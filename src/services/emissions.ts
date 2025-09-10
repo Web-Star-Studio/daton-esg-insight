@@ -166,27 +166,65 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
     const searchCategories = categoryMapping[source.category] || [source.category];
     console.log('Buscando fatores para categorias:', searchCategories);
 
-    // Buscar fator de emissão compatível
+    // Buscar activity data para obter unidade
+    const { data: activityData, error: activityError } = await supabase
+      .from('activity_data')
+      .select('unit, quantity')
+      .eq('id', activityDataId)
+      .single();
+
+    if (activityError) {
+      console.error('Erro ao buscar dados de atividade:', activityError);
+      return;
+    }
+
+    console.log('Unidade da atividade:', activityData.unit);
+
+    // Buscar fator de emissão compatível com melhor compatibilidade de unidades
     const { data: factors, error: factorsError } = await supabase
       .from('emission_factors')
       .select('*')
-      .in('category', searchCategories)
-      .limit(1);
+      .in('category', searchCategories);
 
     if (factorsError) {
       console.error('Erro ao buscar fatores:', factorsError);
       return;
     }
 
-    if (!factors?.length) {
-      console.warn('Nenhum fator encontrado para categorias:', searchCategories);
+    console.log('Fatores encontrados:', factors?.length || 0);
+
+    // Find compatible factor with improved unit matching
+    const compatibleFactor = factors?.find(factor => {
+      const factorUnit = factor.activity_unit.toLowerCase();
+      const activityUnit = activityData.unit.toLowerCase();
+      
+      // Direct match
+      if (factorUnit === activityUnit) return true;
+      
+      // Common unit conversions
+      const unitEquivalents = {
+        'litros': ['l', 'litro', 'liters'],
+        'l': ['litros', 'litro', 'liters'],
+        'kwh': ['kw.h', 'kw-h', 'quilowatt-hora'],
+        'm³': ['m3', 'metros cúbicos', 'metro cúbico'],
+        'm3': ['m³', 'metros cúbicos', 'metro cúbico'],
+        'kg': ['quilograma', 'quilogramas', 'kilograma'],
+        't': ['tonelada', 'toneladas', 'ton']
+      };
+      
+      return unitEquivalents[factorUnit]?.includes(activityUnit) || 
+             unitEquivalents[activityUnit]?.includes(factorUnit);
+    });
+
+    if (!compatibleFactor) {
+      console.warn('Nenhum fator compatível encontrado para unidade:', activityData.unit);
       return;
     }
 
-    console.log('Fator encontrado:', factors[0].name);
+    console.log('Fator compatível encontrado:', compatibleFactor.name);
 
     // Calcular emissões automaticamente
-    await calculateEmissions(activityDataId, factors[0].id);
+    await calculateEmissions(activityDataId, compatibleFactor.id);
     console.log('Emissões calculadas com sucesso!');
   } catch (error) {
     console.error('Erro no cálculo automático:', error);
@@ -323,8 +361,12 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
     const ch4_emissions = activity.quantity * (factor.ch4_factor || 0);
     const n2o_emissions = activity.quantity * (factor.n2o_factor || 0);
     
-    // Total CO2 equivalent (assuming GWP: CH4=25, N2O=298)
-    const total_co2e = co2_emissions + (ch4_emissions * 25) + (n2o_emissions * 298);
+    // Convert to CO2 equivalent using GWP factors from IPCC AR5
+    const gwpCH4 = 28; // IPCC AR5 GWP for CH4 over 100 years (valor correto)
+    const gwpN2O = 265; // IPCC AR5 GWP for N2O over 100 years (valor correto)
+    
+    // Total CO2 equivalent using corrected GWP values
+    const total_co2e = co2_emissions + (ch4_emissions * gwpCH4) + (n2o_emissions * gwpN2O);
 
     // Store calculated emissions
     const { data: calculatedEmission, error: insertError } = await supabase
@@ -338,7 +380,7 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
           ch4_emissions,
           n2o_emissions,
           calculation_method: 'simple_multiplication',
-          gwp_factors: { ch4: 25, n2o: 298 }
+          gwp_factors: { ch4: gwpCH4, n2o: gwpN2O }
         }
       })
       .select()

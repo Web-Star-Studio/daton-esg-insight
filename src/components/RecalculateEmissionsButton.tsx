@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calculator, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { recalculateExistingEmissions } from "@/services/emissionFactors";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecalculateEmissionsButtonProps {
   onSuccess?: () => void;
@@ -21,7 +21,16 @@ export function RecalculateEmissionsButton({ onSuccess }: RecalculateEmissionsBu
         description: "Calculando emissões para dados existentes...",
       });
 
-      await recalculateExistingEmissions();
+      // Call the new recalculation edge function
+      const currentYear = new Date().getFullYear();
+      const { data, error } = await supabase.functions.invoke('ghg-recalculate', {
+        body: {
+          period_start: `${currentYear}-01-01`,
+          period_end: `${currentYear}-12-31`
+        }
+      });
+
+      if (error) throw error;
       
       toast({
         title: "Sucesso",
