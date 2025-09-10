@@ -68,7 +68,7 @@ class CustomFormsService {
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      method: 'GET',
+      body: null,
     });
 
     if (error) throw error;
@@ -80,11 +80,7 @@ class CustomFormsService {
     if (!user) throw new Error('Usuário não autenticado');
 
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      method: 'GET',
-      body: null,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      body: { formId },
     });
 
     if (error) throw error;
@@ -104,10 +100,10 @@ class CustomFormsService {
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      method: 'POST',
       body: {
         ...formData,
         company_id: profile.company_id,
+        method: 'POST'
       },
     });
 
@@ -119,9 +115,12 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data, error } = await supabase.functions.invoke(`custom-forms-management/${formId}`, {
-      method: 'PUT',
-      body: formData,
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      body: {
+        ...formData,
+        formId,
+        method: 'PUT'
+      },
     });
 
     if (error) throw error;
@@ -132,8 +131,11 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { error } = await supabase.functions.invoke(`custom-forms-management/${formId}`, {
-      method: 'DELETE',
+    const { error } = await supabase.functions.invoke('custom-forms-management', {
+      body: {
+        formId,
+        method: 'DELETE'
+      },
     });
 
     if (error) throw error;
@@ -151,11 +153,12 @@ class CustomFormsService {
 
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
-    const { data, error } = await supabase.functions.invoke(`custom-forms-management/${formId}/submissions`, {
-      method: 'POST',
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
         ...submissionData,
         company_id: profile.company_id,
+        formId,
+        method: 'SUBMIT'
       },
     });
 
@@ -167,8 +170,11 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data, error } = await supabase.functions.invoke(`custom-forms-management/${formId}/submissions`, {
-      method: 'GET',
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      body: {
+        formId,
+        method: 'GET_SUBMISSIONS'
+      },
     });
 
     if (error) throw error;
