@@ -28,6 +28,7 @@ import GestaoESG from "./pages/GestaoESG";
 import ColetaDados from "./pages/ColetaDados";
 import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import Documentos from "./pages/Documentos";
+import Auditoria from "./pages/Auditoria";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -152,6 +153,11 @@ const App = () => (
             <Route path="/documentos" element={
               <ProtectedRoute>
                 <Documentos />
+              </ProtectedRoute>
+            } />
+            <Route path="/auditoria" element={
+              <ProtectedRoute>
+                <Auditoria />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
