@@ -131,6 +131,60 @@ export type Database = {
         }
         Relationships: []
       }
+      documents: {
+        Row: {
+          company_id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          related_id: string
+          related_model: string
+          upload_date: string
+          uploader_user_id: string
+        }
+        Insert: {
+          company_id: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          related_id: string
+          related_model: string
+          upload_date?: string
+          uploader_user_id: string
+        }
+        Update: {
+          company_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          related_id?: string
+          related_model?: string
+          upload_date?: string
+          uploader_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploader_user_id_fkey"
+            columns: ["uploader_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emission_factors: {
         Row: {
           activity_unit: string
@@ -228,6 +282,69 @@ export type Database = {
           },
         ]
       }
+      licenses: {
+        Row: {
+          company_id: string
+          conditions: string | null
+          created_at: string
+          expiration_date: string
+          id: string
+          issue_date: string | null
+          issuing_body: string
+          name: string
+          process_number: string | null
+          responsible_user_id: string | null
+          status: Database["public"]["Enums"]["license_status_enum"]
+          type: Database["public"]["Enums"]["license_type_enum"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          conditions?: string | null
+          created_at?: string
+          expiration_date: string
+          id?: string
+          issue_date?: string | null
+          issuing_body: string
+          name: string
+          process_number?: string | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["license_status_enum"]
+          type: Database["public"]["Enums"]["license_type_enum"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          conditions?: string | null
+          created_at?: string
+          expiration_date?: string
+          id?: string
+          issue_date?: string | null
+          issuing_body?: string
+          name?: string
+          process_number?: string | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["license_status_enum"]
+          type?: Database["public"]["Enums"]["license_type_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licenses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licenses_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_id: string
@@ -268,6 +385,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_license_status: {
+        Args: {
+          current_status: Database["public"]["Enums"]["license_status_enum"]
+          expiration_date_param: string
+          issue_date_param: string
+        }
+        Returns: Database["public"]["Enums"]["license_status_enum"]
+      }
       get_user_company_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -276,6 +401,8 @@ export type Database = {
     Enums: {
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
+      license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
+      license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
       user_role_enum: "Admin" | "Editor" | "Leitor"
     }
     CompositeTypes: {
@@ -406,6 +533,8 @@ export const Constants = {
     Enums: {
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],
+      license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
+      license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
       user_role_enum: ["Admin", "Editor", "Leitor"],
     },
   },
