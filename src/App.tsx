@@ -20,6 +20,7 @@ import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
 import RegistrarCreditosCarbono from "./pages/RegistrarCreditosCarbono";
 import Ativos from "./pages/Ativos";
+import Desempenho from "./pages/Desempenho";
 import Configuracao from "./pages/Configuracao";
 import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
 import IAInsights from "./pages/IAInsights";
@@ -113,6 +114,11 @@ const App = () => (
             <Route path="/ativos" element={
               <ProtectedRoute>
                 <Ativos />
+              </ProtectedRoute>
+            } />
+            <Route path="/desempenho" element={
+              <ProtectedRoute>
+                <Desempenho />
               </ProtectedRoute>
             } />
             <Route path="/configuracao" element={
