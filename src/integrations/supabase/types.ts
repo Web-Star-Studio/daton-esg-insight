@@ -65,6 +65,57 @@ export type Database = {
           },
         ]
       }
+      assets: {
+        Row: {
+          asset_type: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          name: string
+          parent_asset_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_type: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          parent_asset_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          parent_asset_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calculated_emissions: {
         Row: {
           activity_data_id: string
@@ -398,6 +449,7 @@ export type Database = {
       }
       emission_sources: {
         Row: {
+          asset_id: string | null
           category: string
           company_id: string
           created_at: string
@@ -409,6 +461,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          asset_id?: string | null
           category: string
           company_id: string
           created_at?: string
@@ -420,6 +473,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          asset_id?: string | null
           category?: string
           company_id?: string
           created_at?: string
@@ -431,6 +485,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "emission_sources_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "emission_sources_company_id_fkey"
             columns: ["company_id"]
@@ -645,6 +706,7 @@ export type Database = {
       }
       licenses: {
         Row: {
+          asset_id: string | null
           company_id: string
           conditions: string | null
           created_at: string
@@ -660,6 +722,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          asset_id?: string | null
           company_id: string
           conditions?: string | null
           created_at?: string
@@ -675,6 +738,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          asset_id?: string | null
           company_id?: string
           conditions?: string | null
           created_at?: string
@@ -690,6 +754,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "licenses_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "licenses_company_id_fkey"
             columns: ["company_id"]
@@ -743,6 +814,7 @@ export type Database = {
       }
       waste_logs: {
         Row: {
+          asset_id: string | null
           collection_date: string
           company_id: string
           cost: number | null
@@ -762,6 +834,7 @@ export type Database = {
           waste_description: string
         }
         Insert: {
+          asset_id?: string | null
           collection_date: string
           company_id: string
           cost?: number | null
@@ -781,6 +854,7 @@ export type Database = {
           waste_description: string
         }
         Update: {
+          asset_id?: string | null
           collection_date?: string
           company_id?: string
           cost?: number | null
@@ -800,6 +874,13 @@ export type Database = {
           waste_description?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "waste_logs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "waste_logs_company_id_fkey"
             columns: ["company_id"]

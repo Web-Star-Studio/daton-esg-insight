@@ -19,6 +19,7 @@ import Relatorios from "./pages/Relatorios";
 import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
 import RegistrarCreditosCarbono from "./pages/RegistrarCreditosCarbono";
+import Ativos from "./pages/Ativos";
 import Configuracao from "./pages/Configuracao";
 import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
 import IAInsights from "./pages/IAInsights";
@@ -107,6 +108,11 @@ const App = () => (
             <Route path="/gestao-esg" element={
               <ProtectedRoute>
                 <GestaoESG />
+              </ProtectedRoute>
+            } />
+            <Route path="/ativos" element={
+              <ProtectedRoute>
+                <Ativos />
               </ProtectedRoute>
             } />
             <Route path="/configuracao" element={
