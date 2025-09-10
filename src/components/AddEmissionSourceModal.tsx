@@ -71,6 +71,7 @@ type Step2EletricidadeData = z.infer<typeof step2EletricidadeSchema>
 interface AddEmissionSourceModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
 const categoriasPorEscopo = {
@@ -99,7 +100,7 @@ const combustiveis = [
   { value: "biomassa", label: "Biomassa", unidade: "toneladas" },
 ]
 
-export function AddEmissionSourceModal({ open, onOpenChange }: AddEmissionSourceModalProps) {
+export function AddEmissionSourceModal({ open, onOpenChange, onSuccess }: AddEmissionSourceModalProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null)
   const [stepType, setStepType] = useState<'combustao' | 'eletricidade' | null>(null)
@@ -208,8 +209,12 @@ export function AddEmissionSourceModal({ open, onOpenChange }: AddEmissionSource
       // Resetar forms e fechar modal
       resetAndClose();
       
-      // Recarregar a página para mostrar os novos dados
-      window.location.reload();
+      // Chamar callback de sucesso se fornecido, senão recarregar página
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        window.location.reload();
+      }
       
     } catch (error) {
       console.error('Erro ao salvar fonte de emissão:', error);

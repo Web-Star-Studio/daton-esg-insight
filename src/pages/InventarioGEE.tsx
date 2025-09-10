@@ -2,6 +2,7 @@ import { MainLayout } from "@/components/MainLayout"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -10,30 +11,48 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent } from "@/components/ui/card"
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react"
+import { Plus, Pencil, Trash2, Loader2, Factory, Zap, Truck } from "lucide-react"
 import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal"
+import EditEmissionSourceModal from "@/components/EditEmissionSourceModal"
 import { useState, useEffect } from "react"
-import { getEmissionSourcesWithEmissions, deleteEmissionSource } from "@/services/emissions"
+import { 
+  getEmissionSourcesWithEmissions, 
+  deleteEmissionSource,
+  getEmissionStats
+} from "@/services/emissions"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { useToast } from "@/hooks/use-toast"
 
 const InventarioGEE = () => {
+  const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [selectedSource, setSelectedSource] = useState<any>(null)
   const [emissionSources, setEmissionSources] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    loadEmissionSources()
+    loadData()
   }, [])
 
-  const loadEmissionSources = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true)
-      const data = await getEmissionSourcesWithEmissions()
-      setEmissionSources(data)
+      const [sourcesData, statsData] = await Promise.all([
+        getEmissionSourcesWithEmissions(),
+        getEmissionStats()
+      ])
+      setEmissionSources(sourcesData)
+      setStats(statsData)
     } catch (error) {
-      console.error('Erro ao carregar fontes de emissão:', error)
+      console.error('Erro ao carregar dados:', error)
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados do inventário",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -43,11 +62,25 @@ const InventarioGEE = () => {
     if (confirm('Tem certeza que deseja excluir esta fonte de emissão?')) {
       try {
         await deleteEmissionSource(id)
-        await loadEmissionSources() // Recarregar a lista
+        await loadData()
+        toast({
+          title: "Sucesso",
+          description: "Fonte de emissão excluída com sucesso!",
+        })
       } catch (error) {
         console.error('Erro ao excluir fonte:', error)
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir fonte de emissão",
+          variant: "destructive",
+        })
       }
     }
+  }
+
+  const handleEditSource = (source: any) => {
+    setSelectedSource(source)
+    setIsEditModalOpen(true)
   }
   
   const getStatusBadge = (status: string) => {
@@ -120,6 +153,7 @@ const InventarioGEE = () => {
                         variant="ghost" 
                         size="sm"
                         className="h-8 w-8 p-0 hover:bg-accent"
+                        onClick={() => handleEditSource(fonte)}
                         title="Editar fonte"
                       >
                         <Pencil className="h-4 w-4" />
@@ -164,8 +198,80 @@ const InventarioGEE = () => {
         {/* Modal para adicionar fonte */}
         <AddEmissionSourceModal 
           open={isModalOpen} 
-          onOpenChange={setIsModalOpen} 
+          onOpenChange={setIsModalOpen}
+          onSuccess={loadData}
         />
+
+        {/* Modal para editar fonte */}
+        <EditEmissionSourceModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          source={selectedSource}
+          onSuccess={loadData}
+        />
+
+        {/* KPIs Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Fontes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Factory className="h-4 w-4" />
+                Escopo 1
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.escopo1 || 0}</div>
+              <p className="text-xs text-muted-foreground">Emissões Diretas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Escopo 2
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{stats.escopo2 || 0}</div>
+              <p className="text-xs text-muted-foreground">Energia Adquirida</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                Escopo 3
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats.escopo3 || 0}</div>
+              <p className="text-xs text-muted-foreground">Outras Indiretas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Fontes Ativas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.ativas || 0}</div>
+              <div className="text-xs text-muted-foreground">
+                {stats.total ? Math.round((stats.ativas / stats.total) * 100) : 0}% do total
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Sistema de Abas */}
         <Tabs defaultValue="todas" className="space-y-6">

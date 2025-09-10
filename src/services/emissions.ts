@@ -181,3 +181,85 @@ export async function getEmissionSourcesWithEmissions() {
       : source.updated_at,
   })) || [];
 }
+
+// Calculate emissions for activity data
+export async function calculateEmissions(activityDataId: string, emissionFactorId: string) {
+  try {
+    // Fetch activity data and emission factor
+    const [activityResponse, factorResponse] = await Promise.all([
+      supabase
+        .from('activity_data')
+        .select('*')
+        .eq('id', activityDataId)
+        .single(),
+      supabase
+        .from('emission_factors')
+        .select('*')
+        .eq('id', emissionFactorId)
+        .single()
+    ]);
+
+    if (activityResponse.error || factorResponse.error) {
+      throw new Error('Error fetching data for calculation');
+    }
+
+    const activity = activityResponse.data;
+    const factor = factorResponse.data;
+
+    // Calculate emissions (quantity * emission factors)
+    const co2_emissions = activity.quantity * (factor.co2_factor || 0);
+    const ch4_emissions = activity.quantity * (factor.ch4_factor || 0);
+    const n2o_emissions = activity.quantity * (factor.n2o_factor || 0);
+    
+    // Total CO2 equivalent (assuming GWP: CH4=25, N2O=298)
+    const total_co2e = co2_emissions + (ch4_emissions * 25) + (n2o_emissions * 298);
+
+    // Store calculated emissions
+    const { data: calculatedEmission, error: insertError } = await supabase
+      .from('calculated_emissions')
+      .insert({
+        activity_data_id: activityDataId,
+        emission_factor_id: emissionFactorId,
+        total_co2e,
+        details_json: {
+          co2_emissions,
+          ch4_emissions,
+          n2o_emissions,
+          calculation_method: 'simple_multiplication',
+          gwp_factors: { ch4: 25, n2o: 298 }
+        }
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    return calculatedEmission;
+  } catch (error) {
+    console.error('Error calculating emissions:', error);
+    throw error;
+  }
+}
+
+// Get emission factors suitable for a category
+export async function getEmissionFactors(category?: string) {
+  let query = supabase
+    .from('emission_factors')
+    .select('*')
+    .order('name');
+
+  if (category) {
+    query = query.eq('category', category);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching emission factors:', error);
+    throw error;
+  }
+
+  return data || [];
+}
