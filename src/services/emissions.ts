@@ -28,6 +28,7 @@ export interface ActivityData {
   period_start_date: string;
   period_end_date: string;
   source_document?: string;
+  emission_factor_id?: string; // CORREÇÃO CRÍTICA: Permitir seleção específica de fator
 }
 
 // Obter todas as fontes de emissão da empresa
@@ -132,8 +133,14 @@ export async function addActivityData(activityData: ActivityData): Promise<void>
     throw activityError;
   }
 
-  // Após inserir activity_data, tentar calcular emissões automaticamente
-  await tryAutoCalculateEmissions(activityRecord.id, activityData.emission_source_id);
+  // Após inserir activity_data, calcular emissões com fator específico ou automático
+  if (activityData.emission_factor_id) {
+    // CORREÇÃO CRÍTICA: Usar fator específico selecionado pelo usuário
+    await calculateEmissions(activityRecord.id, activityData.emission_factor_id);
+  } else {
+    // Fallback: tentar calcular automaticamente (comportamento anterior)
+    await tryAutoCalculateEmissions(activityRecord.id, activityData.emission_source_id);
+  }
 }
 
 async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceId: string) {

@@ -48,6 +48,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
   const [sourceDocument, setSourceDocument] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emissionFactors, setEmissionFactors] = useState<EmissionFactor[]>([]);
+  const [selectedEmissionFactorId, setSelectedEmissionFactorId] = useState<string>("");
   const [refreshData, setRefreshData] = useState(0);
   const { toast } = useToast();
 
@@ -73,6 +74,16 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificação crítica: se há múltiplos fatores, o usuário deve selecionar um específico
+    if (emissionFactors.length > 1 && !selectedEmissionFactorId) {
+      toast({
+        title: "Tipo de combustível obrigatório",
+        description: "Selecione o tipo específico de combustível consumido.",
         variant: "destructive",
       });
       return;
@@ -119,6 +130,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
     setQuantity("");
     setUnit("");
     setSourceDocument("");
+    setSelectedEmissionFactorId("");
   };
 
   const getUnitSuggestions = () => {
@@ -265,6 +277,28 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
                   </Select>
                 </div>
               </div>
+
+              {/* CORREÇÃO CRÍTICA: Seleção de Tipo de Combustível */}
+              {emissionFactors.length > 1 && (
+                <div className="space-y-2">
+                  <Label htmlFor="emission-factor">Tipo de Combustível *</Label>
+                  <Select value={selectedEmissionFactorId} onValueChange={setSelectedEmissionFactorId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de combustível consumido" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {emissionFactors.map((factor) => (
+                        <SelectItem key={factor.id} value={factor.id}>
+                          {factor.name} ({factor.activity_unit})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-muted-foreground">
+                    Esta categoria possui múltiplos tipos de combustível. Selecione o tipo específico consumido para cálculo preciso.
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="source-document">Documento Fonte (opcional)</Label>
