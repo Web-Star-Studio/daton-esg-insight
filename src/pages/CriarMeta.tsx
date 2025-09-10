@@ -16,6 +16,8 @@ import { ptBR } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "@/hooks/use-toast"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createGoal, getCompanyUsers, type CreateGoalData } from "@/services/goals"
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome da meta é obrigatório"),
@@ -34,6 +36,35 @@ const formSchema = z.object({
 
 const CriarMeta = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  // Fetch company users for responsible assignment
+  const { data: companyUsers = [] } = useQuery({
+    queryKey: ['company-users'],
+    queryFn: getCompanyUsers,
+  })
+
+  // Create goal mutation
+  const createGoalMutation = useMutation({
+    mutationFn: createGoal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      toast({
+        title: "Meta criada com sucesso!",
+        description: "A nova meta de sustentabilidade foi cadastrada.",
+      })
+      navigate("/metas")
+    },
+    onError: (error) => {
+      console.error('Error creating goal:', error)
+      toast({
+        title: "Erro ao criar meta",
+        description: "Não foi possível criar a meta. Tente novamente.",
+        variant: "destructive",
+      })
+    },
+  })
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,12 +81,18 @@ const CriarMeta = () => {
   })
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values)
-    toast({
-      title: "Meta criada com sucesso!",
-      description: "A nova meta de sustentabilidade foi cadastrada.",
-    })
-    navigate("/metas")
+    const goalData: CreateGoalData = {
+      name: values.nome,
+      description: values.descricao,
+      metric_key: values.metrica,
+      baseline_value: values.valorBase,
+      baseline_period: values.periodoBase,
+      target_value: values.valorAlvo,
+      deadline_date: values.prazoFinal.toISOString().split('T')[0],
+      responsible_user_id: values.responsavel,
+    }
+
+    createGoalMutation.mutate(goalData)
   }
 
   const handleCancel = () => {
@@ -77,8 +114,12 @@ const CriarMeta = () => {
             <Button variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>
-            <Button type="submit" form="meta-form">
-              Salvar Meta
+            <Button 
+              type="submit" 
+              form="meta-form"
+              disabled={createGoalMutation.isPending}
+            >
+              {createGoalMutation.isPending ? "Salvando..." : "Salvar Meta"}
             </Button>
           </div>
         </div>
@@ -285,9 +326,11 @@ const CriarMeta = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="ana-silva">Ana Silva (Gerente Ambiental)</SelectItem>
-                            <SelectItem value="carlos-pereira">Carlos Pereira (Diretor de Operações)</SelectItem>
-                            <SelectItem value="mariana-costa">Mariana Costa (Coordenadora de Sustentabilidade)</SelectItem>
+                            {companyUsers.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.full_name} {user.job_title ? `(${user.job_title})` : ''}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

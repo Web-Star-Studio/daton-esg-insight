@@ -6,6 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Flag, TrendingUp, AlertTriangle, BarChart3, Pencil, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getGoals, getDashboardStats, type GoalListItem } from "@/services/goals";
+import { toast } from "@/hooks/use-toast";
 
 interface CircularProgressProps {
   value: number;
@@ -49,48 +52,24 @@ function CircularProgress({ value, size = 120, strokeWidth = 8 }: CircularProgre
   );
 }
 
-const mockGoals = [
-  {
-    id: 1,
-    name: "Reduzir emissões de Escopo 1",
-    metric: "Emissões GEE (tCO₂e)",
-    baseline: "2.500 tCO₂e (2024)",
-    target: "2.125 tCO₂e",
-    deadline: "31/12/2026",
-    progress: 60,
-    status: "No Caminho Certo" as const,
-  },
-  {
-    id: 2,
-    name: "Aumentar taxa de reciclagem",
-    metric: "% de Resíduos Reciclados",
-    baseline: "45% (2024)",
-    target: "75%",
-    deadline: "31/12/2025",
-    progress: 85,
-    status: "Atingida" as const,
-  },
-  {
-    id: 3,
-    name: "Reduzir consumo de água",
-    metric: "Consumo de Água (m³)",
-    baseline: "15.000 m³ (2024)",
-    target: "12.000 m³",
-    deadline: "30/06/2025",
-    progress: 45,
-    status: "Atenção Necessária" as const,
-  },
-  {
-    id: 4,
-    name: "Economia de energia",
-    metric: "Consumo Energético (kWh)",
-    baseline: "500.000 kWh (2024)",
-    target: "400.000 kWh",
-    deadline: "31/12/2024",
-    progress: 20,
-    status: "Atrasada" as const,
-  },
-];
+// Helper function to format metric display
+const getMetricDisplay = (metricKey: string): string => {
+  const metricMap: Record<string, string> = {
+    'emissoes-totais': 'Emissões Totais (tCO₂e)',
+    'emissoes-escopo1': 'Emissões Escopo 1 (tCO₂e)',
+    'emissoes-escopo2': 'Emissões Escopo 2 (tCO₂e)',
+    'taxa-reciclagem': '% de Resíduos Reciclados',
+    'geracao-residuos': 'Geração Total de Resíduos (ton)',
+    'consumo-eletricidade': 'Consumo de Eletricidade (kWh)',
+    'consumo-agua': 'Consumo de Água (m³)',
+  };
+  return metricMap[metricKey] || metricKey;
+};
+
+// Helper function to format date
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString('pt-BR');
+};
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -124,9 +103,28 @@ const getStatusColor = (status: string) => {
 
 export default function Metas() {
   const navigate = useNavigate();
-  const activeGoals = mockGoals.filter(goal => goal.status !== "Atingida").length;
-  const averageProgress = Math.round(mockGoals.reduce((sum, goal) => sum + goal.progress, 0) / mockGoals.length);
-  const delayedGoals = mockGoals.filter(goal => goal.status === "Atrasada").length;
+
+  // Fetch goals data
+  const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useQuery({
+    queryKey: ['goals'],
+    queryFn: getGoals,
+  });
+
+  // Fetch dashboard stats
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: getDashboardStats,
+  });
+
+  const isLoading = goalsLoading || statsLoading;
+
+  if (goalsError) {
+    toast({
+      title: "Erro ao carregar metas",
+      description: "Não foi possível carregar as metas. Tente novamente.",
+      variant: "destructive",
+    });
+  }
 
   return (
     <MainLayout>
@@ -156,7 +154,9 @@ export default function Metas() {
               <Flag className="h-5 w-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{activeGoals}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {isLoading ? "--" : stats?.activeGoals || 0}
+              </div>
             </CardContent>
           </Card>
 
@@ -169,7 +169,7 @@ export default function Metas() {
               <TrendingUp className="h-5 w-5 text-success" />
             </CardHeader>
             <CardContent className="flex items-center justify-center pt-4">
-              <CircularProgress value={averageProgress} />
+              <CircularProgress value={isLoading ? 0 : stats?.averageProgress || 0} />
             </CardContent>
           </Card>
 
@@ -182,7 +182,9 @@ export default function Metas() {
               <AlertTriangle className="h-5 w-5 text-warning" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{delayedGoals}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {isLoading ? "--" : stats?.delayedGoals || 0}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -208,50 +210,76 @@ export default function Metas() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockGoals.map((goal) => (
-                    <TableRow key={goal.id}>
-                      <TableCell className="font-medium">{goal.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{goal.metric}</TableCell>
-                      <TableCell className="text-muted-foreground">{goal.baseline}</TableCell>
-                      <TableCell className="font-medium">{goal.target}</TableCell>
-                      <TableCell className="text-muted-foreground">{goal.deadline}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={goal.progress} className="w-20" />
-                          <span className="text-sm font-medium min-w-[3rem]">
-                            {goal.progress}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={`${getStatusColor(goal.status)} border-0`}
-                        >
-                          {goal.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title="Atualizar Progresso"
-                          >
-                            <BarChart3 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            title="Editar Meta"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  {isLoading ? (
+                    // Loading skeleton
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                        <TableCell><div className="h-8 bg-muted animate-pulse rounded" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : goals.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        Nenhuma meta cadastrada ainda. Clique em "Criar Nova Meta" para começar.
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    goals.map((goal) => (
+                      <TableRow key={goal.id}>
+                        <TableCell className="font-medium">{goal.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {getMetricDisplay(goal.metric_key)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">--</TableCell>
+                        <TableCell className="font-medium">{goal.target_value}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(goal.deadline_date)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={goal.current_progress_percent} className="w-20" />
+                            <span className="text-sm font-medium min-w-[3rem]">
+                              {Math.round(goal.current_progress_percent)}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            className={`${getStatusColor(goal.status)} border-0`}
+                          >
+                            {goal.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Atualizar Progresso"
+                            >
+                              <BarChart3 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Editar Meta"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
