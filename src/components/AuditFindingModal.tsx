@@ -123,7 +123,7 @@ export function AuditFindingModal({ auditId, finding, isOpen, onClose, onSuccess
 
     const submitData = {
       ...formData,
-      responsible_user_id: formData.responsible_user_id || undefined,
+      responsible_user_id: formData.responsible_user_id === "none" ? undefined : formData.responsible_user_id,
       due_date: formData.due_date || undefined,
       action_plan: formData.action_plan || undefined
     };
@@ -216,7 +216,7 @@ export function AuditFindingModal({ auditId, finding, isOpen, onClose, onSuccess
                   <SelectValue placeholder="Selecione o responsável" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum responsável</SelectItem>
+                  <SelectItem value="none">Nenhum responsável</SelectItem>
                   {users?.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name}

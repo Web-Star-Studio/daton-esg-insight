@@ -73,8 +73,8 @@ export function ComplianceTaskModal({ open, onOpenChange, task }: ComplianceTask
       description: task?.description || "",
       frequency: task?.frequency || "Anual",
       due_date: task?.due_date ? new Date(task.due_date) : undefined,
-      requirement_id: task?.requirement_id || "",
-      responsible_user_id: task?.responsible_user_id || "",
+      requirement_id: task?.requirement_id || "none",
+      responsible_user_id: task?.responsible_user_id || "none",
       notes: task?.notes || "",
     },
   });
@@ -140,8 +140,8 @@ export function ComplianceTaskModal({ open, onOpenChange, task }: ComplianceTask
         description: values.description,
         frequency: values.frequency,
         due_date: format(values.due_date, 'yyyy-MM-dd'),
-        requirement_id: values.requirement_id || undefined,
-        responsible_user_id: values.responsible_user_id || undefined,
+        requirement_id: values.requirement_id === "none" ? undefined : values.requirement_id,
+        responsible_user_id: values.responsible_user_id === "none" ? undefined : values.responsible_user_id,
         notes: values.notes,
       };
 
@@ -288,7 +288,7 @@ export function ComplianceTaskModal({ open, onOpenChange, task }: ComplianceTask
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nenhum requisito associado</SelectItem>
+                      <SelectItem value="none">Nenhum requisito associado</SelectItem>
                       {requirements?.map((req) => (
                         <SelectItem key={req.id} value={req.id}>
                           {req.reference_code ? `${req.reference_code} - ` : ""}{req.title}
@@ -314,7 +314,7 @@ export function ComplianceTaskModal({ open, onOpenChange, task }: ComplianceTask
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Não atribuído</SelectItem>
+                      <SelectItem value="none">Não atribuído</SelectItem>
                       {users?.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.full_name}

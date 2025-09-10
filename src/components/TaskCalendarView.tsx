@@ -30,12 +30,12 @@ export function TaskCalendarView() {
   const [selectedTask, setSelectedTask] = useState<ComplianceTask | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['compliance-tasks', statusFilter],
-    queryFn: () => complianceService.getTasks(statusFilter ? { status: statusFilter } : {}),
+    queryFn: () => complianceService.getTasks(statusFilter !== "all" ? { status: statusFilter } : {}),
   });
 
   const getStatusBadge = (status: string, dueDate: string) => {
@@ -103,7 +103,7 @@ export function TaskCalendarView() {
                   <SelectValue placeholder="Filtrar por status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
+                  <SelectItem value="all">Todos os status</SelectItem>
                   <SelectItem value="Pendente">Pendente</SelectItem>
                   <SelectItem value="Em Andamento">Em Andamento</SelectItem>
                   <SelectItem value="Concluído">Concluído</SelectItem>

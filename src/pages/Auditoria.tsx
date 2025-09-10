@@ -19,7 +19,7 @@ export default function Auditoria() {
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
   const [filters, setFilters] = useState({
     search: "",
-    actionType: "",
+    actionType: "all",
     startDate: "",
     endDate: ""
   });
@@ -232,7 +232,7 @@ export default function Auditoria() {
                         <SelectValue placeholder="Todos os tipos" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os tipos</SelectItem>
+                        <SelectItem value="all">Todos os tipos</SelectItem>
                         <SelectItem value="CREATE_AUDIT">Criar Auditoria</SelectItem>
                         <SelectItem value="CREATE_FINDING">Criar Achado</SelectItem>
                         <SelectItem value="UPDATE_FINDING">Atualizar Achado</SelectItem>
@@ -258,7 +258,7 @@ export default function Auditoria() {
                   <div className="flex items-end">
                     <Button 
                       variant="outline" 
-                      onClick={() => setFilters({ search: "", actionType: "", startDate: "", endDate: "" })}
+                      onClick={() => setFilters({ search: "", actionType: "all", startDate: "", endDate: "" })}
                     >
                       Limpar Filtros
                     </Button>
