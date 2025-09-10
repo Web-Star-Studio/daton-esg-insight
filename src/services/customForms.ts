@@ -1,0 +1,179 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export interface CustomForm {
+  id: string;
+  title: string;
+  description?: string;
+  structure_json: FormStructure;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  submission_count?: number;
+}
+
+export interface FormField {
+  id: string;
+  type: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'date' | 'checkbox';
+  label: string;
+  required: boolean;
+  placeholder?: string;
+  options?: string[]; // For select/multiselect fields
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+  };
+}
+
+export interface FormStructure {
+  fields: FormField[];
+  theme?: {
+    primaryColor?: string;
+    backgroundColor?: string;
+  };
+}
+
+export interface FormSubmission {
+  id: string;
+  form_id: string;
+  submission_data: Record<string, any>;
+  submitted_at: string;
+  submitted_by?: {
+    full_name: string;
+  };
+}
+
+export interface CreateFormData {
+  title: string;
+  description?: string;
+  structure_json: FormStructure;
+  is_published?: boolean;
+}
+
+export interface SubmitFormData {
+  submission_data: Record<string, any>;
+}
+
+class CustomFormsService {
+  async getForms(): Promise<CustomForm[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) throw new Error('Perfil do usuário não encontrado');
+
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      method: 'GET',
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getForm(formId: string): Promise<CustomForm | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      method: 'GET',
+      body: null,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async createForm(formData: CreateFormData): Promise<CustomForm> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) throw new Error('Perfil do usuário não encontrado');
+
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      method: 'POST',
+      body: {
+        ...formData,
+        company_id: profile.company_id,
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateForm(formId: string, formData: Partial<CreateFormData>): Promise<CustomForm> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data, error } = await supabase.functions.invoke(`custom-forms-management/${formId}`, {
+      method: 'PUT',
+      body: formData,
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteForm(formId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { error } = await supabase.functions.invoke(`custom-forms-management/${formId}`, {
+      method: 'DELETE',
+    });
+
+    if (error) throw error;
+  }
+
+  async submitForm(formId: string, submissionData: SubmitFormData): Promise<FormSubmission> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) throw new Error('Perfil do usuário não encontrado');
+
+    const { data, error } = await supabase.functions.invoke(`custom-forms-management/${formId}/submissions`, {
+      method: 'POST',
+      body: {
+        ...submissionData,
+        company_id: profile.company_id,
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getFormSubmissions(formId: string): Promise<FormSubmission[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data, error } = await supabase.functions.invoke(`custom-forms-management/${formId}/submissions`, {
+      method: 'GET',
+    });
+
+    if (error) throw error;
+    return data;
+  }
+}
+
+export const customFormsService = new CustomFormsService();

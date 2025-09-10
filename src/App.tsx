@@ -26,6 +26,7 @@ import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
 import IAInsights from "./pages/IAInsights";
 import GestaoESG from "./pages/GestaoESG";
 import ColetaDados from "./pages/ColetaDados";
+import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -140,6 +141,11 @@ const App = () => (
             <Route path="/coleta-dados" element={
               <ProtectedRoute>
                 <ColetaDados />
+              </ProtectedRoute>
+            } />
+            <Route path="/formularios-customizados" element={
+              <ProtectedRoute>
+                <FormulariosCustomizados />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

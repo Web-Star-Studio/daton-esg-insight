@@ -79,7 +79,7 @@ const menuSections: MenuSection[] = [
     title: "DADOS E DOCUMENTOS",
     items: [
       { id: "coleta-dados", title: "Coleta de Dados", icon: CloudUpload, path: "/coleta-dados" },
-      { id: "formularios", title: "Formulários", icon: FileText, path: "/formularios" },
+      { id: "formularios", title: "Formulários Customizados", icon: FileText, path: "/formularios-customizados" },
       { id: "documentos", title: "Documentos", icon: Folder, path: "/documentos" },
       { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
     ]

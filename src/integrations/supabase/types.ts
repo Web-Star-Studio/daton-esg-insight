@@ -340,6 +340,42 @@ export type Database = {
           },
         ]
       }
+      custom_forms: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          is_published: boolean
+          structure_json: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          structure_json: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          structure_json?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_collection_tasks: {
         Row: {
           assigned_to_user_id: string | null
@@ -640,6 +676,41 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_submissions: {
+        Row: {
+          company_id: string
+          form_id: string
+          id: string
+          submission_data: Json
+          submitted_at: string
+          submitted_by_user_id: string
+        }
+        Insert: {
+          company_id: string
+          form_id: string
+          id?: string
+          submission_data: Json
+          submitted_at?: string
+          submitted_by_user_id: string
+        }
+        Update: {
+          company_id?: string
+          form_id?: string
+          id?: string
+          submission_data?: Json
+          submitted_at?: string
+          submitted_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
             referencedColumns: ["id"]
           },
         ]
