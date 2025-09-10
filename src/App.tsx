@@ -2,7 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
@@ -25,32 +28,102 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/inventario-gee" element={<InventarioGEE />} />
-          <Route path="/dashboard-ghg" element={<DashboardGHG />} />
-          <Route path="/licenciamento" element={<Licenciamento />} />
-          <Route path="/licenciamento/novo" element={<CadastrarLicenca />} />
-          <Route path="/residuos" element={<Residuos />} />
-          <Route path="/residuos/novo" element={<RegistrarDestinacao />} />
-          <Route path="/metas" element={<Metas />} />
-          <Route path="/metas/nova" element={<CriarMeta />} />
-          <Route path="/relatorios" element={<Relatorios />} />
-          <Route path="/biblioteca-fatores" element={<BibliotecaFatores />} />
-          <Route path="/projetos-carbono" element={<ProjetosCarbono />} />
-          <Route path="/projetos-carbono/registrar-creditos" element={<RegistrarCreditosCarbono />} />
-          <Route path="/configuracao" element={<Configuracao />} />
-          <Route path="/simulador" element={<SimuladorEcoImpacto />} />
-          <Route path="/ia-insights" element={<IAInsights />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Rota de autenticação - pública */}
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Rotas protegidas */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/inventario-gee" element={
+              <ProtectedRoute>
+                <InventarioGEE />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard-ghg" element={
+              <ProtectedRoute>
+                <DashboardGHG />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento" element={
+              <ProtectedRoute>
+                <Licenciamento />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/novo" element={
+              <ProtectedRoute requiredRole="Editor">
+                <CadastrarLicenca />
+              </ProtectedRoute>
+            } />
+            <Route path="/residuos" element={
+              <ProtectedRoute>
+                <Residuos />
+              </ProtectedRoute>
+            } />
+            <Route path="/residuos/novo" element={
+              <ProtectedRoute requiredRole="Editor">
+                <RegistrarDestinacao />
+              </ProtectedRoute>
+            } />
+            <Route path="/metas" element={
+              <ProtectedRoute>
+                <Metas />
+              </ProtectedRoute>
+            } />
+            <Route path="/metas/nova" element={
+              <ProtectedRoute requiredRole="Editor">
+                <CriarMeta />
+              </ProtectedRoute>
+            } />
+            <Route path="/relatorios" element={
+              <ProtectedRoute>
+                <Relatorios />
+              </ProtectedRoute>
+            } />
+            <Route path="/biblioteca-fatores" element={
+              <ProtectedRoute>
+                <BibliotecaFatores />
+              </ProtectedRoute>
+            } />
+            <Route path="/projetos-carbono" element={
+              <ProtectedRoute>
+                <ProjetosCarbono />
+              </ProtectedRoute>
+            } />
+            <Route path="/projetos-carbono/registrar-creditos" element={
+              <ProtectedRoute requiredRole="Editor">
+                <RegistrarCreditosCarbono />
+              </ProtectedRoute>
+            } />
+            <Route path="/configuracao" element={
+              <ProtectedRoute requiredRole="Admin">
+                <Configuracao />
+              </ProtectedRoute>
+            } />
+            <Route path="/simulador" element={
+              <ProtectedRoute>
+                <SimuladorEcoImpacto />
+              </ProtectedRoute>
+            } />
+            <Route path="/ia-insights" element={
+              <ProtectedRoute>
+                <IAInsights />
+              </ProtectedRoute>
+            } />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
