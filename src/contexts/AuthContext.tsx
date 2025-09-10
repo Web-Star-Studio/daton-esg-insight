@@ -31,10 +31,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Buscar dados completos do usuário
           setTimeout(async () => {
             try {
+              console.log('AuthContext: Session found, fetching user data');
               const userData = await authService.getCurrentUser();
-              setUser(userData);
+              if (userData) {
+                console.log('AuthContext: User data found:', userData.full_name);
+                setUser(userData);
+              } else {
+                console.log('AuthContext: No user data found for session');
+                setUser(null);
+              }
             } catch (error) {
-              console.error('Erro ao buscar dados do usuário:', error);
+              console.error('AuthContext: Erro ao buscar dados do usuário:', error);
               setUser(null);
             } finally {
               setIsLoading(false);
@@ -48,8 +55,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // ENTÃO verificar se já existe uma sessão
+    console.log('AuthContext: Checking for existing session');
     authService.getCurrentUser().then((userData) => {
+      if (userData) {
+        console.log('AuthContext: Initial user data found:', userData.full_name);
+      } else {
+        console.log('AuthContext: No initial user data found');
+      }
       setUser(userData);
+      setIsLoading(false);
+    }).catch((error) => {
+      console.error('AuthContext: Error checking initial session:', error);
+      setUser(null);
       setIsLoading(false);
     });
 

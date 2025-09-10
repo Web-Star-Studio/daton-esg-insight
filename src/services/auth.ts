@@ -105,6 +105,8 @@ class AuthService {
       return null;
     }
 
+    console.log('Getting profile for user:', session.user.id);
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select(`
@@ -115,11 +117,24 @@ class AuthService {
         )
       `)
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
 
-    if (error || !profile) {
+    if (error) {
+      console.error('Error fetching profile:', error);
       return null;
     }
+
+    if (!profile) {
+      console.error('No profile found for user:', session.user.id);
+      return null;
+    }
+
+    if (!profile.companies) {
+      console.error('No company found for profile:', profile.id);
+      return null;
+    }
+
+    console.log('Profile found successfully:', profile.id);
 
     return {
       id: profile.id,
