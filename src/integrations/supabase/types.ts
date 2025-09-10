@@ -107,6 +107,56 @@ export type Database = {
           },
         ]
       }
+      carbon_projects: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          location: string | null
+          name: string
+          standard: string
+          status: Database["public"]["Enums"]["carbon_project_status_enum"]
+          type_methodology: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          location?: string | null
+          name: string
+          standard: string
+          status?: Database["public"]["Enums"]["carbon_project_status_enum"]
+          type_methodology: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          location?: string | null
+          name?: string
+          standard?: string
+          status?: Database["public"]["Enums"]["carbon_project_status_enum"]
+          type_methodology?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carbon_projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           cnpj: string
@@ -130,6 +180,114 @@ export type Database = {
           sector?: string | null
         }
         Relationships: []
+      }
+      credit_purchases: {
+        Row: {
+          available_quantity: number
+          company_id: string
+          created_at: string
+          id: string
+          project_id: string | null
+          project_name_text: string | null
+          purchase_date: string
+          quantity_tco2e: number
+          registry_id: string | null
+          standard: string | null
+          total_cost: number | null
+          type_methodology: string | null
+          updated_at: string
+        }
+        Insert: {
+          available_quantity?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          project_name_text?: string | null
+          purchase_date: string
+          quantity_tco2e: number
+          registry_id?: string | null
+          standard?: string | null
+          total_cost?: number | null
+          type_methodology?: string | null
+          updated_at?: string
+        }
+        Update: {
+          available_quantity?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          project_name_text?: string | null
+          purchase_date?: string
+          quantity_tco2e?: number
+          registry_id?: string | null
+          standard?: string | null
+          total_cost?: number | null
+          type_methodology?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_purchases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "carbon_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_retirements: {
+        Row: {
+          company_id: string
+          created_at: string
+          credit_purchase_id: string
+          id: string
+          quantity_tco2e: number
+          reason: string | null
+          retirement_date: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          credit_purchase_id: string
+          id?: string
+          quantity_tco2e: number
+          reason?: string | null
+          retirement_date: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          credit_purchase_id?: string
+          id?: string
+          quantity_tco2e?: number
+          reason?: string | null
+          retirement_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_retirements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_retirements_credit_purchase_id_fkey"
+            columns: ["credit_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "credit_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -578,6 +736,8 @@ export type Database = {
       }
     }
     Enums: {
+      carbon_project_status_enum: "Ativo" | "Encerrado" | "Suspenso"
+      credit_status_enum: "Disponível" | "Aposentado" | "Reservado"
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
       goal_status_enum:
@@ -720,6 +880,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      carbon_project_status_enum: ["Ativo", "Encerrado", "Suspenso"],
+      credit_status_enum: ["Disponível", "Aposentado", "Reservado"],
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],
       goal_status_enum: [
