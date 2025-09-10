@@ -138,6 +138,8 @@ export async function addActivityData(activityData: ActivityData): Promise<void>
 
 async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceId: string) {
   try {
+    console.log('Tentando calcular emissões para activity:', activityDataId);
+    
     // Buscar fonte de emissão para obter categoria
     const { data: source, error: sourceError } = await supabase
       .from('emission_sources')
@@ -145,19 +147,47 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
       .eq('id', emissionSourceId)
       .single();
 
-    if (sourceError) return;
+    if (sourceError) {
+      console.error('Erro ao buscar fonte de emissão:', sourceError);
+      return;
+    }
+
+    console.log('Categoria da fonte:', source.category);
+
+    // Mapeamento de categorias para compatibilidade
+    const categoryMapping: Record<string, string[]> = {
+      'Combustão Móvel': ['Fontes Móveis', 'Combustão Móvel'],
+      'Fontes Móveis': ['Fontes Móveis', 'Combustão Móvel'],
+      'Eletricidade Adquirida': ['Eletricidade Adquirida', 'Energia Adquirida'],
+      'Energia Adquirida': ['Eletricidade Adquirida', 'Energia Adquirida'],
+      'Combustão Estacionária': ['Combustão Estacionária'],
+    };
+
+    const searchCategories = categoryMapping[source.category] || [source.category];
+    console.log('Buscando fatores para categorias:', searchCategories);
 
     // Buscar fator de emissão compatível
     const { data: factors, error: factorsError } = await supabase
       .from('emission_factors')
       .select('*')
-      .eq('category', source.category)
+      .in('category', searchCategories)
       .limit(1);
 
-    if (factorsError || !factors?.length) return;
+    if (factorsError) {
+      console.error('Erro ao buscar fatores:', factorsError);
+      return;
+    }
+
+    if (!factors?.length) {
+      console.warn('Nenhum fator encontrado para categorias:', searchCategories);
+      return;
+    }
+
+    console.log('Fator encontrado:', factors[0].name);
 
     // Calcular emissões automaticamente
     await calculateEmissions(activityDataId, factors[0].id);
+    console.log('Emissões calculadas com sucesso!');
   } catch (error) {
     console.error('Erro no cálculo automático:', error);
     // Não propagar erro para não afetar a inserção dos dados
@@ -166,21 +196,52 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
 
 // Obter estatísticas de emissões
 export async function getEmissionStats() {
-  const { data: sources, error: sourcesError } = await supabase
+  // Get total emissions by scope from calculated_emissions
+  const { data: emissionsData, error: emissionsError } = await supabase
+    .from('calculated_emissions')
+    .select(`
+      total_co2e,
+      activity_data (
+        emission_source_id,
+        emission_sources (
+          scope,
+          status
+        )
+      )
+    `);
+
+  if (emissionsError) {
+    console.error('Erro ao obter estatísticas de emissões:', emissionsError);
+  }
+
+  // Calculate totals by scope
+  let totalEmissions = 0;
+  let escopo1Emissions = 0;
+  let escopo2Emissions = 0;
+  let escopo3Emissions = 0;
+
+  emissionsData?.forEach(emission => {
+    const scope = emission.activity_data?.emission_sources?.scope;
+    const co2e = emission.total_co2e || 0;
+    
+    totalEmissions += co2e;
+    if (scope === 1) escopo1Emissions += co2e;
+    else if (scope === 2) escopo2Emissions += co2e;
+    else if (scope === 3) escopo3Emissions += co2e;
+  });
+
+  // Also get source counts for reference
+  const { data: sources } = await supabase
     .from('emission_sources')
     .select('scope, status');
 
-  if (sourcesError) {
-    console.error('Erro ao obter estatísticas:', sourcesError);
-    throw sourcesError;
-  }
-
   const stats = {
-    total: sources?.length || 0,
-    escopo1: sources?.filter(s => s.scope === 1).length || 0,
-    escopo2: sources?.filter(s => s.scope === 2).length || 0,
-    escopo3: sources?.filter(s => s.scope === 3).length || 0,
-    ativas: sources?.filter(s => s.status === 'Ativo').length || 0,
+    total: Math.round(totalEmissions * 100) / 100, // tCO2e
+    escopo1: Math.round(escopo1Emissions * 100) / 100, // tCO2e
+    escopo2: Math.round(escopo2Emissions * 100) / 100, // tCO2e
+    escopo3: Math.round(escopo3Emissions * 100) / 100, // tCO2e
+    ativas: sources?.filter(s => s.status === 'Ativo').length || 0, // count of active sources
+    fontes_total: sources?.length || 0, // total count of sources
   };
 
   return stats;
@@ -188,31 +249,49 @@ export async function getEmissionStats() {
 
 // Obter fontes de emissão com últimas emissões calculadas
 export async function getEmissionSourcesWithEmissions() {
-  const { data, error } = await supabase
+  // First get emission sources
+  const { data: sources, error: sourcesError } = await supabase
     .from('emission_sources')
-    .select(`
-      *,
-      calculated_emissions(
-        total_co2e,
-        calculation_date
-      )
-    `)
+    .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao buscar fontes com emissões:', error);
-    throw error;
+  if (sourcesError) {
+    console.error('Erro ao buscar fontes de emissão:', sourcesError);
+    throw sourcesError;
   }
 
-  return data?.map(source => ({
-    ...source,
-    ultima_emissao: Array.isArray(source.calculated_emissions) && source.calculated_emissions.length > 0 
-      ? source.calculated_emissions[0].total_co2e 
-      : 0,
-    ultima_atualizacao: Array.isArray(source.calculated_emissions) && source.calculated_emissions.length > 0
-      ? source.calculated_emissions[0].calculation_date 
-      : source.updated_at,
-  })) || [];
+  if (!sources) return [];
+
+  // Get calculated emissions for each source
+  const sourcesWithEmissions = await Promise.all(
+    sources.map(async (source) => {
+      // Get latest emission calculation for this source
+      const { data: emissions } = await supabase
+        .from('calculated_emissions')
+        .select('total_co2e, calculation_date')
+        .eq('activity_data_id', 
+          await supabase
+            .from('activity_data')
+            .select('id')
+            .eq('emission_source_id', source.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .then(({ data }) => data?.[0]?.id)
+        )
+        .order('calculation_date', { ascending: false })
+        .limit(1);
+
+      const latestEmission = emissions?.[0];
+
+      return {
+        ...source,
+        ultima_emissao: latestEmission?.total_co2e || 0,
+        ultima_atualizacao: latestEmission?.calculation_date || source.updated_at,
+      };
+    })
+  );
+
+  return sourcesWithEmissions;
 }
 
 // Calculate emissions for activity data

@@ -1,8 +1,9 @@
-import { MainLayout } from "@/components/MainLayout"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react";
+import { MainLayout } from "@/components/MainLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -10,20 +11,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Loader2, Factory, Zap, Truck, BarChart3 } from "lucide-react"
-import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal"
-import EditEmissionSourceModal from "@/components/EditEmissionSourceModal"
-import { ActivityDataModal } from "@/components/ActivityDataModal"
-import { useState, useEffect } from "react"
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Building2, 
+  Factory, 
+  Zap, 
+  TrendingUp, 
+  CheckCircle, 
+  Plus, 
+  Pencil, 
+  Trash2,
+  BarChart3,
+  Loader2
+} from "lucide-react";
+import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal";
+import EditEmissionSourceModal from "@/components/EditEmissionSourceModal";
+import { ActivityDataModal } from "@/components/ActivityDataModal";
+import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { 
   getEmissionSourcesWithEmissions, 
+  getEmissionStats, 
   deleteEmissionSource,
-  getEmissionStats
-} from "@/services/emissions"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { useToast } from "@/hooks/use-toast"
+  type EmissionSource 
+} from "@/services/emissions";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const InventarioGEE = () => {
   const { toast } = useToast()
@@ -199,18 +212,16 @@ const InventarioGEE = () => {
     <MainLayout>
       <div className="space-y-6">
         {/* Cabeçalho da página */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Inventário de Emissões GEE</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie suas fontes de emissão de Gases de Efeito Estufa
-            </p>
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Inventário GEE</h1>
+            <div className="flex gap-2">
+              <RecalculateEmissionsButton onSuccess={loadData} />
+              <Button onClick={() => setIsModalOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Fonte de Emissão
+              </Button>
+            </div>
           </div>
-          <Button className="sm:ml-auto" onClick={() => setIsModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Fonte de Emissão
-          </Button>
-        </div>
 
         {/* Modal para adicionar fonte */}
         <AddEmissionSourceModal 
@@ -240,61 +251,61 @@ const InventarioGEE = () => {
         {/* KPIs Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Fontes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total || 0}</div>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total de Emissões</p>
+                  <p className="text-2xl font-bold">{stats.total} <span className="text-sm font-normal text-muted-foreground">tCO₂e</span></p>
+                </div>
+                <Building2 className="h-8 w-8 text-muted-foreground" />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Factory className="h-4 w-4" />
-                Escopo 1
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.escopo1 || 0}</div>
-              <p className="text-xs text-muted-foreground">Emissões Diretas</p>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Escopo 1</p>
+                  <p className="text-2xl font-bold">{stats.escopo1} <span className="text-sm font-normal text-muted-foreground">tCO₂e</span></p>
+                </div>
+                <Factory className="h-8 w-8 text-muted-foreground" />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Escopo 2
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{stats.escopo2 || 0}</div>
-              <p className="text-xs text-muted-foreground">Energia Adquirida</p>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Escopo 2</p>
+                  <p className="text-2xl font-bold">{stats.escopo2} <span className="text-sm font-normal text-muted-foreground">tCO₂e</span></p>
+                </div>
+                <Zap className="h-8 w-8 text-muted-foreground" />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Truck className="h-4 w-4" />
-                Escopo 3
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.escopo3 || 0}</div>
-              <p className="text-xs text-muted-foreground">Outras Indiretas</p>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Escopo 3</p>
+                  <p className="text-2xl font-bold">{stats.escopo3} <span className="text-sm font-normal text-muted-foreground">tCO₂e</span></p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Fontes Ativas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.ativas || 0}</div>
-              <div className="text-xs text-muted-foreground">
-                {stats.total ? Math.round((stats.ativas / stats.total) * 100) : 0}% do total
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Fontes Ativas</p>
+                  <p className="text-2xl font-bold">{stats.ativas} <span className="text-sm font-normal text-muted-foreground">de {stats.fontes_total}</span></p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
