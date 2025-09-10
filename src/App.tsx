@@ -15,6 +15,7 @@ import CriarMeta from "./pages/CriarMeta";
 import Relatorios from "./pages/Relatorios";
 import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
+import RegistrarCreditosCarbono from "./pages/RegistrarCreditosCarbono";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/biblioteca-fatores" element={<BibliotecaFatores />} />
           <Route path="/projetos-carbono" element={<ProjetosCarbono />} />
+          <Route path="/projetos-carbono/registrar-creditos" element={<RegistrarCreditosCarbono />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

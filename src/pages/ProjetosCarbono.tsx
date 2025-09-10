@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, ShieldCheck, Trees, DollarSign, Eye, Plus } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export default function ProjetosCarbono() {
+  const navigate = useNavigate()
   const kpis = [
     {
       title: "Créditos Disponíveis",
@@ -68,7 +70,10 @@ export default function ProjetosCarbono() {
               Gerencie e acompanhe seus investimentos em créditos de carbono para a compensação de emissões.
             </p>
           </div>
-          <Button className="flex items-center gap-2">
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => navigate("/projetos-carbono/registrar-creditos")}
+          >
             <Plus className="h-4 w-4" />
             Registrar Compra de Créditos
           </Button>
