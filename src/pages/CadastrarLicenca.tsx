@@ -17,6 +17,9 @@ import { ptBR } from "date-fns/locale"
 import { CalendarIcon, Upload, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { createLicense, uploadLicenseDocument } from "@/services/licenses"
+import { toast } from "sonner"
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -35,7 +38,36 @@ const formSchema = z.object({
 
 const CadastrarLicenca = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Mutation for creating license
+  const createLicenseMutation = useMutation({
+    mutationFn: createLicense,
+    onSuccess: async (newLicense) => {
+      // If there's a file to upload, upload it
+      if (uploadedFile) {
+        try {
+          await uploadLicenseDocument(newLicense.id, uploadedFile)
+        } catch (error) {
+          console.error('Error uploading document:', error)
+          toast.error('Licença criada, mas houve erro no upload do documento')
+        }
+      }
+      
+      // Invalidate and refetch licenses
+      queryClient.invalidateQueries({ queryKey: ['licenses'] })
+      queryClient.invalidateQueries({ queryKey: ['license-stats'] })
+      
+      navigate("/licenciamento")
+    },
+    onError: (error) => {
+      console.error('Error creating license:', error)
+      toast.error('Erro ao criar licença')
+      setIsSubmitting(false)
+    }
+  })
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,10 +113,30 @@ const CadastrarLicenca = () => {
     setUploadedFile(null)
   }
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values)
-    // Aqui seria a lógica de salvar
-    navigate("/licenciamento")
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (isSubmitting) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      const licenseData = {
+        name: values.nome,
+        type: values.tipo,
+        issuing_body: values.orgaoEmissor,
+        process_number: values.numeroProcesso,
+        issue_date: values.dataEmissao,
+        expiration_date: values.dataVencimento,
+        status: values.status,
+        conditions: values.condicionantes,
+        // For now, we'll leave responsible_user_id empty
+        // In a real app, this would be set to the selected user
+      }
+
+      createLicenseMutation.mutate(licenseData)
+    } catch (error) {
+      console.error('Error in form submission:', error)
+      setIsSubmitting(false)
+    }
   }
 
   const handleCancel = () => {
@@ -106,8 +158,8 @@ const CadastrarLicenca = () => {
             <Button variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>
-            <Button type="submit" form="licenca-form">
-              Salvar
+            <Button type="submit" form="licenca-form" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </div>
