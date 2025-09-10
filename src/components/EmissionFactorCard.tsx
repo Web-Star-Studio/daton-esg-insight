@@ -28,6 +28,14 @@ export function EmissionFactorCard({ factor, onDelete }: EmissionFactorCardProps
 
   // Calculate CO₂ equivalent automatically
   const calculateCO2Equivalent = () => {
+    // Check if this is a refrigerant gas with direct GWP
+    const gwpDirect = factor.details_json?.gwp_direct;
+    if (gwpDirect) {
+      // For refrigerant gases, 1 kg of gas = gwp_direct kg CO₂e
+      return gwpDirect;
+    }
+    
+    // Standard calculation for other gases
     const co2 = factor.co2_factor || 0;
     const ch4 = (factor.ch4_factor || 0) * GWP_VALUES.CH4;
     const n2o = (factor.n2o_factor || 0) * GWP_VALUES.N2O;
@@ -74,10 +82,16 @@ export function EmissionFactorCard({ factor, onDelete }: EmissionFactorCardProps
             <span className="font-medium text-sm">CO₂ Equivalente</span>
           </div>
           <div className="text-lg font-mono font-bold text-primary">
-            {co2Equivalent.toFixed(6)} kg CO₂e/{factor.activity_unit}
+            {factor.details_json?.gwp_direct ? 
+              `${co2Equivalent.toLocaleString()} kg CO₂e/${factor.activity_unit}` :
+              `${co2Equivalent.toFixed(6)} kg CO₂e/${factor.activity_unit}`
+            }
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Calculado com GWP do IPCC AR6 (100 anos)
+            {factor.details_json?.gwp_direct ? 
+              `GWP direto (${factor.details_json.gwp_source})` :
+              "Calculado com GWP do IPCC AR6 (100 anos)"
+            }
           </p>
         </div>
 

@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter, Trash2, Edit } from "lucide-react";
+import { Plus, Search, Filter, Info } from "lucide-react";
 import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
+import { EmissionFactorCard } from "@/components/EmissionFactorCard";
+import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { useToast } from "@/hooks/use-toast";
 import { 
   getEmissionFactors, 
@@ -19,7 +21,9 @@ export default function BibliotecaFatores() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedScope, setSelectedScope] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showMethodology, setShowMethodology] = useState(false);
   const [factors, setFactors] = useState<EmissionFactor[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,19 +59,27 @@ export default function BibliotecaFatores() {
   // Filter factors based on search and filters
   const filteredFactors = factors.filter(factor => {
     const matchesSearch = factor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         factor.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         factor.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         factor.source.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || factor.category === selectedCategory;
     const matchesType = selectedType === "all" || factor.type === selectedType;
     
-    return matchesSearch && matchesCategory && matchesType;
+    // Basic scope mapping for better filtering
+    const matchesScope = selectedScope === "all" || 
+      (selectedScope === "1" && (factor.category.includes("Combustão") || factor.category.includes("Processos"))) ||
+      (selectedScope === "2" && factor.category.includes("Energia Adquirida")) ||
+      (selectedScope === "3" && (factor.category.includes("Resíduos") || factor.category.includes("Efluentes")));
+    
+    return matchesSearch && matchesCategory && matchesType && matchesScope;
   });
 
-  const getTypeLabel = (type: string) => {
-    return type === "system" ? "Sistema" : "Customizado";
-  };
-
-  const getTypeBadgeVariant = (type: string) => {
-    return type === "system" ? "secondary" : "default";
+  // Statistics for better overview
+  const stats = {
+    total: factors.length,
+    system: factors.filter(f => f.type === 'system').length,
+    custom: factors.filter(f => f.type === 'custom').length,
+    categories: categories.length,
+    filtered: filteredFactors.length
   };
 
   const handleDeleteFactor = async (id: string) => {
@@ -96,34 +108,65 @@ export default function BibliotecaFatores() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex justify-between items-start">
+          <div className="space-y-2">
             <h1 className="text-3xl font-bold">Biblioteca de Fatores de Emissão</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie fatores de emissão do sistema e customizados
+            <p className="text-muted-foreground">
+              Base de dados profissional com {stats.total} fatores validados para inventários de GEE
             </p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>{stats.system} fatores oficiais</span>
+              <span>•</span>
+              <span>{stats.custom} fatores customizados</span>
+              <span>•</span>
+              <span>{stats.categories} categorias</span>
+            </div>
           </div>
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Fator Customizado
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)}>
+              <Info className="mr-2 h-4 w-4" />
+              {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
+            </Button>
+            <Button onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Fator Customizado
+            </Button>
+          </div>
         </div>
+
+        {/* Methodology Section */}
+        {showMethodology && (
+          <MethodologyInfo />
+        )}
 
         {/* Filters */}
         <Card>
           <CardContent className="p-6">
-            <div className="flex gap-4">
-              <div className="flex-1">
+            <div className="flex gap-4 flex-wrap">
+              <div className="flex-1 min-w-[300px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Buscar fatores..."
+                    placeholder="Buscar por nome, categoria ou fonte..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
+              
+              <Select value={selectedScope} onValueChange={setSelectedScope}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Escopo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Escopos</SelectItem>
+                  <SelectItem value="1">Escopo 1</SelectItem>
+                  <SelectItem value="2">Escopo 2</SelectItem>
+                  <SelectItem value="3">Escopo 3</SelectItem>
+                </SelectContent>
+              </Select>
+              
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Categoria" />
@@ -137,8 +180,9 @@ export default function BibliotecaFatores() {
                   ))}
                 </SelectContent>
               </Select>
+              
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-40">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,78 +195,48 @@ export default function BibliotecaFatores() {
           </CardContent>
         </Card>
 
-        {/* Factors Grid */}
-        <div className="space-y-4">
+        {/* Results Summary */}
+        <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">
-            {filteredFactors.length} {filteredFactors.length === 1 ? 'fator encontrado' : 'fatores encontrados'}
+            {stats.filtered} {stats.filtered === 1 ? 'fator encontrado' : 'fatores encontrados'}
+            {stats.filtered !== stats.total && (
+              <span className="text-muted-foreground font-normal"> de {stats.total} total</span>
+            )}
           </h2>
           
-          {isLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="text-muted-foreground">Carregando fatores de emissão...</div>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredFactors.map((factor) => (
-                <Card key={factor.id} className="relative">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg">{factor.name}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getTypeBadgeVariant(factor.type)}>
-                          {getTypeLabel(factor.type)}
-                        </Badge>
-                        {factor.type === 'custom' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteFactor(factor.id)}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {factor.category} • {factor.activity_unit}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>CO₂:</span>
-                        <span className="font-mono">{factor.co2_factor || 0} kg CO₂/{factor.activity_unit}</span>
-                      </div>
-                      {factor.ch4_factor && (
-                        <div className="flex justify-between text-sm">
-                          <span>CH₄:</span>
-                          <span className="font-mono">{factor.ch4_factor} kg CH₄/{factor.activity_unit}</span>
-                        </div>
-                      )}
-                      {factor.n2o_factor && (
-                        <div className="flex justify-between text-sm">
-                          <span>N₂O:</span>
-                          <span className="font-mono">{factor.n2o_factor} kg N₂O/{factor.activity_unit}</span>
-                        </div>
-                      )}
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground">
-                          Fonte: {factor.source}
-                          {factor.year_of_validity && ` (${factor.year_of_validity})`}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          {searchTerm && (
+            <Button variant="ghost" size="sm" onClick={() => setSearchTerm("")}>
+              Limpar busca
+            </Button>
           )}
         </div>
 
+        {/* Factors Grid */}
+        {isLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="text-muted-foreground">Carregando fatores de emissão...</div>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {filteredFactors.map((factor) => (
+              <EmissionFactorCard
+                key={factor.id}
+                factor={factor}
+                onDelete={factor.type === 'custom' ? handleDeleteFactor : undefined}
+              />
+            ))}
+          </div>
+        )}
+
         <AddCustomFactorModal
           open={isAddModalOpen}
-          onOpenChange={setIsAddModalOpen}
+          onOpenChange={(open) => {
+            setIsAddModalOpen(open);
+            if (!open) {
+              // Reload data when modal closes
+              loadData();
+            }
+          }}
         />
       </div>
     </MainLayout>

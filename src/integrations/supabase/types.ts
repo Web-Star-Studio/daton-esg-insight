@@ -763,6 +763,7 @@ export type Database = {
           co2_factor: number | null
           company_id: string | null
           created_at: string
+          details_json: Json | null
           id: string
           n2o_factor: number | null
           name: string
@@ -778,6 +779,7 @@ export type Database = {
           co2_factor?: number | null
           company_id?: string | null
           created_at?: string
+          details_json?: Json | null
           id?: string
           n2o_factor?: number | null
           name: string
@@ -793,6 +795,7 @@ export type Database = {
           co2_factor?: number | null
           company_id?: string | null
           created_at?: string
+          details_json?: Json | null
           id?: string
           n2o_factor?: number | null
           name?: string

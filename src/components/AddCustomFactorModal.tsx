@@ -100,15 +100,46 @@ export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModa
 
   const watchedUnidade = form.watch("unidade")
 
-  const onSubmit = (data: CustomFactorData) => {
-    console.log("Fator customizado criado:", { ...data, vigencia: dateRange })
-    
-    toast({
-      title: "Fator de Emissão Criado",
-      description: "O fator customizado foi adicionado com sucesso à biblioteca.",
-    })
+  const onSubmit = async (data: CustomFactorData) => {
+    try {
+      console.log("Criando fator customizado:", { ...data, vigencia: dateRange })
+      
+      // Prepare the data for creation
+      const factorData = {
+        name: data.nome,
+        category: data.categoria,
+        activity_unit: data.unidade,
+        co2_factor: data.co2 ? parseFloat(data.co2) : undefined,
+        ch4_factor: data.ch4 ? parseFloat(data.ch4) : undefined,
+        n2o_factor: data.n2o ? parseFloat(data.n2o) : undefined,
+        source: data.fonte,
+        year_of_validity: dateRange?.from ? new Date(dateRange.from).getFullYear() : undefined,
+      };
 
-    resetAndClose()
+      // Import and call the service function
+      const { createCustomEmissionFactor } = await import("@/services/emissionFactors");
+      await createCustomEmissionFactor(factorData);
+      
+      toast({
+        title: "Fator de Emissão Criado",
+        description: "O fator customizado foi adicionado com sucesso à biblioteca.",
+      });
+
+      resetAndClose();
+      
+      // Trigger reload if there's a callback
+      if (window.location.pathname === '/biblioteca-fatores') {
+        window.location.reload();
+      }
+      
+    } catch (error) {
+      console.error('Erro ao criar fator:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar fator de emissão. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   }
 
   const resetAndClose = () => {

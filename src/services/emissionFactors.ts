@@ -13,6 +13,8 @@ export interface EmissionFactor {
   type: 'system' | 'custom';
   company_id: string | null;
   created_at: string;
+  validation_status?: string;
+  details_json?: any;
 }
 
 export interface CreateEmissionFactorData {
