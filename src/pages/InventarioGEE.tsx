@@ -11,9 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Loader2, Factory, Zap, Truck } from "lucide-react"
+import { Plus, Pencil, Trash2, Loader2, Factory, Zap, Truck, BarChart3 } from "lucide-react"
 import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal"
 import EditEmissionSourceModal from "@/components/EditEmissionSourceModal"
+import { ActivityDataModal } from "@/components/ActivityDataModal"
 import { useState, useEffect } from "react"
 import { 
   getEmissionSourcesWithEmissions, 
@@ -28,7 +29,9 @@ const InventarioGEE = () => {
   const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
+  const [activityDataSource, setActivityDataSource] = useState<any>(null)
   const [emissionSources, setEmissionSources] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -81,6 +84,11 @@ const InventarioGEE = () => {
   const handleEditSource = (source: any) => {
     setSelectedSource(source)
     setIsEditModalOpen(true)
+  }
+
+  const handleManageActivityData = (source: any) => {
+    setActivityDataSource(source)
+    setIsActivityModalOpen(true)
   }
   
   const getStatusBadge = (status: string) => {
@@ -148,7 +156,16 @@ const InventarioGEE = () => {
                   <TableCell>{formatDate(fonte.ultima_atualizacao)}</TableCell>
                   <TableCell>{getStatusBadge(fonte.status)}</TableCell>
                   <TableCell>
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+                        onClick={() => handleManageActivityData(fonte)}
+                        title="Gerenciar dados de atividade"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm"
@@ -209,6 +226,16 @@ const InventarioGEE = () => {
           source={selectedSource}
           onSuccess={loadData}
         />
+
+        {/* Modal para gerenciar dados de atividade */}
+        {activityDataSource && (
+          <ActivityDataModal
+            open={isActivityModalOpen}
+            onOpenChange={setIsActivityModalOpen}
+            source={activityDataSource}
+            onSuccess={loadData}
+          />
+        )}
 
         {/* KPIs Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">

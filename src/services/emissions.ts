@@ -118,16 +118,49 @@ export async function addActivityData(activityData: ActivityData): Promise<void>
     throw new Error('Usuário não autenticado');
   }
 
-  const { error } = await supabase
+  const { data: activityRecord, error: activityError } = await supabase
     .from('activity_data')
     .insert({
       ...activityData,
       user_id: user.id,
-    });
+    })
+    .select()
+    .single();
 
-  if (error) {
-    console.error('Erro ao adicionar dados de atividade:', error);
-    throw error;
+  if (activityError) {
+    console.error('Erro ao adicionar dados de atividade:', activityError);
+    throw activityError;
+  }
+
+  // Após inserir activity_data, tentar calcular emissões automaticamente
+  await tryAutoCalculateEmissions(activityRecord.id, activityData.emission_source_id);
+}
+
+async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceId: string) {
+  try {
+    // Buscar fonte de emissão para obter categoria
+    const { data: source, error: sourceError } = await supabase
+      .from('emission_sources')
+      .select('category')
+      .eq('id', emissionSourceId)
+      .single();
+
+    if (sourceError) return;
+
+    // Buscar fator de emissão compatível
+    const { data: factors, error: factorsError } = await supabase
+      .from('emission_factors')
+      .select('*')
+      .eq('category', source.category)
+      .limit(1);
+
+    if (factorsError || !factors?.length) return;
+
+    // Calcular emissões automaticamente
+    await calculateEmissions(activityDataId, factors[0].id);
+  } catch (error) {
+    console.error('Erro no cálculo automático:', error);
+    // Não propagar erro para não afetar a inserção dos dados
   }
 }
 

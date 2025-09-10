@@ -1,0 +1,301 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { EmissionSource, ActivityData, addActivityData, getEmissionFactors } from "@/services/emissions";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivityDataList } from "./ActivityDataList";
+
+interface ActivityDataModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  source: EmissionSource;
+  onSuccess?: () => void;
+}
+
+interface EmissionFactor {
+  id: string;
+  name: string;
+  activity_unit: string;
+  category: string;
+}
+
+const ACTIVITY_UNITS = [
+  { value: "L", label: "Litros (L)" },
+  { value: "m³", label: "Metros cúbicos (m³)" },
+  { value: "kWh", label: "Quilowatt-hora (kWh)" },
+  { value: "kg", label: "Quilogramas (kg)" },
+  { value: "t", label: "Toneladas (t)" },
+  { value: "km", label: "Quilômetros (km)" },
+  { value: "unidade", label: "Unidades" },
+];
+
+export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: ActivityDataModalProps) {
+  const [periodStartDate, setPeriodStartDate] = useState<Date | undefined>();
+  const [periodEndDate, setPeriodEndDate] = useState<Date | undefined>();
+  const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("");
+  const [sourceDocument, setSourceDocument] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [emissionFactors, setEmissionFactors] = useState<EmissionFactor[]>([]);
+  const [refreshData, setRefreshData] = useState(0);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (open && source) {
+      loadEmissionFactors();
+    }
+  }, [open, source]);
+
+  const loadEmissionFactors = async () => {
+    try {
+      const factors = await getEmissionFactors(source.category);
+      setEmissionFactors(factors);
+    } catch (error) {
+      console.error("Erro ao carregar fatores de emissão:", error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!periodStartDate || !periodEndDate || !quantity || !unit) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const activityData: ActivityData = {
+        emission_source_id: source.id,
+        period_start_date: format(periodStartDate, "yyyy-MM-dd"),
+        period_end_date: format(periodEndDate, "yyyy-MM-dd"),
+        quantity: parseFloat(quantity),
+        unit,
+        source_document: sourceDocument || undefined,
+      };
+
+      await addActivityData(activityData);
+
+      toast({
+        title: "Sucesso",
+        description: "Dados de atividade adicionados com sucesso!",
+      });
+
+      resetForm();
+      onOpenChange(false);
+      setRefreshData(prev => prev + 1);
+      onSuccess?.();
+    } catch (error) {
+      console.error("Erro ao adicionar dados de atividade:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar dados de atividade. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setPeriodStartDate(undefined);
+    setPeriodEndDate(undefined);
+    setQuantity("");
+    setUnit("");
+    setSourceDocument("");
+  };
+
+  const getUnitSuggestions = () => {
+    const categoryUnits = {
+      "Combustíveis Móveis": ["L", "m³"],
+      "Combustíveis Estacionários": ["L", "m³", "kg", "t"],
+      "Energia Elétrica": ["kWh"],
+      "Transporte": ["km", "L"],
+      "Resíduos": ["kg", "t"],
+      "Refrigeração": ["kg"],
+      "Processos Industriais": ["kg", "t", "unidade"],
+    };
+
+    return categoryUnits[source.category as keyof typeof categoryUnits] || ["kg", "L", "kWh"];
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Gerenciar Dados de Atividade</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Fonte: <span className="font-medium">{source.name}</span> | 
+            Categoria: <span className="font-medium">{source.category}</span>
+          </p>
+        </DialogHeader>
+
+        <Tabs defaultValue="list" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="list">Dados Existentes</TabsTrigger>
+            <TabsTrigger value="add">Adicionar Novo</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="space-y-4">
+            <ActivityDataList 
+              source={source} 
+              key={refreshData}
+              onDataChange={() => {
+                setRefreshData(prev => prev + 1);
+                onSuccess?.();
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="add" className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="period-start">Data Início do Período *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !periodStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {periodStartDate ? format(periodStartDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={periodStartDate}
+                        onSelect={setPeriodStartDate}
+                        initialFocus
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="period-end">Data Fim do Período *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !periodEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {periodEndDate ? format(periodEndDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={periodEndDate}
+                        onSelect={setPeriodEndDate}
+                        initialFocus
+                        locale={ptBR}
+                        disabled={(date) => periodStartDate ? date < periodStartDate : false}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantidade *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    step="0.01"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="Ex: 1000"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="unit">Unidade *</Label>
+                  <Select value={unit} onValueChange={setUnit} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a unidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div className="p-2 text-xs text-muted-foreground font-medium">Sugeridas para esta categoria:</div>
+                      {getUnitSuggestions().map((suggestedUnit) => {
+                        const unitInfo = ACTIVITY_UNITS.find(u => u.value === suggestedUnit);
+                        return (
+                          <SelectItem key={suggestedUnit} value={suggestedUnit}>
+                            {unitInfo?.label || suggestedUnit}
+                          </SelectItem>
+                        );
+                      })}
+                      <div className="p-2 text-xs text-muted-foreground font-medium border-t mt-2">Outras unidades:</div>
+                      {ACTIVITY_UNITS.filter(unit => !getUnitSuggestions().includes(unit.value)).map((unit) => (
+                        <SelectItem key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="source-document">Documento Fonte (opcional)</Label>
+                <Input
+                  id="source-document"
+                  value={sourceDocument}
+                  onChange={(e) => setSourceDocument(e.target.value)}
+                  placeholder="Ex: Fatura de energia 123/2024, Nota fiscal 456"
+                />
+              </div>
+
+              {emissionFactors.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Fatores de Emissão Disponíveis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xs text-muted-foreground">
+                      {emissionFactors.length} fator(es) disponível(is) para cálculo automático nesta categoria.
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex justify-end space-x-2">
+                <Button type="submit" disabled={isLoading}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  {isLoading ? "Adicionando..." : "Adicionar Dados"}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
