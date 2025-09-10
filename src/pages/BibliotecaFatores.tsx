@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Filter, Info } from "lucide-react";
 import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
+import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
 import { EmissionFactorCard } from "@/components/EmissionFactorCard";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,8 @@ export default function BibliotecaFatores() {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedScope, setSelectedScope] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingFactor, setEditingFactor] = useState<EmissionFactor | null>(null);
   const [showMethodology, setShowMethodology] = useState(false);
   const [factors, setFactors] = useState<EmissionFactor[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -102,6 +105,11 @@ export default function BibliotecaFatores() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditFactor = (factor: EmissionFactor) => {
+    setEditingFactor(factor);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -223,6 +231,7 @@ export default function BibliotecaFatores() {
                 key={factor.id}
                 factor={factor}
                 onDelete={factor.type === 'custom' ? handleDeleteFactor : undefined}
+                onEdit={factor.type === 'custom' ? handleEditFactor : undefined}
               />
             ))}
           </div>
@@ -237,6 +246,19 @@ export default function BibliotecaFatores() {
               loadData();
             }
           }}
+        />
+
+        <EditCustomFactorModal
+          open={isEditModalOpen}
+          onOpenChange={(open) => {
+            setIsEditModalOpen(open);
+            setEditingFactor(null);
+            if (!open) {
+              // Reload data when modal closes
+              loadData();
+            }
+          }}
+          factor={editingFactor}
         />
       </div>
     </MainLayout>

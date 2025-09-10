@@ -1,13 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Calculator, ExternalLink } from "lucide-react";
+import { Trash2, Calculator, ExternalLink, Edit } from "lucide-react";
 import { EmissionFactor } from "@/services/emissionFactors";
 import { Separator } from "@/components/ui/separator";
 
 interface EmissionFactorCardProps {
   factor: EmissionFactor;
   onDelete?: (id: string) => void;
+  onEdit?: (factor: EmissionFactor) => void;
 }
 
 // GWP values from IPCC AR6 (100-year horizon)
@@ -17,7 +18,7 @@ const GWP_VALUES = {
   CO2: 1 // Dióxido de Carbono (baseline)
 };
 
-export function EmissionFactorCard({ factor, onDelete }: EmissionFactorCardProps) {
+export function EmissionFactorCard({ factor, onDelete, onEdit }: EmissionFactorCardProps) {
   const getTypeLabel = (type: string) => {
     return type === "system" ? "Sistema" : "Customizado";
   };
@@ -57,15 +58,31 @@ export function EmissionFactorCard({ factor, onDelete }: EmissionFactorCardProps
             <Badge variant={getTypeBadgeVariant(factor.type)}>
               {getTypeLabel(factor.type)}
             </Badge>
-            {factor.type === 'custom' && onDelete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(factor.id)}
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+            {factor.type === 'custom' && (
+              <div className="flex items-center gap-1">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(factor)}
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Editar fator"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(factor.id)}
+                    className="h-6 w-6 p-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Deletar fator"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
