@@ -243,8 +243,8 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
                       <SelectValue placeholder="Selecione a unidade" />
                     </SelectTrigger>
                     <SelectContent>
-                      <div className="p-2 text-xs text-muted-foreground font-medium">Sugeridas para esta categoria:</div>
                       {getUnitSuggestions().map((suggestedUnit) => {
+                        if (!suggestedUnit || suggestedUnit.trim() === '') return null;
                         const unitInfo = ACTIVITY_UNITS.find(u => u.value === suggestedUnit);
                         return (
                           <SelectItem key={suggestedUnit} value={suggestedUnit}>
@@ -252,8 +252,11 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
                           </SelectItem>
                         );
                       })}
-                      <div className="p-2 text-xs text-muted-foreground font-medium border-t mt-2">Outras unidades:</div>
-                      {ACTIVITY_UNITS.filter(unit => !getUnitSuggestions().includes(unit.value)).map((unit) => (
+                      {ACTIVITY_UNITS.filter(unit => 
+                        unit.value && 
+                        unit.value.trim() !== '' && 
+                        !getUnitSuggestions().includes(unit.value)
+                      ).map((unit) => (
                         <SelectItem key={unit.value} value={unit.value}>
                           {unit.label}
                         </SelectItem>
