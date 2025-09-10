@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Search, Eye, Plus } from "lucide-react"
+import { AddCustomFactorModal } from "@/components/AddCustomFactorModal"
 
 interface EmissionFactor {
   id: string
@@ -77,6 +78,7 @@ const categories = [
 export default function BibliotecaFatores() {
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("Todas as Categorias")
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const filteredFactors = mockFactors.filter(factor => {
     const matchesSearch = factor.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -95,7 +97,7 @@ export default function BibliotecaFatores() {
               Consulte os fatores de emissão padrão do sistema (baseados no GHG Protocol e MCTI) e gerencie fatores customizados.
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="w-4 h-4" />
             Adicionar Fator Customizado
           </Button>
@@ -202,6 +204,11 @@ export default function BibliotecaFatores() {
           </CardContent>
         </Card>
       </div>
+
+      <AddCustomFactorModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+      />
     </MainLayout>
   )
 }
