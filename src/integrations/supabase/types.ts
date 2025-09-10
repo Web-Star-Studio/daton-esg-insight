@@ -282,6 +282,117 @@ export type Database = {
           },
         ]
       }
+      goal_progress_updates: {
+        Row: {
+          created_at: string
+          current_value: number
+          goal_id: string
+          id: string
+          notes: string | null
+          progress_percentage: number | null
+          update_date: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_value: number
+          goal_id: string
+          id?: string
+          notes?: string | null
+          progress_percentage?: number | null
+          update_date: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_value?: number
+          goal_id?: string
+          id?: string
+          notes?: string | null
+          progress_percentage?: number | null
+          update_date?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_progress_updates_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_progress_updates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          baseline_period: string | null
+          baseline_value: number | null
+          company_id: string
+          created_at: string
+          deadline_date: string
+          description: string | null
+          id: string
+          metric_key: string
+          name: string
+          responsible_user_id: string | null
+          status: Database["public"]["Enums"]["goal_status_enum"]
+          target_value: number
+          updated_at: string
+        }
+        Insert: {
+          baseline_period?: string | null
+          baseline_value?: number | null
+          company_id: string
+          created_at?: string
+          deadline_date: string
+          description?: string | null
+          id?: string
+          metric_key: string
+          name: string
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["goal_status_enum"]
+          target_value: number
+          updated_at?: string
+        }
+        Update: {
+          baseline_period?: string | null
+          baseline_value?: number | null
+          company_id?: string
+          created_at?: string
+          deadline_date?: string
+          description?: string | null
+          id?: string
+          metric_key?: string
+          name?: string
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["goal_status_enum"]
+          target_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licenses: {
         Row: {
           company_id: string
@@ -469,6 +580,11 @@ export type Database = {
     Enums: {
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
+      goal_status_enum:
+        | "No Caminho Certo"
+        | "Atenção Necessária"
+        | "Atingida"
+        | "Atrasada"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
       user_role_enum: "Admin" | "Editor" | "Leitor"
@@ -606,6 +722,12 @@ export const Constants = {
     Enums: {
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],
+      goal_status_enum: [
+        "No Caminho Certo",
+        "Atenção Necessária",
+        "Atingida",
+        "Atrasada",
+      ],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
       user_role_enum: ["Admin", "Editor", "Leitor"],
