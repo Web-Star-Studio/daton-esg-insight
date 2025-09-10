@@ -903,6 +903,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["license_status_enum"]
       }
+      exec_sql: {
+        Args: { query: string }
+        Returns: Json
+      }
       get_user_company_id: {
         Args: Record<PropertyKey, never>
         Returns: string
