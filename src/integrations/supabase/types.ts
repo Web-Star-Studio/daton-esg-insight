@@ -65,6 +65,36 @@ export type Database = {
           },
         ]
       }
+      activity_logs: {
+        Row: {
+          action_type: string
+          company_id: string
+          created_at: string
+          description: string
+          details_json: Json | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          company_id: string
+          created_at?: string
+          description: string
+          details_json?: Json | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          company_id?: string
+          created_at?: string
+          description?: string
+          details_json?: Json | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_type: string
@@ -115,6 +145,95 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_findings: {
+        Row: {
+          action_plan: string | null
+          audit_id: string
+          created_at: string
+          description: string
+          due_date: string | null
+          id: string
+          responsible_user_id: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_plan?: string | null
+          audit_id: string
+          created_at?: string
+          description: string
+          due_date?: string | null
+          id?: string
+          responsible_user_id?: string | null
+          severity: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_plan?: string | null
+          audit_id?: string
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          responsible_user_id?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_findings_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audits: {
+        Row: {
+          audit_type: string
+          auditor: string | null
+          company_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          scope: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audit_type: string
+          auditor?: string | null
+          company_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          scope?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audit_type?: string
+          auditor?: string | null
+          company_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          scope?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       calculated_emissions: {
         Row: {
@@ -1130,6 +1249,16 @@ export type Database = {
       }
       get_user_company_id: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      log_activity: {
+        Args: {
+          p_action_type: string
+          p_company_id: string
+          p_description: string
+          p_details_json?: Json
+          p_user_id: string
+        }
         Returns: string
       }
       update_overdue_tasks: {
