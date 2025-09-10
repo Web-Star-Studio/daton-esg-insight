@@ -17,6 +17,7 @@ export type Database = {
       activity_data: {
         Row: {
           created_at: string
+          emission_factor_id: string | null
           emission_source_id: string
           id: string
           period_end_date: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          emission_factor_id?: string | null
           emission_source_id: string
           id?: string
           period_end_date: string
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          emission_factor_id?: string | null
           emission_source_id?: string
           id?: string
           period_end_date?: string
@@ -49,6 +52,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "activity_data_emission_factor_id_fkey"
+            columns: ["emission_factor_id"]
+            isOneToOne: false
+            referencedRelation: "emission_factors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "activity_data_emission_source_id_fkey"
             columns: ["emission_source_id"]
