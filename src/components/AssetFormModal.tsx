@@ -143,7 +143,7 @@ export function AssetFormModal({ open, onClose, onSuccess, editingAsset }: Asset
   const onSubmit = (data: AssetFormData) => {
     const formattedData = {
       ...data,
-      parent_asset_id: data.parent_asset_id || undefined,
+      parent_asset_id: data.parent_asset_id === "none" ? undefined : data.parent_asset_id || undefined,
     };
 
     if (editingAsset) {
@@ -237,7 +237,7 @@ export function AssetFormModal({ open, onClose, onSuccess, editingAsset }: Asset
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nenhum (Ativo raiz)</SelectItem>
+                      <SelectItem value="none">Nenhum (Ativo raiz)</SelectItem>
                       {filteredAssetOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}

@@ -212,10 +212,10 @@ export default function Desempenho() {
                 <div className="space-y-2">
                   <Label>Comparar por (Opcional)</Label>
                   <Select 
-                    value={analysisConfig.comparison_dimension || ''} 
+                    value={analysisConfig.comparison_dimension || 'none'} 
                     onValueChange={(value) => setAnalysisConfig(prev => ({ 
                       ...prev, 
-                      comparison_dimension: (value as 'asset' | 'waste_class' | 'scope') || undefined,
+                      comparison_dimension: (value === "none" ? undefined : value as 'asset' | 'waste_class' | 'scope'),
                       filter_ids: [] // Reset filter_ids when changing dimension
                     }))}
                   >
@@ -223,7 +223,7 @@ export default function Desempenho() {
                       <SelectValue placeholder="Nenhuma comparação" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma comparação</SelectItem>
+                      <SelectItem value="none">Nenhuma comparação</SelectItem>
                       {COMPARISON_DIMENSIONS.map(dim => (
                         <SelectItem key={dim.value} value={dim.value}>
                           {dim.label}
