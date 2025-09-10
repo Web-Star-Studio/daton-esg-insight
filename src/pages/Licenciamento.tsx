@@ -20,6 +20,7 @@ import {
   Pencil,
   Paperclip
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 // Mock data para as licenças
 const mockLicencas = [
@@ -76,6 +77,11 @@ const mockLicencas = [
 ]
 
 const Licenciamento = () => {
+  const navigate = useNavigate()
+
+  const handleAddLicenca = () => {
+    navigate("/licenciamento/novo")
+  }
   const getStatusBadge = (status: string) => {
     const statusMap = {
       "Ativa": { variant: "default" as const, className: "bg-success/10 text-success border-success/20" },
@@ -104,7 +110,7 @@ const Licenciamento = () => {
               Gerencie todas as licenças ambientais da empresa
             </p>
           </div>
-          <Button className="sm:ml-auto">
+          <Button className="sm:ml-auto" onClick={handleAddLicenca}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Licença
           </Button>

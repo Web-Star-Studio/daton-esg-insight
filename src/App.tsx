@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
 import Licenciamento from "./pages/Licenciamento";
+import CadastrarLicenca from "./pages/CadastrarLicenca";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/inventario-gee" element={<InventarioGEE />} />
           <Route path="/dashboard-ghg" element={<DashboardGHG />} />
           <Route path="/licenciamento" element={<Licenciamento />} />
+          <Route path="/licenciamento/novo" element={<CadastrarLicenca />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
