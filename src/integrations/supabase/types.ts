@@ -14,16 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_data: {
+        Row: {
+          created_at: string
+          emission_source_id: string
+          id: string
+          period_end_date: string
+          period_start_date: string
+          quantity: number
+          source_document: string | null
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emission_source_id: string
+          id?: string
+          period_end_date: string
+          period_start_date: string
+          quantity: number
+          source_document?: string | null
+          unit: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emission_source_id?: string
+          id?: string
+          period_end_date?: string
+          period_start_date?: string
+          quantity?: number
+          source_document?: string | null
+          unit?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_data_emission_source_id_fkey"
+            columns: ["emission_source_id"]
+            isOneToOne: false
+            referencedRelation: "emission_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_data_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calculated_emissions: {
+        Row: {
+          activity_data_id: string
+          calculation_date: string
+          details_json: Json | null
+          emission_factor_id: string
+          id: string
+          total_co2e: number
+        }
+        Insert: {
+          activity_data_id: string
+          calculation_date?: string
+          details_json?: Json | null
+          emission_factor_id: string
+          id?: string
+          total_co2e: number
+        }
+        Update: {
+          activity_data_id?: string
+          calculation_date?: string
+          details_json?: Json | null
+          emission_factor_id?: string
+          id?: string
+          total_co2e?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculated_emissions_activity_data_id_fkey"
+            columns: ["activity_data_id"]
+            isOneToOne: true
+            referencedRelation: "activity_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calculated_emissions_emission_factor_id_fkey"
+            columns: ["emission_factor_id"]
+            isOneToOne: false
+            referencedRelation: "emission_factors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          cnpj: string
+          created_at: string
+          id: string
+          name: string
+          sector: string | null
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          id?: string
+          name: string
+          sector?: string | null
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sector?: string | null
+        }
+        Relationships: []
+      }
+      emission_factors: {
+        Row: {
+          activity_unit: string
+          category: string
+          ch4_factor: number | null
+          co2_factor: number | null
+          company_id: string | null
+          created_at: string
+          id: string
+          n2o_factor: number | null
+          name: string
+          source: string
+          type: Database["public"]["Enums"]["emission_factor_type_enum"]
+          year_of_validity: number | null
+        }
+        Insert: {
+          activity_unit: string
+          category: string
+          ch4_factor?: number | null
+          co2_factor?: number | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          n2o_factor?: number | null
+          name: string
+          source: string
+          type?: Database["public"]["Enums"]["emission_factor_type_enum"]
+          year_of_validity?: number | null
+        }
+        Update: {
+          activity_unit?: string
+          category?: string
+          ch4_factor?: number | null
+          co2_factor?: number | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          n2o_factor?: number | null
+          name?: string
+          source?: string
+          type?: Database["public"]["Enums"]["emission_factor_type_enum"]
+          year_of_validity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emission_factors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emission_sources: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          scope: number
+          status: Database["public"]["Enums"]["emission_source_status_enum"]
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          scope: number
+          status?: Database["public"]["Enums"]["emission_source_status_enum"]
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          scope?: number
+          status?: Database["public"]["Enums"]["emission_source_status_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emission_sources_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_id: string
+          created_at: string
+          full_name: string
+          id: string
+          job_title: string | null
+          role: Database["public"]["Enums"]["user_role_enum"]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          full_name: string
+          id: string
+          job_title?: string | null
+          role?: Database["public"]["Enums"]["user_role_enum"]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          job_title?: string | null
+          role?: Database["public"]["Enums"]["user_role_enum"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_company_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      emission_factor_type_enum: "system" | "custom"
+      emission_source_status_enum: "Ativo" | "Inativo"
+      user_role_enum: "Admin" | "Editor" | "Leitor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +403,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      emission_factor_type_enum: ["system", "custom"],
+      emission_source_status_enum: ["Ativo", "Inativo"],
+      user_role_enum: ["Admin", "Editor", "Leitor"],
+    },
   },
 } as const
