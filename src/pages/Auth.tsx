@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Building2, Mail, Lock, User, FileText } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Auth() {
   const { login, register, isLoading } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
 
@@ -44,7 +46,11 @@ export default function Auth() {
     e.preventDefault();
     
     if (registerData.password !== registerData.confirmPassword) {
-      alert('As senhas não coincidem!');
+      toast({
+        variant: "destructive",
+        title: "Erro de validação",
+        description: "As senhas não coincidem!",
+      });
       return;
     }
 

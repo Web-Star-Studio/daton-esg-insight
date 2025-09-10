@@ -67,10 +67,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: `Bem-vindo, ${response.user?.full_name}!`,
       });
     } catch (error: any) {
+      console.error('Erro no login:', error);
+      
+      let errorMessage = "Credenciais inválidas.";
+      
+      if (error.message?.includes('Email not confirmed')) {
+        errorMessage = "Verifique seu email e clique no link de confirmação antes de fazer login.";
+      } else if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = "Email ou senha incorretos.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         variant: "destructive",
         title: "Erro no login",
-        description: error.message || "Credenciais inválidas.",
+        description: errorMessage,
       });
       throw error;
     } finally {
@@ -81,17 +93,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterCompanyData) => {
     try {
       setIsLoading(true);
-      await authService.registerCompany(data);
+      const result = await authService.registerCompany(data);
       
       toast({
         title: "Registro realizado com sucesso!",
-        description: "Verifique seu email para ativar a conta.",
+        description: result.message || "Verifique seu email para ativar a conta.",
       });
     } catch (error: any) {
+      console.error('Erro no registro:', error);
+      
+      let errorMessage = "Erro ao criar conta.";
+      
+      if (error.message?.includes('duplicate key')) {
+        errorMessage = "Esta empresa ou email já está cadastrado.";
+      } else if (error.message?.includes('invalid email')) {
+        errorMessage = "Email inválido.";
+      } else if (error.message?.includes('password')) {
+        errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         variant: "destructive",
         title: "Erro no registro",
-        description: error.message || "Erro ao criar conta.",
+        description: errorMessage,
       });
       throw error;
     } finally {

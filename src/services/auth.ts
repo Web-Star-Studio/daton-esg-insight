@@ -31,14 +31,19 @@ class AuthService {
    * Login - equivalente ao POST /auth/login
    */
   async loginUser(email: string, password: string) {
+    console.log('Tentando fazer login para:', email);
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
     if (error) {
+      console.error('Erro no login:', error);
       throw new Error(error.message);
     }
+
+    console.log('Login realizado com sucesso');
 
     // Buscar dados completos do usuário após login
     const user = await this.getCurrentUser();
@@ -54,6 +59,8 @@ class AuthService {
    */
   async registerCompany(data: RegisterCompanyData) {
     try {
+      console.log('Iniciando registro da empresa:', data.company_name);
+
       // 1. Criar a empresa primeiro
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
@@ -65,10 +72,13 @@ class AuthService {
         .single();
 
       if (companyError) {
-        throw new Error(companyError.message);
+        console.error('Erro ao criar empresa:', companyError);
+        throw new Error(`Erro ao criar empresa: ${companyError.message}`);
       }
 
-      // 2. Registrar o usuário
+      console.log('Empresa criada com sucesso:', companyData.id);
+
+      // 2. Registrar o usuário com dados da empresa
       const redirectUrl = `${window.location.origin}/`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -84,29 +94,21 @@ class AuthService {
       });
 
       if (authError) {
+        console.error('Erro ao criar usuário:', authError);
         // Reverter criação da empresa se o usuário não foi criado
         await supabase.from('companies').delete().eq('id', companyData.id);
-        throw new Error(authError.message);
+        throw new Error(`Erro ao criar usuário: ${authError.message}`);
       }
 
-      // 3. Criar perfil do usuário
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            full_name: data.user_name,
-            company_id: companyData.id,
-            role: 'Admin' // Primeiro usuário da empresa é sempre Admin
-          });
+      console.log('Usuário criado com sucesso. Profile será criado automaticamente pelo trigger.');
 
-        if (profileError) {
-          console.error('Erro ao criar perfil:', profileError);
-        }
-      }
-
-      return { message: "Empresa e usuário criados com sucesso." };
-    } catch (error) {
+      return { 
+        message: "Empresa e usuário criados com sucesso. Verifique seu email para ativar a conta.",
+        user: authData.user,
+        company: companyData
+      };
+    } catch (error: any) {
+      console.error('Erro no processo de registro:', error);
       throw error;
     }
   }
