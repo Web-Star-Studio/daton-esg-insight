@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { format } from "date-fns"
 import { CalendarIcon, ChevronLeft } from "lucide-react"
+import { createEmissionSource, addActivityData } from "@/services/emissions"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -161,12 +162,59 @@ export function AddEmissionSourceModal({ open, onOpenChange }: AddEmissionSource
     handleFinalSubmit(step1Data!, data)
   }
 
-  const handleFinalSubmit = (step1: Step1Data, step2: Step2CombustaoData | Step2EletricidadeData | null) => {
-    console.log("Dados finais:", { step1, step2, stepType })
-    // Aqui seria feita a integração com a API
-    
-    // Resetar forms e fechar modal
-    resetAndClose()
+  const handleFinalSubmit = async (step1: Step1Data, step2: Step2CombustaoData | Step2EletricidadeData | null) => {
+    try {
+      // Criar a fonte de emissão
+      const emissionSourceData = {
+        name: step1.nome,
+        scope: parseInt(step1.escopo.replace('Escopo ', '')),
+        category: step1.categoria,
+        description: `Fonte criada via assistente: ${step1.categoria}`,
+      };
+
+      const newSource = await createEmissionSource(emissionSourceData);
+
+      // Se há dados de atividade (step2), salvar também
+      if (step2 && newSource.id) {
+        let activityData;
+        
+        if (stepType === 'combustao') {
+          const combustaoData = step2 as Step2CombustaoData;
+          activityData = {
+            emission_source_id: newSource.id,
+            quantity: parseFloat(combustaoData.consumo),
+            unit: combustiveis.find(c => c.value === combustaoData.tipoCombustivel)?.unidade || 'unidade',
+            period_start_date: format(combustaoData.periodo, 'yyyy-MM-dd'),
+            period_end_date: format(combustaoData.periodo, 'yyyy-MM-dd'),
+            source_document: `Combustível: ${combustiveis.find(c => c.value === combustaoData.tipoCombustivel)?.label}`,
+          };
+        } else if (stepType === 'eletricidade') {
+          const eletricidadeData = step2 as Step2EletricidadeData;
+          activityData = {
+            emission_source_id: newSource.id,
+            quantity: parseFloat(eletricidadeData.consumoEletricidade),
+            unit: 'kWh',
+            period_start_date: format(eletricidadeData.periodo, 'yyyy-MM-dd'),
+            period_end_date: format(eletricidadeData.periodo, 'yyyy-MM-dd'),
+            source_document: `Eletricidade: ${eletricidadeData.localizacaoFornecedor}`,
+          };
+        }
+
+        if (activityData) {
+          await addActivityData(activityData);
+        }
+      }
+
+      // Resetar forms e fechar modal
+      resetAndClose();
+      
+      // Recarregar a página para mostrar os novos dados
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Erro ao salvar fonte de emissão:', error);
+      // Aqui poderia mostrar um toast de erro
+    }
   }
 
   const resetAndClose = () => {
