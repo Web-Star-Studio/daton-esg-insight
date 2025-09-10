@@ -16,6 +16,9 @@ import { ptBR } from "date-fns/locale"
 import { CalendarIcon, Upload, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { createWasteLog, uploadWasteDocument } from "@/services/waste"
+import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
@@ -35,6 +38,8 @@ const formSchema = z.object({
 const RegistrarDestinacao = () => {
   const navigate = useNavigate()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,10 +69,65 @@ const RegistrarDestinacao = () => {
     setUploadedFile(null)
   }
 
+  // Create waste log mutation
+  const createWasteLogMutation = useMutation({
+    mutationFn: createWasteLog,
+    onSuccess: async (data) => {
+      // If there's a file, upload it
+      if (uploadedFile) {
+        try {
+          await uploadWasteDocument(data.id, uploadedFile)
+          toast({
+            title: "Sucesso!",
+            description: "Registro de resíduo e documento salvos com sucesso.",
+          })
+        } catch (error) {
+          toast({
+            title: "Aviso",
+            description: "Registro salvo, mas houve erro no upload do documento.",
+            variant: "destructive",
+          })
+        }
+      } else {
+        toast({
+          title: "Sucesso!",
+          description: "Registro de resíduo salvo com sucesso.",
+        })
+      }
+      
+      // Invalidate and refetch waste logs
+      queryClient.invalidateQueries({ queryKey: ['waste-logs'] })
+      queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] })
+      
+      navigate("/residuos")
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar registro de resíduo.",
+        variant: "destructive",
+      })
+    }
+  })
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values)
-    // Aqui seria a lógica de salvar
-    navigate("/residuos")
+    const wasteData = {
+      mtr_number: values.mtr,
+      waste_description: values.descricaoResiduo,
+      waste_class: values.classe as "Classe I - Perigoso" | "Classe II A - Não Inerte" | "Classe II B - Inerte",
+      collection_date: values.dataColeta.toISOString().split('T')[0],
+      quantity: values.quantidade,
+      unit: values.unidade,
+      transporter_name: values.transportador || undefined,
+      transporter_cnpj: values.cnpjTransportador || undefined,
+      destination_name: values.destinador || undefined,
+      destination_cnpj: values.cnpjDestinador || undefined,
+      final_treatment_type: values.tipoDestinacao || undefined,
+      cost: values.custo || undefined,
+      status: 'Coletado' as const
+    }
+
+    createWasteLogMutation.mutate(wasteData)
   }
 
   const handleCancel = () => {
@@ -89,8 +149,12 @@ const RegistrarDestinacao = () => {
             <Button variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>
-            <Button type="submit" form="residuo-form">
-              Salvar Registro
+            <Button 
+              type="submit" 
+              form="residuo-form"
+              disabled={createWasteLogMutation.isPending}
+            >
+              {createWasteLogMutation.isPending ? "Salvando..." : "Salvar Registro"}
             </Button>
           </div>
         </div>

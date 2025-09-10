@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 import { 
   Scale, 
   Recycle, 
@@ -13,80 +14,75 @@ import {
   FileText
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
+import { getWasteLogs, getWasteDashboard } from "@/services/waste"
+import { useToast } from "@/hooks/use-toast"
 
 const Residuos = () => {
   const navigate = useNavigate()
-  // Mock data for KPIs
+  const { toast } = useToast()
+
+  // Fetch waste logs
+  const { data: wasteLogs = [], isLoading: isLoadingLogs, error: logsError } = useQuery({
+    queryKey: ['waste-logs'],
+    queryFn: () => getWasteLogs(),
+  })
+
+  // Fetch dashboard data
+  const { data: dashboard, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
+    queryKey: ['waste-dashboard'],
+    queryFn: () => getWasteDashboard(),
+  })
+
+  // Show error toast if any query fails
+  if (logsError || dashboardError) {
+    toast({
+      variant: "destructive",
+      title: "Erro ao carregar dados",
+      description: "Ocorreu um erro ao buscar os dados de resíduos.",
+    })
+  }
+
+  // Generate KPI data from dashboard
   const kpiData = [
     {
       title: "Total Gerado no Mês",
-      value: "2.5 Toneladas",
+      value: dashboard ? `${dashboard.total_generated.value} ${dashboard.total_generated.unit}` : "0 toneladas",
       icon: Scale,
       iconColor: "text-foreground"
     },
     {
       title: "Taxa de Reciclagem",
-      value: "45%",
+      value: dashboard ? `${dashboard.recycling_rate_percent}%` : "0%",
       icon: Recycle,
       iconColor: "text-success"
     },
     {
       title: "Destinado a Aterro",
-      value: "1.2 Toneladas",
+      value: dashboard ? `${dashboard.sent_to_landfill.value} ${dashboard.sent_to_landfill.unit}` : "0 toneladas",
       icon: Trash2,
       iconColor: "text-warning"
     },
     {
       title: "Custo de Destinação (Mês)",
-      value: "R$ 3.450,00",
+      value: dashboard ? `R$ ${dashboard.disposal_cost_month.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ 0,00",
       icon: DollarSign,
       iconColor: "text-foreground"
     }
   ]
 
-  // Mock data for MTR table
-  const mtrData = [
-    {
-      mtr: "MTR-0012345",
-      residuo: "Papel e Papelão",
-      classe: "Classe II A - Não Inertes",
-      dataColeta: "05/09/2025",
-      quantidade: "800 kg",
-      destinador: "Recicla Tudo Ltda.",
-      status: "Destinação Finalizada",
-      statusVariant: "success" as const
-    },
-    {
-      mtr: "CI-00876",
-      residuo: "Resíduo Orgânico",
-      classe: "Classe II A - Não Inertes",
-      dataColeta: "03/09/2025",
-      quantidade: "1.2 ton",
-      destinador: "Aterro Sanitário Central",
-      status: "Em Trânsito",
-      statusVariant: "warning" as const
-    },
-    {
-      mtr: "MTR-0012401",
-      residuo: "Óleo Contaminado",
-      classe: "Classe I - Perigoso",
-      dataColeta: "01/09/2025",
-      quantidade: "150 L",
-      destinador: "Lwarb Lubrificantes",
-      status: "Coletado",
-      statusVariant: "secondary" as const
-    },
-    {
-      mtr: "MTR-0012398",
-      residuo: "Sucata Metálica",
-      classe: "Classe II B - Inertes",
-      dataColeta: "28/08/2025",
-      quantidade: "450 kg",
-      destinador: "MetalRecicla S.A.",
-      status: "Destinação Finalizada",
-      statusVariant: "success" as const
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "Destinação Finalizada":
+        return "success"
+      case "Em Trânsito":
+        return "warning"
+      case "Coletado":
+        return "secondary"
+      default:
+        return "secondary"
     }
-  ]
+  }
 
   const getBadgeVariant = (variant: string) => {
     switch (variant) {
@@ -138,7 +134,11 @@ const Residuos = () => {
                   <Icon className={`h-5 w-5 ${kpi.iconColor}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{kpi.value}</div>
+                  {isLoadingDashboard ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <div className="text-2xl font-bold text-foreground">{kpi.value}</div>
+                  )}
                 </CardContent>
               </Card>
             )
@@ -166,54 +166,86 @@ const Residuos = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mtrData.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{item.mtr}</TableCell>
-                      <TableCell>{item.residuo}</TableCell>
-                      <TableCell>
-                        <span className="text-sm">{item.classe}</span>
-                      </TableCell>
-                      <TableCell>{item.dataColeta}</TableCell>
-                      <TableCell>{item.quantidade}</TableCell>
-                      <TableCell>{item.destinador}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={getBadgeVariant(item.statusVariant)}
-                          className={getBadgeClassName(item.statusVariant)}
+                  {isLoadingLogs ? (
+                    // Loading skeleton rows
+                    Array.from({ length: 4 }).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : wasteLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        Nenhum registro de resíduo encontrado.
+                        <Button 
+                          variant="link" 
+                          onClick={() => navigate("/residuos/novo")}
+                          className="ml-2"
                         >
-                          {item.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            title="Ver Detalhes/CDF"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            title="Ver Detalhes"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            title="Editar"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
+                          Registrar o primeiro
+                        </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    wasteLogs.map((item) => {
+                      const statusVariant = getStatusVariant(item.status)
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.mtr_number}</TableCell>
+                          <TableCell>{item.waste_description}</TableCell>
+                          <TableCell>
+                            <span className="text-sm">{item.waste_class}</span>
+                          </TableCell>
+                          <TableCell>{item.collection_date}</TableCell>
+                          <TableCell>{item.quantity} {item.unit}</TableCell>
+                          <TableCell>{item.destination_name || "-"}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={getBadgeVariant(statusVariant)}
+                              className={getBadgeClassName(statusVariant)}
+                            >
+                              {item.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title="Ver Detalhes/CDF"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title="Ver Detalhes"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title="Editar"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
                 </TableBody>
               </Table>
             </div>
