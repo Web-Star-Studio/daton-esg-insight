@@ -12,8 +12,10 @@ import {
   Pencil,
   FileText
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 const Residuos = () => {
+  const navigate = useNavigate()
   // Mock data for KPIs
   const kpiData = [
     {
@@ -120,7 +122,7 @@ const Residuos = () => {
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold text-foreground">Gestão de Resíduos Sólidos</h1>
           </div>
-          <Button className="w-fit">
+          <Button className="w-fit" onClick={() => navigate("/residuos/novo")}>
             + Registrar Destinação
           </Button>
         </div>
