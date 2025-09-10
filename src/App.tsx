@@ -10,6 +10,7 @@ import Licenciamento from "./pages/Licenciamento";
 import CadastrarLicenca from "./pages/CadastrarLicenca";
 import Residuos from "./pages/Residuos";
 import RegistrarDestinacao from "./pages/RegistrarDestinacao";
+import Metas from "./pages/Metas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/licenciamento/novo" element={<CadastrarLicenca />} />
           <Route path="/residuos" element={<Residuos />} />
           <Route path="/residuos/novo" element={<RegistrarDestinacao />} />
+          <Route path="/metas" element={<Metas />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
