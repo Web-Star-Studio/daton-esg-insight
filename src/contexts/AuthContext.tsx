@@ -162,10 +162,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
+      console.log('Tentando buscar dados do usuário...');
       const userData = await authService.getCurrentUser();
+      console.log('Dados do usuário obtidos:', userData);
       setUser(userData);
+      
+      if (!userData) {
+        console.log('Nenhum usuário encontrado ou profile não existe');
+        toast({
+          title: "Atenção",
+          description: "Profile de usuário não encontrado. Entre em contato com o suporte.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      console.error('Erro ao atualizar dados do usuário:', error);
+      console.error('Erro ao buscar usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados do usuário. Verifique se seu profile foi criado corretamente.",
+        variant: "destructive",
+      });
     }
   };
 
