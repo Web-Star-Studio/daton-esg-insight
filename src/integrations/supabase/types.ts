@@ -340,6 +340,108 @@ export type Database = {
           },
         ]
       }
+      data_collection_tasks: {
+        Row: {
+          assigned_to_user_id: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          frequency: string
+          id: string
+          metadata: Json | null
+          name: string
+          period_end: string
+          period_start: string
+          related_asset_id: string | null
+          status: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          frequency: string
+          id?: string
+          metadata?: Json | null
+          name: string
+          period_end: string
+          period_start: string
+          related_asset_id?: string | null
+          status?: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          frequency?: string
+          id?: string
+          metadata?: Json | null
+          name?: string
+          period_end?: string
+          period_start?: string
+          related_asset_id?: string | null
+          status?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      data_import_jobs: {
+        Row: {
+          company_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          import_type: string
+          log: Json | null
+          progress_percentage: number | null
+          records_processed: number | null
+          records_total: number | null
+          status: string
+          updated_at: string
+          uploader_user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          import_type: string
+          log?: Json | null
+          progress_percentage?: number | null
+          records_processed?: number | null
+          records_total?: number | null
+          status?: string
+          updated_at?: string
+          uploader_user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          import_type?: string
+          log?: Json | null
+          progress_percentage?: number | null
+          records_processed?: number | null
+          records_total?: number | null
+          status?: string
+          updated_at?: string
+          uploader_user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           company_id: string
@@ -910,6 +1012,10 @@ export type Database = {
       get_user_company_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      update_overdue_tasks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

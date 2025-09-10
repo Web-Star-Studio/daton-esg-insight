@@ -25,6 +25,7 @@ import Configuracao from "./pages/Configuracao";
 import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
 import IAInsights from "./pages/IAInsights";
 import GestaoESG from "./pages/GestaoESG";
+import ColetaDados from "./pages/ColetaDados";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -134,6 +135,11 @@ const App = () => (
             <Route path="/ia-insights" element={
               <ProtectedRoute>
                 <IAInsights />
+              </ProtectedRoute>
+            } />
+            <Route path="/coleta-dados" element={
+              <ProtectedRoute>
+                <ColetaDados />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
