@@ -380,6 +380,74 @@ export type Database = {
           },
         ]
       }
+      waste_logs: {
+        Row: {
+          collection_date: string
+          company_id: string
+          cost: number | null
+          created_at: string
+          destination_cnpj: string | null
+          destination_name: string | null
+          final_treatment_type: string | null
+          id: string
+          mtr_number: string
+          quantity: number
+          status: Database["public"]["Enums"]["waste_status_enum"]
+          transporter_cnpj: string | null
+          transporter_name: string | null
+          unit: string
+          updated_at: string
+          waste_class: Database["public"]["Enums"]["waste_class_enum"]
+          waste_description: string
+        }
+        Insert: {
+          collection_date: string
+          company_id: string
+          cost?: number | null
+          created_at?: string
+          destination_cnpj?: string | null
+          destination_name?: string | null
+          final_treatment_type?: string | null
+          id?: string
+          mtr_number: string
+          quantity: number
+          status?: Database["public"]["Enums"]["waste_status_enum"]
+          transporter_cnpj?: string | null
+          transporter_name?: string | null
+          unit: string
+          updated_at?: string
+          waste_class: Database["public"]["Enums"]["waste_class_enum"]
+          waste_description: string
+        }
+        Update: {
+          collection_date?: string
+          company_id?: string
+          cost?: number | null
+          created_at?: string
+          destination_cnpj?: string | null
+          destination_name?: string | null
+          final_treatment_type?: string | null
+          id?: string
+          mtr_number?: string
+          quantity?: number
+          status?: Database["public"]["Enums"]["waste_status_enum"]
+          transporter_cnpj?: string | null
+          transporter_name?: string | null
+          unit?: string
+          updated_at?: string
+          waste_class?: Database["public"]["Enums"]["waste_class_enum"]
+          waste_description?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waste_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -404,6 +472,11 @@ export type Database = {
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
       user_role_enum: "Admin" | "Editor" | "Leitor"
+      waste_class_enum:
+        | "Classe I - Perigoso"
+        | "Classe II A - Não Inerte"
+        | "Classe II B - Inerte"
+      waste_status_enum: "Coletado" | "Em Trânsito" | "Destinação Finalizada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -536,6 +609,12 @@ export const Constants = {
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
       user_role_enum: ["Admin", "Editor", "Leitor"],
+      waste_class_enum: [
+        "Classe I - Perigoso",
+        "Classe II A - Não Inerte",
+        "Classe II B - Inerte",
+      ],
+      waste_status_enum: ["Coletado", "Em Trânsito", "Destinação Finalizada"],
     },
   },
 } as const
