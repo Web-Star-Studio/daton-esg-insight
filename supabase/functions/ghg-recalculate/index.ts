@@ -123,9 +123,9 @@ Deno.serve(async (req) => {
         const ch4Emissions = activity.quantity * (compatibleFactor.ch4_factor || 0);
         const n2oEmissions = activity.quantity * (compatibleFactor.n2o_factor || 0);
 
-        // Convert to CO2 equivalent using correct GWP factors
-        const gwpCH4 = 28;  // IPCC AR5 (corrected from 25)
-        const gwpN2O = 265; // IPCC AR5 (corrected from 298)
+        // Convert to CO2 equivalent using correct GWP factors (IPCC AR6 - Correção Emergencial)
+        const gwpCH4 = 27;  // IPCC AR6 (não-fóssil/combustão)
+        const gwpN2O = 273; // IPCC AR6
 
         const totalCo2eGrams = co2Emissions + (ch4Emissions * gwpCH4) + (n2oEmissions * gwpN2O);
         const totalCo2eKg = totalCo2eGrams / 1000;

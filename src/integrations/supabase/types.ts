@@ -768,6 +768,7 @@ export type Database = {
           name: string
           source: string
           type: Database["public"]["Enums"]["emission_factor_type_enum"]
+          validation_status: string | null
           year_of_validity: number | null
         }
         Insert: {
@@ -782,6 +783,7 @@ export type Database = {
           name: string
           source: string
           type?: Database["public"]["Enums"]["emission_factor_type_enum"]
+          validation_status?: string | null
           year_of_validity?: number | null
         }
         Update: {
@@ -796,6 +798,7 @@ export type Database = {
           name?: string
           source?: string
           type?: Database["public"]["Enums"]["emission_factor_type_enum"]
+          validation_status?: string | null
           year_of_validity?: number | null
         }
         Relationships: [

@@ -361,9 +361,9 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
     const ch4_emissions = activity.quantity * (factor.ch4_factor || 0);
     const n2o_emissions = activity.quantity * (factor.n2o_factor || 0);
     
-    // Convert to CO2 equivalent using GWP factors from IPCC AR5
-    const gwpCH4 = 28; // IPCC AR5 GWP for CH4 over 100 years (valor correto)
-    const gwpN2O = 265; // IPCC AR5 GWP for N2O over 100 years (valor correto)
+    // Convert to CO2 equivalent using GWP factors from IPCC AR6 (Correção Emergencial)
+    const gwpCH4 = 27; // IPCC AR6 GWP for CH4 over 100 years (não-fóssil/combustão)
+    const gwpN2O = 273; // IPCC AR6 GWP for N2O over 100 years
     
     // Total CO2 equivalent using corrected GWP values
     const total_co2e = co2_emissions + (ch4_emissions * gwpCH4) + (n2o_emissions * gwpN2O);
