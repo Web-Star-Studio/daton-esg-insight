@@ -440,6 +440,47 @@ export type Database = {
           },
         ]
       }
+      esg_metrics: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          metric_key: string
+          period: string
+          unit: string | null
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          metric_key: string
+          period: string
+          unit?: string | null
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          metric_key?: string
+          period?: string
+          unit?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esg_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_reports: {
         Row: {
           company_id: string

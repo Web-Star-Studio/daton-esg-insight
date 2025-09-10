@@ -22,6 +22,7 @@ import RegistrarCreditosCarbono from "./pages/RegistrarCreditosCarbono";
 import Configuracao from "./pages/Configuracao";
 import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
 import IAInsights from "./pages/IAInsights";
+import GestaoESG from "./pages/GestaoESG";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -101,6 +102,11 @@ const App = () => (
             <Route path="/projetos-carbono/registrar-creditos" element={
               <ProtectedRoute requiredRole="Editor">
                 <RegistrarCreditosCarbono />
+              </ProtectedRoute>
+            } />
+            <Route path="/gestao-esg" element={
+              <ProtectedRoute>
+                <GestaoESG />
               </ProtectedRoute>
             } />
             <Route path="/configuracao" element={
