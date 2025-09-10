@@ -61,24 +61,8 @@ class AuthService {
     try {
       console.log('Iniciando registro da empresa:', data.company_name);
 
-      // 1. Criar a empresa primeiro
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .insert({
-          name: data.company_name,
-          cnpj: data.cnpj
-        })
-        .select()
-        .single();
-
-      if (companyError) {
-        console.error('Erro ao criar empresa:', companyError);
-        throw new Error(`Erro ao criar empresa: ${companyError.message}`);
-      }
-
-      console.log('Empresa criada com sucesso:', companyData.id);
-
-      // 2. Registrar o usuário com dados da empresa
+      // Criar usuário primeiro com dados da empresa nos metadados
+      // O trigger handle_new_user() criará empresa e profile automaticamente
       const redirectUrl = `${window.location.origin}/`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -88,24 +72,22 @@ class AuthService {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: data.user_name,
-            company_id: companyData.id
+            company_name: data.company_name,
+            cnpj: data.cnpj
           }
         }
       });
 
       if (authError) {
         console.error('Erro ao criar usuário:', authError);
-        // Reverter criação da empresa se o usuário não foi criado
-        await supabase.from('companies').delete().eq('id', companyData.id);
         throw new Error(`Erro ao criar usuário: ${authError.message}`);
       }
 
-      console.log('Usuário criado com sucesso. Profile será criado automaticamente pelo trigger.');
+      console.log('Usuário criado com sucesso. Empresa e profile serão criados automaticamente pelo trigger.');
 
       return { 
         message: "Empresa e usuário criados com sucesso. Verifique seu email para ativar a conta.",
-        user: authData.user,
-        company: companyData
+        user: authData.user
       };
     } catch (error: any) {
       console.error('Erro no processo de registro:', error);
