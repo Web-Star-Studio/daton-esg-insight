@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Flag, TrendingUp, AlertTriangle, BarChart3, Pencil, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface CircularProgressProps {
   value: number;
@@ -122,6 +123,7 @@ const getStatusColor = (status: string) => {
 };
 
 export default function Metas() {
+  const navigate = useNavigate();
   const activeGoals = mockGoals.filter(goal => goal.status !== "Atingida").length;
   const averageProgress = Math.round(mockGoals.reduce((sum, goal) => sum + goal.progress, 0) / mockGoals.length);
   const delayedGoals = mockGoals.filter(goal => goal.status === "Atrasada").length;
@@ -134,7 +136,10 @@ export default function Metas() {
           <h1 className="text-3xl font-bold text-foreground">
             Painel de Metas de Sustentabilidade
           </h1>
-          <Button className="gap-2">
+          <Button 
+            className="gap-2"
+            onClick={() => navigate("/metas/nova")}
+          >
             <Plus className="h-4 w-4" />
             Criar Nova Meta
           </Button>
