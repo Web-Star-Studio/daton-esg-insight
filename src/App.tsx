@@ -12,6 +12,7 @@ import Residuos from "./pages/Residuos";
 import RegistrarDestinacao from "./pages/RegistrarDestinacao";
 import Metas from "./pages/Metas";
 import CriarMeta from "./pages/CriarMeta";
+import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/residuos/novo" element={<RegistrarDestinacao />} />
           <Route path="/metas" element={<Metas />} />
           <Route path="/metas/nova" element={<CriarMeta />} />
+          <Route path="/relatorios" element={<Relatorios />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
