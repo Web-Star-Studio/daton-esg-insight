@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm } from "@/services/customForms";
 import { FormBuilderModal } from "@/components/FormBuilderModal";
 import { FormSubmissionsModal } from "@/components/FormSubmissionsModal";
+import { MainLayout } from "@/components/MainLayout";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function FormulariosCustomizados() {
@@ -89,7 +90,8 @@ export default function FormulariosCustomizados() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <MainLayout>
+        <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Formulários Customizados</h1>
@@ -111,12 +113,14 @@ export default function FormulariosCustomizados() {
             </Card>
           ))}
         </div>
-      </div>
+        </div>
+      </MainLayout>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <MainLayout>
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Formulários Customizados</h1>
@@ -288,6 +292,7 @@ export default function FormulariosCustomizados() {
           onClose={() => setSubmissionsFormId(null)}
         />
       )}
-    </div>
+      </div>
+    </MainLayout>
   );
 }

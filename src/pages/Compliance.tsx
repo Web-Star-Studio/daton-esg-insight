@@ -10,6 +10,7 @@ import { ComplianceTaskModal } from "@/components/ComplianceTaskModal";
 import { RegulatoryRequirementModal } from "@/components/RegulatoryRequirementModal";
 import { TaskCalendarView } from "@/components/TaskCalendarView";
 import { RequirementsLibrary } from "@/components/RequirementsLibrary";
+import { MainLayout } from "@/components/MainLayout";
 
 export default function Compliance() {
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -21,7 +22,8 @@ export default function Compliance() {
   });
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Painel de Conformidade Regulatória</h1>
       </div>
@@ -151,6 +153,7 @@ export default function Compliance() {
         open={showRequirementModal} 
         onOpenChange={setShowRequirementModal}
       />
-    </div>
+      </div>
+    </MainLayout>
   );
 }
