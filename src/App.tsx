@@ -16,6 +16,7 @@ import Relatorios from "./pages/Relatorios";
 import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
 import RegistrarCreditosCarbono from "./pages/RegistrarCreditosCarbono";
+import Configuracao from "./pages/Configuracao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/biblioteca-fatores" element={<BibliotecaFatores />} />
           <Route path="/projetos-carbono" element={<ProjetosCarbono />} />
           <Route path="/projetos-carbono/registrar-creditos" element={<RegistrarCreditosCarbono />} />
+          <Route path="/configuracao" element={<Configuracao />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
