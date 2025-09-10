@@ -351,6 +351,62 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_tasks: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          evidence_document_id: string | null
+          frequency: Database["public"]["Enums"]["frequency_enum"]
+          id: string
+          notes: string | null
+          requirement_id: string | null
+          responsible_user_id: string | null
+          status: Database["public"]["Enums"]["compliance_task_status_enum"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          evidence_document_id?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_enum"]
+          id?: string
+          notes?: string | null
+          requirement_id?: string | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["compliance_task_status_enum"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          evidence_document_id?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_enum"]
+          id?: string
+          notes?: string | null
+          requirement_id?: string | null
+          responsible_user_id?: string | null
+          status?: Database["public"]["Enums"]["compliance_task_status_enum"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_tasks_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_purchases: {
         Row: {
           available_quantity: number
@@ -1152,6 +1208,42 @@ export type Database = {
           },
         ]
       }
+      regulatory_requirements: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          jurisdiction: Database["public"]["Enums"]["jurisdiction_enum"]
+          reference_code: string | null
+          source_url: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          jurisdiction?: Database["public"]["Enums"]["jurisdiction_enum"]
+          reference_code?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          jurisdiction?: Database["public"]["Enums"]["jurisdiction_enum"]
+          reference_code?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       waste_logs: {
         Row: {
           asset_id: string | null
@@ -1268,14 +1360,27 @@ export type Database = {
     }
     Enums: {
       carbon_project_status_enum: "Ativo" | "Encerrado" | "Suspenso"
+      compliance_task_status_enum:
+        | "Pendente"
+        | "Em Andamento"
+        | "Concluído"
+        | "Em Atraso"
       credit_status_enum: "Disponível" | "Aposentado" | "Reservado"
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
+      frequency_enum:
+        | "Única"
+        | "Anual"
+        | "Semestral"
+        | "Trimestral"
+        | "Mensal"
+        | "Sob Demanda"
       goal_status_enum:
         | "No Caminho Certo"
         | "Atenção Necessária"
         | "Atingida"
         | "Atrasada"
+      jurisdiction_enum: "Federal" | "Estadual" | "Municipal"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
       report_status_enum: "Rascunho" | "Gerando" | "Concluído"
@@ -1418,15 +1523,30 @@ export const Constants = {
   public: {
     Enums: {
       carbon_project_status_enum: ["Ativo", "Encerrado", "Suspenso"],
+      compliance_task_status_enum: [
+        "Pendente",
+        "Em Andamento",
+        "Concluído",
+        "Em Atraso",
+      ],
       credit_status_enum: ["Disponível", "Aposentado", "Reservado"],
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],
+      frequency_enum: [
+        "Única",
+        "Anual",
+        "Semestral",
+        "Trimestral",
+        "Mensal",
+        "Sob Demanda",
+      ],
       goal_status_enum: [
         "No Caminho Certo",
         "Atenção Necessária",
         "Atingida",
         "Atrasada",
       ],
+      jurisdiction_enum: ["Federal", "Estadual", "Municipal"],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
       report_status_enum: ["Rascunho", "Gerando", "Concluído"],

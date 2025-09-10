@@ -29,6 +29,7 @@ import ColetaDados from "./pages/ColetaDados";
 import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import Documentos from "./pages/Documentos";
 import Auditoria from "./pages/Auditoria";
+import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -158,6 +159,11 @@ const App = () => (
             <Route path="/auditoria" element={
               <ProtectedRoute>
                 <Auditoria />
+              </ProtectedRoute>
+            } />
+            <Route path="/compliance" element={
+              <ProtectedRoute>
+                <Compliance />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
