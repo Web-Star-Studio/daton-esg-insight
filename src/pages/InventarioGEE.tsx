@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { Plus, Pencil, Trash2 } from "lucide-react"
+import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal"
+import { useState } from "react"
 
 // Mock data para a tabela
 const mockData = [
@@ -54,6 +56,8 @@ const mockData = [
 ]
 
 const InventarioGEE = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  
   const getStatusBadge = (status: string) => {
     return status === "Ativo" 
       ? <Badge className="bg-success/10 text-success border-success/20">Ativo</Badge>
@@ -121,11 +125,17 @@ const InventarioGEE = () => {
               Gerencie suas fontes de emissão de Gases de Efeito Estufa
             </p>
           </div>
-          <Button className="sm:ml-auto">
+          <Button className="sm:ml-auto" onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Fonte de Emissão
           </Button>
         </div>
+
+        {/* Modal para adicionar fonte */}
+        <AddEmissionSourceModal 
+          open={isModalOpen} 
+          onOpenChange={setIsModalOpen} 
+        />
 
         {/* Sistema de Abas */}
         <Tabs defaultValue="todas" className="space-y-6">
