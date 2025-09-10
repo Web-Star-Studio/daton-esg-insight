@@ -440,6 +440,57 @@ export type Database = {
           },
         ]
       }
+      generated_reports: {
+        Row: {
+          company_id: string
+          config_json: Json | null
+          created_at: string
+          data_period_end: string
+          data_period_start: string
+          file_path_pdf: string | null
+          file_path_xlsx: string | null
+          generation_date: string
+          id: string
+          report_template: Database["public"]["Enums"]["report_template_enum"]
+          status: Database["public"]["Enums"]["report_status_enum"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          config_json?: Json | null
+          created_at?: string
+          data_period_end: string
+          data_period_start: string
+          file_path_pdf?: string | null
+          file_path_xlsx?: string | null
+          generation_date?: string
+          id?: string
+          report_template: Database["public"]["Enums"]["report_template_enum"]
+          status?: Database["public"]["Enums"]["report_status_enum"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          config_json?: Json | null
+          created_at?: string
+          data_period_end?: string
+          data_period_start?: string
+          file_path_pdf?: string | null
+          file_path_xlsx?: string | null
+          generation_date?: string
+          id?: string
+          report_template?: Database["public"]["Enums"]["report_template_enum"]
+          status?: Database["public"]["Enums"]["report_status_enum"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       goal_progress_updates: {
         Row: {
           created_at: string
@@ -747,6 +798,12 @@ export type Database = {
         | "Atrasada"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
+      report_status_enum: "Rascunho" | "Gerando" | "Concluído"
+      report_template_enum:
+        | "GHG_PROTOCOL"
+        | "GRI_STANDARD"
+        | "GOALS_PERFORMANCE"
+        | "CUSTOM_REPORT"
       user_role_enum: "Admin" | "Editor" | "Leitor"
       waste_class_enum:
         | "Classe I - Perigoso"
@@ -892,6 +949,13 @@ export const Constants = {
       ],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
+      report_status_enum: ["Rascunho", "Gerando", "Concluído"],
+      report_template_enum: [
+        "GHG_PROTOCOL",
+        "GRI_STANDARD",
+        "GOALS_PERFORMANCE",
+        "CUSTOM_REPORT",
+      ],
       user_role_enum: ["Admin", "Editor", "Leitor"],
       waste_class_enum: [
         "Classe I - Perigoso",
