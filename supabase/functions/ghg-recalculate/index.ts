@@ -118,30 +118,28 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Calculate emissions using corrected GWP values (IPCC AR5)
-        const co2Emissions = activity.quantity * (compatibleFactor.co2_factor || 0);
-        const ch4Emissions = activity.quantity * (compatibleFactor.ch4_factor || 0);
-        const n2oEmissions = activity.quantity * (compatibleFactor.n2o_factor || 0);
+        // Calculate emissions - factors are already in kg CO2e per unit
+        const co2EmissionsKg = activity.quantity * (compatibleFactor.co2_factor || 0);
+        const ch4EmissionsKg = activity.quantity * (compatibleFactor.ch4_factor || 0);
+        const n2oEmissionsKg = activity.quantity * (compatibleFactor.n2o_factor || 0);
 
-        // Convert to CO2 equivalent using correct GWP factors (IPCC AR6 - Correção Emergencial)
+        // Convert to CO2 equivalent using correct GWP factors (IPCC AR6)
         const gwpCH4 = 27;  // IPCC AR6 (não-fóssil/combustão)
         const gwpN2O = 273; // IPCC AR6
 
-        const totalCo2eGrams = co2Emissions + (ch4Emissions * gwpCH4) + (n2oEmissions * gwpN2O);
-        const totalCo2eKg = totalCo2eGrams / 1000;
-        const totalCo2eTonnes = totalCo2eKg / 1000;
+        const totalCo2eKg = co2EmissionsKg + (ch4EmissionsKg * gwpCH4) + (n2oEmissionsKg * gwpN2O);
+        const totalCo2eTonnes = totalCo2eKg / 1000; // Convert kg to tonnes
 
         // Create calculation details
         const calculationDetails = {
           activity_quantity: activity.quantity,
           activity_unit: activity.unit,
           emission_factor_name: compatibleFactor.name,
-          co2_grams: co2Emissions,
-          ch4_grams: ch4Emissions,
-          n2o_grams: n2oEmissions,
+          co2_kg: co2EmissionsKg,
+          ch4_kg: ch4EmissionsKg,
+          n2o_kg: n2oEmissionsKg,
           gwp_ch4: gwpCH4,
           gwp_n2o: gwpN2O,
-          total_co2e_grams: totalCo2eGrams,
           total_co2e_kg: totalCo2eKg,
           calculation_date: new Date().toISOString()
         };
