@@ -137,8 +137,12 @@ const InventarioGEE = () => {
     if (data.length === 0) {
       return (
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Nenhuma fonte de emissão encontrada para este escopo.</p>
+          <CardContent className="p-12 text-center">
+            <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma fonte de emissão encontrada</h3>
+            <p className="text-muted-foreground mb-4">
+              Para começar seu inventário GEE, adicione uma fonte de emissão clicando no botão "Adicionar Fonte de Emissão".
+            </p>
           </CardContent>
         </Card>
       )
@@ -215,7 +219,9 @@ const InventarioGEE = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Inventário GEE</h1>
             <div className="flex gap-2">
-              <RecalculateEmissionsButton onSuccess={loadData} />
+              {(stats.fontes_total > 0) && (
+                <RecalculateEmissionsButton onSuccess={loadData} />
+              )}
               <Button onClick={() => setIsModalOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Fonte de Emissão
