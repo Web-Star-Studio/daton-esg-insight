@@ -478,6 +478,41 @@ export type Database = {
         }
         Relationships: []
       }
+      document_folders: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          parent_folder_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           company_id: string
@@ -485,9 +520,11 @@ export type Database = {
           file_path: string
           file_size: number | null
           file_type: string
+          folder_id: string | null
           id: string
           related_id: string
           related_model: string
+          tags: string[] | null
           upload_date: string
           uploader_user_id: string
         }
@@ -497,9 +534,11 @@ export type Database = {
           file_path: string
           file_size?: number | null
           file_type: string
+          folder_id?: string | null
           id?: string
           related_id: string
           related_model: string
+          tags?: string[] | null
           upload_date?: string
           uploader_user_id: string
         }
@@ -509,9 +548,11 @@ export type Database = {
           file_path?: string
           file_size?: number | null
           file_type?: string
+          folder_id?: string | null
           id?: string
           related_id?: string
           related_model?: string
+          tags?: string[] | null
           upload_date?: string
           uploader_user_id?: string
         }
@@ -521,6 +562,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
             referencedColumns: ["id"]
           },
           {

@@ -27,6 +27,7 @@ import IAInsights from "./pages/IAInsights";
 import GestaoESG from "./pages/GestaoESG";
 import ColetaDados from "./pages/ColetaDados";
 import FormulariosCustomizados from "./pages/FormulariosCustomizados";
+import Documentos from "./pages/Documentos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -146,6 +147,11 @@ const App = () => (
             <Route path="/formularios-customizados" element={
               <ProtectedRoute>
                 <FormulariosCustomizados />
+              </ProtectedRoute>
+            } />
+            <Route path="/documentos" element={
+              <ProtectedRoute>
+                <Documentos />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
