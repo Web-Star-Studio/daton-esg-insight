@@ -99,6 +99,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
         quantity: parseFloat(quantity),
         unit,
         source_document: sourceDocument || undefined,
+        emission_factor_id: selectedEmissionFactorId || undefined, // CORREÇÃO CRÍTICA: Enviar ID do fator selecionado
       };
 
       await addActivityData(activityData);
