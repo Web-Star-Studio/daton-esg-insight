@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
 import { 
   LayoutDashboard, 
   FlaskConical, 
@@ -39,6 +39,7 @@ interface MenuItem {
   id: string
   title: string
   icon: React.ComponentType<{ className?: string }>
+  path: string
 }
 
 interface MenuSection {
@@ -50,51 +51,51 @@ const menuSections: MenuSection[] = [
   {
     title: "ANÁLISE GERAL",
     items: [
-      { id: "painel", title: "Painel", icon: LayoutDashboard },
-      { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical },
-      { id: "ia-insights", title: "IA & Insights", icon: Sparkles },
+      { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/" },
+      { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
+      { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
     ]
   },
   {
     title: "GESTÃO DE GEE",
     items: [
-      { id: "inventario-gee", title: "Inventário GEE", icon: Package },
-      { id: "dashboard-ghg", title: "Dashboard GHG", icon: BarChart3 },
-      { id: "metas", title: "Metas", icon: Flag },
-      { id: "projetos-carbono", title: "Projetos de Carbono", icon: Recycle },
+      { id: "inventario-gee", title: "Inventário GEE", icon: Package, path: "/inventario-gee" },
+      { id: "dashboard-ghg", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg" },
+      { id: "metas", title: "Metas", icon: Flag, path: "/metas" },
+      { id: "projetos-carbono", title: "Projetos de Carbono", icon: Recycle, path: "/projetos-carbono" },
     ]
   },
   {
     title: "ESG E SUSTENTABILIDADE",
     items: [
-      { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase },
-      { id: "licenciamento", title: "Licenciamento", icon: Gavel },
-      { id: "residuos", title: "Resíduos", icon: Trash2 },
-      { id: "ativos", title: "Ativos", icon: HardDrive },
-      { id: "desempenho", title: "Desempenho", icon: TrendingUp },
+      { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
+      { id: "licenciamento", title: "Licenciamento", icon: Gavel, path: "/licenciamento" },
+      { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
+      { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
+      { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
     ]
   },
   {
     title: "DADOS E DOCUMENTOS",
     items: [
-      { id: "coleta-dados", title: "Coleta de Dados", icon: CloudUpload },
-      { id: "formularios", title: "Formulários", icon: FileText },
-      { id: "documentos", title: "Documentos", icon: Folder },
-      { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen },
+      { id: "coleta-dados", title: "Coleta de Dados", icon: CloudUpload, path: "/coleta-dados" },
+      { id: "formularios", title: "Formulários", icon: FileText, path: "/formularios" },
+      { id: "documentos", title: "Documentos", icon: Folder, path: "/documentos" },
+      { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
     ]
   },
   {
     title: "RELATÓRIOS E COMPLIANCE",
     items: [
-      { id: "relatorios", title: "Relatórios", icon: FileBarChart },
-      { id: "auditoria", title: "Auditoria", icon: CheckCircle },
-      { id: "compliance", title: "Compliance", icon: ShieldCheck },
+      { id: "relatorios", title: "Relatórios", icon: FileBarChart, path: "/relatorios" },
+      { id: "auditoria", title: "Auditoria", icon: CheckCircle, path: "/auditoria" },
+      { id: "compliance", title: "Compliance", icon: ShieldCheck, path: "/compliance" },
     ]
   },
   {
     title: "CONFIGURAÇÕES",
     items: [
-      { id: "configuracao", title: "Configuração", icon: Settings },
+      { id: "configuracao", title: "Configuração", icon: Settings, path: "/configuracao" },
     ]
   }
 ]
@@ -102,10 +103,26 @@ const menuSections: MenuSection[] = [
 export function AppSidebar() {
   const { state } = useSidebar()
   const isCollapsed = state === "collapsed"
-  const [activeItem, setActiveItem] = useState("painel")
+  const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Determinar item ativo baseado na rota atual
+  const getActiveItem = () => {
+    const currentPath = location.pathname
+    for (const section of menuSections) {
+      for (const item of section.items) {
+        if (item.path === currentPath) {
+          return item.id
+        }
+      }
+    }
+    return "painel" // default
+  }
+  
+  const activeItem = getActiveItem()
 
-  const handleItemClick = (itemId: string) => {
-    setActiveItem(itemId)
+  const handleItemClick = (item: MenuItem) => {
+    navigate(item.path)
   }
 
   return (
@@ -145,7 +162,7 @@ export function AppSidebar() {
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
-                      onClick={() => handleItemClick(item.id)}
+                      onClick={() => handleItemClick(item)}
                       className={`
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
                         ${activeItem === item.id 
