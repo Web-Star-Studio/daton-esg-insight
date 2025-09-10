@@ -137,14 +137,12 @@ export function EmissionFactorCard({ factor, onDelete }: EmissionFactorCardProps
             )}
           </div>
           
-          {factor.validation_status && (
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${factor.validation_status === 'validated' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              <span className="text-xs text-muted-foreground">
-                {factor.validation_status === 'validated' ? 'Validado' : 'Pendente validação'}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-xs text-muted-foreground">
+              {factor.type === 'system' ? 'Validado oficialmente' : 'Fator customizado'}
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>
