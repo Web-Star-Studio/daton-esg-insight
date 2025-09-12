@@ -252,6 +252,36 @@ Retorne APENAS um JSON válido no seguinte formato:
   return basePrompt;
 }
 
+// Utility function to extract JSON from text that might contain code blocks or other noise
+function extractJsonFromText(text: string): any {
+  // Remove any markdown code block markers
+  let cleanText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+  
+  // Try to find JSON content between braces
+  const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    cleanText = jsonMatch[0];
+  }
+  
+  // Trim whitespace
+  cleanText = cleanText.trim();
+  
+  try {
+    return JSON.parse(cleanText);
+  } catch (error) {
+    // If that fails, try to extract just the JSON object
+    const startBrace = cleanText.indexOf('{');
+    const endBrace = cleanText.lastIndexOf('}');
+    
+    if (startBrace !== -1 && endBrace !== -1 && endBrace > startBrace) {
+      const jsonPart = cleanText.substring(startBrace, endBrace + 1);
+      return JSON.parse(jsonPart);
+    }
+    
+    throw new Error(`Invalid JSON format: ${error.message}`);
+  }
+}
+
 function detectLicenseContext(content: string): LicenseContext {
   const context: LicenseContext = {};
   
@@ -658,7 +688,8 @@ ${documentContent || 'Documento não pôde ser processado adequadamente. Favor p
         model: useVision ? 'gpt-4o-mini' : 'gpt-4o-mini',
         messages: messages,
         max_tokens: 3000,
-        temperature: 0.1
+        temperature: 0.1,
+        response_format: { type: "json_object" }
       }),
     })
 
@@ -679,10 +710,11 @@ ${documentContent || 'Documento não pôde ser processado adequadamente. Favor p
     try {
       const aiContent = openAIResult.choices[0].message.content
       console.log('AI extracted content:', aiContent)
-      extractedData = JSON.parse(aiContent)
+      extractedData = extractJsonFromText(aiContent)
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError)
-      throw new Error('Failed to parse AI analysis results')
+      console.error('Raw content:', aiContent)
+      throw new Error(`Failed to parse AI analysis results: ${parseError.message}`)
     }
 
     // Calculate overall confidence score
@@ -704,9 +736,11 @@ ${documentContent || 'Documento não pôde ser processado adequadamente. Favor p
 
   } catch (error) {
     console.error('Error in license-document-analyzer:', error)
+    const errorMessage = error.message || 'Erro interno do servidor'
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: errorMessage,
+      details: error.stack || 'No stack trace available'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

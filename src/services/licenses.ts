@@ -495,8 +495,15 @@ export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalys
       })
 
       if (error) {
-        console.error('Error calling document analyzer:', error)
-        throw new Error('Erro na análise do documento')
+        console.error('Edge function error:', error)
+        throw new Error(`Erro na análise: ${error.message || 'Erro desconhecido'}`)
+      }
+
+      if (!data?.success) {
+        console.error('Analysis failed:', data)
+        const errorMsg = data?.error || 'Falha na análise do documento'
+        const details = data?.details ? ` - Detalhes: ${data.details}` : ''
+        throw new Error(`${errorMsg}${details}`)
       }
 
       return data as DocumentAnalysisResult
@@ -506,7 +513,7 @@ export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalys
     }
   } catch (error) {
     console.error('Error in analyzeLicenseDocument:', error)
-    toast.error('Erro ao analisar documento')
+    // Re-throw with original message to preserve details
     throw error
   }
 }
