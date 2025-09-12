@@ -434,6 +434,93 @@ async function extractPdfText(fileBlob: Blob): Promise<string> {
   }
 }
 
+// Heuristic extraction from filename when document content is minimal
+function heuristicExtractFromFileName(fileName: string): Partial<ExtractedLicenseFormData> {
+  console.log(`Attempting heuristic extraction from filename: ${fileName}`);
+  
+  const extracted: Partial<ExtractedLicenseFormData> = {};
+  const lowerFileName = fileName.toLowerCase();
+  
+  // Extract license type from filename
+  if (lowerFileName.includes('licen') && lowerFileName.includes('ambiental')) {
+    extracted.tipo = 'Licença Ambiental';
+  } else if (lowerFileName.includes('licen') && lowerFileName.includes('operacao')) {
+    extracted.tipo = 'Licença de Operação';
+  } else if (lowerFileName.includes('licen') && lowerFileName.includes('previa')) {
+    extracted.tipo = 'Licença Prévia';
+  } else if (lowerFileName.includes('licen') && lowerFileName.includes('instalacao')) {
+    extracted.tipo = 'Licença de Instalação';
+  } else if (lowerFileName.includes('licen')) {
+    extracted.tipo = 'Licença Ambiental';
+  }
+  
+  // Extract issuing body
+  if (lowerFileName.includes('ibama')) {
+    extracted.orgaoEmissor = 'IBAMA';
+  } else if (lowerFileName.includes('cetesb')) {
+    extracted.orgaoEmissor = 'CETESB';
+  } else if (lowerFileName.includes('inea')) {
+    extracted.orgaoEmissor = 'INEA';
+  } else if (lowerFileName.includes('feam')) {
+    extracted.orgaoEmissor = 'FEAM';
+  } else if (lowerFileName.includes('fepam')) {
+    extracted.orgaoEmissor = 'FEPAM';
+  }
+  
+  // Extract dates from filename (YYYY, DD-MM-YYYY, etc)
+  const datePattern = /(\d{1,2}[-\/]\d{1,2}[-\/]\d{4}|\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{4})/g;
+  const dates = fileName.match(datePattern);
+  
+  if (dates && dates.length > 0) {
+    // Try to parse the first date as issue date
+    const firstDate = dates[0];
+    if (firstDate.length === 4) {
+      // Just year, create a date for January 1st
+      extracted.dataEmissao = `${firstDate}-01-01`;
+    } else {
+      // Try to parse full date
+      const parsedDate = parseDate(firstDate);
+      if (parsedDate) {
+        extracted.dataEmissao = parsedDate;
+      }
+    }
+  }
+  
+  // Extract process number patterns
+  const processPattern = /(\d{4,5}[\.\-\/]?\d{3,6}[\.\-\/]?\d{4}[\.\-\/]?\d{2})/;
+  const processMatch = fileName.match(processPattern);
+  if (processMatch) {
+    extracted.numeroProcesso = processMatch[1];
+  }
+  
+  console.log('Heuristic extraction result:', extracted);
+  return extracted;
+}
+
+// Helper function to parse dates in various formats
+function parseDate(dateStr: string): string | null {
+  try {
+    // Try DD/MM/YYYY or DD-MM-YYYY format
+    const ddmmyyyy = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (ddmmyyyy) {
+      const [, day, month, year] = ddmmyyyy;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // Try YYYY/MM/DD or YYYY-MM-DD format
+    const yyyymmdd = dateStr.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if (yyyymmdd) {
+      const [, year, month, day] = yyyymmdd;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return null;
+  }
+}
+
 // Helper function to parse Excel/CSV data
 async function parseSpreadsheet(fileBlob: Blob, fileName: string): Promise<string> {
   try {
@@ -767,17 +854,38 @@ ${documentContent || 'Documento não pôde ser processado adequadamente. Favor p
       throw new Error(`Failed to parse AI analysis results: ${parseError.message}`)
     }
 
+    // If extracted data is minimal, try heuristic extraction from filename
+    let analysisType = useVision ? 'vision' : 'text';
+    if (extractedData && Object.values(extractedData).filter(v => v && v.toString().trim()).length < 3) {
+      console.log('Low content detected, attempting heuristic extraction from filename...');
+      const heuristicData = heuristicExtractFromFileName(fileName);
+      
+      if (Object.keys(heuristicData).length > 0) {
+        // Merge heuristic data with AI data, preferring AI data when available
+        Object.entries(heuristicData).forEach(([key, value]) => {
+          if (!extractedData[key] || !extractedData[key].toString().trim()) {
+            extractedData[key] = value;
+            if (extractedData.confidence_scores) {
+              extractedData.confidence_scores[key] = 0.6; // Medium confidence for heuristic data
+            }
+          }
+        });
+        analysisType = 'hybrid_analysis';
+        console.log('Merged heuristic data with AI analysis');
+      }
+    }
+
     // Calculate overall confidence score
     const confidenceValues = Object.values(extractedData.confidence_scores)
     const overallConfidence = confidenceValues.reduce((sum, score) => sum + score, 0) / confidenceValues.length
 
-    console.log(`Analysis completed with overall confidence: ${overallConfidence} using ${useVision ? 'vision' : 'text'} analysis`)
+    console.log(`Analysis completed with overall confidence: ${overallConfidence} using ${analysisType} analysis`)
 
     return new Response(JSON.stringify({
       success: true,
       extracted_data: extractedData,
       overall_confidence: overallConfidence,
-      analysis_type: useVision ? 'vision' : 'text',
+      analysis_type: analysisType,
       file_type: fileType,
       analysis_timestamp: new Date().toISOString()
     }), {

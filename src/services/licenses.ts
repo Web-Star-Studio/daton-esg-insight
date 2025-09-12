@@ -332,8 +332,9 @@ export async function deleteLicense(id: string): Promise<void> {
 // POST /api/v1/licenses/{licenseId}/documents
 export async function uploadLicenseDocument(licenseId: string, file: File): Promise<LicenseDocument> {
   try {
-    // Generate unique file name
+    // Generate unique file name to prevent duplicates
     const fileExt = file.name.split('.').pop()
+    const baseName = file.name.replace(`.${fileExt}`, '')
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = `licenses/${licenseId}/${fileName}`
 
@@ -368,11 +369,31 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
       throw new Error('User company not found')
     }
 
-    // Save document record
+    // Check for existing document with same name and generate unique name if needed
+    let finalFileName = file.name
+    let counter = 1
+    
+    while (true) {
+      const { data: existingDoc } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('file_name', finalFileName)
+        .eq('related_model', 'licenses')
+        .eq('related_id', licenseId)
+        .single()
+      
+      if (!existingDoc) break
+      
+      counter++
+      const nameWithoutExt = baseName
+      finalFileName = `${nameWithoutExt} (${counter}).${fileExt}`
+    }
+
+    // Save document record with unique name
     const { data: documentData, error: documentError } = await supabase
       .from('documents')
       .insert({
-        file_name: file.name,
+        file_name: finalFileName,
         file_path: filePath,
         file_type: file.type,
         file_size: file.size,
@@ -392,7 +413,11 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
       throw documentError
     }
 
-    toast.success('Documento anexado com sucesso!')
+    const successMessage = finalFileName !== file.name 
+      ? `Documento salvo como "${finalFileName}" (nome ajustado para evitar duplicata)`
+      : 'Documento anexado com sucesso!'
+    
+    toast.success(successMessage)
     return {
       id: documentData.id,
       file_name: documentData.file_name,

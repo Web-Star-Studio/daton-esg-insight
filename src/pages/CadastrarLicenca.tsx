@@ -200,6 +200,12 @@ const CadastrarLicenca = () => {
           message += ` Tipo: ${result.file_type.toUpperCase()}`
         }
         
+        if (result.analysis_type === 'hybrid_analysis') {
+          message += ` 🔀 Análise híbrida (IA + nome do arquivo)`
+        } else if (result.analysis_type === 'filename_heuristic') {
+          message += ` 📝 Dados extraídos do nome do arquivo`
+        }
+        
         if (confidence >= 0.8) {
           message += ` ✨ Alta confiança (${Math.round(confidence * 100)}%)`
         } else if (confidence >= 0.5) {
