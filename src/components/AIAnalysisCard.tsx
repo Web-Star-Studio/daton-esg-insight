@@ -12,6 +12,7 @@ interface AIAnalysisCardProps {
   analysisProgress: number
   analysisData: ExtractedLicenseFormData | null
   overallConfidence: number | null
+  analysisError: string | null
   onAnalyze: () => void
   onApplyData: () => void
   onRemoveFile: () => void
@@ -23,6 +24,7 @@ export const AIAnalysisCard = ({
   analysisProgress,
   analysisData,
   overallConfidence,
+  analysisError,
   onAnalyze,
   onApplyData,
   onRemoveFile
@@ -115,8 +117,38 @@ export const AIAnalysisCard = ({
             </div>
           )}
 
+          {/* Analysis Error */}
+          {analysisError && (
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <h4 className="text-sm font-medium text-red-800">Falha na Análise</h4>
+              </div>
+              <p className="text-sm text-red-700">{analysisError}</p>
+              <div className="bg-red-100 p-3 rounded-lg">
+                <p className="text-xs text-red-800 font-medium mb-2">💡 Dicas para melhorar o resultado:</p>
+                <ul className="text-xs text-red-700 space-y-1">
+                  <li>• Verifique se o documento é um PDF de qualidade</li>
+                  <li>• Certifique-se que é uma licença ambiental válida</li>
+                  <li>• Evite documentos escaneados ou com baixa resolução</li>
+                  <li>• Se necessário, preencha os campos manualmente</li>
+                </ul>
+              </div>
+              <Button
+                type="button"
+                onClick={onAnalyze}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50"
+              >
+                <Sparkles className="h-4 w-4" />
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
+
           {/* Analysis Results */}
-          {analysisData && (
+          {analysisData && !analysisError && (
             <div className="bg-background/70 p-4 rounded-lg border space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

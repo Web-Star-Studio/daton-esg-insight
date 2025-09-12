@@ -371,111 +371,172 @@ function detectLicenseContext(content: string): LicenseContext {
   return context;
 }
 
-// Enhanced PDF text extraction with multi-page support
+// Enhanced PDF text extraction with content quality detection
 async function extractPdfText(fileBlob: Blob): Promise<string> {
   try {
     const arrayBuffer = await fileBlob.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     
     let text = '';
-    let currentPage = 1;
-    const maxPages = 10; // Limit to first 10 pages
+    let textualContent = 0; // Count meaningful textual content
+    let totalChars = 0;
     
-    // Look for page breaks and text objects
-    let inTextObject = false;
-    let pageText = '';
+    // Improved text extraction - look for text streams and objects
+    let i = 0;
+    while (i < uint8Array.length - 10) {
+      // Look for text objects (BT...ET blocks)
+      if (uint8Array[i] === 0x42 && uint8Array[i+1] === 0x54 && uint8Array[i+2] === 0x20) { // "BT "
+        i += 3;
+        let textBlock = '';
+        
+        // Extract text until ET
+        while (i < uint8Array.length - 3) {
+          if (uint8Array[i] === 0x45 && uint8Array[i+1] === 0x54 && uint8Array[i+2] === 0x20) { // "ET "
+            break;
+          }
+          
+          // Look for Tj or TJ commands (text showing operators)
+          if (uint8Array[i] === 0x28) { // Start of text string "("
+            i++;
+            let textContent = '';
+            while (i < uint8Array.length && uint8Array[i] !== 0x29) { // Until ")"
+              if (uint8Array[i] >= 32 && uint8Array[i] <= 126) {
+                textContent += String.fromCharCode(uint8Array[i]);
+                totalChars++;
+                if (/[a-zA-Z]/.test(String.fromCharCode(uint8Array[i]))) {
+                  textualContent++;
+                }
+              }
+              i++;
+            }
+            if (textContent.trim().length > 2) {
+              textBlock += textContent + ' ';
+            }
+          }
+          i++;
+        }
+        
+        if (textBlock.trim().length > 5) {
+          text += textBlock.trim() + '\n';
+        }
+      }
+      i++;
+    }
     
-    for (let i = 0; i < uint8Array.length - 10 && currentPage <= maxPages; i++) {
-      const slice = uint8Array.slice(i, i + 3);
-      const str = String.fromCharCode(...slice);
+    // Fallback: Look for readable ASCII sequences (for simpler PDFs)
+    if (text.length < 100) {
+      console.log('Primary extraction yielded little content, trying fallback method...');
+      let fallbackText = '';
+      let consecutiveLetters = 0;
       
-      // Detect page breaks
-      if (uint8Array.slice(i, i + 8).toString() === '47,41,103,101,32,111,98,106') { // "page obj"
-        if (pageText.trim()) {
-          text += `\n--- Página ${currentPage} ---\n${pageText}\n`;
-          currentPage++;
-          pageText = '';
+      for (let j = 0; j < uint8Array.length; j++) {
+        const char = uint8Array[j];
+        if (char >= 32 && char <= 126) { // Printable ASCII
+          const charStr = String.fromCharCode(char);
+          fallbackText += charStr;
+          totalChars++;
+          
+          if (/[a-zA-Z]/.test(charStr)) {
+            consecutiveLetters++;
+            textualContent++;
+          } else {
+            consecutiveLetters = 0;
+          }
+          
+          // Add spaces for word separation
+          if (consecutiveLetters > 15) {
+            fallbackText += ' ';
+            consecutiveLetters = 0;
+          }
+        } else if (char === 10 || char === 13) {
+          fallbackText += '\n';
+          consecutiveLetters = 0;
+        } else {
+          consecutiveLetters = 0;
         }
       }
       
-      if (str === 'BT ') {
-        inTextObject = true;
-        i += 2;
-        continue;
-      }
-      
-      if (str === 'ET ') {
-        inTextObject = false;
-        pageText += '\n';
-        i += 2;
-        continue;
-      }
-      
-      // Extract readable characters
-      if (inTextObject && uint8Array[i] >= 32 && uint8Array[i] <= 126) {
-        pageText += String.fromCharCode(uint8Array[i]);
+      if (fallbackText.length > text.length) {
+        text = fallbackText;
       }
     }
     
-    // Add final page if exists
-    if (pageText.trim()) {
-      text += `\n--- Página ${currentPage} ---\n${pageText}\n`;
-    }
+    // Calculate text quality ratio
+    const textQuality = totalChars > 0 ? (textualContent / totalChars) : 0;
+    console.log(`PDF extraction stats: total chars: ${totalChars}, textual: ${textualContent}, quality ratio: ${textQuality.toFixed(2)}`);
     
-    // Enhanced text cleaning and structure preservation
-    return text.replace(/[^\w\s\-\/\(\)\.\,\:\n\r]/g, ' ')
-              .replace(/\s+/g, ' ')
-              .replace(/\n\s*\n/g, '\n')
-              .trim()
-              .substring(0, 15000); // Increased limit for multi-page
+    // Enhanced text cleaning while preserving structure
+    const cleanedText = text
+      .replace(/[^\w\s\-\/\(\)\.\,\:\;\n\r\u00C0-\u017F]/g, ' ') // Allow accented characters
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .replace(/(\n\s*){3,}/g, '\n\n') // Limit consecutive newlines
+      .trim();
+    
+    // Log quality metrics
+    const finalLength = cleanedText.length;
+    const wordCount = cleanedText.split(/\s+/).filter(word => word.length > 2).length;
+    console.log(`Final PDF content: ${finalLength} chars, ${wordCount} words, quality: ${textQuality > 0.3 ? 'Good' : 'Poor'}`);
+    
+    return cleanedText.substring(0, 20000); // Increased limit for better extraction
   } catch (error) {
     console.error('Error extracting PDF text:', error);
     return '';
   }
 }
 
-// Heuristic extraction from filename when document content is minimal
+// VERY conservative heuristic extraction - only extract data if VERY clearly present in filename
 function heuristicExtractFromFileName(fileName: string): Partial<ExtractedLicenseFormData> {
   console.log(`Attempting heuristic extraction from filename: ${fileName}`);
 
-  const extracted: Partial<ExtractedLicenseFormData> = {};
+  // Return empty object for temp files or unclear filenames - DO NOT INVENT DATA
   const baseName = fileName.split('/').pop() || fileName;
   const lowerBase = baseName.toLowerCase();
 
-  // Ignore temp analysis names to avoid fabricating data from random IDs
-  if (lowerBase.startsWith('temp-analysis-') || lowerBase.startsWith('temp-')) {
-    console.log('Skipping heuristic extraction due to temporary filename pattern');
+  if (lowerBase.startsWith('temp-analysis-') || lowerBase.startsWith('temp-') || lowerBase.length < 10) {
+    console.log('Skipping heuristic extraction - filename not descriptive enough');
     return {};
   }
 
-  // Extract license type from filename (conservative)
-  if (lowerBase.includes('licen') && lowerBase.includes('operacao')) {
-    extracted.tipo = 'Licença de Operação';
-  } else if (lowerBase.includes('licen') && lowerBase.includes('instalacao')) {
-    extracted.tipo = 'Licença de Instalação';
-  } else if (lowerBase.includes('licen') && lowerBase.includes('previa')) {
-    extracted.tipo = 'Licença Prévia';
+  // ONLY extract if filename is VERY specific and clear
+  const extracted: Partial<ExtractedLicenseFormData> = {};
+  
+  // Only extract license type if EXPLICITLY present with clear keywords
+  const licenseTypePatterns = [
+    { pattern: /licen[çc]a[\s_-]*de[\s_-]*opera[çc][ãa]o|[\s_-]lo[\s_-]/i, type: 'LO' },
+    { pattern: /licen[çc]a[\s_-]*de[\s_-]*instala[çc][ãa]o|[\s_-]li[\s_-]/i, type: 'LI' },
+    { pattern: /licen[çc]a[\s_-]*pr[ée]via|[\s_-]lp[\s_-]/i, type: 'LP' }
+  ];
+
+  for (const { pattern, type } of licenseTypePatterns) {
+    if (pattern.test(baseName)) {
+      extracted.tipo = type;
+      break;
+    }
   }
 
-  // Extract issuing body only if explicitly present
-  if (lowerBase.includes('ibama')) extracted.orgaoEmissor = 'IBAMA';
-  else if (lowerBase.includes('cetesb')) extracted.orgaoEmissor = 'CETESB';
-  else if (lowerBase.includes('inea')) extracted.orgaoEmissor = 'INEA';
-  else if (lowerBase.includes('fepam')) extracted.orgaoEmissor = 'FEPAM';
-  else if (lowerBase.includes('feam')) extracted.orgaoEmissor = 'FEAM';
+  // Only extract issuing body if CLEARLY mentioned in filename
+  const bodyPatterns = [
+    { pattern: /ibama/i, name: 'IBAMA' },
+    { pattern: /cetesb/i, name: 'CETESB' },
+    { pattern: /inea/i, name: 'INEA' }
+  ];
 
-  // Extract plausible dates (DD-MM-YYYY, DD_MM_YYYY, YYYY-MM-DD, etc.)
-  const datePattern = /(\b\d{1,2}[\-_/]\d{1,2}[\-_/]\d{4}\b|\b\d{4}[\-_/]\d{1,2}[\-_/]\d{1,2}\b|\b\d{4}\b)/g;
-  const dateMatches = baseName.match(datePattern) || [];
-  for (const token of dateMatches) {
-    let parsed = parseDate(token);
-    if (!parsed && /^\d{4}$/.test(token)) {
-      const year = parseInt(token, 10);
-      if (year >= 1950 && year <= 2100) parsed = `${year}-01-01`;
+  for (const { pattern, name } of bodyPatterns) {
+    if (pattern.test(baseName)) {
+      extracted.orgaoEmissor = name;
+      break;
     }
-    if (parsed) {
-      const yr = parseInt(parsed.slice(0, 4), 10);
-      if (yr >= 1950 && yr <= 2100) {
+  }
+
+  // ONLY extract process numbers if they follow known patterns
+  const processPattern = /\b(\d{5,7}[\.\-\/]\d{3,6}[\.\-\/]\d{4}[\.\-\/]?\w*)\b/;
+  const processMatch = baseName.match(processPattern);
+  if (processMatch && processMatch[1]) {
+    extracted.numeroProcesso = processMatch[1];
+  }
+
+  console.log('Heuristic extraction result:', extracted);
+  return extracted;
         extracted.dataEmissao = parsed; // only set a single conservative field
         break;
       }
@@ -846,36 +907,116 @@ ${documentContent || 'Documento não pôde ser processado adequadamente. Favor p
       extractedData = extractJsonFromText(aiContent)
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError)
-      console.error('Raw content:', aiContent)
+      console.error('Raw content:', openAIResult.choices[0].message.content)
       throw new Error(`Failed to parse AI analysis results: ${parseError.message}`)
     }
 
-    // If extracted data is minimal, try heuristic extraction from filename
+    // CRITICAL VALIDATION: Check if document content was meaningful
+    const hasValidContent = documentContent && documentContent.length > 50;
+    const textContentQuality = documentContent ? documentContent.replace(/\s+/g, ' ').trim().length : 0;
+    
+    console.log(`Document analysis quality check: content length=${textContentQuality}, hasValidContent=${hasValidContent}`);
+
+    // If document had insufficient content, reject the analysis
+    if (!hasValidContent || textContentQuality < 50) {
+      console.log('REJECTING ANALYSIS: Insufficient document content for reliable extraction');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'INSUFFICIENT_CONTENT',
+        message: 'O documento não pôde ser processado adequadamente. Conteúdo insuficiente para análise confiável.',
+        suggestion: 'Verifique se o documento não está corrompido, escaneado em baixa qualidade, ou se é um PDF protegido. Tente enviar um documento com melhor qualidade ou preencha os dados manualmente.',
+        extracted_data: null,
+        overall_confidence: 0,
+        analysis_type: 'failed_insufficient_content'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // QUALITY VALIDATION: Check if AI actually extracted meaningful data
+    const significantFields = ['nome', 'tipo', 'orgaoEmissor', 'numeroProcesso'];
+    const extractedSignificantData = significantFields.filter(field => 
+      extractedData[field] && extractedData[field].toString().trim().length > 2
+    );
+
+    console.log(`Extracted significant fields: ${extractedSignificantData.length}/${significantFields.length}`);
+
+    // If AI couldn't extract basic information, try conservative heuristic
     let analysisType = useVision ? 'vision' : 'text';
-    if (extractedData && Object.values(extractedData).filter(v => v && v.toString().trim()).length < 3) {
-      console.log('Low content detected, attempting heuristic extraction from filename...');
+    if (extractedSignificantData.length < 2) {
+      console.log('AI extraction yielded minimal results, attempting conservative heuristic...');
       const heuristicData = heuristicExtractFromFileName(fileName);
       
-      if (Object.keys(heuristicData).length > 0) {
-        // Merge heuristic data with AI data, preferring AI data when available
-        Object.entries(heuristicData).forEach(([key, value]) => {
-          if (!extractedData[key] || !extractedData[key].toString().trim()) {
+      // Only use heuristic data if it's actually meaningful
+      const meaningfulHeuristicFields = Object.entries(heuristicData).filter(([_, value]) => 
+        value && value.toString().trim().length > 2
+      );
+
+      if (meaningfulHeuristicFields.length > 0) {
+        console.log(`Found ${meaningfulHeuristicFields.length} meaningful heuristic fields`);
+        // Merge only the meaningful heuristic data
+        meaningfulHeuristicFields.forEach(([key, value]) => {
+          if (!extractedData[key] || extractedData[key].toString().trim().length <= 2) {
             extractedData[key] = value;
             if (extractedData.confidence_scores) {
-              extractedData.confidence_scores[key] = 0.6; // Medium confidence for heuristic data
+              extractedData.confidence_scores[key] = 45; // Lower confidence for heuristic
             }
           }
         });
-        analysisType = 'hybrid_analysis';
-        console.log('Merged heuristic data with AI analysis');
+        analysisType = 'hybrid_with_heuristic';
+      } else {
+        // No meaningful data from either AI or heuristic - reject
+        console.log('REJECTING ANALYSIS: No meaningful data could be extracted');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'NO_MEANINGFUL_DATA',
+          message: 'Não foi possível extrair informações significativas do documento.',
+          suggestion: 'O documento pode estar em formato não suportado, com qualidade muito baixa, ou pode não ser um documento de licença ambiental. Tente enviar um documento com melhor qualidade ou preencha os dados manualmente.',
+          extracted_data: null,
+          overall_confidence: 0,
+          analysis_type: 'failed_no_data'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 
-    // Calculate overall confidence score
-    const confidenceValues = Object.values(extractedData.confidence_scores)
-    const overallConfidence = confidenceValues.reduce((sum, score) => sum + score, 0) / confidenceValues.length
+    // Calculate overall confidence score with additional quality checks
+    const confidenceValues = Object.values(extractedData.confidence_scores).filter(score => typeof score === 'number' && score > 0);
+    if (confidenceValues.length === 0) {
+      console.log('REJECTING ANALYSIS: No confident data extracted');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'LOW_CONFIDENCE',
+        message: 'A análise não produziu resultados confiáveis.',
+        suggestion: 'Tente enviar um documento com melhor qualidade ou preencha os dados manualmente.',
+        extracted_data: null,
+        overall_confidence: 0,
+        analysis_type: 'failed_low_confidence'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    console.log(`Analysis completed with overall confidence: ${overallConfidence} using ${analysisType} analysis`)
+    const overallConfidence = confidenceValues.reduce((sum, score) => sum + score, 0) / confidenceValues.length;
+
+    // Final confidence threshold check
+    if (overallConfidence < 25) {
+      console.log(`REJECTING ANALYSIS: Overall confidence too low (${overallConfidence})`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'CONFIDENCE_TOO_LOW',
+        message: `Confiança da análise muito baixa (${Math.round(overallConfidence)}%). Dados podem não ser confiáveis.`,
+        suggestion: 'Verifique a qualidade do documento e tente novamente, ou preencha os dados manualmente.',
+        extracted_data: null,
+        overall_confidence: overallConfidence,
+        analysis_type: 'failed_low_confidence'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Analysis APPROVED with confidence: ${overallConfidence} using ${analysisType} analysis`)
 
     return new Response(JSON.stringify({
       success: true,

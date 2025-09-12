@@ -48,6 +48,7 @@ const CadastrarLicenca = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisData, setAnalysisData] = useState<ExtractedLicenseFormData | null>(null)
   const [overallConfidence, setOverallConfidence] = useState<number | null>(null)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -136,6 +137,7 @@ const CadastrarLicenca = () => {
     setUploadedFile(file)
     setAnalysisData(null)
     setOverallConfidence(null)
+    setAnalysisError(null)
     setAnalysisProgress(0)
     
     setStepsData(prev => ({
@@ -180,6 +182,7 @@ const CadastrarLicenca = () => {
       if (result.success && result.extracted_data) {
         setAnalysisData(result.extracted_data)
         setOverallConfidence(result.overall_confidence || 0)
+        setAnalysisError(null)
         
         setStepsData(prev => ({
           ...prev,
@@ -216,19 +219,34 @@ const CadastrarLicenca = () => {
         
         toast.success(message)
       } else {
+        // Handle analysis errors with better UX
+        const errorMessage = result.error || 'Erro na análise do documento'
+        setAnalysisError(errorMessage)
+        setAnalysisData(null)
+        setOverallConfidence(null)
+        
         setStepsData(prev => ({
           ...prev,
-          analyze: { completed: false, error: result.error }
+          analyze: { completed: false, error: errorMessage }
         }))
-        toast.error(result.error || 'Erro na análise do documento')
+        
+        // Don't show toast error, let the AIAnalysisCard handle the error display
+        console.log('Analysis failed:', errorMessage)
       }
     } catch (error) {
       console.error('Error analyzing document:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao analisar documento. Tente novamente.'
+      setAnalysisError(errorMessage)
+      setAnalysisData(null)
+      setOverallConfidence(null)
+      
       setStepsData(prev => ({
         ...prev,
-        analyze: { completed: false, error: error.message }
+        analyze: { completed: false, error: errorMessage }
       }))
-      toast.error('Erro ao analisar documento. Tente novamente.')
+      
+      // Don't show toast error, let the component handle error display
+      console.log('Analysis failed with exception:', errorMessage)
     } finally {
       clearInterval(progressInterval)
       setIsAnalyzing(false)
@@ -394,6 +412,7 @@ const CadastrarLicenca = () => {
     setUploadedFile(null)
     setAnalysisData(null)
     setOverallConfidence(null)
+    setAnalysisError(null)
     setAnalysisProgress(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -482,6 +501,43 @@ const CadastrarLicenca = () => {
                      analysisProgress < 70 ? 'Extraindo informações...' :
                      analysisProgress < 90 ? 'Analisando dados...' : 'Finalizando...'}
                   </p>
+                </div>
+              ) : analysisError ? (
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                      <span className="font-medium text-red-800">Falha na Análise</span>
+                    </div>
+                    <p className="text-red-700 mb-3">{analysisError}</p>
+                    <div className="bg-red-100 p-3 rounded-lg mb-3">
+                      <p className="text-xs text-red-800 font-medium mb-2">💡 Dicas para melhorar o resultado:</p>
+                      <ul className="text-xs text-red-700 space-y-1">
+                        <li>• Verifique se o documento é um PDF de qualidade</li>
+                        <li>• Certifique-se que é uma licença ambiental válida</li>
+                        <li>• Evite documentos escaneados ou com baixa resolução</li>
+                        <li>• Se necessário, prossiga e preencha os campos manualmente</li>
+                      </ul>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleAnalyzeDocument}
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Tentar Novamente
+                      </Button>
+                      <Button
+                        onClick={() => setCurrentStep('save')}
+                        size="sm"
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Preencher Manualmente
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ) : analysisData ? (
                 <div className="space-y-4">
