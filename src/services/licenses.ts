@@ -1,6 +1,35 @@
 import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 
+export interface ExtractedLicenseFormData {
+  nome: string;
+  tipo: string;
+  orgaoEmissor: string;
+  numeroProcesso: string;
+  dataEmissao: string;
+  dataVencimento: string;
+  status: string;
+  condicionantes: string;
+  confidence_scores: {
+    nome: number;
+    tipo: number;
+    orgaoEmissor: number;
+    numeroProcesso: number;
+    dataEmissao: number;
+    dataVencimento: number;
+    status: number;
+    condicionantes: number;
+  };
+}
+
+export interface DocumentAnalysisResult {
+  success: boolean;
+  extracted_data?: ExtractedLicenseFormData;
+  overall_confidence?: number;
+  analysis_timestamp?: string;
+  error?: string;
+}
+
 export interface LicenseData {
   id: string;
   name: string;
@@ -432,6 +461,50 @@ export async function getDocumentUrl(filePath: string): Promise<string> {
     return data.signedUrl
   } catch (error) {
     console.error('Error getting document URL:', error)
+    throw error
+  }
+}
+
+// Analyze license document with AI for form auto-fill
+export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalysisResult> {
+  try {
+    // First upload the file temporarily for analysis
+    const fileExt = file.name.split('.').pop()
+    const tempFileName = `temp-analysis-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+    const tempFilePath = `temp/${tempFileName}`
+
+    // Upload file to temporary location
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(tempFilePath, file, {
+        cacheControl: '300',
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Error uploading temp file:', uploadError)
+      throw new Error('Erro ao fazer upload temporário do arquivo')
+    }
+
+    try {
+      // Call the document analyzer edge function
+      const { data, error } = await supabase.functions.invoke('license-document-analyzer', {
+        body: { documentPath: tempFilePath }
+      })
+
+      if (error) {
+        console.error('Error calling document analyzer:', error)
+        throw new Error('Erro na análise do documento')
+      }
+
+      return data as DocumentAnalysisResult
+    } finally {
+      // Clean up temporary file
+      await supabase.storage.from('documents').remove([tempFilePath])
+    }
+  } catch (error) {
+    console.error('Error in analyzeLicenseDocument:', error)
+    toast.error('Erro ao analisar documento')
     throw error
   }
 }

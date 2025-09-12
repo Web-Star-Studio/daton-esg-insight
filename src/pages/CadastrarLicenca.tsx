@@ -14,12 +14,13 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format, differenceInYears, differenceInMonths, differenceInDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Upload, X } from "lucide-react"
+import { CalendarIcon, Upload, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useState, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { createLicense, uploadLicenseDocument } from "@/services/licenses"
+import { createLicense, uploadLicenseDocument, analyzeLicenseDocument, ExtractedLicenseFormData } from "@/services/licenses"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -41,6 +42,9 @@ const CadastrarLicenca = () => {
   const queryClient = useQueryClient()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisData, setAnalysisData] = useState<ExtractedLicenseFormData | null>(null)
+  const [overallConfidence, setOverallConfidence] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Mutation for creating license
@@ -107,11 +111,15 @@ const CadastrarLicenca = () => {
     const file = e.target.files?.[0]
     if (file) {
       setUploadedFile(file)
+      setAnalysisData(null)
+      setOverallConfidence(null)
     }
   }
 
   const removeFile = () => {
     setUploadedFile(null)
+    setAnalysisData(null)
+    setOverallConfidence(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -119,6 +127,79 @@ const CadastrarLicenca = () => {
 
   const triggerFileInput = () => {
     fileInputRef.current?.click()
+  }
+
+  const handleAnalyzeDocument = async () => {
+    if (!uploadedFile) {
+      toast.error('Selecione um documento primeiro')
+      return
+    }
+
+    setIsAnalyzing(true)
+    try {
+      const result = await analyzeLicenseDocument(uploadedFile)
+      
+      if (result.success && result.extracted_data) {
+        setAnalysisData(result.extracted_data)
+        setOverallConfidence(result.overall_confidence || 0)
+        toast.success('Documento analisado com sucesso!')
+      } else {
+        toast.error(result.error || 'Erro na análise do documento')
+      }
+    } catch (error) {
+      console.error('Error analyzing document:', error)
+      toast.error('Erro ao analisar documento')
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const applyAnalysisData = () => {
+    if (!analysisData) return
+
+    // Apply extracted data to form
+    if (analysisData.nome) form.setValue('nome', analysisData.nome)
+    if (analysisData.tipo) form.setValue('tipo', analysisData.tipo)
+    if (analysisData.orgaoEmissor) form.setValue('orgaoEmissor', analysisData.orgaoEmissor)
+    if (analysisData.numeroProcesso) form.setValue('numeroProcesso', analysisData.numeroProcesso)
+    if (analysisData.status) form.setValue('status', analysisData.status)
+    if (analysisData.condicionantes) form.setValue('condicionantes', analysisData.condicionantes)
+    
+    // Handle dates
+    if (analysisData.dataEmissao) {
+      try {
+        const emissionDate = new Date(analysisData.dataEmissao)
+        if (!isNaN(emissionDate.getTime())) {
+          form.setValue('dataEmissao', emissionDate)
+        }
+      } catch (error) {
+        console.error('Error parsing emission date:', error)
+      }
+    }
+    
+    if (analysisData.dataVencimento) {
+      try {
+        const expirationDate = new Date(analysisData.dataVencimento)
+        if (!isNaN(expirationDate.getTime())) {
+          form.setValue('dataVencimento', expirationDate)
+        }
+      } catch (error) {
+        console.error('Error parsing expiration date:', error)
+      }
+    }
+
+    toast.success('Dados aplicados ao formulário!')
+  }
+
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 0.8) return 'text-green-600'
+    if (confidence >= 0.5) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getConfidenceIcon = (confidence: number) => {
+    if (confidence >= 0.8) return CheckCircle2
+    return AlertCircle
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -405,7 +486,7 @@ const CadastrarLicenca = () => {
                         <div className="space-y-2">
                           <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                           <div className="text-sm text-muted-foreground">
-                            Arraste um arquivo aqui ou
+                            Arraste um arquivo PDF aqui ou
                           </div>
                           <Button type="button" variant="outline" size="sm" onClick={triggerFileInput}>
                             Selecionar arquivo
@@ -413,26 +494,78 @@ const CadastrarLicenca = () => {
                           <input
                             ref={fileInputRef}
                             type="file"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                             className="hidden"
                             onChange={handleFileUpload}
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                           />
                           <div className="text-xs text-muted-foreground">
                             PDF, DOC, JPG até 10MB
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between bg-muted/50 p-3 rounded-md">
-                          <span className="text-sm font-medium">{uploadedFile.name}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={removeFile}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-muted/50 p-3 rounded-md">
+                            <span className="text-sm font-medium">{uploadedFile.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={removeFile}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* AI Analysis Section */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                onClick={handleAnalyzeDocument}
+                                disabled={isAnalyzing}
+                                size="sm"
+                                className="flex items-center gap-2"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                                {isAnalyzing ? 'Analisando...' : 'Analisar com IA'}
+                              </Button>
+                              
+                              {overallConfidence !== null && (
+                                <Badge variant="outline" className={getConfidenceColor(overallConfidence)}>
+                                  Confiança: {Math.round(overallConfidence * 100)}%
+                                </Badge>
+                              )}
+                            </div>
+
+                            {analysisData && (
+                              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-sm font-medium">Dados Extraídos da IA</h4>
+                                  <Button
+                                    type="button"
+                                    onClick={applyAnalysisData}
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    Aplicar aos Campos
+                                  </Button>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {Object.entries(analysisData.confidence_scores).map(([field, confidence]) => {
+                                    const Icon = getConfidenceIcon(confidence)
+                                    return (
+                                      <div key={field} className="flex items-center gap-1">
+                                        <Icon className={`h-3 w-3 ${getConfidenceColor(confidence)}`} />
+                                        <span className="capitalize">{field}: {Math.round(confidence * 100)}%</span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
