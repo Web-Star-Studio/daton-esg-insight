@@ -27,6 +27,8 @@ export interface DocumentAnalysisResult {
   extracted_data?: ExtractedLicenseFormData;
   overall_confidence?: number;
   analysis_timestamp?: string;
+  file_type?: string;
+  analysis_type?: string;
   error?: string;
 }
 

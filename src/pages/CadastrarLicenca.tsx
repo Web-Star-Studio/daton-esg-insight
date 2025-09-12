@@ -14,13 +14,14 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format, differenceInYears, differenceInMonths, differenceInDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Upload, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react"
+import { CalendarIcon, Upload, X, Sparkles, CheckCircle2, AlertCircle, FileText, Eye } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createLicense, uploadLicenseDocument, analyzeLicenseDocument, ExtractedLicenseFormData } from "@/services/licenses"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -45,6 +46,8 @@ const CadastrarLicenca = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisData, setAnalysisData] = useState<ExtractedLicenseFormData | null>(null)
   const [overallConfidence, setOverallConfidence] = useState<number | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [analysisProgress, setAnalysisProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Mutation for creating license
@@ -107,12 +110,30 @@ const CadastrarLicenca = () => {
     return ""
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (file: File) => {
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv', 'image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Tipo de arquivo não suportado. Use PDF, Excel, CSV ou imagens.')
+      return
+    }
+    
+    // Validate file size (20MB max)
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 20MB.')
+      return
+    }
+    
+    setUploadedFile(file)
+    setAnalysisData(null)
+    setOverallConfidence(null)
+    setAnalysisProgress(0)
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setUploadedFile(file)
-      setAnalysisData(null)
-      setOverallConfidence(null)
+      handleFileUpload(file)
     }
   }
 
@@ -120,6 +141,7 @@ const CadastrarLicenca = () => {
     setUploadedFile(null)
     setAnalysisData(null)
     setOverallConfidence(null)
+    setAnalysisProgress(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -129,6 +151,36 @@ const CadastrarLicenca = () => {
     fileInputRef.current?.click()
   }
 
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      handleFileUpload(files[0])
+    }
+  }, [])
+
+  // Get file type icon
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase()
+    if (['pdf'].includes(extension || '')) return FileText
+    if (['xlsx', 'xls', 'csv'].includes(extension || '')) return FileText
+    if (['jpg', 'jpeg', 'png', 'webp'].includes(extension || '')) return Eye
+    return Upload
+  }
+
   const handleAnalyzeDocument = async () => {
     if (!uploadedFile) {
       toast.error('Selecione um documento primeiro')
@@ -136,59 +188,146 @@ const CadastrarLicenca = () => {
     }
 
     setIsAnalyzing(true)
+    setAnalysisProgress(0)
+    
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress(prev => Math.min(prev + 10, 90))
+    }, 200)
+    
     try {
       const result = await analyzeLicenseDocument(uploadedFile)
+      
+      clearInterval(progressInterval)
+      setAnalysisProgress(100)
       
       if (result.success && result.extracted_data) {
         setAnalysisData(result.extracted_data)
         setOverallConfidence(result.overall_confidence || 0)
-        toast.success('Documento analisado com sucesso!')
+        
+        // Custom success message based on confidence
+        const confidence = result.overall_confidence || 0
+        let message = `Documento analisado com sucesso!`
+        
+        if (result.file_type) {
+          message += ` Tipo: ${result.file_type.toUpperCase()}`
+        }
+        
+        if (confidence >= 0.8) {
+          message += ` ✨ Alta confiança (${Math.round(confidence * 100)}%)`
+        } else if (confidence >= 0.5) {
+          message += ` ⚠️ Confiança moderada (${Math.round(confidence * 100)}%)`
+        } else {
+          message += ` ⚠️ Baixa confiança (${Math.round(confidence * 100)}%) - Revise os dados`
+        }
+        
+        toast.success(message)
       } else {
         toast.error(result.error || 'Erro na análise do documento')
       }
     } catch (error) {
       console.error('Error analyzing document:', error)
-      toast.error('Erro ao analisar documento')
+      toast.error('Erro ao analisar documento. Tente novamente.')
     } finally {
+      clearInterval(progressInterval)
       setIsAnalyzing(false)
+      setAnalysisProgress(0)
     }
   }
 
   const applyAnalysisData = () => {
     if (!analysisData) return
 
-    // Apply extracted data to form
-    if (analysisData.nome) form.setValue('nome', analysisData.nome)
-    if (analysisData.tipo) form.setValue('tipo', analysisData.tipo)
-    if (analysisData.orgaoEmissor) form.setValue('orgaoEmissor', analysisData.orgaoEmissor)
-    if (analysisData.numeroProcesso) form.setValue('numeroProcesso', analysisData.numeroProcesso)
-    if (analysisData.status) form.setValue('status', analysisData.status)
-    if (analysisData.condicionantes) form.setValue('condicionantes', analysisData.condicionantes)
+    let appliedFields = 0
+    let skippedFields: string[] = []
+
+    // Apply extracted data to form with validation
+    if (analysisData.nome && analysisData.nome.trim()) {
+      form.setValue('nome', analysisData.nome.trim())
+      appliedFields++
+    } else {
+      skippedFields.push('nome')
+    }
     
-    // Handle dates
+    if (analysisData.tipo && analysisData.tipo.trim()) {
+      form.setValue('tipo', analysisData.tipo.trim())
+      appliedFields++
+    } else {
+      skippedFields.push('tipo')
+    }
+    
+    if (analysisData.orgaoEmissor && analysisData.orgaoEmissor.trim()) {
+      form.setValue('orgaoEmissor', analysisData.orgaoEmissor.trim())
+      appliedFields++
+    } else {
+      skippedFields.push('órgão emissor')
+    }
+    
+    if (analysisData.numeroProcesso && analysisData.numeroProcesso.trim()) {
+      form.setValue('numeroProcesso', analysisData.numeroProcesso.trim())
+      appliedFields++
+    } else {
+      skippedFields.push('número do processo')
+    }
+    
+    if (analysisData.status && analysisData.status.trim()) {
+      form.setValue('status', analysisData.status.trim())
+      appliedFields++
+    } else {
+      skippedFields.push('status')
+    }
+    
+    if (analysisData.condicionantes && analysisData.condicionantes.trim()) {
+      form.setValue('condicionantes', analysisData.condicionantes.trim())
+      appliedFields++
+    } else {
+      skippedFields.push('condicionantes')
+    }
+    
+    // Handle dates with better validation
     if (analysisData.dataEmissao) {
       try {
         const emissionDate = new Date(analysisData.dataEmissao)
-        if (!isNaN(emissionDate.getTime())) {
+        if (!isNaN(emissionDate.getTime()) && emissionDate.getFullYear() > 1900) {
           form.setValue('dataEmissao', emissionDate)
+          appliedFields++
+        } else {
+          skippedFields.push('data de emissão')
         }
       } catch (error) {
         console.error('Error parsing emission date:', error)
+        skippedFields.push('data de emissão')
       }
+    } else {
+      skippedFields.push('data de emissão')
     }
     
     if (analysisData.dataVencimento) {
       try {
         const expirationDate = new Date(analysisData.dataVencimento)
-        if (!isNaN(expirationDate.getTime())) {
+        if (!isNaN(expirationDate.getTime()) && expirationDate.getFullYear() > 1900) {
           form.setValue('dataVencimento', expirationDate)
+          appliedFields++
+        } else {
+          skippedFields.push('data de vencimento')
         }
       } catch (error) {
         console.error('Error parsing expiration date:', error)
+        skippedFields.push('data de vencimento')
       }
+    } else {
+      skippedFields.push('data de vencimento')
     }
 
-    toast.success('Dados aplicados ao formulário!')
+    // Show success message with details
+    const message = `${appliedFields} campos aplicados com sucesso!${skippedFields.length > 0 ? ` (${skippedFields.length} campos não preenchidos)` : ''}`
+    toast.success(message)
+    
+    if (skippedFields.length > 0) {
+      setTimeout(() => {
+        toast.info(`Revise: ${skippedFields.join(', ')}`)
+      }, 1000)
+    }
   }
 
   const getConfidenceColor = (confidence: number) => {
@@ -481,31 +620,58 @@ const CadastrarLicenca = () => {
                   {/* Upload de Arquivos */}
                   <div className="space-y-3">
                     <Label>Anexar Documento da Licença</Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                    <div 
+                      className={cn(
+                        "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
+                        isDragOver ? "border-primary bg-primary/5" : "border-border",
+                        uploadedFile ? "bg-muted/30" : ""
+                      )}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
                       {!uploadedFile ? (
-                        <div className="space-y-2">
-                          <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                          <div className="text-sm text-muted-foreground">
-                            Arraste um arquivo PDF aqui ou
+                        <div className="space-y-3">
+                          <Upload className={cn(
+                            "h-10 w-10 mx-auto transition-colors",
+                            isDragOver ? "text-primary" : "text-muted-foreground"
+                          )} />
+                          <div className="space-y-2">
+                            <div className="text-sm font-medium">
+                              {isDragOver ? "Solte o arquivo aqui" : "Arraste um arquivo aqui"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">ou</div>
+                            <Button type="button" variant="outline" size="sm" onClick={triggerFileInput}>
+                              Selecionar arquivo
+                            </Button>
                           </div>
-                          <Button type="button" variant="outline" size="sm" onClick={triggerFileInput}>
-                            Selecionar arquivo
-                          </Button>
                           <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                            accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.webp"
                             className="hidden"
-                            onChange={handleFileUpload}
+                            onChange={handleFileInputChange}
                           />
                           <div className="text-xs text-muted-foreground">
-                            PDF, DOC, JPG até 10MB
+                            PDF, Excel, CSV, JPG até 20MB
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-4">
+                          {/* File Info */}
                           <div className="flex items-center justify-between bg-muted/50 p-3 rounded-md">
-                            <span className="text-sm font-medium">{uploadedFile.name}</span>
+                            <div className="flex items-center gap-2">
+                              {(() => {
+                                const Icon = getFileIcon(uploadedFile.name)
+                                return <Icon className="h-4 w-4 text-muted-foreground" />
+                              })()}
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">{uploadedFile.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {(uploadedFile.size / 1024 / 1024).toFixed(1)}MB
+                                </span>
+                              </div>
+                            </div>
                             <Button
                               type="button"
                               variant="ghost"
@@ -519,7 +685,7 @@ const CadastrarLicenca = () => {
                           
                           {/* AI Analysis Section */}
                           <div className="space-y-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Button
                                 type="button"
                                 onClick={handleAnalyzeDocument}
@@ -527,7 +693,7 @@ const CadastrarLicenca = () => {
                                 size="sm"
                                 className="flex items-center gap-2"
                               >
-                                <Sparkles className="h-4 w-4" />
+                                <Sparkles className={cn("h-4 w-4", isAnalyzing && "animate-spin")} />
                                 {isAnalyzing ? 'Analisando...' : 'Analisar com IA'}
                               </Button>
                               
@@ -538,30 +704,63 @@ const CadastrarLicenca = () => {
                               )}
                             </div>
 
+                            {/* Progress Bar */}
+                            {isAnalyzing && (
+                              <div className="space-y-2">
+                                <Progress value={analysisProgress} className="w-full h-2" />
+                                <p className="text-xs text-muted-foreground text-center">
+                                  {analysisProgress < 30 ? 'Processando documento...' :
+                                   analysisProgress < 70 ? 'Extraindo informações...' :
+                                   analysisProgress < 90 ? 'Analisando dados...' : 'Finalizando...'}
+                                </p>
+                              </div>
+                            )}
+
                             {analysisData && (
-                              <div className="bg-muted/30 p-4 rounded-lg space-y-3">
+                              <div className="bg-gradient-to-r from-primary/5 to-secondary/5 p-4 rounded-lg border space-y-3">
                                 <div className="flex items-center justify-between">
-                                  <h4 className="text-sm font-medium">Dados Extraídos da IA</h4>
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <h4 className="text-sm font-medium">Dados Extraídos com IA</h4>
+                                  </div>
                                   <Button
                                     type="button"
                                     onClick={applyAnalysisData}
                                     size="sm"
-                                    variant="outline"
+                                    className="bg-primary/90 hover:bg-primary"
                                   >
                                     Aplicar aos Campos
                                   </Button>
                                 </div>
                                 
+                                {/* Confidence Scores Grid */}
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   {Object.entries(analysisData.confidence_scores).map(([field, confidence]) => {
                                     const Icon = getConfidenceIcon(confidence)
                                     return (
-                                      <div key={field} className="flex items-center gap-1">
+                                      <div key={field} className="flex items-center gap-1 p-2 bg-background/50 rounded">
                                         <Icon className={`h-3 w-3 ${getConfidenceColor(confidence)}`} />
-                                        <span className="capitalize">{field}: {Math.round(confidence * 100)}%</span>
+                                        <span className="capitalize font-medium">{field}:</span>
+                                        <span className={getConfidenceColor(confidence)}>
+                                          {Math.round(confidence * 100)}%
+                                        </span>
                                       </div>
                                     )
                                   })}
+                                </div>
+
+                                {/* Preview of extracted data */}
+                                <div className="text-xs space-y-1 pt-2 border-t">
+                                  <p className="font-medium text-muted-foreground">Prévia dos dados:</p>
+                                  {analysisData.nome && (
+                                    <p><span className="font-medium">Nome:</span> {analysisData.nome}</p>
+                                  )}
+                                  {analysisData.tipo && (
+                                    <p><span className="font-medium">Tipo:</span> {analysisData.tipo}</p>
+                                  )}
+                                  {analysisData.orgaoEmissor && (
+                                    <p><span className="font-medium">Órgão:</span> {analysisData.orgaoEmissor}</p>
+                                  )}
                                 </div>
                               </div>
                             )}
