@@ -16,7 +16,7 @@ import { format, differenceInYears, differenceInMonths, differenceInDays } from 
 import { ptBR } from "date-fns/locale"
 import { CalendarIcon, Upload, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createLicense, uploadLicenseDocument } from "@/services/licenses"
 import { toast } from "sonner"
@@ -41,6 +41,7 @@ const CadastrarLicenca = () => {
   const queryClient = useQueryClient()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Mutation for creating license
   const createLicenseMutation = useMutation({
@@ -111,6 +112,13 @@ const CadastrarLicenca = () => {
 
   const removeFile = () => {
     setUploadedFile(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -399,15 +407,16 @@ const CadastrarLicenca = () => {
                           <div className="text-sm text-muted-foreground">
                             Arraste um arquivo aqui ou
                           </div>
-                          <Button type="button" variant="outline" size="sm">
-                            <input
-                              type="file"
-                              className="hidden"
-                              onChange={handleFileUpload}
-                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            />
+                          <Button type="button" variant="outline" size="sm" onClick={triggerFileInput}>
                             Selecionar arquivo
                           </Button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          />
                           <div className="text-xs text-muted-foreground">
                             PDF, DOC, JPG até 10MB
                           </div>
