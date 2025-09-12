@@ -224,8 +224,10 @@ const CadastrarLicenca = () => {
         setAnalysisError(errorMessage)
         
         // Store partial analysis data if available
-        if (result.analysis_attempted) {
-          setAnalysisData(result);
+        if (result.success && result.extracted_data) {
+          setAnalysisData(result.extracted_data);
+        } else if (result.partial_data) {
+          setAnalysisData(result.partial_data);
         } else {
           setAnalysisData(null);
         }
@@ -237,7 +239,7 @@ const CadastrarLicenca = () => {
         }))
         
         // Show appropriate toast message
-        if (result.analysis_attempted) {
+        if (result.partial_data || result.extracted_data) {
           toast.error('Análise incompleta - baixa confiança nos dados detectados. Verifique os dados parciais ou insira manualmente.')
         } else {
           console.log('Analysis failed:', errorMessage)

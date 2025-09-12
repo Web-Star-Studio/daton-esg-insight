@@ -29,6 +29,9 @@ export interface DocumentAnalysisResult {
   analysis_timestamp?: string;
   file_type?: string;
   analysis_type?: string;
+  analysis_attempted?: boolean;
+  partial_data?: any;
+  confidence?: number;
   error?: string;
 }
 
