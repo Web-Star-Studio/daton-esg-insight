@@ -29,6 +29,19 @@ serve(async (req) => {
       throw new Error('Invalid authentication')
     }
 
+    // Get user company_id from profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile?.company_id) {
+      throw new Error('User company not found')
+    }
+
+    const userCompanyId = profile.company_id
+
     const url = new URL(req.url)
     const path = url.pathname.split('/').pop()
     const method = req.method
@@ -79,7 +92,7 @@ serve(async (req) => {
           .insert({
             name,
             parent_folder_id,
-            company_id: (await supabase.rpc('get_user_company_id')).data
+            company_id: userCompanyId
           })
           .select()
           .single()
@@ -161,7 +174,7 @@ serve(async (req) => {
             tags: tags ? tags.split(',').map(t => t.trim()) : [],
             related_model: relatedModel,
             related_id: relatedId || crypto.randomUUID(),
-            company_id: (await supabase.rpc('get_user_company_id')).data,
+            company_id: userCompanyId,
             uploader_user_id: user.id
           })
           .select()
