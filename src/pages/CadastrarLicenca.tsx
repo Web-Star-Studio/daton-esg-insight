@@ -222,7 +222,13 @@ const CadastrarLicenca = () => {
         // Handle analysis errors with better UX
         const errorMessage = result.error || 'Erro na análise do documento'
         setAnalysisError(errorMessage)
-        setAnalysisData(null)
+        
+        // Store partial analysis data if available
+        if (result.analysis_attempted) {
+          setAnalysisData(result);
+        } else {
+          setAnalysisData(null);
+        }
         setOverallConfidence(null)
         
         setStepsData(prev => ({
@@ -230,8 +236,12 @@ const CadastrarLicenca = () => {
           analyze: { completed: false, error: errorMessage }
         }))
         
-        // Don't show toast error, let the AIAnalysisCard handle the error display
-        console.log('Analysis failed:', errorMessage)
+        // Show appropriate toast message
+        if (result.analysis_attempted) {
+          toast.error('Análise incompleta - baixa confiança nos dados detectados. Verifique os dados parciais ou insira manualmente.')
+        } else {
+          console.log('Analysis failed:', errorMessage)
+        }
       }
     } catch (error) {
       console.error('Error analyzing document:', error)

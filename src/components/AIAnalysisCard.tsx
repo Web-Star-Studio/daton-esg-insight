@@ -10,7 +10,7 @@ interface AIAnalysisCardProps {
   uploadedFile: File | null
   isAnalyzing: boolean
   analysisProgress: number
-  analysisData: ExtractedLicenseFormData | null
+  analysisData: (ExtractedLicenseFormData & { analysis_attempted?: boolean; analysis_type?: string; confidence?: number; partial_data?: any }) | null
   overallConfidence: number | null
   analysisError: string | null
   onAnalyze: () => void
@@ -122,16 +122,33 @@ export const AIAnalysisCard = ({
             <div className="bg-red-50 border border-red-200 p-4 rounded-lg space-y-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-600" />
-                <h4 className="text-sm font-medium text-red-800">Falha na Análise</h4>
+                <h4 className="text-sm font-medium text-red-800">
+                  {analysisData?.analysis_attempted ? 'Análise Incompleta' : 'Falha na Análise'}
+                </h4>
               </div>
               <p className="text-sm text-red-700">{analysisError}</p>
+              
+              {analysisData?.analysis_attempted && (
+                <div className="bg-red-100 p-3 rounded-lg">
+                  <p className="text-xs text-red-800 font-medium mb-1">Análise Tentada:</p>
+                  <p className="text-xs text-red-700">
+                    Tipo: {analysisData.analysis_type} | Confiança: {analysisData.confidence}%
+                  </p>
+                  {analysisData.partial_data && (
+                    <p className="text-xs text-red-700 mt-1">
+                      Dados parciais detectados mas com baixa confiança
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="bg-red-100 p-3 rounded-lg">
-                <p className="text-xs text-red-800 font-medium mb-2">💡 Dicas para melhorar o resultado:</p>
+                <p className="text-xs text-red-800 font-medium mb-2">💡 Recomendações:</p>
                 <ul className="text-xs text-red-700 space-y-1">
-                  <li>• Verifique se o documento é um PDF de qualidade</li>
-                  <li>• Certifique-se que é uma licença ambiental válida</li>
-                  <li>• Evite documentos escaneados ou com baixa resolução</li>
-                  <li>• Se necessário, preencha os campos manualmente</li>
+                  <li>• Para PDFs escaneados: converta para PDF pesquisável</li>
+                  <li>• Verifique se o documento contém informações de licença visíveis</li>
+                  <li>• Tente fazer upload de um arquivo com melhor resolução</li>
+                  <li>• Como alternativa, insira os dados manualmente no formulário</li>
                 </ul>
               </div>
               <Button
