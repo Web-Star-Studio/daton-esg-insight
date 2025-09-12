@@ -32,12 +32,15 @@ import { useQuery } from "@tanstack/react-query"
 import { getLicenses, getLicenseStats, type LicenseListItem, type LicenseStats } from "@/services/licenses"
 import { ComplianceDashboard } from "@/components/ComplianceDashboard";
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
+import { LicenseDocumentUploadModal } from "@/components/LicenseDocumentUploadModal";
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 
 const Licenciamento = () => {
   const navigate = useNavigate()
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [selectedLicenseForUpload, setSelectedLicenseForUpload] = useState<{id: string, name: string} | null>(null)
 
   // Fetch licenses data
   const { data: licenses, isLoading: licensesLoading, error: licensesError } = useQuery({
@@ -53,6 +56,16 @@ const Licenciamento = () => {
 
   const handleAddLicenca = () => {
     navigate("/licenciamento/novo")
+  }
+
+  const handleAttachFile = (licenseId: string, licenseName: string) => {
+    setSelectedLicenseForUpload({ id: licenseId, name: licenseName })
+    setShowUploadModal(true)
+  }
+
+  const handleUploadSuccess = () => {
+    // Refetch licenses to update the data
+    // The useQuery will automatically refetch
   }
 
   const formatDate = (dateString: string) => {
@@ -275,6 +288,7 @@ const Licenciamento = () => {
                             size="sm"
                             className="h-8 w-8 p-0 hover:bg-accent"
                             title="Anexar Arquivo"
+                            onClick={() => handleAttachFile(license.id, license.name)}
                           >
                             <Paperclip className="h-4 w-4" />
                           </Button>
@@ -300,6 +314,20 @@ const Licenciamento = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Upload Modal */}
+      {selectedLicenseForUpload && (
+        <LicenseDocumentUploadModal
+          isOpen={showUploadModal}
+          onClose={() => {
+            setShowUploadModal(false)
+            setSelectedLicenseForUpload(null)
+          }}
+          onSuccess={handleUploadSuccess}
+          licenseId={selectedLicenseForUpload.id}
+          licenseName={selectedLicenseForUpload.name}
+        />
+      )}
     </MainLayout>
   )
 }

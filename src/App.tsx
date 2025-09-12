@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
 import Licenciamento from "./pages/Licenciamento";
+import LicenseDetails from "./pages/LicenseDetails";
 import CadastrarLicenca from "./pages/CadastrarLicenca";
 import { LicenciamentoAnalise } from "./pages/LicenciamentoAnalise";
 import Residuos from "./pages/Residuos";
@@ -70,6 +71,11 @@ const App = () => (
             <Route path="/licenciamento/novo" element={
               <ProtectedRoute requiredRole="Editor">
                 <CadastrarLicenca />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/:id" element={
+              <ProtectedRoute>
+                <LicenseDetails />
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/:id/analise" element={
