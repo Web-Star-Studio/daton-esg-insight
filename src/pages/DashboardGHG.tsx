@@ -1,13 +1,16 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { MainLayout } from "@/components/MainLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TrendingDown, CalendarIcon } from "lucide-react"
 import { format, addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
+import { useQuery } from "@tanstack/react-query"
+import { supabase } from "@/integrations/supabase/client"
 import {
   BarChart,
   Bar,
@@ -22,41 +25,147 @@ import {
   Legend
 } from "recharts"
 
-// Dados mockados para o gráfico de evolução mensal
-const monthlyData = [
-  { mes: "Jan", escopo1: 180, escopo2: 190, escopo3: 20 },
-  { mes: "Fev", escopo1: 165, escopo2: 185, escopo3: 15 },
-  { mes: "Mar", escopo1: 175, escopo2: 195, escopo3: 25 },
-  { mes: "Abr", escopo1: 160, escopo2: 180, escopo3: 18 },
-  { mes: "Mai", escopo1: 170, escopo2: 175, escopo3: 22 },
-  { mes: "Jun", escopo1: 185, escopo2: 200, escopo3: 30 },
-  { mes: "Jul", escopo1: 190, escopo2: 205, escopo3: 28 },
-  { mes: "Ago", escopo1: 175, escopo2: 180, escopo3: 20 },
-  { mes: "Set", escopo1: 168, escopo2: 175, escopo3: 15 },
-  { mes: "Out", escopo1: 172, escopo2: 185, escopo3: 25 },
-  { mes: "Nov", escopo1: 165, escopo2: 170, escopo3: 18 },
-  { mes: "Dez", escopo1: 160, escopo2: 165, escopo3: 12 }
-]
+// Fetch real emissions data from Supabase
+const getEmissionsData = async (dateRange?: DateRange) => {
+  let query = supabase
+    .from('calculated_emissions')
+    .select(`
+      total_co2e,
+      calculation_date,
+      activity_data (
+        period_start_date,
+        period_end_date,
+        emission_sources (
+          scope,
+          category,
+          name
+        )
+      )
+    `)
+    .order('calculation_date', { ascending: true })
 
-// Dados para gráfico de rosca - Emissões por Escopo
-const escopoData = [
-  { name: "Escopo 1", value: 48.9, color: "#1e40af" }, // Azul escuro
-  { name: "Escopo 2", value: 51.1, color: "#3b82f6" }, // Azul médio
-  { name: "Escopo 3", value: 0, color: "#93c5fd" }, // Azul claro
-]
+  // Apply date filter if provided
+  if (dateRange?.from) {
+    query = query.gte('calculation_date', dateRange.from.toISOString())
+  }
+  if (dateRange?.to) {
+    query = query.lte('calculation_date', dateRange.to.toISOString())
+  }
 
-// Dados para gráfico de rosca - Fontes Escopo 1
-const fontesEscopo1Data = [
-  { name: "Combustão Estacionária", value: 65, color: "#1e40af" },
-  { name: "Combustão Móvel", value: 30, color: "#3b82f6" },
-  { name: "Emissões Fugitivas", value: 5, color: "#93c5fd" },
-]
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching emissions:', error)
+    throw error
+  }
+
+  return data || []
+}
 
 const DashboardGHG = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2025, 0, 1), // 01/01/2025
     to: new Date(2025, 11, 31), // 31/12/2025
   })
+
+  // Fetch emissions data
+  const { data: emissionsData, isLoading } = useQuery({
+    queryKey: ['emissions-data', dateRange],
+    queryFn: () => getEmissionsData(dateRange),
+  })
+
+  // Process data for charts
+  const { monthlyData, escopoData, fontesEscopo1Data, totals } = useMemo(() => {
+    if (!emissionsData || emissionsData.length === 0) {
+      return {
+        monthlyData: [],
+        escopoData: [],
+        fontesEscopo1Data: [],
+        totals: { total: 0, escopo1: 0, escopo2: 0, escopo3: 0 }
+      }
+    }
+
+    // Group by month and scope
+    const monthlyTotals: Record<string, { escopo1: number; escopo2: number; escopo3: number }> = {}
+    const scopeTotals = { escopo1: 0, escopo2: 0, escopo3: 0 }
+    const categoryTotals: Record<string, number> = {}
+
+    emissionsData.forEach(emission => {
+      const scope = emission.activity_data?.emission_sources?.scope
+      const category = emission.activity_data?.emission_sources?.category || 'Outros'
+      const co2e = emission.total_co2e || 0
+      const date = new Date(emission.calculation_date)
+      const monthKey = format(date, 'MMM')
+
+      // Initialize month if not exists
+      if (!monthlyTotals[monthKey]) {
+        monthlyTotals[monthKey] = { escopo1: 0, escopo2: 0, escopo3: 0 }
+      }
+
+      // Add to monthly totals
+      if (scope === 1) {
+        monthlyTotals[monthKey].escopo1 += co2e
+        scopeTotals.escopo1 += co2e
+        if (scope === 1) categoryTotals[category] = (categoryTotals[category] || 0) + co2e
+      } else if (scope === 2) {
+        monthlyTotals[monthKey].escopo2 += co2e
+        scopeTotals.escopo2 += co2e
+      } else if (scope === 3) {
+        monthlyTotals[monthKey].escopo3 += co2e
+        scopeTotals.escopo3 += co2e
+      }
+    })
+
+    // Convert to chart format
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    const processedMonthlyData = months.map(mes => ({
+      mes,
+      escopo1: Math.round((monthlyTotals[mes]?.escopo1 || 0) * 100) / 100,
+      escopo2: Math.round((monthlyTotals[mes]?.escopo2 || 0) * 100) / 100,
+      escopo3: Math.round((monthlyTotals[mes]?.escopo3 || 0) * 100) / 100,
+    }))
+
+    const totalEmissions = scopeTotals.escopo1 + scopeTotals.escopo2 + scopeTotals.escopo3
+    const processedEscopoData = [
+      { 
+        name: "Escopo 1", 
+        value: totalEmissions > 0 ? Math.round((scopeTotals.escopo1 / totalEmissions) * 1000) / 10 : 0, 
+        color: "#1e40af" 
+      },
+      { 
+        name: "Escopo 2", 
+        value: totalEmissions > 0 ? Math.round((scopeTotals.escopo2 / totalEmissions) * 1000) / 10 : 0, 
+        color: "#3b82f6" 
+      },
+      { 
+        name: "Escopo 3", 
+        value: totalEmissions > 0 ? Math.round((scopeTotals.escopo3 / totalEmissions) * 1000) / 10 : 0, 
+        color: "#93c5fd" 
+      },
+    ].filter(item => item.value > 0)
+
+    // Process scope 1 sources
+    const totalScope1 = scopeTotals.escopo1
+    const processedFontesData = Object.entries(categoryTotals)
+      .map(([category, value]) => ({
+        name: category,
+        value: totalScope1 > 0 ? Math.round((value / totalScope1) * 1000) / 10 : 0,
+        color: "#" + Math.floor(Math.random()*16777215).toString(16) // Random color
+      }))
+      .filter(item => item.value > 0)
+
+    return {
+      monthlyData: processedMonthlyData,
+      escopoData: processedEscopoData,
+      fontesEscopo1Data: processedFontesData,
+      totals: {
+        total: Math.round(totalEmissions * 100) / 100,
+        escopo1: Math.round(scopeTotals.escopo1 * 100) / 100,
+        escopo2: Math.round(scopeTotals.escopo2 * 100) / 100,
+        escopo3: Math.round(scopeTotals.escopo3 * 100) / 100,
+      }
+    }
+  }, [emissionsData])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -145,10 +254,13 @@ const DashboardGHG = () => {
               <CardTitle className="text-sm font-medium">Emissões Totais (tCO₂e)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">4.204</div>
-              <div className="flex items-center gap-1 text-xs text-success">
-                <TrendingDown className="h-3 w-3" />
-                -5.8% vs. Período Anterior
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold text-foreground">{totals.total}</div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Período selecionado
               </div>
             </CardContent>
           </Card>
@@ -158,8 +270,14 @@ const DashboardGHG = () => {
               <CardTitle className="text-sm font-medium">Escopo 1 (tCO₂e)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">2.054</div>
-              <div className="text-xs text-muted-foreground">48.9% do total</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold text-foreground">{totals.escopo1}</div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                {totals.total > 0 ? Math.round((totals.escopo1 / totals.total) * 100) : 0}% do total
+              </div>
             </CardContent>
           </Card>
 
@@ -168,8 +286,14 @@ const DashboardGHG = () => {
               <CardTitle className="text-sm font-medium">Escopo 2 (tCO₂e)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">2.150</div>
-              <div className="text-xs text-muted-foreground">51.1% do total</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold text-foreground">{totals.escopo2}</div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                {totals.total > 0 ? Math.round((totals.escopo2 / totals.total) * 100) : 0}% do total
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -181,22 +305,28 @@ const DashboardGHG = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="mes" 
-                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="escopo1" stackId="a" fill="#1e40af" name="Escopo 1" />
-                  <Bar dataKey="escopo2" stackId="a" fill="#3b82f6" name="Escopo 2" />
-                  <Bar dataKey="escopo3" stackId="a" fill="#93c5fd" name="Escopo 3" />
-                </BarChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="mes" 
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="escopo1" stackId="a" fill="#1e40af" name="Escopo 1" />
+                    <Bar dataKey="escopo2" stackId="a" fill="#3b82f6" name="Escopo 2" />
+                    <Bar dataKey="escopo3" stackId="a" fill="#93c5fd" name="Escopo 3" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -210,35 +340,45 @@ const DashboardGHG = () => {
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={escopoData.filter(item => item.value > 0)}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                      outerRadius={80}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {escopoData.filter(item => item.value > 0).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any) => [`${value}%`, 'Percentual']}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      formatter={(value, entry: any) => (
-                        <span style={{ color: entry.color }}>{value}: {entry.payload.value}%</span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Skeleton className="h-32 w-32 rounded-full" />
+                  </div>
+                ) : escopoData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={escopoData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        innerRadius={40}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {escopoData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any) => [`${value}%`, 'Percentual']}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        formatter={(value, entry: any) => (
+                          <span style={{ color: entry.color }}>{value}: {entry.payload.value}%</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Nenhum dado de emissões encontrado
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -250,35 +390,45 @@ const DashboardGHG = () => {
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={fontesEscopo1Data}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                      outerRadius={80}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {fontesEscopo1Data.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any) => [`${value}%`, 'Percentual']}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      formatter={(value, entry: any) => (
-                        <span style={{ color: entry.color }}>{value}: {entry.payload.value}%</span>
-                      )}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Skeleton className="h-32 w-32 rounded-full" />
+                  </div>
+                ) : fontesEscopo1Data.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={fontesEscopo1Data}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        innerRadius={40}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {fontesEscopo1Data.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any) => [`${value}%`, 'Percentual']}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        formatter={(value, entry: any) => (
+                          <span style={{ color: entry.color }}>{value}: {entry.payload.value}%</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Nenhum dado de Escopo 1 encontrado
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
