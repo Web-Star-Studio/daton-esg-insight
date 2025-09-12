@@ -105,6 +105,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_extraction_patterns: {
+        Row: {
+          company_id: string
+          created_at: string
+          document_type: string
+          extraction_rules: Json
+          field_patterns: Json
+          id: string
+          last_used_at: string | null
+          success_count: number
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          document_type: string
+          extraction_rules?: Json
+          field_patterns?: Json
+          id?: string
+          last_used_at?: string | null
+          success_count?: number
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          document_type?: string
+          extraction_rules?: Json
+          field_patterns?: Json
+          id?: string
+          last_used_at?: string | null
+          success_count?: number
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_type: string
@@ -663,6 +702,54 @@ export type Database = {
         }
         Relationships: []
       }
+      document_extraction_jobs: {
+        Row: {
+          ai_model_used: string | null
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          error_message: string | null
+          id: string
+          processing_end_time: string | null
+          processing_start_time: string | null
+          processing_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_model_used?: string | null
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          error_message?: string | null
+          id?: string
+          processing_end_time?: string | null
+          processing_start_time?: string | null
+          processing_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_model_used?: string | null
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          error_message?: string | null
+          id?: string
+          processing_end_time?: string | null
+          processing_start_time?: string | null
+          processing_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_folders: {
         Row: {
           company_id: string
@@ -700,6 +787,9 @@ export type Database = {
       }
       documents: {
         Row: {
+          ai_confidence_score: number | null
+          ai_extracted_category: string | null
+          ai_processing_status: string | null
           company_id: string
           file_name: string
           file_path: string
@@ -714,6 +804,9 @@ export type Database = {
           uploader_user_id: string
         }
         Insert: {
+          ai_confidence_score?: number | null
+          ai_extracted_category?: string | null
+          ai_processing_status?: string | null
           company_id: string
           file_name: string
           file_path: string
@@ -728,6 +821,9 @@ export type Database = {
           uploader_user_id: string
         }
         Update: {
+          ai_confidence_score?: number | null
+          ai_extracted_category?: string | null
+          ai_processing_status?: string | null
           company_id?: string
           file_name?: string
           file_path?: string
@@ -918,6 +1014,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      extracted_data_preview: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          company_id: string
+          confidence_scores: Json
+          created_at: string
+          extracted_fields: Json
+          extraction_job_id: string
+          id: string
+          suggested_mappings: Json
+          target_table: string
+          updated_at: string
+          validation_notes: string | null
+          validation_status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          company_id: string
+          confidence_scores?: Json
+          created_at?: string
+          extracted_fields?: Json
+          extraction_job_id: string
+          id?: string
+          suggested_mappings?: Json
+          target_table: string
+          updated_at?: string
+          validation_notes?: string | null
+          validation_status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          company_id?: string
+          confidence_scores?: Json
+          created_at?: string
+          extracted_fields?: Json
+          extraction_job_id?: string
+          id?: string
+          suggested_mappings?: Json
+          target_table?: string
+          updated_at?: string
+          validation_notes?: string | null
+          validation_status?: string
+        }
+        Relationships: []
       }
       form_submissions: {
         Row: {
