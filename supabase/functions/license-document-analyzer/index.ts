@@ -20,6 +20,10 @@ interface ExtractedLicenseFormData {
   dataVencimento: string;
   status: string;
   condicionantes: string;
+  structured_conditions: LicenseCondition[];
+  alerts: LicenseAlert[];
+  compliance_score: number;
+  renewal_recommendation: RenewalRecommendation;
   confidence_scores: {
     nome: number;
     tipo: number;
@@ -32,20 +36,59 @@ interface ExtractedLicenseFormData {
   };
 }
 
-// Helper function to extract text from PDF
+interface LicenseCondition {
+  condition_text: string;
+  condition_category: string;
+  priority: 'low' | 'medium' | 'high';
+  frequency?: 'Mensal' | 'Trimestral' | 'Semestral' | 'Anual' | 'Unica';
+  due_date?: string;
+  responsible_area?: string;
+  compliance_status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+}
+
+interface LicenseAlert {
+  type: 'renewal' | 'condition_due' | 'compliance_issue' | 'document_required';
+  title: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  due_date?: string;
+  action_required: boolean;
+}
+
+interface RenewalRecommendation {
+  start_date: string;
+  urgency: 'low' | 'medium' | 'high';
+  required_documents: string[];
+  estimated_cost?: number;
+  recommended_actions: string[];
+}
+
+// Enhanced PDF text extraction with multi-page support
 async function extractPdfText(fileBlob: Blob): Promise<string> {
   try {
     const arrayBuffer = await fileBlob.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Simple PDF text extraction looking for readable text patterns
     let text = '';
-    let inTextObject = false;
+    let currentPage = 1;
+    const maxPages = 10; // Limit to first 10 pages
     
-    for (let i = 0; i < uint8Array.length - 10; i++) {
-      // Look for PDF text markers
+    // Look for page breaks and text objects
+    let inTextObject = false;
+    let pageText = '';
+    
+    for (let i = 0; i < uint8Array.length - 10 && currentPage <= maxPages; i++) {
       const slice = uint8Array.slice(i, i + 3);
       const str = String.fromCharCode(...slice);
+      
+      // Detect page breaks
+      if (uint8Array.slice(i, i + 8).toString() === '47,41,103,101,32,111,98,106') { // "page obj"
+        if (pageText.trim()) {
+          text += `\n--- Página ${currentPage} ---\n${pageText}\n`;
+          currentPage++;
+          pageText = '';
+        }
+      }
       
       if (str === 'BT ') {
         inTextObject = true;
@@ -55,21 +98,28 @@ async function extractPdfText(fileBlob: Blob): Promise<string> {
       
       if (str === 'ET ') {
         inTextObject = false;
-        text += '\n';
+        pageText += '\n';
         i += 2;
         continue;
       }
       
+      // Extract readable characters
       if (inTextObject && uint8Array[i] >= 32 && uint8Array[i] <= 126) {
-        text += String.fromCharCode(uint8Array[i]);
+        pageText += String.fromCharCode(uint8Array[i]);
       }
     }
     
-    // Clean up extracted text
-    return text.replace(/[^\w\s\-\/\(\)\.\,\:]/g, ' ')
+    // Add final page if exists
+    if (pageText.trim()) {
+      text += `\n--- Página ${currentPage} ---\n${pageText}\n`;
+    }
+    
+    // Enhanced text cleaning and structure preservation
+    return text.replace(/[^\w\s\-\/\(\)\.\,\:\n\r]/g, ' ')
               .replace(/\s+/g, ' ')
+              .replace(/\n\s*\n/g, '\n')
               .trim()
-              .substring(0, 8000); // Limit size
+              .substring(0, 15000); // Increased limit for multi-page
   } catch (error) {
     console.error('Error extracting PDF text:', error);
     return '';
@@ -208,26 +258,45 @@ serve(async (req) => {
     const messages = [
       {
         role: 'system',
-        content: `Você é um especialista em análise de documentos de licenças ambientais brasileiras. 
-        Analise o documento de licença ambiental e extraia EXATAMENTE as seguintes informações para preenchimento de um formulário:
+        content: `Você é um especialista em análise avançada de documentos de licenças ambientais brasileiras. 
+        Analise o documento e extraia informações estruturadas para preenchimento automatizado de formulário e geração de alertas.
 
         INSTRUÇÕES ESPECÍFICAS:
-        1. Nome: Identifique o nome/título da licença (ex: "Licença de Operação - Fábrica Principal")
-        2. Tipo: Determine o tipo exato (LP, LI, LO, LAS, LOC, ou Outra)
-        3. Órgão Emissor: Identifique o órgão ambiental (IBAMA, CETESB, FEPAM, etc.)
-        4. Número do Processo: Encontre o número oficial do processo/documento
-        5. Data de Emissão: Data no formato YYYY-MM-DD
-        6. Data de Vencimento: Data no formato YYYY-MM-DD
-        7. Status: "Ativa" se vigente, ou outro status apropriado
-        8. Condicionantes: Liste todas as condicionantes/exigências encontradas
-
-        IMPORTANTE: Para cada campo, atribua uma pontuação de confiança de 0 a 1.
-        Se não encontrar informação específica, use string vazia e confiança 0.
         
-        ${fileType === 'pdf' ? 'Este é um documento PDF convertido para texto.' : ''}
-        ${fileType === 'spreadsheet' ? 'Este é um arquivo de planilha convertido para texto.' : ''}
+        1. DADOS BÁSICOS DA LICENÇA:
+           - Nome: Identifique o nome/título completo da licença
+           - Tipo: LP, LI, LO, LAS, LOC, ou Outra
+           - Órgão Emissor: IBAMA, CETESB, FEPAM, IAP, INEA, etc.
+           - Número do Processo: Número oficial completo
+           - Data de Emissão e Vencimento: Formato YYYY-MM-DD
+           - Status: Ativa, Vencida, Suspensa, Em Renovação
 
-        Responda APENAS com um JSON válido no formato:
+        2. CONDICIONANTES ESTRUTURADAS:
+           Extraia TODAS as condicionantes/exigências encontradas com:
+           - Texto completo da condicionante
+           - Categoria (monitoramento, relatório, obras, operação, etc.)
+           - Prioridade (low, medium, high)
+           - Frequência se aplicável (Mensal, Trimestral, Semestral, Anual, Unica)
+           - Data limite se mencionada
+           - Área responsável se identificada
+
+        3. ALERTAS AUTOMÁTICOS:
+           Gere alertas baseados em:
+           - Proximidade do vencimento da licença
+           - Condicionantes com prazos críticos
+           - Relatórios periódicos obrigatórios
+           - Documentações pendentes
+
+        4. ANÁLISE DE COMPLIANCE:
+           - Score de compliance (0-100) baseado na complexidade das condicionantes
+           - Recomendações para renovação com cronograma
+           - Documentos necessários para renovação
+           - Ações recomendadas
+
+        ${fileType === 'pdf' ? 'IMPORTANTE: Este é um documento PDF multi-página. Analise todo o conteúdo disponível.' : ''}
+        ${fileType === 'spreadsheet' ? 'IMPORTANTE: Este é um arquivo de planilha. Procure por dados estruturados em colunas.' : ''}
+
+        Responda APENAS com um JSON válido no formato EXATO:
         {
           "nome": "string",
           "tipo": "string",
@@ -236,7 +305,36 @@ serve(async (req) => {
           "dataEmissao": "YYYY-MM-DD",
           "dataVencimento": "YYYY-MM-DD",
           "status": "string",
-          "condicionantes": "string",
+          "condicionantes": "string resumido das principais condicionantes",
+          "structured_conditions": [
+            {
+              "condition_text": "texto completo da condicionante",
+              "condition_category": "categoria",
+              "priority": "medium",
+              "frequency": "Anual",
+              "due_date": "YYYY-MM-DD",
+              "responsible_area": "área responsável",
+              "compliance_status": "pending"
+            }
+          ],
+          "alerts": [
+            {
+              "type": "renewal",
+              "title": "título do alerta",
+              "message": "descrição detalhada",
+              "severity": "medium",
+              "due_date": "YYYY-MM-DD",
+              "action_required": true
+            }
+          ],
+          "compliance_score": 75,
+          "renewal_recommendation": {
+            "start_date": "YYYY-MM-DD",
+            "urgency": "medium",
+            "required_documents": ["documento1", "documento2"],
+            "estimated_cost": 0,
+            "recommended_actions": ["ação1", "ação2"]
+          },
           "confidence_scores": {
             "nome": 0.8,
             "tipo": 0.9,
@@ -286,7 +384,7 @@ ${documentContent}`
       body: JSON.stringify({
         model: useVision ? 'gpt-4o-mini' : 'gpt-4o-mini',
         messages: messages,
-        max_tokens: 1500,
+        max_tokens: 3000,
         temperature: 0.1
       }),
     })
