@@ -231,21 +231,25 @@ const CadastrarLicenca = () => {
   }
 
   const applyFieldData = (field: string, value: any) => {
-    if (field === 'dataEmissao' || field === 'dataVencimento') {
-      const date = new Date(value)
-      if (!isNaN(date.getTime())) {
-        form.setValue(field, date)
+    const validFields = ["nome", "tipo", "orgaoEmissor", "numeroProcesso", "status", "dataEmissao", "dataVencimento", "condicionantes", "responsavel"] as const
+    
+    if (validFields.includes(field as any)) {
+      if (field === 'dataEmissao' || field === 'dataVencimento') {
+        const date = new Date(value)
+        if (!isNaN(date.getTime())) {
+          form.setValue(field as any, date)
+        }
+      } else {
+        form.setValue(field as any, value)
       }
-    } else {
-      form.setValue(field, value)
+      
+      setStepsData(prev => ({
+        ...prev,
+        review: { ...prev.review, fieldsApplied: true }
+      }))
+      
+      toast.success(`Campo ${field} aplicado com sucesso!`)
     }
-    
-    setStepsData(prev => ({
-      ...prev,
-      review: { ...prev.review, fieldsApplied: true }
-    }))
-    
-    toast.success(`Campo ${field} aplicado com sucesso!`)
   }
 
   const applyBulkData = () => {
@@ -256,7 +260,7 @@ const CadastrarLicenca = () => {
     
     fieldsToApply.forEach(field => {
       if (analysisData[field] && analysisData[field].trim()) {
-        form.setValue(field, analysisData[field].trim())
+        form.setValue(field as any, analysisData[field].trim())
         appliedFields++
       }
     })

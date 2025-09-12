@@ -13,6 +13,7 @@ import { UseFormReturn } from "react-hook-form"
 
 interface FieldReconciliation {
   field: string
+  label: string
   extractedValue: any
   currentValue: any
   confidence: number
@@ -61,7 +62,7 @@ export const LicenseReconciliationDashboard = ({
       label: mapping.label,
       extractedValue: mapping.extractedValue,
       currentValue: formValues[mapping.field],
-      confidence: analysisData.confidence_scores[mapping.field] || 0,
+      confidence: analysisData.confidence_scores?.[mapping.field] || 0.75,
       isApplied: false,
       isEditing: false,
       validation: validateField(mapping.field, mapping.extractedValue)

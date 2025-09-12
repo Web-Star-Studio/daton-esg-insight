@@ -449,13 +449,23 @@ serve(async (req) => {
       // If no text extracted or very little, fallback to vision
       if (documentContent.length < 100) {
         console.log('PDF text extraction yielded little content, using vision API...');
-        const { data: signedUrlData, error: urlError } = await supabaseClient.storage
-          .from('documents')
-          .createSignedUrl(documentPath, 300);
-        
-        if (!urlError && signedUrlData?.signedUrl) {
-          signedUrl = signedUrlData.signedUrl;
-          useVision = true;
+        try {
+          const { data: signedUrlData, error: urlError } = await supabaseClient.storage
+            .from('documents')
+            .createSignedUrl(documentPath, 300);
+          
+          if (!urlError && signedUrlData?.signedUrl) {
+            // For PDFs, we need to ensure the signed URL points to a supported image format
+            // Since OpenAI only supports PNG, JPEG, GIF, WEBP for vision API
+            signedUrl = signedUrlData.signedUrl;
+            useVision = true;
+          } else {
+            console.log('Failed to create signed URL, falling back to text-only analysis');
+            useVision = false;
+          }
+        } catch (urlError) {
+          console.error('Error creating signed URL:', urlError);
+          useVision = false;
         }
       }
     } else if (fileType === 'spreadsheet') {
@@ -463,13 +473,28 @@ serve(async (req) => {
       documentContent = await parseSpreadsheet(fileData, fileName);
     } else if (fileType === 'image') {
       console.log('Using vision API for image...');
-      const { data: signedUrlData, error: urlError } = await supabaseClient.storage
-        .from('documents')
-        .createSignedUrl(documentPath, 300);
-      
-      if (!urlError && signedUrlData?.signedUrl) {
-        signedUrl = signedUrlData.signedUrl;
-        useVision = true;
+      try {
+        const { data: signedUrlData, error: urlError } = await supabaseClient.storage
+          .from('documents')
+          .createSignedUrl(documentPath, 300);
+        
+        if (!urlError && signedUrlData?.signedUrl) {
+          // Verify the image format is supported by OpenAI
+          const supportedFormats = ['png', 'jpeg', 'jpg', 'gif', 'webp'];
+          const fileExtension = fileName.toLowerCase().split('.').pop();
+          
+          if (supportedFormats.includes(fileExtension || '')) {
+            signedUrl = signedUrlData.signedUrl;
+            useVision = true;
+          } else {
+            throw new Error(`Formato de imagem não suportado: ${fileExtension}. Use PNG, JPEG, GIF ou WEBP.`);
+          }
+        } else {
+          throw new Error('Falha ao criar URL assinada para a imagem');
+        }
+      } catch (imageError) {
+        console.error('Error processing image:', imageError);
+        throw new Error(`Erro ao processar imagem: ${imageError.message}`);
       }
     } else {
       throw new Error(`Unsupported file type: ${fileType}`);
@@ -577,29 +602,49 @@ serve(async (req) => {
       }
     ];
 
-    if (useVision) {
-      messages.push({
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: 'Analise este documento de licença ambiental e extraia os dados para preenchimento do formulário:'
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: signedUrl
-            }
-          }
-        ]
-      });
-    } else {
+    if (useVision && signedUrl) {
+      // Verify URL format before sending to OpenAI
+      try {
+        const response = await fetch(signedUrl, { method: 'HEAD' });
+        const contentType = response.headers.get('content-type') || '';
+        
+        // Check if content type is supported by OpenAI Vision API
+        const supportedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+        
+        if (supportedTypes.some(type => contentType.includes(type))) {
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Analise este documento de licença ambiental e extraia os dados para preenchimento do formulário:'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: signedUrl,
+                  detail: 'high'
+                }
+              }
+            ]
+          });
+        } else {
+          console.log(`Unsupported content type for vision: ${contentType}, falling back to text analysis`);
+          useVision = false;
+        }
+      } catch (urlError) {
+        console.error('Error checking URL format:', urlError);
+        useVision = false;
+      }
+    }
+    
+    if (!useVision) {
       messages.push({
         role: 'user',
         content: `Analise este documento de licença ambiental e extraia os dados para preenchimento do formulário:
 
 CONTEÚDO DO DOCUMENTO:
-${documentContent}`
+${documentContent || 'Documento não pôde ser processado adequadamente. Favor preencher manualmente os campos necessários.'}`
       });
     }
 
