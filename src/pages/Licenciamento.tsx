@@ -2,6 +2,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -21,12 +22,16 @@ import {
   Pencil,
   Paperclip,
   Brain,
-  RefreshCw
+  RefreshCw,
+  BarChart3,
+  Bell
 } from "lucide-react";
 import { useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { getLicenses, getLicenseStats, type LicenseListItem, type LicenseStats } from "@/services/licenses"
+import { ComplianceDashboard } from "@/components/ComplianceDashboard";
+import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 

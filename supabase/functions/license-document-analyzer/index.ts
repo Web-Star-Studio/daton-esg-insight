@@ -63,6 +63,234 @@ interface RenewalRecommendation {
   recommended_actions: string[];
 }
 
+interface LicenseContext {
+  licenseType?: string;
+  issuingBody?: string;
+  businessSector?: string;
+  activityType?: string;
+}
+
+// Specialized prompts based on license context
+function getSpecializedPrompt(documentContent: string): string {
+  const context = detectLicenseContext(documentContent);
+  
+  let basePrompt = `
+Você é um especialista em licenciamento ambiental brasileiro com profundo conhecimento em:
+- Legislação ambiental federal, estadual e municipal
+- Procedimentos dos órgãos ambientais (IBAMA, CETESB, FEPAM, INEA, etc.)
+- Condicionantes técnicas por setor industrial
+- Prazos e cronogramas de renovação
+- Compliance ambiental corporativo
+
+CONTEXTO DETECTADO:
+- Tipo de Licença: ${context.licenseType || 'Detectar automaticamente'}
+- Órgão Emissor: ${context.issuingBody || 'Detectar automaticamente'}
+- Setor de Atividade: ${context.businessSector || 'Detectar automaticamente'}
+
+INSTRUÇÕES ESPECÍFICAS:
+`;
+
+  // Add specialized instructions based on context
+  if (context.licenseType?.includes('LP')) {
+    basePrompt += `
+ANÁLISE ESPECÍFICA PARA LICENÇA PRÉVIA (LP):
+- Foque em viabilidade ambiental e localização
+- Identifique estudos ambientais exigidos (EIA/RIMA, EAS, RCA)
+- Extraia condicionantes de concepção e alternativas tecnológicas
+- Analise restrições de localização e distâncias mínimas
+- Identifique exigências para fase de LI
+`;
+  } else if (context.licenseType?.includes('LI')) {
+    basePrompt += `
+ANÁLISE ESPECÍFICA PARA LICENÇA DE INSTALAÇÃO (LI):
+- Foque em especificações técnicas e cronogramas
+- Extraia condicionantes de construção e instalação  
+- Identifique sistemas de controle ambiental exigidos
+- Analise prazos de obras e marcos de execução
+- Identifique documentos para LO
+`;
+  } else if (context.licenseType?.includes('LO')) {
+    basePrompt += `
+ANÁLISE ESPECÍFICA PARA LICENÇA DE OPERAÇÃO (LO):
+- Foque em condicionantes operacionais e monitoramento
+- Extraia frequências de relatórios e monitoramentos
+- Identifique parâmetros de emissões e efluentes
+- Analise obrigações de automonitoramento
+- Calcule cronograma de renovação (geralmente 4-10 anos)
+`;
+  }
+
+  if (context.issuingBody?.includes('IBAMA')) {
+    basePrompt += `
+ESPECIFICIDADES DO IBAMA:
+- Atividades de significativo impacto ambiental nacional
+- Foco em fauna, flora e unidades de conservação
+- Condicionantes federais específicas
+- Prazos e procedimentos federais
+`;
+  } else if (context.issuingBody?.includes('CETESB')) {
+    basePrompt += `
+ESPECIFICIDADES DA CETESB (SP):
+- Padrões de qualidade do ar de São Paulo
+- CADRI para resíduos industriais  
+- Emissões veiculares e combustíveis
+- Licenciamento por porte e potencial poluidor
+`;
+  }
+
+  if (context.businessSector?.includes('mineração')) {
+    basePrompt += `
+SETOR MINERAÇÃO:
+- PAE (Plano de Aproveitamento Econômico)
+- PRAD (Plano de Recuperação de Área Degradada)
+- Plano de fechamento de mina
+- Monitoramento de águas subterrâneas
+`;
+  } else if (context.businessSector?.includes('petróleo')) {
+    basePrompt += `
+SETOR PETRÓLEO & GÁS:
+- Planos de emergência individual (PEI)
+- Estudos de dispersão de óleo
+- Monitoramento da biota aquática
+- Análise de risco ecológico
+`;
+  }
+
+  basePrompt += `
+ANÁLISE REQUERIDA:
+
+1. DADOS BÁSICOS DA LICENÇA:
+- Nome/título da licença
+- Tipo (LP, LI, LO, LAS, LAU, LAC, RLO, etc.)
+- Órgão emissor completo
+- Número do processo administrativo
+- Data de emissão (formato YYYY-MM-DD)
+- Data de vencimento (formato YYYY-MM-DD)
+- Status atual da licença
+
+2. ANÁLISE INTELIGENTE DE CONDICIONANTES:
+Para cada condicionante identificada, extrair:
+- Texto completo e exato da condicionante
+- Categoria técnica (monitoramento_continuo, relatorio_periodico, obra_infraestrutura, programa_ambiental, etc.)
+- Prioridade baseada em consequências do não cumprimento
+- Frequência específica (Mensal, Bimestral, Trimestral, Semestral, Anual, Unica)
+- Data limite calculada ou estimada
+- Área responsável sugerida (Meio Ambiente, Operação, Manutenção, etc.)
+- Indicadores de compliance automático
+
+3. SISTEMA DE ALERTAS INTELIGENTES:
+- Alerta de renovação com cronograma otimizado
+- Alertas de condicionantes vencendo
+- Identificação de riscos de compliance
+- Alertas de mudanças regulamentares aplicáveis
+
+4. ANÁLISE PREDITIVA:
+- Score de compliance calculado (0-100)
+- Probabilidade de renovação bem-sucedida
+- Riscos identificados e recomendações
+- Cronograma otimizado de renovação
+- Estimativa de custos do processo
+
+5. RECOMENDAÇÕES ESTRATÉGICAS:
+- Ações preventivas prioritárias
+- Oportunidades de simplificação ou unificação
+- Melhorias nos processos internos
+- Preparação para renovação
+
+Retorne APENAS um JSON válido no seguinte formato:
+{
+  "nome": "string",
+  "tipo": "string", 
+  "orgaoEmissor": "string",
+  "numeroProcesso": "string",
+  "dataEmissao": "YYYY-MM-DD",
+  "dataVencimento": "YYYY-MM-DD", 
+  "status": "Ativa|Vencida|Em Renovação|Suspensa",
+  "condicionantes": "string com texto completo das condicionantes",
+  "structured_conditions": [
+    {
+      "condition_text": "texto exato da condicionante",
+      "condition_category": "categoria específica",
+      "priority": "low|medium|high",
+      "frequency": "Mensal|Bimestral|Trimestral|Semestral|Anual|Unica",
+      "due_date": "YYYY-MM-DD ou null",
+      "responsible_area": "área responsável",
+      "compliance_status": "pending"
+    }
+  ],
+  "alerts": [
+    {
+      "type": "renewal|condition_due|compliance_issue|document_required|regulatory_change",
+      "title": "título específico",
+      "message": "descrição detalhada", 
+      "severity": "low|medium|high|critical",
+      "due_date": "YYYY-MM-DD ou null",
+      "action_required": boolean
+    }
+  ],
+  "compliance_score": number,
+  "renewal_recommendation": {
+    "start_date": "YYYY-MM-DD",
+    "urgency": "low|medium|high", 
+    "required_documents": ["lista específica"],
+    "estimated_cost": number,
+    "recommended_actions": ["ações específicas"]
+  },
+  "confidence_scores": {
+    "nome": number,
+    "tipo": number,
+    "orgaoEmissor": number,
+    "numeroProcesso": number,
+    "dataEmissao": number,
+    "dataVencimento": number,
+    "status": number,
+    "condicionantes": number
+  }
+}
+`;
+
+  return basePrompt;
+}
+
+function detectLicenseContext(content: string): LicenseContext {
+  const context: LicenseContext = {};
+  
+  // Detect license type
+  if (content.match(/licen[çc]a pr[ée]via|LP\b/i)) {
+    context.licenseType = 'LP - Licença Prévia';
+  } else if (content.match(/licen[çc]a de instala[çc][ãa]o|LI\b/i)) {
+    context.licenseType = 'LI - Licença de Instalação';
+  } else if (content.match(/licen[çc]a de opera[çc][ãa]o|LO\b/i)) {
+    context.licenseType = 'LO - Licença de Operação';
+  } else if (content.match(/licen[çc]a ambiental simplificada|LAS\b/i)) {
+    context.licenseType = 'LAS - Licença Ambiental Simplificada';
+  }
+  
+  // Detect issuing body
+  if (content.match(/IBAMA|Instituto Brasileiro/i)) {
+    context.issuingBody = 'IBAMA';
+  } else if (content.match(/CETESB|Companhia Ambiental/i)) {
+    context.issuingBody = 'CETESB - São Paulo';
+  } else if (content.match(/FEPAM|Funda[çc][ãa]o Estadual/i)) {
+    context.issuingBody = 'FEPAM - Rio Grande do Sul';
+  } else if (content.match(/INEA|Instituto Estadual/i)) {
+    context.issuingBody = 'INEA - Rio de Janeiro';
+  }
+  
+  // Detect business sector
+  if (content.match(/minera[çc][ãa]o|extrat|lavra|mina\b/i)) {
+    context.businessSector = 'mineração';
+  } else if (content.match(/petr[óo]leo|g[áa]s|refinaria|E&P/i)) {
+    context.businessSector = 'petróleo';
+  } else if (content.match(/sider[úu]rgica|metalurgia|a[çc]o\b/i)) {
+    context.businessSector = 'siderurgia';
+  } else if (content.match(/qu[íi]mica|farmac[êe]utica|petroqu[íi]mica/i)) {
+    context.businessSector = 'química';
+  }
+  
+  return context;
+}
+
 // Enhanced PDF text extraction with multi-page support
 async function extractPdfText(fileBlob: Blob): Promise<string> {
   try {
