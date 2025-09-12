@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Building2, 
   Cog, 
@@ -18,10 +21,18 @@ import {
   Plus,
   HardDrive,
   MapPin,
-  Activity
+  Activity,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  TrendingUp,
+  BarChart3
 } from "lucide-react";
-import { getAssetsHierarchy, getAssetById, Asset, AssetWithLinkedData } from "@/services/assets";
+import { getAssetsHierarchy, getAssetById, deleteAsset, Asset, AssetWithLinkedData, ASSET_TYPES } from "@/services/assets";
 import { AssetFormModal } from "@/components/AssetFormModal";
+import { useToast } from "@/hooks/use-toast";
 
 const getAssetTypeIcon = (type: string) => {
   const iconMap: Record<string, any> = {
@@ -44,6 +55,8 @@ interface AssetTreeItemProps {
   onSelectAsset: (assetId: string) => void;
   expandedNodes: Set<string>;
   onToggleExpanded: (assetId: string) => void;
+  searchTerm: string;
+  typeFilter: string;
 }
 
 function AssetTreeItem({ 
@@ -52,11 +65,34 @@ function AssetTreeItem({
   selectedAssetId, 
   onSelectAsset, 
   expandedNodes, 
-  onToggleExpanded 
+  onToggleExpanded,
+  searchTerm,
+  typeFilter
 }: AssetTreeItemProps) {
   const hasChildren = asset.children && asset.children.length > 0;
   const isExpanded = expandedNodes.has(asset.id);
   const isSelected = selectedAssetId === asset.id;
+  
+  // Filter logic
+  const matchesSearch = searchTerm === "" || 
+    asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (asset.location && asset.location.toLowerCase().includes(searchTerm.toLowerCase()));
+  
+  const matchesType = typeFilter === "all" || asset.asset_type === typeFilter;
+  
+  const isVisible = matchesSearch && matchesType;
+  
+  // Check if any children match the filter
+  const hasMatchingChildren = hasChildren && asset.children?.some(child => 
+    (searchTerm === "" || child.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+     (child.location && child.location.toLowerCase().includes(searchTerm.toLowerCase()))) &&
+    (typeFilter === "all" || child.asset_type === typeFilter)
+  );
+  
+  // Show if this asset matches OR if it has matching children
+  const shouldShow = isVisible || hasMatchingChildren;
+  
+  if (!shouldShow) return null;
 
   return (
     <div>
@@ -109,6 +145,8 @@ function AssetTreeItem({
               onSelectAsset={onSelectAsset}
               expandedNodes={expandedNodes}
               onToggleExpanded={onToggleExpanded}
+              searchTerm={searchTerm}
+              typeFilter={typeFilter}
             />
           ))}
         </div>
@@ -117,7 +155,15 @@ function AssetTreeItem({
   );
 }
 
-function AssetDetailsPanel({ assetId }: { assetId: string }) {
+function AssetDetailsPanel({ 
+  assetId, 
+  onEdit, 
+  onDelete 
+}: { 
+  assetId: string;
+  onEdit: (asset: Asset) => void;
+  onDelete: (assetId: string) => void;
+}) {
   const { data: assetDetails, isLoading, error } = useQuery({
     queryKey: ['asset-details', assetId],
     queryFn: () => getAssetById(assetId),
@@ -146,12 +192,63 @@ function AssetDetailsPanel({ assetId }: { assetId: string }) {
     <div className="space-y-6">
       {/* Cabeçalho do Ativo */}
       <div className="border-b pb-4">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-primary">
-            {getAssetTypeIcon(assetDetails.asset_type)}
-          </span>
-          <h2 className="text-2xl font-semibold">{assetDetails.name}</h2>
-          <Badge variant="secondary">{assetDetails.asset_type}</Badge>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <span className="text-primary">
+              {getAssetTypeIcon(assetDetails.asset_type)}
+            </span>
+            <h2 className="text-2xl font-semibold">{assetDetails.name}</h2>
+            <Badge variant="secondary">{assetDetails.asset_type}</Badge>
+          </div>
+          
+          {/* Botões de Ação */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(assetDetails)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Confirmar Exclusão
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir o ativo "{assetDetails.name}"? 
+                    {(assetDetails.kpis.total_emissions > 0 || 
+                      assetDetails.kpis.active_licenses > 0 || 
+                      assetDetails.kpis.waste_records > 0) && (
+                      <span className="block mt-2 text-destructive font-medium">
+                        Atenção: Este ativo possui dados vinculados (emissões, licenças ou resíduos).
+                      </span>
+                    )}
+                    Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDelete(assetDetails.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Excluir Ativo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
         
         {assetDetails.location && (
@@ -178,37 +275,79 @@ function AssetDetailsPanel({ assetId }: { assetId: string }) {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          {/* KPIs */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* KPIs Aprimorados */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Fontes de Emissão</CardTitle>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-red-500" />
+                  Fontes de Emissão
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-2xl font-bold text-red-600">
                   {assetDetails.kpis.total_emissions}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Fontes ativas de GEE
+                </p>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Licenças Ativas</CardTitle>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-green-500" />
+                  Licenças Ativas
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
                   {assetDetails.kpis.active_licenses}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  De {assetDetails.linked_licenses.length} totais
+                </p>
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Registros de Resíduos</CardTitle>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-blue-500" />
+                  Registros de Resíduos
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
                   {assetDetails.kpis.waste_records}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Logs de destinação
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Status Compliance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Licenças</span>
+                    <Badge variant={assetDetails.kpis.active_licenses > 0 ? "default" : "destructive"} className="text-xs">
+                      {assetDetails.kpis.active_licenses > 0 ? "OK" : "Pendente"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Emissões</span>
+                    <Badge variant={assetDetails.kpis.total_emissions > 0 ? "secondary" : "outline"} className="text-xs">
+                      {assetDetails.kpis.total_emissions > 0 ? "Monitorado" : "N/A"}
+                    </Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -343,6 +482,38 @@ export default function Ativos() {
   const [selectedAssetId, setSelectedAssetId] = useState<string>();
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | undefined>();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteAssetMutation = useMutation({
+    mutationFn: deleteAsset,
+    onSuccess: () => {
+      toast({
+        title: "Sucesso",
+        description: "Ativo excluído com sucesso",
+      });
+      queryClient.invalidateQueries({ queryKey: ['assets-hierarchy'] });
+      setSelectedAssetId(undefined);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro", 
+        description: error.message || "Erro ao excluir ativo",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleDeleteAsset = (assetId: string) => {
+    deleteAssetMutation.mutate(assetId);
+  };
+
+  const handleEditAsset = (asset: Asset) => {
+    setEditingAsset(asset);
+  };
 
   const { data: assets, isLoading, error } = useQuery({
     queryKey: ['assets-hierarchy'],
@@ -388,6 +559,34 @@ export default function Ativos() {
               <CardDescription>
                 Selecione um ativo para ver os detalhes
               </CardDescription>
+              
+              {/* Filtros */}
+              <div className="space-y-3 pt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar ativos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-full">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    {ASSET_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="max-h-[500px] overflow-y-auto">
@@ -416,6 +615,8 @@ export default function Ativos() {
                         onSelectAsset={setSelectedAssetId}
                         expandedNodes={expandedNodes}
                         onToggleExpanded={handleToggleExpanded}
+                        searchTerm={searchTerm}
+                        typeFilter={typeFilter}
                       />
                     ))}
                   </div>
@@ -443,7 +644,11 @@ export default function Ativos() {
           <Card className="lg:col-span-2">
             <CardContent className="p-6">
               {selectedAssetId ? (
-                <AssetDetailsPanel assetId={selectedAssetId} />
+                <AssetDetailsPanel 
+                  assetId={selectedAssetId} 
+                  onEdit={handleEditAsset}
+                  onDelete={handleDeleteAsset}
+                />
               ) : (
                 <div className="text-center text-muted-foreground py-16">
                   <HardDrive className="h-16 w-16 mx-auto mb-4 opacity-50" />
@@ -455,14 +660,18 @@ export default function Ativos() {
           </Card>
         </div>
 
-        {/* Modal de Criação de Ativo */}
+        {/* Modal de Criação/Edição de Ativo */}
         <AssetFormModal
-          open={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          open={showCreateModal || !!editingAsset}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingAsset(undefined);
+          }}
           onSuccess={() => {
             setShowCreateModal(false);
-            // Recarregar dados será feito automaticamente pelo React Query
+            setEditingAsset(undefined);
           }}
+          editingAsset={editingAsset}
         />
       </div>
     </MainLayout>
