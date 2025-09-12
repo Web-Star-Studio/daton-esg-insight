@@ -1,7 +1,7 @@
-import { MainLayout } from "@/components/MainLayout"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MainLayout } from "@/components/MainLayout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Plus, 
   Award, 
@@ -19,8 +19,10 @@ import {
   XCircle,
   Eye,
   Pencil,
-  Paperclip
-} from "lucide-react"
+  Paperclip,
+  Brain,
+  RefreshCw
+} from "lucide-react";
 import { useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
@@ -181,6 +183,7 @@ const Licenciamento = () => {
                   <TableHead>Data de Emissão</TableHead>
                   <TableHead>Data de Vencimento</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>IA</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -196,6 +199,7 @@ const Licenciamento = () => {
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell>
                         <div className="flex justify-center gap-2">
                           <Skeleton className="h-8 w-8" />
@@ -216,7 +220,33 @@ const Licenciamento = () => {
                       <TableCell>{formatDate(license.expiration_date)}</TableCell>
                       <TableCell>{getStatusBadge(license.status)}</TableCell>
                       <TableCell>
+                        {license.ai_processing_status === 'completed' ? (
+                          <Badge variant="default" className="gap-1">
+                            <Brain className="h-3 w-3" />
+                            {license.compliance_score}%
+                          </Badge>
+                        ) : license.ai_processing_status === 'processing' ? (
+                          <Badge variant="secondary" className="gap-1">
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                            Processando
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            Não analisada
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex justify-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-accent"
+                            title="Análise IA"
+                            onClick={() => navigate(`/licenciamento/${license.id}/analise`)}
+                          >
+                            <Brain className="h-4 w-4" />
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -249,7 +279,7 @@ const Licenciamento = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       <div className="text-muted-foreground">
                         <p>Nenhuma licença encontrada</p>
                         <Button onClick={handleAddLicenca} className="mt-4">

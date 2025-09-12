@@ -1260,10 +1260,186 @@ export type Database = {
           },
         ]
       }
+      license_ai_analysis: {
+        Row: {
+          ai_insights: Json
+          ai_model_used: string | null
+          analysis_type: string
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          id: string
+          license_id: string
+          processing_time_ms: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_insights?: Json
+          ai_model_used?: string | null
+          analysis_type?: string
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          license_id: string
+          processing_time_ms?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_insights?: Json
+          ai_model_used?: string | null
+          analysis_type?: string
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          license_id?: string
+          processing_time_ms?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_ai_analysis_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_alerts: {
+        Row: {
+          action_required: boolean
+          alert_type: string
+          company_id: string
+          created_at: string
+          due_date: string | null
+          id: string
+          is_resolved: boolean
+          license_id: string
+          message: string
+          metadata: Json | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          severity: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_required?: boolean
+          alert_type: string
+          company_id: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          is_resolved?: boolean
+          license_id: string
+          message: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_required?: boolean
+          alert_type?: string
+          company_id?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          is_resolved?: boolean
+          license_id?: string
+          message?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_alerts_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_conditions: {
+        Row: {
+          ai_confidence: number | null
+          ai_extracted: boolean
+          company_id: string
+          condition_category: string | null
+          condition_text: string
+          created_at: string
+          due_date: string | null
+          frequency: Database["public"]["Enums"]["frequency_enum"] | null
+          id: string
+          license_id: string
+          priority: string
+          responsible_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_extracted?: boolean
+          company_id: string
+          condition_category?: string | null
+          condition_text: string
+          created_at?: string
+          due_date?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_enum"] | null
+          id?: string
+          license_id: string
+          priority?: string
+          responsible_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_extracted?: boolean
+          company_id?: string
+          condition_category?: string | null
+          condition_text?: string
+          created_at?: string
+          due_date?: string | null
+          frequency?: Database["public"]["Enums"]["frequency_enum"] | null
+          id?: string
+          license_id?: string
+          priority?: string
+          responsible_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_conditions_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licenses: {
         Row: {
+          ai_confidence_score: number | null
+          ai_extracted_data: Json | null
+          ai_last_analysis_at: string | null
+          ai_processing_status: string | null
           asset_id: string | null
           company_id: string
+          compliance_score: number | null
           conditions: string | null
           created_at: string
           expiration_date: string
@@ -1278,8 +1454,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_confidence_score?: number | null
+          ai_extracted_data?: Json | null
+          ai_last_analysis_at?: string | null
+          ai_processing_status?: string | null
           asset_id?: string | null
           company_id: string
+          compliance_score?: number | null
           conditions?: string | null
           created_at?: string
           expiration_date: string
@@ -1294,8 +1475,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_confidence_score?: number | null
+          ai_extracted_data?: Json | null
+          ai_last_analysis_at?: string | null
+          ai_processing_status?: string | null
           asset_id?: string | null
           company_id?: string
+          compliance_score?: number | null
           conditions?: string | null
           created_at?: string
           expiration_date?: string

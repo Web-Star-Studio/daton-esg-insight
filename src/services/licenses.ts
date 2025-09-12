@@ -2,29 +2,39 @@ import { supabase } from "@/integrations/supabase/client"
 import { toast } from "sonner"
 
 export interface LicenseData {
-  id: string
-  name: string
-  type: string
-  issuing_body: string
-  process_number?: string
-  issue_date?: string
-  expiration_date: string
-  status: string
-  conditions?: string
-  responsible_user_id?: string
-  created_at: string
-  updated_at: string
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  issue_date?: string;
+  expiration_date: string;
+  issuing_body: string;
+  process_number?: string;
+  conditions?: string;
+  responsible_user_id?: string;
+  asset_id?: string;
+  company_id: string;
+  ai_processing_status?: string;
+  ai_confidence_score?: number;
+  ai_extracted_data?: any;
+  ai_last_analysis_at?: string;
+  compliance_score?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LicenseListItem {
-  id: string
-  name: string
-  type: string
-  issuing_body: string
-  expiration_date: string
-  status: string
-  process_number?: string
-  issue_date?: string
+  id: string;
+  name: string;
+  type: string;
+  issuing_body: string;
+  expiration_date: string;
+  status: string;
+  process_number?: string;
+  issue_date?: string;
+  ai_processing_status?: string;
+  ai_confidence_score?: number;
+  compliance_score?: number;
 }
 
 export interface CreateLicenseData {
@@ -58,8 +68,26 @@ export interface LicenseDocument {
   upload_date: string
 }
 
-export interface LicenseDetail extends LicenseData {
-  documents: LicenseDocument[]
+export interface LicenseDetail {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  issue_date?: string;
+  expiration_date: string;
+  issuing_body: string;
+  process_number?: string;
+  conditions?: string;
+  responsible_user_id?: string;
+  asset_id?: string;
+  ai_processing_status?: string;
+  ai_confidence_score?: number;
+  ai_extracted_data?: any;
+  ai_last_analysis_at?: string;
+  compliance_score?: number;
+  created_at: string;
+  updated_at: string;
+  documents: LicenseDocument[];
 }
 
 export interface LicenseFilters {
@@ -87,7 +115,10 @@ export async function getLicenses(filters?: LicenseFilters): Promise<LicenseList
         process_number,
         issue_date,
         expiration_date,
-        status
+        status,
+        ai_processing_status,
+        ai_confidence_score,
+        compliance_score
       `)
       .order('expiration_date', { ascending: true })
 
