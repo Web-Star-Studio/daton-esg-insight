@@ -70,25 +70,49 @@ interface LicenseContext {
   activityType?: string;
 }
 
-// Specialized prompts based on license context
+// Specialized prompts based on license context with advanced AI strategies
 function getSpecializedPrompt(documentContent: string): string {
   const context = detectLicenseContext(documentContent);
   
   let basePrompt = `
-Você é um especialista em licenciamento ambiental brasileiro com profundo conhecimento em:
-- Legislação ambiental federal, estadual e municipal
-- Procedimentos dos órgãos ambientais (IBAMA, CETESB, FEPAM, INEA, etc.)
-- Condicionantes técnicas por setor industrial
-- Prazos e cronogramas de renovação
-- Compliance ambiental corporativo
+Você é um especialista SÊNIOR em licenciamento ambiental brasileiro com 20+ anos de experiência prática. Use estratégias avançadas de extração de dados para documentos oficiais brasileiros.
 
-CONTEXTO DETECTADO:
-- Tipo de Licença: ${context.licenseType || 'Detectar automaticamente'}
-- Órgão Emissor: ${context.issuingBody || 'Detectar automaticamente'}
-- Setor de Atividade: ${context.businessSector || 'Detectar automaticamente'}
+🔍 ESTRATÉGIA DE ANÁLISE EM 3 NÍVEIS:
 
-INSTRUÇÕES ESPECÍFICAS:
-`;
+NÍVEL 1 - RECONHECIMENTO CONTEXTUAL:
+- Identifique primeiro o TIPO de documento (cabeçalho, logotipo, formato)
+- Detecte o ÓRGÃO emissor através de logos, timbres e assinaturas
+- Determine o SETOR através de atividades descritas
+
+NÍVEL 2 - EXTRAÇÃO INTELIGENTE POR PADRÕES:
+- NÚMEROS DE PROCESSO: Procure padrões como "Processo nº", "Protocolo:", seguidos de números com pontos/barras
+- DATAS: Busque "emitida em", "válida até", "vencimento em" em formato DD/MM/AAAA ou DD de MMMM de AAAA
+- CONDICIONANTES: Identifique por numeração (1., 2., I, II) ou bullets, termos como "fica condicionado", "deverá"
+- STATUS: Inferir de datas (se vencida = "Vencida", se ativa = "Ativa")
+
+NÍVEL 3 - VALIDAÇÃO CRUZADA:
+- Verifique consistência entre dados extraídos
+- Calcule confidence scores baseado na CLAREZA e LOCALIZAÇÃO da informação
+- Use conhecimento de padrões brasileiros para validar
+
+📍 LOCAIS TÍPICOS DE INFORMAÇÃO:
+- CABEÇALHO: Nome da licença, órgão emissor, logotipo
+- PRIMEIRO PARÁGRAFO: Número de processo, requerente, atividade
+- MEIO DO DOCUMENTO: Condicionantes detalhadas (seção específica)
+- FINAL: Datas de emissão e validade, assinaturas
+
+🎯 PADRÕES ESPECÍFICOS BRASILEIROS:
+- Processos: XXXXXX.XXXXXX/XXXX-XX (IBAMA), outros formatos por órgão
+- Órgãos: IBAMA, CETESB, INEA, FATMA, FEAM, IAP, SEMAC, etc.
+- Tipos: LP, LI, LO, LAS, LAU, LAC, RLO, ARL, etc.
+- Datas: DD/MM/AAAA predominante em documentos oficiais
+
+CONTEXTO ATUAL DETECTADO:
+- Tipo: ${context.licenseType || 'ANALISAR NO DOCUMENTO'}
+- Órgão: ${context.issuingBody || 'EXTRAIR DO CABEÇALHO'} 
+- Setor: ${context.businessSector || 'INFERIR DA ATIVIDADE'}
+
+INSTRUÇÕES CRÍTICAS PARA ANÁLISE:`;
 
   // Add specialized instructions based on context
   if (context.licenseType?.includes('LP')) {
@@ -157,96 +181,104 @@ SETOR PETRÓLEO & GÁS:
   }
 
   basePrompt += `
-ANÁLISE REQUERIDA:
+🚀 EXECUÇÃO DA ANÁLISE:
 
-1. DADOS BÁSICOS DA LICENÇA:
-- Nome/título da licença
-- Tipo (LP, LI, LO, LAS, LAU, LAC, RLO, etc.)
-- Órgão emissor completo
-- Número do processo administrativo
-- Data de emissão (formato YYYY-MM-DD)
-- Data de vencimento (formato YYYY-MM-DD)
-- Status atual da licença
+1. DADOS FUNDAMENTAIS (OBRIGATÓRIOS):
+   📋 NOME: Título completo da licença (geralmente no cabeçalho)
+   🏷️ TIPO: LP/LI/LO/LAS/LAU/etc. (procure após "Licença de" ou sozinho)
+   🏛️ ÓRGÃO: Nome completo do órgão emissor (cabeçalho com logotipo)
+   📋 PROCESSO: Número completo do processo (após "Processo nº")
+   📅 EMISSÃO: Data de emissão (procure "emitida em", formato DD/MM/AAAA)
+   ⏰ VENCIMENTO: Data limite (procure "válida até", "vencimento")
+   ✅ STATUS: Calcule baseado na data atual vs vencimento
 
-2. ANÁLISE INTELIGENTE DE CONDICIONANTES:
-Para cada condicionante identificada, extrair:
-- Texto completo e exato da condicionante
-- Categoria técnica (monitoramento_continuo, relatorio_periodico, obra_infraestrutura, programa_ambiental, etc.)
-- Prioridade baseada em consequências do não cumprimento
-- Frequência específica (Mensal, Bimestral, Trimestral, Semestral, Anual, Unica)
-- Data limite calculada ou estimada
-- Área responsável sugerida (Meio Ambiente, Operação, Manutenção, etc.)
-- Indicadores de compliance automático
+2. ESTRATÉGIAS PARA CONDICIONANTES:
+   🔍 LOCALIZE por: "fica condicionado", "deverá", "obriga-se", "é obrigatório"
+   📝 EXTRAIA: Texto completo sem cortes
+   🏷️ CATEGORIZE: monitoramento, relatório, obra, programa, compensação
+   ⚡ PRIORIDADE: high (multas/suspensão), medium (advertência), low (informativo)
+   🔄 FREQUÊNCIA: Procure "mensalmente", "anualmente", "até DD/MM"
+   👥 RESPONSÁVEL: Inferir pela natureza (ambiental, operacional, técnico)
 
-3. SISTEMA DE ALERTAS INTELIGENTES:
-- Alerta de renovação com cronograma otimizado
-- Alertas de condicionantes vencendo
-- Identificação de riscos de compliance
-- Alertas de mudanças regulamentares aplicáveis
+3. CONFIDENCE SCORES INTELIGENTES:
+   100: Informação explícita e clara no documento
+   80-99: Informação evidente mas requer interpretação mínima
+   60-79: Informação inferida com base em contexto sólido
+   40-59: Informação estimada com padrões conhecidos
+   20-39: Informação parcial ou incerta
+   0-19: Informação não encontrada ou altamente duvidosa
 
-4. ANÁLISE PREDITIVA:
-- Score de compliance calculado (0-100)
-- Probabilidade de renovação bem-sucedida
-- Riscos identificados e recomendações
-- Cronograma otimizado de renovação
-- Estimativa de custos do processo
-
-5. RECOMENDAÇÕES ESTRATÉGICAS:
-- Ações preventivas prioritárias
-- Oportunidades de simplificação ou unificação
+4. VALIDAÇÕES OBRIGATÓRIAS:
+   ✅ Datas em formato brasileiro (DD/MM/AAAA)
+   ✅ Órgão deve estar na lista conhecida de órgãos ambientais
+   ✅ Tipo de licença deve ser código válido (LP, LI, LO, etc.)
+   ✅ Status derivado logicamente das datas
+   ✅ Condicionantes devem ter sentido técnico
 - Melhorias nos processos internos
 - Preparação para renovação
 
-Retorne APENAS um JSON válido no seguinte formato:
+⚠️ REGRAS CRÍTICAS DE RESPOSTA:
+- Responda EXCLUSIVAMENTE em formato JSON válido
+- Use confidence scores REALISTAS (0-100)
+- Para campos não encontrados: "" (string), [] (array), 0 (number)
+- Datas SEMPRE no formato YYYY-MM-DD (converter de DD/MM/AAAA)
+- Seja CONSERVADOR nos confidence scores se houver dúvida
+
+📋 FORMATO JSON OBRIGATÓRIO:
 {
-  "nome": "string",
-  "tipo": "string", 
-  "orgaoEmissor": "string",
-  "numeroProcesso": "string",
-  "dataEmissao": "YYYY-MM-DD",
-  "dataVencimento": "YYYY-MM-DD", 
-  "status": "Ativa|Vencida|Em Renovação|Suspensa",
-  "condicionantes": "string com texto completo das condicionantes",
+  "nome": "Licença de Operação - [Nome da Atividade]",
+  "tipo": "LO", 
+  "orgaoEmissor": "CETESB - Companhia Ambiental do Estado de São Paulo",
+  "numeroProcesso": "123456.789.012/2023-SP",
+  "dataEmissao": "2023-05-15",
+  "dataVencimento": "2033-05-14", 
+  "status": "Ativa",
+  "condicionantes": "Texto completo das condicionantes encontradas no documento...",
   "structured_conditions": [
     {
-      "condition_text": "texto exato da condicionante",
-      "condition_category": "categoria específica",
-      "priority": "low|medium|high",
-      "frequency": "Mensal|Bimestral|Trimestral|Semestral|Anual|Unica",
-      "due_date": "YYYY-MM-DD ou null",
-      "responsible_area": "área responsável",
+      "condition_text": "Realizar monitoramento mensal da qualidade do ar",
+      "condition_category": "monitoramento_continuo",
+      "priority": "high",
+      "frequency": "Mensal",
+      "due_date": "2024-01-30",
+      "responsible_area": "Meio Ambiente",
       "compliance_status": "pending"
     }
   ],
   "alerts": [
     {
-      "type": "renewal|condition_due|compliance_issue|document_required|regulatory_change",
-      "title": "título específico",
-      "message": "descrição detalhada", 
-      "severity": "low|medium|high|critical",
-      "due_date": "YYYY-MM-DD ou null",
-      "action_required": boolean
+      "type": "renewal",
+      "title": "Licença próxima ao vencimento",
+      "message": "Iniciar processo de renovação em 18 meses", 
+      "severity": "medium",
+      "due_date": "2031-11-14",
+      "action_required": true
     }
   ],
-  "compliance_score": number,
+  "compliance_score": 85,
   "renewal_recommendation": {
-    "start_date": "YYYY-MM-DD",
-    "urgency": "low|medium|high", 
-    "required_documents": ["lista específica"],
-    "estimated_cost": number,
-    "recommended_actions": ["ações específicas"]
+    "start_date": "2031-05-15",
+    "urgency": "medium", 
+    "required_documents": ["EIA/RIMA atualizado", "Relatórios de monitoramento"],
+    "estimated_cost": 150000,
+    "recommended_actions": ["Contratar consultoria especializada", "Atualizar estudos ambientais"]
   },
   "confidence_scores": {
-    "nome": number,
-    "tipo": number,
-    "orgaoEmissor": number,
-    "numeroProcesso": number,
-    "dataEmissao": number,
-    "dataVencimento": number,
-    "status": number,
-    "condicionantes": number
+    "nome": 95,
+    "tipo": 90,
+    "orgaoEmissor": 88,
+    "numeroProcesso": 85,
+    "dataEmissao": 92,
+    "dataVencimento": 90,
+    "status": 95,
+    "condicionantes": 75
   }
 }
+
+📄 CONTEÚDO DO DOCUMENTO PARA ANÁLISE:
+${documentContent}
+
+🎯 EXECUTE A ANÁLISE AGORA COM MÁXIMA INTELIGÊNCIA E PRECISÃO!
 `;
 
   return basePrompt;
@@ -285,26 +317,44 @@ function extractJsonFromText(text: string): any {
 function detectLicenseContext(content: string): LicenseContext {
   const context: LicenseContext = {};
   
-  // Detect license type
-  if (content.match(/licen[çc]a pr[ée]via|LP\b/i)) {
-    context.licenseType = 'LP - Licença Prévia';
-  } else if (content.match(/licen[çc]a de instala[çc][ãa]o|LI\b/i)) {
-    context.licenseType = 'LI - Licença de Instalação';
-  } else if (content.match(/licen[çc]a de opera[çc][ãa]o|LO\b/i)) {
-    context.licenseType = 'LO - Licença de Operação';
-  } else if (content.match(/licen[çc]a ambiental simplificada|LAS\b/i)) {
-    context.licenseType = 'LAS - Licença Ambiental Simplificada';
+  // Enhanced license type detection with more patterns
+  const licensePatterns = [
+    { pattern: /licen[çc]a pr[ée]via|LP\b/i, type: 'LP' },
+    { pattern: /licen[çc]a de instala[çc][ãa]o|LI\b/i, type: 'LI' },
+    { pattern: /licen[çc]a de opera[çc][ãa]o|LO\b/i, type: 'LO' },
+    { pattern: /licen[çc]a ambiental simplificada|LAS\b/i, type: 'LAS' },
+    { pattern: /licen[çc]a ambiental [úu]nica|LAU\b/i, type: 'LAU' },
+    { pattern: /licen[çc]a ambiental corretiva|LAC\b/i, type: 'LAC' },
+    { pattern: /renova[çc][ãa]o de licen[çc]a|RLO\b/i, type: 'RLO' },
+    { pattern: /autoriza[çc][ãa]o para atividade|AAF\b/i, type: 'AAF' }
+  ];
+  
+  for (const { pattern, type } of licensePatterns) {
+    if (content.match(pattern)) {
+      context.licenseType = type;
+      break;
+    }
   }
   
-  // Detect issuing body
-  if (content.match(/IBAMA|Instituto Brasileiro/i)) {
-    context.issuingBody = 'IBAMA';
-  } else if (content.match(/CETESB|Companhia Ambiental/i)) {
-    context.issuingBody = 'CETESB - São Paulo';
-  } else if (content.match(/FEPAM|Funda[çc][ãa]o Estadual/i)) {
-    context.issuingBody = 'FEPAM - Rio Grande do Sul';
-  } else if (content.match(/INEA|Instituto Estadual/i)) {
-    context.issuingBody = 'INEA - Rio de Janeiro';
+  // Enhanced issuing body detection
+  const issuingBodies = [
+    { pattern: /IBAMA|Instituto Brasileiro do Meio Ambiente/i, name: 'IBAMA' },
+    { pattern: /CETESB|Companhia Ambiental do Estado de S[ãa]o Paulo/i, name: 'CETESB' },
+    { pattern: /FEPAM|Funda[çc][ãa]o Estadual de Prote[çc][ãa]o Ambiental/i, name: 'FEPAM' },
+    { pattern: /INEA|Instituto Estadual do Ambiente/i, name: 'INEA' },
+    { pattern: /FATMA|Funda[çc][ãa]o do Meio Ambiente/i, name: 'FATMA' },
+    { pattern: /FEAM|Funda[çc][ãa]o Estadual do Meio Ambiente/i, name: 'FEAM' },
+    { pattern: /IAP|Instituto Ambiental do Paran[áa]/i, name: 'IAP' },
+    { pattern: /SEMAC|Secretaria de Estado de Meio Ambiente/i, name: 'SEMAC' },
+    { pattern: /SEMA|Secretaria do Meio Ambiente/i, name: 'SEMA' },
+    { pattern: /ADEMA|Administra[çc][ãa]o Estadual do Meio Ambiente/i, name: 'ADEMA' }
+  ];
+  
+  for (const { pattern, name } of issuingBodies) {
+    if (content.match(pattern)) {
+      context.issuingBody = name;
+      break;
+    }
   }
   
   // Detect business sector
