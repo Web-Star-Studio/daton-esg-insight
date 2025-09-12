@@ -437,62 +437,58 @@ async function extractPdfText(fileBlob: Blob): Promise<string> {
 // Heuristic extraction from filename when document content is minimal
 function heuristicExtractFromFileName(fileName: string): Partial<ExtractedLicenseFormData> {
   console.log(`Attempting heuristic extraction from filename: ${fileName}`);
-  
+
   const extracted: Partial<ExtractedLicenseFormData> = {};
-  const lowerFileName = fileName.toLowerCase();
-  
-  // Extract license type from filename
-  if (lowerFileName.includes('licen') && lowerFileName.includes('ambiental')) {
-    extracted.tipo = 'Licença Ambiental';
-  } else if (lowerFileName.includes('licen') && lowerFileName.includes('operacao')) {
+  const baseName = fileName.split('/').pop() || fileName;
+  const lowerBase = baseName.toLowerCase();
+
+  // Ignore temp analysis names to avoid fabricating data from random IDs
+  if (lowerBase.startsWith('temp-analysis-') || lowerBase.startsWith('temp-')) {
+    console.log('Skipping heuristic extraction due to temporary filename pattern');
+    return {};
+  }
+
+  // Extract license type from filename (conservative)
+  if (lowerBase.includes('licen') && lowerBase.includes('operacao')) {
     extracted.tipo = 'Licença de Operação';
-  } else if (lowerFileName.includes('licen') && lowerFileName.includes('previa')) {
-    extracted.tipo = 'Licença Prévia';
-  } else if (lowerFileName.includes('licen') && lowerFileName.includes('instalacao')) {
+  } else if (lowerBase.includes('licen') && lowerBase.includes('instalacao')) {
     extracted.tipo = 'Licença de Instalação';
-  } else if (lowerFileName.includes('licen')) {
-    extracted.tipo = 'Licença Ambiental';
+  } else if (lowerBase.includes('licen') && lowerBase.includes('previa')) {
+    extracted.tipo = 'Licença Prévia';
   }
-  
-  // Extract issuing body
-  if (lowerFileName.includes('ibama')) {
-    extracted.orgaoEmissor = 'IBAMA';
-  } else if (lowerFileName.includes('cetesb')) {
-    extracted.orgaoEmissor = 'CETESB';
-  } else if (lowerFileName.includes('inea')) {
-    extracted.orgaoEmissor = 'INEA';
-  } else if (lowerFileName.includes('feam')) {
-    extracted.orgaoEmissor = 'FEAM';
-  } else if (lowerFileName.includes('fepam')) {
-    extracted.orgaoEmissor = 'FEPAM';
-  }
-  
-  // Extract dates from filename (YYYY, DD-MM-YYYY, etc)
-  const datePattern = /(\d{1,2}[-\/]\d{1,2}[-\/]\d{4}|\d{4}[-\/]\d{1,2}[-\/]\d{1,2}|\d{4})/g;
-  const dates = fileName.match(datePattern);
-  
-  if (dates && dates.length > 0) {
-    // Try to parse the first date as issue date
-    const firstDate = dates[0];
-    if (firstDate.length === 4) {
-      // Just year, create a date for January 1st
-      extracted.dataEmissao = `${firstDate}-01-01`;
-    } else {
-      // Try to parse full date
-      const parsedDate = parseDate(firstDate);
-      if (parsedDate) {
-        extracted.dataEmissao = parsedDate;
+
+  // Extract issuing body only if explicitly present
+  if (lowerBase.includes('ibama')) extracted.orgaoEmissor = 'IBAMA';
+  else if (lowerBase.includes('cetesb')) extracted.orgaoEmissor = 'CETESB';
+  else if (lowerBase.includes('inea')) extracted.orgaoEmissor = 'INEA';
+  else if (lowerBase.includes('fepam')) extracted.orgaoEmissor = 'FEPAM';
+  else if (lowerBase.includes('feam')) extracted.orgaoEmissor = 'FEAM';
+
+  // Extract plausible dates (DD-MM-YYYY, DD_MM_YYYY, YYYY-MM-DD, etc.)
+  const datePattern = /(\b\d{1,2}[\-_/]\d{1,2}[\-_/]\d{4}\b|\b\d{4}[\-_/]\d{1,2}[\-_/]\d{1,2}\b|\b\d{4}\b)/g;
+  const dateMatches = baseName.match(datePattern) || [];
+  for (const token of dateMatches) {
+    let parsed = parseDate(token);
+    if (!parsed && /^\d{4}$/.test(token)) {
+      const year = parseInt(token, 10);
+      if (year >= 1950 && year <= 2100) parsed = `${year}-01-01`;
+    }
+    if (parsed) {
+      const yr = parseInt(parsed.slice(0, 4), 10);
+      if (yr >= 1950 && yr <= 2100) {
+        extracted.dataEmissao = parsed; // only set a single conservative field
+        break;
       }
     }
   }
-  
-  // Extract process number patterns
-  const processPattern = /(\d{4,5}[\.\-\/]?\d{3,6}[\.\-\/]?\d{4}[\.\-\/]?\d{2})/;
-  const processMatch = fileName.match(processPattern);
-  if (processMatch) {
-    extracted.numeroProcesso = processMatch[1];
+
+  // Extract process number: require at least one separator for plausibility
+  const processPattern = /(\d{4,6}[.\-\/]\d{3,6}(?:[.\-\/]\d{2,4})+)/;
+  const pm = baseName.match(processPattern);
+  if (pm && /[.\-\/]/.test(pm[1])) {
+    extracted.numeroProcesso = pm[1];
   }
-  
+
   console.log('Heuristic extraction result:', extracted);
   return extracted;
 }
