@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { DataCollectionTask, dataCollectionService } from '@/services/dataCollection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format, isAfter, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ActivityDataEntryModal } from '@/components/ActivityDataEntryModal';
 
 interface TaskCardProps {
   task: DataCollectionTask;
@@ -15,6 +17,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onComplete }: TaskCardProps) {
   const queryClient = useQueryClient();
+  const [showDataEntryModal, setShowDataEntryModal] = useState(false);
 
   const completeTaskMutation = useMutation({
     mutationFn: (taskId: string) => dataCollectionService.completeTask(taskId),
@@ -30,7 +33,13 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
   });
 
   const handleCompleteTask = () => {
-    completeTaskMutation.mutate(task.id);
+    // For activity data tasks, open the data entry modal
+    if (task.task_type === 'activity_data' || task.task_type === 'energy_invoice' || task.task_type === 'water_invoice') {
+      setShowDataEntryModal(true);
+    } else {
+      // For other types, complete directly
+      completeTaskMutation.mutate(task.id);
+    }
   };
 
   const getTaskTypeLabel = (type: string) => {
@@ -109,6 +118,17 @@ export function TaskCard({ task, onComplete }: TaskCardProps) {
             {completeTaskMutation.isPending ? 'Registrando...' : 'Registrar Dados'}
           </Button>
         )}
+
+        {/* Activity Data Entry Modal */}
+        <ActivityDataEntryModal
+          open={showDataEntryModal}
+          onOpenChange={setShowDataEntryModal}
+          task={task}
+          onComplete={() => {
+            onComplete();
+            setShowDataEntryModal(false);
+          }}
+        />
       </CardContent>
     </Card>
   );

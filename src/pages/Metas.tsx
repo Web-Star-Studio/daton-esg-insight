@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getGoals, getDashboardStats, type GoalListItem } from "@/services/goals";
 import { toast } from "@/hooks/use-toast";
+import { GoalProgressUpdateModal } from "@/components/GoalProgressUpdateModal";
+import { EditGoalModal } from "@/components/EditGoalModal";
 
 interface CircularProgressProps {
   value: number;
@@ -103,6 +106,9 @@ const getStatusColor = (status: string) => {
 
 export default function Metas() {
   const navigate = useNavigate();
+  const [selectedGoal, setSelectedGoal] = useState<GoalListItem | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Fetch goals data
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useQuery({
@@ -264,6 +270,10 @@ export default function Metas() {
                               size="icon"
                               className="h-8 w-8"
                               title="Atualizar Progresso"
+                              onClick={() => {
+                                setSelectedGoal(goal);
+                                setShowProgressModal(true);
+                              }}
                             >
                               <BarChart3 className="h-4 w-4" />
                             </Button>
@@ -272,6 +282,10 @@ export default function Metas() {
                               size="icon"
                               className="h-8 w-8"
                               title="Editar Meta"
+                              onClick={() => {
+                                setSelectedGoal(goal);
+                                setShowEditModal(true);
+                              }}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -285,6 +299,22 @@ export default function Metas() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Modals */}
+        <GoalProgressUpdateModal
+          open={showProgressModal}
+          onOpenChange={setShowProgressModal}
+          goalId={selectedGoal?.id || null}
+          goalName={selectedGoal?.name || ''}
+          currentProgress={selectedGoal?.current_progress_percent || 0}
+          targetValue={selectedGoal?.target_value || 0}
+        />
+
+        <EditGoalModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          goalId={selectedGoal?.id || null}
+        />
       </div>
     </MainLayout>
   );
