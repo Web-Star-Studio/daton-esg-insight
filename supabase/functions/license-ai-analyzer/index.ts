@@ -66,18 +66,32 @@ serve(async (req) => {
     
     console.log(`Starting ${analysisType} analysis for license: ${licenseId}`);
 
-    // Get license and associated documents
+    // Get license data
     const { data: license, error: licenseError } = await supabaseClient
       .from('licenses')
-      .select(`
-        *,
-        documents!documents_related_id_fkey(*)
-      `)
+      .select('*')
       .eq('id', licenseId)
       .single();
 
-    if (licenseError || !license) {
+    if (licenseError) {
+      console.error('License query error:', licenseError);
+      throw new Error(`Failed to fetch license: ${licenseError.message}`);
+    }
+
+    if (!license) {
       throw new Error('License not found');
+    }
+
+    // Get documents for this license
+    const { data: documents, error: documentsError } = await supabaseClient
+      .from('documents')
+      .select('*')
+      .eq('related_id', licenseId)
+      .eq('related_model', 'license');
+
+    if (documentsError) {
+      console.error('Documents query error:', documentsError);
+      // Don't throw error for documents, just log it
     }
 
     // Update processing status
@@ -104,9 +118,11 @@ serve(async (req) => {
     };
 
     // Find PDF documents
-    const pdfDocuments = license.documents?.filter((doc: any) => 
-      doc.file_type?.toLowerCase() === 'pdf'
+    const pdfDocuments = documents?.filter((doc: any) => 
+      doc.file_type?.toLowerCase().includes('pdf')
     ) || [];
+
+    console.log(`Found ${pdfDocuments.length} PDF documents for license ${licenseId}`);
 
     if (pdfDocuments.length > 0) {
       // Analyze PDF with OpenAI
@@ -115,10 +131,17 @@ serve(async (req) => {
         throw new Error('OpenAI API key not configured');
       }
 
+      console.log(`Analyzing PDF document: ${pdfDocuments[0].file_name}`);
+
       // Get document download URL
-      const { data: documentUrl } = await supabaseClient.storage
+      const { data: documentUrl, error: urlError } = await supabaseClient.storage
         .from('documents')
         .createSignedUrl(pdfDocuments[0].file_path, 3600);
+
+      if (urlError) {
+        console.error('Error creating signed URL:', urlError);
+        throw new Error(`Failed to access document: ${urlError.message}`);
+      }
 
       if (documentUrl?.signedUrl) {
         try {
@@ -168,7 +191,7 @@ Se não conseguir extrair alguma informação, use os valores padrão fornecidos
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4o-mini',
+              model: 'gpt-4.1-2025-04-14',
               messages: [
                 {
                   role: 'system',
@@ -179,8 +202,7 @@ Se não conseguir extrair alguma informação, use os valores padrão fornecidos
                   content: prompt
                 }
               ],
-              max_tokens: 2000,
-              temperature: 0.1
+              max_completion_tokens: 2000
             }),
           });
 
@@ -188,16 +210,26 @@ Se não conseguir extrair alguma informação, use os valores padrão fornecidos
             const aiResult = await openAIResponse.json();
             const content = aiResult.choices[0]?.message?.content;
             
+            console.log('OpenAI response received, content length:', content?.length || 0);
+            
             if (content) {
               try {
                 const jsonMatch = content.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
-                  extractedData = { ...extractedData, ...JSON.parse(jsonMatch[0]) };
+                  const parsedData = JSON.parse(jsonMatch[0]);
+                  extractedData = { ...extractedData, ...parsedData };
+                  console.log('Successfully parsed AI response data');
+                } else {
+                  console.warn('No JSON found in AI response');
                 }
               } catch (parseError) {
                 console.error('Error parsing AI response:', parseError);
+                console.log('Raw content:', content.substring(0, 200));
               }
             }
+          } else {
+            const errorText = await openAIResponse.text();
+            console.error('OpenAI API error:', openAIResponse.status, errorText);
           }
         } catch (aiError) {
           console.error('Error calling OpenAI:', aiError);
@@ -221,7 +253,7 @@ Se não conseguir extrair alguma informação, use os valores padrão fornecidos
         ai_insights: extractedData,
         confidence_score: confidenceScore,
         processing_time_ms: processingTime,
-        ai_model_used: 'gpt-4o-mini'
+        ai_model_used: 'gpt-4.1-2025-04-14'
       })
       .select()
       .single();
