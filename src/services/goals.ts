@@ -108,6 +108,20 @@ export const getGoals = async (): Promise<GoalListItem[]> => {
 
 // POST /api/v1/goals - Create new goal
 export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
+  console.log('Creating goal with data:', goalData);
+  
+  // Get user's company_id
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .single();
+
+  if (profileError || !profile?.company_id) {
+    console.error('Error fetching user company:', profileError);
+    throw new Error('Não foi possível identificar a empresa do usuário');
+  }
+
   const { data, error } = await supabase
     .from('goals')
     .insert({
@@ -119,6 +133,7 @@ export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
       target_value: goalData.target_value,
       deadline_date: goalData.deadline_date,
       responsible_user_id: goalData.responsible_user_id,
+      company_id: profile.company_id,
       status: 'No Caminho Certo',
     } as GoalInsert)
     .select()
@@ -126,9 +141,10 @@ export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
 
   if (error) {
     console.error('Error creating goal:', error);
-    throw error;
+    throw new Error(`Erro ao salvar meta: ${error.message}`);
   }
 
+  console.log('Goal created successfully:', data);
   return data;
 };
 
