@@ -48,10 +48,12 @@ export const getExtractionJobStatus = async (jobId: string): Promise<ExtractionJ
   console.log('Getting extraction job status:', jobId);
 
   const { data, error } = await supabase.functions.invoke('document-ai-processor', {
-    method: 'GET',
     body: { 
       action: 'status',
       jobId 
+    },
+    headers: {
+      'Content-Type': 'application/json',
     }
   });
 

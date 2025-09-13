@@ -9,7 +9,11 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
+if (!openAIApiKey) {
+  console.error('OPENAI_API_KEY not found in environment variables');
+}
 
 // Configurações do sistema inteligente
 const AI_CONFIG = {
@@ -35,6 +39,14 @@ serve(async (req) => {
   }
 
   try {
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     const authHeader = req.headers.get('Authorization');
@@ -272,6 +284,8 @@ async function processPDFWithAdvancedAI(fileData: Blob, document: any) {
     const arrayBuffer = await fileData.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
+    console.log('Calling OpenAI API for PDF processing...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -284,30 +298,29 @@ async function processPDFWithAdvancedAI(fileData: Blob, document: any) {
           {
             role: 'system',
             content: `Você é um especialista em extração de dados de documentos corporativos para sistemas ESG/GHG.
-            Analise este PDF e extraia dados estruturados. Retorne APENAS um JSON válido sem texto adicional.
+            Analise este documento e extraia dados estruturados. Retorne APENAS um JSON válido sem texto adicional.
             Estrutura esperada: {"periodo_inicio": "YYYY-MM-DD", "periodo_fim": "YYYY-MM-DD", "quantidade_principal": number, "unidade": "string", "valor_total": number, "categoria": "string"}`
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Extraia dados estruturados deste documento: ${document.file_name}`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64}`,
-                  detail: 'high'
-                }
-              }
-            ]
+            content: `Extraia dados estruturados deste documento: ${document.file_name}. 
+            
+            O documento contém informações sobre consumo/atividade que deve ser extraída para análise de emissões de GEE.
+            
+            Procure por:
+            - Períodos de referência (datas)
+            - Quantidades consumidas (energia, combustível, etc.)
+            - Valores monetários
+            - Unidades de medida
+            - Categorias ou tipos de atividade`
           }
         ],
         max_completion_tokens: AI_CONFIG.processing.max_tokens,
         response_format: { type: "json_object" }
       })
     });
+    
+    console.log('OpenAI API response status:', response.status);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -342,6 +355,8 @@ async function processSpreadsheetWithAdvancedAI(fileData: Blob, document: any) {
     const arrayBuffer = await fileData.arrayBuffer();
     const text = new TextDecoder().decode(arrayBuffer).substring(0, 3000);
 
+    console.log('Calling OpenAI API for spreadsheet processing...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -353,17 +368,27 @@ async function processSpreadsheetWithAdvancedAI(fileData: Blob, document: any) {
         messages: [
           {
             role: 'system',
-            content: 'Analise esta planilha e extraia dados estruturados em JSON. Identifique padrões como datas, quantidades, valores.'
+            content: `Analise esta planilha e extraia dados estruturados em JSON para sistema ESG/GHG.
+            Retorne APENAS um JSON válido sem texto adicional.
+            Estrutura esperada: {"periodo_inicio": "YYYY-MM-DD", "periodo_fim": "YYYY-MM-DD", "quantidade_principal": number, "unidade": "string", "valor_total": number, "categoria": "string"}`
           },
           {
             role: 'user',
-            content: `Arquivo: ${document.file_name}\nConteúdo:\n${text}`
+            content: `Arquivo: ${document.file_name}\nConteúdo:\n${text}
+            
+            Extraia dados estruturados focando em:
+            - Períodos de referência
+            - Quantidades e valores
+            - Unidades de medida
+            - Categorias de atividade`
           }
         ],
         max_completion_tokens: AI_CONFIG.processing.max_tokens,
         response_format: { type: "json_object" }
       })
     });
+    
+    console.log('OpenAI API response status:', response.status);
 
     const result = await response.json();
     let extractedData = {};
