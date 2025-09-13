@@ -69,11 +69,23 @@ export function TargetTrackingModal({ open, onOpenChange, goal }: TargetTracking
   }
 
   const formatMetric = (value: number) => {
-    if (goal.metric.includes('CO2') || goal.metric.includes('emiss')) {
+    // Verificar se goal.metric existe antes de usar .includes()
+    if (!goal.metric_key && !goal.metric) {
+      return value.toLocaleString()
+    }
+    
+    const metric = goal.metric_key || goal.metric || ''
+    if (metric.includes('CO2') || metric.includes('emiss') || metric.includes('ghg')) {
       return `${value.toLocaleString()} tCO₂e`
     }
-    if (goal.metric.includes('%') || goal.metric.includes('percent')) {
+    if (metric.includes('%') || metric.includes('percent')) {
       return `${value}%`
+    }
+    if (metric.includes('waste') || metric.includes('residuo')) {
+      return `${value.toLocaleString()} kg`
+    }
+    if (metric.includes('energy') || metric.includes('energia')) {
+      return `${value.toLocaleString()} kWh`
     }
     return value.toLocaleString()
   }
