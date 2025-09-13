@@ -1,46 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, TrendingUp, Users, Star, Award, ExternalLink, Search } from 'lucide-react';
-import { MarketplaceModal } from '@/components/MarketplaceModal';
-import { getSolutions, getCompanyLeads, ESGSolution, MarketplaceLead, SOLUTION_CATEGORIES } from '@/services/marketplace';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { MainLayout } from "@/components/MainLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MarketplaceModal } from "@/components/MarketplaceModal";
+import { SolutionCard } from "@/components/SolutionCard";
+import { MarketplaceFilters } from "@/components/MarketplaceFilters";
+import { getSolutions, getCompanyLeads, SOLUTION_CATEGORIES, MarketplaceFilters as IMarketplaceFilters } from "@/services/marketplace";
+import { ShoppingCart, Users, TrendingUp, Star, ExternalLink, ArrowRight, Loader2, Search, Filter } from "lucide-react";
 
 export default function Marketplace() {
-  const [showMarketplace, setShowMarketplace] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("featured");
+  const [filters, setFilters] = useState<IMarketplaceFilters>({});
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Buscar soluções em destaque
-  const { data: featuredSolutions = [], isLoading: loadingSolutions } = useQuery({
-    queryKey: ['featured-solutions'],
-    queryFn: async () => {
-      const solutions = await getSolutions();
-      return solutions.filter(s => s.is_featured).slice(0, 4);
-    }
+  // Fetch all solutions with filters
+  const { data: solutions = [], isLoading: loadingSolutions } = useQuery({
+    queryKey: ["marketplace-solutions", filters],
+    queryFn: () => getSolutions(filters),
   });
 
-  // Buscar leads da empresa
-  const { data: companyLeads = [], isLoading: loadingLeads } = useQuery({
-    queryKey: ['company-leads'],
-    queryFn: getCompanyLeads
+  // Filter and sort solutions based on search and sort criteria  
+  const filteredSolutions = solutions
+    .filter(solution => 
+      searchTerm === "" || 
+      solution.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      solution.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      solution.esg_solution_providers.company_name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "rating":
+          return (b.esg_solution_providers.rating || 0) - (a.esg_solution_providers.rating || 0);
+        case "price_low":
+          return (a.price_range || "").localeCompare(b.price_range || "");
+        case "price_high":
+          return (b.price_range || "").localeCompare(a.price_range || "");
+        default: // featured
+          return (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0);
+      }
+    });
+
+  const featuredSolutions = solutions.filter(s => s.is_featured);
+
+  // Fetch company leads
+  const { data: leads = [], isLoading: loadingLeads } = useQuery({
+    queryKey: ["company-leads"],
+    queryFn: getCompanyLeads,
   });
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
-    setShowMarketplace(true);
+    setIsModalOpen(true);
   };
 
   const getLeadStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'contacted': return 'bg-yellow-100 text-yellow-800';
-      case 'quoted': return 'bg-purple-100 text-purple-800';
-      case 'negotiating': return 'bg-orange-100 text-orange-800';
-      case 'closed_won': return 'bg-emerald-100 text-emerald-800';
-      case 'closed_lost': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'new': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'contacted': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'quoted': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'negotiating': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'closed_won': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'closed_lost': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -57,252 +86,337 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ShoppingCart className="h-8 w-8" />
-            Marketplace ESG
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Encontre soluções validadas para seus desafios de sustentabilidade
-          </p>
+    <MainLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Marketplace ESG
+            </h1>
+            <p className="text-muted-foreground max-w-2xl">
+              Descubra soluções ESG inovadoras para transformar sua empresa. 
+              Conecte-se com fornecedores especializados e impulsione sua sustentabilidade.
+            </p>
+          </div>
+          <Button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            Explorar Soluções
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
-        <Button onClick={() => setShowMarketplace(true)} size="lg">
-          <Search className="h-4 w-4 mr-2" />
-          Explorar Soluções
-        </Button>
-      </div>
 
-      {/* Estatísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <ShoppingCart className="h-5 w-5 text-blue-600" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{solutions.length}</p>
+                  <p className="text-sm text-muted-foreground">Soluções Disponíveis</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Soluções Disponíveis</p>
-                <p className="text-2xl font-bold">50+</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <Users className="h-5 w-5 text-emerald-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">150+</p>
+                  <p className="text-sm text-muted-foreground">Fornecedores Verificados</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Fornecedores Verificados</p>
-                <p className="text-2xl font-bold">25+</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-yellow-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{leads.length}</p>
+                  <p className="text-sm text-muted-foreground">Seus Leads</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Seus Leads</p>
-                <p className="text-2xl font-bold">{companyLeads.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Star className="h-5 w-5 text-purple-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Star className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">4.8</p>
+                  <p className="text-sm text-muted-foreground">Avaliação Média</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Avaliação Média</p>
-                <p className="text-2xl font-bold">4.8</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <Tabs defaultValue="categories" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
-          <TabsTrigger value="featured">Destaques</TabsTrigger>
-          <TabsTrigger value="leads">Meus Leads</TabsTrigger>
-        </TabsList>
-
-        {/* Categorias de Soluções */}
-        <TabsContent value="categories" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(SOLUTION_CATEGORIES).map(([key, category]) => (
-              <Card 
-                key={key} 
-                className="cursor-pointer hover:shadow-lg transition-all transform hover:scale-[1.02]"
-                onClick={() => handleCategoryClick(key)}
-              >
-                <CardContent className="p-6 text-center">
-                  <div className="text-4xl mb-3">{category.icon}</div>
-                  <h3 className="font-semibold mb-2">{category.label}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Explore soluções especializadas
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-3 w-full">
-                    Ver Soluções
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+        {/* Search and Filters */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar soluções, fornecedores ou categorias..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        </TabsContent>
+          
+          <div className="flex gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="featured">Em Destaque</SelectItem>
+                <SelectItem value="rating">Melhor Avaliação</SelectItem>
+                <SelectItem value="price_low">Menor Preço</SelectItem>
+                <SelectItem value="price_high">Maior Preço</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-3"
+            >
+              <Filter className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-        {/* Soluções em Destaque */}
-        <TabsContent value="featured" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Advanced Filters */}
+        {showFilters && (
+          <MarketplaceFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
+        )}
+
+        {/* Tabs */}
+        <Tabs defaultValue="solutions" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="solutions">Todas as Soluções</TabsTrigger>
+            <TabsTrigger value="categories">Categorias</TabsTrigger>
+            <TabsTrigger value="featured">Em Destaque</TabsTrigger>
+            <TabsTrigger value="leads">Meus Leads</TabsTrigger>
+          </TabsList>
+
+          {/* All Solutions Tab */}
+          <TabsContent value="solutions" className="space-y-6">
             {loadingSolutions ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 rounded"></div>
-                      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="h-4 bg-muted rounded mb-2"></div>
+                      <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
+                      <div className="h-20 bg-muted rounded mb-4"></div>
+                      <div className="flex gap-2">
+                        <div className="h-6 bg-muted rounded w-16"></div>
+                        <div className="h-6 bg-muted rounded w-20"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
-              featuredSolutions.map((solution) => (
-                <Card key={solution.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{solution.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          {solution.esg_solution_providers.verified && (
-                            <Award className="h-3 w-3 text-blue-500" />
-                          )}
-                          {solution.esg_solution_providers.company_name}
-                        </p>
-                      </div>
-                      <Badge className="bg-yellow-100 text-yellow-800">
-                        Destaque
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {solution.description}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-xs">
-                          {solution.esg_solution_providers.rating?.toFixed(1) || 'N/A'}
-                        </span>
-                      </div>
-                      <Badge variant="outline">
-                        {SOLUTION_CATEGORIES[solution.category as keyof typeof SOLUTION_CATEGORIES]?.label}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1">
-                        Ver Detalhes
-                      </Button>
-                      {solution.esg_solution_providers.website_url && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a 
-                            href={solution.esg_solution_providers.website_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredSolutions.map((solution) => (
+                  <SolutionCard
+                    key={solution.id}
+                    solution={solution}
+                    onInterest={() => {
+                      setSelectedCategory(solution.category);
+                      setIsModalOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
             )}
-          </div>
-        </TabsContent>
+            
+            {!loadingSolutions && filteredSolutions.length === 0 && (
+              <div className="text-center py-12">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhuma solução encontrada</h3>
+                <p className="text-muted-foreground">
+                  Tente ajustar seus filtros ou termos de busca.
+                </p>
+              </div>
+            )}
+          </TabsContent>
 
-        {/* Meus Leads */}
-        <TabsContent value="leads" className="space-y-4">
-          {loadingLeads ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p>Carregando seus leads...</p>
-            </div>
-          ) : companyLeads.length === 0 ? (
-            <div className="text-center py-12">
-              <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum lead ainda</h3>
-              <p className="text-muted-foreground mb-4">
-                Explore o marketplace e demonstre interesse em soluções relevantes.
-              </p>
-              <Button onClick={() => setShowMarketplace(true)}>
-                Explorar Soluções
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {companyLeads.map((lead: any) => (
-                <Card key={lead.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{lead.esg_solutions?.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {lead.esg_solutions?.esg_solution_providers?.company_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Criado em {new Date(lead.created_at).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getLeadStatusColor(lead.status)}>
-                          {formatLeadStatus(lead.status)}
-                        </Badge>
-                        {lead.priority && (
-                          <Badge variant="outline" className="ml-2">
-                            {lead.priority}
-                          </Badge>
-                        )}
-                      </div>
+          {/* Categories Tab */}
+          <TabsContent value="categories" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Object.entries(SOLUTION_CATEGORIES).map(([key, category]) => (
+                <Card 
+                  key={key} 
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 group hover:bg-accent"
+                  onClick={() => handleCategoryClick(key)}
+                >
+                  <CardContent className="p-6 text-center">
+                    <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-200">
+                      {category.icon}
                     </div>
-                    {lead.specific_requirements && (
-                      <p className="text-sm mt-2 p-2 bg-gray-50 rounded">
-                        {lead.specific_requirements}
-                      </p>
-                    )}
+                    <h3 className="font-semibold text-lg mb-2 text-foreground group-hover:text-primary transition-colors">
+                      {category.label}
+                    </h3>
+                    <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+                      <span>Ver soluções</span>
+                      <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-200" />
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
 
-      {/* Modal do Marketplace */}
+          {/* Featured Tab */}
+          <TabsContent value="featured" className="space-y-6">
+            {loadingSolutions ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="h-4 bg-muted rounded mb-2"></div>
+                      <div className="h-3 bg-muted rounded mb-4 w-2/3"></div>
+                      <div className="h-20 bg-muted rounded mb-4"></div>
+                      <div className="flex gap-2">
+                        <div className="h-6 bg-muted rounded w-16"></div>
+                        <div className="h-6 bg-muted rounded w-20"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {featuredSolutions.map((solution) => (
+                  <SolutionCard
+                    key={solution.id}
+                    solution={solution}
+                    onInterest={() => {
+                      setSelectedCategory(solution.category);
+                      setIsModalOpen(true);
+                    }}
+                    featured
+                  />
+                ))}
+              </div>
+            )}
+            
+            {!loadingSolutions && featuredSolutions.length === 0 && (
+              <div className="text-center py-12">
+                <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhuma solução em destaque</h3>
+                <p className="text-muted-foreground">
+                  As soluções em destaque aparecerão aqui em breve.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Leads Tab */}
+          <TabsContent value="leads" className="space-y-6">
+            {loadingLeads ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="h-4 bg-muted rounded mb-2"></div>
+                      <div className="h-3 bg-muted rounded mb-4 w-1/2"></div>
+                      <div className="h-3 bg-muted rounded w-1/3"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : leads.length > 0 ? (
+              <div className="space-y-4">
+                {leads.map((lead) => (
+                  <Card key={lead.id} className="hover:bg-accent transition-colors duration-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-foreground">
+                              {(lead as any).esg_solutions?.title || 'Solução não encontrada'}
+                            </h3>
+                            <Badge 
+                              variant="outline" 
+                              className={getLeadStatusColor(lead.status)}
+                            >
+                              {formatLeadStatus(lead.status)}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {lead.priority === 'high' ? 'Alta' : 
+                               lead.priority === 'medium' ? 'Média' : 'Baixa'} Prioridade
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Fornecedor: {(lead as any).esg_solutions?.esg_solution_providers?.company_name || 'N/A'}
+                          </p>
+                          
+                          {lead.specific_requirements && (
+                            <p className="text-sm text-muted-foreground mb-3">
+                              <strong>Requisitos:</strong> {lead.specific_requirements}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>Criado: {new Date(lead.created_at).toLocaleDateString('pt-BR')}</span>
+                            {lead.budget_range && <span>Orçamento: {lead.budget_range}</span>}
+                            {lead.timeline && <span>Prazo: {lead.timeline}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum lead encontrado</h3>
+                <p className="text-muted-foreground mb-4">
+                  Você ainda não demonstrou interesse em nenhuma solução.
+                </p>
+                <Button onClick={() => setIsModalOpen(true)}>
+                  Explorar Soluções
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Marketplace Modal */}
       <MarketplaceModal
-        isOpen={showMarketplace}
-        onClose={() => setShowMarketplace(false)}
-        identifiedProblems={selectedCategory ? [] : []}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCategory(null);
+        }}
+        identifiedProblems={selectedCategory ? [selectedCategory] : []}
       />
-    </div>
+    </MainLayout>
   );
 }
