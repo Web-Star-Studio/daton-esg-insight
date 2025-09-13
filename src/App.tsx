@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
+import Contato from "./pages/Contato";
 import Funcionalidades from "./pages/Funcionalidades";
 import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
@@ -57,6 +58,9 @@ const App = () => (
             
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Contato - público */}
+            <Route path="/contato" element={<Contato />} />
             
             {/* Funcionalidades - público */}
             <Route path="/funcionalidades" element={<Funcionalidades />} />
