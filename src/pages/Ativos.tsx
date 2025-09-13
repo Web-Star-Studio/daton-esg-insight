@@ -356,17 +356,95 @@ function AssetDetailsPanel({
             </Card>
           </div>
 
-          {/* Descrição */}
-          {assetDetails.description && (
+          {/* Descrição e Informações Ambientais */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {assetDetails.description && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Descrição</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{assetDetails.description}</p>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
-                <CardTitle>Descrição</CardTitle>
+                <CardTitle>Informações Ambientais</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{assetDetails.description}</p>
+              <CardContent className="space-y-3">
+                {assetDetails.operational_status && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Status Operacional:</span>
+                    <Badge variant={assetDetails.operational_status === 'Ativo' ? 'default' : 'secondary'}>
+                      {assetDetails.operational_status}
+                    </Badge>
+                  </div>
+                )}
+                
+                {assetDetails.pollution_potential && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Potencial Poluidor:</span>
+                    <Badge variant={
+                      assetDetails.pollution_potential === 'Alto' ? 'destructive' : 
+                      assetDetails.pollution_potential === 'Médio' ? 'secondary' : 'outline'
+                    }>
+                      {assetDetails.pollution_potential}
+                    </Badge>
+                  </div>
+                )}
+
+                {assetDetails.productive_capacity && assetDetails.capacity_unit && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Capacidade:</span>
+                    <span className="text-sm">{assetDetails.productive_capacity} {assetDetails.capacity_unit}</span>
+                  </div>
+                )}
+
+                {assetDetails.installation_year && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Ano de Instalação:</span>
+                    <span className="text-sm">{assetDetails.installation_year}</span>
+                  </div>
+                )}
+
+                {assetDetails.cnae_code && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">CNAE:</span>
+                    <span className="text-sm font-mono">{assetDetails.cnae_code}</span>
+                  </div>
+                )}
+
+                {assetDetails.monitoring_frequency && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Freq. Monitoramento:</span>
+                    <span className="text-sm">{assetDetails.monitoring_frequency}</span>
+                  </div>
+                )}
+
+                {assetDetails.monitoring_responsible && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Responsável:</span>
+                    <span className="text-sm">{assetDetails.monitoring_responsible}</span>
+                  </div>
+                )}
+
+                {assetDetails.critical_parameters && assetDetails.critical_parameters.length > 0 && (
+                  <div>
+                    <span className="text-sm font-medium">Parâmetros Críticos:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {assetDetails.critical_parameters.map((param, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {param}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
+          </div>
         </TabsContent>
 
         <TabsContent value="emissions" className="space-y-4">
@@ -539,9 +617,9 @@ export default function Ativos() {
         {/* Cabeçalho */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Gestão de Ativos Operacionais</h1>
+            <h1 className="text-3xl font-bold">Gestão de Ativos Ambientais</h1>
             <p className="text-muted-foreground">
-              Visualize e gerencie todos os ativos físicos da empresa
+              Gerencie ativos operacionais com foco em controle ambiental, emissões, licenças e resíduos
             </p>
           </div>
           <Button onClick={() => setShowCreateModal(true)}>

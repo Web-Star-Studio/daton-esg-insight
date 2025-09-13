@@ -14,6 +14,16 @@ interface Asset {
   location?: string
   description?: string
   parent_asset_id?: string
+  // Campos ambientais específicos
+  productive_capacity?: number
+  capacity_unit?: string
+  installation_year?: number
+  operational_status?: string
+  pollution_potential?: string
+  cnae_code?: string
+  monitoring_frequency?: string
+  critical_parameters?: string[]
+  monitoring_responsible?: string
   created_at: string
   updated_at: string
   children?: Asset[]
@@ -142,7 +152,16 @@ serve(async (req) => {
           asset_type: body.asset_type,
           location: body.location,
           description: body.description,
-          parent_asset_id: body.parent_asset_id
+          parent_asset_id: body.parent_asset_id,
+          productive_capacity: body.productive_capacity,
+          capacity_unit: body.capacity_unit,
+          installation_year: body.installation_year,
+          operational_status: body.operational_status,
+          pollution_potential: body.pollution_potential,
+          cnae_code: body.cnae_code,
+          monitoring_frequency: body.monitoring_frequency,
+          critical_parameters: body.critical_parameters,
+          monitoring_responsible: body.monitoring_responsible
         }])
         .select()
         .single()
@@ -172,7 +191,16 @@ serve(async (req) => {
           asset_type: body.asset_type,
           location: body.location,
           description: body.description,
-          parent_asset_id: body.parent_asset_id
+          parent_asset_id: body.parent_asset_id,
+          productive_capacity: body.productive_capacity,
+          capacity_unit: body.capacity_unit,
+          installation_year: body.installation_year,
+          operational_status: body.operational_status,
+          pollution_potential: body.pollution_potential,
+          cnae_code: body.cnae_code,
+          monitoring_frequency: body.monitoring_frequency,
+          critical_parameters: body.critical_parameters,
+          monitoring_responsible: body.monitoring_responsible
         })
         .eq('id', assetId)
         .select()

@@ -200,35 +200,62 @@ export type Database = {
       assets: {
         Row: {
           asset_type: string
+          capacity_unit: string | null
+          cnae_code: string | null
           company_id: string
           created_at: string
+          critical_parameters: string[] | null
           description: string | null
           id: string
+          installation_year: number | null
           location: string | null
+          monitoring_frequency: string | null
+          monitoring_responsible: string | null
           name: string
+          operational_status: string | null
           parent_asset_id: string | null
+          pollution_potential: string | null
+          productive_capacity: number | null
           updated_at: string
         }
         Insert: {
           asset_type: string
+          capacity_unit?: string | null
+          cnae_code?: string | null
           company_id: string
           created_at?: string
+          critical_parameters?: string[] | null
           description?: string | null
           id?: string
+          installation_year?: number | null
           location?: string | null
+          monitoring_frequency?: string | null
+          monitoring_responsible?: string | null
           name: string
+          operational_status?: string | null
           parent_asset_id?: string | null
+          pollution_potential?: string | null
+          productive_capacity?: number | null
           updated_at?: string
         }
         Update: {
           asset_type?: string
+          capacity_unit?: string | null
+          cnae_code?: string | null
           company_id?: string
           created_at?: string
+          critical_parameters?: string[] | null
           description?: string | null
           id?: string
+          installation_year?: number | null
           location?: string | null
+          monitoring_frequency?: string | null
+          monitoring_responsible?: string | null
           name?: string
+          operational_status?: string | null
           parent_asset_id?: string | null
+          pollution_potential?: string | null
+          productive_capacity?: number | null
           updated_at?: string
         }
         Relationships: [

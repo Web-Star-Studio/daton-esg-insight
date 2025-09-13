@@ -12,10 +12,10 @@ export interface Asset {
   productive_capacity?: number;
   capacity_unit?: string;
   installation_year?: number;
-  operational_status?: 'Ativo' | 'Inativo' | 'Manutenção';
-  pollution_potential?: 'Alto' | 'Médio' | 'Baixo';
+  operational_status?: string;
+  pollution_potential?: string;
   cnae_code?: string;
-  monitoring_frequency?: 'Diária' | 'Semanal' | 'Mensal' | 'Trimestral' | 'Anual';
+  monitoring_frequency?: string;
   critical_parameters?: string[];
   monitoring_responsible?: string;
   created_at: string;
@@ -65,10 +65,10 @@ export interface CreateAssetData {
   productive_capacity?: number;
   capacity_unit?: string;
   installation_year?: number;
-  operational_status?: 'Ativo' | 'Inativo' | 'Manutenção';
-  pollution_potential?: 'Alto' | 'Médio' | 'Baixo';
+  operational_status?: string;
+  pollution_potential?: string;
   cnae_code?: string;
-  monitoring_frequency?: 'Diária' | 'Semanal' | 'Mensal' | 'Trimestral' | 'Anual';
+  monitoring_frequency?: string;
   critical_parameters?: string[];
   monitoring_responsible?: string;
 }
@@ -83,10 +83,10 @@ export interface UpdateAssetData {
   productive_capacity?: number;
   capacity_unit?: string;
   installation_year?: number;
-  operational_status?: 'Ativo' | 'Inativo' | 'Manutenção';
-  pollution_potential?: 'Alto' | 'Médio' | 'Baixo';
+  operational_status?: string;
+  pollution_potential?: string;
   cnae_code?: string;
-  monitoring_frequency?: 'Diária' | 'Semanal' | 'Mensal' | 'Trimestral' | 'Anual';
+  monitoring_frequency?: string;
   critical_parameters?: string[];
   monitoring_responsible?: string;
 }
