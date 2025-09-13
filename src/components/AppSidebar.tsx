@@ -59,7 +59,7 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
-    title: "GESTÃO DE GEE",
+    title: "EMISSÕES",
     items: [
       { id: "inventario-gee", title: "Inventário GEE", icon: Package, path: "/inventario-gee" },
       { id: "dashboard-ghg", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg" },
@@ -68,7 +68,7 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
-    title: "ESG E SUSTENTABILIDADE",
+    title: "AMBIENTAL",
     items: [
       { id: "licenciamento", title: "Licenciamento", icon: Gavel, path: "/licenciamento" },
       { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
