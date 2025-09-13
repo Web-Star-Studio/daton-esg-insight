@@ -23,6 +23,8 @@ import Relatorios from "./pages/Relatorios";
 import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
 import RegistrarAtividadeConservacao from "./pages/RegistrarAtividadeConservacao";
+// Backward-compat alias to avoid runtime errors from stale references
+const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
 import Ativos from "./pages/Ativos";
 import Desempenho from "./pages/Desempenho";
 import Configuracao from "./pages/Configuracao";
