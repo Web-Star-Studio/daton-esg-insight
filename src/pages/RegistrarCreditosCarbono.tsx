@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { MainLayout } from "@/components/MainLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,41 +18,76 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { CalendarIcon, Upload, X, Check, ChevronsUpDown, Info } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { carbonProjectsService, type CarbonProject } from "@/services/carbonProjects"
 
 const formSchema = z.object({
-  nomeProjeto: z.string().min(1, "Nome do projeto é obrigatório"),
-  padraoCertificacao: z.string().min(1, "Padrão de certificação é obrigatório"),
-  tipoProjeto: z.string().min(1, "Tipo de projeto é obrigatório"),
-  quantidadeCreditos: z.number().min(0.01, "Quantidade deve ser maior que zero"),
-  custoTotal: z.number().min(0, "Custo deve ser positivo"),
-  dataCompra: z.date({ required_error: "Data da compra é obrigatória" }),
-  serialNumber: z.string().min(1, "ID de registro é obrigatório"),
+  project_id: z.string().optional(),
+  project_name_text: z.string().min(1, "Nome do projeto é obrigatório"),
+  standard: z.string().min(1, "Padrão de certificação é obrigatório"),
+  type_methodology: z.string().min(1, "Tipo de projeto é obrigatório"),
+  quantity_tco2e: z.number().min(0.01, "Quantidade deve ser maior que zero"),
+  total_cost: z.number().min(0, "Custo deve ser positivo").optional(),
+  purchase_date: z.date({ required_error: "Data da compra é obrigatória" }),
+  registry_id: z.string().min(1, "ID de registro é obrigatório"),
 })
-
-const projetosExistentes = [
-  "Reflorestamento Corredor Tupi",
-  "Parque Eólico de Guajiru", 
-  "Captura de Metano - Aterro Seropédica",
-]
 
 const RegistrarCreditosCarbono = () => {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [openCombobox, setOpenCombobox] = useState(false)
   const [isNovoProjetoMode, setIsNovoProjetoMode] = useState(false)
+  const [projects, setProjects] = useState<CarbonProject[]>([])
+  const [loading, setLoading] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nomeProjeto: "",
-      padraoCertificacao: "",
-      tipoProjeto: "",
-      quantidadeCreditos: 0,
-      custoTotal: 0,
-      serialNumber: "",
+      project_name_text: "",
+      standard: "",
+      type_methodology: "",
+      quantity_tco2e: 0,
+      total_cost: 0,
+      registry_id: "",
     },
   })
+
+  // SEO
+  useEffect(() => {
+    document.title = 'Registrar Créditos de Carbono | Compra de Créditos';
+    const desc = 'Registre a compra de créditos de carbono para compensação de emissões com controle detalhado.';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (meta) meta.setAttribute('content', desc);
+    else {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = desc;
+      document.head.appendChild(meta);
+    }
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const href = `${window.location.origin}/projetos-carbono/registrar-creditos`;
+    if (canonical) canonical.setAttribute('href', href);
+    else {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      canonical.href = href;
+      document.head.appendChild(canonical);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = async () => {
+    try {
+      const data = await carbonProjectsService.getProjects();
+      setProjects(data);
+    } catch (error) {
+      console.error('Erro ao carregar projetos:', error);
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -71,23 +107,59 @@ const RegistrarCreditosCarbono = () => {
     setUploadedFile(null)
   }
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values)
-    // Aqui seria a lógica de salvar
-    navigate("/projetos-carbono")
-  }
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      setLoading(true);
+
+      const purchaseData = {
+        project_id: values.project_id || undefined,
+        project_name_text: values.project_name_text,
+        standard: values.standard,
+        type_methodology: values.type_methodology,
+        registry_id: values.registry_id,
+        purchase_date: values.purchase_date.toISOString().split('T')[0],
+        quantity_tco2e: values.quantity_tco2e,
+        total_cost: values.total_cost || undefined,
+      };
+
+      await carbonProjectsService.createPurchase(purchaseData);
+      
+      toast({
+        title: "Sucesso",
+        description: "Compra de créditos registrada com sucesso!",
+      });
+      
+      navigate("/projetos-carbono");
+    } catch (error) {
+      console.error('Erro ao registrar compra:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar compra de créditos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCancel = () => {
     navigate("/projetos-carbono")
   }
 
-  const handleSelectProjeto = (projeto: string) => {
-    if (projeto === "novo-projeto") {
+  const handleSelectProjeto = (projectValue: string) => {
+    if (projectValue === "novo-projeto") {
       setIsNovoProjetoMode(true)
-      form.setValue("nomeProjeto", "")
+      form.setValue("project_name_text", "")
+      form.setValue("project_id", undefined)
     } else {
-      setIsNovoProjetoMode(false)
-      form.setValue("nomeProjeto", projeto)
+      const selectedProject = projects.find(p => p.id === projectValue);
+      if (selectedProject) {
+        setIsNovoProjetoMode(false)
+        form.setValue("project_name_text", selectedProject.name)
+        form.setValue("project_id", selectedProject.id)
+        form.setValue("standard", selectedProject.standard)
+        form.setValue("type_methodology", selectedProject.type_methodology)
+      }
     }
     setOpenCombobox(false)
   }
@@ -107,8 +179,8 @@ const RegistrarCreditosCarbono = () => {
             <Button variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>
-            <Button type="submit" form="creditos-form">
-              Salvar Registro
+            <Button type="submit" form="creditos-form" disabled={loading}>
+              {loading ? "Salvando..." : "Salvar Registro"}
             </Button>
           </div>
         </div>
@@ -127,7 +199,7 @@ const RegistrarCreditosCarbono = () => {
                   <CardContent className="space-y-6">
                     <FormField
                       control={form.control}
-                      name="nomeProjeto"
+                      name="project_name_text"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Selecione ou adicione o projeto de origem dos créditos</FormLabel>
@@ -154,19 +226,24 @@ const RegistrarCreditosCarbono = () => {
                                   <CommandList>
                                     <CommandEmpty>Nenhum projeto encontrado.</CommandEmpty>
                                     <CommandGroup>
-                                      {projetosExistentes.map((projeto) => (
+                                      {projects.map((project) => (
                                         <CommandItem
-                                          key={projeto}
-                                          value={projeto}
-                                          onSelect={() => handleSelectProjeto(projeto)}
+                                          key={project.id}
+                                          value={project.id}
+                                          onSelect={() => handleSelectProjeto(project.id)}
                                         >
                                           <Check
                                             className={cn(
                                               "mr-2 h-4 w-4",
-                                              field.value === projeto ? "opacity-100" : "opacity-0"
+                                              field.value === project.name ? "opacity-100" : "opacity-0"
                                             )}
                                           />
-                                          {projeto}
+                                          <div className="flex flex-col">
+                                            <span>{project.name}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                              {project.type_methodology} • {project.standard}
+                                            </span>
+                                          </div>
                                         </CommandItem>
                                       ))}
                                       <CommandItem
@@ -195,7 +272,7 @@ const RegistrarCreditosCarbono = () => {
                                 size="sm"
                                 onClick={() => {
                                   setIsNovoProjetoMode(false)
-                                  form.setValue("nomeProjeto", "")
+                                  form.setValue("project_name_text", "")
                                 }}
                               >
                                 Selecionar projeto existente
@@ -209,11 +286,11 @@ const RegistrarCreditosCarbono = () => {
 
                     <FormField
                       control={form.control}
-                      name="padraoCertificacao"
+                      name="standard"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Padrão de Certificação do Crédito</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione o padrão" />
@@ -235,7 +312,7 @@ const RegistrarCreditosCarbono = () => {
 
                     <FormField
                       control={form.control}
-                      name="tipoProjeto"
+                      name="type_methodology"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tipo de Projeto</FormLabel>
@@ -257,7 +334,7 @@ const RegistrarCreditosCarbono = () => {
                   <CardContent className="space-y-6">
                     <FormField
                       control={form.control}
-                      name="quantidadeCreditos"
+                      name="quantity_tco2e"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Quantidade de Créditos Adquiridos (em tCO₂e)</FormLabel>
@@ -277,10 +354,10 @@ const RegistrarCreditosCarbono = () => {
 
                     <FormField
                       control={form.control}
-                      name="custoTotal"
+                      name="total_cost"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Custo Total da Transação</FormLabel>
+                          <FormLabel>Custo Total da Transação (Opcional)</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -290,7 +367,7 @@ const RegistrarCreditosCarbono = () => {
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             />
                           </FormControl>
-                          {field.value > 0 && (
+                          {field.value && field.value > 0 && (
                             <div className="text-sm text-muted-foreground">
                               Valor formatado: {formatCurrency(field.value)}
                             </div>
@@ -302,7 +379,7 @@ const RegistrarCreditosCarbono = () => {
 
                     <FormField
                       control={form.control}
-                      name="dataCompra"
+                      name="purchase_date"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Data da Aquisição</FormLabel>
@@ -354,7 +431,7 @@ const RegistrarCreditosCarbono = () => {
                   <CardContent className="space-y-6">
                     <FormField
                       control={form.control}
-                      name="serialNumber"
+                      name="registry_id"
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center gap-2">
