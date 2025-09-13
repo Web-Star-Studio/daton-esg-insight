@@ -58,7 +58,7 @@ export function ConservationActivityModal({
           area_size: activity.area_size || 0,
           start_date: new Date(activity.start_date),
           end_date: activity.end_date ? new Date(activity.end_date) : undefined,
-          status: activity.status,
+          status: activity.status as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa',
           investment_amount: activity.investment_amount,
           carbon_impact_estimate: activity.carbon_impact_estimate,
           methodology: activity.methodology || "",
@@ -88,7 +88,7 @@ export function ConservationActivityModal({
       area_size: 0,
       start_date: new Date(),
       end_date: undefined,
-      status: "Planejada",
+      status: "Planejada" as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa',
       investment_amount: 0,
       carbon_impact_estimate: 0,
       methodology: "",
@@ -226,7 +226,7 @@ export function ConservationActivityModal({
               <Label htmlFor="status">Status</Label>
               <Select 
                 value={formData.status} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa' }))}
               >
                 <SelectTrigger>
                   <SelectValue />
