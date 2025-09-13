@@ -8,112 +8,112 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Daton Design System - Cores ESG Profissionais */
-    --background: 210 17% 98%; /* #F8F9FA - Fundo principal claro */
-    --foreground: 210 52% 11%; /* #0D1B2A - Texto principal */
+    /* Daton Design System - Cores profissionais baseadas na referência */
+    --background: 0 0% 100%; /* Branco para o fundo principal */
+    --foreground: 0 0% 9%; /* Preto para texto principal */
 
     --card: 0 0% 100%; /* Branco para cards */
-    --card-foreground: 210 52% 11%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 52% 11%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Azul corporativo escuro - Cor primária */
-    --primary: 210 52% 11%; /* #0D1B2A */
+    /* Verde Daton como cor primária (baseado no logo) */
+    --primary: 142 69% 58%; /* Verde da árvore do logo */
     --primary-foreground: 0 0% 100%;
 
     /* Cinza claro para elementos secundários */
     --secondary: 210 17% 96%;
-    --secondary-foreground: 210 52% 11%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 210 17% 94%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 17% 95%;
+    --muted-foreground: 0 0% 45%;
 
-    /* Azul vibrante para links e botões */
-    --accent: 211 100% 50%; /* #007BFF */
+    /* Verde mais escuro para acentos */
+    --accent: 142 69% 48%;
     --accent-foreground: 0 0% 100%;
 
     /* Vermelho para erros */
-    --destructive: 354 70% 54%; /* #DC3545 */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Cores ESG específicas */
-    --success: 134 61% 31%; /* #198754 - Verde sustentabilidade */
+    /* Cores de status */
+    --success: 142 69% 58%;
     --success-foreground: 0 0% 100%;
     
-    --warning: 45 100% 51%; /* #FFC107 - Laranja alerta */
-    --warning-foreground: 210 52% 11%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
 
-    --border: 210 17% 90%;
-    --input: 210 17% 90%;
-    --ring: 211 100% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 142 69% 58%;
 
     --radius: 0.75rem;
 
-    /* Sidebar - Azul corporativo escuro */
-    --sidebar-background: 210 52% 11%; /* #0D1B2A */
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 210 52% 11%;
-    --sidebar-accent: 210 52% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 52% 15%;
-    --sidebar-ring: 211 100% 50%;
+    /* Sidebar - Verde suave inspirado no design */
+    --sidebar-background: 0 0% 100%; /* Fundo branco para o sidebar */
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 142 69% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 142 69% 95%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 142 69% 58%;
 
-    /* Gradientes e sombras profissionais */
-    --gradient-primary: linear-gradient(135deg, hsl(210 52% 11%), hsl(210 52% 8%));
-    --gradient-accent: linear-gradient(135deg, hsl(211 100% 50%), hsl(211 100% 45%));
-    --shadow-elegant: 0 10px 30px -10px hsl(210 52% 11% / 0.1);
-    --shadow-card: 0 4px 12px -2px hsl(210 52% 11% / 0.08);
+    /* Gradientes e sombras profissionais atualizados */
+    --gradient-primary: linear-gradient(135deg, hsl(142 69% 58%), hsl(142 69% 48%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 69% 48%), hsl(142 69% 38%));
+    --shadow-elegant: 0 10px 30px -10px hsl(0 0% 9% / 0.1);
+    --shadow-card: 0 4px 12px -2px hsl(0 0% 9% / 0.08);
     
     /* Transições suaves */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    /* Modo escuro mantém o tema profissional */
-    --background: 210 52% 8%;
+    /* Modo escuro com tema verde Daton */
+    --background: 0 0% 4%;
     --foreground: 0 0% 95%;
 
-    --card: 210 52% 10%;
+    --card: 0 0% 6%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 210 52% 10%;
+    --popover: 0 0% 6%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 211 100% 50%;
+    --primary: 142 69% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 52% 12%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 95%;
 
-    --muted: 210 52% 12%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 211 100% 50%;
+    --accent: 142 69% 48%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 354 70% 54%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 134 61% 41%;
+    --success: 142 69% 58%;
     --success-foreground: 0 0% 100%;
     
-    --warning: 45 100% 51%;
-    --warning-foreground: 210 52% 11%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
 
-    --border: 210 52% 15%;
-    --input: 210 52% 15%;
-    --ring: 211 100% 50%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 142 69% 58%;
     
-    --sidebar-background: 210 52% 6%;
+    --sidebar-background: 0 0% 2%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 210 52% 11%;
-    --sidebar-accent: 210 52% 12%;
+    --sidebar-primary: 142 69% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 52% 12%;
-    --sidebar-ring: 211 100% 50%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 142 69% 58%;
   }
 }
 

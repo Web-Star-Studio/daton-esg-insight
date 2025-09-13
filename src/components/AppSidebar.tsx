@@ -34,7 +34,7 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar"
-import datonLogo from "@/assets/daton-logo.png"
+import datonLogo from "@/assets/daton-logo-header.png"
 
 interface MenuItem {
   id: string
@@ -128,55 +128,45 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className={isCollapsed ? "w-16" : "w-64"}>
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+    <Sidebar className={`${isCollapsed ? "w-16" : "w-64"} border-r border-border/40 bg-background`}>
+      <SidebarHeader className="p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+          <div className="flex-shrink-0">
             <img 
               src={datonLogo} 
               alt="Daton" 
-              className="w-6 h-6 object-contain"
+              className={`${isCollapsed ? "w-8 h-8" : "w-24 h-8"} object-contain`}
             />
           </div>
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-sidebar-primary text-lg font-semibold">
-                Daton
-              </span>
-              <span className="text-sidebar-foreground/60 text-xs">
-                ESG Platform
-              </span>
-            </div>
-          )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-2">
+      <SidebarContent className="p-3">
         {menuSections.map((section, sectionIndex) => (
-          <SidebarGroup key={sectionIndex} className="mb-4">
+          <SidebarGroup key={sectionIndex} className="mb-6">
             {!isCollapsed && (
-              <SidebarGroupLabel className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider px-3 py-2">
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 mb-2">
                 {section.title}
               </SidebarGroupLabel>
             )}
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-1">
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
                       onClick={() => handleItemClick(item)}
                       className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm
                         ${activeItem === item.id 
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' 
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                          ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary' 
+                          : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground'
                         }
-                        ${isCollapsed ? 'justify-center' : 'justify-start'}
+                        ${isCollapsed ? 'justify-center px-2' : 'justify-start'}
                       `}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className={`${isCollapsed ? "w-5 h-5" : "w-4 h-4"} flex-shrink-0`} />
                       {!isCollapsed && (
-                        <span className="text-sm truncate">{item.title}</span>
+                        <span className="truncate">{item.title}</span>
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -1,94 +1,74 @@
-import { Search, Bell, User, Settings, LogOut } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { useState } from "react"
+import { Search, Bell, Settings, Menu, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/contexts/AuthContext"
-import { useNavigate } from "react-router-dom"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export function AppHeader() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/auth');
-  };
-
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shadow-sm">
-      {/* Trigger da sidebar e busca */}
+    <header className="flex items-center justify-between px-6 py-4 bg-background border-b border-border/40">
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="lg:hidden" />
+        <SidebarTrigger className="hover:bg-muted/50" />
         
-        <div className="relative w-96 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input 
-            placeholder="Buscar relatórios, métricas, empresas..." 
-            className="pl-10 bg-muted/50 border-muted-foreground/20 focus-visible:ring-accent"
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar..."
+            className="pl-10 pr-4 bg-muted/20 border-border/40 focus:bg-background"
           />
         </div>
       </div>
 
-      {/* Ações do usuário */}
       <div className="flex items-center gap-3">
-        {/* Notificações */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full"></div>
+        <Button variant="ghost" size="sm" className="relative">
+          <Bell className="h-4 w-4" />
+          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0">
+            2
+          </Badge>
         </Button>
 
-        {/* Menu do usuário */}
-        {user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <div className="flex items-center gap-3 pl-3 border-l border-border cursor-pointer hover:bg-muted/50 rounded-lg p-2 transition-colors">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {getUserInitials(user.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium">{user.full_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.role} • {user.company.name}
-                  </p>
-                </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  FA
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-left hidden sm:block">
+                <div className="text-sm font-medium">Felipe Antunes</div>
+                <div className="text-xs text-muted-foreground">Web Star Studio</div>
               </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div>
-                  <div className="font-medium">{user.full_name}</div>
-                  <div className="text-sm text-muted-foreground">{user.email}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {user.job_title} • {user.role}
-                  </div>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/configuracao')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Configurações
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair da Conta
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              Perfil
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              Configurações
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive">
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )
