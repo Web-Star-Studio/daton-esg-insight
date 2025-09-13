@@ -62,6 +62,29 @@ export default function Documentos() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   
+  // SEO
+  useEffect(() => {
+    document.title = 'Central de Documentos | Gestão de Documentos com IA';
+    const desc = 'Gerencie, pesquise e analise documentos com IA. Upload inteligente, pastas e reconciliação de dados.';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (meta) meta.setAttribute('content', desc);
+    else {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = desc;
+      document.head.appendChild(meta);
+    }
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const href = `${window.location.origin}/documentos`;
+    if (canonical) canonical.setAttribute('href', href);
+    else {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      canonical.href = href;
+      document.head.appendChild(canonical);
+    }
+  }, []);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

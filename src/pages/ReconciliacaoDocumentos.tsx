@@ -57,11 +57,32 @@ export const ReconciliacaoDocumentos = () => {
     rejected: 0,
     averageConfidence: 0
   });
+  // SEO
+  useEffect(() => {
+    document.title = 'Reconciliação de Documentos IA | Revisão e Aprovação';
+    const desc = 'Revise, edite e aprove dados extraídos automaticamente pela IA com confiança e controle.';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (meta) meta.setAttribute('content', desc);
+    else {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = desc;
+      document.head.appendChild(meta);
+    }
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const href = `${window.location.origin}/reconciliacao-documentos`;
+    if (canonical) canonical.setAttribute('href', href);
+    else {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      canonical.href = href;
+      document.head.appendChild(canonical);
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     try {
       setLoading(true);

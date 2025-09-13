@@ -27,6 +27,11 @@ export interface AIPattern extends Omit<AIPatternRow, 'field_patterns' | 'extrac
 export const processDocumentWithAI = async (documentId: string): Promise<{ jobId: string; status: string; message: string }> => {
   console.log('Starting AI processing for document:', documentId);
 
+  if (!documentId || typeof documentId !== 'string' || documentId.trim().length === 0) {
+    console.error('processDocumentWithAI called without a valid documentId', documentId);
+    throw new Error('ID do documento inválido para processamento');
+  }
+
   const { data, error } = await supabase.functions.invoke('document-ai-processor', {
     body: { 
       action: 'process',
