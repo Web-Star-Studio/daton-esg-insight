@@ -14,13 +14,13 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import datonLogo from "@/assets/daton-logo-header.png"
-import amchamLogo from "@/assets/clients/amcham.png"
-import cooperliquidosLogo from "@/assets/clients/cooperliquidos.png"
-import gabardoLogo from "@/assets/clients/gabardo.png"
-import mercosulLogo from "@/assets/clients/mercosul.png"
-import proambLogo from "@/assets/clients/proamb.png"
-import safewebLogo from "@/assets/clients/safeweb.png"
-import thyssenkruppLogo from "@/assets/clients/thyssenkrupp.png"
+import amchamLogo from "@/assets/clients/amcham-new.png"
+import cooperliquidosLogo from "@/assets/clients/cooperliquidos-new.png"
+import gabardoLogo from "@/assets/clients/gabardo-new.png"
+import mercosulLogo from "@/assets/clients/mercosul-new.png"
+import proambLogo from "@/assets/clients/proamb-new.png"
+import safewebLogo from "@/assets/clients/safeweb-new.png"
+import thyssenkruppLogo from "@/assets/clients/thyssenkrupp-new.png"
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -311,24 +311,24 @@ export default function LandingPage() {
             <div className="flex client-logos-slider">
               {/* Primeira instância das logos */}
               {clients.map((client, index) => (
-                <div key={`first-${index}`} className="flex-none mx-8 opacity-70 hover:opacity-100 transition-opacity">
-                  <div className="bg-card rounded-xl p-12 h-48 w-48 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
+                <div key={`first-${index}`} className="flex-none mx-6 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-xl p-8 h-32 w-64 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
                     <img 
                       src={client.logo} 
                       alt={client.name} 
-                      className="h-40 w-40 object-contain filter grayscale hover:grayscale-0 transition-all"
+                      className="h-20 w-56 object-contain filter grayscale hover:grayscale-0 transition-all"
                     />
                   </div>
                 </div>
               ))}
               {/* Segunda instância para loop infinito */}
               {clients.map((client, index) => (
-                <div key={`second-${index}`} className="flex-none mx-8 opacity-70 hover:opacity-100 transition-opacity">
-                  <div className="bg-card rounded-xl p-12 h-48 w-48 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
+                <div key={`second-${index}`} className="flex-none mx-6 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-xl p-8 h-32 w-64 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
                     <img 
                       src={client.logo} 
                       alt={client.name} 
-                      className="h-40 w-40 object-contain filter grayscale hover:grayscale-0 transition-all"
+                      className="h-20 w-56 object-contain filter grayscale hover:grayscale-0 transition-all"
                     />
                   </div>
                 </div>
