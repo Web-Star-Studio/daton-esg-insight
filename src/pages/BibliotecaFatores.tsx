@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter, Info } from "lucide-react";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Plus, Search, Filter, Info, Upload, Download } from "lucide-react";
 import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
 import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
+import { ImportFactorsModal } from "@/components/ImportFactorsModal";
+import { ExportFactorsModal } from "@/components/ExportFactorsModal";
 import { EmissionFactorCard } from "@/components/EmissionFactorCard";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { useToast } from "@/hooks/use-toast";
@@ -25,11 +28,15 @@ export default function BibliotecaFatores() {
   const [selectedScope, setSelectedScope] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingFactor, setEditingFactor] = useState<EmissionFactor | null>(null);
   const [showMethodology, setShowMethodology] = useState(false);
   const [factors, setFactors] = useState<EmissionFactor[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   const { toast } = useToast();
 
   // Load data on component mount
@@ -76,7 +83,7 @@ export default function BibliotecaFatores() {
     return matchesSearch && matchesCategory && matchesType && matchesScope;
   });
 
-  // Statistics for better overview
+  // Statistics and pagination
   const stats = {
     total: factors.length,
     system: factors.filter(f => f.type === 'system').length,
@@ -84,6 +91,17 @@ export default function BibliotecaFatores() {
     categories: categories.length,
     filtered: filteredFactors.length
   };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredFactors.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedFactors = filteredFactors.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, selectedType, selectedScope]);
 
   const handleDeleteFactor = async (id: string) => {
     if (!confirm("Tem certeza que deseja deletar este fator de emissão?")) {
@@ -134,6 +152,14 @@ export default function BibliotecaFatores() {
             <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)}>
               <Info className="mr-2 h-4 w-4" />
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
+            </Button>
+            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Importar CSV/Excel
+            </Button>
+            <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar Biblioteca
             </Button>
             <Button onClick={() => setIsAddModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -210,13 +236,20 @@ export default function BibliotecaFatores() {
             {stats.filtered !== stats.total && (
               <span className="text-muted-foreground font-normal"> de {stats.total} total</span>
             )}
+            {totalPages > 1 && (
+              <span className="text-muted-foreground font-normal text-base">
+                {" "}• Página {currentPage} de {totalPages}
+              </span>
+            )}
           </h2>
           
-          {searchTerm && (
-            <Button variant="ghost" size="sm" onClick={() => setSearchTerm("")}>
-              Limpar busca
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {searchTerm && (
+              <Button variant="ghost" size="sm" onClick={() => setSearchTerm("")}>
+                Limpar busca
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Factors Grid */}
@@ -224,17 +257,86 @@ export default function BibliotecaFatores() {
           <div className="flex justify-center items-center h-32">
             <div className="text-muted-foreground">Carregando fatores de emissão...</div>
           </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {filteredFactors.map((factor) => (
-              <EmissionFactorCard
-                key={factor.id}
-                factor={factor}
-                onDelete={factor.type === 'custom' ? handleDeleteFactor : undefined}
-                onEdit={factor.type === 'custom' ? handleEditFactor : undefined}
-              />
-            ))}
+        ) : paginatedFactors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-32 text-center">
+            <p className="text-muted-foreground">Nenhum fator encontrado com os filtros aplicados.</p>
+            {(searchTerm || selectedCategory !== "all" || selectedType !== "all" || selectedScope !== "all") && (
+              <Button variant="ghost" size="sm" onClick={() => {
+                setSearchTerm("");
+                setSelectedCategory("all");
+                setSelectedType("all");
+                setSelectedScope("all");
+              }} className="mt-2">
+                Limpar todos os filtros
+              </Button>
+            )}
           </div>
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {paginatedFactors.map((factor) => (
+                <EmissionFactorCard
+                  key={factor.id}
+                  factor={factor}
+                  onDelete={factor.type === 'custom' ? handleDeleteFactor : undefined}
+                  onEdit={factor.type === 'custom' ? handleEditFactor : undefined}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    {currentPage > 1 && (
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          className="cursor-pointer"
+                        />
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {currentPage < totalPages && (
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          className="cursor-pointer"
+                        />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         )}
 
         <AddCustomFactorModal
@@ -259,6 +361,22 @@ export default function BibliotecaFatores() {
             }
           }}
           factor={editingFactor}
+        />
+
+        <ImportFactorsModal
+          open={isImportModalOpen}
+          onOpenChange={setIsImportModalOpen}
+          onImportComplete={() => {
+            loadData();
+            setIsImportModalOpen(false);
+          }}
+        />
+
+        <ExportFactorsModal
+          open={isExportModalOpen}
+          onOpenChange={setIsExportModalOpen}
+          factors={factors}
+          filteredFactors={filteredFactors}
         />
       </div>
     </MainLayout>
