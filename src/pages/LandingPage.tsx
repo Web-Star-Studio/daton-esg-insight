@@ -14,6 +14,13 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import datonLogo from "@/assets/daton-logo-header.png"
+import amchamLogo from "@/assets/clients/amcham.png"
+import cooperliquidosLogo from "@/assets/clients/cooperliquidos.png"
+import gabardoLogo from "@/assets/clients/gabardo.png"
+import mercosulLogo from "@/assets/clients/mercosul.png"
+import proambLogo from "@/assets/clients/proamb.png"
+import safewebLogo from "@/assets/clients/safeweb.png"
+import thyssenkruppLogo from "@/assets/clients/thyssenkrupp.png"
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -65,7 +72,13 @@ export default function LandingPage() {
   ]
 
   const clients = [
-    "Michelin", "Redbank", "Mercosul", "Proemb", "Safeweb", "Reserva.log"
+    { name: "Amcham", logo: amchamLogo },
+    { name: "Cooperliquidos", logo: cooperliquidosLogo },
+    { name: "Gabardo", logo: gabardoLogo },
+    { name: "Mercosul", logo: mercosulLogo },
+    { name: "Proamb", logo: proambLogo },
+    { name: "Safeweb", logo: safewebLogo },
+    { name: "ThyssenKrupp", logo: thyssenkruppLogo }
   ]
 
   return (
@@ -298,7 +311,11 @@ export default function LandingPage() {
             {clients.map((client, index) => (
               <div key={index} className="opacity-60 hover:opacity-100 transition-opacity">
                 <div className="bg-card rounded-lg p-4 h-16 flex items-center justify-center border border-border/40">
-                  <span className="font-medium text-muted-foreground">{client}</span>
+                  <img 
+                    src={client.logo} 
+                    alt={client.name} 
+                    className="max-h-8 max-w-full object-contain filter grayscale hover:grayscale-0 transition-all"
+                  />
                 </div>
               </div>
             ))}
