@@ -17,7 +17,8 @@ import {
   User,
   Folder,
   Tag,
-  Eye
+  Eye,
+  Wand2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Document } from '@/services/documents';
@@ -32,6 +33,7 @@ interface DocumentCardProps {
   onUpdate: () => void;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  onAnalyze?: () => void;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -42,7 +44,8 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onPreview,
   onUpdate,
   isSelected = false,
-  onToggleSelect
+  onToggleSelect,
+  onAnalyze
 }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -139,6 +142,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                   <Download className="h-4 w-4 mr-2" />
                   Baixar
                 </DropdownMenuItem>
+                {onAnalyze && (
+                  <DropdownMenuItem onClick={onAnalyze}>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Analisar com IA
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem 
                   onClick={onDelete}
                   className="text-destructive"
@@ -176,6 +185,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                 <Download className="h-4 w-4 mr-2" />
                 Baixar
               </DropdownMenuItem>
+              {onAnalyze && (
+                <DropdownMenuItem onClick={onAnalyze}>
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Analisar com IA
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem 
                 onClick={onDelete}
                 className="text-destructive"

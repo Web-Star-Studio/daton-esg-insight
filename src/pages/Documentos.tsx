@@ -49,6 +49,7 @@ import {
   formatFileSize,
   getFileIcon
 } from '@/services/documents';
+import { processDocumentWithAI, getExtractionJobStatus } from '@/services/documentAI';
 
 export default function Documentos() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -201,6 +202,35 @@ export default function Documentos() {
     setShowPreviewModal(true);
   };
 
+  const handleAnalyze = async (document: Document) => {
+    try {
+      toast.info('Análise iniciada', { description: 'Processando com IA...' });
+      const { jobId } = await processDocumentWithAI(document.id);
+
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const maxAttempts = 30;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const job = await getExtractionJobStatus(jobId);
+        if (job.status === 'Concluído') {
+          const conf = Math.round(((job.confidence_score as number || 0) * 100));
+          toast.success('Análise concluída', { description: `Confiança: ${conf}%` });
+          await loadData();
+          return;
+        }
+        if (job.status === 'Erro') {
+          // @ts-ignore
+          const msg = (job as any).error_message || 'Erro desconhecido';
+          toast.error('Falha na análise', { description: msg });
+          return;
+        }
+        await sleep(2000);
+      }
+      toast.info('Análise em andamento', { description: 'Continuará em segundo plano.' });
+    } catch (error) {
+      console.error('Error analyzing document with AI:', error);
+      toast.error('Erro ao iniciar análise');
+    }
+  };
   // Get all unique tags from documents
   const allTags = Array.from(
     new Set(documents.flatMap(doc => doc.tags || []))
@@ -419,6 +449,7 @@ export default function Documentos() {
                         onUpdate={loadData}
                         isSelected={isDocumentSelected(document.id)}
                         onToggleSelect={() => toggleDocumentSelection(document)}
+                        onAnalyze={() => handleAnalyze(document)}
                       />
                     </div>
                   ))}
