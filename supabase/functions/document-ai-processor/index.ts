@@ -11,6 +11,24 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
+// Configurações do sistema inteligente
+const AI_CONFIG = {
+  models: {
+    vision: 'gpt-4.1-2025-04-14',
+    text: 'gpt-4.1-2025-04-14',
+  },
+  confidence: {
+    auto_approve_threshold: 0.9,
+    manual_review_threshold: 0.7,
+    reject_threshold: 0.3
+  },
+  processing: {
+    max_tokens: 2000,
+    retry_attempts: 3,
+    timeout_ms: 30000
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,7 +37,6 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('Authorization header missing');
@@ -33,7 +50,6 @@ serve(async (req) => {
       throw new Error('Authentication failed');
     }
 
-    // Obter company_id do usuário
     const { data: profile } = await supabase
       .from('profiles')
       .select('company_id')
@@ -77,91 +93,109 @@ serve(async (req) => {
 });
 
 async function handleProcessDocument(req: Request, supabase: any, companyId: string, userId: string) {
-  const { documentId } = await req.json();
+  try {
+    const requestBody = await req.text();
+    console.log('Processing request for company:', companyId);
+    
+    if (!requestBody || requestBody.trim() === '') {
+      throw new Error('Request body is empty');
+    }
 
-  console.log('Processing document:', documentId);
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(requestBody);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error(`Invalid JSON: ${parseError.message}`);
+    }
 
-  // Buscar documento no banco
-  const { data: document, error: docError } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('id', documentId)
-    .eq('company_id', companyId)
-    .single();
+    const { documentId } = parsedBody;
+    if (!documentId) {
+      throw new Error('Document ID is required');
+    }
 
-  if (docError || !document) {
-    throw new Error('Document not found');
+    // Buscar documento
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .eq('company_id', companyId)
+      .single();
+
+    if (docError || !document) {
+      throw new Error('Document not found');
+    }
+
+    // Criar job de extração
+    const { data: job, error: jobError } = await supabase
+      .from('document_extraction_jobs')
+      .insert({
+        company_id: companyId,
+        document_id: documentId,
+        user_id: userId,
+        processing_type: getProcessingType(document.file_type),
+        status: 'Processando',
+        ai_model_used: AI_CONFIG.models.vision
+      })
+      .select()
+      .single();
+
+    if (jobError) {
+      throw new Error(`Failed to create job: ${jobError.message}`);
+    }
+
+    // Processar em background
+    processDocumentWithAI(supabase, job, document).catch(console.error);
+
+    return new Response(JSON.stringify({ 
+      jobId: job.id, 
+      status: 'processing',
+      message: 'Document processing started'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in handleProcessDocument:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
-
-  // Criar job de extração
-  const { data: job, error: jobError } = await supabase
-    .from('document_extraction_jobs')
-    .insert({
-      company_id: companyId,
-      document_id: documentId,
-      user_id: userId,
-      processing_type: getProcessingType(document.file_type),
-      status: 'Processando'
-    })
-    .select()
-    .single();
-
-  if (jobError) {
-    throw new Error('Failed to create extraction job');
-  }
-
-  // Processar documento em background
-  EdgeRuntime.waitUntil(processDocumentWithAI(supabase, job, document));
-
-  return new Response(JSON.stringify({ 
-    jobId: job.id, 
-    status: 'processing',
-    message: 'Document processing started' 
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
 }
 
 async function processDocumentWithAI(supabase: any, job: any, document: any) {
   try {
     console.log('Starting AI processing for document:', document.id);
 
-    // Atualizar status
-    await supabase
-      .from('document_extraction_jobs')
-      .update({ status: 'Processando' })
-      .eq('id', job.id);
-
-    // Baixar arquivo do storage
+    // Baixar arquivo
     const { data: fileData, error: downloadError } = await supabase
       .storage
       .from('documents')
       .download(document.file_path);
 
-    if (downloadError) {
-      throw new Error(`Failed to download file: ${downloadError.message}`);
+    if (downloadError || !fileData) {
+      throw new Error(`Download failed: ${downloadError?.message || 'No data'}`);
     }
 
     let extractedData: any = {};
     let confidenceScore = 0;
 
-    if (document.file_type.includes('pdf')) {
-      // Processar PDF com OpenAI Vision
-      const result = await processPDFWithAI(fileData, document);
+    if (document.file_type.toLowerCase().includes('pdf')) {
+      const result = await processPDFWithAdvancedAI(fileData, document);
       extractedData = result.data;
       confidenceScore = result.confidence;
-    } else if (document.file_type.includes('sheet') || document.file_type.includes('csv')) {
-      // Processar Excel/CSV
-      const result = await processSpreadsheetWithAI(fileData, document);
+    } else {
+      const result = await processSpreadsheetWithAdvancedAI(fileData, document);
       extractedData = result.data;
       confidenceScore = result.confidence;
     }
 
-    // Detectar categoria do documento
-    const detectedCategory = await detectDocumentCategory(extractedData, document);
+    // Detectar categoria
+    const detectedCategory = detectDocumentCategory(extractedData, document);
 
-    // Salvar dados extraídos para revisão
-    const { error: previewError } = await supabase
+    // Salvar preview
+    await supabase
       .from('extracted_data_preview')
       .insert({
         extraction_job_id: job.id,
@@ -169,22 +203,9 @@ async function processDocumentWithAI(supabase: any, job: any, document: any) {
         target_table: getTargetTable(detectedCategory),
         extracted_fields: extractedData,
         confidence_scores: generateConfidenceScores(extractedData, confidenceScore),
-        suggested_mappings: generateSuggestedMappings(extractedData, detectedCategory)
+        suggested_mappings: generateSuggestedMappings(extractedData, detectedCategory),
+        validation_status: confidenceScore >= AI_CONFIG.confidence.auto_approve_threshold ? 'Auto-Aprovado' : 'Pendente'
       });
-
-    if (previewError) {
-      throw new Error(`Failed to save extracted data: ${previewError.message}`);
-    }
-
-    // Atualizar documento com categoria detectada
-    await supabase
-      .from('documents')
-      .update({
-        ai_processing_status: 'Processado',
-        ai_extracted_category: detectedCategory,
-        ai_confidence_score: confidenceScore
-      })
-      .eq('id', document.id);
 
     // Finalizar job
     await supabase
@@ -196,12 +217,20 @@ async function processDocumentWithAI(supabase: any, job: any, document: any) {
       })
       .eq('id', job.id);
 
-    console.log('AI processing completed for document:', document.id);
+    await supabase
+      .from('documents')
+      .update({
+        ai_processing_status: 'Processado',
+        ai_extracted_category: detectedCategory,
+        ai_confidence_score: confidenceScore
+      })
+      .eq('id', document.id);
+
+    console.log('Processing completed successfully');
 
   } catch (error) {
-    console.error('Error processing document with AI:', error);
+    console.error('Processing error:', error);
     
-    // Atualizar job com erro
     await supabase
       .from('document_extraction_jobs')
       .update({
@@ -213,154 +242,143 @@ async function processDocumentWithAI(supabase: any, job: any, document: any) {
   }
 }
 
-async function processPDFWithAI(fileData: Blob, document: any) {
-  console.log('Processing PDF with OpenAI Vision...');
-  
-  // Converter para base64
-  const arrayBuffer = await fileData.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+async function processPDFWithAdvancedAI(fileData: Blob, document: any) {
+  try {
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4-vision-preview',
-      messages: [
-        {
-          role: 'system',
-          content: `Você é um especialista em extração de dados de documentos corporativos. 
-          Analise este PDF e extraia dados estruturados relevantes para um sistema de gestão ESG/GHG.
-          Procure por: datas, valores numéricos, CNPJs, consumos de energia, quantidades de resíduos, 
-          emissões, licenças, etc. Retorne os dados em JSON estruturado.`
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Analise este documento PDF e extraia os dados relevantes. 
-              Nome do arquivo: ${document.file_name}.
-              Foque em campos como: período, quantidades, valores, datas, CNPJs, consumos.`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${document.file_type};base64,${base64}`
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: AI_CONFIG.models.vision,
+        messages: [
+          {
+            role: 'system',
+            content: `Você é um especialista em extração de dados de documentos corporativos para sistemas ESG/GHG.
+            Analise este PDF e extraia dados estruturados. Retorne APENAS um JSON válido sem texto adicional.
+            Estrutura esperada: {"periodo_inicio": "YYYY-MM-DD", "periodo_fim": "YYYY-MM-DD", "quantidade_principal": number, "unidade": "string", "valor_total": number, "categoria": "string"}`
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Extraia dados estruturados deste documento: ${document.file_name}`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:application/pdf;base64,${base64}`,
+                  detail: 'high'
+                }
               }
-            }
-          ]
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0.1
-    })
-  });
+            ]
+          }
+        ],
+        max_completion_tokens: AI_CONFIG.processing.max_tokens,
+        response_format: { type: "json_object" }
+      })
+    });
 
-  const result = await response.json();
-  
-  if (result.error) {
-    throw new Error(`OpenAI API error: ${result.error.message}`);
-  }
-
-  const extractedText = result.choices[0].message.content;
-  
-  // Tentar parsear JSON da resposta
-  let extractedData = {};
-  try {
-    // Extrair JSON da resposta (pode vir com texto adicional)
-    const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      extractedData = JSON.parse(jsonMatch[0]);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenAI error: ${errorData.error?.message}`);
     }
-  } catch (e) {
-    console.warn('Failed to parse JSON from AI response, using raw text');
-    extractedData = { raw_text: extractedText };
-  }
 
-  return {
-    data: extractedData,
-    confidence: 0.8 // Base confidence for PDF processing
-  };
+    const result = await response.json();
+    let extractedData = {};
+    
+    try {
+      extractedData = JSON.parse(result.choices[0].message.content);
+    } catch (parseError) {
+      extractedData = { raw_analysis: result.choices[0].message.content };
+    }
+
+    return {
+      data: extractedData,
+      confidence: calculateConfidence(extractedData)
+    };
+
+  } catch (error) {
+    console.error('PDF processing error:', error);
+    return {
+      data: { error: error.message },
+      confidence: 0.1
+    };
+  }
 }
 
-async function processSpreadsheetWithAI(fileData: Blob, document: any) {
-  console.log('Processing spreadsheet with AI...');
-  
-  // Simular processamento de planilha (implementação completa dependeria de biblioteca específica)
-  const arrayBuffer = await fileData.arrayBuffer();
-  const text = new TextDecoder().decode(arrayBuffer);
-  
-  // Usar OpenAI para analisar texto da planilha
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: `Analise este conteúdo de planilha e extraia dados estruturados para um sistema ESG.
-          Identifique colunas, linhas de dados e converta para JSON estruturado.
-          Procure por padrões como: datas, quantidades, tipos de resíduo, MTRs, consumos, etc.`
-        },
-        {
-          role: 'user',
-          content: `Arquivo: ${document.file_name}\nConteúdo:\n${text.substring(0, 3000)}`
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0.1
-    })
-  });
-
-  const result = await response.json();
-  
-  let extractedData = {};
+async function processSpreadsheetWithAdvancedAI(fileData: Blob, document: any) {
   try {
-    const jsonMatch = result.choices[0].message.content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      extractedData = JSON.parse(jsonMatch[0]);
-    }
-  } catch (e) {
-    extractedData = { raw_analysis: result.choices[0].message.content };
-  }
+    const arrayBuffer = await fileData.arrayBuffer();
+    const text = new TextDecoder().decode(arrayBuffer).substring(0, 3000);
 
-  return {
-    data: extractedData,
-    confidence: 0.9 // Higher confidence for structured data
-  };
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: AI_CONFIG.models.text,
+        messages: [
+          {
+            role: 'system',
+            content: 'Analise esta planilha e extraia dados estruturados em JSON. Identifique padrões como datas, quantidades, valores.'
+          },
+          {
+            role: 'user',
+            content: `Arquivo: ${document.file_name}\nConteúdo:\n${text}`
+          }
+        ],
+        max_completion_tokens: AI_CONFIG.processing.max_tokens,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    const result = await response.json();
+    let extractedData = {};
+    
+    try {
+      extractedData = JSON.parse(result.choices[0].message.content);
+    } catch (parseError) {
+      extractedData = { raw_analysis: result.choices[0].message.content };
+    }
+
+    return {
+      data: extractedData,
+      confidence: calculateConfidence(extractedData)
+    };
+
+  } catch (error) {
+    return {
+      data: { error: error.message },
+      confidence: 0.1
+    };
+  }
 }
 
-async function detectDocumentCategory(extractedData: any, document: any) {
+function detectDocumentCategory(extractedData: any, document: any): string {
   const fileName = document.file_name.toLowerCase();
   const dataStr = JSON.stringify(extractedData).toLowerCase();
 
-  // Lógica de detecção de categoria
-  if (fileName.includes('energia') || fileName.includes('eletrica') || 
-      dataStr.includes('kwh') || dataStr.includes('energia')) {
+  if (fileName.includes('energia') || dataStr.includes('kwh')) {
     return 'energy_invoice';
   }
-  
-  if (fileName.includes('residuo') || fileName.includes('mtr') || 
-      dataStr.includes('residuo') || dataStr.includes('mtr')) {
+  if (fileName.includes('residuo') || dataStr.includes('mtr')) {
     return 'waste_document';
   }
-  
-  if (fileName.includes('combustivel') || fileName.includes('gasolina') || 
-      dataStr.includes('litros') || dataStr.includes('combustivel')) {
+  if (fileName.includes('combustivel') || dataStr.includes('litros')) {
     return 'fuel_invoice';
   }
-  
-  if (fileName.includes('licenca') || dataStr.includes('licenca')) {
+  if (fileName.includes('licenca')) {
     return 'license_document';
   }
-
+  
   return 'general_document';
 }
 
@@ -380,14 +398,11 @@ function generateConfidenceScores(extractedData: any, baseConfidence: number): a
   const scores = {};
   
   for (const key in extractedData) {
-    // Scores mais altos para campos numéricos e datas
+    let confidence = baseConfidence;
     if (typeof extractedData[key] === 'number') {
-      scores[key] = Math.min(baseConfidence + 0.1, 1.0);
-    } else if (key.includes('data') || key.includes('date')) {
-      scores[key] = Math.min(baseConfidence + 0.05, 1.0);
-    } else {
-      scores[key] = baseConfidence;
+      confidence = Math.min(confidence + 0.1, 1.0);
     }
+    scores[key] = Math.round(confidence * 100) / 100;
   }
   
   return scores;
@@ -398,18 +413,8 @@ function generateSuggestedMappings(extractedData: any, category: string): any {
   
   if (category === 'energy_invoice') {
     for (const key in extractedData) {
-      if (key.includes('kwh') || key.includes('consumo')) {
+      if (key.toLowerCase().includes('quantidade')) {
         mappings[key] = 'quantity';
-      } else if (key.includes('periodo') || key.includes('data')) {
-        mappings[key] = 'period_start_date';
-      }
-    }
-  } else if (category === 'waste_document') {
-    for (const key in extractedData) {
-      if (key.includes('quantidade') || key.includes('peso')) {
-        mappings[key] = 'quantity';
-      } else if (key.includes('mtr')) {
-        mappings[key] = 'mtr_number';
       }
     }
   }
@@ -417,11 +422,21 @@ function generateSuggestedMappings(extractedData: any, category: string): any {
   return mappings;
 }
 
+function calculateConfidence(data: any): number {
+  const keys = Object.keys(data);
+  let score = 0.5;
+  
+  if (keys.length > 3) score += 0.2;
+  if (data.quantidade_principal) score += 0.1;
+  if (data.periodo_inicio) score += 0.1;
+  if (data.error) score -= 0.3;
+  
+  return Math.max(0.1, Math.min(1.0, score));
+}
+
 function getProcessingType(fileType: string): string {
-  if (fileType.includes('pdf')) return 'ocr_pdf';
-  if (fileType.includes('sheet') || fileType.includes('excel')) return 'excel_parse';
-  if (fileType.includes('csv')) return 'csv_parse';
-  return 'unknown';
+  if (fileType.toLowerCase().includes('pdf')) return 'advanced_pdf_ocr';
+  return 'structured_data';
 }
 
 async function handleGetStatus(req: Request, supabase: any, companyId: string) {
@@ -434,10 +449,7 @@ async function handleGetStatus(req: Request, supabase: any, companyId: string) {
 
   const { data: job, error } = await supabase
     .from('document_extraction_jobs')
-    .select(`
-      *,
-      extracted_data_preview (*)
-    `)
+    .select(`*, extracted_data_preview (*)`)
     .eq('id', jobId)
     .eq('company_id', companyId)
     .single();
@@ -454,7 +466,6 @@ async function handleGetStatus(req: Request, supabase: any, companyId: string) {
 async function handleApproveData(req: Request, supabase: any, companyId: string, userId: string) {
   const { previewId, finalData } = await req.json();
 
-  // Buscar dados do preview
   const { data: preview, error: previewError } = await supabase
     .from('extracted_data_preview')
     .select('*')
@@ -463,26 +474,21 @@ async function handleApproveData(req: Request, supabase: any, companyId: string,
     .single();
 
   if (previewError || !preview) {
-    throw new Error('Preview data not found');
+    throw new Error('Preview not found');
   }
-
-  // Inserir dados na tabela final
-  const targetTable = preview.target_table;
-  const dataToInsert = {
-    ...finalData,
-    company_id: companyId,
-    user_id: userId
-  };
 
   const { error: insertError } = await supabase
-    .from(targetTable)
-    .insert(dataToInsert);
+    .from(preview.target_table)
+    .insert({
+      ...finalData,
+      company_id: companyId,
+      user_id: userId
+    });
 
   if (insertError) {
-    throw new Error(`Failed to insert data: ${insertError.message}`);
+    throw new Error(`Insert failed: ${insertError.message}`);
   }
 
-  // Atualizar status do preview
   await supabase
     .from('extracted_data_preview')
     .update({
@@ -494,7 +500,7 @@ async function handleApproveData(req: Request, supabase: any, companyId: string,
 
   return new Response(JSON.stringify({ 
     success: true, 
-    message: 'Data approved and imported successfully' 
+    message: 'Data approved successfully' 
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
@@ -515,7 +521,7 @@ async function handleRejectData(req: Request, supabase: any, companyId: string, 
     .eq('company_id', companyId);
 
   if (error) {
-    throw new Error('Failed to reject data');
+    throw new Error('Rejection failed');
   }
 
   return new Response(JSON.stringify({ 
