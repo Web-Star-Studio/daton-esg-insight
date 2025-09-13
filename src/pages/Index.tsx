@@ -21,6 +21,7 @@ import { getEmissionStats } from "@/services/emissions"
 import { getDashboardStats } from "@/services/goals"
 import { getLicenseStats } from "@/services/licenses"
 import { getWasteDashboard } from "@/services/waste"
+import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
 
 const Index = () => {
   // Fetch real data from various services
@@ -212,18 +213,8 @@ const Index = () => {
 
         {/* Terceira Linha - Conteúdo Dinâmico */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Card Insights de IA */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Insights de IA</CardTitle>
-              <Sparkles className="h-5 w-5 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Nossos algoritmos estão analisando seus dados em busca de oportunidades de melhoria.
-              </p>
-            </CardContent>
-          </Card>
+          {/* AI Processing Status Widget */}
+          <AIProcessingStatusWidget />
 
           {/* Card Próximas Tarefas */}
           <Card className="shadow-card lg:col-span-2">

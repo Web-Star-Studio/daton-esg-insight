@@ -19,7 +19,8 @@ import {
   FileBarChart, 
   CheckCircle, 
   ShieldCheck, 
-  Settings 
+  Settings,
+  Wand2
 } from "lucide-react"
 import { 
   Sidebar,
@@ -81,6 +82,7 @@ const menuSections: MenuSection[] = [
       { id: "coleta-dados", title: "Coleta de Dados", icon: CloudUpload, path: "/coleta-dados" },
       { id: "formularios", title: "Formulários Customizados", icon: FileText, path: "/formularios-customizados" },
       { id: "documentos", title: "Documentos", icon: Folder, path: "/documentos" },
+      { id: "reconciliacao-documentos", title: "Reconciliação IA", icon: Wand2, path: "/reconciliacao-documentos" },
       { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
     ]
   },

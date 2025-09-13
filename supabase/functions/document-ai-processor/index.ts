@@ -84,6 +84,9 @@ serve(async (req) => {
         if (bodyText && bodyText.trim()) {
           requestBody = JSON.parse(bodyText);
           console.log('Parsed request body:', requestBody);
+        } else {
+          console.log('Empty request body, setting to empty object');
+          requestBody = {};
         }
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
@@ -142,14 +145,15 @@ serve(async (req) => {
 async function handleProcessDocument(requestBody: any, supabase: any, companyId: string, userId: string) {
   try {
     console.log('Processing request for company:', companyId);
+    console.log('Request body received:', requestBody);
     
-    if (!requestBody) {
-      throw new Error('Request body is required');
+    if (!requestBody || Object.keys(requestBody).length === 0) {
+      throw new Error('Request body with documentId is required');
     }
 
     const { documentId } = requestBody;
     if (!documentId) {
-      throw new Error('Document ID is required');
+      throw new Error('Document ID is required in request body');
     }
 
     // Buscar documento

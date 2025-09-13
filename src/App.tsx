@@ -32,6 +32,7 @@ import GestaoESG from "./pages/GestaoESG";
 import ColetaDados from "./pages/ColetaDados";
 import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import Documentos from "./pages/Documentos";
+import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
 import Auditoria from "./pages/Auditoria";
 import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
@@ -173,6 +174,11 @@ const App = () => (
             <Route path="/documentos" element={
               <ProtectedRoute>
                 <Documentos />
+              </ProtectedRoute>
+            } />
+            <Route path="/reconciliacao-documentos" element={
+              <ProtectedRoute>
+                <ReconciliacaoDocumentos />
               </ProtectedRoute>
             } />
             <Route path="/auditoria" element={

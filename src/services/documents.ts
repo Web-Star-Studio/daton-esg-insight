@@ -27,6 +27,11 @@ export interface Document {
   document_folders?: {
     name: string;
   };
+  ai_processing_status?: string;
+  ai_confidence_score?: number;
+  ai_extracted_category?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DocumentFilters {

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Document } from '@/services/documents';
+import { DocumentStatusBadge } from './DocumentStatusBadge';
 import { formatFileSize, getFileIcon } from '@/services/documents';
 
 interface DocumentCardProps {
@@ -107,6 +108,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                     {getRelatedInfo()}
                   </Badge>
                 )}
+                
+                <DocumentStatusBadge 
+                  aiProcessingStatus={document.ai_processing_status}
+                  aiConfidenceScore={document.ai_confidence_score}
+                  className="ml-auto"
+                />
               </div>
             </div>
           </div>
