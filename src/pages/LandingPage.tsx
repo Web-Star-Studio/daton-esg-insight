@@ -311,24 +311,24 @@ export default function LandingPage() {
             <div className="flex client-logos-slider">
               {/* Primeira instância das logos */}
               {clients.map((client, index) => (
-                <div key={`first-${index}`} className="flex-none mx-4 opacity-70 hover:opacity-100 transition-opacity">
-                  <div className="bg-card rounded-xl p-6 h-24 w-24 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
+                <div key={`first-${index}`} className="flex-none mx-6 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-xl p-8 h-32 w-32 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
                     <img 
                       src={client.logo} 
                       alt={client.name} 
-                      className="h-16 w-16 object-contain filter grayscale hover:grayscale-0 transition-all"
+                      className="h-20 w-20 object-contain filter grayscale hover:grayscale-0 transition-all"
                     />
                   </div>
                 </div>
               ))}
               {/* Segunda instância para loop infinito */}
               {clients.map((client, index) => (
-                <div key={`second-${index}`} className="flex-none mx-4 opacity-70 hover:opacity-100 transition-opacity">
-                  <div className="bg-card rounded-xl p-6 h-24 w-24 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
+                <div key={`second-${index}`} className="flex-none mx-6 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-xl p-8 h-32 w-32 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
                     <img 
                       src={client.logo} 
                       alt={client.name} 
-                      className="h-16 w-16 object-contain filter grayscale hover:grayscale-0 transition-all"
+                      className="h-20 w-20 object-contain filter grayscale hover:grayscale-0 transition-all"
                     />
                   </div>
                 </div>
