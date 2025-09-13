@@ -20,7 +20,10 @@ import {
   DollarSign,
   Star,
   Users,
-  Clock
+  Clock,
+  Search,
+  Crown,
+  Award
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import datonLogo from "@/assets/daton-logo-header.png"
@@ -453,77 +456,226 @@ export default function LandingPage() {
       </section>
 
       {/* Strategic Partnership Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              Parceria estratégica, não apenas <span className="text-primary">uma ferramenta</span>
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Por que Escolher o Daton como Parceiro Estratégico
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Trabalhamos lado a lado com sua equipe para transformar ESG em driver de crescimento e inovação
+              Mais que uma ferramenta, somos seu parceiro na construção de uma liderança sustentável que gera valor para todos os stakeholders.
             </p>
           </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
+              <Shield className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-3">Gestão de Riscos Climáticos</h3>
+              <p className="text-muted-foreground">Antecipe regulamentações e proteja seu negócio contra riscos ESG emergentes.</p>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
+              <Award className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-3">Construção de Marca</h3>
+              <p className="text-muted-foreground">Fortaleça sua reputação e atraia talentos com um posicionamento ESG autêntico.</p>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-3">Acesso a Capital ESG</h3>
+              <p className="text-muted-foreground">Prepare-se para investidores ESG e acesse linhas de crédito sustentáveis.</p>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg bg-card hover:shadow-lg transition-shadow">
+              <Target className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-3">Vantagem Competitiva</h3>
+              <p className="text-muted-foreground">Torne-se referência no seu setor com estratégias ESG diferenciadas.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Liderança Setorial</h3>
-                  <p className="text-muted-foreground">
-                    Posicione-se como referência ESG no seu mercado, atraindo clientes, talentos e parceiros alinhados com sustentabilidade.
-                  </p>
+      {/* Journey Section */}
+      <section className="py-24 bg-gradient-to-br from-background via-muted/10 to-background">
+        <div className="container mx-auto px-4">
+          {/* Section Header */}
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+              Sua Jornada de Descarbonização com a Daton
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto mb-8">
+              Do caos regulatório à liderança ESG em 4 etapas transformadoras. 
+              Visualize como nossa plataforma transforma sua operação em referência de sustentabilidade.
+            </p>
+            
+            {/* Central Impact Metrics */}
+            <div className="flex flex-wrap justify-center gap-6 mb-12">
+              <div className="bg-card/50 backdrop-blur-sm px-6 py-3 rounded-full border">
+                <span className="text-2xl font-bold text-primary">6 meses → 15 min</span>
+                <span className="text-sm text-muted-foreground ml-2">setup de relatórios</span>
+              </div>
+              <div className="bg-card/50 backdrop-blur-sm px-6 py-3 rounded-full border">
+                <span className="text-2xl font-bold text-primary">R$ 500K → R$ 0</span>
+                <span className="text-sm text-muted-foreground ml-2">multas evitadas</span>
+              </div>
+              <div className="bg-card/50 backdrop-blur-sm px-6 py-3 rounded-full border">
+                <span className="text-2xl font-bold text-primary">Invisível → Top 10%</span>
+                <span className="text-sm text-muted-foreground ml-2">posição setorial</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Journey Steps */}
+          <div className="relative">
+            {/* Connection Line */}
+            <div className="hidden lg:block absolute top-24 left-0 right-0 h-0.5 bg-gradient-to-r from-muted via-primary/50 to-muted"></div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4">
+              {/* Step 1: Diagnóstico */}
+              <div className="group relative">
+                <div className="bg-card hover:bg-card/80 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:scale-105 border border-border/50 hover:border-primary/30">
+                  {/* Step Number */}
+                  <div className="absolute -top-4 left-8 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                  
+                  {/* Icon */}
+                  <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Search className="h-8 w-8 text-primary" />
+                  </div>
+                  
+                  {/* Content */}
+                  <h3 className="text-xl font-bold text-center mb-3">Radiografia ESG Completa</h3>
+                  
+                  {/* Before/After */}
+                  <div className="space-y-4">
+                    <div className="p-3 bg-destructive/10 rounded-lg border-l-4 border-destructive">
+                      <p className="text-sm font-medium text-destructive">Antes:</p>
+                      <p className="text-xs text-muted-foreground">Dados dispersos, relatórios manuais, riscos invisíveis</p>
+                    </div>
+                    
+                    <div className="p-3 bg-primary/10 rounded-lg border-l-4 border-primary">
+                      <p className="text-sm font-medium text-primary">Com Daton:</p>
+                      <p className="text-xs text-muted-foreground">Coleta automatizada, visão 360°, baseline preciso</p>
+                    </div>
+                  </div>
+                  
+                  {/* Result Badge */}
+                  <div className="mt-4 text-center">
+                    <span className="inline-block bg-accent px-3 py-1 rounded-full text-xs font-medium text-accent-foreground">
+                      Semanas → 1 dia
+                    </span>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Gestão Proativa de Riscos</h3>
-                  <p className="text-muted-foreground">
-                    Antecipe mudanças regulatórias, riscos climáticos e tendências de mercado para manter-se sempre à frente.
-                  </p>
+
+              {/* Step 2: Planejamento */}
+              <div className="group relative">
+                <div className="bg-card hover:bg-card/80 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:scale-105 border border-border/50 hover:border-primary/30">
+                  <div className="absolute -top-4 left-8 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                  
+                  <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Target className="h-8 w-8 text-primary" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-center mb-3">Estratégia Science-Based</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="p-3 bg-destructive/10 rounded-lg border-l-4 border-destructive">
+                      <p className="text-sm font-medium text-destructive">Antes:</p>
+                      <p className="text-xs text-muted-foreground">Metas genéricas, sem base científica</p>
+                    </div>
+                    
+                    <div className="p-3 bg-primary/10 rounded-lg border-l-4 border-primary">
+                      <p className="text-sm font-medium text-primary">Com Daton:</p>
+                      <p className="text-xs text-muted-foreground">Metas validadas, roadmap claro, benchmarking</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <span className="inline-block bg-accent px-3 py-1 rounded-full text-xs font-medium text-accent-foreground">
+                      Credibilidade com investidores
+                    </span>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-primary" />
+
+              {/* Step 3: Ação */}
+              <div className="group relative">
+                <div className="bg-card hover:bg-card/80 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:scale-105 border border-border/50 hover:border-primary/30">
+                  <div className="absolute -top-4 left-8 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                  
+                  <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <TrendingDown className="h-8 w-8 text-primary" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-center mb-3">Execução Inteligente</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="p-3 bg-destructive/10 rounded-lg border-l-4 border-destructive">
+                      <p className="text-sm font-medium text-destructive">Antes:</p>
+                      <p className="text-xs text-muted-foreground">Ações isoladas, sem monitoramento</p>
+                    </div>
+                    
+                    <div className="p-3 bg-primary/10 rounded-lg border-l-4 border-primary">
+                      <p className="text-sm font-medium text-primary">Com Daton:</p>
+                      <p className="text-xs text-muted-foreground">Plano coordenado, alertas automáticos</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <span className="inline-block bg-accent px-3 py-1 rounded-full text-xs font-medium text-accent-foreground">
+                      70% redução tempo, 99% precisão
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Acesso a Capital ESG</h3>
-                  <p className="text-muted-foreground">
-                    Prepare-se para investidores ESG, green bonds e mercados sustentáveis com dados e narrativa sólidos.
-                  </p>
+              </div>
+
+              {/* Step 4: Liderança */}
+              <div className="group relative">
+                <div className="bg-card hover:bg-card/80 rounded-2xl p-8 transition-all duration-300 hover:shadow-xl hover:scale-105 border border-border/50 hover:border-primary/30">
+                  <div className="absolute -top-4 left-8 bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                  
+                  <div className="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Crown className="h-8 w-8 text-primary" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-center mb-3">Referência de Mercado</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="p-3 bg-destructive/10 rounded-lg border-l-4 border-destructive">
+                      <p className="text-sm font-medium text-destructive">Antes:</p>
+                      <p className="text-xs text-muted-foreground">Compliance básico, invisibilidade setorial</p>
+                    </div>
+                    
+                    <div className="p-3 bg-primary/10 rounded-lg border-l-4 border-primary">
+                      <p className="text-sm font-medium text-primary">Com Daton:</p>
+                      <p className="text-xs text-muted-foreground">Relatórios robustos, storytelling ESG, liderança</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 text-center">
+                    <span className="inline-block bg-accent px-3 py-1 rounded-full text-xs font-medium text-accent-foreground">
+                      Top 10% setor, acesso capital ESG
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
-                O que nossos parceiros conquistam
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <span className="font-medium">Posição de Liderança ESG</span>
-                  <span className="text-green-600 font-bold">Top 10% setor</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                  <span className="font-medium">Redução Custo de Capital</span>
-                  <span className="text-blue-600 font-bold">até 2.5%</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                  <span className="font-medium">Employer Branding</span>
-                  <span className="text-purple-600 font-bold">+40% candidatos</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                  <span className="font-medium">Preparação Futura</span>
-                  <span className="text-orange-600 font-bold">5 anos à frente</span>
-                </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="text-center mt-16">
+            <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-8 border max-w-2xl mx-auto">
+              <h3 className="text-2xl font-bold mb-4">Pronto para Liderar sua Jornada de Descarbonização?</h3>
+              <p className="text-muted-foreground mb-6">
+                Descubra em qual etapa sua empresa está e como acelerar sua transformação ESG.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                  Ver Minha Jornada Personalizada
+                </Button>
+                <Button variant="outline" size="lg">
+                  Falar com Especialista
+                </Button>
               </div>
             </div>
           </div>
