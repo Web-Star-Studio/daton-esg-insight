@@ -53,6 +53,7 @@ const menuSections: MenuSection[] = [
     title: "ANÁLISE GERAL",
     items: [
       { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/" },
+      { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
       { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
       { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
     ]
@@ -69,7 +70,6 @@ const menuSections: MenuSection[] = [
   {
     title: "ESG E SUSTENTABILIDADE",
     items: [
-      { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
       { id: "licenciamento", title: "Licenciamento", icon: Gavel, path: "/licenciamento" },
       { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
       { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
