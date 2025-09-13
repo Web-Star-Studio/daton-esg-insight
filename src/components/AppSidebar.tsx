@@ -56,6 +56,7 @@ const menuSections: MenuSection[] = [
       { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
       { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
       { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
+      { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
     ]
   },
   {
@@ -72,8 +73,6 @@ const menuSections: MenuSection[] = [
     items: [
       { id: "licenciamento", title: "Licenciamento", icon: Gavel, path: "/licenciamento" },
       { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
-      { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
-      { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
     ]
   },
   {
@@ -84,6 +83,7 @@ const menuSections: MenuSection[] = [
       { id: "documentos", title: "Documentos", icon: Folder, path: "/documentos" },
       { id: "reconciliacao-documentos", title: "Reconciliação IA", icon: Wand2, path: "/reconciliacao-documentos" },
       { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
+      { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
     ]
   },
   {
