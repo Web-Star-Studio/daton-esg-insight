@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
+import Funcionalidades from "./pages/Funcionalidades";
 import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
@@ -56,6 +57,9 @@ const App = () => (
             
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Funcionalidades - público */}
+            <Route path="/funcionalidades" element={<Funcionalidades />} />
             
             {/* Simulador - público */}
             <Route path="/simulador" element={<SimuladorEcoImpacto />} />
