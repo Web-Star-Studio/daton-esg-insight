@@ -126,4 +126,22 @@ All colors MUST be HSL.
     @apply bg-background text-foreground font-inter;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
+
+  /* Slideshow automático para logos dos clientes */
+  @keyframes slide-left {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  .client-logos-slider {
+    animation: slide-left 25s linear infinite;
+  }
+
+  .client-logos-slider:hover {
+    animation-play-state: paused;
+  }
 }

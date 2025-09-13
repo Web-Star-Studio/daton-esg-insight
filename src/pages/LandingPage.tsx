@@ -307,18 +307,33 @@ export default function LandingPage() {
             Clientes que já confiam na nossa expertise
           </p>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
-            {clients.map((client, index) => (
-              <div key={index} className="opacity-60 hover:opacity-100 transition-opacity">
-                <div className="bg-card rounded-lg p-4 h-16 flex items-center justify-center border border-border/40">
-                  <img 
-                    src={client.logo} 
-                    alt={client.name} 
-                    className="max-h-8 max-w-full object-contain filter grayscale hover:grayscale-0 transition-all"
-                  />
+          <div className="overflow-hidden">
+            <div className="flex client-logos-slider">
+              {/* Primeira instância das logos */}
+              {clients.map((client, index) => (
+                <div key={`first-${index}`} className="flex-none mx-4 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-xl p-6 h-24 w-24 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
+                    <img 
+                      src={client.logo} 
+                      alt={client.name} 
+                      className="h-16 w-16 object-contain filter grayscale hover:grayscale-0 transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+              {/* Segunda instância para loop infinito */}
+              {clients.map((client, index) => (
+                <div key={`second-${index}`} className="flex-none mx-4 opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-xl p-6 h-24 w-24 flex items-center justify-center border border-border/40 shadow-sm hover:shadow-md transition-all">
+                    <img 
+                      src={client.logo} 
+                      alt={client.name} 
+                      className="h-16 w-16 object-contain filter grayscale hover:grayscale-0 transition-all"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
