@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
 import Contato from "./pages/Contato";
 import Funcionalidades from "./pages/Funcionalidades";
+import Documentacao from "./pages/Documentacao";
 import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
@@ -64,6 +65,9 @@ const App = () => (
             
             {/* Funcionalidades - público */}
             <Route path="/funcionalidades" element={<Funcionalidades />} />
+            
+            {/* Documentação - público */}
+            <Route path="/documentacao" element={<Documentacao />} />
             
             {/* Simulador - público */}
             <Route path="/simulador" element={<SimuladorEcoImpacto />} />
