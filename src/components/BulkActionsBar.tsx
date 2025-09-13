@@ -55,7 +55,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
   };
 
   const handleBulkMove = async () => {
-    if (!selectedFolderId && selectedFolderId !== '') {
+    if (!selectedFolderId) {
       toast.error('Selecione uma pasta de destino');
       return;
     }

@@ -56,7 +56,7 @@ export default function Documentos() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
@@ -104,7 +104,7 @@ export default function Documentos() {
       const filters = {
         search: searchTerm || undefined,
         folder_id: selectedFolderId || undefined,
-        tag: selectedTag || undefined,
+        tag: selectedTag === 'all' ? undefined : selectedTag,
         page: currentPage,
         limit: itemsPerPage,
         sortBy,
@@ -132,7 +132,6 @@ export default function Documentos() {
     loadData();
   }, [searchTerm, selectedFolderId, selectedTag, currentPage, sortBy, sortOrder]);
 
-  // Reset page when filters change
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
@@ -256,7 +255,7 @@ export default function Documentos() {
                     <SelectValue placeholder="Tag" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as tags</SelectItem>
+                    <SelectItem value="all">Todas as tags</SelectItem>
                     {allTags.map(tag => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                     ))}
@@ -387,7 +386,7 @@ export default function Documentos() {
                 <File className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Nenhum documento encontrado</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || selectedTag ? 'Tente ajustar os filtros de busca' : 'Comece fazendo upload de seus primeiros documentos'}
+                  {searchTerm || selectedTag !== 'all' ? 'Tente ajustar os filtros de busca' : 'Comece fazendo upload de seus primeiros documentos'}
                 </p>
                 <Button onClick={() => setShowUploadModal(true)}>
                   <Upload className="h-4 w-4 mr-2" />
