@@ -222,11 +222,12 @@ export default function LandingPage() {
                   🚀 Plataforma ESG mais avançada do Brasil
                 </Badge>
                 <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                  Transforme sua gestão <span className="text-primary">ESG</span> em resultados de negócio
+                  Lidere a transformação para uma <span className="text-primary">economia sustentável</span>
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  Plataforma completa que automatiza compliance, monitora emissões e gera relatórios inteligentes. 
-                  Reduza 70% do tempo em relatórios ESG e tome decisões baseadas em dados precisos.
+                  Mais que eficiência operacional: torne-se um líder ESG com nossa plataforma completa. 
+                  Construa vantagem competitiva, gerencie riscos climáticos e prepare sua empresa para o futuro 
+                  da economia sustentável.
                 </p>
               </div>
               
@@ -399,11 +400,28 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-              Uma plataforma para dominar sua <span className="text-primary">jornada ESG</span>
+              Lidere a nova <span className="text-primary">economia sustentável</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Tudo que você precisa para transformar sustentabilidade em vantagem competitiva
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+              ESG não é mais apenas conformidade - é diferenciação estratégica. Prepare-se para um futuro onde 
+              sustentabilidade define liderança de mercado, atrai os melhores talentos e conquista investidores conscientes.
             </p>
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-8 mb-12 max-w-4xl mx-auto">
+              <div className="grid md:grid-cols-3 gap-6 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-primary mb-2">Gestão de Riscos</div>
+                  <p className="text-sm text-muted-foreground">Antecipe mudanças regulatórias e climáticas</p>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-primary mb-2">Marca Forte</div>
+                  <p className="text-sm text-muted-foreground">Construa reputação e atraia stakeholders</p>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-primary mb-2">Investidores ESG</div>
+                  <p className="text-sm text-muted-foreground">Acesse capital e mercados sustentáveis</p>
+                </div>
+              </div>
+            </div>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -430,6 +448,84 @@ export default function LandingPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Strategic Partnership Section */}
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+              Parceria estratégica, não apenas <span className="text-primary">uma ferramenta</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Trabalhamos lado a lado com sua equipe para transformar ESG em driver de crescimento e inovação
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Liderança Setorial</h3>
+                  <p className="text-muted-foreground">
+                    Posicione-se como referência ESG no seu mercado, atraindo clientes, talentos e parceiros alinhados com sustentabilidade.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Gestão Proativa de Riscos</h3>
+                  <p className="text-muted-foreground">
+                    Antecipe mudanças regulatórias, riscos climáticos e tendências de mercado para manter-se sempre à frente.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Acesso a Capital ESG</h3>
+                  <p className="text-muted-foreground">
+                    Prepare-se para investidores ESG, green bonds e mercados sustentáveis com dados e narrativa sólidos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-2xl p-8 shadow-lg">
+              <h3 className="text-2xl font-bold text-foreground mb-6 text-center">
+                O que nossos parceiros conquistam
+              </h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="font-medium">Posição de Liderança ESG</span>
+                  <span className="text-green-600 font-bold">Top 10% setor</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="font-medium">Redução Custo de Capital</span>
+                  <span className="text-blue-600 font-bold">até 2.5%</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                  <span className="font-medium">Employer Branding</span>
+                  <span className="text-purple-600 font-bold">+40% candidatos</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                  <span className="font-medium">Preparação Futura</span>
+                  <span className="text-orange-600 font-bold">5 anos à frente</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -507,6 +603,65 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Impact Beyond Numbers Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+              Impacto além dos <span className="text-primary">números</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Juntos, estamos construindo um futuro mais sustentável e uma economia que beneficia a todos
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <Card className="p-8 text-center border-0 bg-white shadow-lg">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Leaf className="h-8 w-8 text-green-600" />
+              </div>
+              <div className="text-3xl font-bold text-green-600 mb-2">1.2M</div>
+              <div className="text-lg font-semibold text-foreground mb-2">tCO2e evitadas</div>
+              <p className="text-muted-foreground text-sm">
+                pelos nossos clientes no último ano, contribuindo para as metas climáticas globais
+              </p>
+            </Card>
+
+            <Card className="p-8 text-center border-0 bg-white shadow-lg">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="text-3xl font-bold text-blue-600 mb-2">12</div>
+              <div className="text-lg font-semibold text-foreground mb-2">ODS impactados</div>
+              <p className="text-muted-foreground text-sm">
+                Objetivos de Desenvolvimento Sustentável atendidos através das nossas soluções
+              </p>
+            </Card>
+
+            <Card className="p-8 text-center border-0 bg-white shadow-lg">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-purple-600" />
+              </div>
+              <div className="text-3xl font-bold text-purple-600 mb-2">85%</div>
+              <div className="text-lg font-semibold text-foreground mb-2">líderes setoriais</div>
+              <p className="text-muted-foreground text-sm">
+                dos nossos clientes se tornaram referência ESG em seus mercados
+              </p>
+            </Card>
+          </div>
+
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-8 text-center">
+            <h3 className="text-2xl font-bold text-foreground mb-4">
+              A nova economia já começou
+            </h3>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Empresas sustentáveis crescem 2.5x mais rápido, têm 70% menos turnover e acesso a 
+              US$ 30 trilhões em investimentos ESG globais. O futuro pertence aos líderes de hoje.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Expert Team Section */}
       <section className="py-20 bg-muted/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -569,24 +724,25 @@ export default function LandingPage() {
           {/* Support Promise */}
           <div className="bg-white rounded-2xl p-8 text-center shadow-lg">
             <h3 className="text-2xl font-bold text-foreground mb-4">
-              Suporte especializado incluído
+              Consultoria estratégica incluída
             </h3>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Não é apenas uma ferramenta - é uma parceria completa. Nossa equipe de consultores 
-              ESG trabalha junto com você para maximizar seus resultados.
+              Muito além de uma plataforma: somos seus parceiros na jornada de liderança ESG. 
+              Nossa equipe trabalha com você para posicionar sua empresa como referência setorial, 
+              preparar para investidores ESG e construir vantagem competitiva duradoura.
             </p>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="flex items-center justify-center space-x-3">
                 <Users className="h-6 w-6 text-primary" />
-                <span className="font-medium text-foreground">Consultoria dedicada</span>
+                <span className="font-medium text-foreground">Estratégia de liderança ESG</span>
               </div>
               <div className="flex items-center justify-center space-x-3">
-                <Clock className="h-6 w-6 text-primary" />
-                <span className="font-medium text-foreground">Suporte 24/7</span>
+                <TrendingUp className="h-6 w-6 text-primary" />
+                <span className="font-medium text-foreground">Preparação para investidores</span>
               </div>
               <div className="flex items-center justify-center space-x-3">
                 <Target className="h-6 w-6 text-primary" />
-                <span className="font-medium text-foreground">Metas personalizadas</span>
+                <span className="font-medium text-foreground">Roadmap de transformação</span>
               </div>
             </div>
           </div>
@@ -638,11 +794,11 @@ export default function LandingPage() {
       <section className="py-20 bg-black text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-            Seja um dos primeiros a usar o Daton
+            Lidere a transformação sustentável do seu setor
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Garanta seu acesso antecipado e seja notificado sobre o lançamento da plataforma mais 
-            inovadora do mercado ESG
+            Pioneiros na adoção de ESG estratégico se tornam líderes de mercado. Seja reconhecido como 
+            referência em sustentabilidade e construa vantagem competitiva duradoura.
           </p>
           <div className="flex justify-center">
             <Button 
@@ -651,7 +807,7 @@ export default function LandingPage() {
               className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => navigate("/simulador")}
             >
-              Descubra seu impacto
+              Quero liderar meu setor
             </Button>
           </div>
         </div>
