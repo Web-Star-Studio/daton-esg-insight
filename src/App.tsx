@@ -31,6 +31,7 @@ import IAInsights from "./pages/IAInsights";
 import GestaoESG from "./pages/GestaoESG";
 import ColetaDados from "./pages/ColetaDados";
 import FormulariosCustomizados from "./pages/FormulariosCustomizados";
+import PublicForm from "./pages/PublicForm";
 import Documentos from "./pages/Documentos";
 import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
 import Auditoria from "./pages/Auditoria";
@@ -191,6 +192,10 @@ const App = () => (
                 <Compliance />
               </ProtectedRoute>
             } />
+            
+            {/* Public form route - no authentication required */}
+            <Route path="/form/:formId" element={<PublicForm />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

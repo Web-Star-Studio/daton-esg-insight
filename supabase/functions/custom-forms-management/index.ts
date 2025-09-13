@@ -89,7 +89,20 @@ Deno.serve(async (req) => {
     }
 
     const method = req.method
-    const body = method !== 'GET' ? await req.json() : null
+    let body = null
+    
+    // Only parse JSON if there's a body
+    if (method !== 'GET') {
+      const text = await req.text()
+      if (text && text.trim()) {
+        try {
+          body = JSON.parse(text)
+        } catch (e) {
+          console.error('Error parsing JSON:', e, 'Text:', text)
+          throw new Error('Invalid JSON in request body')
+        }
+      }
+    }
     
     console.log('Request body:', body)
 

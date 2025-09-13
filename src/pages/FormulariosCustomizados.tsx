@@ -19,6 +19,29 @@ export default function FormulariosCustomizados() {
   const [submissionsFormId, setSubmissionsFormId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // SEO
+  useEffect(() => {
+    document.title = 'Formulários Customizados | Criação e Gestão de Formulários';
+    const desc = 'Crie, gerencie e colete dados através de formulários personalizados com interface drag-and-drop.';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (meta) meta.setAttribute('content', desc);
+    else {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = desc;
+      document.head.appendChild(meta);
+    }
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const href = `${window.location.origin}/formularios-customizados`;
+    if (canonical) canonical.setAttribute('href', href);
+    else {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      canonical.href = href;
+      document.head.appendChild(canonical);
+    }
+  }, []);
+
   useEffect(() => {
     loadForms();
   }, []);
