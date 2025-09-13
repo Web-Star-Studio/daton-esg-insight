@@ -20,7 +20,8 @@ import {
   CheckCircle, 
   ShieldCheck, 
   Settings,
-  Wand2
+  Wand2,
+  Calculator
 } from "lucide-react"
 import { 
   Sidebar,
@@ -55,6 +56,7 @@ const menuSections: MenuSection[] = [
       { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/dashboard" },
       { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
       { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
+      { id: "planejador-cenarios", title: "Planejador de Cenários", icon: Calculator, path: "/planejador-cenarios" },
       { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
       { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
     ]
