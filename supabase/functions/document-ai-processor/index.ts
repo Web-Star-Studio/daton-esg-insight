@@ -74,27 +74,32 @@ serve(async (req) => {
 
     console.log('Document AI Processor request:', req.method);
 
-    // Get request body for POST requests
-    let requestBody = null;
+    // Get request body for POST requests (robust parsing with clone fallback)
+    let requestBody: any = {};
     if (req.method === 'POST') {
+      const contentType = req.headers.get('content-type') || '';
+      const cloned = req.clone();
       try {
-        const bodyText = await req.text();
-        console.log('Raw request body:', bodyText);
-        
-        if (bodyText && bodyText.trim()) {
-          requestBody = JSON.parse(bodyText);
-          console.log('Parsed request body:', requestBody);
+        if (contentType.includes('application/json')) {
+          requestBody = await req.json();
+        } else if (contentType.includes('application/x-www-form-urlencoded')) {
+          const text = await req.text();
+          requestBody = Object.fromEntries(new URLSearchParams(text));
         } else {
-          console.log('Empty request body, setting to empty object');
+          const text = await req.text();
+          requestBody = text && text.trim() ? JSON.parse(text) : {};
+        }
+      } catch (err) {
+        try {
+          const bodyText = await cloned.text();
+          console.log('Raw request body (fallback):', bodyText);
+          requestBody = bodyText && bodyText.trim() ? JSON.parse(bodyText) : {};
+        } catch (fallbackErr) {
+          console.error('Body parse error:', err, fallbackErr);
           requestBody = {};
         }
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        return new Response(JSON.stringify({ error: `Invalid JSON: ${parseError.message}` }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       }
+      console.log('Parsed request body:', requestBody);
     }
 
     // Route based on action in request body or query parameter
