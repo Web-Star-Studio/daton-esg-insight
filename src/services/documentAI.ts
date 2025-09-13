@@ -134,21 +134,73 @@ export const getExtractionJobs = async (): Promise<ExtractionJob[]> => {
   return (data || []) as ExtractionJob[];
 };
 
-// Listar dados aguardando aprovação
 export const getPendingExtractions = async (): Promise<ExtractedDataPreview[]> => {
   console.log('Fetching pending extractions...');
 
-  const { data, error } = await supabase
+  // Tentar consulta completa com joins primeiro (depois que FKs estiverem em vigor)
+  let { data, error } = await supabase
     .from('extracted_data_preview')
     .select(`
-      *,
-      document_extraction_jobs!inner(
-        document_id,
-        documents(file_name, file_type)
+      id,
+      extraction_job_id,
+      company_id,
+      extracted_fields,
+      confidence_scores,
+      suggested_mappings,
+      target_table,
+      validation_status,
+      created_at,
+      updated_at,
+      approved_at,
+      approved_by_user_id,
+      validation_notes,
+      extraction_job:document_extraction_jobs(
+        id,
+        status,
+        processing_type,
+        confidence_score,
+        document:documents(
+          id,
+          file_name,
+          file_type,
+          ai_extracted_category
+        )
       )
     `)
     .eq('validation_status', 'Pendente')
     .order('created_at', { ascending: false });
+
+  // Consulta de fallback se FKs ainda não estiverem em vigor
+  if (error && (error.message?.includes('foreign key') || error.message?.includes('could not find foreign table'))) {
+    console.warn('Foreign keys not yet established, using fallback query:', error.message);
+    
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('extracted_data_preview')
+      .select(`
+        id,
+        extraction_job_id,
+        company_id,
+        extracted_fields,
+        confidence_scores,
+        suggested_mappings,
+        target_table,
+        validation_status,
+        created_at,
+        updated_at,
+        approved_at,
+        approved_by_user_id,
+        validation_notes
+      `)
+      .eq('validation_status', 'Pendente')
+      .order('created_at', { ascending: false });
+
+    if (fallbackError) {
+      console.error('Error in fallback query:', fallbackError);
+      throw new Error(`Failed to fetch pending extractions: ${fallbackError.message}`);
+    }
+
+    return (fallbackData || []) as ExtractedDataPreview[];
+  }
 
   if (error) {
     console.error('Error fetching pending extractions:', error);

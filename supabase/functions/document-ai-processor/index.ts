@@ -241,13 +241,13 @@ async function processDocumentWithAI(supabase: any, job: any, document: any) {
     // Detectar categoria
     const detectedCategory = detectDocumentCategory(extractedData, document);
 
-    // Salvar preview
+    // Salvar preview - sempre usar activity_data como target para padronização
     await supabase
       .from('extracted_data_preview')
       .insert({
         extraction_job_id: job.id,
         company_id: job.company_id,
-        target_table: getTargetTable(detectedCategory),
+        target_table: 'activity_data', // Padronizado para activity_data
         extracted_fields: extractedData,
         confidence_scores: generateConfidenceScores(extractedData, confidenceScore),
         suggested_mappings: generateSuggestedMappings(extractedData, detectedCategory),
@@ -524,46 +524,195 @@ async function handleGetStatus(req: Request, supabase: any, companyId: string, r
 }
 
 async function handleApproveData(requestBody: any, supabase: any, companyId: string, userId: string) {
-  const { previewId, finalData } = requestBody;
+  try {
+    console.log('Handling approval for preview:', requestBody.previewId);
+    
+    const { previewId, finalData } = requestBody;
+    
+    if (!previewId) {
+      throw new Error('Preview ID is required for approval');
+    }
 
-  const { data: preview, error: previewError } = await supabase
-    .from('extracted_data_preview')
-    .select('*')
-    .eq('id', previewId)
-    .eq('company_id', companyId)
-    .single();
+    // Buscar preview com informações do job e documento
+    const { data: preview, error: previewError } = await supabase
+      .from('extracted_data_preview')
+      .select(`
+        *,
+        extraction_job:document_extraction_jobs(
+          id,
+          document_id,
+          document:documents(id, file_name, ai_extracted_category)
+        )
+      `)
+      .eq('id', previewId)
+      .eq('company_id', companyId)
+      .single();
 
-  if (previewError || !preview) {
-    throw new Error('Preview not found');
-  }
+    if (previewError || !preview) {
+      console.error('Preview fetch error:', previewError);
+      throw new Error('Preview not found or access denied');
+    }
 
-  const { error: insertError } = await supabase
-    .from(preview.target_table)
-    .insert({
-      ...finalData,
-      company_id: companyId,
-      user_id: userId
+    console.log('Found preview with job info:', preview);
+
+    // Combinar dados extraídos com dados fornecidos pelo usuário
+    const mergedData = {
+      ...preview.extracted_fields,
+      ...finalData
+    };
+
+    console.log('Merged data for processing:', mergedData);
+
+    // Mapear campos para o schema activity_data
+    const activityData: any = {};
+    
+    // Mapear datas - procurar por vários nomes possíveis
+    const dateFields = ['periodo_inicio', 'period_start_date', 'start_date', 'data_inicio'];
+    const endDateFields = ['periodo_fim', 'period_end_date', 'end_date', 'data_fim'];
+    
+    for (const field of dateFields) {
+      if (mergedData[field]) {
+        activityData.period_start_date = mergedData[field];
+        break;
+      }
+    }
+    
+    for (const field of endDateFields) {
+      if (mergedData[field]) {
+        activityData.period_end_date = mergedData[field];
+        break;
+      }
+    }
+
+    // Mapear quantidade - procurar por vários nomes possíveis
+    const quantityFields = ['quantidade_principal', 'quantity', 'quantidade', 'valor', 'consumo'];
+    for (const field of quantityFields) {
+      if (mergedData[field] !== undefined) {
+        activityData.quantity = parseFloat(mergedData[field]) || 0;
+        break;
+      }
+    }
+
+    // Mapear unidade
+    const unitFields = ['unidade', 'unit', 'medida'];
+    for (const field of unitFields) {
+      if (mergedData[field]) {
+        activityData.unit = mergedData[field];
+        break;
+      }
+    }
+
+    // Definir valores padrão se não encontrados
+    if (!activityData.period_start_date) {
+      const currentDate = new Date().toISOString().split('T')[0];
+      activityData.period_start_date = currentDate;
+    }
+    if (!activityData.period_end_date) {
+      activityData.period_end_date = activityData.period_start_date;
+    }
+    if (!activityData.quantity) {
+      activityData.quantity = 1;
+    }
+    if (!activityData.unit) {
+      activityData.unit = 'unidade';
+    }
+
+    // Lidar com fonte de emissão - encontrar ou criar baseado na categoria
+    let emissionSourceId = null;
+    const documentCategory = preview.extraction_job?.document?.ai_extracted_category || 'Geral';
+    
+    // Tentar encontrar fonte de emissão existente
+    const { data: existingSource } = await supabase
+      .from('emission_sources')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('category', documentCategory)
+      .eq('scope', 2) // Padrão escopo 2
+      .limit(1)
+      .single();
+
+    if (existingSource) {
+      emissionSourceId = existingSource.id;
+      console.log('Found existing emission source:', emissionSourceId);
+    } else {
+      // Criar nova fonte de emissão
+      const { data: newSource, error: sourceError } = await supabase
+        .from('emission_sources')
+        .insert({
+          name: `${documentCategory} - Fonte Automática`,
+          category: documentCategory,
+          scope: 2,
+          company_id: companyId,
+          description: `Fonte de emissão criada automaticamente para categoria: ${documentCategory}`
+        })
+        .select('id')
+        .single();
+
+      if (sourceError) {
+        console.error('Error creating emission source:', sourceError);
+        throw new Error(`Failed to create emission source: ${sourceError.message}`);
+      }
+      
+      emissionSourceId = newSource.id;
+      console.log('Created new emission source:', emissionSourceId);
+    }
+
+    // Definir campos obrigatórios para activity_data
+    activityData.emission_source_id = emissionSourceId;
+    activityData.user_id = userId;
+    
+    // Campos opcionais
+    if (mergedData.source_document || preview.extraction_job?.document?.file_name) {
+      activityData.source_document = mergedData.source_document || preview.extraction_job?.document?.file_name;
+    }
+
+    console.log('Activity data to insert:', activityData);
+
+    // Inserir na tabela activity_data
+    const { data: insertedActivity, error: insertError } = await supabase
+      .from('activity_data')
+      .insert(activityData)
+      .select('id')
+      .single();
+
+    if (insertError) {
+      console.error('Activity data insert error:', insertError);
+      throw new Error(`Failed to insert activity data: ${insertError.message}`);
+    }
+
+    console.log('Successfully inserted activity data:', insertedActivity);
+
+    // Atualizar status do preview para aprovado
+    const { error: updateError } = await supabase
+      .from('extracted_data_preview')
+      .update({
+        validation_status: 'Aprovado',
+        approved_at: new Date().toISOString(),
+        approved_by_user_id: userId
+      })
+      .eq('id', previewId);
+
+    if (updateError) {
+      console.error('Preview update error:', updateError);
+      throw new Error(`Failed to update preview: ${updateError.message}`);
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Data approved and inserted into activity_data successfully',
+      activity_id: insertedActivity.id,
+      emission_source_id: emissionSourceId
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
-  if (insertError) {
-    throw new Error(`Insert failed: ${insertError.message}`);
+    
+  } catch (error) {
+    console.error('Error in handleApproveData:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
-
-  await supabase
-    .from('extracted_data_preview')
-    .update({
-      validation_status: 'Aprovado',
-      approved_by_user_id: userId,
-      approved_at: new Date().toISOString()
-    })
-    .eq('id', previewId);
-
-  return new Response(JSON.stringify({ 
-    success: true, 
-    message: 'Data approved successfully' 
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
 }
 
 async function handleRejectData(requestBody: any, supabase: any, companyId: string, userId: string) {
