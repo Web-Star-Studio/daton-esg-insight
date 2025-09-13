@@ -108,7 +108,8 @@ serve(async (req) => {
         return await handleProcessDocument(requestBody, supabase, profile.company_id, user.id);
 
       case 'status':
-        return await handleGetStatus(req, supabase, profile.company_id);
+        // Accept status via body or query string
+        return await handleGetStatus(req, supabase, profile.company_id, requestBody);
 
       case 'approve':
         if (req.method !== 'POST') {
@@ -489,9 +490,9 @@ function getProcessingType(fileType: string): string {
   return 'structured_data';
 }
 
-async function handleGetStatus(req: Request, supabase: any, companyId: string) {
+async function handleGetStatus(req: Request, supabase: any, companyId: string, requestBody?: any) {
   const url = new URL(req.url);
-  const jobId = url.searchParams.get('jobId');
+  const jobId = url.searchParams.get('jobId') || requestBody?.jobId;
 
   if (!jobId) {
     throw new Error('Job ID required');
