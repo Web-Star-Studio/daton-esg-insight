@@ -12,6 +12,7 @@ import { getGoals, getDashboardStats, type GoalListItem } from "@/services/goals
 import { toast } from "@/hooks/use-toast";
 import { GoalProgressUpdateModal } from "@/components/GoalProgressUpdateModal";
 import { EditGoalModal } from "@/components/EditGoalModal";
+import { TargetTrackingModal } from "@/components/TargetTrackingModal";
 
 interface CircularProgressProps {
   value: number;
@@ -109,6 +110,7 @@ export default function Metas() {
   const [selectedGoal, setSelectedGoal] = useState<GoalListItem | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
 
   // Fetch goals data
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useQuery({
@@ -269,6 +271,18 @@ export default function Metas() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              title="Ver Trilha de Metas"
+                              onClick={() => {
+                                setSelectedGoal(goal);
+                                setShowTrackingModal(true);
+                              }}
+                            >
+                              <Flag className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
                               title="Atualizar Progresso"
                               onClick={() => {
                                 setSelectedGoal(goal);
@@ -314,6 +328,12 @@ export default function Metas() {
           open={showEditModal}
           onOpenChange={setShowEditModal}
           goalId={selectedGoal?.id || null}
+        />
+
+        <TargetTrackingModal
+          open={showTrackingModal}
+          onOpenChange={setShowTrackingModal}
+          goal={selectedGoal}
         />
       </div>
     </MainLayout>
