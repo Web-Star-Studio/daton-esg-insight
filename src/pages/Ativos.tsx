@@ -36,12 +36,15 @@ import { useToast } from "@/hooks/use-toast";
 
 const getAssetTypeIcon = (type: string) => {
   const iconMap: Record<string, any> = {
-    'Edificação': Building2,
-    'Equipamento Estacionário': Cog,
-    'Veículo': Car,
-    'Frota': Truck,
-    'Sistema': Server,
-    'Infraestrutura': Network
+    'Unidade Industrial': Building2,
+    'Fonte Fixa de Combustão': Cog,
+    'Chaminé/Stack': Network,
+    'Sistema de Tratamento': Activity,
+    'Depósito de Resíduos': HardDrive,
+    'Fonte Móvel': Car,
+    'Equipamento de Monitoramento': BarChart3,
+    'Sistema de Controle Ambiental': Server,
+    'Infraestrutura Auxiliar': Network
   };
   
   const IconComponent = iconMap[type] || HardDrive;

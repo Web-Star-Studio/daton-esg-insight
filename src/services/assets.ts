@@ -8,6 +8,16 @@ export interface Asset {
   location?: string;
   description?: string;
   parent_asset_id?: string;
+  // Campos ambientais específicos
+  productive_capacity?: number;
+  capacity_unit?: string;
+  installation_year?: number;
+  operational_status?: 'Ativo' | 'Inativo' | 'Manutenção';
+  pollution_potential?: 'Alto' | 'Médio' | 'Baixo';
+  cnae_code?: string;
+  monitoring_frequency?: 'Diária' | 'Semanal' | 'Mensal' | 'Trimestral' | 'Anual';
+  critical_parameters?: string[];
+  monitoring_responsible?: string;
   created_at: string;
   updated_at: string;
   children?: Asset[];
@@ -51,6 +61,16 @@ export interface CreateAssetData {
   location?: string;
   description?: string;
   parent_asset_id?: string;
+  // Campos ambientais específicos
+  productive_capacity?: number;
+  capacity_unit?: string;
+  installation_year?: number;
+  operational_status?: 'Ativo' | 'Inativo' | 'Manutenção';
+  pollution_potential?: 'Alto' | 'Médio' | 'Baixo';
+  cnae_code?: string;
+  monitoring_frequency?: 'Diária' | 'Semanal' | 'Mensal' | 'Trimestral' | 'Anual';
+  critical_parameters?: string[];
+  monitoring_responsible?: string;
 }
 
 export interface UpdateAssetData {
@@ -59,16 +79,33 @@ export interface UpdateAssetData {
   location?: string;
   description?: string;
   parent_asset_id?: string;
+  // Campos ambientais específicos
+  productive_capacity?: number;
+  capacity_unit?: string;
+  installation_year?: number;
+  operational_status?: 'Ativo' | 'Inativo' | 'Manutenção';
+  pollution_potential?: 'Alto' | 'Médio' | 'Baixo';
+  cnae_code?: string;
+  monitoring_frequency?: 'Diária' | 'Semanal' | 'Mensal' | 'Trimestral' | 'Anual';
+  critical_parameters?: string[];
+  monitoring_responsible?: string;
 }
 
 export const ASSET_TYPES = [
-  'Edificação',
-  'Equipamento Estacionário',
-  'Veículo',
-  'Frota',
-  'Sistema',
-  'Infraestrutura'
+  'Unidade Industrial',
+  'Fonte Fixa de Combustão',
+  'Chaminé/Stack',
+  'Sistema de Tratamento',
+  'Depósito de Resíduos',
+  'Fonte Móvel',
+  'Equipamento de Monitoramento',
+  'Sistema de Controle Ambiental',
+  'Infraestrutura Auxiliar'
 ];
+
+export const OPERATIONAL_STATUS_OPTIONS = ['Ativo', 'Inativo', 'Manutenção'] as const;
+export const POLLUTION_POTENTIAL_OPTIONS = ['Alto', 'Médio', 'Baixo'] as const;
+export const MONITORING_FREQUENCY_OPTIONS = ['Diária', 'Semanal', 'Mensal', 'Trimestral', 'Anual'] as const;
 
 export async function getAssetsHierarchy(): Promise<Asset[]> {
   const { data, error } = await supabase.functions.invoke('assets-management', {
