@@ -1196,6 +1196,134 @@ export type Database = {
           },
         ]
       }
+      esg_solution_providers: {
+        Row: {
+          categories: string[] | null
+          certifications: string[] | null
+          company_name: string
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          logo_url: string | null
+          rating: number | null
+          status: string
+          total_reviews: number | null
+          updated_at: string
+          verified: boolean | null
+          website_url: string | null
+        }
+        Insert: {
+          categories?: string[] | null
+          certifications?: string[] | null
+          company_name: string
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          rating?: number | null
+          status?: string
+          total_reviews?: number | null
+          updated_at?: string
+          verified?: boolean | null
+          website_url?: string | null
+        }
+        Update: {
+          categories?: string[] | null
+          certifications?: string[] | null
+          company_name?: string
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          rating?: number | null
+          status?: string
+          total_reviews?: number | null
+          updated_at?: string
+          verified?: boolean | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      esg_solutions: {
+        Row: {
+          case_studies: Json | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          impact_metrics: Json | null
+          implementation_time: string | null
+          is_featured: boolean | null
+          price_range: string | null
+          pricing_model: string | null
+          provider_id: string
+          requirements: string[] | null
+          roi_estimate: string | null
+          status: string
+          subcategory: string | null
+          target_problems: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          case_studies?: Json | null
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          impact_metrics?: Json | null
+          implementation_time?: string | null
+          is_featured?: boolean | null
+          price_range?: string | null
+          pricing_model?: string | null
+          provider_id: string
+          requirements?: string[] | null
+          roi_estimate?: string | null
+          status?: string
+          subcategory?: string | null
+          target_problems?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          case_studies?: Json | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          impact_metrics?: Json | null
+          implementation_time?: string | null
+          is_featured?: boolean | null
+          price_range?: string | null
+          pricing_model?: string | null
+          provider_id?: string
+          requirements?: string[] | null
+          roi_estimate?: string | null
+          status?: string
+          subcategory?: string | null
+          target_problems?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esg_solutions_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "esg_solution_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       extracted_data_preview: {
         Row: {
           approved_at: string | null
@@ -1708,6 +1836,81 @@ export type Database = {
           },
         ]
       }
+      marketplace_leads: {
+        Row: {
+          budget_range: string | null
+          closed_at: string | null
+          company_id: string
+          contact_notes: string | null
+          contacted_at: string | null
+          created_at: string
+          estimated_value: number | null
+          id: string
+          insight_reference: string | null
+          priority: string
+          provider_response: string | null
+          solution_id: string
+          specific_requirements: string | null
+          status: string
+          timeline: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_range?: string | null
+          closed_at?: string | null
+          company_id: string
+          contact_notes?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          estimated_value?: number | null
+          id?: string
+          insight_reference?: string | null
+          priority?: string
+          provider_response?: string | null
+          solution_id: string
+          specific_requirements?: string | null
+          status?: string
+          timeline?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_range?: string | null
+          closed_at?: string | null
+          company_id?: string
+          contact_notes?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          estimated_value?: number | null
+          id?: string
+          insight_reference?: string | null
+          priority?: string
+          provider_response?: string | null
+          solution_id?: string
+          specific_requirements?: string | null
+          status?: string
+          timeline?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_leads_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_leads_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "esg_solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_id: string
@@ -1778,6 +1981,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      solution_reviews: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          implementation_success: boolean | null
+          provider_id: string
+          rating: number
+          review_text: string | null
+          roi_achieved: string | null
+          solution_id: string
+          title: string | null
+          user_id: string
+          verified_purchase: boolean | null
+          would_recommend: boolean | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          implementation_success?: boolean | null
+          provider_id: string
+          rating: number
+          review_text?: string | null
+          roi_achieved?: string | null
+          solution_id: string
+          title?: string | null
+          user_id: string
+          verified_purchase?: boolean | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          implementation_success?: boolean | null
+          provider_id?: string
+          rating?: number
+          review_text?: string | null
+          roi_achieved?: string | null
+          solution_id?: string
+          title?: string | null
+          user_id?: string
+          verified_purchase?: boolean | null
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_reviews_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "esg_solution_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_reviews_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "esg_solutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waste_logs: {
         Row: {

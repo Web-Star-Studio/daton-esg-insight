@@ -99,3 +99,6 @@ verify_jwt = true
 
 [functions.performance-analysis]
 verify_jwt = true
+
+[functions.marketplace-matcher]
+verify_jwt = true

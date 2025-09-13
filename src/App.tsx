@@ -35,6 +35,7 @@ import Configuracao from "./pages/Configuracao";
 import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
 import PlanejadorCenarios from "./pages/PlanejadorCenarios";
 import IAInsights from "./pages/IAInsights";
+import Marketplace from "./pages/Marketplace";
 import GestaoESG from "./pages/GestaoESG";
 import ColetaDados from "./pages/ColetaDados";
 import FormulariosCustomizados from "./pages/FormulariosCustomizados";
@@ -184,6 +185,11 @@ const App = () => (
             <Route path="/ia-insights" element={
               <ProtectedRoute>
                 <IAInsights />
+              </ProtectedRoute>
+            } />
+            <Route path="/marketplace" element={
+              <ProtectedRoute>
+                <Marketplace />
               </ProtectedRoute>
             } />
             <Route path="/coleta-dados" element={

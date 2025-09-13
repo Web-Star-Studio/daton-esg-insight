@@ -19,9 +19,10 @@ import {
   FileBarChart, 
   CheckCircle, 
   ShieldCheck, 
-  Settings,
-  Wand2,
-  Calculator
+  Settings, 
+  Wand2, 
+  Calculator,
+  ShoppingCart
 } from "lucide-react"
 import { 
   Sidebar,
@@ -58,6 +59,7 @@ const menuSections: MenuSection[] = [
       { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
       { id: "planejador-cenarios", title: "Planejador de Cenários", icon: Calculator, path: "/planejador-cenarios" },
       { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
+      { id: "marketplace", title: "Marketplace ESG", icon: ShoppingCart, path: "/marketplace" },
       { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
     ]
   },
