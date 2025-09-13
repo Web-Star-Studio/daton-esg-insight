@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import {
   Search,
   Upload,
@@ -16,7 +19,11 @@ import {
   Grid3X3,
   List,
   Tag,
-  Calendar
+  Calendar,
+  Eye,
+  SortAsc,
+  SortDesc,
+  Filter
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,6 +35,8 @@ import { FolderTreeView } from '@/components/FolderTreeView';
 import { DocumentUploadModal } from '@/components/DocumentUploadModal';
 import { CreateFolderModal } from '@/components/CreateFolderModal';
 import { DocumentCard } from '@/components/DocumentCard';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
+import { BulkActionsBar } from '@/components/BulkActionsBar';
 import { toast } from 'sonner';
 import {
   getDocuments,
@@ -51,6 +60,22 @@ export default function Documentos() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalDocuments, setTotalDocuments] = useState(0);
+  const itemsPerPage = 20;
+
+  // Selection and bulk operations
+  const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+
+  // Advanced filters
+  const [sortBy, setSortBy] = useState<string>('upload_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Get current folder name for breadcrumb
   const getCurrentFolderName = (folderId: string | null): string => {
@@ -76,18 +101,25 @@ export default function Documentos() {
     try {
       setLoading(true);
       
-      const filters: DocumentFilters = {};
-      if (searchTerm) filters.search = searchTerm;
-      if (selectedFolderId) filters.folder_id = selectedFolderId;
-      if (selectedTag) filters.tag = selectedTag;
+      const filters = {
+        search: searchTerm || undefined,
+        folder_id: selectedFolderId || undefined,
+        tag: selectedTag || undefined,
+        page: currentPage,
+        limit: itemsPerPage,
+        sortBy,
+        sortOrder
+      };
 
-      const [foldersData, documentsData] = await Promise.all([
+      const [foldersData, documentsResponse] = await Promise.all([
         getFolders(),
         getDocuments(filters)
       ]);
 
       setFolders(foldersData);
-      setDocuments(documentsData);
+      setDocuments(documentsResponse.documents);
+      setTotalPages(documentsResponse.totalPages);
+      setTotalDocuments(documentsResponse.total);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Erro ao carregar dados');
@@ -98,7 +130,40 @@ export default function Documentos() {
 
   useEffect(() => {
     loadData();
-  }, [searchTerm, selectedFolderId, selectedTag]);
+  }, [searchTerm, selectedFolderId, selectedTag, currentPage, sortBy, sortOrder]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, selectedFolderId, selectedTag, sortBy, sortOrder]);
+
+  // Selection handlers
+  const toggleDocumentSelection = (document: Document) => {
+    setSelectedDocuments(prev => {
+      const isSelected = prev.find(d => d.id === document.id);
+      if (isSelected) {
+        return prev.filter(d => d.id !== document.id);
+      } else {
+        return [...prev, document];
+      }
+    });
+  };
+
+  const selectAllDocuments = () => {
+    setSelectedDocuments(documents);
+  };
+
+  const clearSelection = () => {
+    setSelectedDocuments([]);
+  };
+
+  const isDocumentSelected = (documentId: string) => {
+    return selectedDocuments.some(d => d.id === documentId);
+  };
+
+  const isAllSelected = documents.length > 0 && selectedDocuments.length === documents.length;
 
   // Handle document actions
   const handleDownload = async (document: Document) => {
@@ -122,12 +187,19 @@ export default function Documentos() {
       try {
         await deleteDocument(document.id);
         toast.success('Documento excluído com sucesso');
+        // Remove from selection if selected
+        setSelectedDocuments(prev => prev.filter(d => d.id !== document.id));
         loadData();
       } catch (error) {
         console.error('Error deleting document:', error);
         toast.error('Erro ao excluir documento');
       }
     }
+  };
+
+  const handlePreview = (document: Document) => {
+    setPreviewDocument(document);
+    setShowPreviewModal(true);
   };
 
   // Get all unique tags from documents
@@ -164,48 +236,107 @@ export default function Documentos() {
 
         {/* Search and Filters */}
         <Card className="p-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex-1 min-w-[300px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Pesquisar documentos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex-1 min-w-[300px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Pesquisar documentos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedTag}
-                onChange={(e) => setSelectedTag(e.target.value)}
-                className="px-3 py-2 border rounded-md bg-background"
-              >
-                <option value="">Todas as tags</option>
-                {allTags.map(tag => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
               
-              <div className="flex border rounded-md">
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2">
+                <Select value={selectedTag} onValueChange={setSelectedTag}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas as tags</SelectItem>
+                    {allTags.map(tag => (
+                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                  const [field, order] = value.split('-') as [string, 'asc' | 'desc'];
+                  setSortBy(field);
+                  setSortOrder(order);
+                }}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Ordenar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upload_date-desc">Mais recente</SelectItem>
+                    <SelectItem value="upload_date-asc">Mais antigo</SelectItem>
+                    <SelectItem value="file_name-asc">Nome A-Z</SelectItem>
+                    <SelectItem value="file_name-desc">Nome Z-A</SelectItem>
+                    <SelectItem value="file_size-desc">Maior arquivo</SelectItem>
+                    <SelectItem value="file_size-asc">Menor arquivo</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <div className="flex border rounded-md">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {/* Selection Controls */}
+            {documents.length > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          selectAllDocuments();
+                        } else {
+                          clearSelection();
+                        }
+                      }}
+                    />
+                    <span className="text-sm">
+                      Selecionar todos ({documents.length})
+                    </span>
+                  </div>
+                  
+                  {selectedDocuments.length > 0 && (
+                    <Badge variant="secondary">
+                      {selectedDocuments.length} selecionado(s)
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>
+                    Mostrando {documents.length} de {totalDocuments} documentos
+                  </span>
+                  {totalPages > 1 && (
+                    <span>• Página {currentPage} de {totalPages}</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -264,25 +395,101 @@ export default function Documentos() {
                 </Button>
               </Card>
             ) : (
-              <div className={viewMode === 'grid' 
-                ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'
-                : 'space-y-2'
-              }>
-                {documents.map((document) => (
-                  <DocumentCard
-                    key={document.id}
-                    document={document}
-                    viewMode={viewMode}
-                    onDownload={() => handleDownload(document)}
-                    onDelete={() => handleDelete(document)}
-                    onUpdate={loadData}
-                  />
-                ))}
-              </div>
+              <>
+                <div className={viewMode === 'grid' 
+                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'
+                  : 'space-y-2'
+                }>
+                  {documents.map((document) => (
+                    <div key={document.id} className="relative">
+                      {viewMode === 'grid' && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <Checkbox
+                            checked={isDocumentSelected(document.id)}
+                            onCheckedChange={() => toggleDocumentSelection(document)}
+                            className="bg-background border-2"
+                          />
+                        </div>
+                      )}
+                      <DocumentCard
+                        document={document}
+                        viewMode={viewMode}
+                        onDownload={() => handleDownload(document)}
+                        onDelete={() => handleDelete(document)}
+                        onPreview={() => handlePreview(document)}
+                        onUpdate={loadData}
+                        isSelected={isDocumentSelected(document.id)}
+                        onToggleSelect={() => toggleDocumentSelection(document)}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-8">
+                    <Pagination>
+                      <PaginationContent>
+                        {currentPage > 1 && (
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                              className="cursor-pointer"
+                            />
+                          </PaginationItem>
+                        )}
+                        
+                        {/* Page numbers */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <PaginationItem key={pageNum}>
+                              <PaginationLink
+                                onClick={() => setCurrentPage(pageNum)}
+                                isActive={currentPage === pageNum}
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        
+                        {currentPage < totalPages && (
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                              className="cursor-pointer"
+                            />
+                          </PaginationItem>
+                        )}
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedDocuments={selectedDocuments}
+        onClearSelection={clearSelection}
+        onRefresh={loadData}
+        folders={folders}
+      />
 
       {/* Modals */}
       <DocumentUploadModal
@@ -297,6 +504,12 @@ export default function Documentos() {
         onClose={() => setShowCreateFolderModal(false)}
         onSuccess={loadData}
         parentFolderId={selectedFolderId}
+      />
+
+      <DocumentPreviewModal
+        document={previewDocument}
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
       />
     </MainLayout>
   );

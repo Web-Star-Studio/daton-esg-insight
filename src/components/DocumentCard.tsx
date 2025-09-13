@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +16,8 @@ import {
   Calendar,
   User,
   Folder,
-  Tag
+  Tag,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Document } from '@/services/documents';
@@ -26,7 +28,10 @@ interface DocumentCardProps {
   viewMode: 'grid' | 'list';
   onDownload: () => void;
   onDelete: () => void;
+  onPreview: () => void;
   onUpdate: () => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -34,7 +39,10 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   viewMode,
   onDownload,
   onDelete,
-  onUpdate
+  onPreview,
+  onUpdate,
+  isSelected = false,
+  onToggleSelect
 }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -60,9 +68,16 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <Card className="p-4">
+      <Card className={`p-4 ${isSelected ? 'ring-2 ring-primary' : ''}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1 min-w-0">
+            {onToggleSelect && (
+              <Checkbox 
+                checked={isSelected}
+                onCheckedChange={onToggleSelect}
+              />
+            )}
+            
             <div className="text-2xl">{getFileIcon(document.file_type)}</div>
             
             <div className="flex-1 min-w-0">
@@ -116,6 +131,10 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onPreview}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Visualizar
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onDownload}>
                   <Download className="h-4 w-4 mr-2" />
                   Baixar
@@ -136,7 +155,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   }
 
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow">
+    <Card className={`p-4 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <div className="space-y-3">
         {/* File Icon and Actions */}
         <div className="flex items-start justify-between">
@@ -149,6 +168,10 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onPreview}>
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={onDownload}>
                 <Download className="h-4 w-4 mr-2" />
                 Baixar
