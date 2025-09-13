@@ -14,6 +14,8 @@ export interface ExtractedDataPreview extends Omit<ExtractedDataPreviewRow, 'ext
   confidence_scores: Record<string, number>;
   suggested_mappings: Record<string, string>;
   validation_status: 'Pendente' | 'Aprovado' | 'Rejeitado';
+  // Foreign key relationship data (when joins are available and working)
+  extraction_job?: any; // Keep flexible for now due to FK setup timing
 }
 
 export interface AIPattern extends Omit<AIPatternRow, 'field_patterns' | 'extraction_rules'> {
@@ -199,7 +201,13 @@ export const getPendingExtractions = async (): Promise<ExtractedDataPreview[]> =
       throw new Error(`Failed to fetch pending extractions: ${fallbackError.message}`);
     }
 
-    return (fallbackData || []) as ExtractedDataPreview[];
+    return (fallbackData || []).map(item => ({
+      ...item,
+      extracted_fields: item.extracted_fields as Record<string, any>,
+      confidence_scores: item.confidence_scores as Record<string, number>,
+      suggested_mappings: item.suggested_mappings as Record<string, string>,
+      validation_status: item.validation_status as 'Pendente' | 'Aprovado' | 'Rejeitado'
+    })) as ExtractedDataPreview[];
   }
 
   if (error) {
@@ -207,7 +215,13 @@ export const getPendingExtractions = async (): Promise<ExtractedDataPreview[]> =
     throw new Error(`Failed to fetch pending extractions: ${error.message}`);
   }
 
-  return (data || []) as ExtractedDataPreview[];
+  return (data || []).map(item => ({
+    ...item,
+    extracted_fields: item.extracted_fields as Record<string, any>,
+    confidence_scores: item.confidence_scores as Record<string, number>,
+    suggested_mappings: item.suggested_mappings as Record<string, string>,
+    validation_status: item.validation_status as 'Pendente' | 'Aprovado' | 'Rejeitado'
+  })) || [];
 };
 
 // Estatísticas de processamento IA
