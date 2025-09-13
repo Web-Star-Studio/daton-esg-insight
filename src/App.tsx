@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
+import LandingPage from "./pages/LandingPage";
 import Index from "./pages/Index";
 import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
@@ -50,15 +51,23 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Landing Page - público */}
+            <Route path="/" element={<LandingPage />} />
+            
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
             
-            {/* Rotas protegidas */}
-            <Route path="/" element={
+            {/* Simulador - público */}
+            <Route path="/simulador" element={<SimuladorEcoImpacto />} />
+            
+            {/* Dashboard principal - protegido */}
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Index />
               </ProtectedRoute>
             } />
+            
+            {/* Rotas protegidas */}
             <Route path="/inventario-gee" element={
               <ProtectedRoute>
                 <InventarioGEE />
@@ -152,11 +161,6 @@ const App = () => (
             <Route path="/configuracao" element={
               <ProtectedRoute requiredRole="Admin">
                 <Configuracao />
-              </ProtectedRoute>
-            } />
-            <Route path="/simulador" element={
-              <ProtectedRoute>
-                <SimuladorEcoImpacto />
               </ProtectedRoute>
             } />
             <Route path="/ia-insights" element={

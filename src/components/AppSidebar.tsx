@@ -52,7 +52,7 @@ const menuSections: MenuSection[] = [
   {
     title: "ANÁLISE GERAL",
     items: [
-      { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/" },
+      { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/dashboard" },
       { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
       { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
       { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
