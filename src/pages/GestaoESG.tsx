@@ -3,6 +3,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardWithAI } from "@/components/CardWithAI";
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
 import { getESGDashboard, type ESGDashboardResponse } from "@/services/esg";
 import { cn } from "@/lib/utils";
@@ -223,9 +224,25 @@ export default function GestaoESG() {
           </div>
         </div>
 
-        {/* Central ESG Score */}
+        {/* Central ESG Score com IA */}
         <div className="flex justify-center">
-          <CircularProgress value={esgData.overall_esg_score} size={200} />
+          <CardWithAI
+            cardType="esg_score"
+            cardData={{ 
+              overall_esg_score: esgData.overall_esg_score || 0,
+              environmental: esgData.environmental,
+              social: esgData.social,
+              governance: esgData.governance
+            }}
+            title="Score ESG Geral"
+            value={esgData.overall_esg_score}
+            subtitle="Baseado em métricas ambientais, sociais e de governança"
+            className="text-center p-8 min-w-[300px]"
+          >
+            <div className="mb-4 flex justify-center">
+              <CircularProgress value={esgData.overall_esg_score} size={200} />
+            </div>
+          </CardWithAI>
         </div>
 
         {/* ESG Pillars */}

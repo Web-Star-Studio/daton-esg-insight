@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { MainLayout } from "@/components/MainLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardWithAI } from "@/components/CardWithAI"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
@@ -247,55 +248,51 @@ const DashboardGHG = () => {
           </div>
         </div>
 
-        {/* KPIs Resumidos */}
+        {/* KPIs Resumidos com IA */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Emissões Totais (tCO₂e)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">{totals.total}</div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                Período selecionado
-              </div>
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="emissions_total"
+            cardData={{ 
+              total: totals.total, 
+              previous: totals.total * 0.9, // Mock previous value
+              trend: 'increase' 
+            }}
+            title="Emissões Totais (tCO₂e)"
+            value={totals.total}
+            subtitle="Período selecionado"
+            className="shadow-card"
+            isLoading={isLoading}
+          />
 
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Escopo 1 (tCO₂e)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">{totals.escopo1}</div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                {totals.total > 0 ? Math.round((totals.escopo1 / totals.total) * 100) : 0}% do total
-              </div>
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="emissions_scope"
+            cardData={{ 
+              escopo1: totals.escopo1,
+              escopo2: totals.escopo2,
+              escopo3: totals.escopo3,
+              scope2_percentage: totals.total > 0 ? Math.round((totals.escopo2 / totals.total) * 100) : 0
+            }}
+            title="Escopo 1 (tCO₂e)"
+            value={totals.escopo1}
+            subtitle={`${totals.total > 0 ? Math.round((totals.escopo1 / totals.total) * 100) : 0}% do total`}
+            className="shadow-card"
+            isLoading={isLoading}
+          />
 
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Escopo 2 (tCO₂e)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">{totals.escopo2}</div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                {totals.total > 0 ? Math.round((totals.escopo2 / totals.total) * 100) : 0}% do total
-              </div>
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="emissions_scope"
+            cardData={{ 
+              escopo1: totals.escopo1,
+              escopo2: totals.escopo2,
+              escopo3: totals.escopo3,
+              scope2_percentage: totals.total > 0 ? Math.round((totals.escopo2 / totals.total) * 100) : 0
+            }}
+            title="Escopo 2 (tCO₂e)"
+            value={totals.escopo2}
+            subtitle={`${totals.total > 0 ? Math.round((totals.escopo2 / totals.total) * 100) : 0}% do total`}
+            className="shadow-card"
+            isLoading={isLoading}
+          />
         </div>
 
         {/* Gráfico Principal - Evolução Mensal */}
