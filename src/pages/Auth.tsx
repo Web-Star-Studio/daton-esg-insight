@@ -36,7 +36,7 @@ export default function Auth() {
     e.preventDefault();
     try {
       await login(loginData.email, loginData.password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       // Erro já tratado no context com toast
     }
