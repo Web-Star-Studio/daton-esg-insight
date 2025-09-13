@@ -6,32 +6,47 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, differenceInDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Target, Users, TrendingUp, Info, ArrowLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createGoal, getCompanyUsers, type CreateGoalData } from "@/services/goals"
 
 const formSchema = z.object({
-  nome: z.string().min(1, "Nome da meta é obrigatório"),
+  nome: z.string().min(3, "Nome da meta deve ter pelo menos 3 caracteres"),
   descricao: z.string().optional(),
   metrica: z.string().min(1, "Métrica é obrigatória"),
   valorBase: z.number().min(0, "Valor base deve ser positivo").optional(),
   periodoBase: z.string().optional(),
-  valorAlvo: z.number().min(0, "Valor alvo deve ser positivo"),
+  valorAlvo: z.number().min(0.01, "Valor alvo deve ser maior que zero"),
   prazoFinal: z.date({ required_error: "Prazo final é obrigatório" }),
   responsavel: z.string().min(1, "Responsável é obrigatório"),
   frequencia: z.string().min(1, "Frequência é obrigatória"),
-}).refine((data) => data.prazoFinal > new Date(), {
+}).refine((data) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return data.prazoFinal > today;
+}, {
   message: "Prazo final deve ser uma data futura",
   path: ["prazoFinal"],
+}).refine((data) => {
+  if (data.valorBase && data.valorBase >= data.valorAlvo) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Valor alvo deve ser diferente do valor base",
+  path: ["valorAlvo"],
 })
 
 const CriarMeta = () => {
@@ -66,6 +81,64 @@ const CriarMeta = () => {
     },
   })
 
+  const calculateProgress = () => {
+    const valorBase = form.watch('valorBase') || 0;
+    const valorAlvo = form.watch('valorAlvo') || 0;
+    
+    if (valorBase && valorAlvo && valorBase !== valorAlvo) {
+      // Example calculation - in real scenario this would be based on actual data
+      return Math.abs((valorBase / valorAlvo) * 100);
+    }
+    return 0;
+  };
+
+  const getDaysUntilDeadline = () => {
+    const deadline = form.watch('prazoFinal');
+    if (!deadline) return 0;
+    return differenceInDays(deadline, new Date());
+  };
+
+  const getMetricInfo = (metricKey: string) => {
+    const metricMap: Record<string, { description: string; unit: string; example: string }> = {
+      'emissoes-totais': {
+        description: 'Total de emissões de gases de efeito estufa da organização',
+        unit: 'tCO₂e',
+        example: 'Meta: reduzir de 500 para 425 tCO₂e (15% redução)'
+      },
+      'emissoes-escopo1': {
+        description: 'Emissões diretas de fontes controladas pela organização',
+        unit: 'tCO₂e',
+        example: 'Meta: reduzir emissões de frota e combustão direta'
+      },
+      'emissoes-escopo2': {
+        description: 'Emissões indiretas de energia elétrica consumida',
+        unit: 'tCO₂e',
+        example: 'Meta: reduzir através de energia renovável'
+      },
+      'taxa-reciclagem': {
+        description: 'Porcentagem de resíduos destinados à reciclagem',
+        unit: '%',
+        example: 'Meta: aumentar taxa de 60% para 80%'
+      },
+      'geracao-residuos': {
+        description: 'Quantidade total de resíduos gerados pela organização',
+        unit: 'ton',
+        example: 'Meta: reduzir geração através de economia circular'
+      },
+      'consumo-eletricidade': {
+        description: 'Consumo total de energia elétrica',
+        unit: 'kWh',
+        example: 'Meta: reduzir consumo através de eficiência energética'
+      },
+      'consumo-agua': {
+        description: 'Consumo total de água da organização',
+        unit: 'm³',
+        example: 'Meta: reduzir consumo através de reuso e eficiência'
+      },
+    };
+    return metricMap[metricKey];
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -78,7 +151,7 @@ const CriarMeta = () => {
       responsavel: "",
       frequencia: "",
     },
-  })
+  });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const goalData: CreateGoalData = {
@@ -111,14 +184,21 @@ const CriarMeta = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={handleCancel}>
-              Cancelar
+            <Button 
+              variant="ghost" 
+              onClick={handleCancel}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
             </Button>
             <Button 
               type="submit" 
               form="meta-form"
               disabled={createGoalMutation.isPending}
+              className="gap-2"
             >
+              <Target className="h-4 w-4" />
               {createGoalMutation.isPending ? "Salvando..." : "Salvar Meta"}
             </Button>
           </div>
@@ -176,26 +256,41 @@ const CriarMeta = () => {
                   control={form.control}
                   name="metrica"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Selecione a Métrica que será acompanhada</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Escolha a métrica chave (KPI)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="emissoes-totais">Emissões Totais (tCO₂e)</SelectItem>
-                          <SelectItem value="emissoes-escopo1">Emissões Escopo 1 (tCO₂e)</SelectItem>
-                          <SelectItem value="emissoes-escopo2">Emissões Escopo 2 (tCO₂e)</SelectItem>
-                          <SelectItem value="taxa-reciclagem">Taxa de Reciclagem (%)</SelectItem>
-                          <SelectItem value="geracao-residuos">Geração Total de Resíduos (ton)</SelectItem>
-                          <SelectItem value="consumo-eletricidade">Consumo de Eletricidade (kWh)</SelectItem>
-                          <SelectItem value="consumo-agua">Consumo de Água (m³)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+                  <FormItem>
+                    <FormLabel>Selecione a Métrica que será acompanhada</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Escolha a métrica chave (KPI)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="emissoes-totais">Emissões Totais (tCO₂e)</SelectItem>
+                        <SelectItem value="emissoes-escopo1">Emissões Escopo 1 (tCO₂e)</SelectItem>
+                        <SelectItem value="emissoes-escopo2">Emissões Escopo 2 (tCO₂e)</SelectItem>
+                        <SelectItem value="taxa-reciclagem">Taxa de Reciclagem (%)</SelectItem>
+                        <SelectItem value="geracao-residuos">Geração Total de Resíduos (ton)</SelectItem>
+                        <SelectItem value="consumo-eletricidade">Consumo de Eletricidade (kWh)</SelectItem>
+                        <SelectItem value="consumo-agua">Consumo de Água (m³)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    {field.value && (
+                      <div className="mt-2 p-3 bg-info/10 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-4 w-4 text-info mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-info">
+                              {getMetricInfo(field.value)?.description}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {getMetricInfo(field.value)?.example}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </FormItem>
                   )}
                 />
 
@@ -298,6 +393,12 @@ const CriarMeta = () => {
                             </PopoverContent>
                           </Popover>
                           <FormMessage />
+                          {field.value && (
+                            <FormDescription className="flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3" />
+                              {getDaysUntilDeadline()} dias para atingir a meta
+                            </FormDescription>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -363,6 +464,60 @@ const CriarMeta = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Preview Card */}
+            {form.watch('nome') && form.watch('metrica') && form.watch('valorAlvo') && (
+              <Card className="shadow-card border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    Preview da Meta
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Badge variant="outline" className="mb-2">Meta</Badge>
+                      <p className="font-medium">{form.watch('nome')}</p>
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2">Métrica</Badge>
+                      <p className="text-sm text-muted-foreground">
+                        {getMetricInfo(form.watch('metrica'))?.unit}
+                      </p>
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="mb-2">Valor Alvo</Badge>
+                      <p className="font-medium">{form.watch('valorAlvo')}</p>
+                    </div>
+                    {form.watch('prazoFinal') && (
+                      <div>
+                        <Badge variant="outline" className="mb-2">Prazo</Badge>
+                        <p className="text-sm">
+                          {format(form.watch('prazoFinal'), "dd/MM/yyyy", { locale: ptBR })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {form.watch('valorBase') && (
+                    <Separator />
+                  )}
+                  
+                  {form.watch('valorBase') && form.watch('valorAlvo') && form.watch('valorBase') !== form.watch('valorAlvo') && (
+                    <Alert>
+                      <TrendingUp className="h-4 w-4" />
+                      <AlertDescription>
+                        {form.watch('valorBase')! > form.watch('valorAlvo') 
+                          ? `Meta de redução: ${((form.watch('valorBase')! - form.watch('valorAlvo')) / form.watch('valorBase')! * 100).toFixed(1)}%`
+                          : `Meta de aumento: ${((form.watch('valorAlvo') - form.watch('valorBase')!) / form.watch('valorBase')! * 100).toFixed(1)}%`
+                        }
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </form>
         </Form>
       </div>

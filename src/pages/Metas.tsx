@@ -2,10 +2,8 @@ import { useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Flag, TrendingUp, AlertTriangle, BarChart3, Pencil, Plus } from "lucide-react";
+import { Flag, TrendingUp, AlertTriangle, BarChart3, Pencil, Plus, Target, Users, Calendar, Copy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getGoals, getDashboardStats, type GoalListItem } from "@/services/goals";
@@ -13,6 +11,11 @@ import { toast } from "@/hooks/use-toast";
 import { GoalProgressUpdateModal } from "@/components/GoalProgressUpdateModal";
 import { EditGoalModal } from "@/components/EditGoalModal";
 import { TargetTrackingModal } from "@/components/TargetTrackingModal";
+import { DuplicateGoalModal } from "@/components/DuplicateGoalModal";
+import { GoalStatusBadge } from "@/components/GoalStatusBadge";
+import { GoalProgressDisplay } from "@/components/GoalProgressDisplay";
+import { GoalsFiltersBar } from "@/components/GoalsFiltersBar";
+import { useGoalsFilters } from "@/hooks/useGoalsFilters";
 
 interface CircularProgressProps {
   value: number;
@@ -111,6 +114,7 @@ export default function Metas() {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   // Fetch goals data
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useQuery({
@@ -123,6 +127,16 @@ export default function Metas() {
     queryKey: ['dashboard-stats'],
     queryFn: getDashboardStats,
   });
+
+  // Filter and sort goals
+  const {
+    filters,
+    filteredAndSortedGoals,
+    updateFilter,
+    resetFilters,
+    totalCount,
+    filteredCount,
+  } = useGoalsFilters(goals);
 
   const isLoading = goalsLoading || statsLoading;
 
@@ -138,83 +152,161 @@ export default function Metas() {
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">
-            Painel de Metas de Sustentabilidade
-          </h1>
-          <Button 
-            className="gap-2"
-            onClick={() => navigate("/metas/nova")}
-          >
-            <Plus className="h-4 w-4" />
-            Criar Nova Meta
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-foreground">
+              Painel de Metas de Sustentabilidade
+            </h1>
+            <p className="text-muted-foreground">
+              Monitore o progresso das suas metas ambientais e de sustentabilidade
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => window.location.reload()}
+              size="sm"
+            >
+              Atualizar
+            </Button>
+            <Button 
+              className="gap-2"
+              onClick={() => navigate("/metas/nova")}
+            >
+              <Plus className="h-4 w-4" />
+              Criar Nova Meta
+            </Button>
+          </div>
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Metas Ativas */}
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Metas Ativas
               </CardTitle>
-              <Flag className="h-5 w-5 text-primary" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Target className="h-4 w-4 text-primary" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {isLoading ? "--" : stats?.activeGoals || 0}
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-foreground">
+                  {isLoading ? "--" : stats?.activeGoals || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">metas em andamento</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Progresso Médio */}
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Progresso Médio das Metas
+                Progresso Médio
               </CardTitle>
-              <TrendingUp className="h-5 w-5 text-success" />
+              <div className="p-2 bg-success/10 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-success" />
+              </div>
             </CardHeader>
-            <CardContent className="flex items-center justify-center pt-4">
-              <CircularProgress value={isLoading ? 0 : stats?.averageProgress || 0} />
+            <CardContent className="flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-foreground">
+                  {isLoading ? "--" : `${stats?.averageProgress || 0}%`}
+                </div>
+                <p className="text-xs text-muted-foreground">das metas concluídas</p>
+              </div>
+              <CircularProgress 
+                value={isLoading ? 0 : stats?.averageProgress || 0} 
+                size={60}
+                strokeWidth={4}
+              />
             </CardContent>
           </Card>
 
           {/* Metas em Atraso */}
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Metas em Atraso
+                Em Atraso
               </CardTitle>
-              <AlertTriangle className="h-5 w-5 text-warning" />
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {isLoading ? "--" : stats?.delayedGoals || 0}
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-foreground">
+                  {isLoading ? "--" : stats?.delayedGoals || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">metas atrasadas</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Total de Metas */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total de Metas
+              </CardTitle>
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Flag className="h-4 w-4 text-accent-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-foreground">
+                  {isLoading ? "--" : totalCount}
+                </div>
+                <p className="text-xs text-muted-foreground">metas cadastradas</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Goals Management Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciamento de Metas</CardTitle>
+        {/* Goals Management Section */}
+        <Card className="shadow-card">
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl">Gerenciamento de Metas</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/metas/nova")}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nova Meta
+                </Button>
+              </div>
+            </div>
+            
+            {/* Filters */}
+            <GoalsFiltersBar
+              filters={filters}
+              updateFilter={updateFilter}
+              resetFilters={resetFilters}
+              totalCount={totalCount}
+              filteredCount={filteredCount}
+            />
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome da Meta</TableHead>
-                    <TableHead>Métrica</TableHead>
-                    <TableHead>Linha de Base</TableHead>
-                    <TableHead>Alvo</TableHead>
-                    <TableHead>Prazo Final</TableHead>
-                    <TableHead>Progresso</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="min-w-[200px]">Nome da Meta</TableHead>
+                    <TableHead className="min-w-[180px]">Métrica</TableHead>
+                    <TableHead className="min-w-[100px]">Linha de Base</TableHead>
+                    <TableHead className="min-w-[100px]">Alvo</TableHead>
+                    <TableHead className="min-w-[120px]">Prazo Final</TableHead>
+                    <TableHead className="min-w-[150px]">Progresso</TableHead>
+                    <TableHead className="min-w-[120px]">Status</TableHead>
+                    <TableHead className="text-right min-w-[180px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -232,14 +324,27 @@ export default function Metas() {
                         <TableCell><div className="h-8 bg-muted animate-pulse rounded" /></TableCell>
                       </TableRow>
                     ))
-                  ) : goals.length === 0 ? (
+                  ) : filteredAndSortedGoals.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        Nenhuma meta cadastrada ainda. Clique em "Criar Nova Meta" para começar.
+                      <TableCell colSpan={8} className="text-center py-12">
+                        <div className="flex flex-col items-center gap-2">
+                          <Target className="h-12 w-12 text-muted-foreground/50" />
+                          <div className="text-center">
+                            <p className="font-medium text-muted-foreground">
+                              {totalCount === 0 ? 'Nenhuma meta cadastrada' : 'Nenhuma meta encontrada'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {totalCount === 0 
+                                ? 'Clique em "Nova Meta" para criar sua primeira meta'
+                                : 'Tente ajustar os filtros para encontrar suas metas'
+                              }
+                            </p>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    goals.map((goal) => (
+                    filteredAndSortedGoals.map((goal) => (
                       <TableRow key={goal.id}>
                         <TableCell className="font-medium">{goal.name}</TableCell>
                         <TableCell className="text-muted-foreground">
@@ -251,19 +356,13 @@ export default function Metas() {
                           {formatDate(goal.deadline_date)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={goal.current_progress_percent} className="w-20" />
-                            <span className="text-sm font-medium min-w-[3rem]">
-                              {Math.round(goal.current_progress_percent)}%
-                            </span>
-                          </div>
+                          <GoalProgressDisplay 
+                            progress={goal.current_progress_percent}
+                            size="sm"
+                          />
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            className={`${getStatusColor(goal.status)} border-0`}
-                          >
-                            {goal.status}
-                          </Badge>
+                          <GoalStatusBadge status={goal.status} />
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -290,6 +389,18 @@ export default function Metas() {
                               }}
                             >
                               <BarChart3 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Duplicar Meta"
+                              onClick={() => {
+                                setSelectedGoal(goal);
+                                setShowDuplicateModal(true);
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -334,6 +445,12 @@ export default function Metas() {
           open={showTrackingModal}
           onOpenChange={setShowTrackingModal}
           goal={selectedGoal}
+        />
+
+        <DuplicateGoalModal
+          open={showDuplicateModal}
+          onOpenChange={setShowDuplicateModal}
+          goalId={selectedGoal?.id || null}
         />
       </div>
     </MainLayout>
