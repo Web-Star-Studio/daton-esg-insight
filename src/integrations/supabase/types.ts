@@ -105,6 +105,59 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_monitoring: {
+        Row: {
+          activity_id: string
+          area_completed: number | null
+          carbon_sequestered: number | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          evidence_files: Json | null
+          id: string
+          monitoring_date: string
+          notes: string | null
+          progress_percentage: number | null
+          updated_at: string
+        }
+        Insert: {
+          activity_id: string
+          area_completed?: number | null
+          carbon_sequestered?: number | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          evidence_files?: Json | null
+          id?: string
+          monitoring_date: string
+          notes?: string | null
+          progress_percentage?: number | null
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string
+          area_completed?: number | null
+          carbon_sequestered?: number | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          evidence_files?: Json | null
+          id?: string
+          monitoring_date?: string
+          notes?: string | null
+          progress_percentage?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_monitoring_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "conservation_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_extraction_patterns: {
         Row: {
           company_id: string
@@ -456,6 +509,99 @@ export type Database = {
           },
         ]
       }
+      conservation_activities: {
+        Row: {
+          activity_type: string
+          area_size: number | null
+          carbon_impact_estimate: number | null
+          company_id: string
+          coordinates: Json | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          investment_amount: number | null
+          location: string | null
+          methodology: string | null
+          monitoring_plan: string | null
+          responsible_user_id: string | null
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          area_size?: number | null
+          carbon_impact_estimate?: number | null
+          company_id: string
+          coordinates?: Json | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          investment_amount?: number | null
+          location?: string | null
+          methodology?: string | null
+          monitoring_plan?: string | null
+          responsible_user_id?: string | null
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          area_size?: number | null
+          carbon_impact_estimate?: number | null
+          company_id?: string
+          coordinates?: Json | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          investment_amount?: number | null
+          location?: string | null
+          methodology?: string | null
+          monitoring_plan?: string | null
+          responsible_user_id?: string | null
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conservation_activity_types: {
+        Row: {
+          carbon_factor: number | null
+          created_at: string
+          description: string | null
+          id: string
+          methodology_reference: string | null
+          name: string
+          unit: string | null
+        }
+        Insert: {
+          carbon_factor?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          methodology_reference?: string | null
+          name: string
+          unit?: string | null
+        }
+        Update: {
+          carbon_factor?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          methodology_reference?: string | null
+          name?: string
+          unit?: string | null
+        }
+        Relationships: []
+      }
       credit_purchases: {
         Row: {
           available_quantity: number
@@ -748,7 +894,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_extraction_job_document"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_folders: {
         Row: {
@@ -1061,7 +1215,15 @@ export type Database = {
           validation_notes?: string | null
           validation_status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_extracted_preview_job"
+            columns: ["extraction_job_id"]
+            isOneToOne: false
+            referencedRelation: "document_extraction_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       form_submissions: {
         Row: {
@@ -1673,6 +1835,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_conservation_stats: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
       calculate_license_status: {
         Args: {
           current_status: Database["public"]["Enums"]["license_status_enum"]

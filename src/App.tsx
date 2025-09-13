@@ -22,7 +22,7 @@ import CriarMeta from "./pages/CriarMeta";
 import Relatorios from "./pages/Relatorios";
 import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
-import RegistrarCreditosCarbono from "./pages/RegistrarCreditosCarbono";
+import RegistrarAtividadeConservacao from "./pages/RegistrarAtividadeConservacao";
 import Ativos from "./pages/Ativos";
 import Desempenho from "./pages/Desempenho";
 import Configuracao from "./pages/Configuracao";
@@ -127,9 +127,9 @@ const App = () => (
                 <ProjetosCarbono />
               </ProtectedRoute>
             } />
-            <Route path="/projetos-carbono/registrar-creditos" element={
+            <Route path="/projetos-carbono/registrar-atividade" element={
               <ProtectedRoute requiredRole="Editor">
-                <RegistrarCreditosCarbono />
+                <RegistrarAtividadeConservacao />
               </ProtectedRoute>
             } />
             <Route path="/gestao-esg" element={

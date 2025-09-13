@@ -4,31 +4,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Wallet, ShieldCheck, Trees, DollarSign, Eye, Plus, Trash2 } from "lucide-react"
+import { TreePine, Sprout, BarChart3, DollarSign, Eye, Plus, Trash2, MapPin, Calendar, TrendingUp } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
-import { carbonProjectsService, type CarbonProject, type CreditPurchase } from "@/services/carbonProjects"
-import { CreditRetirementModal } from "@/components/CreditRetirementModal"
+import { carbonCompensationService, type ConservationActivity } from "@/services/carbonCompensation"
+import { ConservationActivityModal } from "@/components/ConservationActivityModal"
+import { ActivityMonitoringModal } from "@/components/ActivityMonitoringModal"
 
-export default function ProjetosCarbono() {
+export default function CompensacaoCarbono() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const [projects, setProjects] = useState<CarbonProject[]>([])
-  const [purchases, setPurchases] = useState<CreditPurchase[]>([])
+  const [activities, setActivities] = useState<ConservationActivity[]>([])
   const [stats, setStats] = useState({
-    totalPurchased: 0,
-    totalAvailable: 0,
-    totalRetired: 0,
-    totalInvestment: 0,
-    projectsCount: 0,
+    total_area: 0,
+    total_investment: 0,
+    total_carbon_estimate: 0,
+    total_carbon_sequestered: 0,
+    activities_count: 0,
+    active_activities_count: 0,
   })
   const [loading, setLoading] = useState(true)
-  const [retirementModalOpen, setRetirementModalOpen] = useState(false)
+  const [activityModalOpen, setActivityModalOpen] = useState(false)
+  const [monitoringModalOpen, setMonitoringModalOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<ConservationActivity | null>(null)
 
   // SEO
   useEffect(() => {
-    document.title = 'Projetos de Carbono | Gestão de Créditos de Carbono';
-    const desc = 'Gerencie projetos de carbono, compras e aposentadoria de créditos para compensação de emissões.';
+    document.title = 'Compensação de Carbono | Atividades de Conservação e Recuperação';
+    const desc = 'Gerencie atividades de conservação, reflorestamento e recuperação ambiental para compensação de carbono própria.';
     let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
     if (meta) meta.setAttribute('content', desc);
     else {
@@ -55,20 +58,18 @@ export default function ProjetosCarbono() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [projectsData, purchasesData, statsData] = await Promise.all([
-        carbonProjectsService.getProjects(),
-        carbonProjectsService.getPurchases(),
-        carbonProjectsService.getDashboardStats(),
+      const [activitiesData, statsData] = await Promise.all([
+        carbonCompensationService.getActivities(),
+        carbonCompensationService.getDashboardStats(),
       ]);
 
-      setProjects(projectsData);
-      setPurchases(purchasesData);
+      setActivities(activitiesData);
       setStats(statsData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar dados dos projetos de carbono",
+        description: "Erro ao carregar dados de compensação de carbono",
         variant: "destructive",
       });
     } finally {
@@ -92,24 +93,26 @@ export default function ProjetosCarbono() {
 
   const kpis = [
     {
-      title: "Créditos Disponíveis",
-      value: `${formatNumber(stats.totalAvailable)} tCO₂e`,
-      icon: Wallet,
-    },
-    {
-      title: "Total Compensado (Aposentado)",
-      value: `${formatNumber(stats.totalRetired)} tCO₂e`,
-      icon: ShieldCheck,
+      title: "Área Total Conservada",
+      value: `${formatNumber(stats.total_area)} ha`,
+      icon: TreePine,
       iconColor: "text-green-600",
     },
     {
-      title: "Projetos Apoiados",
-      value: stats.projectsCount.toString(),
-      icon: Trees,
+      title: "Carbono Sequestrado",
+      value: `${formatNumber(stats.total_carbon_sequestered)} tCO₂e`,
+      icon: Sprout,
+      iconColor: "text-emerald-600",
+    },
+    {
+      title: "Potencial de Sequestro",
+      value: `${formatNumber(stats.total_carbon_estimate)} tCO₂e`,
+      icon: TrendingUp,
+      iconColor: "text-blue-600",
     },
     {
       title: "Investimento Total",
-      value: formatCurrency(stats.totalInvestment),
+      value: formatCurrency(stats.total_investment),
       icon: DollarSign,
     },
   ]
@@ -120,9 +123,9 @@ export default function ProjetosCarbono() {
         <div className="space-y-6">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Portfólio de Projetos de Carbono</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Compensação de Carbono</h1>
               <p className="text-muted-foreground mt-2">
-                Gerencie e acompanhe seus investimentos em créditos de carbono para a compensação de emissões.
+                Gerencie atividades próprias de conservação, reflorestamento e recuperação ambiental para compensação de carbono.
               </p>
             </div>
           </div>
@@ -150,24 +153,21 @@ export default function ProjetosCarbono() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Portfólio de Projetos de Carbono</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Compensação de Carbono</h1>
             <p className="text-muted-foreground mt-2">
-              Gerencie e acompanhe seus investimentos em créditos de carbono para a compensação de emissões.
+              Gerencie atividades próprias de conservação, reflorestamento e recuperação ambiental para compensação de carbono.
             </p>
           </div>
           <div className="flex gap-2">
             <Button 
               variant="outline"
-              onClick={() => setRetirementModalOpen(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Aposentar Créditos
-            </Button>
-            <Button 
-              onClick={() => navigate("/projetos-carbono/registrar-creditos")}
+              onClick={() => {
+                setSelectedActivity(null);
+                setActivityModalOpen(true);
+              }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Registrar Compra
+              Nova Atividade
             </Button>
           </div>
         </div>
@@ -189,62 +189,118 @@ export default function ProjetosCarbono() {
           ))}
         </div>
 
-        {/* Credit Purchases Table */}
+        {/* Activities Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Compras de Créditos de Carbono</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Atividades de Conservação</CardTitle>
+              <Badge variant="outline">
+                {stats.activities_count} total • {stats.active_activities_count} ativas
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
-            {purchases.length === 0 ? (
+            {activities.length === 0 ? (
               <div className="text-center py-12">
-                <Trees className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhuma compra registrada</h3>
+                <TreePine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhuma atividade registrada</h3>
                 <p className="text-muted-foreground mb-4">
-                  Registre sua primeira compra de créditos de carbono para começar
+                  Crie sua primeira atividade de conservação para começar a compensar carbono
                 </p>
-                <Button onClick={() => navigate("/projetos-carbono/registrar-creditos")}>
+                <Button onClick={() => {
+                  setSelectedActivity(null);
+                  setActivityModalOpen(true);
+                }}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Registrar Primeira Compra
+                  Criar Primeira Atividade
                 </Button>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Projeto</TableHead>
-                    <TableHead>Tipo / Metodologia</TableHead>
-                    <TableHead>Padrão</TableHead>
-                    <TableHead>Créditos Comprados</TableHead>
-                    <TableHead>Disponíveis</TableHead>
-                    <TableHead>Custo Total</TableHead>
-                    <TableHead>Data da Compra</TableHead>
+                    <TableHead>Atividade</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Localização</TableHead>
+                    <TableHead>Área</TableHead>
+                    <TableHead>Impacto Estimado</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data Início</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {purchases.map((purchase) => (
-                    <TableRow key={purchase.id}>
-                      <TableCell className="font-medium">
-                        {purchase.project_name_text || `Projeto ID: ${purchase.project_id?.substring(0, 8)}`}
-                      </TableCell>
-                      <TableCell>{purchase.type_methodology || '-'}</TableCell>
-                      <TableCell>{purchase.standard || '-'}</TableCell>
-                      <TableCell>{formatNumber(purchase.quantity_tco2e)} tCO₂e</TableCell>
+                  {activities.map((activity) => (
+                    <TableRow key={activity.id}>
                       <TableCell>
-                        <Badge variant={purchase.available_quantity > 0 ? "default" : "secondary"}>
-                          {formatNumber(purchase.available_quantity)} tCO₂e
+                        <div className="flex flex-col">
+                          <span className="font-medium">{activity.title}</span>
+                          {activity.description && (
+                            <span className="text-sm text-muted-foreground truncate max-w-xs">
+                              {activity.description}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{activity.activity_type}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{activity.location || '-'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {activity.area_size ? `${formatNumber(activity.area_size)} ha` : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {formatNumber(activity.carbon_impact_estimate)} tCO₂e
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            activity.status === "Concluída" ? "default" :
+                            activity.status === "Em Andamento" ? "secondary" :
+                            activity.status === "Suspensa" ? "destructive" : "outline"
+                          }
+                          className={
+                            activity.status === "Concluída" ? "bg-green-100 text-green-800" :
+                            activity.status === "Em Andamento" ? "bg-blue-100 text-blue-800" : ""
+                          }
+                        >
+                          {activity.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {purchase.total_cost ? formatCurrency(purchase.total_cost) : '-'}
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">
+                            {new Date(activity.start_date).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {new Date(purchase.purchase_date).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setActivityModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setMonitoringModalOpen(true);
+                            }}
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -253,64 +309,30 @@ export default function ProjetosCarbono() {
             )}
           </CardContent>
         </Card>
-
-        {/* Projects Table */}
-        {projects.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Projetos de Carbono Disponíveis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome do Projeto</TableHead>
-                    <TableHead>Tipo / Metodologia</TableHead>
-                    <TableHead>Padrão / Certificadora</TableHead>
-                    <TableHead>Localização</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {projects.map((project) => (
-                    <TableRow key={project.id}>
-                      <TableCell className="font-medium">{project.name}</TableCell>
-                      <TableCell>{project.type_methodology}</TableCell>
-                      <TableCell>{project.standard}</TableCell>
-                      <TableCell>{project.location || '-'}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={project.status === "Ativo" ? "default" : "secondary"}
-                          className={
-                            project.status === "Ativo"
-                              ? "bg-green-100 text-green-800 hover:bg-green-200"
-                              : ""
-                          }
-                        >
-                          {project.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Modals */}
-      <CreditRetirementModal
-        open={retirementModalOpen}
-        onClose={() => setRetirementModalOpen(false)}
-        onRetirementCreated={loadData}
+      <ConservationActivityModal
+        open={activityModalOpen}
+        onClose={() => {
+          setActivityModalOpen(false);
+          setSelectedActivity(null);
+        }}
+        onActivityCreated={loadData}
+        activity={selectedActivity}
       />
+      
+      {selectedActivity && (
+        <ActivityMonitoringModal
+          open={monitoringModalOpen}
+          onClose={() => {
+            setMonitoringModalOpen(false);
+            setSelectedActivity(null);
+          }}
+          onMonitoringCreated={loadData}
+          activity={selectedActivity}
+        />
+      )}
     </MainLayout>
   )
 }
