@@ -25,8 +25,11 @@ export interface AIPattern extends Omit<AIPatternRow, 'field_patterns' | 'extrac
 export const processDocumentWithAI = async (documentId: string): Promise<{ jobId: string; status: string; message: string }> => {
   console.log('Starting AI processing for document:', documentId);
 
-  const { data, error } = await supabase.functions.invoke('document-ai-processor/process', {
-    body: { documentId },
+  const { data, error } = await supabase.functions.invoke('document-ai-processor', {
+    body: { 
+      action: 'process',
+      documentId 
+    },
     headers: {
       'Content-Type': 'application/json',
     }
@@ -44,10 +47,11 @@ export const processDocumentWithAI = async (documentId: string): Promise<{ jobId
 export const getExtractionJobStatus = async (jobId: string): Promise<ExtractionJob & { extracted_data_preview?: ExtractedDataPreview[] }> => {
   console.log('Getting extraction job status:', jobId);
 
-  const { data, error } = await supabase.functions.invoke('document-ai-processor/status', {
-    body: {},
-    headers: {
-      'Content-Type': 'application/json',
+  const { data, error } = await supabase.functions.invoke('document-ai-processor', {
+    method: 'GET',
+    body: { 
+      action: 'status',
+      jobId 
     }
   });
 
@@ -66,8 +70,12 @@ export const approveExtractedData = async (
 ): Promise<{ success: boolean; message: string }> => {
   console.log('Approving extracted data:', previewId);
 
-  const { data, error } = await supabase.functions.invoke('document-ai-processor/approve', {
-    body: { previewId, finalData },
+  const { data, error } = await supabase.functions.invoke('document-ai-processor', {
+    body: { 
+      action: 'approve',
+      previewId, 
+      finalData 
+    },
     headers: {
       'Content-Type': 'application/json',
     }
@@ -88,8 +96,12 @@ export const rejectExtractedData = async (
 ): Promise<{ success: boolean; message: string }> => {
   console.log('Rejecting extracted data:', previewId);
 
-  const { data, error } = await supabase.functions.invoke('document-ai-processor/reject', {
-    body: { previewId, rejectionNotes },
+  const { data, error } = await supabase.functions.invoke('document-ai-processor', {
+    body: { 
+      action: 'reject',
+      previewId, 
+      rejectionNotes 
+    },
     headers: {
       'Content-Type': 'application/json',
     }

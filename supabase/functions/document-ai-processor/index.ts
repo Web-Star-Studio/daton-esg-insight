@@ -60,28 +60,62 @@ serve(async (req) => {
       throw new Error('User company not found');
     }
 
+    console.log('Document AI Processor request:', req.method);
+
+    // Get request body for POST requests
+    let requestBody = null;
+    if (req.method === 'POST') {
+      try {
+        const bodyText = await req.text();
+        console.log('Raw request body:', bodyText);
+        
+        if (bodyText && bodyText.trim()) {
+          requestBody = JSON.parse(bodyText);
+          console.log('Parsed request body:', requestBody);
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        return new Response(JSON.stringify({ error: `Invalid JSON: ${parseError.message}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Route based on action in request body or query parameter
     const url = new URL(req.url);
-    const path = url.pathname.split('/').slice(-1)[0];
+    const action = requestBody?.action || url.searchParams.get('action') || 'process';
 
-    console.log('Document AI Processor:', req.method, path);
+    console.log('Action:', action);
 
-    if (req.method === 'POST' && path === 'process') {
-      return await handleProcessDocument(req, supabase, profile.company_id, user.id);
+    switch (action) {
+      case 'process':
+        if (req.method !== 'POST') {
+          throw new Error('Process action requires POST method');
+        }
+        return await handleProcessDocument(requestBody, supabase, profile.company_id, user.id);
+
+      case 'status':
+        return await handleGetStatus(req, supabase, profile.company_id);
+
+      case 'approve':
+        if (req.method !== 'POST') {
+          throw new Error('Approve action requires POST method');
+        }
+        return await handleApproveData(requestBody, supabase, profile.company_id, user.id);
+
+      case 'reject':
+        if (req.method !== 'POST') {
+          throw new Error('Reject action requires POST method');
+        }
+        return await handleRejectData(requestBody, supabase, profile.company_id, user.id);
+
+      default:
+        return new Response(JSON.stringify({ error: 'Invalid action' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
     }
-
-    if (req.method === 'GET' && path === 'status') {
-      return await handleGetStatus(req, supabase, profile.company_id);
-    }
-
-    if (req.method === 'POST' && path === 'approve') {
-      return await handleApproveData(req, supabase, profile.company_id, user.id);
-    }
-
-    if (req.method === 'POST' && path === 'reject') {
-      return await handleRejectData(req, supabase, profile.company_id, user.id);
-    }
-
-    return new Response('Not found', { status: 404, headers: corsHeaders });
 
   } catch (error) {
     console.error('Error in document-ai-processor:', error);
@@ -92,24 +126,15 @@ serve(async (req) => {
   }
 });
 
-async function handleProcessDocument(req: Request, supabase: any, companyId: string, userId: string) {
+async function handleProcessDocument(requestBody: any, supabase: any, companyId: string, userId: string) {
   try {
-    const requestBody = await req.text();
     console.log('Processing request for company:', companyId);
     
-    if (!requestBody || requestBody.trim() === '') {
-      throw new Error('Request body is empty');
+    if (!requestBody) {
+      throw new Error('Request body is required');
     }
 
-    let parsedBody;
-    try {
-      parsedBody = JSON.parse(requestBody);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error(`Invalid JSON: ${parseError.message}`);
-    }
-
-    const { documentId } = parsedBody;
+    const { documentId } = requestBody;
     if (!documentId) {
       throw new Error('Document ID is required');
     }
@@ -463,8 +488,8 @@ async function handleGetStatus(req: Request, supabase: any, companyId: string) {
   });
 }
 
-async function handleApproveData(req: Request, supabase: any, companyId: string, userId: string) {
-  const { previewId, finalData } = await req.json();
+async function handleApproveData(requestBody: any, supabase: any, companyId: string, userId: string) {
+  const { previewId, finalData } = requestBody;
 
   const { data: preview, error: previewError } = await supabase
     .from('extracted_data_preview')
@@ -506,8 +531,8 @@ async function handleApproveData(req: Request, supabase: any, companyId: string,
   });
 }
 
-async function handleRejectData(req: Request, supabase: any, companyId: string, userId: string) {
-  const { previewId, rejectionNotes } = await req.json();
+async function handleRejectData(requestBody: any, supabase: any, companyId: string, userId: string) {
+  const { previewId, rejectionNotes } = requestBody;
 
   const { error } = await supabase
     .from('extracted_data_preview')
