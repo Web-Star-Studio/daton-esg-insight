@@ -1,18 +1,30 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Star, ExternalLink, Heart } from "lucide-react";
-import { ESGSolution } from "@/services/marketplace";
-import { useState } from "react";
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Star, ExternalLink, Heart, Scale, Loader2 } from 'lucide-react';
+import { ESGSolution } from '@/services/marketplace';
+import { useFavorites } from '@/hooks/useFavorites';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SolutionCardProps {
   solution: ESGSolution;
   onInterest: () => void;
+  onAddToComparison?: (solution: ESGSolution) => void;
   featured?: boolean;
+  isInComparison?: boolean;
+  showComparisonButton?: boolean;
 }
 
-export function SolutionCard({ solution, onInterest, featured = false }: SolutionCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
+export function SolutionCard({ 
+  solution, 
+  onInterest, 
+  onAddToComparison,
+  featured = false,
+  isInComparison = false,
+  showComparisonButton = false
+}: SolutionCardProps) {
+  const { toggleFavorite, isFavorite, isUpdating } = useFavorites();
 
   const getPriceRangeColor = (range: string) => {
     switch (range) {
@@ -33,43 +45,86 @@ export function SolutionCard({ solution, onInterest, featured = false }: Solutio
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 hover:bg-accent relative">
-      <CardContent className="p-6">
-        {/* Header with favorite button */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              {featured && (
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                  ⭐ Destaque
+    <TooltipProvider>
+      <Card className="group hover:shadow-lg transition-all duration-200 hover:bg-accent relative">
+        <CardContent className="p-6">
+          {/* Header with favorite and comparison buttons */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                {featured && (
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                    ⭐ Destaque
+                  </Badge>
+                )}
+                <Badge variant="outline" className="text-xs">
+                  {solution.category}
                 </Badge>
-              )}
-              <Badge variant="outline" className="text-xs">
-                {solution.category}
-              </Badge>
+              </div>
+              <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                {solution.title}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                {solution.esg_solution_providers.company_name}
+              </p>
             </div>
-            <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors line-clamp-2">
-              {solution.title}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-2">
-              {solution.esg_solution_providers.company_name}
-            </p>
+            
+            <div className="flex gap-1">
+              {showComparisonButton && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToComparison?.(solution);
+                      }}
+                      disabled={isInComparison}
+                      className={`p-2 ${
+                        isInComparison 
+                          ? 'text-primary bg-primary/10' 
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
+                    >
+                      <Scale className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isInComparison ? 'Na comparação' : 'Adicionar à comparação'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(solution.id);
+                    }}
+                    disabled={isUpdating}
+                    className="p-2"
+                  >
+                    {isUpdating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Heart className={`h-4 w-4 ${
+                        isFavorite(solution.id) 
+                          ? 'fill-red-500 text-red-500' 
+                          : 'text-muted-foreground'
+                      }`} />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isFavorite(solution.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsFavorite(!isFavorite);
-            }}
-            className="p-2"
-          >
-            <Heart 
-              className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} 
-            />
-          </Button>
-        </div>
         
         {/* Description */}
         <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
@@ -145,5 +200,6 @@ export function SolutionCard({ solution, onInterest, featured = false }: Solutio
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }
