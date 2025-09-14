@@ -45,6 +45,7 @@ import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
 import DocumentAnalysis from "./pages/DocumentAnalysis";
 import DocumentReconciliation from "./pages/DocumentReconciliation";
 import LicenseAnalysisWorkflow from "./pages/LicenseAnalysisWorkflow";
+import TestExtraction from "./pages/TestExtraction";
 import Auditoria from "./pages/Auditoria";
 import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
@@ -108,6 +109,11 @@ const App = () => (
             <Route path="/licenciamento/workflow" element={
               <ProtectedRoute>
                 <LicenseAnalysisWorkflow />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/teste" element={
+              <ProtectedRoute>
+                <TestExtraction />
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/analise" element={

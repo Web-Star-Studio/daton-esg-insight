@@ -33,6 +33,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { 
+} from "@/components/ui/alert-dialog";
+import { 
   Plus, 
   Award, 
   CheckCircle, 
@@ -48,6 +50,11 @@ import {
   Filter,
   Trash2,
   Archive,
+  FileText,
+  Calendar,
+  Map,
+  ExternalLink,
+  MoreVertical,
   MoreHorizontal,
   Download
 } from "lucide-react";
@@ -225,10 +232,16 @@ const Licenciamento = () => {
               Gerencie todas as licenças ambientais da empresa
             </p>
           </div>
-          <Button className="sm:ml-auto" onClick={handleAddLicenca}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Licença
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={() => navigate('/licenciamento/workflow')} variant="outline">
+              <Brain className="h-4 w-4 mr-2" />
+              Análise com IA
+            </Button>
+            <Button className="sm:ml-auto" onClick={handleAddLicenca}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Licença
+            </Button>
+          </div>
         </div>
 
         {/* Cards de Resumo (KPIs) */}
