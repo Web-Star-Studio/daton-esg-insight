@@ -65,10 +65,10 @@ const menuSections: MenuSection[] = [
   {
     title: "EMISSÕES",
     items: [
-      { id: "inventario-gee", title: "Inventário GEE", icon: Package, path: "/inventario-gee" },
       { id: "dashboard-ghg", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg" },
-      { id: "metas", title: "Metas", icon: Flag, path: "/metas" },
+      { id: "inventario-gee", title: "Inventário GEE", icon: Package, path: "/inventario-gee" },
       { id: "projetos-carbono", title: "Projetos de Carbono", icon: Recycle, path: "/projetos-carbono" },
+      { id: "metas", title: "Metas", icon: Flag, path: "/metas" },
     ]
   },
   {
