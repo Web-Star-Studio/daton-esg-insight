@@ -21,6 +21,10 @@ All colors MUST be HSL.
     /* Verde Daton como cor primária (#00bf63) */
     --primary: 151 100% 37%; /* Verde #00bf63 */
     --primary-foreground: 0 0% 100%;
+    
+    /* Verde mais claro para variações */
+    --primary-light: 151 60% 85%; /* Verde claro */
+    --primary-light-foreground: 151 100% 20%;
 
     /* Cinza claro para elementos secundários */
     --secondary: 210 17% 96%;
@@ -83,6 +87,9 @@ All colors MUST be HSL.
 
     --primary: 151 100% 37%;
     --primary-foreground: 0 0% 100%;
+    
+    --primary-light: 151 60% 85%; /* Verde claro */
+    --primary-light-foreground: 151 100% 20%;
 
     --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 95%;

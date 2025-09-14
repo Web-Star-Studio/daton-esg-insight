@@ -16,18 +16,18 @@ export function SolutionCard({ solution, onInterest, featured = false }: Solutio
 
   const getPriceRangeColor = (range: string) => {
     switch (range) {
-      case 'budget_friendly': return 'bg-green-100 text-green-800 border-green-200';
-      case 'mid_range': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'premium': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'budget_friendly': return 'bg-primary-light text-primary-light-foreground border-primary-light';
+      case 'mid_range': return 'bg-warning/10 text-warning-foreground border-warning/30';
+      case 'premium': return 'bg-accent/20 text-accent-foreground border-accent/40';
       default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getROIColor = (roi: string) => {
     switch (roi) {
-      case '6-12_months': return 'bg-green-100 text-green-800 border-green-200';
-      case '1-2_years': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case '2_years_plus': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case '6-12_months': return 'bg-success/10 text-success-foreground border-success/30';
+      case '1-2_years': return 'bg-primary/10 text-primary-foreground border-primary/30';
+      case '2_years_plus': return 'bg-warning/10 text-warning-foreground border-warning/30';
       default: return 'bg-muted text-muted-foreground';
     }
   };
