@@ -694,35 +694,10 @@ serve(async (req) => {
       const hasLicenseKeywords = /licen[çc]a|processo|emiss[ãa]o|vencimento|condicionante/i.test(extractedText);
       
       if (extractedText.length < 200 || wordCount < 25 || !hasLicenseKeywords) {
-        console.log('PDF text quality insufficient, attempting hybrid analysis...');
-        
-        // Create temporary file for vision analysis
-        const tempVisionPath = `temp-vision-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.pdf`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('documents')
-          .upload(tempVisionPath, fileData, {
-            contentType: 'application/pdf',
-            cacheControl: '300'
-          });
-        
-        if (!uploadError && uploadData) {
-          const { data: urlData } = await supabase.storage
-            .from('documents')
-            .createSignedUrl(uploadData.path, 1800); // 30 minutes
-          
-          if (urlData?.signedUrl) {
-            imageUrl = urlData.signedUrl;
-            analysisType = 'hybrid';
-            documentContent = `PDF document with limited text extraction. Extracted text: ${extractedText}`;
-            console.log('Prepared for hybrid text+vision analysis');
-          }
-        }
-        
-        if (!imageUrl) {
-          documentContent = extractedText;
-          analysisType = 'text_low_quality';
-          console.log('Fallback to text-only analysis with low quality content');
-        }
+        console.log('PDF text quality insufficient, proceeding with text-only analysis (no vision for PDFs)');
+        documentContent = extractedText;
+        analysisType = 'text_low_quality';
+      }
       } else {
         documentContent = extractedText;
         analysisType = 'text';
