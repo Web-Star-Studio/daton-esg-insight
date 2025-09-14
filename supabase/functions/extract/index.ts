@@ -14,118 +14,66 @@ interface ExtractionRequest {
 const JSON_SCHEMA = {
   type: "object",
   properties: {
-    document_type: { type: "string" },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    _evidence_chars: { type: "number" },
     license_number: { type: "string" },
+    issuing_agency: { type: "string" },
     issue_date: { type: "string", format: "date" },
-    valid_until: { type: "string", format: "date" },
-    process_number: { type: "string" },
-    company: { type: "string" },
+    expiration_date: { type: "string", format: "date" },
+    company_name: { type: "string" },
     cnpj: { type: "string" },
-    full_address: { type: "string" },
+    address: { type: "string" },
     coordinates: {
       type: "object",
       properties: {
-        latitude: { type: ["number", "null"] },
-        longitude: { type: ["number", "null"] }
+        latitude: { type: "number" },
+        longitude: { type: "number" }
       }
     },
     activity_description: { type: "string" },
-    company_size: { type: "string" },
+    company_size: { 
+      type: "string", 
+      enum: ["micro", "pequeno", "medio", "grande"] 
+    },
     conditions: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          code: { type: "string" },
-          text: { type: "string" },
-          category: { type: "string" },
-          deadline_days: { type: ["integer", "null"] },
+          description: { type: "string" },
           source_snippet: { type: "string" },
-          confidence: { type: "number" }
+          category: { 
+            type: "string",
+            enum: ["residuos", "emissoes", "ruido", "oleos_combustiveis", "riscos", "monitoramento", "geral"]
+          },
+          due_date: { type: "string", format: "date" },
+          frequency: { type: "string" },
+          responsible: { type: "string" }
         },
-        required: ["text"]
+        required: ["description", "source_snippet"]
       }
-    },
-    confidence: { type: "number" }
+    }
   },
-  required: ["confidence"]
+  required: ["confidence", "_evidence_chars"]
 };
 
-// Simple CSV parser for Deno
-function parseCSV(text: string): string[][] {
-  const lines = text.split('\n').filter(line => line.trim());
-  const result: string[][] = [];
-  
-  for (const line of lines) {
-    // Simple CSV parsing - handles basic cases
-    const fields: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        fields.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    
-    if (current) {
-      fields.push(current.trim());
-    }
-    
-    result.push(fields);
-  }
-  
-  return result;
-}
+const INSTRUCTIONS = `Você vai ler o PDF/Imagem anexado e extrair apenas informações que estejam visíveis no documento.
 
-// Simple PDF text extraction
-async function extractPDFText(pdfData: Uint8Array): Promise<string> {
-  try {
-    // Convert to string and try to extract basic text
-    const text = new TextDecoder('utf-8').decode(pdfData);
-    
-    // Look for text between stream objects
-    const streamRegex = /stream\s*(.*?)\s*endstream/gs;
-    const matches = text.match(streamRegex);
-    
-    if (matches) {
-      let extractedText = '';
-      for (const match of matches) {
-        const content = match.replace(/stream\s*/, '').replace(/\s*endstream/, '');
-        // Try to decode simple text
-        if (content.includes('Tj') || content.includes('TJ')) {
-          const textRegex = /\((.*?)\)\s*Tj?/g;
-          let textMatch;
-          while ((textMatch = textRegex.exec(content)) !== null) {
-            extractedText += textMatch[1] + ' ';
-          }
-        }
-      }
-      
-      if (extractedText.trim()) {
-        return extractedText.trim();
-      }
-    }
-    
-    // Fallback: try to find readable text in the PDF
-    const readableText = text.match(/[A-Za-z0-9\s\.,;:!?\-()]{20,}/g);
-    if (readableText && readableText.length > 0) {
-      return readableText.join(' ').substring(0, 5000);
-    }
-    
-    return '';
-  } catch (error) {
-    console.error('PDF text extraction failed:', error);
-    return '';
-  }
-}
+Retorne somente JSON válido no schema.
+
+Não invente nada: se um campo não existir, omita.
+
+Sempre inclua em cada condition um source_snippet curto (até 280 chars) retirado do documento.
+
+Preencha _evidence_chars com a soma dos comprimentos dos principais trechos copiados do documento usados como evidência.
+
+Datas em YYYY-MM-DD.
+
+CNPJ com pontuação.
+
+category é uma label curta (ex.: residuos, emissoes, ruido, oleos_combustiveis, riscos).
+
+Se o arquivo for ilegível (scan ruim) ou tiver pouco texto, retorne um JSON somente com confidence: 0.0 e _evidence_chars: 0.`;
 
 serve(async (req) => {
   console.log('Starting document extraction...');
@@ -180,13 +128,6 @@ serve(async (req) => {
 
     if (fileError || !file) {
       console.log(`[${correlationId}] File not found or access denied:`, fileError);
-      await supabase.from('audit_logs').insert({
-        user_id: user.id,
-        action: 'extract_error',
-        target_id: file_id,
-        details: { error: 'File not found or access denied', correlation_id: correlationId }
-      });
-      
       return new Response(JSON.stringify({ ok: false, error: 'file not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -195,9 +136,6 @@ serve(async (req) => {
 
     console.log(`[${correlationId}] Processing file: ${file.original_name} (${file.mime})`);
 
-    // Update file status to parsing
-    await supabase.from('files').update({ status: 'parsed' }).eq('id', file_id);
-
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('uploads')
@@ -205,17 +143,11 @@ serve(async (req) => {
 
     if (downloadError || !fileData) {
       console.log(`[${correlationId}] File download failed:`, downloadError);
+      
       await supabase.from('files').update({ 
         status: 'failed', 
         error: 'Download failed' 
       }).eq('id', file_id);
-      
-      await supabase.from('audit_logs').insert({
-        user_id: user.id,
-        action: 'extract_error',
-        target_id: file_id,
-        details: { error: 'Download failed', correlation_id: correlationId }
-      });
 
       return new Response(JSON.stringify({ ok: false, error: 'download failed' }), {
         status: 500,
@@ -223,170 +155,126 @@ serve(async (req) => {
       });
     }
 
-    let documentText = '';
-
-    // Parse file based on type
-    if (file.mime === 'application/pdf') {
-      console.log(`[${correlationId}] Parsing PDF file`);
-      const arrayBuffer = await fileData.arrayBuffer();
-      const pdfBytes = new Uint8Array(arrayBuffer);
-      documentText = await extractPDFText(pdfBytes);
-      
-      if (!documentText.trim()) {
-        console.log(`[${correlationId}] PDF text extraction failed - no readable text found`);
-        await supabase.from('files').update({ 
-          status: 'failed', 
-          error: 'PDF contains no readable text or is image-based' 
-        }).eq('id', file_id);
-        
-        await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'extract_error',
-          target_id: file_id,
-          details: { error: 'PDF text extraction failed', correlation_id: correlationId }
-        });
-
-        return new Response(JSON.stringify({ ok: false, error: 'PDF text extraction failed' }), {
-          status: 422,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      console.log(`[${correlationId}] Extracted ${documentText.length} characters from PDF`);
-    } else if (file.mime === 'text/csv' || file.original_name.toLowerCase().endsWith('.csv')) {
-      console.log(`[${correlationId}] Parsing CSV file`);
-      const csvText = await fileData.text();
-      const csvData = parseCSV(csvText);
-      
-      // Convert CSV to readable text for AI processing
-      documentText = csvData.map((row, index) => {
-        if (index === 0) {
-          return `Headers: ${row.join(', ')}`;
-        } else {
-          return `Row ${index}: ${row.join(', ')}`;
-        }
-      }).join('\n');
-      
-      console.log(`[${correlationId}] Parsed CSV with ${csvData.length} rows`);
-    } else if (file.mime.includes('text/') || file.original_name.toLowerCase().endsWith('.txt')) {
-      console.log(`[${correlationId}] Reading text file`);
-      documentText = await fileData.text();
-    } else {
-      // For other file types, try to read as text
-      try {
-        documentText = await fileData.text();
-        console.log(`[${correlationId}] Read file as text (${documentText.length} chars)`);
-      } catch (error) {
-        console.log(`[${correlationId}] Failed to read file as text:`, error);
-        // Use filename as fallback
-        documentText = `Filename: ${file.original_name}`;
-      }
-    }
-
-    // Limit text length to prevent token overflow
-    if (documentText.length > 15000) {
-      documentText = documentText.substring(0, 15000) + '... (truncated)';
-    }
-
-    // Call OpenAI for extraction
-    console.log(`[${correlationId}] Calling OpenAI for extraction...`);
+    // Convert file to blob for OpenAI upload
+    const fileBuffer = await fileData.arrayBuffer();
+    const fileBlob = new Blob([fileBuffer], { type: file.mime });
     
-    let extractedData: any = { confidence: 0.1 };
+    console.log(`[${correlationId}] Uploading file to OpenAI...`);
 
-    try {
-      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{
-            role: 'system',
-          content: `Você é um especialista em análise de Licenças de Operação (LO) ambiental. 
-            Extraia informações estruturadas do documento seguindo exatamente estas regras:
-            
-            CAMPOS OBRIGATÓRIOS:
-            - document_type: sempre "Licença de Operação" ou "LO"
-            - license_number: número/código da licença (ex: "LO 123/2024")
-            - issue_date: data de emissão (formato YYYY-MM-DD)
-            - valid_until: data de validade (formato YYYY-MM-DD)
-            - process_number: número do processo administrativo
-            - company: nome completo da empresa/empreendedor
-            - cnpj: CNPJ normalizado (apenas números)
-            - full_address: endereço completo do empreendimento
-            - coordinates: {latitude: numero, longitude: numero} se disponível
-            - activity_description: descrição da atividade licenciada
-            - company_size: porte da empresa (Micro, Pequeno, Médio, Grande)
-            
-            CONDICIONANTES:
-            - code: código/número da condicionante
-            - text: texto completo da condicionante
-            - category: tema da condicionante (ex: "Monitoramento", "Gestão de Resíduos", "Emissões Atmosféricas", "Recursos Hídricos", "Ruído", "Solo", "Vegetação", "Relatórios")
-            - deadline_days: prazo em dias se especificado
-            - source_snippet: trecho exato do documento
-            - confidence: confiança da extração (0-1)
-            
-            REGRAS:
-            - Extraia apenas dados com base textual clara no documento
-            - Use confidence entre 0 e 1 baseado na certeza
-            - Normalize datas para YYYY-MM-DD
-            - Para coordenadas, procure por "lat", "long", "UTM", "coordenadas"
-            - Categorize condicionantes por tema ambiental
-            - Se CSV, pode conter dados tabulares de licenças`
-          }, {
-            role: 'user',
-            content: `Analise este documento e extraia as informações estruturadas:\n\n${documentText}`
-          }],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "license_extraction",
-              schema: JSON_SCHEMA
-            }
-          },
-          temperature: 0
-        })
-      });
+    // Upload file to OpenAI
+    const formData = new FormData();
+    formData.append('file', fileBlob, file.original_name);
+    formData.append('purpose', 'assistants');
 
-      if (openaiResponse.ok) {
-        const aiResult = await openaiResponse.json();
-        extractedData = JSON.parse(aiResult.choices[0].message.content);
-        console.log(`[${correlationId}] OpenAI extraction successful, confidence: ${extractedData.confidence}`);
-      } else {
-        const errorText = await openaiResponse.text();
-        console.log(`[${correlationId}] OpenAI API error:`, errorText);
-        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-      }
-    } catch (error) {
-      console.log(`[${correlationId}] AI extraction failed, using fallback:`, error);
-      // Fallback extraction from filename and basic text analysis
-      const filename = file.original_name.toLowerCase();
-      extractedData = {
-        document_type: filename.includes('licenca') || filename.includes('license') ? 'licenca' : 'outro',
-        company: 'Empresa não identificada',
-        confidence: 0.2,
-        conditions: []
-      };
+    const uploadResponse = await fetch('https://api.openai.com/v1/files', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: formData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.log(`[${correlationId}] OpenAI file upload failed:`, errorText);
       
-      // Try to extract basic info from text
-      if (documentText.length > 100) {
-        // Look for dates
-        const datePattern = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/g;
-        const dates = documentText.match(datePattern);
-        if (dates && dates.length > 0) {
-          extractedData.confidence = 0.4;
-        }
-        
-        // Look for CNPJ patterns
-        const cnpjPattern = /(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}\-?\d{2})/g;
-        const cnpj = documentText.match(cnpjPattern);
-        if (cnpj && cnpj.length > 0) {
-          extractedData.cnpj = cnpj[0].replace(/[\.\/\-]/g, '');
-          extractedData.confidence = 0.5;
-        }
-      }
+      await supabase.from('files').update({ 
+        status: 'failed', 
+        error: 'OpenAI file upload failed' 
+      }).eq('id', file_id);
+
+      return new Response(JSON.stringify({ ok: false, error: 'file upload failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const uploadResult = await uploadResponse.json();
+    const openaiFileId = uploadResult.id;
+    
+    console.log(`[${correlationId}] File uploaded to OpenAI: ${openaiFileId}`);
+    console.log(`[${correlationId}] Calling OpenAI Responses API...`);
+
+    // Call OpenAI Responses API
+    const responsesResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: INSTRUCTIONS
+            },
+            {
+              type: 'input_file',
+              input_file: { file_id: openaiFileId }
+            }
+          ]
+        }],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'DatonLO',
+            schema: JSON_SCHEMA
+          }
+        },
+        temperature: 0
+      })
+    });
+
+    // Clean up: Delete file from OpenAI
+    try {
+      await fetch(`https://api.openai.com/v1/files/${openaiFileId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${openaiApiKey}` }
+      });
+      console.log(`[${correlationId}] Cleaned up OpenAI file: ${openaiFileId}`);
+    } catch (cleanupError) {
+      console.log(`[${correlationId}] Failed to cleanup OpenAI file:`, cleanupError);
+    }
+
+    if (!responsesResponse.ok) {
+      const errorText = await responsesResponse.text();
+      console.log(`[${correlationId}] OpenAI Responses API failed:`, errorText);
+      
+      await supabase.from('files').update({ 
+        status: 'failed', 
+        error: 'AI analysis failed' 
+      }).eq('id', file_id);
+
+      return new Response(JSON.stringify({ ok: false, error: 'ai analysis failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const aiResult = await responsesResponse.json();
+    const extractedData = JSON.parse(aiResult.choices[0].message.content);
+    
+    console.log(`[${correlationId}] OpenAI extraction successful, confidence: ${extractedData.confidence}, evidence chars: ${extractedData._evidence_chars}`);
+
+    // Validate response quality
+    if (extractedData.confidence < 0.5 || extractedData._evidence_chars < 200) {
+      console.log(`[${correlationId}] Document quality insufficient - confidence: ${extractedData.confidence}, evidence: ${extractedData._evidence_chars}`);
+      
+      await supabase.from('files').update({ 
+        status: 'failed', 
+        error: 'Documento ilegível/escaneado, não há evidência suficiente' 
+      }).eq('id', file_id);
+
+      return new Response(JSON.stringify({ 
+        ok: false, 
+        error: 'Documento ilegível/escaneado, não há evidência suficiente' 
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Create extraction record
@@ -412,15 +300,19 @@ serve(async (req) => {
     const stagingItems = [];
     
     // Basic fields
-    const basicFields = ['document_type', 'license_number', 'issue_date', 'valid_until', 'process_number', 'company', 'cnpj', 'full_address', 'activity_description', 'company_size'];
+    const basicFields = [
+      'license_number', 'issuing_agency', 'issue_date', 'expiration_date', 
+      'company_name', 'cnpj', 'address', 'activity_description', 'company_size'
+    ];
+    
     for (const field of basicFields) {
       if (extractedData[field]) {
         stagingItems.push({
           extraction_id: extraction.id,
           field_name: field,
           extracted_value: String(extractedData[field]),
-          source_text: documentText.substring(0, 100), // Sample source text
-          confidence: extractedData.confidence || 0.5,
+          source_text: `Extracted from document with ${extractedData._evidence_chars} chars of evidence`,
+          confidence: extractedData.confidence,
           status: 'pending'
         });
       }
@@ -432,8 +324,8 @@ serve(async (req) => {
         extraction_id: extraction.id,
         field_name: 'coordinates',
         extracted_value: JSON.stringify(extractedData.coordinates),
-        source_text: documentText.substring(0, 100),
-        confidence: extractedData.confidence || 0.5,
+        source_text: `Coordinates extracted with confidence ${extractedData.confidence}`,
+        confidence: extractedData.confidence,
         status: 'pending'
       });
     }
@@ -446,13 +338,14 @@ serve(async (req) => {
           row_index: index,
           field_name: 'condition',
           extracted_value: JSON.stringify({
-            code: condition.code || '',
-            text: condition.text || '',
-            category: condition.category || 'Outros',
-            deadline_days: condition.deadline_days
+            description: condition.description,
+            category: condition.category || 'geral',
+            due_date: condition.due_date,
+            frequency: condition.frequency,
+            responsible: condition.responsible
           }),
           source_text: condition.source_snippet || '',
-          confidence: condition.confidence || extractedData.confidence || 0.5,
+          confidence: extractedData.confidence,
           status: 'pending'
         });
       });
@@ -482,6 +375,7 @@ serve(async (req) => {
         extraction_id: extraction.id, 
         items_count: stagingItems.length,
         confidence: extractedData.confidence,
+        evidence_chars: extractedData._evidence_chars,
         correlation_id: correlationId
       }
     });
@@ -491,47 +385,19 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       ok: true, 
       extraction_id: extraction.id,
-      items_count: stagingItems.length,
-      confidence: extractedData.confidence
+      confidence: extractedData.confidence,
+      evidence_chars: extractedData._evidence_chars
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error(`[${correlationId}] Extraction failed:`, error);
+    console.log(`[${correlationId}] Extraction failed:`, error);
     
-    // Log error to audit table
-    try {
-      const { file_id } = await req.json();
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-        { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-      );
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && file_id) {
-        await supabase.from('files').update({ 
-          status: 'failed', 
-          error: error.message 
-        }).eq('id', file_id);
-
-        await supabase.from('audit_logs').insert({
-          user_id: user.id,
-          action: 'extract_error',
-          target_id: file_id,
-          details: { 
-            error: error.message, 
-            stack: error.stack,
-            correlation_id: correlationId
-          }
-        });
-      }
-    } catch (logError) {
-      console.error(`[${correlationId}] Failed to log error:`, logError);
-    }
-
-    return new Response(JSON.stringify({ ok: false, error: error.message }), {
+    return new Response(JSON.stringify({ 
+      ok: false, 
+      error: error.message 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
