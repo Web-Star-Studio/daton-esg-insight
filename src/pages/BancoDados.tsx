@@ -191,13 +191,20 @@ const BancoDados = () => {
   );
 
   const DataTable = ({ section }: { section: any }) => {
-    const filteredData = section.data?.filter((item: any) => 
+    // Ensure we're working with an array
+    const dataArray = Array.isArray(section.data) 
+      ? section.data 
+      : section.data 
+        ? [section.data] 
+        : [];
+    
+    const filteredData = dataArray.filter((item: any) => 
       Object.values(item).some(value => 
         value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
-    ) || [];
+    );
 
-    if (!section.data || section.data.length === 0) {
+    if (!section.data || dataArray.length === 0) {
       return (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8">
