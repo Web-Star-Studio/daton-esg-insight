@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -154,13 +155,15 @@ export default function GestaoESG() {
     retry: 1,
   });
 
-  if (error) {
-    toast({
-      title: "Erro",
-      description: "Não foi possível carregar os dados do dashboard ESG",
-      variant: "destructive",
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os dados do dashboard ESG",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   if (isLoading) {
     return (
