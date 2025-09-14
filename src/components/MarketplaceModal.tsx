@@ -53,19 +53,19 @@ export function MarketplaceModal({
 
   // Filtrar soluções baseado em busca e filtros
   useEffect(() => {
-    let filtered = solutions;
+    let filtered = Array.isArray(solutions) ? solutions : [];
 
     // Filtro por texto
-    if (searchTerm) {
+    if (searchTerm && filtered.length > 0) {
       filtered = filtered.filter(solution => 
-        solution.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        solution.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        solution.esg_solution_providers.company_name.toLowerCase().includes(searchTerm.toLowerCase())
+        solution.title?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        solution.description?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        solution.esg_solution_providers?.company_name?.toLowerCase()?.includes(searchTerm.toLowerCase())
       );
     }
 
     // Filtro por categoria na tab ativa
-    if (activeTab !== 'all') {
+    if (activeTab !== 'all' && filtered.length > 0) {
       filtered = filtered.filter(solution => solution.category === activeTab);
     }
 
@@ -78,9 +78,9 @@ export function MarketplaceModal({
       let result;
       
       // Se há problemas identificados, usar matching inteligente
-      if (identifiedProblems.length > 0) {
+      if (identifiedProblems && Array.isArray(identifiedProblems) && identifiedProblems.length > 0) {
         result = await findMatchingSolutions(identifiedProblems, companyContext, filters);
-        setSolutions(result.solutions);
+        setSolutions(result.solutions || []);
         
         if (result.ai_powered) {
           toast.success(`${result.total_matches} soluções encontradas com IA para seus problemas específicos`);
@@ -88,7 +88,7 @@ export function MarketplaceModal({
       } else {
         // Senão, buscar todas as soluções
         const allSolutions = await getSolutions(filters);
-        setSolutions(allSolutions);
+        setSolutions(Array.isArray(allSolutions) ? allSolutions : []);
       }
     } catch (error) {
       console.error('Error loading solutions:', error);
@@ -138,7 +138,7 @@ export function MarketplaceModal({
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             Marketplace de Soluções ESG
-            {identifiedProblems.length > 0 && (
+            {identifiedProblems && Array.isArray(identifiedProblems) && identifiedProblems.length > 0 && (
               <Badge variant="secondary">
                 {identifiedProblems.length} problema(s) identificado(s)
               </Badge>
@@ -280,21 +280,21 @@ export function MarketplaceModal({
                           {solution.description}
                         </p>
 
-                        {/* Problemas que resolve */}
-                        {solution.matching_problems && solution.matching_problems.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-emerald-600 mb-1">
-                              Resolve seus problemas:
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {solution.matching_problems.map((problem, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs bg-emerald-50 text-emerald-700">
-                                  {problem}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+        {/* Problemas que resolve */}
+        {solution.matching_problems && Array.isArray(solution.matching_problems) && solution.matching_problems.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-emerald-600 mb-1">
+              Resolve seus problemas:
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {solution.matching_problems.map((problem, idx) => (
+                <Badge key={idx} variant="secondary" className="text-xs bg-emerald-50 text-emerald-700">
+                  {problem}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
                         {/* Métricas */}
                         <div className="flex justify-between items-center text-sm">
