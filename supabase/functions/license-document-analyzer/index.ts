@@ -841,38 +841,71 @@ serve(async (req) => {
     }
 
     console.log('Calling OpenAI API for comprehensive analysis...');
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(openaiPayload),
-    });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
+    // Helper: retry OpenAI call on rate limits/transient errors
+    const callOpenAIWithRetry = async (payload: any, attempts = 3) => {
+      let lastResponse: Response | null = null;
+      for (let i = 0; i < attempts; i++) {
+        if (i > 0) {
+          const backoff = Math.min(2000 * 2 ** (i - 1), 8000);
+          const jitter = Math.floor(Math.random() * 400);
+          const wait = backoff + jitter;
+          console.log(`OpenAI retry ${i}/${attempts - 1} after ${wait}ms...`);
+          await new Promise(r => setTimeout(r, wait));
+        }
+
+        try {
+          const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          lastResponse = resp;
+
+          if (resp.ok) return resp;
+
+          // Retry only on rate limiting or transient server errors
+          if (![429, 500, 502, 503, 504].includes(resp.status)) {
+            return resp;
+          }
+        } catch (err) {
+          console.log('OpenAI fetch error, will retry if attempts remain:', err);
+          // Continue to retry on network errors
+        }
+      }
+      return lastResponse as Response;
+    };
+
+    const openaiResponse = await callOpenAIWithRetry(openaiPayload, 3);
+
+    if (!openaiResponse || !openaiResponse.ok) {
+      const errorText = openaiResponse ? await openaiResponse.text() : 'No response from OpenAI';
       console.error('OpenAI API error details:', errorText);
       
       let errorMessage = 'Erro no serviço de análise por IA.';
       const suggestions = ['Tente novamente em alguns minutos', 'Verifique sua conexão com a internet'];
+      let statusCode = 500;
       
-      if (errorText.includes('rate_limit')) {
+      if (errorText.includes('rate_limit') || (openaiResponse && openaiResponse.status === 429)) {
         errorMessage = 'Muitas solicitações de análise. Aguarde alguns minutos.';
+        statusCode = 429;
       } else if (errorText.includes('invalid_api_key')) {
         errorMessage = 'Configuração do serviço de IA inválida.';
         suggestions.push('Contacte o administrador do sistema');
-      } else if (errorText.includes('quota')) {
-        errorMessage = 'Limite de análises atingido temporariamente.';
+      } else if (openaiResponse && [500, 502, 503, 504].includes(openaiResponse.status)) {
+        errorMessage = 'Serviço de IA temporariamente indisponível. Tente novamente.';
       }
       
       return new Response(JSON.stringify({ 
         success: false, 
         error: errorMessage,
         suggestions,
-        technical_details: `OpenAI API error: ${openaiResponse.status}`
+        technical_details: `OpenAI API error: ${openaiResponse ? openaiResponse.status : 'network'}`
       }), {
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
