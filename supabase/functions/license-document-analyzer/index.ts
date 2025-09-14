@@ -776,7 +776,6 @@ serve(async (req) => {
     const openaiPayload: any = {
       model: 'gpt-4.1-2025-04-14', // Latest GPT-4.1 model
       max_completion_tokens: 6000,
-      temperature: 0.1, // Low temperature for consistent extraction
       response_format: { type: "json_object" }
     };
 
@@ -804,7 +803,7 @@ serve(async (req) => {
           content: [
             {
               type: 'text',
-              content: getSpecializedPrompt(documentContent)
+              text: getSpecializedPrompt(documentContent)
             },
             {
               type: 'image_url',
