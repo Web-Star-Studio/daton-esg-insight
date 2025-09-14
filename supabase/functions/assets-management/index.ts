@@ -1,297 +1,251 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface Asset {
-  id: string
-  company_id: string
-  name: string
-  asset_type: string
-  location?: string
-  description?: string
-  parent_asset_id?: string
-  // Campos ambientais específicos
-  productive_capacity?: number
-  capacity_unit?: string
-  installation_year?: number
-  operational_status?: string
-  pollution_potential?: string
-  cnae_code?: string
-  monitoring_frequency?: string
-  critical_parameters?: string[]
-  monitoring_responsible?: string
-  created_at: string
-  updated_at: string
-  children?: Asset[]
-}
-
-interface AssetWithLinkedData extends Asset {
-  linked_emission_sources: any[]
-  linked_licenses: any[]
-  linked_waste_logs: any[]
-  kpis: {
-    total_emissions: number
-    active_licenses: number
-    waste_records: number
-  }
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const authHeader = req.headers.get('Authorization')!
+    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+
+    const { data: { user } } = await supabaseClient.auth.getUser()
+    if (!user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return new Response('Profile not found', { status: 404, headers: corsHeaders })
+    }
+
+    const company_id = profile.company_id
     const url = new URL(req.url)
-    const pathSegments = url.pathname.split('/').filter(Boolean)
-    const assetId = pathSegments[pathSegments.length - 1]
+    const pathParts = url.pathname.split('/')
+    const assetId = pathParts[pathParts.length - 1]
 
-    console.log('Assets Management - Method:', req.method, 'Path:', url.pathname)
-
-    // GET /assets - Lista hierárquica de ativos
-    if (req.method === 'GET' && !assetId.match(/^[0-9a-f-]{36}$/i)) {
-      const { data: assets, error } = await supabaseClient
-        .from('assets')
-        .select('*')
-        .order('created_at')
-
-      if (error) {
-        console.error('Error fetching assets:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+    if (req.method === 'GET') {
+      if (pathParts.includes('assets') && assetId && assetId !== 'assets') {
+        return await getAssetWithLinkedData(supabaseClient, company_id, assetId)
+      } else {
+        return await getAllAssets(supabaseClient, company_id)
       }
-
-      // Organizar em estrutura hierárquica
-      const hierarchicalAssets = buildHierarchy(assets || [])
-
-      return new Response(JSON.stringify({ assets: hierarchicalAssets }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // GET /assets/{id} - Detalhes de um ativo com dados vinculados
-    if (req.method === 'GET' && assetId.match(/^[0-9a-f-]{36}$/i)) {
-      // Buscar detalhes do ativo
-      const { data: asset, error: assetError } = await supabaseClient
-        .from('assets')
-        .select('*')
-        .eq('id', assetId)
-        .single()
-
-      if (assetError || !asset) {
-        return new Response(JSON.stringify({ error: 'Asset not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      // Buscar dados vinculados em paralelo
-      const [emissionSourcesRes, licensesRes, wasteLogsRes] = await Promise.all([
-        supabaseClient
-          .from('emission_sources')
-          .select('id, name, category, scope, status')
-          .eq('asset_id', assetId),
-        supabaseClient
-          .from('licenses')
-          .select('id, name, type, status, expiration_date, issuing_body')
-          .eq('asset_id', assetId),
-        supabaseClient
-          .from('waste_logs')
-          .select('id, mtr_number, waste_description, quantity, unit, collection_date, status')
-          .eq('asset_id', assetId)
-      ])
-
-      const linked_emission_sources = emissionSourcesRes.data || []
-      const linked_licenses = licensesRes.data || []
-      const linked_waste_logs = wasteLogsRes.data || []
-
-      // Calcular KPIs
-      const kpis = {
-        total_emissions: linked_emission_sources.length,
-        active_licenses: linked_licenses.filter(l => l.status === 'Ativa').length,
-        waste_records: linked_waste_logs.length
-      }
-
-      const response: AssetWithLinkedData = {
-        ...asset,
-        linked_emission_sources,
-        linked_licenses,
-        linked_waste_logs,
-        kpis
-      }
-
-      return new Response(JSON.stringify(response), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // POST /assets - Criar novo ativo
-    if (req.method === 'POST') {
+    } else if (req.method === 'POST') {
       const body = await req.json()
-      
-      const { data: asset, error } = await supabaseClient
-        .from('assets')
-        .insert([{
-          name: body.name,
-          asset_type: body.asset_type,
-          location: body.location,
-          description: body.description,
-          parent_asset_id: body.parent_asset_id,
-          productive_capacity: body.productive_capacity,
-          capacity_unit: body.capacity_unit,
-          installation_year: body.installation_year,
-          operational_status: body.operational_status,
-          pollution_potential: body.pollution_potential,
-          cnae_code: body.cnae_code,
-          monitoring_frequency: body.monitoring_frequency,
-          critical_parameters: body.critical_parameters,
-          monitoring_responsible: body.monitoring_responsible
-        }])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating asset:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(JSON.stringify(asset), {
-        status: 201,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // PUT /assets/{id} - Atualizar ativo
-    if (req.method === 'PUT' && assetId.match(/^[0-9a-f-]{36}$/i)) {
+      return await createAsset(supabaseClient, company_id, body)
+    } else if (req.method === 'PUT') {
       const body = await req.json()
-      
-      const { data: asset, error } = await supabaseClient
-        .from('assets')
-        .update({
-          name: body.name,
-          asset_type: body.asset_type,
-          location: body.location,
-          description: body.description,
-          parent_asset_id: body.parent_asset_id,
-          productive_capacity: body.productive_capacity,
-          capacity_unit: body.capacity_unit,
-          installation_year: body.installation_year,
-          operational_status: body.operational_status,
-          pollution_potential: body.pollution_potential,
-          cnae_code: body.cnae_code,
-          monitoring_frequency: body.monitoring_frequency,
-          critical_parameters: body.critical_parameters,
-          monitoring_responsible: body.monitoring_responsible
-        })
-        .eq('id', assetId)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating asset:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(JSON.stringify(asset), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return await updateAsset(supabaseClient, company_id, assetId, body)
+    } else if (req.method === 'DELETE') {
+      return await deleteAsset(supabaseClient, company_id, assetId)
     }
 
-    // DELETE /assets/{id} - Excluir ativo
-    if (req.method === 'DELETE' && assetId.match(/^[0-9a-f-]{36}$/i)) {
-      // Verificar se tem filhos
-      const { data: children } = await supabaseClient
-        .from('assets')
-        .select('id')
-        .eq('parent_asset_id', assetId)
-
-      if (children && children.length > 0) {
-        return new Response(JSON.stringify({ 
-          error: 'Cannot delete asset with children. Move or delete child assets first.' 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      const { error } = await supabaseClient
-        .from('assets')
-        .delete()
-        .eq('id', assetId)
-
-      if (error) {
-        console.error('Error deleting asset:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders,
-      })
-    }
-
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
 
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('Error in assets-management function:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
   }
 })
 
-function buildHierarchy(assets: Asset[]): Asset[] {
-  const assetMap = new Map<string, Asset>()
-  const rootAssets: Asset[] = []
+async function getAllAssets(supabase: any, company_id: string) {
+  const { data, error } = await supabase
+    .from('assets')
+    .select('*')
+    .eq('company_id', company_id)
+    .order('created_at', { ascending: false })
 
-  // Criar mapa de assets
-  assets.forEach(asset => {
+  if (error) {
+    throw new Error(`Failed to fetch assets: ${error.message}`)
+  }
+
+  const hierarchy = buildHierarchy(data || [])
+
+  return new Response(
+    JSON.stringify(hierarchy),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function getAssetWithLinkedData(supabase: any, company_id: string, asset_id: string) {
+  const { data: asset, error: assetError } = await supabase
+    .from('assets')
+    .select('*')
+    .eq('id', asset_id)
+    .eq('company_id', company_id)
+    .single()
+
+  if (assetError) {
+    throw new Error(`Failed to fetch asset: ${assetError.message}`)
+  }
+
+  const { data: emissionSources } = await supabase
+    .from('emission_sources')
+    .select('*')
+    .eq('asset_id', asset_id)
+
+  const { data: licenses } = await supabase
+    .from('licenses')
+    .select('*')
+    .eq('asset_id', asset_id)
+
+  const kpis = await calculateAssetKPIs(supabase, asset_id, company_id)
+
+  const assetWithLinkedData = {
+    ...asset,
+    emission_sources: emissionSources || [],
+    licenses: licenses || [],
+    waste_logs: [],
+    kpis: kpis
+  }
+
+  return new Response(
+    JSON.stringify(assetWithLinkedData),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function createAsset(supabase: any, company_id: string, assetData: any) {
+  const { data, error } = await supabase
+    .from('assets')
+    .insert({
+      ...assetData,
+      company_id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to create asset: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function updateAsset(supabase: any, company_id: string, asset_id: string, updateData: any) {
+  const { data, error } = await supabase
+    .from('assets')
+    .update(updateData)
+    .eq('id', asset_id)
+    .eq('company_id', company_id)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update asset: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function deleteAsset(supabase: any, company_id: string, asset_id: string) {
+  const { data: children } = await supabase
+    .from('assets')
+    .select('id')
+    .eq('parent_asset_id', asset_id)
+    .eq('company_id', company_id)
+
+  if (children && children.length > 0) {
+    return new Response(
+      JSON.stringify({ error: 'Cannot delete asset with child assets' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const { error } = await supabase
+    .from('assets')
+    .delete()
+    .eq('id', asset_id)
+    .eq('company_id', company_id)
+
+  if (error) {
+    throw new Error(`Failed to delete asset: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+function buildHierarchy(assets: any[]): any[] {
+  const assetMap = new Map()
+  const rootAssets = []
+
+  for (const asset of assets) {
     assetMap.set(asset.id, { ...asset, children: [] })
-  })
+  }
 
-  // Construir hierarquia
-  assets.forEach(asset => {
-    const assetWithChildren = assetMap.get(asset.id)!
+  for (const asset of assets) {
+    const assetWithChildren = assetMap.get(asset.id)
     
     if (asset.parent_asset_id) {
       const parent = assetMap.get(asset.parent_asset_id)
       if (parent) {
-        parent.children = parent.children || []
         parent.children.push(assetWithChildren)
+      } else {
+        rootAssets.push(assetWithChildren)
       }
     } else {
       rootAssets.push(assetWithChildren)
     }
-  })
+  }
 
   return rootAssets
+}
+
+async function calculateAssetKPIs(supabase: any, asset_id: string, company_id: string) {
+  const kpis = []
+
+  const { data: emissionSources } = await supabase
+    .from('emission_sources')
+    .select('id')
+    .eq('asset_id', asset_id)
+
+  if (emissionSources && emissionSources.length > 0) {
+    const sourceIds = emissionSources.map((s: any) => s.id)
+    
+    const { data: emissions } = await supabase
+      .from('calculated_emissions')
+      .select(`
+        total_co2e,
+        activity_data!inner(emission_source_id)
+      `)
+      .in('activity_data.emission_source_id', sourceIds)
+
+    const totalEmissions = emissions?.reduce((sum: number, item: any) => sum + (item.total_co2e || 0), 0) || 0
+
+    kpis.push({
+      key: 'total_emissions',
+      label: 'Emissões Totais',
+      value: totalEmissions.toFixed(2),
+      unit: 'tCO₂e'
+    })
+  }
+
+  return kpis
 }

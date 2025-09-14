@@ -1,183 +1,139 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface Database {
-  public: {
-    Tables: {
-      data_collection_tasks: {
-        Row: {
-          id: string
-          company_id: string
-          name: string
-          description?: string
-          frequency: string
-          due_date: string
-          period_start: string
-          period_end: string
-          status: string
-          assigned_to_user_id?: string
-          related_asset_id?: string
-          task_type: string
-          metadata: any
-          created_at: string
-          updated_at: string
-        }
-        Insert: Omit<Database['public']['Tables']['data_collection_tasks']['Row'], 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Database['public']['Tables']['data_collection_tasks']['Insert']>
-      }
-    }
-  }
-}
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  console.log(`${req.method} ${req.url}`)
-
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabase = createClient<Database>(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const authHeader = req.headers.get('Authorization')!
+    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+
+    const { data: { user } } = await supabaseClient.auth.getUser()
+    if (!user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return new Response('Profile not found', { status: 404, headers: corsHeaders })
+    }
+
+    const company_id = profile.company_id
     const url = new URL(req.url)
-    const path = url.pathname.split('/').filter(Boolean)
+    const path = url.pathname
 
-    // GET /functions/v1/data-collection-management/tasks
-    if (req.method === 'GET' && path[path.length - 1] === 'tasks') {
-      const assignee = url.searchParams.get('assignee')
-      const status = url.searchParams.get('status')
-      
-      let query = supabase
-        .from('data_collection_tasks')
-        .select(`
-          *,
-          assets:related_asset_id(name),
-          profiles:assigned_to_user_id(full_name)
-        `)
-        .order('due_date', { ascending: true })
-
-      if (assignee === 'me') {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          query = query.eq('assigned_to_user_id', user.id)
-        }
-      }
-
-      if (status) {
-        query = query.eq('status', status)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Error fetching tasks:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // PUT /functions/v1/data-collection-management/tasks/{id}/complete
-    if (req.method === 'PUT' && path.includes('complete')) {
-      const taskId = path[path.length - 2]
-      
-      const { data, error } = await supabase
-        .from('data_collection_tasks')
-        .update({ status: 'Concluído' })
-        .eq('id', taskId)
-        .select()
-
-      if (error) {
-        console.error('Error completing task:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // POST /functions/v1/data-collection-management/tasks
-    if (req.method === 'POST' && path[path.length - 1] === 'tasks') {
+    if (req.method === 'GET' && path.includes('/tasks')) {
+      return await getTasks(supabaseClient, company_id, url.searchParams)
+    } else if (req.method === 'POST' && path.includes('/tasks')) {
       const body = await req.json()
-      
-      // Get user's company
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      return await createTask(supabaseClient, company_id, user.id, body)
+    } else if (req.method === 'PUT' && path.includes('/complete')) {
+      const taskId = url.searchParams.get('id')
+      if (taskId) {
+        return await completeTask(supabaseClient, company_id, taskId)
       }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile) {
-        return new Response(JSON.stringify({ error: 'Profile not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      const taskData = {
-        ...body,
-        company_id: profile.company_id,
-      }
-
-      const { data, error } = await supabase
-        .from('data_collection_tasks')
-        .insert(taskData)
-        .select()
-
-      if (error) {
-        console.error('Error creating task:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(JSON.stringify(data), {
-        status: 201,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
     }
 
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response('Not found', { status: 404, headers: corsHeaders })
 
   } catch (error) {
-    console.error('Unexpected error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('Error in data-collection-management function:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
   }
 })
+
+async function getTasks(supabase: any, company_id: string, searchParams: URLSearchParams) {
+  let query = supabase
+    .from('data_collection_tasks')
+    .select(`
+      *,
+      assigned_user:profiles!data_collection_tasks_assigned_to_user_id_fkey(id, full_name),
+      related_asset:assets(id, name)
+    `)
+    .eq('company_id', company_id)
+    .order('due_date', { ascending: true })
+
+  const assignee = searchParams.get('assignee')
+  if (assignee === 'me') {
+    query = query.eq('assigned_to_user_id', company_id)
+  } else if (assignee && assignee !== 'all') {
+    query = query.eq('assigned_to_user_id', assignee)
+  }
+
+  const status = searchParams.get('status')
+  if (status && status !== 'all') {
+    query = query.eq('status', status)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(`Failed to fetch tasks: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data || []),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function createTask(supabase: any, company_id: string, user_id: string, taskData: any) {
+  const { data, error } = await supabase
+    .from('data_collection_tasks')
+    .insert({
+      ...taskData,
+      company_id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to create task: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function completeTask(supabase: any, company_id: string, task_id: string) {
+  const { data, error } = await supabase
+    .from('data_collection_tasks')
+    .update({ 
+      status: 'Concluído',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', task_id)
+    .eq('company_id', company_id)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to complete task: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}

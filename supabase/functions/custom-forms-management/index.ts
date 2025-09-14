@@ -1,399 +1,229 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-console.log("Custom Forms Management function started")
-
-interface Database {
-  public: {
-    Tables: {
-      custom_forms: {
-        Row: {
-          id: string
-          company_id: string
-          created_by_user_id: string
-          title: string
-          description: string | null
-          structure_json: any
-          is_published: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_by_user_id: string
-          title: string
-          description?: string | null
-          structure_json: any
-          is_published?: boolean
-        }
-        Update: {
-          title?: string
-          description?: string | null
-          structure_json?: any
-          is_published?: boolean
-        }
-      }
-      form_submissions: {
-        Row: {
-          id: string
-          form_id: string
-          submitted_by_user_id: string
-          company_id: string
-          submission_data: any
-          submitted_at: string
-        }
-        Insert: {
-          form_id: string
-          submitted_by_user_id: string
-          company_id: string
-          submission_data: any
-        }
-      }
-    }
-  }
-}
-
-const supabase = createClient<Database>(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-)
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const url = new URL(req.url)
-    const segments = url.pathname.split('/').filter(Boolean)
-    
-    console.log('Function called with:', {
-      method: req.method,
-      url: req.url,
-      segments,
-    })
-    
-    // Get user from Authorization header
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('Authorization header required')
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    if (authError || !user) {
-      throw new Error('Invalid token')
+    const authHeader = req.headers.get('Authorization')!
+    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+
+    const { data: { user } } = await supabaseClient.auth.getUser()
+    if (!user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    const method = req.method
-    let body = null
-    
-    // Only parse JSON if there's a body
-    if (method !== 'GET') {
-      const text = await req.text()
-      if (text && text.trim()) {
-        try {
-          body = JSON.parse(text)
-        } catch (e) {
-          console.error('Error parsing JSON:', e, 'Text:', text)
-          throw new Error('Invalid JSON in request body')
-        }
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return new Response('Profile not found', { status: 404, headers: corsHeaders })
+    }
+
+    const company_id = profile.company_id
+    const url = new URL(req.url)
+    const path = url.pathname
+
+    if (req.method === 'GET' && path.includes('/forms')) {
+      const formId = url.searchParams.get('id')
+      if (formId) {
+        return await getForm(supabaseClient, company_id, formId)
+      } else {
+        return await getForms(supabaseClient, company_id)
+      }
+    } else if (req.method === 'POST' && path.includes('/forms')) {
+      const body = await req.json()
+      if (body.method === 'SUBMIT') {
+        return await submitForm(supabaseClient, company_id, user.id, body)
+      } else {
+        return await createForm(supabaseClient, company_id, user.id, body)
+      }
+    } else if (req.method === 'PUT' && path.includes('/forms')) {
+      const formId = url.searchParams.get('id')
+      const body = await req.json()
+      if (formId) {
+        return await updateForm(supabaseClient, company_id, formId, body)
+      }
+    } else if (req.method === 'DELETE' && path.includes('/forms')) {
+      const formId = url.searchParams.get('id')
+      if (formId) {
+        return await deleteForm(supabaseClient, company_id, formId)
+      }
+    } else if (req.method === 'GET' && path.includes('/submissions')) {
+      const formId = url.searchParams.get('form_id')
+      if (formId) {
+        return await getSubmissions(supabaseClient, company_id, formId)
       }
     }
-    
-    console.log('Request body:', body)
 
-    // Determine operation type from method and body
-    const operationMethod = body?.method || method
-    const formId = body?.formId || (segments.length > 0 ? segments[0] : null)
-    
-    console.log('Operation details:', {
-      operationMethod,
-      formId,
-      hasSubmissionsRoute: segments.length === 2 && segments[1] === 'submissions'
-    })
-
-    // Route: GET /forms - List all forms (body is null or no formId)
-    if ((method === 'GET' && !body) || (method === 'POST' && !body?.method)) {
-      console.log('Listing all forms')
-      const { data: forms, error } = await supabase
-        .from('custom_forms')
-        .select(`
-          id,
-          title,
-          description,
-          is_published,
-          created_at,
-          updated_at,
-          form_submissions(count)
-        `)
-        .order('updated_at', { ascending: false })
-
-      if (error) throw error
-
-      const formsWithCount = forms.map(form => ({
-        ...form,
-        submission_count: form.form_submissions?.[0]?.count || 0
-      }))
-
-      return new Response(JSON.stringify(formsWithCount), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    // Route: GET specific form - when body has formId
-    if (method === 'POST' && body?.formId && !body?.method) {
-      console.log('Getting specific form:', body.formId)
-      const { data: form, error } = await supabase
-        .from('custom_forms')
-        .select('*')
-        .eq('id', body.formId)
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(form), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    // Route: POST /forms - Create new form
-    if (method === 'POST' && body?.method === 'POST') {
-      console.log('Creating new form')
-      const { data, error } = await supabase
-        .from('custom_forms')
-        .insert({
-          company_id: body.company_id,
-          created_by_user_id: user.id,
-          title: body.title,
-          description: body.description,
-          structure_json: body.structure_json,
-          is_published: body.is_published || false
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      })
-    }
-
-    // Route: PUT /forms/{formId} - Update form (through body)
-    if (method === 'POST' && body?.method === 'PUT' && body?.formId) {
-      console.log('Updating form:', body.formId)
-      const { data, error } = await supabase
-        .from('custom_forms')
-        .update({
-          title: body.title,
-          description: body.description,
-          structure_json: body.structure_json,
-          is_published: body.is_published
-        })
-        .eq('id', body.formId)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    // Route: DELETE /forms/{formId} - Delete form (through body)  
-    if (method === 'POST' && body?.method === 'DELETE' && body?.formId) {
-      console.log('Deleting form:', body.formId)
-      const { error } = await supabase
-        .from('custom_forms')
-        .delete()
-        .eq('id', body.formId)
-
-      if (error) throw error
-
-      return new Response(null, {
-        headers: corsHeaders,
-        status: 204,
-      })
-    }
-
-    // Route: Submit form response (through body)
-    if (method === 'POST' && body?.method === 'SUBMIT' && body?.formId) {
-      console.log('Submitting to form (via body):', body.formId)
-      
-      const { data, error } = await supabase
-        .from('form_submissions')
-        .insert({
-          form_id: body.formId,
-          submitted_by_user_id: user.id,
-          company_id: body.company_id,
-          submission_data: body.submission_data
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      })
-    }
-
-    // Route: Get form submissions (through body)
-    if (method === 'POST' && body?.method === 'GET_SUBMISSIONS' && body?.formId) {
-      console.log('Getting submissions for form (via body):', body.formId)
-      
-      const { data: submissions, error } = await supabase
-        .from('form_submissions')
-        .select(`
-          id,
-          submission_data,
-          submitted_at,
-          profiles!submitted_by_user_id(full_name)
-        `)
-        .eq('form_id', body.formId)
-        .order('submitted_at', { ascending: false })
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(submissions), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    // Legacy URL-based routes (kept for submissions and backward compatibility)
-    
-    // Route: GET /forms/{formId} - Get specific form (legacy URL-based)
-    if (method === 'GET' && segments.length === 1) {
-      const urlFormId = segments[0]
-      console.log('Getting specific form (legacy URL):', urlFormId)
-      
-      const { data: form, error } = await supabase
-        .from('custom_forms')
-        .select('*')
-        .eq('id', urlFormId)
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(form), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    // Route: PUT /forms/{formId} - Update form (legacy URL-based)
-    if (method === 'PUT' && segments.length === 1) {
-      const urlFormId = segments[0]
-      console.log('Updating form (legacy URL):', urlFormId)
-      
-      const { data, error } = await supabase
-        .from('custom_forms')
-        .update({
-          title: body.title,
-          description: body.description,
-          structure_json: body.structure_json,
-          is_published: body.is_published
-        })
-        .eq('id', urlFormId)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    // Route: DELETE /forms/{formId} - Delete form (legacy URL-based)
-    if (method === 'DELETE' && segments.length === 1) {
-      const urlFormId = segments[0]
-      console.log('Deleting form (legacy URL):', urlFormId)
-      
-      const { error } = await supabase
-        .from('custom_forms')
-        .delete()
-        .eq('id', urlFormId)
-
-      if (error) throw error
-
-      return new Response(null, {
-        headers: corsHeaders,
-        status: 204,
-      })
-    }
-
-    // Route: POST /forms/{formId}/submissions - Submit form response
-    if (method === 'POST' && segments.length === 2 && segments[1] === 'submissions') {
-      const urlFormId = segments[0]
-      console.log('Submitting to form:', urlFormId)
-      
-      const { data, error } = await supabase
-        .from('form_submissions')
-        .insert({
-          form_id: urlFormId,
-          submitted_by_user_id: user.id,
-          company_id: body.company_id,
-          submission_data: body.submission_data
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      })
-    }
-
-    // Route: GET /forms/{formId}/submissions - Get form submissions
-    if (method === 'GET' && segments.length === 2 && segments[1] === 'submissions') {
-      const urlFormId = segments[0]
-      console.log('Getting submissions for form:', urlFormId)
-      
-      const { data: submissions, error } = await supabase
-        .from('form_submissions')
-        .select(`
-          id,
-          submission_data,
-          submitted_at,
-          profiles!submitted_by_user_id(full_name)
-        `)
-        .eq('form_id', urlFormId)
-        .order('submitted_at', { ascending: false })
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(submissions), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
-    }
-
-    console.log('No matching route found')
-    return new Response('Not Found', {
-      headers: corsHeaders,
-      status: 404,
-    })
+    return new Response('Not found', { status: 404, headers: corsHeaders })
 
   } catch (error) {
     console.error('Error in custom-forms-management function:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
   }
 })
+
+async function getForms(supabase: any, company_id: string) {
+  const { data, error } = await supabase
+    .from('custom_forms')
+    .select(`
+      *,
+      created_by:profiles!custom_forms_created_by_user_id_fkey(id, full_name)
+    `)
+    .eq('company_id', company_id)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(`Failed to fetch forms: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data || []),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function getForm(supabase: any, company_id: string, form_id: string) {
+  const { data, error } = await supabase
+    .from('custom_forms')
+    .select('*')
+    .eq('id', form_id)
+    .eq('company_id', company_id)
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to fetch form: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function createForm(supabase: any, company_id: string, user_id: string, formData: any) {
+  const { data, error } = await supabase
+    .from('custom_forms')
+    .insert({
+      title: formData.title,
+      description: formData.description,
+      structure_json: formData.structure_json,
+      is_published: formData.is_published || false,
+      company_id,
+      created_by_user_id: user_id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to create form: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function updateForm(supabase: any, company_id: string, form_id: string, updateData: any) {
+  const { data, error } = await supabase
+    .from('custom_forms')
+    .update({
+      title: updateData.title,
+      description: updateData.description,
+      structure_json: updateData.structure_json,
+      is_published: updateData.is_published,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', form_id)
+    .eq('company_id', company_id)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update form: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function deleteForm(supabase: any, company_id: string, form_id: string) {
+  const { error } = await supabase
+    .from('custom_forms')
+    .delete()
+    .eq('id', form_id)
+    .eq('company_id', company_id)
+
+  if (error) {
+    throw new Error(`Failed to delete form: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify({ success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function submitForm(supabase: any, company_id: string, user_id: string, submissionData: any) {
+  const { data, error } = await supabase
+    .from('form_submissions')
+    .insert({
+      form_id: submissionData.form_id,
+      submission_data: submissionData.submission_data,
+      company_id,
+      submitted_by_user_id: user_id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to submit form: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function getSubmissions(supabase: any, company_id: string, form_id: string) {
+  const { data, error } = await supabase
+    .from('form_submissions')
+    .select(`
+      *,
+      submitted_by:profiles!form_submissions_submitted_by_user_id_fkey(id, full_name)
+    `)
+    .eq('form_id', form_id)
+    .eq('company_id', company_id)
+    .order('submitted_at', { ascending: false })
+
+  if (error) {
+    throw new Error(`Failed to fetch submissions: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data || []),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
