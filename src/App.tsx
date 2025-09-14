@@ -33,7 +33,7 @@ import Ativos from "./pages/Ativos";
 import Desempenho from "./pages/Desempenho";
 import Configuracao from "./pages/Configuracao";
 import { SimuladorEcoImpacto } from "./pages/SimuladorEcoImpacto";
-import PlanejadorCenarios from "./pages/PlanejadorCenarios";
+
 import IAInsights from "./pages/IAInsights";
 import Marketplace from "./pages/Marketplace";
 import GestaoESG from "./pages/GestaoESG";
@@ -170,11 +170,6 @@ const App = () => (
             <Route path="/desempenho" element={
               <ProtectedRoute>
                 <Desempenho />
-              </ProtectedRoute>
-            } />
-            <Route path="/planejador-cenarios" element={
-              <ProtectedRoute>
-                <PlanejadorCenarios />
               </ProtectedRoute>
             } />
             <Route path="/configuracao" element={

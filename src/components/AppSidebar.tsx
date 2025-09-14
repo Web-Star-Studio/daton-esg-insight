@@ -21,7 +21,6 @@ import {
   ShieldCheck, 
   Settings, 
   Wand2, 
-  Calculator,
   ShoppingCart
 } from "lucide-react"
 import { 
@@ -57,7 +56,7 @@ const menuSections: MenuSection[] = [
       { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/dashboard" },
       { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
       { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
-      { id: "planejador-cenarios", title: "Planejador de Cenários", icon: Calculator, path: "/planejador-cenarios" },
+      
       { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
       { id: "marketplace", title: "Marketplace ESG", icon: ShoppingCart, path: "/marketplace" },
       { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
