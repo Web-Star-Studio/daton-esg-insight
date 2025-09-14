@@ -59,16 +59,8 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) throw new Error('Perfil do usuário não encontrado');
-
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      body: null,
+      body: { action: 'GET_FORMS' }
     });
 
     if (error) throw error;
@@ -80,7 +72,7 @@ class CustomFormsService {
     if (!user) throw new Error('Usuário não autenticado');
 
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      body: { formId },
+      body: { action: 'GET_FORM', formId }
     });
 
     if (error) throw error;
@@ -91,20 +83,11 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) throw new Error('Perfil do usuário não encontrado');
-
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
-        ...formData,
-        company_id: profile.company_id,
-        method: 'POST'
-      },
+        action: 'CREATE_FORM',
+        ...formData
+      }
     });
 
     if (error) throw error;
@@ -117,10 +100,10 @@ class CustomFormsService {
 
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
-        ...formData,
+        action: 'UPDATE_FORM',
         formId,
-        method: 'PUT'
-      },
+        ...formData
+      }
     });
 
     if (error) throw error;
@@ -133,9 +116,9 @@ class CustomFormsService {
 
     const { error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
-        formId,
-        method: 'DELETE'
-      },
+        action: 'DELETE_FORM',
+        formId
+      }
     });
 
     if (error) throw error;
@@ -145,21 +128,12 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) throw new Error('Perfil do usuário não encontrado');
-
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
-        ...submissionData,
-        company_id: profile.company_id,
+        action: 'SUBMIT_FORM',
         formId,
-        method: 'SUBMIT'
-      },
+        ...submissionData
+      }
     });
 
     if (error) throw error;
@@ -172,9 +146,9 @@ class CustomFormsService {
 
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
-        formId,
-        method: 'GET_SUBMISSIONS'
-      },
+        action: 'GET_SUBMISSIONS',
+        formId
+      }
     });
 
     if (error) throw error;

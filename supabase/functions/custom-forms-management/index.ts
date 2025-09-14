@@ -14,10 +14,14 @@ serve(async (req) => {
     )
 
     const authHeader = req.headers.get('Authorization')!
-    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+    if (!authHeader) {
+      return new Response('Authorization header missing', { status: 401, headers: corsHeaders })
+    }
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) {
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
+    
+    if (userError || !user) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
@@ -32,42 +36,34 @@ serve(async (req) => {
     }
 
     const company_id = profile.company_id
-    const url = new URL(req.url)
-    const path = url.pathname
+    const body = await req.json()
+    const { action } = body
 
-    if (req.method === 'GET' && path.includes('/forms')) {
-      const formId = url.searchParams.get('id')
-      if (formId) {
-        return await getForm(supabaseClient, company_id, formId)
-      } else {
+    switch (action) {
+      case 'GET_FORMS':
         return await getForms(supabaseClient, company_id)
-      }
-    } else if (req.method === 'POST' && path.includes('/forms')) {
-      const body = await req.json()
-      if (body.method === 'SUBMIT') {
-        return await submitForm(supabaseClient, company_id, user.id, body)
-      } else {
+      
+      case 'GET_FORM':
+        return await getForm(supabaseClient, company_id, body.formId)
+      
+      case 'CREATE_FORM':
         return await createForm(supabaseClient, company_id, user.id, body)
-      }
-    } else if (req.method === 'PUT' && path.includes('/forms')) {
-      const formId = url.searchParams.get('id')
-      const body = await req.json()
-      if (formId) {
-        return await updateForm(supabaseClient, company_id, formId, body)
-      }
-    } else if (req.method === 'DELETE' && path.includes('/forms')) {
-      const formId = url.searchParams.get('id')
-      if (formId) {
-        return await deleteForm(supabaseClient, company_id, formId)
-      }
-    } else if (req.method === 'GET' && path.includes('/submissions')) {
-      const formId = url.searchParams.get('form_id')
-      if (formId) {
-        return await getSubmissions(supabaseClient, company_id, formId)
-      }
+      
+      case 'UPDATE_FORM':
+        return await updateForm(supabaseClient, company_id, body.formId, body)
+      
+      case 'DELETE_FORM':
+        return await deleteForm(supabaseClient, company_id, body.formId)
+      
+      case 'SUBMIT_FORM':
+        return await submitForm(supabaseClient, company_id, user.id, body)
+      
+      case 'GET_SUBMISSIONS':
+        return await getSubmissions(supabaseClient, company_id, body.formId)
+      
+      default:
+        return new Response('Invalid action', { status: 400, headers: corsHeaders })
     }
-
-    return new Response('Not found', { status: 404, headers: corsHeaders })
 
   } catch (error) {
     console.error('Error in custom-forms-management function:', error)
