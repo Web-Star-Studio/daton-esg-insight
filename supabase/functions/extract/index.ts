@@ -14,66 +14,73 @@ interface ExtractionRequest {
 const JSON_SCHEMA = {
   type: "object",
   properties: {
-    confidence: { type: "number", minimum: 0, maximum: 1 },
-    _evidence_chars: { type: "number" },
+    license_type: { type: "string" },
     license_number: { type: "string" },
-    issuing_agency: { type: "string" },
+    process_number: { type: "string" },
     issue_date: { type: "string", format: "date" },
-    expiration_date: { type: "string", format: "date" },
-    company_name: { type: "string" },
+    valid_from: { type: "string", format: "date" },
+    valid_until: { type: "string", format: "date" },
+    company: { type: "string" },
     cnpj: { type: "string" },
     address: { type: "string" },
-    coordinates: {
-      type: "object",
-      properties: {
-        latitude: { type: "number" },
-        longitude: { type: "number" }
-      }
-    },
-    activity_description: { type: "string" },
-    company_size: { 
-      type: "string", 
-      enum: ["micro", "pequeno", "medio", "grande"] 
-    },
+    city: { type: "string" },
+    state: { type: "string" },
+    latitude: { type: "number" },
+    longitude: { type: "number" },
+    activity: { type: "string" },
+    area_size_m2: { type: "number" },
+    previous_license_revoked: { type: "string" },
     conditions: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          description: { type: "string" },
+          code: { type: "string" },
+          section_title: { type: "string" },
+          text: { type: "string" },
+          category: { type: "string" },
+          deadline_days: { type: ["integer", "null"] },
+          law_refs: { type: "string" },
           source_snippet: { type: "string" },
-          category: { 
-            type: "string",
-            enum: ["residuos", "emissoes", "ruido", "oleos_combustiveis", "riscos", "monitoramento", "geral"]
-          },
-          due_date: { type: "string", format: "date" },
-          frequency: { type: "string" },
-          responsible: { type: "string" }
+          confidence: { type: "number" }
         },
-        required: ["description", "source_snippet"]
+        required: ["text"]
       }
-    }
+    },
+    confidence: { type: "number" },
+    _evidence_chars: { type: "integer" }
   },
   required: ["confidence", "_evidence_chars"]
 };
 
-const INSTRUCTIONS = `Você vai ler o PDF/Imagem anexado e extrair apenas informações que estejam visíveis no documento.
+const INSTRUCTIONS = `Você é um agente de extração de dados ambientais. Receberá como entrada o conteúdo integral de um documento de licenciamento (PDF convertido em texto/tabelas). Esse documento pode ser uma Licença de Operação (LO), Licença Prévia (LP), Licença de Instalação (LI) ou outro tipo similar.
 
-Retorne somente JSON válido no schema.
+Seu trabalho é extrair apenas informações que estão de fato no documento e devolvê-las em JSON válido conforme o schema fornecido.
 
-Não invente nada: se um campo não existir, omita.
+Regras obrigatórias:
 
-Sempre inclua em cada condition um source_snippet curto (até 280 chars) retirado do documento.
+1. Nunca invente informações. Se um campo não existir, simplesmente não retorne esse campo.
+2. Sempre inclua um campo confidence de 0 a 1 e um source_snippet com o trecho textual que comprova cada dado extraído.
+3. Datas devem ser padronizadas no formato YYYY-MM-DD.
+4. CNPJs devem ser formatados com pontuação (99.999.999/9999-99).
+5. Coordenadas devem ser numéricas (latitude/longitude).
+6. Condicionantes/condições devem vir com código (se existir), texto, categoria resumida e snippet.
+7. Se o documento estiver ilegível ou não houver dados suficientes, retorne apenas: { "confidence": 0.0, "_evidence_chars": 0 }
 
-Preencha _evidence_chars com a soma dos comprimentos dos principais trechos copiados do documento usados como evidência.
+Instruções para interpretação:
 
-Datas em YYYY-MM-DD.
+- Identifique e preencha apenas os campos realmente encontrados no documento.
+- Os campos são flexíveis: se a licença não traz "coordenadas" ou "área", esses campos não aparecem.
+- Em "conditions", cada condicionante deve ser um item do array com:
+  * código (se houver, ex. "3.1.1")
+  * título da seção (ex. "Quanto aos Resíduos Sólidos")  
+  * texto integral da condição
+  * categoria curta (ex. residuos, emissoes, ruido, oleos, riscos)
+  * snippet literal do trecho no documento
+- Use _evidence_chars para somar o total de caracteres dos snippets coletados (medida de "quanto conteúdo real foi usado").
 
-CNPJ com pontuação.
-
-category é uma label curta (ex.: residuos, emissoes, ruido, oleos_combustiveis, riscos).
-
-Se o arquivo for ilegível (scan ruim) ou tiver pouco texto, retorne um JSON somente com confidence: 0.0 e _evidence_chars: 0.`;
+Saída esperada:
+Sempre um único JSON válido que obedece ao schema. Não adicione explicações nem comentários fora do JSON.`;
 
 serve(async (req) => {
   console.log('Starting document extraction...');
@@ -299,10 +306,11 @@ serve(async (req) => {
     // Create staging items
     const stagingItems = [];
     
-    // Basic fields
+    // Basic fields - updated for new schema
     const basicFields = [
-      'license_number', 'issuing_agency', 'issue_date', 'expiration_date', 
-      'company_name', 'cnpj', 'address', 'activity_description', 'company_size'
+      'license_type', 'license_number', 'process_number', 'issue_date', 
+      'valid_from', 'valid_until', 'company', 'cnpj', 'address', 
+      'city', 'state', 'activity', 'area_size_m2', 'previous_license_revoked'
     ];
     
     for (const field of basicFields) {
@@ -318,19 +326,31 @@ serve(async (req) => {
       }
     }
 
-    // Coordinates (special handling)
-    if (extractedData.coordinates && (extractedData.coordinates.latitude || extractedData.coordinates.longitude)) {
-      stagingItems.push({
-        extraction_id: extraction.id,
-        field_name: 'coordinates',
-        extracted_value: JSON.stringify(extractedData.coordinates),
-        source_text: `Coordinates extracted with confidence ${extractedData.confidence}`,
-        confidence: extractedData.confidence,
-        status: 'pending'
-      });
+    // Coordinates (separate latitude/longitude fields)
+    if (extractedData.latitude || extractedData.longitude) {
+      if (extractedData.latitude) {
+        stagingItems.push({
+          extraction_id: extraction.id,
+          field_name: 'latitude',
+          extracted_value: String(extractedData.latitude),
+          source_text: `Coordinates extracted with confidence ${extractedData.confidence}`,
+          confidence: extractedData.confidence,
+          status: 'pending'
+        });
+      }
+      if (extractedData.longitude) {
+        stagingItems.push({
+          extraction_id: extraction.id,
+          field_name: 'longitude',
+          extracted_value: String(extractedData.longitude),
+          source_text: `Coordinates extracted with confidence ${extractedData.confidence}`,
+          confidence: extractedData.confidence,
+          status: 'pending'
+        });
+      }
     }
 
-    // Conditions
+    // Conditions - updated for new schema structure
     if (extractedData.conditions && Array.isArray(extractedData.conditions)) {
       extractedData.conditions.forEach((condition: any, index: number) => {
         stagingItems.push({
@@ -338,14 +358,16 @@ serve(async (req) => {
           row_index: index,
           field_name: 'condition',
           extracted_value: JSON.stringify({
-            description: condition.description,
+            code: condition.code,
+            section_title: condition.section_title,
+            text: condition.text,
             category: condition.category || 'geral',
-            due_date: condition.due_date,
-            frequency: condition.frequency,
-            responsible: condition.responsible
+            deadline_days: condition.deadline_days,
+            law_refs: condition.law_refs,
+            confidence: condition.confidence || extractedData.confidence
           }),
           source_text: condition.source_snippet || '',
-          confidence: extractedData.confidence,
+          confidence: condition.confidence || extractedData.confidence,
           status: 'pending'
         });
       });
