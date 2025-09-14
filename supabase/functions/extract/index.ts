@@ -215,12 +215,12 @@ serve(async (req) => {
           role: 'user',
           content: [
             {
-              type: 'input_text',
+              type: 'text',
               text: INSTRUCTIONS
             },
             {
-              type: 'input_file',
-              input_file: { file_id: openaiFileId }
+              type: 'file',
+              file: { file_id: openaiFileId }
             }
           ]
         }],
