@@ -1,209 +1,194 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authorization required');
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('Authorization')!
+    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+
+    // Get user and company
+    const { data: { user } } = await supabaseClient.auth.getUser()
+    if (!user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (authError || !user) {
-      throw new Error('Invalid authorization');
-    }
-
-    // Get user's company
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseClient
       .from('profiles')
       .select('company_id, role')
       .eq('id', user.id)
-      .single();
+      .single()
 
-    if (!profile?.company_id) {
-      throw new Error('User company not found');
+    if (!profile || !['Admin', 'Editor'].includes(profile.role)) {
+      return new Response('Insufficient permissions', { status: 403, headers: corsHeaders })
     }
 
-    // Check permissions (Admin or Editor required)
-    if (profile.role !== 'Admin' && profile.role !== 'Editor') {
-      throw new Error('Insufficient permissions');
-    }
+    // Get request data
+    const { period_start, period_end } = await req.json()
 
-    const { period_start, period_end } = await req.json();
-    
-    console.log(`Starting recalculation for company ${profile.company_id}, period: ${period_start} to ${period_end}`);
+    console.log(`Starting GHG recalculation for company ${profile.company_id} from ${period_start} to ${period_end}`)
 
-    // Get all activity data within the specified period for the company
-    const { data: activityData, error: activityError } = await supabase
+    // Get activity data for the period
+    const { data: activityData, error: activityError } = await supabaseClient
       .from('activity_data')
       .select(`
-        *,
-        emission_sources!inner (
+        id,
+        quantity,
+        unit,
+        period_start_date,
+        period_end_date,
+        emission_source:emission_sources(
           id,
           name,
           category,
+          scope,
           company_id
         )
       `)
-      .eq('emission_sources.company_id', profile.company_id)
-      .gte('period_start_date', period_start || '2024-01-01')
-      .lte('period_end_date', period_end || '2024-12-31');
+      .eq('emission_source.company_id', profile.company_id)
+      .gte('period_start_date', period_start)
+      .lte('period_end_date', period_end)
 
     if (activityError) {
-      throw new Error(`Failed to fetch activity data: ${activityError.message}`);
+      console.error('Error fetching activity data:', activityError)
+      throw new Error(`Failed to fetch activity data: ${activityError.message}`)
     }
 
-    console.log(`Found ${activityData?.length || 0} activity records to recalculate`);
+    console.log(`Found ${activityData?.length || 0} activity records to recalculate`)
 
-    let recalculatedCount = 0;
-    let errorCount = 0;
+    let processedRecords = 0
+    let successfulCalculations = 0
 
     // Process each activity data record
     for (const activity of activityData || []) {
       try {
-        console.log(`Recalculating emissions for activity ${activity.id}`);
+        processedRecords++
+        console.log(`Processing activity ${activity.id} - ${activity.emission_source.name}`)
 
-        // Get emission factors for this category
-        const { data: factors, error: factorsError } = await supabase
+        // Get compatible emission factors
+        const { data: factors } = await supabaseClient
           .from('emission_factors')
           .select('*')
-          .eq('category', activity.emission_sources.category);
+          .eq('category', activity.emission_source.category)
+          .limit(10)
 
-        if (factorsError) {
-          console.error(`Failed to fetch emission factors: ${factorsError.message}`);
-          errorCount++;
-          continue;
+        if (!factors || factors.length === 0) {
+          console.log(`No emission factors found for category: ${activity.emission_source.category}`)
+          continue
         }
 
-        // Find compatible emission factor (improved unit matching)
-        const compatibleFactor = factors.find(factor => {
-          const factorUnit = factor.activity_unit.toLowerCase();
-          const activityUnit = activity.unit.toLowerCase();
-          
-          // Direct match
-          if (factorUnit === activityUnit) return true;
-          
-          // Common unit conversions
-          const unitEquivalents = {
-            'litros': ['l', 'litro', 'liters'],
-            'l': ['litros', 'litro', 'liters'],
-            'kwh': ['kw.h', 'kw-h', 'quilowatt-hora'],
-            'm³': ['m3', 'metros cúbicos', 'metro cúbico'],
-            'm3': ['m³', 'metros cúbicos', 'metro cúbico'],
-            'kg': ['quilograma', 'quilogramas', 'kilograma'],
-            't': ['tonelada', 'toneladas', 'ton']
-          };
-          
-          return unitEquivalents[factorUnit]?.includes(activityUnit) || 
-                 unitEquivalents[activityUnit]?.includes(factorUnit);
-        });
+        // Find compatible factor (for now, just use the first one)
+        const factor = factors[0]
 
-        if (!compatibleFactor) {
-          console.log(`No compatible emission factor found for activity ${activity.id}`);
-          continue;
+        // Convert units if needed (simplified conversion)
+        let convertedQuantity = activity.quantity
+        const unitConversions: { [key: string]: { [key: string]: number } } = {
+          'kg': { 'tonnes': 1000, 't': 1000 },
+          'tonnes': { 'kg': 0.001 },
+          't': { 'kg': 0.001 },
+          'litros': { 'L': 1, 'm3': 0.001 },
+          'L': { 'litros': 1, 'm3': 0.001 }
         }
 
-        // Calculate emissions - factors are already in kg CO2e per unit
-        const co2EmissionsKg = activity.quantity * (compatibleFactor.co2_factor || 0);
-        const ch4EmissionsKg = activity.quantity * (compatibleFactor.ch4_factor || 0);
-        const n2oEmissionsKg = activity.quantity * (compatibleFactor.n2o_factor || 0);
+        if (activity.unit !== factor.activity_unit) {
+          const conversion = unitConversions[activity.unit]?.[factor.activity_unit]
+          if (conversion) {
+            convertedQuantity = activity.quantity / conversion
+          } else {
+            console.log(`Cannot convert ${activity.unit} to ${factor.activity_unit}`)
+            continue
+          }
+        }
 
-        // Convert to CO2 equivalent using correct GWP factors (IPCC AR6)
-        const gwpCH4 = 27;  // IPCC AR6 (não-fóssil/combustão)
-        const gwpN2O = 273; // IPCC AR6
+        // Calculate emissions (kg CO2e)
+        const co2Emissions = (factor.co2_factor || 0) * convertedQuantity
+        const ch4Emissions = (factor.ch4_factor || 0) * convertedQuantity * 25 // GWP for CH4
+        const n2oEmissions = (factor.n2o_factor || 0) * convertedQuantity * 298 // GWP for N2O
 
-        const totalCo2eKg = co2EmissionsKg + (ch4EmissionsKg * gwpCH4) + (n2oEmissionsKg * gwpN2O);
-        const totalCo2eTonnes = totalCo2eKg / 1000; // Convert kg to tonnes
+        const totalCo2e = (co2Emissions + ch4Emissions + n2oEmissions) / 1000 // Convert to tonnes
 
-        // Create calculation details
-        const calculationDetails = {
-          activity_quantity: activity.quantity,
-          activity_unit: activity.unit,
-          emission_factor_name: compatibleFactor.name,
-          co2_kg: co2EmissionsKg,
-          ch4_kg: ch4EmissionsKg,
-          n2o_kg: n2oEmissionsKg,
-          gwp_ch4: gwpCH4,
-          gwp_n2o: gwpN2O,
-          total_co2e_kg: totalCo2eKg,
-          calculation_date: new Date().toISOString()
-        };
-
-        // Delete existing calculation for this activity
-        await supabase
+        // Save calculation result
+        const { error: calculationError } = await supabaseClient
           .from('calculated_emissions')
-          .delete()
-          .eq('activity_data_id', activity.id);
-
-        // Insert new calculation
-        const { error: insertError } = await supabase
-          .from('calculated_emissions')
-          .insert({
+          .upsert({
             activity_data_id: activity.id,
-            emission_factor_id: compatibleFactor.id,
-            total_co2e: totalCo2eTonnes,
-            details_json: calculationDetails
-          });
+            emission_factor_id: factor.id,
+            total_co2e: totalCo2e,
+            details_json: {
+              co2_emissions: co2Emissions,
+              ch4_emissions: ch4Emissions,
+              n2o_emissions: n2oEmissions,
+              converted_quantity: convertedQuantity,
+              original_quantity: activity.quantity,
+              original_unit: activity.unit,
+              factor_unit: factor.activity_unit,
+              calculation_date: new Date().toISOString()
+            }
+          }, {
+            onConflict: 'activity_data_id'
+          })
 
-        if (insertError) {
-          console.error(`Failed to insert calculated emission: ${insertError.message}`);
-          errorCount++;
+        if (calculationError) {
+          console.error(`Error saving calculation for activity ${activity.id}:`, calculationError)
         } else {
-          recalculatedCount++;
-          console.log(`Successfully recalculated emissions for activity ${activity.id}: ${totalCo2eTonnes} tCO2e`);
+          successfulCalculations++
+          console.log(`Successfully calculated emissions for activity ${activity.id}: ${totalCo2e.toFixed(3)} tCO2e`)
         }
 
-      } catch (error) {
-        console.error(`Error processing activity ${activity.id}:`, error);
-        errorCount++;
+      } catch (activityError) {
+        console.error(`Error processing activity ${activity.id}:`, activityError)
       }
     }
 
-    console.log(`Recalculation complete. Successfully recalculated: ${recalculatedCount}, Errors: ${errorCount}`);
+    const response = {
+      success: true,
+      message: 'GHG recalculation completed',
+      details: {
+        period_start,
+        period_end,
+        company_id: profile.company_id,
+        processed_records: processedRecords,
+        successful_calculations: successfulCalculations,
+        failed_calculations: processedRecords - successfulCalculations
+      }
+    }
+
+    console.log('Recalculation completed:', response)
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Emissões recalculadas com sucesso!`,
-        details: {
-          total_records: activityData?.length || 0,
-          recalculated: recalculatedCount,
-          errors: errorCount,
-          period: { start: period_start, end: period_end }
-        }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+      JSON.stringify(response),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    )
 
   } catch (error) {
-    console.error('Error in ghg-recalculate function:', error);
+    console.error('Error in ghg-recalculate function:', error)
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         success: false,
-        error: error.message
+        error: error.message 
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      { 
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    )
   }
-});
+})

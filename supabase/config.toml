@@ -58,46 +58,10 @@ port = 54329
 enabled = true
 port = 54330
 
-[functions.ai-insights-engine]
-verify_jwt = true
-
-[functions.assets-management]
-verify_jwt = true
-
-[functions.audit-management]
-verify_jwt = true
-
-[functions.compliance-management]
-verify_jwt = true
-
-[functions.custom-forms-management]
-verify_jwt = true
-
-[functions.data-collection-management]
-verify_jwt = true
-
-[functions.data-import-processor]
-verify_jwt = true
-
-[functions.document-ai-processor]
-verify_jwt = true
-
-[functions.documents-management]
-verify_jwt = true
-
 [functions.esg-dashboard]
 verify_jwt = true
 
 [functions.ghg-recalculate]
-verify_jwt = true
-
-[functions.license-ai-analyzer]
-verify_jwt = true
-
-[functions.license-document-analyzer]
-verify_jwt = true
-
-[functions.performance-analysis]
 verify_jwt = true
 
 [functions.marketplace-matcher]
