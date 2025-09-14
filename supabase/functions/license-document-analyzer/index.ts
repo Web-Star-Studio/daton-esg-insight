@@ -697,7 +697,6 @@ serve(async (req) => {
         console.log('PDF text quality insufficient, proceeding with text-only analysis (no vision for PDFs)');
         documentContent = extractedText;
         analysisType = 'text_low_quality';
-      }
       } else {
         documentContent = extractedText;
         analysisType = 'text';
