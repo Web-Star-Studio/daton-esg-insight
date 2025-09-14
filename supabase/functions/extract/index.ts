@@ -14,14 +14,12 @@ interface ExtractionRequest {
 const JSON_SCHEMA = {
   type: "object",
   properties: {
-    document_type: { type: "string", enum: ["licenca", "termo", "despacho", "outro"] },
-    issuer: { type: "string" },
+    document_type: { type: "string" },
     issue_date: { type: "string", format: "date" },
     valid_until: { type: "string", format: "date" },
     process_number: { type: "string" },
     company: { type: "string" },
     cnpj: { type: "string" },
-    site: { type: "string" },
     conditions: {
       type: "array",
       items: {
@@ -41,6 +39,82 @@ const JSON_SCHEMA = {
   required: ["confidence"]
 };
 
+// Simple CSV parser for Deno
+function parseCSV(text: string): string[][] {
+  const lines = text.split('\n').filter(line => line.trim());
+  const result: string[][] = [];
+  
+  for (const line of lines) {
+    // Simple CSV parsing - handles basic cases
+    const fields: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        fields.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    if (current) {
+      fields.push(current.trim());
+    }
+    
+    result.push(fields);
+  }
+  
+  return result;
+}
+
+// Simple PDF text extraction
+async function extractPDFText(pdfData: Uint8Array): Promise<string> {
+  try {
+    // Convert to string and try to extract basic text
+    const text = new TextDecoder('utf-8').decode(pdfData);
+    
+    // Look for text between stream objects
+    const streamRegex = /stream\s*(.*?)\s*endstream/gs;
+    const matches = text.match(streamRegex);
+    
+    if (matches) {
+      let extractedText = '';
+      for (const match of matches) {
+        const content = match.replace(/stream\s*/, '').replace(/\s*endstream/, '');
+        // Try to decode simple text
+        if (content.includes('Tj') || content.includes('TJ')) {
+          const textRegex = /\((.*?)\)\s*Tj?/g;
+          let textMatch;
+          while ((textMatch = textRegex.exec(content)) !== null) {
+            extractedText += textMatch[1] + ' ';
+          }
+        }
+      }
+      
+      if (extractedText.trim()) {
+        return extractedText.trim();
+      }
+    }
+    
+    // Fallback: try to find readable text in the PDF
+    const readableText = text.match(/[A-Za-z0-9\s\.,;:!?\-()]{20,}/g);
+    if (readableText && readableText.length > 0) {
+      return readableText.join(' ').substring(0, 5000);
+    }
+    
+    return '';
+  } catch (error) {
+    console.error('PDF text extraction failed:', error);
+    return '';
+  }
+}
+
 serve(async (req) => {
   console.log('Starting document extraction...');
   
@@ -55,6 +129,10 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+    
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
+    }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       global: { headers: { Authorization: req.headers.get('Authorization')! } }
@@ -137,14 +215,50 @@ serve(async (req) => {
 
     // Parse file based on type
     if (file.mime === 'application/pdf') {
-      // For now, use a simple text extraction fallback
+      console.log(`[${correlationId}] Parsing PDF file`);
       const arrayBuffer = await fileData.arrayBuffer();
-      const text = new TextDecoder().decode(arrayBuffer);
-      documentText = text.substring(0, 10000); // Limit to prevent token overflow
-      console.log(`[${correlationId}] Extracted text from PDF (${documentText.length} chars)`);
-    } else if (file.mime === 'text/csv') {
+      const pdfBytes = new Uint8Array(arrayBuffer);
+      documentText = await extractPDFText(pdfBytes);
+      
+      if (!documentText.trim()) {
+        console.log(`[${correlationId}] PDF text extraction failed - no readable text found`);
+        await supabase.from('files').update({ 
+          status: 'failed', 
+          error: 'PDF contains no readable text or is image-based' 
+        }).eq('id', file_id);
+        
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action: 'extract_error',
+          target_id: file_id,
+          details: { error: 'PDF text extraction failed', correlation_id: correlationId }
+        });
+
+        return new Response(JSON.stringify({ ok: false, error: 'PDF text extraction failed' }), {
+          status: 422,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      console.log(`[${correlationId}] Extracted ${documentText.length} characters from PDF`);
+    } else if (file.mime === 'text/csv' || file.original_name.toLowerCase().endsWith('.csv')) {
+      console.log(`[${correlationId}] Parsing CSV file`);
+      const csvText = await fileData.text();
+      const csvData = parseCSV(csvText);
+      
+      // Convert CSV to readable text for AI processing
+      documentText = csvData.map((row, index) => {
+        if (index === 0) {
+          return `Headers: ${row.join(', ')}`;
+        } else {
+          return `Row ${index}: ${row.join(', ')}`;
+        }
+      }).join('\n');
+      
+      console.log(`[${correlationId}] Parsed CSV with ${csvData.length} rows`);
+    } else if (file.mime.includes('text/') || file.original_name.toLowerCase().endsWith('.txt')) {
+      console.log(`[${correlationId}] Reading text file`);
       documentText = await fileData.text();
-      console.log(`[${correlationId}] Read CSV content (${documentText.length} chars)`);
     } else {
       // For other file types, try to read as text
       try {
@@ -152,8 +266,14 @@ serve(async (req) => {
         console.log(`[${correlationId}] Read file as text (${documentText.length} chars)`);
       } catch (error) {
         console.log(`[${correlationId}] Failed to read file as text:`, error);
+        // Use filename as fallback
         documentText = `Filename: ${file.original_name}`;
       }
+    }
+
+    // Limit text length to prevent token overflow
+    if (documentText.length > 15000) {
+      documentText = documentText.substring(0, 15000) + '... (truncated)';
     }
 
     // Call OpenAI for extraction
@@ -173,15 +293,16 @@ serve(async (req) => {
           messages: [{
             role: 'system',
             content: `Você é um especialista em análise de documentos de licenciamento ambiental. 
-            Extraia informações estruturadas do documento fornecido. 
+            Extraia informações estruturadas do documento fornecido seguindo exatamente estas regras:
             - Extraia apenas campos com base textual no documento; nunca invente dados
-            - Sempre preencha source_snippet quando possível
+            - Sempre preencha source_snippet com o trecho exato do documento quando possível
             - Use confidence entre 0 e 1 baseado na certeza da extração
             - Normalize datas para formato YYYY-MM-DD
-            - Normalize CNPJ removendo pontos e barras`
+            - Normalize CNPJ removendo pontos e barras
+            - Se for CSV, considere que pode conter dados tabulares de licenças ou condicionantes`
           }, {
             role: 'user',
-            content: `Analise este documento:\n\n${documentText}`
+            content: `Analise este documento e extraia as informações estruturadas:\n\n${documentText}`
           }],
           response_format: {
             type: "json_schema",
@@ -199,21 +320,37 @@ serve(async (req) => {
         extractedData = JSON.parse(aiResult.choices[0].message.content);
         console.log(`[${correlationId}] OpenAI extraction successful, confidence: ${extractedData.confidence}`);
       } else {
-        console.log(`[${correlationId}] OpenAI API error:`, await openaiResponse.text());
-        throw new Error('OpenAI API error');
+        const errorText = await openaiResponse.text();
+        console.log(`[${correlationId}] OpenAI API error:`, errorText);
+        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
       }
     } catch (error) {
       console.log(`[${correlationId}] AI extraction failed, using fallback:`, error);
-      // Fallback extraction from filename
+      // Fallback extraction from filename and basic text analysis
       const filename = file.original_name.toLowerCase();
-      if (filename.includes('licenca') || filename.includes('license')) {
-        extractedData = {
-          document_type: "licenca",
-          issuer: filename.includes('ibama') ? 'IBAMA' : 'Órgão não identificado',
-          company: 'Empresa não identificada',
-          confidence: 0.3,
-          conditions: []
-        };
+      extractedData = {
+        document_type: filename.includes('licenca') || filename.includes('license') ? 'licenca' : 'outro',
+        company: 'Empresa não identificada',
+        confidence: 0.2,
+        conditions: []
+      };
+      
+      // Try to extract basic info from text
+      if (documentText.length > 100) {
+        // Look for dates
+        const datePattern = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/g;
+        const dates = documentText.match(datePattern);
+        if (dates && dates.length > 0) {
+          extractedData.confidence = 0.4;
+        }
+        
+        // Look for CNPJ patterns
+        const cnpjPattern = /(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}\-?\d{2})/g;
+        const cnpj = documentText.match(cnpjPattern);
+        if (cnpj && cnpj.length > 0) {
+          extractedData.cnpj = cnpj[0].replace(/[\.\/\-]/g, '');
+          extractedData.confidence = 0.5;
+        }
       }
     }
 
@@ -240,13 +377,13 @@ serve(async (req) => {
     const stagingItems = [];
     
     // Basic fields
-    const basicFields = ['document_type', 'issuer', 'issue_date', 'valid_until', 'process_number', 'company', 'cnpj', 'site'];
+    const basicFields = ['document_type', 'issue_date', 'valid_until', 'process_number', 'company', 'cnpj'];
     for (const field of basicFields) {
       if (extractedData[field]) {
         stagingItems.push({
           extraction_id: extraction.id,
           field_name: field,
-          extracted_value: extractedData[field],
+          extracted_value: String(extractedData[field]),
           source_text: documentText.substring(0, 100), // Sample source text
           confidence: extractedData.confidence || 0.5,
           status: 'pending'
@@ -260,8 +397,12 @@ serve(async (req) => {
         stagingItems.push({
           extraction_id: extraction.id,
           row_index: index,
-          field_name: 'condition_text',
-          extracted_value: condition.text,
+          field_name: 'condition',
+          extracted_value: JSON.stringify({
+            code: condition.code || '',
+            text: condition.text || '',
+            deadline_days: condition.deadline_days
+          }),
           source_text: condition.source_snippet || '',
           confidence: condition.confidence || extractedData.confidence || 0.5,
           status: 'pending'

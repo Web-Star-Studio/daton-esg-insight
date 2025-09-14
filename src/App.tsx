@@ -42,6 +42,9 @@ import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import PublicForm from "./pages/PublicForm";
 import Documentos from "./pages/Documentos";
 import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
+import DocumentAnalysis from "./pages/DocumentAnalysis";
+import DocumentReconciliation from "./pages/DocumentReconciliation";
+import LicenseAnalysisWorkflow from "./pages/LicenseAnalysisWorkflow";
 import Auditoria from "./pages/Auditoria";
 import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
@@ -102,6 +105,21 @@ const App = () => (
                 <CadastrarLicenca />
               </ProtectedRoute>
             } />
+            <Route path="/licenciamento/workflow" element={
+              <ProtectedRoute>
+                <LicenseAnalysisWorkflow />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/analise" element={
+              <ProtectedRoute>
+                <DocumentAnalysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/reconciliacao" element={
+              <ProtectedRoute>
+                <DocumentReconciliation />
+              </ProtectedRoute>
+            } />
             <Route path="/licenciamento/:id" element={
               <ProtectedRoute>
                 <LicenseDetails />
@@ -115,6 +133,16 @@ const App = () => (
             <Route path="/licenciamento/:id/analise" element={
               <ProtectedRoute>
                 <LicenciamentoAnalise />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/analise" element={
+              <ProtectedRoute>
+                <DocumentAnalysis />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/reconciliacao" element={
+              <ProtectedRoute>
+                <DocumentReconciliation />
               </ProtectedRoute>
             } />
             <Route path="/residuos" element={
