@@ -322,6 +322,33 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       audits: {
         Row: {
           audit_type: string
@@ -1379,6 +1406,156 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      extraction_items_curated: {
+        Row: {
+          approved_at: string | null
+          approved_by: string
+          field_name: string
+          file_id: string | null
+          id: string
+          lineage: Json | null
+          value: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by: string
+          field_name: string
+          file_id?: string | null
+          id?: string
+          lineage?: Json | null
+          value: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string
+          field_name?: string
+          file_id?: string | null
+          id?: string
+          lineage?: Json | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extraction_items_curated_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extraction_items_staging: {
+        Row: {
+          confidence: number | null
+          extracted_value: string | null
+          extraction_id: string | null
+          field_name: string
+          id: string
+          row_index: number | null
+          source_text: string | null
+          status: string
+        }
+        Insert: {
+          confidence?: number | null
+          extracted_value?: string | null
+          extraction_id?: string | null
+          field_name: string
+          id?: string
+          row_index?: number | null
+          source_text?: string | null
+          status?: string
+        }
+        Update: {
+          confidence?: number | null
+          extracted_value?: string | null
+          extraction_id?: string | null
+          field_name?: string
+          id?: string
+          row_index?: number | null
+          source_text?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extraction_items_staging_extraction_id_fkey"
+            columns: ["extraction_id"]
+            isOneToOne: false
+            referencedRelation: "extractions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extractions: {
+        Row: {
+          created_at: string | null
+          file_id: string | null
+          id: string
+          model: string
+          quality_score: number | null
+          raw_json: Json
+        }
+        Insert: {
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          model: string
+          quality_score?: number | null
+          raw_json: Json
+        }
+        Update: {
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          model?: string
+          quality_score?: number | null
+          raw_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extractions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      files: {
+        Row: {
+          created_at: string | null
+          error: string | null
+          id: string
+          mime: string
+          original_name: string
+          size_bytes: number
+          status: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          mime: string
+          original_name: string
+          size_bytes: number
+          status: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          mime?: string
+          original_name?: string
+          size_bytes?: number
+          status?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       form_submissions: {
         Row: {
