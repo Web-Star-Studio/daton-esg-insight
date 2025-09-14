@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { CardWithAI } from "@/components/CardWithAI";
-import { TrendingUp, TrendingDown, Minus, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronRight, AlertCircle } from "lucide-react";
 import { getESGDashboard, type ESGDashboardResponse } from "@/services/esg";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -57,7 +60,7 @@ const CircularProgress = ({ value, size = 200 }: { value: number; size?: number 
 };
 
 // KPI Card Component
-const KPICard = ({ kpi, pillar }: { kpi: any; pillar: string }) => {
+const KPICard = ({ kpi, pillar, navigate }: { kpi: any; pillar: string; navigate: any }) => {
   const getTrendIcon = (trend: number) => {
     if (trend > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
     if (trend < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
@@ -92,7 +95,7 @@ const KPICard = ({ kpi, pillar }: { kpi: any; pillar: string }) => {
       "transition-colors", 
       hasNavigation && "cursor-pointer hover:bg-muted/50"
     )}
-    onClick={() => hasNavigation && (window.location.href = path)}>
+    onClick={() => hasNavigation && navigate(path)}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -115,11 +118,12 @@ const KPICard = ({ kpi, pillar }: { kpi: any; pillar: string }) => {
 };
 
 // Pillar Card Component
-const PillarCard = ({ title, data, color, pillar }: { 
+const PillarCard = ({ title, data, color, pillar, navigate }: { 
   title: string; 
   data: any; 
   color: string;
   pillar: string;
+  navigate: any;
 }) => {
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-500";
@@ -139,7 +143,7 @@ const PillarCard = ({ title, data, color, pillar }: {
       </CardHeader>
       <CardContent className="space-y-4">
         {data.kpis.map((kpi: any, index: number) => (
-          <KPICard key={index} kpi={kpi} pillar={pillar} />
+          <KPICard key={index} kpi={kpi} pillar={pillar} navigate={navigate} />
         ))}
       </CardContent>
     </Card>
@@ -148,12 +152,45 @@ const PillarCard = ({ title, data, color, pillar }: {
 
 export default function GestaoESG() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
-  const { data: esgData, isLoading, error } = useQuery<ESGDashboardResponse>({
+  const { data: esgData, isLoading, error, refetch } = useQuery<ESGDashboardResponse>({
     queryKey: ['esg-dashboard'],
     queryFn: getESGDashboard,
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
   });
+
+  // Mock data as fallback
+  const mockESGData = {
+    overall_esg_score: 75,
+    environmental: {
+      score: 70,
+      kpis: [
+        { key: "total_emissions", label: "Emissões Totais", value: "1,250", trend: -2.5, unit: "tCO₂e" },
+        { key: "recycling_rate", label: "Taxa de Reciclagem", value: "68", trend: 3.2, unit: "%" },
+        { key: "energy_efficiency", label: "Eficiência Energética", value: "82", trend: 1.8, unit: "%" }
+      ]
+    },
+    social: {
+      score: 80,
+      kpis: [
+        { key: "employee_satisfaction", label: "Satisfação dos Funcionários", value: "8.2", trend: 0.5, unit: "/10" },
+        { key: "training_hours", label: "Horas de Treinamento", value: "45", trend: 12.3, unit: "h/pessoa" },
+        { key: "diversity_index", label: "Índice de Diversidade", value: "7.5", trend: 2.1, unit: "/10" }
+      ]
+    },
+    governance: {
+      score: 75,
+      kpis: [
+        { key: "goals_on_track", label: "% Metas no Prazo", value: "100", trend: 5, unit: "%" },
+        { key: "compliance_rate", label: "Taxa de Conformidade", value: "96", trend: 1.5, unit: "%" },
+        { key: "audit_score", label: "Score de Auditoria", value: "8.8", trend: 0.8, unit: "/10" }
+      ]
+    }
+  };
+
+  const displayData = esgData || mockESGData;
 
   useEffect(() => {
     if (error) {
@@ -199,20 +236,67 @@ export default function GestaoESG() {
     );
   }
 
-  if (error || !esgData) {
+  const KPICardComponent = ({ kpi, pillar }: { kpi: any; pillar: string }) => {
+    const getTrendIcon = (trend: number) => {
+      if (trend > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
+      if (trend < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
+      return <Minus className="h-4 w-4 text-muted-foreground" />;
+    };
+
+    const getTrendText = (trend: number) => {
+      if (trend === 0) return "Sem alteração";
+      return `${trend > 0 ? '+' : ''}${trend}%`;
+    };
+
+    const getNavigationPath = (key: string) => {
+      const routeMap: { [key: string]: string } = {
+        'total_emissions': '/inventario-gee',
+        'recycling_rate': '/residuos',
+        'license_compliance': '/licenciamento',
+        'goals_on_track': '/metas',
+        'policy_compliance': '/compliance',
+        'board_diversity': '/configuracao',
+        'employee_satisfaction': '/configuracao',
+        'training_hours': '/configuracao',
+        'diversity_index': '/configuracao',
+        'compliance_rate': '/compliance',
+        'audit_score': '/auditoria',
+        'transparency_index': '/relatorios',
+        'energy_efficiency': '/inventario-gee'
+      };
+
+      return routeMap[key] || '#';
+    };
+
+    const path = getNavigationPath(kpi.key);
+    const hasNavigation = path !== '#';
+
     return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-          <h1 className="text-2xl font-bold text-muted-foreground">
-            Erro ao carregar dados ESG
-          </h1>
-          <p className="text-muted-foreground">
-            Verifique sua conexão e tente novamente
-          </p>
-        </div>
-      </MainLayout>
+      <Card className={cn(
+        "transition-colors", 
+        hasNavigation && "cursor-pointer hover:bg-muted/50"
+      )}
+      onClick={() => hasNavigation && navigate(path)}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm text-muted-foreground">{kpi.label}</p>
+              <p className="text-2xl font-semibold">
+                {kpi.value}{kpi.unit && kpi.unit !== 'índice' && ` ${kpi.unit}`}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center text-xs">
+                {getTrendIcon(kpi.trend)}
+                <span className="ml-1">{getTrendText(kpi.trend)}</span>
+              </div>
+              {hasNavigation && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
-  }
+  };
 
   return (
     <MainLayout>
@@ -227,47 +311,71 @@ export default function GestaoESG() {
           </div>
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert className="border-destructive/50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Erro ao carregar dados ESG. Mostrando dados de exemplo.
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetch()} 
+                className="ml-2"
+              >
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Central ESG Score com IA */}
         <div className="flex justify-center">
           <CardWithAI
             cardType="esg_score"
             cardData={{ 
-              overall_esg_score: esgData.overall_esg_score || 0,
-              environmental: esgData.environmental,
-              social: esgData.social,
-              governance: esgData.governance
+              overall_esg_score: displayData.overall_esg_score || 0,
+              environmental: displayData.environmental,
+              social: displayData.social,
+              governance: displayData.governance
             }}
             title="Score ESG Geral"
-            value={esgData.overall_esg_score}
+            value={displayData.overall_esg_score}
             subtitle="Baseado em métricas ambientais, sociais e de governança"
             className="text-center p-8 min-w-[300px]"
           >
             <div className="mb-4 flex justify-center">
-              <CircularProgress value={esgData.overall_esg_score} size={200} />
+              <CircularProgress value={displayData.overall_esg_score} size={200} />
             </div>
           </CardWithAI>
         </div>
 
         {/* ESG Pillars */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ESG Pillars */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <PillarCard
             title="Ambiental (E)"
-            data={esgData.environmental}
+            data={displayData.environmental}
             color="green"
             pillar="environmental"
+            navigate={navigate}
           />
           <PillarCard
             title="Social (S)"
-            data={esgData.social}
+            data={displayData.social}
             color="blue"
             pillar="social"
+            navigate={navigate}
           />
           <PillarCard
             title="Governança (G)"
-            data={esgData.governance}
+            data={displayData.governance}
             color="purple"
             pillar="governance"
+            navigate={navigate}
           />
+        </div>
         </div>
 
         {/* Additional Information */}
