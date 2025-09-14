@@ -81,8 +81,7 @@ async function getForms(supabase: any, company_id: string) {
   const { data, error } = await supabase
     .from('custom_forms')
     .select(`
-      *,
-      created_by:profiles!custom_forms_created_by_user_id_fkey(id, full_name)
+      *
     `)
     .eq('company_id', company_id)
     .order('created_at', { ascending: false })
@@ -91,8 +90,24 @@ async function getForms(supabase: any, company_id: string) {
     throw new Error(`Failed to fetch forms: ${error.message}`)
   }
 
+  // Manually fetch user data for each form
+  const formsWithUsers = await Promise.all(
+    (data || []).map(async (form: any) => {
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('id', form.created_by_user_id)
+        .single()
+
+      return {
+        ...form,
+        created_by: userData
+      }
+    })
+  )
+
   return new Response(
-    JSON.stringify(data || []),
+    JSON.stringify(formsWithUsers),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }
@@ -206,10 +221,7 @@ async function submitForm(supabase: any, company_id: string, user_id: string, su
 async function getSubmissions(supabase: any, company_id: string, form_id: string) {
   const { data, error } = await supabase
     .from('form_submissions')
-    .select(`
-      *,
-      submitted_by:profiles!form_submissions_submitted_by_user_id_fkey(id, full_name)
-    `)
+    .select('*')
     .eq('form_id', form_id)
     .eq('company_id', company_id)
     .order('submitted_at', { ascending: false })
@@ -218,8 +230,24 @@ async function getSubmissions(supabase: any, company_id: string, form_id: string
     throw new Error(`Failed to fetch submissions: ${error.message}`)
   }
 
+  // Manually fetch user data for each submission
+  const submissionsWithUsers = await Promise.all(
+    (data || []).map(async (submission: any) => {
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('id', submission.submitted_by_user_id)
+        .single()
+
+      return {
+        ...submission,
+        submitted_by: userData
+      }
+    })
+  )
+
   return new Response(
-    JSON.stringify(data || []),
+    JSON.stringify(submissionsWithUsers),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }
