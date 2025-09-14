@@ -195,13 +195,105 @@ export const ReconciliacaoDocumentos = () => {
     setRejectionNotes('');
   };
 
+  const getFieldLabel = (field: string): string => {
+    const labels: Record<string, string> = {
+      'document_type': 'Tipo de Documento',
+      'license_number': 'Número da Licença',
+      'issue_date': 'Data de Emissão',
+      'valid_until': 'Válida Até',
+      'process_number': 'Número do Processo',
+      'company': 'Empresa',
+      'cnpj': 'CNPJ',
+      'full_address': 'Endereço Completo',
+      'coordinates': 'Coordenadas',
+      'activity_description': 'Descrição da Atividade',
+      'company_size': 'Porte da Empresa'
+    };
+    return labels[field] || field;
+  };
+
   const renderFieldEditor = (field: string, value: any, confidence?: number) => {
+    // Renderização especial para coordenadas
+    if (field === 'coordinates') {
+      const coords = typeof value === 'string' ? JSON.parse(value) : value;
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>{getFieldLabel(field)}</Label>
+            {confidence && (
+              <Badge variant={getConfidenceBadgeVariant(confidence)} className="text-xs">
+                {formatConfidenceScore(confidence)}
+              </Badge>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Latitude</Label>
+              <Input
+                type="number"
+                step="any"
+                placeholder="Ex: -23.5505"
+                value={coords?.latitude || ''}
+                onChange={(e) => handleFieldChange(field, {
+                  ...coords,
+                  latitude: parseFloat(e.target.value) || null
+                })}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Longitude</Label>
+              <Input
+                type="number"
+                step="any"
+                placeholder="Ex: -46.6333"
+                value={coords?.longitude || ''}
+                onChange={(e) => handleFieldChange(field, {
+                  ...coords,
+                  longitude: parseFloat(e.target.value) || null
+                })}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Renderização especial para porte da empresa
+    if (field === 'company_size') {
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>{getFieldLabel(field)}</Label>
+            {confidence && (
+              <Badge variant={getConfidenceBadgeVariant(confidence)} className="text-xs">
+                {formatConfidenceScore(confidence)}
+              </Badge>
+            )}
+          </div>
+          <Select
+            value={editedData[field] || value}
+            onValueChange={(newValue) => handleFieldChange(field, newValue)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o porte" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Microempresa">Microempresa</SelectItem>
+              <SelectItem value="Pequeno Porte">Pequeno Porte</SelectItem>
+              <SelectItem value="Médio Porte">Médio Porte</SelectItem>
+              <SelectItem value="Grande Porte">Grande Porte</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
     // Detectar tipo do campo para renderizar input apropriado
     if (typeof value === 'number') {
       return (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor={field}>{field}</Label>
+            <Label htmlFor={field}>{getFieldLabel(field)}</Label>
             {confidence && (
               <Badge variant={getConfidenceBadgeVariant(confidence)} className="text-xs">
                 {formatConfidenceScore(confidence)}
@@ -219,11 +311,11 @@ export const ReconciliacaoDocumentos = () => {
       );
     }
 
-    if (field.includes('data') || field.includes('date')) {
+    if (field.includes('date') || field.includes('issue_date') || field.includes('valid_until')) {
       return (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor={field}>{field}</Label>
+            <Label htmlFor={field}>{getFieldLabel(field)}</Label>
             {confidence && (
               <Badge variant={getConfidenceBadgeVariant(confidence)} className="text-xs">
                 {formatConfidenceScore(confidence)}
@@ -240,11 +332,11 @@ export const ReconciliacaoDocumentos = () => {
       );
     }
 
-    if (typeof value === 'string' && value.length > 100) {
+    if (field === 'activity_description' || field === 'full_address' || (typeof value === 'string' && value.length > 100)) {
       return (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor={field}>{field}</Label>
+            <Label htmlFor={field}>{getFieldLabel(field)}</Label>
             {confidence && (
               <Badge variant={getConfidenceBadgeVariant(confidence)} className="text-xs">
                 {formatConfidenceScore(confidence)}
@@ -264,7 +356,7 @@ export const ReconciliacaoDocumentos = () => {
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor={field}>{field}</Label>
+          <Label htmlFor={field}>{getFieldLabel(field)}</Label>
           {confidence && (
             <Badge variant={getConfidenceBadgeVariant(confidence)} className="text-xs">
               {formatConfidenceScore(confidence)}
@@ -470,24 +562,169 @@ export const ReconciliacaoDocumentos = () => {
                       <TabsTrigger value="mappings">Mapeamentos</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="extracted" className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.entries(selectedExtraction.extracted_fields as Record<string, any>).map(([field, value]) => {
-                          const confidence = (selectedExtraction.confidence_scores as Record<string, number>)[field];
-                          
-                          return (
-                            <div key={field}>
-                              {renderFieldEditor(field, value, confidence)}
-                              {confidence && confidence < 0.6 && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <AlertTriangle className="h-3 w-3 text-orange-500" />
-                                  <span className="text-xs text-orange-600">Baixa confiança - verificar</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                    <TabsContent value="extracted" className="space-y-6">
+                      {/* Informações Básicas */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">Informações da Licença</h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {['document_type', 'license_number', 'issue_date', 'valid_until', 'process_number'].map((field) => {
+                            const value = (selectedExtraction.extracted_fields as Record<string, any>)[field];
+                            const confidence = (selectedExtraction.confidence_scores as Record<string, number>)[field];
+                            
+                            if (!value) return null;
+                            
+                            return (
+                              <div key={field}>
+                                {renderFieldEditor(field, value, confidence)}
+                                {confidence && confidence < 0.6 && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <AlertTriangle className="h-3 w-3 text-orange-500" />
+                                    <span className="text-xs text-orange-600">Baixa confiança - verificar</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
+
+                      {/* Informações da Empresa */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">Informações da Empresa</h4>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {['company', 'cnpj', 'company_size'].map((field) => {
+                            const value = (selectedExtraction.extracted_fields as Record<string, any>)[field];
+                            const confidence = (selectedExtraction.confidence_scores as Record<string, number>)[field];
+                            
+                            if (!value) return null;
+                            
+                            return (
+                              <div key={field}>
+                                {renderFieldEditor(field, value, confidence)}
+                                {confidence && confidence < 0.6 && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <AlertTriangle className="h-3 w-3 text-orange-500" />
+                                    <span className="text-xs text-orange-600">Baixa confiança - verificar</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Localização e Atividade */}
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">Localização e Atividade</h4>
+                        <div className="space-y-4">
+                          {['full_address', 'coordinates', 'activity_description'].map((field) => {
+                            const value = (selectedExtraction.extracted_fields as Record<string, any>)[field];
+                            const confidence = (selectedExtraction.confidence_scores as Record<string, number>)[field];
+                            
+                            if (!value) return null;
+                            
+                            return (
+                              <div key={field}>
+                                {renderFieldEditor(field, value, confidence)}
+                                {confidence && confidence < 0.6 && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <AlertTriangle className="h-3 w-3 text-orange-500" />
+                                    <span className="text-xs text-orange-600">Baixa confiança - verificar</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Condicionantes */}
+                      {selectedExtraction.extracted_fields.conditions && Array.isArray(selectedExtraction.extracted_fields.conditions) && (
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">
+                            Condicionantes ({selectedExtraction.extracted_fields.conditions.length})
+                          </h4>
+                          <div className="space-y-3">
+                            {selectedExtraction.extracted_fields.conditions.map((condition: any, index: number) => (
+                              <Card key={index} className="p-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Código</Label>
+                                    <Input
+                                      value={condition.code || ''}
+                                      onChange={(e) => {
+                                        const newConditions = [...selectedExtraction.extracted_fields.conditions];
+                                        newConditions[index] = { ...condition, code: e.target.value };
+                                        handleFieldChange('conditions', newConditions);
+                                      }}
+                                      placeholder="Ex: 2.1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Categoria</Label>
+                                    <Select
+                                      value={condition.category || 'Outros'}
+                                      onValueChange={(value) => {
+                                        const newConditions = [...selectedExtraction.extracted_fields.conditions];
+                                        newConditions[index] = { ...condition, category: value };
+                                        handleFieldChange('conditions', newConditions);
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Monitoramento">Monitoramento</SelectItem>
+                                        <SelectItem value="Gestão de Resíduos">Gestão de Resíduos</SelectItem>
+                                        <SelectItem value="Emissões Atmosféricas">Emissões Atmosféricas</SelectItem>
+                                        <SelectItem value="Recursos Hídricos">Recursos Hídricos</SelectItem>
+                                        <SelectItem value="Ruído">Ruído</SelectItem>
+                                        <SelectItem value="Solo">Solo</SelectItem>
+                                        <SelectItem value="Vegetação">Vegetação</SelectItem>
+                                        <SelectItem value="Relatórios">Relatórios</SelectItem>
+                                        <SelectItem value="Outros">Outros</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Prazo (dias)</Label>
+                                    <Input
+                                      type="number"
+                                      value={condition.deadline_days || ''}
+                                      onChange={(e) => {
+                                        const newConditions = [...selectedExtraction.extracted_fields.conditions];
+                                        newConditions[index] = { ...condition, deadline_days: parseInt(e.target.value) || null };
+                                        handleFieldChange('conditions', newConditions);
+                                      }}
+                                      placeholder="Ex: 30"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="mt-3">
+                                  <Label className="text-xs text-muted-foreground">Texto da Condicionante</Label>
+                                  <Textarea
+                                    value={condition.text || ''}
+                                    onChange={(e) => {
+                                      const newConditions = [...selectedExtraction.extracted_fields.conditions];
+                                      newConditions[index] = { ...condition, text: e.target.value };
+                                      handleFieldChange('conditions', newConditions);
+                                    }}
+                                    rows={2}
+                                    placeholder="Descrição completa da condicionante..."
+                                  />
+                                </div>
+                                {condition.confidence && (
+                                  <div className="flex justify-end mt-2">
+                                    <Badge variant={getConfidenceBadgeVariant(condition.confidence)} className="text-xs">
+                                      {formatConfidenceScore(condition.confidence)}
+                                    </Badge>
+                                  </div>
+                                )}
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </TabsContent>
 
                     <TabsContent value="mappings" className="space-y-4">

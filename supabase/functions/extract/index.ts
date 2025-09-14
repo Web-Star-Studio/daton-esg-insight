@@ -15,11 +15,22 @@ const JSON_SCHEMA = {
   type: "object",
   properties: {
     document_type: { type: "string" },
+    license_number: { type: "string" },
     issue_date: { type: "string", format: "date" },
     valid_until: { type: "string", format: "date" },
     process_number: { type: "string" },
     company: { type: "string" },
     cnpj: { type: "string" },
+    full_address: { type: "string" },
+    coordinates: {
+      type: "object",
+      properties: {
+        latitude: { type: ["number", "null"] },
+        longitude: { type: ["number", "null"] }
+      }
+    },
+    activity_description: { type: "string" },
+    company_size: { type: "string" },
     conditions: {
       type: "array",
       items: {
@@ -27,6 +38,7 @@ const JSON_SCHEMA = {
         properties: {
           code: { type: "string" },
           text: { type: "string" },
+          category: { type: "string" },
           deadline_days: { type: ["integer", "null"] },
           source_snippet: { type: "string" },
           confidence: { type: "number" }
@@ -292,14 +304,37 @@ serve(async (req) => {
           model: 'gpt-4o-mini',
           messages: [{
             role: 'system',
-            content: `Você é um especialista em análise de documentos de licenciamento ambiental. 
-            Extraia informações estruturadas do documento fornecido seguindo exatamente estas regras:
-            - Extraia apenas campos com base textual no documento; nunca invente dados
-            - Sempre preencha source_snippet com o trecho exato do documento quando possível
-            - Use confidence entre 0 e 1 baseado na certeza da extração
-            - Normalize datas para formato YYYY-MM-DD
-            - Normalize CNPJ removendo pontos e barras
-            - Se for CSV, considere que pode conter dados tabulares de licenças ou condicionantes`
+          content: `Você é um especialista em análise de Licenças de Operação (LO) ambiental. 
+            Extraia informações estruturadas do documento seguindo exatamente estas regras:
+            
+            CAMPOS OBRIGATÓRIOS:
+            - document_type: sempre "Licença de Operação" ou "LO"
+            - license_number: número/código da licença (ex: "LO 123/2024")
+            - issue_date: data de emissão (formato YYYY-MM-DD)
+            - valid_until: data de validade (formato YYYY-MM-DD)
+            - process_number: número do processo administrativo
+            - company: nome completo da empresa/empreendedor
+            - cnpj: CNPJ normalizado (apenas números)
+            - full_address: endereço completo do empreendimento
+            - coordinates: {latitude: numero, longitude: numero} se disponível
+            - activity_description: descrição da atividade licenciada
+            - company_size: porte da empresa (Micro, Pequeno, Médio, Grande)
+            
+            CONDICIONANTES:
+            - code: código/número da condicionante
+            - text: texto completo da condicionante
+            - category: tema da condicionante (ex: "Monitoramento", "Gestão de Resíduos", "Emissões Atmosféricas", "Recursos Hídricos", "Ruído", "Solo", "Vegetação", "Relatórios")
+            - deadline_days: prazo em dias se especificado
+            - source_snippet: trecho exato do documento
+            - confidence: confiança da extração (0-1)
+            
+            REGRAS:
+            - Extraia apenas dados com base textual clara no documento
+            - Use confidence entre 0 e 1 baseado na certeza
+            - Normalize datas para YYYY-MM-DD
+            - Para coordenadas, procure por "lat", "long", "UTM", "coordenadas"
+            - Categorize condicionantes por tema ambiental
+            - Se CSV, pode conter dados tabulares de licenças`
           }, {
             role: 'user',
             content: `Analise este documento e extraia as informações estruturadas:\n\n${documentText}`
@@ -377,7 +412,7 @@ serve(async (req) => {
     const stagingItems = [];
     
     // Basic fields
-    const basicFields = ['document_type', 'issue_date', 'valid_until', 'process_number', 'company', 'cnpj'];
+    const basicFields = ['document_type', 'license_number', 'issue_date', 'valid_until', 'process_number', 'company', 'cnpj', 'full_address', 'activity_description', 'company_size'];
     for (const field of basicFields) {
       if (extractedData[field]) {
         stagingItems.push({
@@ -391,6 +426,18 @@ serve(async (req) => {
       }
     }
 
+    // Coordinates (special handling)
+    if (extractedData.coordinates && (extractedData.coordinates.latitude || extractedData.coordinates.longitude)) {
+      stagingItems.push({
+        extraction_id: extraction.id,
+        field_name: 'coordinates',
+        extracted_value: JSON.stringify(extractedData.coordinates),
+        source_text: documentText.substring(0, 100),
+        confidence: extractedData.confidence || 0.5,
+        status: 'pending'
+      });
+    }
+
     // Conditions
     if (extractedData.conditions && Array.isArray(extractedData.conditions)) {
       extractedData.conditions.forEach((condition: any, index: number) => {
@@ -401,6 +448,7 @@ serve(async (req) => {
           extracted_value: JSON.stringify({
             code: condition.code || '',
             text: condition.text || '',
+            category: condition.category || 'Outros',
             deadline_days: condition.deadline_days
           }),
           source_text: condition.source_snippet || '',
