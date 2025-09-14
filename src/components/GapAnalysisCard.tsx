@@ -17,11 +17,22 @@ export function GapAnalysisCard({ current, expected, target, metric }: GapAnalys
   const progressToTarget = ((Math.abs(target - current) / Math.abs(target - expected)) * 100)
   
   const formatMetric = (value: number): string => {
-    if (metric.includes('CO2') || metric.includes('emiss')) {
+    // Verificar se metric existe antes de usar .includes()
+    if (!metric) {
+      return value.toLocaleString()
+    }
+    
+    if (metric.includes('CO2') || metric.includes('emiss') || metric.includes('ghg')) {
       return `${value.toLocaleString()} tCO₂e`
     }
     if (metric.includes('%') || metric.includes('percent')) {
       return `${value}%`
+    }
+    if (metric.includes('waste') || metric.includes('residuo')) {
+      return `${value.toLocaleString()} kg`
+    }
+    if (metric.includes('energy') || metric.includes('energia')) {
+      return `${value.toLocaleString()} kWh`
     }
     return value.toLocaleString()
   }
