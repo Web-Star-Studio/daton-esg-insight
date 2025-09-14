@@ -595,7 +595,7 @@ serve(async (req) => {
     
     // Get Supabase client and verify authentication
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     
     if (!openAIApiKey) {
@@ -610,7 +610,8 @@ serve(async (req) => {
       });
     }
     
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Use service role key for storage access
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get user from authorization header
     const authHeader = req.headers.get('authorization');
@@ -621,7 +622,9 @@ serve(async (req) => {
       });
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
+    // Create auth client for user verification
+    const authClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
+    const { data: { user }, error: userError } = await authClient.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
@@ -652,9 +655,16 @@ serve(async (req) => {
 
     if (downloadError || !fileData) {
       console.error('Download error:', downloadError);
+      console.error('Document path:', documentPath);
+      console.error('Storage bucket: documents');
+      
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Failed to download document. Please ensure the file exists and try again.' 
+        error: 'Failed to download document. Please ensure the file exists and try again.',
+        technical_details: {
+          error: downloadError?.message || 'File not found',
+          document_path: documentPath
+        }
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
