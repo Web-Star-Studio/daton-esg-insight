@@ -42,6 +42,11 @@ interface MenuItem {
   title: string
   icon: React.ComponentType<{ className?: string }>
   path: string
+  subItems?: Array<{
+    id: string
+    title: string
+    path: string
+  }>
 }
 
 interface MenuSection {
@@ -74,7 +79,18 @@ const menuSections: MenuSection[] = [
   {
     title: "AMBIENTAL",
     items: [
-      { id: "licenciamento", title: "Licenciamento", icon: Gavel, path: "/licenciamento" },
+      { 
+        id: "licenciamento", 
+        title: "Licenciamento", 
+        icon: Gavel, 
+        path: "/licenciamento",
+        subItems: [
+          { id: "licenciamento-dashboard", title: "Painel Principal", path: "/licenciamento" },
+          { id: "licenciamento-workflow", title: "Análise com IA", path: "/licenciamento/workflow" },
+          { id: "licenciamento-reconciliacao", title: "Reconciliação", path: "/licenciamento/reconciliacao" },
+          { id: "licenciamento-novo", title: "Nova Licença", path: "/licenciamento/novo" },
+        ]
+      },
       { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
     ]
   },
@@ -119,15 +135,28 @@ export function AppSidebar() {
         if (item.path === currentPath) {
           return item.id
         }
+        // Check subitems
+        if (item.subItems) {
+          for (const subItem of item.subItems) {
+            if (currentPath === subItem.path) {
+              return item.id
+            }
+          }
+        }
       }
     }
     return "painel" // default
   }
   
   const activeItem = getActiveItem()
+  const isLicensingActive = location.pathname.startsWith('/licenciamento')
 
   const handleItemClick = (item: MenuItem) => {
     navigate(item.path)
+  }
+  
+  const handleSubItemClick = (subItem: { id: string; title: string; path: string }) => {
+    navigate(subItem.path)
   }
 
   return (
@@ -155,24 +184,47 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {section.items.map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      onClick={() => handleItemClick(item)}
-                      className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm
-                        ${activeItem === item.id 
-                          ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary' 
-                          : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground'
-                        }
-                        ${isCollapsed ? 'justify-center px-2' : 'justify-start'}
-                      `}
-                    >
-                      <item.icon className={`${isCollapsed ? "w-5 h-5" : "w-4 h-4"} flex-shrink-0`} />
-                      {!isCollapsed && (
-                        <span className="truncate">{item.title}</span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <div key={item.id}>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => handleItemClick(item)}
+                        className={`
+                          w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm
+                          ${activeItem === item.id 
+                            ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary' 
+                            : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground'
+                          }
+                          ${isCollapsed ? 'justify-center px-2' : 'justify-start'}
+                        `}
+                      >
+                        <item.icon className={`${isCollapsed ? "w-5 h-5" : "w-4 h-4"} flex-shrink-0`} />
+                        {!isCollapsed && (
+                          <span className="truncate">{item.title}</span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    {/* Render subitems if they exist and sidebar is not collapsed and parent is active */}
+                    {item.subItems && !isCollapsed && isLicensingActive && item.id === 'licenciamento' && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {item.subItems.map((subItem) => (
+                          <SidebarMenuItem key={subItem.id} className="text-sm">
+                            <SidebarMenuButton
+                              onClick={() => handleSubItemClick(subItem)}
+                              className={`
+                                w-full justify-start py-1 px-2 transition-colors text-xs
+                                ${location.pathname === subItem.path
+                                  ? "bg-primary/20 text-primary font-medium"
+                                  : "hover:bg-muted/50 text-muted-foreground"
+                                }
+                              `}
+                            >
+                              <span>{subItem.title}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
