@@ -44,7 +44,7 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       setTitle(editingForm.title);
       setDescription(editingForm.description || "");
       setIsPublished(editingForm.is_published);
-      setFields(editingForm.structure_json.fields || []);
+      setFields(editingForm.structure_json?.fields || []);
     } else {
       setTitle("");
       setDescription("");
