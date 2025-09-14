@@ -86,9 +86,8 @@ const menuSections: MenuSection[] = [
         path: "/licenciamento",
         subItems: [
           { id: "licenciamento-dashboard", title: "Painel Principal", path: "/licenciamento" },
-          { id: "licenciamento-workflow", title: "Análise com IA", path: "/licenciamento/workflow" },
-          { id: "licenciamento-reconciliacao", title: "Reconciliação", path: "/licenciamento/reconciliacao" },
-          { id: "licenciamento-novo", title: "Nova Licença", path: "/licenciamento/novo" },
+          { id: "licenciamento-analise", title: "Análise com IA", path: "/licenciamento/analise" },
+          { id: "licenciamento-nova", title: "Nova Licença", path: "/licenciamento/nova" },
         ]
       },
       { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
