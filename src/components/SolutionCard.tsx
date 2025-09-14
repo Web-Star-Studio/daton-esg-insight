@@ -46,7 +46,7 @@ export function SolutionCard({
 
   return (
     <TooltipProvider>
-      <Card className="group hover:shadow-lg transition-all duration-200 hover:bg-accent relative">
+      <Card className="group hover:shadow-lg transition-all duration-200 relative">
         <CardContent className="p-6">
           {/* Header with favorite and comparison buttons */}
           <div className="flex items-start justify-between mb-4">
