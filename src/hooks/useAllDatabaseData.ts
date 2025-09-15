@@ -46,22 +46,26 @@ export interface DatabaseSection {
 
 export const useAllDatabaseData = () => {
   // Core Business Data
-  const { data: companyData, isLoading: companyLoading } = useQuery({
+  const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
     queryKey: ['company-data'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('companies').select('*').single();
+      const { data, error } = await supabase.from('companies').select('*').maybeSingle();
       if (error) throw error;
       return data;
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: profiles, isLoading: profilesLoading } = useQuery({
+  const { data: profiles, isLoading: profilesLoading, error: profilesError } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(200);
       if (error) throw error;
       return data;
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   // Assets & Infrastructure
@@ -87,13 +91,15 @@ export const useAllDatabaseData = () => {
     retryDelay: 1000
   });
 
-  const { data: activityData, isLoading: activityDataLoading } = useQuery({
+  const { data: activityData, isLoading: activityDataLoading, error: activityDataError } = useQuery({
     queryKey: ['activity-data'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('activity_data').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('activity_data').select('*').order('created_at', { ascending: false }).limit(200);
       if (error) throw error;
       return data;
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   const { data: calculatedEmissions, isLoading: calculatedEmissionsLoading } = useQuery({
@@ -313,22 +319,104 @@ export const useAllDatabaseData = () => {
   });
 
   // Reports
-  const { data: generatedReports, isLoading: reportsLoading } = useQuery({
+  const { data: generatedReports, isLoading: reportsLoading, error: reportsError } = useQuery({
     queryKey: ['generated-reports'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('generated_reports').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('generated_reports').select('*').order('created_at', { ascending: false }).limit(200);
       if (error) throw error;
       return data;
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: activityLogs, isLoading: activityLogsLoading } = useQuery({
+  const { data: activityLogs, isLoading: activityLogsLoading, error: activityLogsError } = useQuery({
     queryKey: ['activity-logs'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(100);
+      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(200);
       if (error) throw error;
       return data;
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  // Additional missing tables
+  const { data: files, isLoading: filesLoading, error: filesError } = useQuery({
+    queryKey: ['files'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('files').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  const { data: extractions, isLoading: extractionsLoading, error: extractionsError } = useQuery({
+    queryKey: ['extractions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('extractions').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  const { data: extractionItemsStaging, isLoading: extractionStagingLoading, error: extractionStagingError } = useQuery({
+    queryKey: ['extraction-items-staging'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('extraction_items_staging').select('*').limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  const { data: extractionItemsCurated, isLoading: extractionCuratedLoading, error: extractionCuratedError } = useQuery({
+    queryKey: ['extraction-items-curated'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('extraction_items_curated').select('*').order('approved_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  const { data: documentExtractionJobs, isLoading: docExtractionLoading, error: docExtractionError } = useQuery({
+    queryKey: ['document-extraction-jobs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('document_extraction_jobs').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  const { data: esgSolutions, isLoading: esgSolutionsLoading, error: esgSolutionsError } = useQuery({
+    queryKey: ['esg-solutions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('esg_solutions').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
+  });
+
+  const { data: esgSolutionProviders, isLoading: esgProvidersLoading, error: esgProvidersError } = useQuery({
+    queryKey: ['esg-solution-providers'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('esg_solution_providers').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   const isLoading = companyLoading || profilesLoading || assetsLoading || emissionSourcesLoading || 
@@ -339,7 +427,9 @@ export const useAllDatabaseData = () => {
                    creditRetirementsLoading || documentsLoading || documentFoldersLoading ||
                    extractedDataLoading || customFormsLoading || formSubmissionsLoading ||
                    dataCollectionLoading || dataImportLoading || complianceTasksLoading ||
-                   auditsLoading || auditFindingsLoading || reportsLoading || activityLogsLoading;
+                   auditsLoading || auditFindingsLoading || reportsLoading || activityLogsLoading ||
+                   filesLoading || extractionsLoading || extractionStagingLoading || 
+                   extractionCuratedLoading || docExtractionLoading || esgSolutionsLoading || esgProvidersLoading;
 
   const sectionIcons = {
     "company": Building2,
@@ -372,6 +462,13 @@ export const useAllDatabaseData = () => {
     "audits": FileSearch,
     "audit-findings": AlertCircle,
     "generated-reports": BarChart,
+    "files": FileText,
+    "extractions": Database,
+    "extraction-items-staging": Import,
+    "extraction-items-curated": CheckSquare,
+    "document-extraction-jobs": Brain,
+    "esg-solutions": Leaf,
+    "esg-solution-providers": Building2
   };
 
   return {
@@ -425,10 +522,34 @@ export const useAllDatabaseData = () => {
       
       // Reports
       { id: "generated-reports", title: "Relatórios", data: generatedReports || [], category: "reports", description: "Relatórios gerados" },
+      
+      // Additional AI & Extraction Data
+      { id: "files", title: "Arquivos", data: files || [], category: "documents", description: "Arquivos do sistema" },
+      { id: "extractions", title: "Extrações", data: extractions || [], category: "documents", description: "Extrações de dados" },
+      { id: "extraction-items-staging", title: "Itens em Processamento", data: extractionItemsStaging || [], category: "documents", description: "Dados sendo processados" },
+      { id: "extraction-items-curated", title: "Itens Curados", data: extractionItemsCurated || [], category: "documents", description: "Dados validados" },
+      { id: "document-extraction-jobs", title: "Jobs de Extração", data: documentExtractionJobs || [], category: "documents", description: "Processamentos de documentos" },
+      
+      // ESG Marketplace
+      { id: "esg-solutions", title: "Soluções ESG", data: esgSolutions || [], category: "esg", description: "Soluções do marketplace" },
+      { id: "esg-solution-providers", title: "Provedores ESG", data: esgSolutionProviders || [], category: "esg", description: "Empresas parceiras" },
     ].map(section => {
       const hasError = (section.id === 'assets' && assetsError) || 
                       (section.id === 'emission-sources' && emissionSourcesError) ||
                       (section.id === 'licenses' && licensesError) ||
+                      (section.id === 'waste-logs' && wasteLogsError) ||
+                      (section.id === 'company' && companyError) ||
+                      (section.id === 'profiles' && profilesError) ||
+                      (section.id === 'activity-data' && activityDataError) ||
+                      (section.id === 'generated-reports' && reportsError) ||
+                      (section.id === 'activity-logs' && activityLogsError) ||
+                      (section.id === 'files' && filesError) ||
+                      (section.id === 'extractions' && extractionsError) ||
+                      (section.id === 'extraction-items-staging' && extractionStagingError) ||
+                      (section.id === 'extraction-items-curated' && extractionCuratedError) ||
+                      (section.id === 'document-extraction-jobs' && docExtractionError) ||
+                      (section.id === 'esg-solutions' && esgSolutionsError) ||
+                      (section.id === 'esg-solution-providers' && esgProvidersError) ||
                       (section.id === 'waste-logs' && wasteLogsError);
       
       return {

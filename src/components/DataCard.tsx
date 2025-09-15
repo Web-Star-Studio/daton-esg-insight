@@ -35,9 +35,13 @@ import {
   Eye,
   Edit,
   Download,
-  Plus
+  Plus,
+  RefreshCw
 } from "lucide-react";
 import { DatabaseSection } from "@/hooks/useAllDatabaseData";
+import { exportSectionToCSV, exportSectionToExcel, exportSectionToJSON, SECTION_ROUTES } from "@/lib/export";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const categoryIcons = {
   "company": Building2,
@@ -88,14 +92,100 @@ const categoryColors = {
 interface DataCardProps {
   section: DatabaseSection;
   onClick?: () => void;
+  onView?: () => void;
+  onEdit?: () => void;
+  onExport?: () => void;
+  onNew?: () => void;
   isSelected?: boolean;
+  exportFormat?: 'xlsx' | 'csv' | 'json';
 }
 
-export const DataCard: React.FC<DataCardProps> = ({ section, onClick, isSelected = false }) => {
+export const DataCard: React.FC<DataCardProps> = ({ 
+  section, 
+  onClick, 
+  onView, 
+  onEdit, 
+  onExport, 
+  onNew,
+  isSelected = false,
+  exportFormat = 'xlsx' 
+}) => {
+  const navigate = useNavigate();
   const IconComponent = categoryIcons[section.id as keyof typeof categoryIcons] || Package;
   const categoryColor = categoryColors[section.category as keyof typeof categoryColors] || "hsl(var(--muted-foreground))";
   
   const completionPercentage = section.count > 0 ? Math.min(100, (section.count / 10) * 100) : 0;
+
+  const handleView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onView) {
+      onView();
+    } else {
+      onClick?.();
+    }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit();
+    } else {
+      const route = SECTION_ROUTES[section.id];
+      if (route) {
+        navigate(route);
+        toast.success(`Navegando para ${section.title}`);
+      } else {
+        toast.info(`Funcionalidade de edição não disponível para ${section.title}`);
+      }
+    }
+  };
+
+  const handleExport = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onExport) {
+      onExport();
+      return;
+    }
+
+    try {
+      if (section.count === 0) {
+        toast.warning('Nenhum dado para exportar');
+        return;
+      }
+
+      switch (exportFormat) {
+        case 'csv':
+          exportSectionToCSV(section);
+          break;
+        case 'json':
+          exportSectionToJSON(section);
+          break;
+        case 'xlsx':
+        default:
+          exportSectionToExcel(section);
+          break;
+      }
+      toast.success(`${section.title} exportado com sucesso`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Erro ao exportar dados');
+    }
+  };
+
+  const handleNew = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onNew) {
+      onNew();
+    } else {
+      const route = SECTION_ROUTES[section.id];
+      if (route) {
+        navigate(route);
+        toast.success(`Criando novo registro em ${section.title}`);
+      } else {
+        toast.info(`Funcionalidade de criação não disponível para ${section.title}`);
+      }
+    }
+  };
   
   const getStatusBadge = () => {
     if (section.status === 'active') {
@@ -103,7 +193,15 @@ export const DataCard: React.FC<DataCardProps> = ({ section, onClick, isSelected
     } else if (section.status === 'empty') {
       return <Badge variant="secondary">Vazio</Badge>;
     } else if (section.status === 'error') {
-      return <Badge variant="destructive">Erro</Badge>;
+      return (
+        <Badge variant="destructive" className="cursor-pointer" onClick={(e) => {
+          e.stopPropagation();
+          window.location.reload();
+        }}>
+          <RefreshCw className="w-3 h-3 mr-1" />
+          Erro - Tentar novamente
+        </Badge>
+      );
     } else {
       return <Badge variant="secondary">Desconhecido</Badge>;
     }
@@ -179,19 +277,43 @@ export const DataCard: React.FC<DataCardProps> = ({ section, onClick, isSelected
 
         {/* Quick actions */}
         <div className="flex justify-between pt-2 border-t border-border/50">
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2 text-xs"
+            onClick={handleView}
+            disabled={section.status === 'error'}
+          >
             <Eye className="w-3 h-3 mr-1" />
             Ver
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2 text-xs"
+            onClick={handleEdit}
+            disabled={section.status === 'error'}
+          >
             <Edit className="w-3 h-3 mr-1" />
             Editar
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2 text-xs"
+            onClick={handleExport}
+            disabled={section.status === 'error' || section.count === 0}
+          >
             <Download className="w-3 h-3 mr-1" />
             Export
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2 text-xs"
+            onClick={handleNew}
+            disabled={section.status === 'error'}
+          >
             <Plus className="w-3 h-3 mr-1" />
             Novo
           </Button>
