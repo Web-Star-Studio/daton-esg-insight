@@ -102,8 +102,10 @@ export const DataCard: React.FC<DataCardProps> = ({ section, onClick, isSelected
       return <Badge variant="default" className="bg-success text-success-foreground">Ativo</Badge>;
     } else if (section.status === 'empty') {
       return <Badge variant="secondary">Vazio</Badge>;
-    } else {
+    } else if (section.status === 'error') {
       return <Badge variant="destructive">Erro</Badge>;
+    } else {
+      return <Badge variant="secondary">Desconhecido</Badge>;
     }
   };
 

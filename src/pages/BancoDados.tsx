@@ -15,7 +15,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle
 } from "lucide-react";
 import { useAllDatabaseData, DatabaseSection } from "@/hooks/useAllDatabaseData";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
@@ -46,6 +47,24 @@ const BancoDados = () => {
   const DataTable = ({ section }: { section: DatabaseSection }) => {
     const dataArray = Array.isArray(section.data) ? section.data : section.data ? [section.data] : [];
     const displayData = dataArray.slice(0, 10); // Show first 10 items
+    
+    if (section.status === 'error') {
+      return (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-muted-foreground text-center">
+              <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-destructive" />
+              <p className="text-lg font-medium mb-2">Erro ao carregar dados</p>
+              <p className="text-sm mb-4">Não foi possível carregar {section.title}</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tentar novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
     
     if (dataArray.length === 0) {
       return (
@@ -148,6 +167,11 @@ const BancoDados = () => {
             <p className="text-muted-foreground">
               Central completa de dados - visualize, gerencie e exporte todas as informações da sua empresa
             </p>
+            {isLoading && (
+              <p className="text-sm text-blue-600 mt-1">
+                Carregando dados do banco de dados...
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center border rounded-lg p-1">
@@ -166,9 +190,9 @@ const BancoDados = () => {
                 <List className="w-4 h-4" />
               </Button>
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => window.location.reload()}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Atualizar
+              Atualizar Dados
             </Button>
             <Button variant="outline">
               <Settings className="w-4 h-4 mr-2" />

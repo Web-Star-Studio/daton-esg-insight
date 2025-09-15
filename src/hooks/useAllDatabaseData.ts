@@ -65,18 +65,26 @@ export const useAllDatabaseData = () => {
   });
 
   // Assets & Infrastructure
-  const { data: assets, isLoading: assetsLoading } = useQuery({
+  const { data: assets, isLoading: assetsLoading, error: assetsError } = useQuery({
     queryKey: ['assets'],
-    queryFn: getAssetsHierarchy
+    queryFn: async () => {
+      const { data, error } = await supabase.from('assets').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
-  const { data: emissionSources, isLoading: emissionSourcesLoading } = useQuery({
+  const { data: emissionSources, isLoading: emissionSourcesLoading, error: emissionSourcesError } = useQuery({
     queryKey: ['emission-sources'],
     queryFn: async () => {
       const { data, error } = await supabase.from('emission_sources').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   const { data: activityData, isLoading: activityDataLoading } = useQuery({
@@ -106,14 +114,15 @@ export const useAllDatabaseData = () => {
     }
   });
 
-  // Environmental Licensing
-  const { data: licenses, isLoading: licensesLoading } = useQuery({
+  // Environmental Licensing - Note: licenses table doesn't exist, using placeholder
+  const { data: licenses, isLoading: licensesLoading, error: licensesError } = useQuery({
     queryKey: ['licenses'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('licenses').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    }
+      // Table doesn't exist in schema, returning empty array
+      return [];
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   const { data: licenseAlerts, isLoading: licenseAlertsLoading } = useQuery({
@@ -134,14 +143,15 @@ export const useAllDatabaseData = () => {
     }
   });
 
-  // Waste Management
-  const { data: wasteLogs, isLoading: wasteLogsLoading } = useQuery({
+  // Waste Management - Note: waste_logs table doesn't exist, using placeholder
+  const { data: wasteLogs, isLoading: wasteLogsLoading, error: wasteLogsError } = useQuery({
     queryKey: ['waste-logs'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('waste_logs').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    }
+      // Table doesn't exist in schema, returning empty array
+      return [];
+    },
+    retry: 1,
+    retryDelay: 1000
   });
 
   // Goals & ESG
@@ -415,13 +425,20 @@ export const useAllDatabaseData = () => {
       
       // Reports
       { id: "generated-reports", title: "Relatórios", data: generatedReports || [], category: "reports", description: "Relatórios gerados" },
-    ].map(section => ({
-      ...section,
-      icon: sectionIcons[section.id as keyof typeof sectionIcons] || Package,
-      count: section.data.length,
-      status: (section.data.length > 0 ? 'active' : 'empty') as 'active' | 'empty' | 'error',
-      lastUpdated: section.data.length > 0 ? 'Hoje' : 'Nunca'
-    })),
+    ].map(section => {
+      const hasError = (section.id === 'assets' && assetsError) || 
+                      (section.id === 'emission-sources' && emissionSourcesError) ||
+                      (section.id === 'licenses' && licensesError) ||
+                      (section.id === 'waste-logs' && wasteLogsError);
+      
+      return {
+        ...section,
+        icon: sectionIcons[section.id as keyof typeof sectionIcons] || Package,
+        count: section.data?.length || 0,
+        status: hasError ? 'error' : (section.data?.length > 0 ? 'active' : 'empty') as 'active' | 'empty' | 'error',
+        lastUpdated: section.data?.length > 0 ? 'Hoje' : 'Nunca'
+      };
+    }),
     isLoading,
     totalRecords: [
       companyData ? 1 : 0,
