@@ -120,8 +120,8 @@ export default function ProcessarLicenca() {
       reader.readAsDataURL(file);
       const base64Data = await base64Promise;
 
-      // Call workflow processor
-      const { data, error } = await supabase.functions.invoke('license-workflow-processor', {
+      // Call unified license processor
+      const { data, error } = await supabase.functions.invoke('license-ai-analyzer', {
         body: {
           action: 'upload',
           file: {
@@ -164,7 +164,7 @@ export default function ProcessarLicenca() {
     if (!selectedLicense) return;
 
     try {
-      const { error } = await supabase.functions.invoke('license-workflow-processor', {
+      const { error } = await supabase.functions.invoke('license-ai-analyzer', {
         body: {
           action: 'reconcile',
           licenseId: selectedLicense.id,

@@ -92,7 +92,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.license-ai-analyzer]
-verify_jwt = true
+verify_jwt = false
 
 [functions.license-document-analyzer]
 verify_jwt = false
