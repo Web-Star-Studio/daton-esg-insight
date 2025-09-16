@@ -160,6 +160,17 @@ export const StationaryCombustionModal = ({
         return;
       }
 
+      // Validation - CAMPOS OBRIGATÓRIOS ADICIONAIS
+      if (!formData.sourceRegistry.trim()) {
+        toast.error("❌ GHG Protocol Brasil: Registro da fonte é OBRIGATÓRIO");
+        return;
+      }
+
+      if (!formData.sourceDescription.trim()) {
+        toast.error("❌ GHG Protocol Brasil: Descrição da fonte é OBRIGATÓRIA");
+        return;
+      }
+
       if (!validateFuelForSector(formData.fuelName, formData.economicSector)) {
         toast.error("Combustível não compatível com o setor selecionado");
         return;
@@ -205,6 +216,13 @@ export const StationaryCombustionModal = ({
         period_start_date: formData.periodStart,
         period_end_date: formData.periodEnd,
         source_document: formData.sourceDocument || undefined,
+        // Add the new required fields as part of metadata
+        metadata: {
+          source_registry: formData.sourceRegistry,
+          source_description: formData.sourceDescription,
+          economic_sector: formData.economicSector,
+          fuel_name: formData.fuelName
+        }
       };
       
       // Only include emission_factor_id if it's valid
@@ -429,23 +447,35 @@ export const StationaryCombustionModal = ({
             <h3 className="text-sm font-medium">Informações da Fonte (GHG Protocol)</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="sourceRegistry">Registro da Fonte</Label>
+              <Label htmlFor="sourceRegistry" className="text-ghgRequired-foreground font-medium">
+                Registro da Fonte <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="sourceRegistry"
                 placeholder="Ex: Caldeira 001, Gerador Emergência A"
                 value={formData.sourceRegistry}
                 onChange={(e) => setFormData(prev => ({ ...prev, sourceRegistry: e.target.value }))}
+                className="bg-ghgRequired border-ghgRequired-foreground/30"
               />
+              <div className="text-xs text-ghgRequired-foreground">
+                Campo obrigatório conforme GHG Protocol Brasil 2025.0.1
+              </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="sourceDescription">Descrição da Fonte</Label>
+              <Label htmlFor="sourceDescription" className="text-ghgRequired-foreground font-medium">
+                Descrição da Fonte <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="sourceDescription"
                 placeholder="Descreva a fonte de combustão (equipamento, localização, características)"
                 value={formData.sourceDescription}
                 onChange={(e) => setFormData(prev => ({ ...prev, sourceDescription: e.target.value }))}
+                className="bg-ghgRequired border-ghgRequired-foreground/30"
               />
+              <div className="text-xs text-ghgRequired-foreground">
+                Campo obrigatório conforme GHG Protocol Brasil 2025.0.1
+              </div>
             </div>
             
             <div className="space-y-2">
