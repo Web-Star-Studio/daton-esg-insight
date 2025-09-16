@@ -330,7 +330,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   // ALWAYS update the license with results - this is critical
   try {
     const licenseInfo = extractedData.license_info || {};
-    await supabaseClient
+    const { error: licenseUpdateError } = await supabaseClient
       .from('licenses')
       .update({
         name: licenseInfo.company_name || licenseInfo.license_number || file.name.replace('.pdf', ''),
@@ -339,14 +339,18 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         issue_date: licenseInfo.issue_date,
         expiration_date: licenseInfo.expiration_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         issuing_body: licenseInfo.issuer || 'Órgão Ambiental',
-        activity_description: licenseInfo.activity_type,
-        location: licenseInfo.location,
         ai_processing_status: finalStatus,
         ai_confidence_score: confidenceScore,
         ai_extracted_data: extractedData,
+        ai_last_analysis_at: new Date().toISOString(),
         compliance_score: Math.max(50, confidenceScore * 100)
       })
       .eq('id', newLicenseId);
+    
+    if (licenseUpdateError) {
+      console.error('License update error:', licenseUpdateError);
+      throw new Error(`Failed to update license: ${licenseUpdateError.message}`);
+    }
     
     console.log(`License updated with status: ${finalStatus}`);
 
@@ -362,8 +366,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         status: 'pending',
         ai_extracted: true,
         ai_confidence: confidenceScore,
-        legal_basis: condicionante.base_legal,
-        reference: condicionante.referencia
+        reference: condicionante.referencia || condicionante.base_legal
       }));
 
       const { error: condInsertError } = await supabaseClient
@@ -407,27 +410,36 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     }
 
     // Update document status
-    await supabaseClient
+    const { error: docUpdateError } = await supabaseClient
       .from('documents')
       .update({
         ai_processing_status: finalStatus,
         ai_confidence_score: confidenceScore
       })
       .eq('id', document.id);
+    
+    if (docUpdateError) {
+      console.error('Document update error:', docUpdateError);
+    }
 
   } catch (updateError) {
     console.error('Error updating license with results:', updateError);
     // Try one more time to at least mark as failed
     try {
-      await supabaseClient
+      const { error: fallbackError } = await supabaseClient
         .from('licenses')
         .update({
           ai_processing_status: 'failed',
+          ai_last_analysis_at: new Date().toISOString(),
           name: file.name.replace('.pdf', '')
         })
         .eq('id', newLicenseId);
-    } catch (fallbackError) {
-      console.error('Even fallback update failed:', fallbackError);
+      
+      if (fallbackError) {
+        console.error('Even fallback update failed:', fallbackError);
+      }
+    } catch (fallbackCatchError) {
+      console.error('Fallback update exception:', fallbackCatchError);
     }
   }
 
@@ -536,7 +548,7 @@ async function createAssistant(openAIApiKey: string, instructions: string) {
     body: JSON.stringify({
       name: 'Licença Ambiental Extractor',
       instructions,
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       tools: [{ type: 'file_search' }],
     }),
   });
