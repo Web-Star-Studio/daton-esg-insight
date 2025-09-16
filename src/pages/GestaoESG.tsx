@@ -4,9 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
 import { PredictiveDashboard } from "@/components/PredictiveDashboard";
+import { ContextualInsightsPanel } from "@/components/ContextualInsightsPanel";
+import { PredictiveAlertsWidget } from "@/components/PredictiveAlertsWidget";
+import { SmartRecommendationsEngine } from "@/components/SmartRecommendationsEngine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SmartSkeleton } from "@/components/SmartSkeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CardWithAI } from "@/components/CardWithAI";
@@ -212,27 +215,7 @@ export default function GestaoESG() {
             <h1 className="text-3xl font-bold">Painel de Gestão Estratégica ESG</h1>
           </div>
 
-          {/* Loading Skeleton */}
-          <div className="flex justify-center">
-            <Skeleton className="w-[200px] h-[200px] rounded-full" />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((j) => (
-                      <Skeleton key={j} className="h-16 w-full" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <SmartSkeleton variant="dashboard" />
         </div>
       </MainLayout>
     );
@@ -331,6 +314,13 @@ export default function GestaoESG() {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Enhanced AI Systems */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+          <ContextualInsightsPanel />
+          <PredictiveAlertsWidget />
+          <SmartRecommendationsEngine />
+        </div>
 
         {/* Intelligent Alerts */}
         <IntelligentAlertsSystem />
