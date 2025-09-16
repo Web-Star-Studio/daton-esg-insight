@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// Simplified edge function using direct emission factors (kg CO2e per unit)
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -42,7 +43,7 @@ serve(async (req) => {
     // Get request data
     const { period_start, period_end } = await req.json()
 
-    console.log(`Starting GHG recalculation for company ${profile.company_id} from ${period_start} to ${period_end}`)
+    console.log(`Starting simplified GHG recalculation for company ${profile.company_id}`)
 
     // Get activity data for the period
     const { data: activityData, error: activityError } = await supabaseClient
@@ -51,8 +52,6 @@ serve(async (req) => {
         id,
         quantity,
         unit,
-        period_start_date,
-        period_end_date,
         emission_source:emission_sources(
           id,
           name,
@@ -75,7 +74,7 @@ serve(async (req) => {
     let processedRecords = 0
     let successfulCalculations = 0
 
-    // Process each activity data record
+    // Process each activity data record using simplified calculation
     for (const activity of activityData || []) {
       try {
         processedRecords++
@@ -86,42 +85,42 @@ serve(async (req) => {
           .from('emission_factors')
           .select('*')
           .eq('category', activity.emission_source.category)
-          .limit(10)
+          .eq('type', 'system')
+          .limit(5)
 
         if (!factors || factors.length === 0) {
           console.log(`No emission factors found for category: ${activity.emission_source.category}`)
           continue
         }
 
-        // Find compatible factor (for now, just use the first one)
-        const factor = factors[0]
+        // Find compatible factor by unit or use the first one
+        const factor = factors.find(f => f.activity_unit === activity.unit) || factors[0]
 
-        // Convert units if needed (simplified conversion)
-        let convertedQuantity = activity.quantity
-        const unitConversions: { [key: string]: { [key: string]: number } } = {
-          'kg': { 'tonnes': 1000, 't': 1000 },
-          'tonnes': { 'kg': 0.001 },
-          't': { 'kg': 0.001 },
-          'litros': { 'L': 1, 'm3': 0.001 },
-          'L': { 'litros': 1, 'm3': 0.001 }
+        // Use database function for calculation
+        const { data: result, error: calcError } = await supabaseClient
+          .rpc('calculate_simple_emissions', {
+            p_activity_quantity: activity.quantity,
+            p_activity_unit: activity.unit,
+            p_factor_co2: factor.co2_factor || 0,
+            p_factor_ch4: factor.ch4_factor || 0,
+            p_factor_n2o: factor.n2o_factor || 0,
+            p_factor_unit: factor.activity_unit
+          })
+
+        if (calcError) {
+          console.error(`Calculation error for activity ${activity.id}:`, calcError)
+          continue
         }
 
-        if (activity.unit !== factor.activity_unit) {
-          const conversion = unitConversions[activity.unit]?.[factor.activity_unit]
-          if (conversion) {
-            convertedQuantity = activity.quantity / conversion
-          } else {
-            console.log(`Cannot convert ${activity.unit} to ${factor.activity_unit}`)
-            continue
-          }
-        }
-
-        // Calculate emissions (kg CO2e)
-        const co2Emissions = (factor.co2_factor || 0) * convertedQuantity
-        const ch4Emissions = (factor.ch4_factor || 0) * convertedQuantity * 25 // GWP for CH4
-        const n2oEmissions = (factor.n2o_factor || 0) * convertedQuantity * 298 // GWP for N2O
-
-        const totalCo2e = (co2Emissions + ch4Emissions + n2oEmissions) / 1000 // Convert to tonnes
+        // Cast result to proper type
+        const calculationResult = result as {
+          total_co2e_tonnes: number;
+          co2_kg: number;
+          ch4_kg: number;
+          n2o_kg: number;
+          conversion_factor_used: number;
+          calculation_method: string;
+        };
 
         // Save calculation result
         const { error: calculationError } = await supabaseClient
@@ -129,16 +128,13 @@ serve(async (req) => {
           .upsert({
             activity_data_id: activity.id,
             emission_factor_id: factor.id,
-            total_co2e: totalCo2e,
+            total_co2e: calculationResult.total_co2e_tonnes,
+            fossil_co2e: calculationResult.total_co2e_tonnes, // Assume all fossil for simplicity
+            biogenic_co2e: 0,
             details_json: {
-              co2_emissions: co2Emissions,
-              ch4_emissions: ch4Emissions,
-              n2o_emissions: n2oEmissions,
-              converted_quantity: convertedQuantity,
-              original_quantity: activity.quantity,
-              original_unit: activity.unit,
-              factor_unit: factor.activity_unit,
-              calculation_date: new Date().toISOString()
+              ...calculationResult,
+              factor_name: factor.name,
+              calculation_method: 'simple_direct_edge_function'
             }
           }, {
             onConflict: 'activity_data_id'
@@ -148,7 +144,7 @@ serve(async (req) => {
           console.error(`Error saving calculation for activity ${activity.id}:`, calculationError)
         } else {
           successfulCalculations++
-          console.log(`Successfully calculated emissions for activity ${activity.id}: ${totalCo2e.toFixed(3)} tCO2e`)
+          console.log(`Successfully calculated emissions for activity ${activity.id}: ${calculationResult.total_co2e_tonnes} tCO2e`)
         }
 
       } catch (activityError) {
@@ -158,7 +154,7 @@ serve(async (req) => {
 
     const response = {
       success: true,
-      message: 'GHG recalculation completed',
+      message: 'Simplified GHG recalculation completed',
       details: {
         period_start,
         period_end,

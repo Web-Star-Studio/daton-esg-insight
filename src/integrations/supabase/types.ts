@@ -2789,6 +2789,17 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["license_status_enum"]
       }
+      calculate_simple_emissions: {
+        Args: {
+          p_activity_quantity: number
+          p_activity_unit: string
+          p_factor_ch4?: number
+          p_factor_co2: number
+          p_factor_n2o?: number
+          p_factor_unit?: string
+        }
+        Returns: Json
+      }
       exec_sql: {
         Args: { query: string }
         Returns: Json

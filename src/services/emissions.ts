@@ -454,11 +454,13 @@ export async function getEmissionSourcesWithEmissions() {
   return sourcesWithEmissions;
 }
 
-// Calculate emissions for activity data with GHG Protocol compliance
+// Calculate emissions using simple direct formula: Emissions = Activity × Factor
 export async function calculateEmissions(activityDataId: string, emissionFactorId: string) {
   try {
+    console.log(`Calculating emissions for activity ${activityDataId} with factor ${emissionFactorId}`);
+    
     // Fetch activity data and emission factor
-    const [activityResponse, factorResponse, sourceResponse] = await Promise.all([
+    const [activityResponse, factorResponse] = await Promise.all([
       supabase
         .from('activity_data')
         .select('*')
@@ -468,137 +470,71 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
         .from('emission_factors')
         .select('*')
         .eq('id', emissionFactorId)
-        .single(),
-      supabase
-        .from('activity_data')
-        .select(`
-          emission_sources (
-            category,
-            economic_sector
-          )
-        `)
-        .eq('id', activityDataId)
         .single()
     ]);
 
-    if (activityResponse.error || factorResponse.error || sourceResponse.error) {
+    if (activityResponse.error || factorResponse.error) {
       throw new Error('Error fetching data for calculation');
     }
 
     const activity = activityResponse.data;
     const factor = factorResponse.data;
-    const source = sourceResponse.data.emission_sources;
 
-    // For stationary combustion, use enhanced calculation
-    if (source?.category === 'Combustão Estacionária') {
-      const { calculateStationaryCombustionEmissions } = await import('./stationaryCombustion');
-      
-      const economicSector = source.economic_sector as any || 'Industrial';
-      
-      try {
-        const result = await calculateStationaryCombustionEmissions(
-          factor.name,
-          activity.quantity,
-          activity.unit,
-          economicSector
-        );
-        
-        // Store calculated emissions with fossil/biogenic separation
-        const { data: calculatedEmission, error: insertError } = await supabase
-          .from('calculated_emissions')
-          .upsert({
-            activity_data_id: activityDataId,
-            emission_factor_id: emissionFactorId,
-            total_co2e: result.total_co2e,
-            fossil_co2e: result.fossil_co2e,
-            biogenic_co2e: result.biogenic_co2e,
-            details_json: result.calculation_details
-          }, {
-            onConflict: 'activity_data_id'
-          })
-          .select()
-          .single();
+    // Use database function for simple calculation
+    const { data: result, error: calcError } = await supabase
+      .rpc('calculate_simple_emissions', {
+        p_activity_quantity: activity.quantity,
+        p_activity_unit: activity.unit,
+        p_factor_co2: factor.co2_factor || 0,
+        p_factor_ch4: factor.ch4_factor || 0,
+        p_factor_n2o: factor.n2o_factor || 0,
+        p_factor_unit: factor.activity_unit
+      });
 
-        if (insertError) {
-          throw insertError;
-        }
-
-        return calculatedEmission;
-      } catch (stationaryError) {
-        console.warn('Stationary combustion calculation failed, falling back to standard calculation:', stationaryError);
-        // Continue with standard calculation as fallback
-      }
+    if (calcError) {
+      throw new Error(`Calculation error: ${calcError.message}`);
     }
 
-    // Standard calculation for other categories
-    let co2_emissions = activity.quantity * (factor.co2_factor || 0);
-    let ch4_emissions = activity.quantity * (factor.ch4_factor || 0);  
-    let n2o_emissions = activity.quantity * (factor.n2o_factor || 0);
+    // Cast result to proper type
+    const calculationResult = result as {
+      total_co2e_tonnes: number;
+      co2_kg: number;
+      ch4_kg: number;
+      n2o_kg: number;
+      conversion_factor_used: number;
+      calculation_method: string;
+    };
 
-    // Apply unit conversions if needed
-    const { getConversionFactor } = await import('./conversionFactors');
-    
-    if (activity.unit !== factor.activity_unit) {
-      const conversionFactor = await getConversionFactor(
-        activity.unit, 
-        factor.activity_unit, 
-        source?.category
-      );
-      const convertedQuantity = activity.quantity * conversionFactor;
-      
-      co2_emissions = convertedQuantity * (factor.co2_factor || 0);
-      ch4_emissions = convertedQuantity * (factor.ch4_factor || 0);
-      n2o_emissions = convertedQuantity * (factor.n2o_factor || 0);
-    }
-
-    // GWP factors IPCC AR6
-    const gwpCH4 = factor.is_biofuel ? 27 : 30; // Different for fossil vs biogenic
-    const gwpN2O = 273;
-    
-    // CO2 equivalent calculation
-    const ch4_co2e = ch4_emissions * gwpCH4;
-    const n2o_co2e = n2o_emissions * gwpN2O;
-    
-    // Fossil vs biogenic separation
-    const biogenic_fraction = factor.biogenic_fraction || 0;
-    const fossil_fraction = 1 - biogenic_fraction;
-    
-    const fossil_co2e = (co2_emissions * fossil_fraction) + ch4_co2e + n2o_co2e;
-    const biogenic_co2e = co2_emissions * biogenic_fraction;
-    const total_co2e = fossil_co2e + biogenic_co2e;
-
-    // Store calculated emissions
-    const { data: calculatedEmission, error: insertError } = await supabase
+    // Save the calculated emissions
+    const { error: saveError } = await supabase
       .from('calculated_emissions')
       .upsert({
         activity_data_id: activityDataId,
         emission_factor_id: emissionFactorId,
-        total_co2e,
-        fossil_co2e,
-        biogenic_co2e,
+        total_co2e: calculationResult.total_co2e_tonnes,
+        fossil_co2e: calculationResult.total_co2e_tonnes, // Assume all fossil for now
+        biogenic_co2e: 0, // Can be enhanced later based on factor type
         details_json: {
-          co2_emissions,
-          ch4_emissions,
-          n2o_emissions,
-          ch4_co2e,
-          n2o_co2e,
-          biogenic_fraction,
-          fossil_fraction,
-          calculation_method: 'ghg_protocol_2025',
-          gwp_factors: { ch4: gwpCH4, n2o: gwpN2O },
-          conversion_applied: activity.unit !== factor.activity_unit
+          ...calculationResult,
+          calculation_method: 'simple_direct_formula',
+          factor_name: factor.name,
+          activity_quantity: activity.quantity,
+          activity_unit: activity.unit,
+          factor_unit: factor.activity_unit
         }
-      }, {
+      }, { 
         onConflict: 'activity_data_id'
-      })
-      .select()
-      .single();
+      });
 
-    if (insertError) {
-      throw insertError;
+    if (saveError) {
+      throw new Error(`Save error: ${saveError.message}`);
     }
 
-    return calculatedEmission;
+    console.log(`Emissions calculated successfully: ${calculationResult.total_co2e_tonnes} tCO2e`);
+    return {
+      total_co2e: calculationResult.total_co2e_tonnes,
+      details: calculationResult
+    };
   } catch (error) {
     console.error('Error calculating emissions:', error);
     throw error;
