@@ -9,16 +9,13 @@ const corsHeaders = {
 
 interface LicenseProcessRequest {
   action: 'upload' | 'analyze' | 'reconcile';
-  // For upload action
   file?: {
     name: string;
     type: string;
     data: string; // base64
   };
-  // For analyze action
   licenseId?: string;
   analysisType?: 'full_analysis' | 'renewal_prediction' | 'compliance_check';
-  // For reconcile action  
   reconciliationData?: any;
 }
 
@@ -49,6 +46,48 @@ interface ExtractedLicenseData {
     severidade: 'crítica' | 'alta' | 'média' | 'baixa';
     tipo_alerta: string;
   }>;
+}
+
+// Robust JSON parser with fallback
+function extractJsonFromResponse(content: string): any {
+  try {
+    // Try direct parse first
+    return JSON.parse(content);
+  } catch {
+    // Try extracting from code blocks
+    const jsonBlock = content.match(/```json([\s\S]*?)```/i);
+    if (jsonBlock) {
+      try {
+        return JSON.parse(jsonBlock[1].trim());
+      } catch {}
+    }
+    
+    // Try any code block
+    const anyBlock = content.match(/```([\s\S]*?)```/);
+    if (anyBlock) {
+      try {
+        return JSON.parse(anyBlock[1].trim());
+      } catch {}
+    }
+    
+    // Try extracting JSON object
+    const braceMatch = content.match(/\{[\s\S]*\}/);
+    if (braceMatch) {
+      try {
+        return JSON.parse(braceMatch[0]);
+      } catch {}
+    }
+    
+    throw new Error('No valid JSON found in response');
+  }
+}
+
+// Timeout wrapper for async functions
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+  );
+  return Promise.race([promise, timeout]);
 }
 
 serve(async (req) => {
@@ -120,9 +159,10 @@ serve(async (req) => {
   }
 });
 
-// Handle file upload and create license record
+// Handle file upload and create license record with robust processing
 async function handleUpload(supabaseClient: any, userId: string, companyId: string, file: any) {
   console.log('Handling file upload...');
+  const startTime = Date.now();
   
   // Convert base64 to blob
   const fileData = Uint8Array.from(atob(file.data), c => c.charCodeAt(0));
@@ -174,7 +214,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       name: 'Processando...',
       type: 'LO',
       status: 'Ativa',
-      issuing_body: 'Identificando...',
+      issuing_body: 'Analisando...',
       expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       ai_processing_status: 'processing',
       ai_confidence_score: 0
@@ -186,28 +226,33 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     throw new Error(`License creation failed: ${licenseError.message}`);
   }
 
-  // Immediately start AI analysis with the PDF content
-  console.log('Starting immediate AI analysis with PDF...');
-  
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openAIApiKey) {
-    console.error('OpenAI API key not configured');
-    throw new Error('OpenAI API key not configured');
-  }
+  // Start AI analysis with phased extraction and robust error handling
+  console.log('Starting phased AI analysis...');
+  let finalStatus: 'completed' | 'failed' | 'needs_review' = 'failed';
+  let extractedData: Partial<ExtractedLicenseData> = {};
+  let confidenceScore = 0;
+  let processingLog: string[] = [];
 
   try {
-    // Create OpenAI file from PDF
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    // Upload file to OpenAI with timeout
     const formData = new FormData();
     formData.append('file', new Blob([fileData], { type: file.type }), file.name);
     formData.append('purpose', 'assistants');
 
-    const fileResponse = await fetch('https://api.openai.com/v1/files', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-      },
-      body: formData,
-    });
+    const fileResponse = await withTimeout(
+      fetch('https://api.openai.com/v1/files', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+        body: formData,
+      }),
+      30000,
+      'File upload timeout'
+    );
 
     if (!fileResponse.ok) {
       throw new Error(`OpenAI file upload failed: ${await fileResponse.text()}`);
@@ -215,71 +260,208 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     const openAIFile = await fileResponse.json();
     console.log('OpenAI file created:', openAIFile.id);
+    processingLog.push(`File uploaded: ${openAIFile.id}`);
 
-    // Create assistant for license analysis with improved Brazilian prompt
-    const assistantResponse = await fetch('https://api.openai.com/v1/assistants', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2',
-      },
-      body: JSON.stringify({
-        name: 'Analista de Licença Ambiental Brasileiro',
-        instructions: `Você é um agente inteligente treinado para analisar **documentos de licenciamento ambiental emitidos no Brasil**, de diferentes tipos e órgãos emissores (ex: FEPAM, IBAMA, CETESB, SEMA, SEMMAS, etc.).
+    // Phase 1: Extract license info only (fast)
+    console.log('Phase 1: Extracting basic license info...');
+    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 60000);
+    if (basicInfo) {
+      extractedData.license_info = basicInfo;
+      processingLog.push('Phase 1: License info extracted');
+    } else {
+      processingLog.push('Phase 1: Failed to extract license info');
+    }
 
-Seu objetivo é identificar, classificar e extrair **informações estruturadas e úteis para sistemas de gestão ambiental**, com foco em conformidade legal, acompanhamento de prazos e responsabilidades.
+    // Phase 2: Extract condicionantes (medium complexity)
+    console.log('Phase 2: Extracting condicionantes...');
+    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 90000);
+    if (condicionantes) {
+      extractedData.condicionantes = condicionantes;
+      processingLog.push(`Phase 2: ${condicionantes.length} condicionantes extracted`);
+    } else {
+      processingLog.push('Phase 2: Failed to extract condicionantes');
+    }
 
-🎯 **TAREFAS PRINCIPAIS:**
+    // Phase 3: Extract alertas (fast)
+    console.log('Phase 3: Extracting alertas...');
+    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 60000);
+    if (alertas) {
+      extractedData.alertas = alertas;
+      processingLog.push(`Phase 3: ${alertas.length} alertas extracted`);
+    } else {
+      processingLog.push('Phase 3: Failed to extract alertas');
+    }
 
-1. **Identifique automaticamente o tipo do documento**, com base no conteúdo textual:
-   - Ex: Licença de Operação (LO), Licença Prévia (LP), Licença de Instalação (LI), Autorização Ambiental, Autorização para Supressão Vegetal, etc.
+    // Determine final status based on what was extracted
+    const hasBasicInfo = extractedData.license_info && Object.keys(extractedData.license_info).length > 0;
+    const hasCondicionantes = extractedData.condicionantes && extractedData.condicionantes.length > 0;
+    const hasAlertas = extractedData.alertas && extractedData.alertas.length > 0;
 
-2. **Extraia os dados principais do cabeçalho do documento:**
-   - Nome do empreendedor
-   - CNPJ/CPF
-   - Nº do processo
-   - Nº da licença
-   - Data de emissão
-   - Data de validade (ou prazo)
-   - Órgão emissor
-   - Endereço do empreendimento
-   - Coordenadas geográficas (se houver)
-   - Tipo de atividade licenciada
+    if (hasBasicInfo && (hasCondicionantes || hasAlertas)) {
+      finalStatus = 'completed';
+    } else if (hasBasicInfo) {
+      finalStatus = 'needs_review';
+      processingLog.push('Partial extraction - needs review');
+    } else {
+      finalStatus = 'failed';
+      processingLog.push('Critical failure - no basic info extracted');
+    }
 
-3. **Leia o corpo do documento e identifique trechos normativos ou obrigatórios**, classificando-os como:
+    // Calculate confidence score
+    confidenceScore = calculateConfidenceScore(extractedData as ExtractedLicenseData);
 
-   ✅ **Condicionantes da Licença:**  
-   Tudo que for **obrigação direta e exigível** do empreendedor, com força de lei, norma ou resolução ambiental, incluindo:
-   - Entrega de relatórios
-   - Nomeação de responsável técnico com ART
-   - Regras de descarte de resíduos
-   - Medidas para emergências
-   - Uso de EPI, planos de controle, reuso de água, etc.
-   - Limites de emissão, ruído ou contaminação
-   - Cumprimento de Planos de Gerenciamento Ambiental, Logística Reversa, PRAD, etc.
-   - Condições para renovação, ampliação ou desativação do empreendimento
-   - Qualquer item que, se descumprido, possa gerar multa, advertência ou suspensão da licença
+    // Cleanup OpenAI file
+    try {
+      await fetch(`https://api.openai.com/v1/files/${openAIFile.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+      });
+      console.log('OpenAI file cleaned up');
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+    }
 
-   ⚠️ **Alertas e Observações:**
-   Trechos com avisos, recomendações, ressalvas legais e boas práticas, incluindo:
-   - Instruções sobre manter cópias no local
-   - Menções à revogação de licenças anteriores
-   - Avisos de que o documento não substitui alvarás municipais
-   - Lembretes de obrigações legais futuras
-   - Regras de publicidade da licença
-   - Declarações de validade ou autenticidade
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    finalStatus = 'failed';
+    processingLog.push(`Error: ${error.message}`);
+  }
 
-4. **🧠 CRITÉRIOS DE DECISÃO PARA CLASSIFICAR OS ITENS:**
+  // ALWAYS update the license with results - this is critical
+  try {
+    const licenseInfo = extractedData.license_info || {};
+    await supabaseClient
+      .from('licenses')
+      .update({
+        name: licenseInfo.company_name || licenseInfo.license_number || file.name.replace('.pdf', ''),
+        type: licenseInfo.license_type || 'LO',
+        process_number: licenseInfo.process_number,
+        issue_date: licenseInfo.issue_date,
+        expiration_date: licenseInfo.expiration_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        issuing_body: licenseInfo.issuer || 'Órgão Ambiental',
+        activity_description: licenseInfo.activity_type,
+        location: licenseInfo.location,
+        ai_processing_status: finalStatus,
+        ai_confidence_score: confidenceScore,
+        ai_extracted_data: extractedData,
+        compliance_score: Math.max(50, confidenceScore * 100)
+      })
+      .eq('id', newLicenseId);
+    
+    console.log(`License updated with status: ${finalStatus}`);
 
-Sempre que encontrar verbos como: "deverá", "fica obrigado", "é exigido", "será responsabilizado", "deve ser mantido", "cumprir", trate como condicionante.
+    // Save condicionantes if any were extracted
+    if (extractedData.condicionantes && extractedData.condicionantes.length > 0) {
+      console.log(`Inserting ${extractedData.condicionantes.length} condicionantes`);
+      const conditionsToInsert = extractedData.condicionantes.map((condicionante: any) => ({
+        license_id: newLicenseId,
+        company_id: companyId,
+        condition_text: condicionante.descricao_detalhada || condicionante.titulo_resumido,
+        condition_category: condicionante.categoria || 'Outros',
+        priority: mapPrioridade(condicionante.prioridade),
+        status: 'pending',
+        ai_extracted: true,
+        ai_confidence: confidenceScore,
+        legal_basis: condicionante.base_legal,
+        reference: condicionante.referencia
+      }));
 
-Quando encontrar expressões como: "esta licença não substitui", "esta licença revoga", "recomenda-se", "caso ocorra", "orienta-se", classifique como alerta ou observação.
+      const { error: condInsertError } = await supabaseClient
+        .from('license_conditions')
+        .insert(conditionsToInsert);
+      
+      if (condInsertError) {
+        console.error('Error inserting license conditions:', condInsertError);
+      } else {
+        console.log('License conditions inserted successfully');
+      }
+    }
 
-Use legislação ambiental brasileira atualizada como referência (ex: CONAMA, NBRs da ABNT, Leis Federais, Portarias Estaduais).
+    // Save alertas if any were extracted
+    if (extractedData.alertas && extractedData.alertas.length > 0) {
+      console.log(`Inserting ${extractedData.alertas.length} alertas`);
+      const alertsToInsert = extractedData.alertas.map((alerta: any) => ({
+        license_id: newLicenseId,
+        company_id: companyId,
+        alert_type: alerta.tipo_alerta || 'observacao_geral',
+        title: alerta.titulo,
+        message: alerta.mensagem,
+        severity: mapSeveridade(alerta.severidade),
+        action_required: alerta.severidade === 'crítica' || alerta.severidade === 'alta',
+        is_resolved: false,
+        metadata: {
+          tipo_original: alerta.tipo_alerta,
+          severidade_original: alerta.severidade
+        }
+      }));
 
-📦 **SAÍDA FINAL - RETORNE APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA EXATA:**
+      const { error: alertInsertError } = await supabaseClient
+        .from('license_alerts')
+        .insert(alertsToInsert);
+      
+      if (alertInsertError) {
+        console.error('Error inserting license alerts:', alertInsertError);
+      } else {
+        console.log('License alerts inserted successfully');
+      }
+    }
 
+    // Update document status
+    await supabaseClient
+      .from('documents')
+      .update({
+        ai_processing_status: finalStatus,
+        ai_confidence_score: confidenceScore
+      })
+      .eq('id', document.id);
+
+  } catch (updateError) {
+    console.error('Error updating license with results:', updateError);
+    // Try one more time to at least mark as failed
+    try {
+      await supabaseClient
+        .from('licenses')
+        .update({
+          ai_processing_status: 'failed',
+          name: file.name.replace('.pdf', '')
+        })
+        .eq('id', newLicenseId);
+    } catch (fallbackError) {
+      console.error('Even fallback update failed:', fallbackError);
+    }
+  }
+
+  const processingTime = Date.now() - startTime;
+  console.log(`Processing completed in ${processingTime}ms with status: ${finalStatus}`);
+  console.log('Processing log:', processingLog);
+
+  return new Response(JSON.stringify({
+    success: true,
+    licenseId: newLicenseId,
+    documentId: document.id,
+    status: finalStatus,
+    confidence: confidenceScore,
+    processingTime,
+    extractedCount: {
+      license_info: extractedData.license_info ? 1 : 0,
+      condicionantes: extractedData.condicionantes?.length || 0,
+      alertas: extractedData.alertas?.length || 0
+    },
+    message: finalStatus === 'completed' 
+      ? 'Análise concluída com sucesso!' 
+      : finalStatus === 'needs_review'
+      ? 'Análise parcial - requer revisão'
+      : 'Análise falhou - tente novamente'
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// Extract a specific phase of data with timeout and retry
+async function extractPhase(openAIApiKey: string, fileId: string, phase: 'license_info' | 'condicionantes' | 'alertas', timeoutMs: number): Promise<any> {
+  try {
+    const phasePrompts = {
+      license_info: `Extraia APENAS as informações básicas da licença deste documento brasileiro:
 {
   "license_info": {
     "license_number": "string",
@@ -292,303 +474,180 @@ Use legislação ambiental brasileira atualizada como referência (ex: CONAMA, N
     "process_number": "string",
     "activity_type": "string",
     "location": "string"
-  },
+  }
+}
+RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`,
+      condicionantes: `Extraia APENAS as condicionantes obrigatórias deste documento de licença brasileira:
+{
   "condicionantes": [
     {
-      "titulo_resumido": "Frase curta e clara explicando o item",
-      "descricao_detalhada": "Trecho original ou versão parafraseada fiel do texto legal",
-      "categoria": "Resíduos|Supervisão Técnica|Atmosférico|Hídrico|Solo|Ruído|Emergencial|Renovação|Outros",
-      "base_legal": "Se houver, cite a lei, portaria, resolução ou norma",
-      "referencia": "Item ou parágrafo original, se aplicável",
+      "titulo_resumido": "string",
+      "descricao_detalhada": "string",
+      "categoria": "string",
+      "base_legal": "string",
+      "referencia": "string",
       "prioridade": "alta|média|baixa"
-    }
-  ],
-  "alertas": [
-    {
-      "titulo": "Título do alerta",
-      "mensagem": "Mensagem completa do alerta ou observação",
-      "severidade": "crítica|alta|média|baixa",
-      "tipo_alerta": "lembrete_renovacao|aviso_conformidade|observacao_geral|revogacao|publicidade"
     }
   ]
 }
-
-🛑 **IMPORTANTE:**
-- Ignore carimbos, selos, rodapés e repetições automáticas
-- Não use trechos duplicados ou genéricos
-- Priorize sempre o conteúdo jurídico, técnico e normativo
-- Caso não encontre condicionantes, retorne "condicionantes": []
-- RETORNE APENAS O JSON, SEM TEXTO ADICIONAL`,
-        model: 'gpt-4o-mini',
-        tools: [{ type: 'file_search' }],
-      }),
-    });
-
-    if (!assistantResponse.ok) {
-      throw new Error(`Assistant creation failed: ${await assistantResponse.text()}`);
+Procure por verbos como "deverá", "fica obrigado", "é exigido". RETORNE APENAS O JSON.`,
+      alertas: `Extraia APENAS os alertas e observações deste documento de licença brasileira:
+{
+  "alertas": [
+    {
+      "titulo": "string",
+      "mensagem": "string",
+      "severidade": "crítica|alta|média|baixa",
+      "tipo_alerta": "string"
     }
+  ]
+}
+Procure por avisos, recomendações, revogações. RETORNE APENAS O JSON.`
+    };
 
-    const assistant = await assistantResponse.json();
-    console.log('Assistant created:', assistant.id);
+    const assistant = await createAssistant(openAIApiKey, phasePrompts[phase]);
+    const thread = await createThread(openAIApiKey, fileId, phasePrompts[phase]);
+    const result = await runAssistantWithTimeout(openAIApiKey, assistant.id, thread.id, timeoutMs);
 
-    // Create thread with the file
-    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2',
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: 'user',
-            content: 'Analise este documento de licença ambiental brasileira e extraia todas as informações importantes no formato JSON especificado. Foque especialmente em identificar condicionantes obrigatórias e alertas importantes.',
-            attachments: [
-              {
-                file_id: openAIFile.id,
-                tools: [{ type: 'file_search' }]
-              }
-            ]
-          }
-        ]
-      }),
-    });
+    // Cleanup
+    await cleanupResources(openAIApiKey, assistant.id);
 
-    if (!threadResponse.ok) {
-      throw new Error(`Thread creation failed: ${await threadResponse.text()}`);
+    if (result) {
+      const parsed = extractJsonFromResponse(result);
+      return parsed[phase] || null;
     }
+    return null;
+    
+  } catch (error) {
+    console.error(`Phase ${phase} extraction failed:`, error);
+    return null;
+  }
+}
 
-    const thread = await threadResponse.json();
-    console.log('Thread created:', thread.id);
+// Helper functions for OpenAI operations
+async function createAssistant(openAIApiKey: string, instructions: string) {
+  const response = await fetch('https://api.openai.com/v1/assistants', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2',
+    },
+    body: JSON.stringify({
+      name: 'Licença Ambiental Extractor',
+      instructions,
+      model: 'gpt-4o-mini',
+      tools: [{ type: 'file_search' }],
+    }),
+  });
 
-    // Run the assistant
-    const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2',
-      },
-      body: JSON.stringify({
-        assistant_id: assistant.id,
-      }),
-    });
-
-    if (!runResponse.ok) {
-      throw new Error(`Run creation failed: ${await runResponse.text()}`);
-    }
-
-    const run = await runResponse.json();
-    console.log('Run started:', run.id);
-
-    // Poll for completion
-    let runStatus = run.status;
-    let attempts = 0;
-    const maxAttempts = 120; // 120 seconds max for thorough analysis
-
-    while (runStatus === 'queued' || runStatus === 'in_progress') {
-      if (attempts >= maxAttempts) {
-        throw new Error('AI analysis timeout');
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'OpenAI-Beta': 'assistants=v2',
-        },
-      });
-
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        runStatus = statusData.status;
-        console.log('Run status:', runStatus);
-      }
-      
-      attempts++;
-    }
-
-    if (runStatus === 'completed') {
-      // Get the messages
-      const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'OpenAI-Beta': 'assistants=v2',
-        },
-      });
-
-      if (messagesResponse.ok) {
-        const messages = await messagesResponse.json();
-        const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
-        
-        if (assistantMessage && assistantMessage.content[0]?.text?.value) {
-          const content = assistantMessage.content[0].text.value;
-          console.log('AI analysis result:', content.substring(0, 500));
-          
-          try {
-            // Robust JSON extraction: prefer ```json``` blocks, then any code block, then first {...}
-            let extractedData: ExtractedLicenseData | null = null;
-            const jsonBlock = content.match(/```json[\s\S]*?```/i);
-            const anyBlock = content.match(/```[\s\S]*?```/);
-            const tryParse = (txt: string) => { try { return JSON.parse(txt); } catch { return null; } };
-            if (jsonBlock) {
-              const inner = jsonBlock[0].replace(/```json/i,'').replace(/```$/,'').trim();
-              extractedData = tryParse(inner);
-            }
-            if (!extractedData && anyBlock) {
-              const inner = anyBlock[0].replace(/```/g,'').trim();
-              extractedData = tryParse(inner);
-            }
-            if (!extractedData) {
-              const braceMatch = content.match(/\{[\s\S]*\}/);
-              if (braceMatch) extractedData = tryParse(braceMatch[0]);
-            }
-            if (!extractedData) {
-              throw new Error('AI did not return valid JSON');
-            }
-            
-            console.log('Extracted data structure:', JSON.stringify(extractedData, null, 2));
-            
-            // Calculate confidence score based on new structure
-            const confidenceScore = calculateConfidenceScore(extractedData);
-              
-            // Update license with extracted data using new structure
-            const licenseInfo = extractedData.license_info || {};
-            await supabaseClient
-              .from('licenses')
-              .update({
-                name: licenseInfo.company_name || licenseInfo.license_number || file.name.replace('.pdf', ''),
-                type: licenseInfo.license_type || 'LO',
-                process_number: licenseInfo.process_number,
-                issue_date: licenseInfo.issue_date,
-                expiration_date: licenseInfo.expiration_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                issuing_body: licenseInfo.issuer || 'Órgão Ambiental',
-                activity_description: licenseInfo.activity_type,
-                location: licenseInfo.location,
-                ai_processing_status: 'completed',
-                ai_confidence_score: confidenceScore,
-                ai_extracted_data: extractedData,
-                compliance_score: 75 // Default score, can be enhanced later
-              })
-              .eq('id', newLicenseId);
-
-            console.log('License updated with basic info');
-
-            // Save extracted condicionantes to database
-            if (extractedData.condicionantes && extractedData.condicionantes.length > 0) {
-              console.log(`Inserting ${extractedData.condicionantes.length} condicionantes`);
-              const conditionsToInsert = extractedData.condicionantes.map((condicionante: any) => ({
-                license_id: newLicenseId,
-                company_id: companyId,
-                condition_text: condicionante.descricao_detalhada || condicionante.titulo_resumido,
-                condition_category: condicionante.categoria || 'Outros',
-                priority: mapPrioridade(condicionante.prioridade),
-                frequency: null, // Can be enhanced later
-                due_date: null, // Can be enhanced later
-                status: 'pending',
-                ai_extracted: true,
-                ai_confidence: confidenceScore,
-                compliance_requirements: condicionante.descricao_detalhada,
-                legal_basis: condicionante.base_legal,
-                reference: condicionante.referencia
-              }));
-
-              const { error: condInsertError } = await supabaseClient
-                .from('license_conditions')
-                .insert(conditionsToInsert);
-              if (condInsertError) {
-                console.error('Error inserting license conditions:', condInsertError);
-              } else {
-                console.log('License conditions inserted successfully');
-              }
-            } else {
-              console.log('No condicionantes found to insert');
-            }
-
-            // Save alertas to database
-            if (extractedData.alertas && extractedData.alertas.length > 0) {
-              console.log(`Inserting ${extractedData.alertas.length} alertas`);
-              const alertsToInsert = extractedData.alertas.map((alerta: any) => ({
-                license_id: newLicenseId, 
-                company_id: companyId,
-                alert_type: alerta.tipo_alerta || 'observacao_geral',
-                title: alerta.titulo,
-                message: alerta.mensagem,
-                severity: mapSeveridade(alerta.severidade),
-                action_required: alerta.severidade === 'crítica' || alerta.severidade === 'alta',
-                due_date: null, // Can be enhanced later
-                is_resolved: false,
-                metadata: {
-                  tipo_original: alerta.tipo_alerta,
-                  severidade_original: alerta.severidade
-                }
-              }));
-
-              const { error: alertInsertError } = await supabaseClient
-                .from('license_alerts')
-                .insert(alertsToInsert);
-              if (alertInsertError) {
-                console.error('Error inserting license alerts:', alertInsertError);
-              } else {
-                console.log('License alerts inserted successfully');
-              }
-            } else {
-              console.log('No alertas found to insert');
-            }
-
-            // Update document status
-            await supabaseClient
-              .from('documents')
-              .update({
-                ai_processing_status: 'completed',
-                ai_confidence_score: confidenceScore
-              })
-              .eq('id', document.id);
-
-            console.log('License updated with AI data successfully');
-          } catch (parseError) {
-            console.error('Error parsing AI response:', parseError);
-            console.error('Raw AI response:', content);
-          }
-        }
-      }
-    }
-
-    // Cleanup OpenAI resources
-    try {
-      await fetch(`https://api.openai.com/v1/files/${openAIFile.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-        },
-      });
-      console.log('OpenAI file cleaned up');
-    } catch (cleanupError) {
-      console.error('Cleanup error:', cleanupError);
-    }
-
-  } catch (aiError) {
-    console.error('AI analysis error:', aiError);
-    // Update license as failed but don't throw error - upload was successful
-    await supabaseClient
-      .from('licenses')
-      .update({
-        ai_processing_status: 'failed',
-        name: file.name.replace('.pdf', '')
-      })
-      .eq('id', newLicenseId);
+  if (!response.ok) {
+    throw new Error(`Assistant creation failed: ${await response.text()}`);
   }
 
-  return new Response(JSON.stringify({
-    success: true,
-    licenseId: newLicenseId,
-    documentId: document.id,
-    message: 'Upload realizado com sucesso. Análise IA iniciada.'
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  return await response.json();
+}
+
+async function createThread(openAIApiKey: string, fileId: string, message: string) {
+  const response = await fetch('https://api.openai.com/v1/threads', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2',
+    },
+    body: JSON.stringify({
+      messages: [{
+        role: 'user',
+        content: message,
+        attachments: [{
+          file_id: fileId,
+          tools: [{ type: 'file_search' }]
+        }]
+      }]
+    }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Thread creation failed: ${await response.text()}`);
+  }
+
+  return await response.json();
+}
+
+async function runAssistantWithTimeout(openAIApiKey: string, assistantId: string, threadId: string, timeoutMs: number): Promise<string | null> {
+  const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2',
+    },
+    body: JSON.stringify({ assistant_id: assistantId }),
+  });
+
+  if (!runResponse.ok) {
+    throw new Error(`Run creation failed: ${await runResponse.text()}`);
+  }
+
+  const run = await runResponse.json();
+  const startTime = Date.now();
+  let attempts = 0;
+  const maxAttempts = Math.floor(timeoutMs / 1000);
+
+  // Poll for completion with timeout
+  while (Date.now() - startTime < timeoutMs && attempts < maxAttempts) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'OpenAI-Beta': 'assistants=v2',
+      },
+    });
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json();
+      
+      if (statusData.status === 'completed') {
+        // Get messages
+        const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'OpenAI-Beta': 'assistants=v2',
+          },
+        });
+
+        if (messagesResponse.ok) {
+          const messages = await messagesResponse.json();
+          const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
+          return assistantMessage?.content[0]?.text?.value || null;
+        }
+        break;
+      } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
+        console.error('Assistant run failed:', statusData);
+        break;
+      }
+    }
+    
+    attempts++;
+  }
+
+  return null;
+}
+
+async function cleanupResources(openAIApiKey: string, assistantId: string) {
+  try {
+    await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'OpenAI-Beta': 'assistants=v2',
+      },
+    });
+  } catch (error) {
+    console.error('Cleanup error:', error);
+  }
 }
 
 // Handle AI analysis for existing license
