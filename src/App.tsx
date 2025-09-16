@@ -41,6 +41,7 @@ import PublicForm from "./pages/PublicForm";
 import Documentos from "./pages/Documentos";
 import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
 import LicenseAnalysis from "@/pages/LicenseAnalysis";
+import LicenseWorkflowPage from "@/components/LicenseWorkflowPage";
 import LicenseForm from "@/pages/LicenseForm";
 
 import TestExtraction from "./pages/TestExtraction";
@@ -135,14 +136,39 @@ const App = () => (
                 <LicenciamentoAnalise />
               </ProtectedRoute>
             } />
-            <Route path="/licenciamento/analise" element={
+            <Route path="/licenciamento/workflow" element={
               <ProtectedRoute>
-                <LicenseAnalysis />
+                <LicenseWorkflowPage />
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/reconciliacao" element={
               <ProtectedRoute>
-                <LicenseAnalysis />
+                <ReconciliacaoDocumentos />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/novo" element={
+              <ProtectedRoute requiredRole="Editor">
+                <LicenseForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/nova" element={
+              <ProtectedRoute requiredRole="Editor">
+                <LicenseForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/:id" element={
+              <ProtectedRoute>
+                <LicenseDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/:id/editar" element={
+              <ProtectedRoute requiredRole="Editor">
+                <LicenseForm />
+              </ProtectedRoute>
+            } />
+            <Route path="/licenciamento/:id/analise" element={
+              <ProtectedRoute>
+                <LicenciamentoAnalise />
               </ProtectedRoute>
             } />
             <Route path="/residuos" element={
