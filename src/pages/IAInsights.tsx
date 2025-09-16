@@ -1,12 +1,14 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MainLayout } from "@/components/MainLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
+import { supabase } from "@/integrations/supabase/client"
 import { 
   Sparkles, 
   AlertTriangle, 
@@ -16,137 +18,72 @@ import {
   ArrowUpDown,
   ExternalLink,
   CheckCircle,
-  X
+  X,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Minus
 } from "lucide-react"
 
-interface InsightCard {
+interface AIInsight {
   id: string
-  tipo: "anomalia" | "oportunidade" | "risco"
-  titulo: string
-  descricao: string
-  metrica: string
-  acaoSugerida: string
-  timestamp: Date
-  relevancia: number
-  lido: boolean
+  card_type: string
+  insight_type: 'contextual' | 'comparative' | 'predictive' | 'recommendation'
+  message: string
+  detailed_analysis?: string
+  recommendations: Array<{
+    id: string
+    title: string
+    description: string
+    action_type: 'quick_win' | 'strategic' | 'urgent'
+    estimated_impact: string
+    implementation_effort: 'low' | 'medium' | 'high'
+    target_module?: string
+  }>
+  confidence: number
+  benchmark_data?: {
+    current_value: string
+    sector_average: string
+    best_practice: string
+    percentile: string
+  }
+  trigger_condition: string
+  created_at: string
+  read?: boolean
 }
 
-const mockInsights: InsightCard[] = [
-  {
-    id: "1",
-    tipo: "anomalia",
-    titulo: "Pico Inesperado no Consumo de Energia da Unidade SP",
-    descricao: "Detectamos um aumento de 23% no consumo de eletricidade na Unidade SP na última semana, o que está significativamente fora do padrão histórico para este período.",
-    metrica: "Consumo Registrado: 18.450 kWh (vs. Média de 15.000 kWh)",
-    acaoSugerida: "Recomendamos verificar o sistema de climatização (HVAC) ou possíveis falhas em equipamentos de grande porte.",
-    timestamp: new Date("2024-09-08"),
-    relevancia: 95,
-    lido: false
-  },
-  {
-    id: "2",
-    tipo: "oportunidade",
-    titulo: "Potencial de Redução de Custos com Resíduos Classe II A",
-    descricao: "Analisando seus registros, notamos que 85% dos seus resíduos Classe II A (não-inertes) são compostos por papel e papelão. Empresas com perfil semelhante atingem taxas de reciclagem 20% maiores para este material.",
-    metrica: "Taxa de Reciclagem Atual (Papel): 65%",
-    acaoSugerida: "Considere renegociar com a cooperativa de reciclagem ou iniciar uma campanha interna de conscientização. Simule o impacto desta ação em nosso simulador.",
-    timestamp: new Date("2024-09-07"),
-    relevancia: 88,
-    lido: false
-  },
-  {
-    id: "3",
-    tipo: "risco",
-    titulo: "Ritmo Atual Pode Não Atingir a Meta de Redução de Emissões",
-    descricao: "Com base na projeção de suas emissões nos últimos 6 meses, há um risco de 75% de que a meta de 'Reduzir emissões em 15% até Dezembro de 2025' não seja alcançada se o ritmo atual for mantido.",
-    metrica: "Progresso Necessário: 6.5% ao semestre. Progresso Atual: 4.8%",
-    acaoSugerida: "Recomendamos revisar as iniciativas em andamento ou explorar novas ações, como as sugeridas no simulador, para acelerar a redução.",
-    timestamp: new Date("2024-09-06"),
-    relevancia: 92,
-    lido: true
-  },
-  {
-    id: "4",
-    tipo: "anomalia",
-    titulo: "Aumento Atípico na Geração de Resíduos Classe I",
-    descricao: "Identificamos um crescimento de 18% na geração de resíduos perigosos (Classe I) na última quinzena, concentrado principalmente na área de produção.",
-    metrica: "Volume Gerado: 2.8 toneladas (vs. Média de 2.4 toneladas)",
-    acaoSugerida: "Investigate possíveis alterações no processo produtivo ou falhas no manuseio de materiais perigosos.",
-    timestamp: new Date("2024-09-05"),
-    relevancia: 87,
-    lido: false
-  },
-  {
-    id: "5",
-    tipo: "oportunidade",
-    titulo: "Otimização de Rotas Pode Reduzir Emissões do Transporte",
-    descricao: "Nossa análise das rotas de transporte dos últimos 3 meses identificou que 35% dos trajetos poderiam ser otimizados, reduzindo distância total percorrida.",
-    metrica: "Potencial de Redução: 280 km/semana (-12% das emissões de transporte)",
-    acaoSugerida: "Implemente um sistema de roteirização inteligente ou revise manualmente as rotas de maior impacto.",
-    timestamp: new Date("2024-09-04"),
-    relevancia: 82,
-    lido: true
-  },
-  {
-    id: "6",
-    tipo: "risco",
-    titulo: "Prazo de Renovação da LO se Aproxima",
-    descricao: "A Licença de Operação da Unidade RJ vencerá em 45 dias. Baseado no histórico de processos similares, recomendamos iniciar o protocolo de renovação imediatamente.",
-    metrica: "Prazo Restante: 45 dias (Processo típico: 60-90 dias)",
-    acaoSugerida: "Inicie imediatamente o processo de renovação da LO junto ao órgão ambiental competente.",
-    timestamp: new Date("2024-09-03"),
-    relevancia: 96,
-    lido: false
-  },
-  {
-    id: "7",
-    tipo: "oportunidade",
-    titulo: "Substituição por Energia Solar Viável na Sede",
-    descricao: "Com base no perfil de consumo energético e análise de viabilidade, a instalação de painéis solares na sede pode suprir 70% da demanda energética atual.",
-    metrica: "ROI Projetado: 4.2 anos (Economia anual: R$ 185.000)",
-    acaoSugerida: "Solicite orçamentos para sistemas fotovoltaicos e avalie incentivos fiscais disponíveis.",
-    timestamp: new Date("2024-09-02"),
-    relevancia: 85,
-    lido: true
-  },
-  {
-    id: "8",
-    tipo: "anomalia",
-    titulo: "Consumo de Água Acima do Esperado na Unidade MG",
-    descricao: "O consumo de água industrial na Unidade MG apresentou aumento de 28% no último mês, sem correlação com aumento na produção.",
-    metrica: "Consumo Registrado: 1.250 m³ (vs. Média de 980 m³)",
-    acaoSugerida: "Verifique possíveis vazamentos na rede hidráulica ou alterações nos processos que utilizam água.",
-    timestamp: new Date("2024-09-01"),
-    relevancia: 79,
-    lido: false
-  }
-]
-
 const categorias = [
-  { key: "todos", label: "Todos", count: 8 },
-  { key: "oportunidade", label: "Oportunidades", count: 3 },
-  { key: "risco", label: "Riscos", count: 2 },
-  { key: "anomalia", label: "Anomalias", count: 3 }
+  { key: "todos", label: "Todos Insights" },
+  { key: "recommendation", label: "Recomendações" },
+  { key: "predictive", label: "Predições" },
+  { key: "comparative", label: "Comparações" },
+  { key: "contextual", label: "Contextuais" }
 ]
 
 const tipoConfig = {
-  anomalia: {
-    icon: AlertTriangle,
-    label: "Anomalia Detectada",
-    colorClass: "text-orange-600 border-orange-200 bg-orange-50",
-    badgeClass: "bg-orange-100 text-orange-800"
-  },
-  oportunidade: {
+  recommendation: {
     icon: Lightbulb,
-    label: "Oportunidade de Melhoria", 
-    colorClass: "text-green-600 border-green-200 bg-green-50",
+    label: "Recomendação de IA",
+    colorClass: "text-blue-600 border-blue-200 bg-blue-50",
+    badgeClass: "bg-blue-100 text-blue-800"
+  },
+  predictive: {
+    icon: TrendingUp,
+    label: "Predição Inteligente", 
+    colorClass: "text-purple-600 border-purple-200 bg-purple-50",
+    badgeClass: "bg-purple-100 text-purple-800"
+  },
+  comparative: {
+    icon: TrendingDown,
+    label: "Análise Comparativa",
+    colorClass: "text-green-600 border-green-200 bg-green-50", 
     badgeClass: "bg-green-100 text-green-800"
   },
-  risco: {
+  contextual: {
     icon: Shield,
-    label: "Alerta de Risco",
-    colorClass: "text-red-600 border-red-200 bg-red-50", 
-    badgeClass: "bg-red-100 text-red-800"
+    label: "Insight Contextual",
+    colorClass: "text-orange-600 border-orange-200 bg-orange-50",
+    badgeClass: "bg-orange-100 text-orange-800"
   }
 }
 
@@ -154,58 +91,143 @@ export default function IAInsights() {
   const navigate = useNavigate()
   const [filtroCategoria, setFiltroCategoria] = useState("todos")
   const [ordenacao, setOrdenacao] = useState("relevantes")
-  const [insights, setInsights] = useState<InsightCard[]>(mockInsights)
+  const [insights, setInsights] = useState<AIInsight[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchInsights = async () => {
+    try {
+      setLoading(true)
+      console.log('Fetching AI insights...')
+
+      // Get insights for different card types
+      const cardTypes = [
+        { type: 'esg_score', data: { overall_esg_score: 45 } },
+        { type: 'emissions', data: { total_emissions: 75000 } },
+        { type: 'licenses', data: { active_licenses: 5, expiring_soon: 2 } },
+        { type: 'waste', data: { total_waste: 120 } }
+      ]
+
+      const allInsights: AIInsight[] = []
+
+      for (const cardType of cardTypes) {
+        try {
+          const { data, error } = await supabase.functions.invoke('ai-insights-engine', {
+            body: {
+              card_type: cardType.type,
+              card_data: cardType.data,
+              context: {
+                timestamp: new Date().toISOString()
+              }
+            }
+          })
+
+          if (error) {
+            console.error(`Error fetching insights for ${cardType.type}:`, error)
+            continue
+          }
+
+          if (data?.insights && Array.isArray(data.insights)) {
+            allInsights.push(...data.insights)
+          }
+        } catch (error) {
+          console.error(`Failed to fetch insights for ${cardType.type}:`, error)
+        }
+      }
+
+      console.log('Fetched insights:', allInsights)
+      setInsights(allInsights)
+
+    } catch (error) {
+      console.error('Error fetching insights:', error)
+      toast.error('Erro ao carregar insights da IA')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const refreshInsights = async () => {
+    setRefreshing(true)
+    await fetchInsights()
+    setRefreshing(false)
+    toast.success('Insights atualizados!')
+  }
+
+  useEffect(() => {
+    fetchInsights()
+  }, [])
 
   const insightsFiltrados = insights
-    .filter(insight => filtroCategoria === "todos" || insight.tipo === filtroCategoria)
+    .filter(insight => filtroCategoria === "todos" || insight.insight_type === filtroCategoria)
     .sort((a, b) => {
       if (ordenacao === "relevantes") {
-        return b.relevancia - a.relevancia
+        return b.confidence - a.confidence
       }
-      return b.timestamp.getTime() - a.timestamp.getTime()
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
 
   const marcarComoLido = (id: string) => {
     setInsights(prev => prev.map(insight => 
-      insight.id === id ? { ...insight, lido: true } : insight
+      insight.id === id ? { ...insight, read: true } : insight
     ))
     toast.success("Insight marcado como lido")
   }
 
-  const dispensarAlerta = (id: string) => {
+  const dispensarInsight = (id: string) => {
     setInsights(prev => prev.filter(insight => insight.id !== id))
-    toast.success("Alerta dispensado")
+    toast.success("Insight dispensado")
   }
 
-  const criarTarefa = () => {
-    toast.success("Tarefa de verificação criada com sucesso")
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'urgent': return AlertTriangle
+      case 'strategic': return TrendingUp  
+      case 'quick_win': return CheckCircle
+      default: return ExternalLink
+    }
   }
 
-  const navigateToSimulator = () => {
-    navigate("/simulador")
+  const getActionColor = (actionType: string) => {
+    switch (actionType) {
+      case 'urgent': return 'text-red-600'
+      case 'strategic': return 'text-blue-600'
+      case 'quick_win': return 'text-green-600'
+      default: return 'text-gray-600'
+    }
   }
 
-  const navigateToMetas = () => {
-    navigate("/metas")
+  const navigateToModule = (module?: string) => {
+    switch (module) {
+      case 'emissions':
+        navigate('/inventario-gee')
+        break
+      case 'licenses':  
+        navigate('/licenciamento')
+        break
+      case 'performance':
+        navigate('/desempenho')
+        break
+      case 'goals':
+        navigate('/metas')
+        break
+      default:
+        navigate('/dashboard-ghg')
+    }
   }
 
-  const navigateToLicenciamento = () => {
-    navigate("/licenciamento")
-  }
-
-  const renderInsightCard = (insight: InsightCard) => {
-    const config = tipoConfig[insight.tipo]
+  const renderInsightCard = (insight: AIInsight) => {
+    const config = tipoConfig[insight.insight_type] || tipoConfig.contextual
     const IconComponent = config.icon
     
     return (
       <Card 
         key={insight.id} 
         className={`relative transition-all duration-200 hover:shadow-lg ${config.colorClass} ${
-          !insight.lido ? 'ring-2 ring-primary/20' : ''
+          !insight.read ? 'ring-2 ring-primary/20' : ''
         }`}
       >
-        {!insight.lido && (
-          <div className="absolute -top-2 -right-2 w-3 h-3 bg-primary rounded-full" />
+        {!insight.read && (
+          <div className="absolute -top-2 -right-2 w-3 h-3 bg-primary rounded-full animate-pulse" />
         )}
         
         <CardHeader>
@@ -215,89 +237,161 @@ export default function IAInsights() {
                 <IconComponent className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <Badge variant="secondary" className={config.badgeClass}>
-                  {config.label}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className={config.badgeClass}>
+                    {config.label}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {Math.round(insight.confidence * 100)}% confiança
+                  </Badge>
+                </div>
                 <CardTitle className="text-lg leading-tight">
-                  {insight.titulo}
+                  {insight.message}
                 </CardTitle>
               </div>
             </div>
             <div className="text-xs text-muted-foreground whitespace-nowrap">
-              {insight.timestamp.toLocaleDateString('pt-BR')}
+              {new Date(insight.created_at).toLocaleDateString('pt-BR')}
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {insight.descricao}
-          </p>
+          {insight.detailed_analysis && (
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {insight.detailed_analysis}
+            </p>
+          )}
           
-          <div className="p-3 bg-background/60 rounded-lg border">
-            <p className="text-sm font-medium text-foreground">
-              {insight.metrica}
-            </p>
-          </div>
+          {insight.benchmark_data && (
+            <div className="p-3 bg-background/60 rounded-lg border space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Benchmark Setorial
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Atual:</span>
+                  <span className="ml-2 font-medium">{insight.benchmark_data.current_value}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Média:</span>
+                  <span className="ml-2 font-medium">{insight.benchmark_data.sector_average}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Percentil:</span>
+                  <span className="ml-2 font-medium">{insight.benchmark_data.percentile}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Best-in-class:</span>
+                  <span className="ml-2 font-medium">{insight.benchmark_data.best_practice}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-          <div className="p-3 bg-background/40 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              <strong>Ação sugerida:</strong> {insight.acaoSugerida}
-            </p>
-          </div>
+          {insight.recommendations && insight.recommendations.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-foreground">
+                Recomendações da IA:
+              </h4>
+              {insight.recommendations.map((rec) => {
+                const ActionIcon = getActionIcon(rec.action_type)
+                return (
+                  <div key={rec.id} className="p-3 bg-background/40 rounded-lg border-l-4 border-l-primary/50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <ActionIcon className={`w-4 h-4 ${getActionColor(rec.action_type)}`} />
+                          <h5 className="text-sm font-medium">{rec.title}</h5>
+                          <Badge variant="outline" className="text-xs">
+                            {rec.implementation_effort} esforço
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{rec.description}</p>
+                        <p className="text-xs text-primary font-medium">
+                          Impacto estimado: {rec.estimated_impact}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2 pt-2">
-            {insight.tipo === "anomalia" && (
-              <>
-                <Button onClick={criarTarefa} size="sm" className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  Criar Tarefa de Verificação
-                </Button>
-                <Button 
-                  onClick={() => dispensarAlerta(insight.id)}
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  Dispensar Alerta
-                </Button>
-              </>
+            {insight.recommendations.some(r => r.target_module) && (
+              <Button 
+                onClick={() => navigateToModule(insight.recommendations.find(r => r.target_module)?.target_module)}
+                size="sm" 
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ir para Módulo
+              </Button>
             )}
             
-            {insight.tipo === "oportunidade" && (
-              <>
-                <Button onClick={navigateToSimulator} size="sm" className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  Ir para o Simulador
-                </Button>
-                <Button 
-                  onClick={() => marcarComoLido(insight.id)}
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Marcar como Lido
-                </Button>
-              </>
-            )}
+            <Button 
+              onClick={() => marcarComoLido(insight.id)}
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Marcar como Lido
+            </Button>
             
-            {insight.tipo === "risco" && (
-              <>
-                <Button onClick={navigateToMetas} size="sm" className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  Ver Detalhes da Meta
-                </Button>
-                <Button onClick={navigateToLicenciamento} size="sm" className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  Explorar Ações Corretivas
-                </Button>
-              </>
-            )}
+            <Button 
+              onClick={() => dispensarInsight(insight.id)}
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2 text-muted-foreground"
+            >
+              <X className="w-4 h-4" />
+              Dispensar
+            </Button>
           </div>
         </CardContent>
       </Card>
+    )
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+              <h1 className="text-3xl font-bold tracking-tight">Central de Inteligência & Insights</h1>
+            </div>
+            <p className="text-muted-foreground">
+              A IA está analisando seus dados para gerar insights personalizados...
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="w-32 h-4" />
+                      <Skeleton className="w-64 h-5" />
+                    </div>
+                  </div>
+                  <Skeleton className="w-full h-16" />
+                  <div className="flex gap-2">
+                    <Skeleton className="w-24 h-8" />
+                    <Skeleton className="w-20 h-8" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </MainLayout>
     )
   }
 
@@ -306,12 +400,24 @@ export default function IAInsights() {
       <div className="space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight">Central de Inteligência & Insights</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              <h1 className="text-3xl font-bold tracking-tight">Central de Inteligência & Insights</h1>
+            </div>
+            <Button 
+              onClick={refreshInsights} 
+              disabled={refreshing}
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Atualizando...' : 'Atualizar'}
+            </Button>
           </div>
           <p className="text-muted-foreground">
-            Nossos algoritmos estão sempre analisando seus dados para ajudá-lo a tomar as melhores decisões.
+            Nossa IA GPT-4o analisa seus dados em tempo real para gerar insights acionáveis e recomendações personalizadas.
           </p>
         </div>
 
@@ -321,7 +427,7 @@ export default function IAInsights() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Filter className="w-4 h-4" />
-                Filtrar por Categoria
+                Filtrar por Tipo
               </div>
               <div className="flex flex-wrap gap-2">
                 {categorias.map((categoria) => (
@@ -334,7 +440,10 @@ export default function IAInsights() {
                   >
                     {categoria.label}
                     <Badge variant="secondary" className="ml-1">
-                      {categoria.count}
+                      {categoria.key === "todos" 
+                        ? insights.length 
+                        : insights.filter(i => i.insight_type === categoria.key).length
+                      }
                     </Badge>
                   </Button>
                 ))}
@@ -351,7 +460,7 @@ export default function IAInsights() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="relevantes">Mais Relevantes</SelectItem>
+                  <SelectItem value="relevantes">Maior Confiança</SelectItem>
                   <SelectItem value="recentes">Mais Recentes</SelectItem>
                 </SelectContent>
               </Select>
@@ -366,12 +475,29 @@ export default function IAInsights() {
               insightsFiltrados.map(renderInsightCard)
             ) : (
               <Card className="p-8 text-center">
-                <div className="space-y-2">
-                  <Sparkles className="w-8 h-8 mx-auto text-muted-foreground" />
-                  <h3 className="text-lg font-medium">Nenhum insight encontrado</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Tente ajustar os filtros para ver mais insights.
-                  </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center w-16 h-16 mx-auto bg-muted rounded-full">
+                    <Sparkles className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">Nenhum insight encontrado</h3>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      {insights.length === 0 
+                        ? "A IA está processando seus dados. Novos insights aparecerão em breve."
+                        : "Tente ajustar os filtros para ver insights de diferentes tipos."
+                      }
+                    </p>
+                    {insights.length === 0 && (
+                      <Button 
+                        onClick={refreshInsights} 
+                        className="mt-4"
+                        disabled={refreshing}
+                      >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                        Atualizar Análise
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </Card>
             )}
