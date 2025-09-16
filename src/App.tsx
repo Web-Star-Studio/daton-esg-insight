@@ -16,7 +16,8 @@ import InventarioGEE from "./pages/InventarioGEE";
 import DashboardGHG from "./pages/DashboardGHG";
 import Licenciamento from "./pages/Licenciamento";
 import LicenseDetails from "./pages/LicenseDetails";
-import { LicenciamentoAnalise } from "./pages/LicenciamentoAnalise";
+import LicenseForm from "@/pages/LicenseForm";
+import ProcessarLicenca from "./pages/ProcessarLicenca";
 import Residuos from "./pages/Residuos";
 import RegistrarDestinacao from "./pages/RegistrarDestinacao";
 import Metas from "./pages/Metas";
@@ -40,9 +41,6 @@ import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import PublicForm from "./pages/PublicForm";
 import Documentos from "./pages/Documentos";
 import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
-
-
-import LicenseForm from "@/pages/LicenseForm";
 
 import TestExtraction from "./pages/TestExtraction";
 import Auditoria from "./pages/Auditoria";
@@ -96,54 +94,15 @@ const App = () => (
                 <DashboardGHG />
               </ProtectedRoute>
             } />
+            {/* Licenciamento Routes - Organizadas */}
             <Route path="/licenciamento" element={
               <ProtectedRoute>
                 <Licenciamento />
               </ProtectedRoute>
             } />
-            <Route path="/licenciamento/nova" element={
-              <ProtectedRoute requiredRole="Editor">
-                <LicenseForm />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/teste" element={
+            <Route path="/licenciamento/processar" element={
               <ProtectedRoute>
-                <TestExtraction />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/nova" element={
-              <ProtectedRoute requiredRole="Editor">
-                <LicenseForm />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/:id" element={
-              <ProtectedRoute>
-                <LicenseDetails />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/:id/editar" element={
-              <ProtectedRoute requiredRole="Editor">
-                <LicenseForm />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/:id/analise" element={
-              <ProtectedRoute>
-                <LicenciamentoAnalise />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/analise" element={
-              <ProtectedRoute>
-                <LicenciamentoAnalise />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/workflow" element={
-              <ProtectedRoute>
-                <LicenciamentoAnalise />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/reconciliacao" element={
-              <ProtectedRoute>
-                <ReconciliacaoDocumentos />
+                <ProcessarLicenca />
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/novo" element={
@@ -151,11 +110,6 @@ const App = () => (
                 <LicenseForm />
               </ProtectedRoute>
             } />
-            <Route path="/licenciamento/nova" element={
-              <ProtectedRoute requiredRole="Editor">
-                <LicenseForm />
-              </ProtectedRoute>
-            } />
             <Route path="/licenciamento/:id" element={
               <ProtectedRoute>
                 <LicenseDetails />
@@ -164,11 +118,6 @@ const App = () => (
             <Route path="/licenciamento/:id/editar" element={
               <ProtectedRoute requiredRole="Editor">
                 <LicenseForm />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/:id/analise" element={
-              <ProtectedRoute>
-                <LicenciamentoAnalise />
               </ProtectedRoute>
             } />
             <Route path="/residuos" element={
