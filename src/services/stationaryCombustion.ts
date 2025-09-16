@@ -540,37 +540,79 @@ export async function importStationaryFuels(): Promise<{success: number; errors:
 
   for (const fuel of STATIONARY_FUELS) {
     try {
-      const { error } = await supabase
+      // Check if factor already exists
+      const { data: existingFactor } = await supabase
         .from('emission_factors')
-        .upsert({
-          name: fuel.name,
-          category: 'Combustão Estacionária',
-          activity_unit: fuel.activity_unit,
-          co2_factor: fuel.co2_factor,
-          ch4_factor: fuel.ch4_factor,
-          n2o_factor: fuel.n2o_factor,
-          source: fuel.source,
-          year_of_validity: 2025,
-          type: 'system',
-          fuel_type: fuel.fuel_type,
-          is_biofuel: fuel.is_biofuel,
-          calorific_value: fuel.calorific_value,
-          calorific_value_unit: fuel.calorific_value_unit,
-          density: fuel.density,
-          density_unit: fuel.density_unit,
-          biogenic_fraction: fuel.biogenic_fraction,
-          details_json: {
-            economic_sectors: fuel.economic_sectors,
-            fuel_properties: {
-              calorific_value: fuel.calorific_value,
-              calorific_value_unit: fuel.calorific_value_unit,
-              density: fuel.density,
-              density_unit: fuel.density_unit
+        .select('id')
+        .eq('name', fuel.name)
+        .eq('category', 'Combustão Estacionária')
+        .eq('source', fuel.source)
+        .eq('type', 'system')
+        .single();
+
+      let error;
+      if (existingFactor) {
+        // Update existing factor
+        const updateResult = await supabase
+          .from('emission_factors')
+          .update({
+            activity_unit: fuel.activity_unit,
+            co2_factor: fuel.co2_factor,
+            ch4_factor: fuel.ch4_factor,
+            n2o_factor: fuel.n2o_factor,
+            year_of_validity: 2025,
+            fuel_type: fuel.fuel_type,
+            is_biofuel: fuel.is_biofuel,
+            calorific_value: fuel.calorific_value,
+            calorific_value_unit: fuel.calorific_value_unit,
+            density: fuel.density,
+            density_unit: fuel.density_unit,
+            biogenic_fraction: fuel.biogenic_fraction,
+            details_json: {
+              economic_sectors: fuel.economic_sectors,
+              fuel_properties: {
+                calorific_value: fuel.calorific_value,
+                calorific_value_unit: fuel.calorific_value_unit,
+                density: fuel.density,
+                density_unit: fuel.density_unit
+              }
             }
-          }
-        }, {
-          onConflict: 'name,category,source'
-        });
+          })
+          .eq('id', existingFactor.id);
+        error = updateResult.error;
+      } else {
+        // Insert new factor
+        const insertResult = await supabase
+          .from('emission_factors')
+          .insert({
+            name: fuel.name,
+            category: 'Combustão Estacionária',
+            activity_unit: fuel.activity_unit,
+            co2_factor: fuel.co2_factor,
+            ch4_factor: fuel.ch4_factor,
+            n2o_factor: fuel.n2o_factor,
+            source: fuel.source,
+            year_of_validity: 2025,
+            type: 'system',
+            fuel_type: fuel.fuel_type,
+            is_biofuel: fuel.is_biofuel,
+            calorific_value: fuel.calorific_value,
+            calorific_value_unit: fuel.calorific_value_unit,
+            density: fuel.density,
+            density_unit: fuel.density_unit,
+            biogenic_fraction: fuel.biogenic_fraction,
+            details_json: {
+              economic_sectors: fuel.economic_sectors,
+              fuel_properties: {
+                calorific_value: fuel.calorific_value,
+                calorific_value_unit: fuel.calorific_value_unit,
+                density: fuel.density,
+                density_unit: fuel.density_unit
+              }
+            }
+          });
+        error = insertResult.error;
+      }
 
       if (error) {
         errors.push(`Erro ao importar ${fuel.name}: ${error.message}`);

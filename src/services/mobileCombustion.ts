@@ -313,30 +313,65 @@ export async function importMobileFuels(): Promise<{success: number; errors: str
 
   try {
     for (const fuel of MOBILE_FUELS) {
-      const { error } = await supabase
+      // Check if factor already exists
+      const { data: existingFactor } = await supabase
         .from('emission_factors')
-        .upsert({
-          name: fuel.name,
-          category: fuel.category,
-          source: fuel.source,
-          activity_unit: fuel.activity_unit,
-          co2_factor: fuel.co2_factor,
-          ch4_factor: fuel.ch4_factor,
-          n2o_factor: fuel.n2o_factor,
-          calorific_value: fuel.calorific_value,
-          calorific_value_unit: fuel.calorific_value_unit,
-          biogenic_fraction: fuel.biogenic_fraction,
-          fuel_type: fuel.fuel_type,
-          details_json: {
-            transport_mode: fuel.transport_mode,
-            vehicle_category: fuel.vehicle_category,
-            economic_sectors: fuel.economic_sectors
-          },
-          type: 'system',
-          validation_status: 'validated'
-        }, {
-          onConflict: 'name,category,source'
-        });
+        .select('id')
+        .eq('name', fuel.name)
+        .eq('category', fuel.category)
+        .eq('source', fuel.source)
+        .eq('type', 'system')
+        .single();
+
+      let error;
+      if (existingFactor) {
+        // Update existing factor
+        const updateResult = await supabase
+          .from('emission_factors')
+          .update({
+            activity_unit: fuel.activity_unit,
+            co2_factor: fuel.co2_factor,
+            ch4_factor: fuel.ch4_factor,
+            n2o_factor: fuel.n2o_factor,
+            calorific_value: fuel.calorific_value,
+            calorific_value_unit: fuel.calorific_value_unit,
+            biogenic_fraction: fuel.biogenic_fraction,
+            fuel_type: fuel.fuel_type,
+            details_json: {
+              transport_mode: fuel.transport_mode,
+              vehicle_category: fuel.vehicle_category,
+              economic_sectors: fuel.economic_sectors
+            },
+            validation_status: 'validated'
+          })
+          .eq('id', existingFactor.id);
+        error = updateResult.error;
+      } else {
+        // Insert new factor
+        const insertResult = await supabase
+          .from('emission_factors')
+          .insert({
+            name: fuel.name,
+            category: fuel.category,
+            source: fuel.source,
+            activity_unit: fuel.activity_unit,
+            co2_factor: fuel.co2_factor,
+            ch4_factor: fuel.ch4_factor,
+            n2o_factor: fuel.n2o_factor,
+            calorific_value: fuel.calorific_value,
+            calorific_value_unit: fuel.calorific_value_unit,
+            biogenic_fraction: fuel.biogenic_fraction,
+            fuel_type: fuel.fuel_type,
+            details_json: {
+              transport_mode: fuel.transport_mode,
+              vehicle_category: fuel.vehicle_category,
+              economic_sectors: fuel.economic_sectors
+            },
+            type: 'system',
+            validation_status: 'validated'
+          });
+        error = insertResult.error;
+      }
 
       if (error) {
         errors.push(`Erro ao importar ${fuel.name}: ${error.message}`);

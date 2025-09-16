@@ -467,30 +467,65 @@ export async function importAgricultureEmissionFactors(): Promise<{success: numb
 
   try {
     for (const factor of AGRICULTURE_EMISSION_FACTORS) {
-      const { error } = await supabase
+      // Check if factor already exists
+      const { data: existingFactor } = await supabase
         .from('emission_factors')
-        .upsert({
-          name: factor.name,
-          category: factor.category,
-          source: factor.source,
-          activity_unit: factor.activity_unit,
-          co2_factor: factor.co2_factor,
-          ch4_factor: factor.ch4_factor,
-          n2o_factor: factor.n2o_factor,
-          biogenic_fraction: factor.biogenic_fraction,
-          details_json: {
-            subcategory: factor.subcategory,
-            methodology: factor.methodology,
-            applicable_species: factor.applicable_species,
-            applicable_systems: factor.applicable_systems,
-            reference_conditions: factor.reference_conditions,
-            uncertainty_range: factor.uncertainty_range
-          },
-          type: 'system',
-          validation_status: 'validated'
-        }, {
-          onConflict: 'name,category,source'
-        });
+        .select('id')
+        .eq('name', factor.name)
+        .eq('category', factor.category)
+        .eq('source', factor.source)
+        .eq('type', 'system')
+        .single();
+
+      let error;
+      if (existingFactor) {
+        // Update existing factor
+        const updateResult = await supabase
+          .from('emission_factors')
+          .update({
+            activity_unit: factor.activity_unit,
+            co2_factor: factor.co2_factor,
+            ch4_factor: factor.ch4_factor,
+            n2o_factor: factor.n2o_factor,
+            biogenic_fraction: factor.biogenic_fraction,
+            details_json: {
+              subcategory: factor.subcategory,
+              methodology: factor.methodology,
+              applicable_species: factor.applicable_species,
+              applicable_systems: factor.applicable_systems,
+              reference_conditions: factor.reference_conditions,
+              uncertainty_range: factor.uncertainty_range
+            },
+            validation_status: 'validated'
+          })
+          .eq('id', existingFactor.id);
+        error = updateResult.error;
+      } else {
+        // Insert new factor
+        const insertResult = await supabase
+          .from('emission_factors')
+          .insert({
+            name: factor.name,
+            category: factor.category,
+            source: factor.source,
+            activity_unit: factor.activity_unit,
+            co2_factor: factor.co2_factor,
+            ch4_factor: factor.ch4_factor,
+            n2o_factor: factor.n2o_factor,
+            biogenic_fraction: factor.biogenic_fraction,
+            details_json: {
+              subcategory: factor.subcategory,
+              methodology: factor.methodology,
+              applicable_species: factor.applicable_species,
+              applicable_systems: factor.applicable_systems,
+              reference_conditions: factor.reference_conditions,
+              uncertainty_range: factor.uncertainty_range
+            },
+            type: 'system',
+            validation_status: 'validated'
+          });
+        error = insertResult.error;
+      }
 
       if (error) {
         errors.push(`Erro ao importar ${factor.name}: ${error.message}`);

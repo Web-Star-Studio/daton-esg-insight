@@ -91,16 +91,35 @@ export async function importRefrigerantFactors(
 
   for (const factor of factors) {
     try {
-      await supabase
+      // Check if factor already exists
+      const { data: existingFactor } = await supabase
         .from('refrigerant_factors')
-        .upsert({
-          ...factor,
-          category: factor.category || 'Emissões Fugitivas',
-          source: factor.source || 'GHG Protocol Brasil 2025.0.1',
-          is_kyoto_gas: factor.is_kyoto_gas || false
-        }, {
-          onConflict: 'refrigerant_code'
-        });
+        .select('id')
+        .eq('refrigerant_code', factor.refrigerant_code)
+        .single();
+
+      if (existingFactor) {
+        // Update existing factor
+        await supabase
+          .from('refrigerant_factors')
+          .update({
+            ...factor,
+            category: factor.category || 'Emissões Fugitivas',
+            source: factor.source || 'GHG Protocol Brasil 2025.0.1',
+            is_kyoto_gas: factor.is_kyoto_gas || false
+          })
+          .eq('id', existingFactor.id);
+      } else {
+        // Insert new factor
+        await supabase
+          .from('refrigerant_factors')
+          .insert({
+            ...factor,
+            category: factor.category || 'Emissões Fugitivas',
+            source: factor.source || 'GHG Protocol Brasil 2025.0.1',
+            is_kyoto_gas: factor.is_kyoto_gas || false
+          });
+      }
       successCount++;
     } catch (error) {
       console.error('Erro ao importar fator de refrigerante:', factor, error);

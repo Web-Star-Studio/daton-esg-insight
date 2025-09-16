@@ -108,14 +108,33 @@ export async function importConversionFactors(
 
   for (const factor of factors) {
     try {
-      await supabase
+      // Check if factor already exists
+      const { data: existingFactor } = await supabase
         .from('conversion_factors')
-        .upsert({
-          ...factor,
-          source: factor.source || 'GHG Protocol Brasil 2025.0.1'
-        }, {
-          onConflict: 'from_unit,to_unit,category'
-        });
+        .select('id')
+        .eq('from_unit', factor.from_unit)
+        .eq('to_unit', factor.to_unit)
+        .eq('category', factor.category)
+        .single();
+
+      if (existingFactor) {
+        // Update existing factor
+        await supabase
+          .from('conversion_factors')
+          .update({
+            conversion_factor: factor.conversion_factor,
+            source: factor.source || 'GHG Protocol Brasil 2025.0.1'
+          })
+          .eq('id', existingFactor.id);
+      } else {
+        // Insert new factor
+        await supabase
+          .from('conversion_factors')
+          .insert({
+            ...factor,
+            source: factor.source || 'GHG Protocol Brasil 2025.0.1'
+          });
+      }
       successCount++;
     } catch (error) {
       console.error('Erro ao importar fator:', factor, error);

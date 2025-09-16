@@ -363,32 +363,69 @@ export async function importIndustrialEmissionFactors(): Promise<{success: numbe
 
   try {
     for (const factor of INDUSTRIAL_EMISSION_FACTORS) {
-      const { error } = await supabase
+      // Check if factor already exists
+      const { data: existingFactor } = await supabase
         .from('emission_factors')
-        .upsert({
-          name: factor.name,
-          category: factor.category,
-          source: factor.source,
-          activity_unit: factor.activity_unit,
-          co2_factor: factor.co2_factor,
-          ch4_factor: factor.ch4_factor,
-          n2o_factor: factor.n2o_factor,
-          details_json: {
-            industry_sector: factor.industry_sector,
-            process_type: factor.process_type,
-            emission_factor: factor.emission_factor,
-            emission_factor_unit: factor.emission_factor_unit,
-            methodology: factor.methodology,
-            applicable_products: factor.applicable_products,
-            reference_conditions: factor.reference_conditions,
-            uncertainty_range: factor.uncertainty_range,
-            other_gases: factor.other_gases
-          },
-          type: 'system',
-          validation_status: 'validated'
-        }, {
-          onConflict: 'name,category,source'
-        });
+        .select('id')
+        .eq('name', factor.name)
+        .eq('category', factor.category)
+        .eq('source', factor.source)
+        .eq('type', 'system')
+        .single();
+
+      let error;
+      if (existingFactor) {
+        // Update existing factor
+        const updateResult = await supabase
+          .from('emission_factors')
+          .update({
+            activity_unit: factor.activity_unit,
+            co2_factor: factor.co2_factor,
+            ch4_factor: factor.ch4_factor,
+            n2o_factor: factor.n2o_factor,
+            details_json: {
+              industry_sector: factor.industry_sector,
+              process_type: factor.process_type,
+              emission_factor: factor.emission_factor,
+              emission_factor_unit: factor.emission_factor_unit,
+              methodology: factor.methodology,
+              applicable_products: factor.applicable_products,
+              reference_conditions: factor.reference_conditions,
+              uncertainty_range: factor.uncertainty_range,
+              other_gases: factor.other_gases
+            },
+            validation_status: 'validated'
+          })
+          .eq('id', existingFactor.id);
+        error = updateResult.error;
+      } else {
+        // Insert new factor
+        const insertResult = await supabase
+          .from('emission_factors')
+          .insert({
+            name: factor.name,
+            category: factor.category,
+            source: factor.source,
+            activity_unit: factor.activity_unit,
+            co2_factor: factor.co2_factor,
+            ch4_factor: factor.ch4_factor,
+            n2o_factor: factor.n2o_factor,
+            details_json: {
+              industry_sector: factor.industry_sector,
+              process_type: factor.process_type,
+              emission_factor: factor.emission_factor,
+              emission_factor_unit: factor.emission_factor_unit,
+              methodology: factor.methodology,
+              applicable_products: factor.applicable_products,
+              reference_conditions: factor.reference_conditions,
+              uncertainty_range: factor.uncertainty_range,
+              other_gases: factor.other_gases
+            },
+            type: 'system',
+            validation_status: 'validated'
+          });
+        error = insertResult.error;
+      }
 
       if (error) {
         errors.push(`Erro ao importar ${factor.name}: ${error.message}`);

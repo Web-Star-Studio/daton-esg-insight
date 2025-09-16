@@ -104,13 +104,35 @@ export async function getElectricityFactorSIN(date: Date): Promise<number> {
 
 // Inserir ou atualizar fatores variáveis
 export async function upsertVariableFactors(factors: Omit<VariableFactors, 'id' | 'created_at' | 'updated_at'>): Promise<VariableFactors> {
-  const { data, error } = await supabase
+  // Check if factor already exists
+  const { data: existingFactor } = await supabase
     .from('variable_factors')
-    .upsert(factors, {
-      onConflict: 'year,month'
-    })
-    .select()
+    .select('*')
+    .eq('year', factors.year)
+    .eq('month', factors.month)
     .single();
+
+  let data, error;
+  if (existingFactor) {
+    // Update existing factor
+    const result = await supabase
+      .from('variable_factors')
+      .update(factors)
+      .eq('id', existingFactor.id)
+      .select()
+      .single();
+    data = result.data;
+    error = result.error;
+  } else {
+    // Insert new factor
+    const result = await supabase
+      .from('variable_factors')
+      .insert(factors)
+      .select()
+      .single();
+    data = result.data;
+    error = result.error;
+  }
 
   if (error) {
     console.error('Erro ao inserir/atualizar fatores variáveis:', error);
