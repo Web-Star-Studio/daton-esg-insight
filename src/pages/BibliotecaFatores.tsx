@@ -12,6 +12,7 @@ import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
 import { ImportFactorsModal } from "@/components/ImportFactorsModal";
 import { ExportFactorsModal } from "@/components/ExportFactorsModal";
 import { ImportBrazilianFactorsButton } from "@/components/ImportBrazilianFactorsButton";
+import { ImportGHGProtocol2025Button } from "@/components/ImportGHGProtocol2025Button";
 import { EmissionFactorCard } from "@/components/EmissionFactorCard";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { useToast } from "@/hooks/use-toast";
@@ -155,6 +156,7 @@ export default function BibliotecaFatores() {
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
             </Button>
             <ImportBrazilianFactorsButton onImportComplete={() => loadData()} />
+            <ImportGHGProtocol2025Button onImportComplete={() => loadData()} />
             <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV/Excel

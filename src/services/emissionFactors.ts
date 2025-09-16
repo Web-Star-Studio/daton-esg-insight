@@ -26,6 +26,7 @@ export interface CreateEmissionFactorData {
   n2o_factor?: number;
   source: string;
   year_of_validity?: number;
+  details_json?: any;
 }
 
 // Obter todos os fatores de emissão (sistema + customizados da empresa)
