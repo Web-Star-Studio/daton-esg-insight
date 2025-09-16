@@ -534,7 +534,7 @@ export default function BibliotecaFatores() {
           factor={editingFactor}
         />
 
-        /* Unified Import Modal */
+        {/* Unified Import Modal */}
         <UnifiedFactorImportModal
           open={isImportModalOpen}
           onOpenChange={setIsImportModalOpen}
