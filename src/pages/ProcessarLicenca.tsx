@@ -7,6 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Upload, 
   Brain, 
@@ -16,7 +27,9 @@ import {
   CheckCircle,
   Clock,
   Eye,
-  FileText 
+  FileText,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +59,9 @@ export default function ProcessarLicenca() {
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
   const [reconciliationOpen, setReconciliationOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedLicenses, setSelectedLicenses] = useState<string[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   React.useEffect(() => {
     loadLicenses();
@@ -188,6 +204,77 @@ export default function ProcessarLicenca() {
         title: "Erro na reconciliação",
         description: "Tente novamente"
       });
+    }
+  };
+
+  const handleSelectLicense = (licenseId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedLicenses(prev => [...prev, licenseId]);
+    } else {
+      setSelectedLicenses(prev => prev.filter(id => id !== licenseId));
+    }
+  };
+
+  const handleSelectAll = (licenses: License[], checked: boolean) => {
+    const licenseIds = licenses.map(l => l.id);
+    if (checked) {
+      setSelectedLicenses(prev => [...new Set([...prev, ...licenseIds])]);
+    } else {
+      setSelectedLicenses(prev => prev.filter(id => !licenseIds.includes(id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    setDeleting(true);
+    try {
+      // Delete documents first
+      for (const licenseId of selectedLicenses) {
+        const { error: docsError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('related_id', licenseId)
+          .eq('related_model', 'license');
+        
+        if (docsError) throw docsError;
+
+        // Delete license conditions
+        await supabase
+          .from('license_conditions')
+          .delete()
+          .eq('license_id', licenseId);
+
+        // Delete license alerts
+        await supabase
+          .from('license_alerts')
+          .delete()
+          .eq('license_id', licenseId);
+      }
+      
+      // Delete licenses
+      const { error } = await supabase
+        .from('licenses')
+        .delete()
+        .in('id', selectedLicenses);
+      
+      if (error) throw error;
+
+      toast({
+        title: "Licenças excluídas!",
+        description: `${selectedLicenses.length} licença(s) foi(ram) excluída(s) com sucesso.`
+      });
+      
+      setSelectedLicenses([]);
+      setDeleteDialogOpen(false);
+      loadLicenses();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir licenças",
+        description: "Tente novamente"
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -343,20 +430,79 @@ export default function ProcessarLicenca() {
 
           {/* Processing Tab */}
           <TabsContent value="processing" className="space-y-4">
+            {/* Bulk Actions Bar */}
+            {selectedLicenses.length > 0 && (
+              <Card className="border-destructive/50 bg-destructive/5">
+                <CardContent className="py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <span className="font-medium">
+                        {selectedLicenses.length} licença(s) selecionada(s)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedLicenses([])}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteDialogOpen(true)}
+                        disabled={deleting}
+                      >
+                        {deleting ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Excluindo...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir Selecionadas
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Processing Licenses */}
             {processingLicenses.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-blue-600 animate-pulse" />
-                    Analisando com IA ({processingLicenses.length})
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-blue-600 animate-pulse" />
+                      Analisando com IA ({processingLicenses.length})
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all-processing"
+                        checked={processingLicenses.every(l => selectedLicenses.includes(l.id))}
+                        onCheckedChange={(checked) => handleSelectAll(processingLicenses, checked as boolean)}
+                      />
+                      <label htmlFor="select-all-processing" className="text-sm text-muted-foreground cursor-pointer">
+                        Selecionar todas
+                      </label>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {processingLicenses.map((license) => (
                       <div key={license.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={selectedLicenses.includes(license.id)}
+                            onCheckedChange={(checked) => handleSelectLicense(license.id, checked as boolean)}
+                          />
                           <Brain className="h-5 w-5 text-blue-600 animate-pulse" />
                           <div>
                             <p className="font-medium">
@@ -382,16 +528,32 @@ export default function ProcessarLicenca() {
             {pendingReview.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-orange-600" />
-                    Aguardando Reconciliação ({pendingReview.length})
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileCheck className="w-5 h-5 text-orange-600" />
+                      Aguardando Reconciliação ({pendingReview.length})
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all-pending"
+                        checked={pendingReview.every(l => selectedLicenses.includes(l.id))}
+                        onCheckedChange={(checked) => handleSelectAll(pendingReview, checked as boolean)}
+                      />
+                      <label htmlFor="select-all-pending" className="text-sm text-muted-foreground cursor-pointer">
+                        Selecionar todas
+                      </label>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {pendingReview.map((license) => (
                       <div key={license.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={selectedLicenses.includes(license.id)}
+                            onCheckedChange={(checked) => handleSelectLicense(license.id, checked as boolean)}
+                          />
                           <FileCheck className="h-5 w-5 text-orange-600" />
                           <div>
                             <p className="font-medium">
@@ -434,12 +596,69 @@ export default function ProcessarLicenca() {
 
           {/* Completed Tab */}
           <TabsContent value="completed" className="space-y-4">
+            {/* Bulk Actions Bar for Completed */}
+            {selectedLicenses.length > 0 && completedLicenses.some(l => selectedLicenses.includes(l.id)) && (
+              <Card className="border-destructive/50 bg-destructive/5">
+                <CardContent className="py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                      <span className="font-medium">
+                        {selectedLicenses.filter(id => completedLicenses.some(l => l.id === id)).length} licença(s) selecionada(s)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedLicenses([])}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteDialogOpen(true)}
+                        disabled={deleting}
+                      >
+                        {deleting ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Excluindo...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir Selecionadas
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  Licenças Finalizadas
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    Licenças Finalizadas
+                  </CardTitle>
+                  {completedLicenses.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all-completed"
+                        checked={completedLicenses.every(l => selectedLicenses.includes(l.id))}
+                        onCheckedChange={(checked) => handleSelectAll(completedLicenses, checked as boolean)}
+                      />
+                      <label htmlFor="select-all-completed" className="text-sm text-muted-foreground cursor-pointer">
+                        Selecionar todas
+                      </label>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -452,6 +671,10 @@ export default function ProcessarLicenca() {
                     {completedLicenses.map((license) => (
                       <div key={license.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={selectedLicenses.includes(license.id)}
+                            onCheckedChange={(checked) => handleSelectLicense(license.id, checked as boolean)}
+                          />
                           <CheckCircle className="h-5 w-5 text-green-600" />
                           <div>
                             <p className="font-medium">{license.name}</p>
@@ -494,6 +717,43 @@ export default function ProcessarLicenca() {
           licenseData={selectedLicense?.ai_extracted_data || {}}
           documentFileName={selectedLicense?.documents?.[0]?.file_name || 'Documento'}
         />
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Confirmar Exclusão
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Você tem certeza que deseja excluir{' '}
+                <strong>{selectedLicenses.length}</strong>{' '}
+                licença(s) selecionada(s)? Esta ação não pode ser desfeita e também excluirá todos os documentos, condições e alertas associados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteSelected}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir {selectedLicenses.length} Licença(s)
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );
