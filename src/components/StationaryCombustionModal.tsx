@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,7 +46,7 @@ export const StationaryCombustionModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableFuels, setAvailableFuels] = useState<any[]>([]);
   const [selectedFuel, setSelectedFuel] = useState<any>(null);
-  const [emissionFactorId, setEmissionFactorId] = useState<string>('');
+  const [emissionFactorId, setEmissionFactorId] = useState<string | null>(null);
 
   // Pre-fill economic sector and load fuels if provided
   useEffect(() => {
@@ -71,6 +71,9 @@ export const StationaryCombustionModal = ({
     const fuel = availableFuels.find(f => f.name === fuelName);
     setSelectedFuel(fuel);
     
+    // Reset emission factor ID
+    setEmissionFactorId(null);
+    
     // Lock unit to fuel's base unit
     const baseUnit = fuel?.activity_unit || '';
     
@@ -80,17 +83,20 @@ export const StationaryCombustionModal = ({
       unit: baseUnit // Lock to base unit
     }));
 
-    // Resolve emission_factor_id from database
+    // Resolve emission_factor_id from database (case-insensitive)
     try {
       const { data: factors } = await supabase
         .from('emission_factors')
         .select('id')
-        .eq('name', fuelName)
+        .ilike('name', fuelName)
         .eq('category', 'Combustão Estacionária')
         .limit(1);
       
       if (factors && factors.length > 0) {
         setEmissionFactorId(factors[0].id);
+        console.info('Fator de emissão resolvido:', factors[0].id);
+      } else {
+        toast.info('Fator específico não encontrado, cálculo automático será aplicado por unidade');
       }
     } catch (error) {
       console.error('Error resolving emission factor:', error);
@@ -143,15 +149,24 @@ export const StationaryCombustionModal = ({
       }
 
       // Submit activity data with emission factor ID for precise calculation
-      await addActivityData({
+      const payload: any = {
         emission_source_id: emissionSourceId,
         quantity: parseFloat(formData.quantity),
         unit: formData.unit, // Base unit from fuel
         period_start_date: formData.periodStart,
         period_end_date: formData.periodEnd,
         source_document: formData.sourceDocument || undefined,
-        emission_factor_id: emissionFactorId // Critical: Include specific factor
-      });
+      };
+      
+      // Only include emission_factor_id if it's valid
+      if (emissionFactorId) {
+        payload.emission_factor_id = emissionFactorId;
+        console.info('Enviando com fator específico:', emissionFactorId);
+      } else {
+        console.info('Enviando para cálculo automático por unidade');
+      }
+      
+      await addActivityData(payload);
 
       toast.success("Dados de combustão estacionária adicionados com sucesso!");
       onSuccess();
@@ -183,6 +198,9 @@ export const StationaryCombustionModal = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Registrar Combustão Estacionária</DialogTitle>
+          <DialogDescription>
+            Adicione dados de consumo de combustível conforme GHG Protocol Brasil
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -119,17 +119,21 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
     try {
       const selectedFactor = emissionFactors.find(f => f.id === selectedEmissionFactorId);
       
-      const activityData: ActivityData = {
-        emission_source_id: source.id,
-        period_start_date: format(periodStartDate, "yyyy-MM-dd"),
-        period_end_date: format(periodEndDate, "yyyy-MM-dd"),
-        quantity: parseFloat(quantity),
-        unit: selectedFactor?.activity_unit || unit, // Use unit from selected factor
-        source_document: sourceDocument || undefined,
-        emission_factor_id: selectedEmissionFactorId, // Always required now
-      };
+    const payload: any = {
+      emission_source_id: source.id,
+      period_start_date: format(periodStartDate, "yyyy-MM-dd"),
+      period_end_date: format(periodEndDate, "yyyy-MM-dd"),
+      quantity: parseFloat(quantity),
+      unit: selectedFactor?.activity_unit || unit,
+      source_document: sourceDocument || undefined,
+    };
+    
+    // Only include emission_factor_id if it's valid
+    if (selectedEmissionFactorId && selectedEmissionFactorId.trim() !== '') {
+      payload.emission_factor_id = selectedEmissionFactorId;
+    }
 
-      await addActivityData(activityData);
+    await addActivityData(payload);
 
       toast({
         title: "Sucesso",
