@@ -11,6 +11,7 @@ import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
 import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
 import { ImportFactorsModal } from "@/components/ImportFactorsModal";
 import { ExportFactorsModal } from "@/components/ExportFactorsModal";
+import { ImportBrazilianFactorsButton } from "@/components/ImportBrazilianFactorsButton";
 import { EmissionFactorCard } from "@/components/EmissionFactorCard";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { useToast } from "@/hooks/use-toast";
@@ -148,11 +149,12 @@ export default function BibliotecaFatores() {
               <span>{stats.categories} categorias</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)}>
               <Info className="mr-2 h-4 w-4" />
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
             </Button>
+            <ImportBrazilianFactorsButton onImportComplete={() => loadData()} />
             <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV/Excel
