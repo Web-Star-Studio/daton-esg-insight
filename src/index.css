@@ -47,6 +47,10 @@ All colors MUST be HSL.
     
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 9%;
+    
+    /* GHG Protocol Brasil - Cor laranja claro para campos obrigatórios */
+    --ghg-required: 28 100% 85%;
+    --ghg-required-foreground: 28 100% 20%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
@@ -108,6 +112,10 @@ All colors MUST be HSL.
     
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 9%;
+    
+    /* GHG Protocol Brasil - Cor laranja claro para campos obrigatórios */
+    --ghg-required: 28 100% 85%;
+    --ghg-required-foreground: 28 100% 20%;
 
     --border: 0 0% 15%;
     --input: 0 0% 15%;

@@ -70,6 +70,10 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        ghgRequired: {
+          DEFAULT: "hsl(var(--ghg-required))",
+          foreground: "hsl(var(--ghg-required-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

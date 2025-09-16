@@ -141,14 +141,22 @@ export const StationaryCombustionModal = ({
     setIsSubmitting(true);
 
     try {
-      // Validation
+      // VALIDAÇÃO CRÍTICA: Óleo lubrificante é proibido pela resolução CONAMA nº 362/2005
+      if (formData.fuelName.toLowerCase().includes('óleo lubrificante') ||
+          formData.fuelName.toLowerCase().includes('oleo lubrificante') ||
+          formData.fuelName.toLowerCase().includes('lubricant')) {
+        toast.error("❌ PROIBIDO: Queima de óleo lubrificante é vedada pela Resolução CONAMA nº 362/2005");
+        return;
+      }
+
+      // Validation - Setor econômico OBRIGATÓRIO
       if (!formData.economicSector) {
-        toast.error("Selecione o setor da economia");
+        toast.error("❌ GHG Protocol Brasil: Setor da economia é OBRIGATÓRIO");
         return;
       }
 
       if (!formData.fuelName) {
-        toast.error("Selecione o combustível");
+        toast.error("❌ GHG Protocol Brasil: Combustível é OBRIGATÓRIO");
         return;
       }
 
@@ -158,17 +166,17 @@ export const StationaryCombustionModal = ({
       }
 
       if (!formData.quantity || parseFloat(formData.quantity) <= 0) {
-        toast.error("Quantidade deve ser maior que zero");
+        toast.error("❌ GHG Protocol Brasil: Quantidade deve ser maior que zero");
         return;
       }
 
       if (!formData.unit) {
-        toast.error("Selecione a unidade");
+        toast.error("❌ GHG Protocol Brasil: Unidade é OBRIGATÓRIA");
         return;
       }
 
       if (!formData.periodStart || !formData.periodEnd) {
-        toast.error("Período de consumo é obrigatório");
+        toast.error("❌ GHG Protocol Brasil: Período de consumo é OBRIGATÓRIO");
         return;
       }
 
@@ -179,6 +187,14 @@ export const StationaryCombustionModal = ({
       if (endDate <= startDate) {
         toast.error("Data final deve ser posterior à data inicial");
         return;
+      }
+
+      // Detect biofuel and show separation info
+      const isBiofuel = selectedFuel?.is_biofuel || formData.fuelName.toLowerCase().includes('biodiesel') ||
+                       formData.fuelName.toLowerCase().includes('etanol') || formData.fuelName.toLowerCase().includes('b12');
+      
+      if (isBiofuel) {
+        toast.success("✅ Biocombustível detectado - Separação automática de CO₂ fóssil e biogênico");
       }
 
       // Submit activity data with emission factor ID for precise calculation
@@ -201,10 +217,10 @@ export const StationaryCombustionModal = ({
       
       if (editingData) {
         await updateActivityData(editingData.id, payload);
-        toast.success("Dados de combustão estacionária atualizados com sucesso!");
+        toast.success("✅ Dados de combustão estacionária atualizados - GHG Protocol Brasil");
       } else {
         await addActivityData(payload);
-        toast.success("Dados de combustão estacionária adicionados com sucesso!");
+        toast.success("✅ Dados de combustão estacionária adicionados - GHG Protocol Brasil");
       }
       onSuccess();
       onOpenChange(false);
@@ -288,14 +304,14 @@ export const StationaryCombustionModal = ({
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Economic Sector Selection */}
+          {/* Economic Sector Selection - CAMPO OBRIGATÓRIO GHG PROTOCOL */}
           <div className="space-y-2">
-            <Label htmlFor="economicSector">
+            <Label htmlFor="economicSector" className="text-ghgRequired-foreground font-medium">
               Setor da Economia <span className="text-destructive">*</span>
             </Label>
             <Select value={formData.economicSector} onValueChange={handleEconomicSectorChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o setor da economia" />
+              <SelectTrigger className="bg-ghgRequired border-ghgRequired-foreground/30">
+                <SelectValue placeholder="⚠️ OBRIGATÓRIO - Selecione o setor da economia" />
               </SelectTrigger>
               <SelectContent>
                 {ECONOMIC_SECTORS.map((sector) => (
@@ -305,39 +321,49 @@ export const StationaryCombustionModal = ({
                 ))}
               </SelectContent>
             </Select>
+            <div className="text-xs text-ghgRequired-foreground">
+              Campo obrigatório conforme GHG Protocol Brasil 2025.0.1
+            </div>
           </div>
 
-          {/* Fuel Selection */}
+          {/* Fuel Selection - CAMPO OBRIGATÓRIO */}
           {formData.economicSector && (
             <div className="space-y-2">
-              <Label htmlFor="fuelName">
+              <Label htmlFor="fuelName" className="text-ghgRequired-foreground font-medium">
                 Tipo de Combustível <span className="text-destructive">*</span>
               </Label>
               <Select value={formData.fuelName} onValueChange={handleFuelChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o combustível" />
+                <SelectTrigger className="bg-ghgRequired border-ghgRequired-foreground/30">
+                  <SelectValue placeholder="⚠️ OBRIGATÓRIO - Selecione o combustível" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableFuels.map((fuel) => (
-                    <SelectItem key={fuel.name} value={fuel.name}>
+                    <SelectItem key={fuel.name} value={fuel.name} disabled={fuel.name.toLowerCase().includes('óleo lubrificante')}>
                       <div className="flex flex-col">
-                        <span>{fuel.name}</span>
+                        <span className={fuel.name.toLowerCase().includes('óleo lubrificante') ? 'line-through text-destructive' : ''}>
+                          {fuel.name}
+                          {fuel.name.toLowerCase().includes('óleo lubrificante') && ' (PROIBIDO CONAMA)'}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {fuel.fuel_type} • {fuel.activity_unit}
+                          {fuel.is_biofuel && ' • 🌱 Biocombustível'}
                         </span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <div className="text-xs text-ghgRequired-foreground">
+                ⚠️ Óleo lubrificante proibido (CONAMA nº 362/2005)
+              </div>
             </div>
           )}
 
-          {/* Quantity and Unit */}
+          {/* Quantity and Unit - CAMPOS OBRIGATÓRIOS */}
           {formData.fuelName && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="quantity">
+                <Label htmlFor="quantity" className="text-ghgRequired-foreground font-medium">
                   Quantidade Consumida <span className="text-destructive">*</span>
                 </Label>
                 <Input
@@ -348,30 +374,31 @@ export const StationaryCombustionModal = ({
                   placeholder="Ex: 1000"
                   value={formData.quantity}
                   onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
+                  className="bg-ghgRequired border-ghgRequired-foreground/30"
                 />
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-ghgRequired-foreground">
                   Informe a quantidade já convertida para {formData.unit || 'unidade base'}
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="unit">
+                <Label htmlFor="unit" className="text-ghgRequired-foreground font-medium">
                   Unidade <span className="text-destructive">*</span>
                 </Label>
-                <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                <div className="flex h-10 w-full rounded-md border border-ghgRequired-foreground/30 bg-ghgRequired px-3 py-2 text-sm text-ghgRequired-foreground">
                   {formData.unit || 'Selecione o combustível primeiro'} (unidade base)
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-ghgRequired-foreground">
                   Unidade fixa baseada no tipo de combustível selecionado
                 </div>
               </div>
             </div>
           )}
 
-          {/* Consumption Period */}
+          {/* Consumption Period - CAMPOS OBRIGATÓRIOS */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="periodStart">
+              <Label htmlFor="periodStart" className="text-ghgRequired-foreground font-medium">
                 Data Início Consumo <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -379,11 +406,12 @@ export const StationaryCombustionModal = ({
                 type="date"
                 value={formData.periodStart}
                 onChange={(e) => setFormData(prev => ({ ...prev, periodStart: e.target.value }))}
+                className="bg-ghgRequired border-ghgRequired-foreground/30"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="periodEnd">
+              <Label htmlFor="periodEnd" className="text-ghgRequired-foreground font-medium">
                 Data Fim Consumo <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -391,6 +419,7 @@ export const StationaryCombustionModal = ({
                 type="date"
                 value={formData.periodEnd}
                 onChange={(e) => setFormData(prev => ({ ...prev, periodEnd: e.target.value }))}
+                className="bg-ghgRequired border-ghgRequired-foreground/30"
               />
             </div>
           </div>
@@ -431,12 +460,14 @@ export const StationaryCombustionModal = ({
           </div>
 
           {/* GHG Protocol Brasil Compliance Note */}
-          <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">
-            <p className="font-medium mb-2">📋 GHG Protocol Brasil 2025.0.1 - Combustão Estacionária</p>
-            <ul className="space-y-1 text-xs">
-              <li>• Informe a quantidade já convertida na unidade base do combustível</li>
-              <li>• O sistema separa automaticamente as parcelas fóssil e biogênica</li>
-              <li>• Cálculo conforme metodologia brasileira de inventários GEE</li>
+          <div className="rounded-md bg-primary/10 border border-primary/20 p-4 text-sm">
+            <p className="font-medium mb-2 text-primary">✅ GHG Protocol Brasil 2025.0.1 - Combustão Estacionária</p>
+            <ul className="space-y-1 text-xs text-primary/80">
+              <li>• ⚠️ Campos em laranja claro são OBRIGATÓRIOS conforme metodologia</li>
+              <li>• 🔥 Sistema detecta e separa automaticamente CO₂ fóssil e biogênico</li>
+              <li>• 🚫 Queima de óleo lubrificante proibida (CONAMA nº 362/2005)</li>
+              <li>• 📊 Cálculo automatizado conforme fatores brasileiros oficiais</li>
+              <li>• 🌱 Biocombustíveis identificados automaticamente</li>
             </ul>
           </div>
 
