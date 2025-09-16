@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { importFactorsFromFile } from "@/services/factorImport";
+import { DuplicateFactorConfirmModal } from "@/components/DuplicateFactorConfirmModal";
+import type { EmissionFactor } from "@/services/emissionFactors";
 
 interface ImportFactorsModalProps {
   open: boolean;
@@ -24,10 +26,15 @@ interface ImportResult {
   success: number;
   errors: number;
   warnings: number;
+  duplicates: number;
   details: Array<{
     row: number;
-    status: "success" | "error" | "warning";
+    status: "success" | "error" | "warning" | "duplicate";
     message: string;
+    duplicateData?: {
+      existingFactor: EmissionFactor;
+      newFactor: any;
+    };
   }>;
 }
 
@@ -35,7 +42,39 @@ export function ImportFactorsModal({ open, onOpenChange, onImportComplete }: Imp
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [pendingDuplicates, setPendingDuplicates] = useState<Array<{
+    resolve: (action: 'replace' | 'keep_both' | 'skip') => void;
+    existingFactor: EmissionFactor;
+    newFactor: any;
+  }>>([]);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [currentDuplicate, setCurrentDuplicate] = useState<{
+    existingFactor: EmissionFactor;
+    newFactor: any;
+  } | null>(null);
   const { toast } = useToast();
+
+  const handleDuplicateAction = (action: 'replace' | 'keep_both' | 'cancel') => {
+    const mappedAction: 'replace' | 'keep_both' | 'skip' = action === 'cancel' ? 'skip' : action;
+    
+    if (pendingDuplicates.length > 0) {
+      const current = pendingDuplicates[0];
+      current.resolve(mappedAction);
+      setPendingDuplicates(prev => prev.slice(1));
+      
+      if (pendingDuplicates.length > 1) {
+        // Show next duplicate
+        const next = pendingDuplicates[1];
+        setCurrentDuplicate({
+          existingFactor: next.existingFactor,
+          newFactor: next.newFactor
+        });
+      } else {
+        setShowDuplicateModal(false);
+        setCurrentDuplicate(null);
+      }
+    }
+  };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -44,6 +83,7 @@ export function ImportFactorsModal({ open, onOpenChange, onImportComplete }: Imp
     setIsUploading(true);
     setUploadProgress(0);
     setImportResult(null);
+    setPendingDuplicates([]);
 
     try {
       // Simulate progress
@@ -51,7 +91,16 @@ export function ImportFactorsModal({ open, onOpenChange, onImportComplete }: Imp
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 100);
 
-      const result = await importFactorsFromFile(file);
+      const result = await importFactorsFromFile(file, async (existingFactor, newFactor) => {
+        return new Promise<'replace' | 'keep_both' | 'skip'>((resolve) => {
+          setPendingDuplicates(prev => [...prev, { resolve, existingFactor, newFactor }]);
+          
+          if (!showDuplicateModal) {
+            setCurrentDuplicate({ existingFactor, newFactor });
+            setShowDuplicateModal(true);
+          }
+        });
+      });
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -59,7 +108,7 @@ export function ImportFactorsModal({ open, onOpenChange, onImportComplete }: Imp
 
       toast({
         title: "Importação Concluída",
-        description: `${result.success} fatores importados com sucesso. ${result.errors} erros encontrados.`,
+        description: `${result.success} fatores importados. ${result.errors} erros, ${result.duplicates} duplicatas encontradas.`,
         variant: result.errors > 0 ? "destructive" : "default",
       });
 
@@ -76,7 +125,7 @@ export function ImportFactorsModal({ open, onOpenChange, onImportComplete }: Imp
     } finally {
       setIsUploading(false);
     }
-  }, [toast, onImportComplete]);
+  }, [toast, onImportComplete, showDuplicateModal]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -90,9 +139,12 @@ export function ImportFactorsModal({ open, onOpenChange, onImportComplete }: Imp
   });
 
   const handleClose = () => {
-    if (!isUploading) {
+    if (!isUploading && pendingDuplicates.length === 0) {
       setImportResult(null);
       setUploadProgress(0);
+      setPendingDuplicates([]);
+      setCurrentDuplicate(null);
+      setShowDuplicateModal(false);
       onOpenChange(false);
     }
   };
@@ -198,10 +250,10 @@ Gasolina Comum - Combustão Móvel,Combustão Móvel,Litro,2.292,0.0002,0.000032
                           {importResult.errors} Erros
                         </Badge>
                       )}
-                      {importResult.warnings > 0 && (
-                        <Badge variant="secondary">
-                          <AlertCircle className="mr-1 h-3 w-3" />
-                          {importResult.warnings} Avisos
+                      {importResult.duplicates > 0 && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          <Copy className="mr-1 h-3 w-3" />
+                          {importResult.duplicates} Duplicatas
                         </Badge>
                       )}
                     </div>
@@ -215,12 +267,14 @@ Gasolina Comum - Combustão Móvel,Combustão Móvel,Litro,2.292,0.0002,0.000032
                         className={`text-xs p-2 rounded flex items-start gap-2 ${
                           detail.status === 'success' ? 'bg-green-50 text-green-800' :
                           detail.status === 'error' ? 'bg-red-50 text-red-800' :
+                          detail.status === 'duplicate' ? 'bg-blue-50 text-blue-800' :
                           'bg-yellow-50 text-yellow-800'
                         }`}
                       >
                         {detail.status === 'success' && <CheckCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />}
                         {detail.status === 'error' && <XCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />}
                         {detail.status === 'warning' && <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />}
+                        {detail.status === 'duplicate' && <Copy className="h-3 w-3 mt-0.5 flex-shrink-0" />}
                         <span>
                           <span className="font-medium">Linha {detail.row}:</span> {detail.message}
                         </span>
@@ -234,7 +288,11 @@ Gasolina Comum - Combustão Móvel,Combustão Móvel,Litro,2.292,0.0002,0.000032
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={handleClose} disabled={isUploading}>
+            <Button 
+              variant="outline" 
+              onClick={handleClose} 
+              disabled={isUploading || pendingDuplicates.length > 0}
+            >
               {importResult ? 'Fechar' : 'Cancelar'}
             </Button>
             {importResult && importResult.success > 0 && (
@@ -244,6 +302,17 @@ Gasolina Comum - Combustão Móvel,Combustão Móvel,Litro,2.292,0.0002,0.000032
             )}
           </div>
         </div>
+
+        {/* Duplicate Confirmation Modal */}
+        {currentDuplicate && (
+          <DuplicateFactorConfirmModal
+            open={showDuplicateModal}
+            onOpenChange={setShowDuplicateModal}
+            existingFactor={currentDuplicate.existingFactor}
+            newFactor={currentDuplicate.newFactor}
+            onConfirm={handleDuplicateAction}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

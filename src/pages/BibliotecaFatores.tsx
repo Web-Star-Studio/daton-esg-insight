@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Plus, Search, Filter, Info, Upload, Download } from "lucide-react";
+import { Plus, Search, Filter, Info, Upload, Download, Calendar, Building, Zap } from "lucide-react";
 import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
 import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
 import { ImportFactorsModal } from "@/components/ImportFactorsModal";
@@ -32,6 +32,8 @@ export default function BibliotecaFatores() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedScope, setSelectedScope] = useState("all");
+  const [selectedSource, setSelectedSource] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -40,6 +42,8 @@ export default function BibliotecaFatores() {
   const [showMethodology, setShowMethodology] = useState(false);
   const [factors, setFactors] = useState<EmissionFactor[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [sources, setSources] = useState<string[]>([]);
+  const [years, setYears] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
@@ -60,6 +64,13 @@ export default function BibliotecaFatores() {
       
       setFactors(factorsData);
       setCategories(categoriesData);
+      
+      // Extract unique sources and years
+      const uniqueSources = [...new Set(factorsData.map(f => f.source))].sort();
+      const uniqueYears = [...new Set(factorsData.map(f => f.year_of_validity).filter(Boolean))].sort((a, b) => (b as number) - (a as number));
+      
+      setSources(uniqueSources);
+      setYears(uniqueYears as number[]);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
@@ -72,22 +83,51 @@ export default function BibliotecaFatores() {
     }
   };
 
-  // Filter factors based on search and filters
+  // Enhanced filter logic with multiple criteria
   const filteredFactors = factors.filter(factor => {
-    const matchesSearch = factor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         factor.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         factor.source.toLowerCase().includes(searchTerm.toLowerCase());
+    // Smart search across multiple fields
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm || [
+      factor.name,
+      factor.category,
+      factor.source,
+      factor.activity_unit
+    ].some(field => field?.toLowerCase().includes(searchLower));
+
     const matchesCategory = selectedCategory === "all" || factor.category === selectedCategory;
     const matchesType = selectedType === "all" || factor.type === selectedType;
+    const matchesSource = selectedSource === "all" || factor.source === selectedSource;
+    const matchesYear = selectedYear === "all" || 
+      (selectedYear === "recent" && factor.year_of_validity && factor.year_of_validity >= 2022) ||
+      (selectedYear === "older" && (!factor.year_of_validity || factor.year_of_validity < 2022)) ||
+      factor.year_of_validity?.toString() === selectedYear;
     
-    // Basic scope mapping for better filtering
-    const matchesScope = selectedScope === "all" || 
-      (selectedScope === "1" && (factor.category.includes("Combustão") || factor.category.includes("Processos"))) ||
-      (selectedScope === "2" && factor.category.includes("Energia Adquirida")) ||
-      (selectedScope === "3" && (factor.category.includes("Resíduos") || factor.category.includes("Efluentes")));
+    // Enhanced scope mapping
+    const matchesScope = selectedScope === "all" || getScopeFromCategory(factor.category) === parseInt(selectedScope);
     
-    return matchesSearch && matchesCategory && matchesType && matchesScope;
+    return matchesSearch && matchesCategory && matchesType && matchesScope && matchesSource && matchesYear;
   });
+
+  // Helper function for scope detection
+  const getScopeFromCategory = (category: string) => {
+    const categoryLower = category.toLowerCase();
+    
+    if (categoryLower.includes('combustão') || categoryLower.includes('processos industriais') || 
+        categoryLower.includes('fugitivas') || categoryLower.includes('tratamento de efluentes')) {
+      return 1;
+    }
+    
+    if (categoryLower.includes('energia adquirida') || categoryLower.includes('eletricidade')) {
+      return 2;
+    }
+    
+    if (categoryLower.includes('resíduos') || categoryLower.includes('transporte') || 
+        categoryLower.includes('distribuição')) {
+      return 3;
+    }
+    
+    return 1; // Default to scope 1
+  };
 
   // Statistics and pagination
   const stats = {
@@ -107,7 +147,7 @@ export default function BibliotecaFatores() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory, selectedType, selectedScope]);
+  }, [searchTerm, selectedCategory, selectedType, selectedScope, selectedSource, selectedYear]);
 
   const handleDeleteFactor = async (id: string) => {
     if (!confirm("Tem certeza que deseja deletar este fator de emissão?")) {
@@ -188,12 +228,13 @@ export default function BibliotecaFatores() {
         {/* Filters */}
         <Card>
           <CardContent className="p-6">
-            <div className="flex gap-4 flex-wrap">
-              <div className="flex-1 min-w-[300px]">
+            <div className="space-y-4">
+              {/* Main search */}
+              <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Buscar por nome, categoria ou fonte..."
+                    placeholder="Busca inteligente: nome, categoria, fonte, unidade..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -201,42 +242,111 @@ export default function BibliotecaFatores() {
                 </div>
               </div>
               
-              <Select value={selectedScope} onValueChange={setSelectedScope}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Escopo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Escopos</SelectItem>
-                  <SelectItem value="1">Escopo 1</SelectItem>
-                  <SelectItem value="2">Escopo 2</SelectItem>
-                  <SelectItem value="3">Escopo 3</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas Categorias</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Tipos</SelectItem>
-                  <SelectItem value="system">Sistema</SelectItem>
-                  <SelectItem value="custom">Customizado</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Filter row */}
+              <div className="flex gap-3 flex-wrap">
+                <Select value={selectedScope} onValueChange={setSelectedScope}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Escopo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Escopos</SelectItem>
+                    <SelectItem value="1">Escopo 1</SelectItem>
+                    <SelectItem value="2">Escopo 2</SelectItem>
+                    <SelectItem value="3">Escopo 3</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-52">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas Categorias</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedSource} onValueChange={setSelectedSource}>
+                  <SelectTrigger className="w-52">
+                    <Zap className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Fonte" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Fontes</SelectItem>
+                    {sources.map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {source.length > 30 ? `${source.substring(0, 30)}...` : source}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-44">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Anos</SelectItem>
+                    <SelectItem value="recent">Recentes (2022+)</SelectItem>
+                    <SelectItem value="older">Anteriores (2021-)</SelectItem>
+                    {years.slice(0, 10).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="w-44">
+                    <Building className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Tipos</SelectItem>
+                    <SelectItem value="system">Oficiais</SelectItem>
+                    <SelectItem value="custom">Customizados</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Active filters display */}
+              {(searchTerm || selectedCategory !== "all" || selectedType !== "all" || 
+                selectedScope !== "all" || selectedSource !== "all" || selectedYear !== "all") && (
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Filtros ativos:</span>
+                  {searchTerm && <Badge variant="secondary">Busca: "{searchTerm}"</Badge>}
+                  {selectedScope !== "all" && <Badge variant="secondary">Escopo {selectedScope}</Badge>}
+                  {selectedCategory !== "all" && <Badge variant="secondary">{selectedCategory}</Badge>}
+                  {selectedSource !== "all" && <Badge variant="secondary">{selectedSource.substring(0, 20)}...</Badge>}
+                  {selectedYear !== "all" && <Badge variant="secondary">
+                    {selectedYear === "recent" ? "2022+" : selectedYear === "older" ? "Antes 2022" : selectedYear}
+                  </Badge>}
+                  {selectedType !== "all" && <Badge variant="secondary">
+                    {selectedType === "system" ? "Oficiais" : "Customizados"}
+                  </Badge>}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedCategory("all");
+                      setSelectedType("all");
+                      setSelectedScope("all");
+                      setSelectedSource("all");
+                      setSelectedYear("all");
+                    }}
+                    className="h-6 px-2 text-xs"
+                  >
+                    Limpar filtros
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -278,6 +388,8 @@ export default function BibliotecaFatores() {
                 setSelectedCategory("all");
                 setSelectedType("all");
                 setSelectedScope("all");
+                setSelectedSource("all");
+                setSelectedYear("all");
               }} className="mt-2">
                 Limpar todos os filtros
               </Button>

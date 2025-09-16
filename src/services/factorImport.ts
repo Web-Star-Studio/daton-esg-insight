@@ -1,13 +1,18 @@
-import { createCustomEmissionFactor, CreateEmissionFactorData } from "./emissionFactors";
+import { createCustomEmissionFactor, CreateEmissionFactorData, getEmissionFactors, type EmissionFactor } from "./emissionFactors";
 
 interface ImportResult {
   success: number;
   errors: number;
   warnings: number;
+  duplicates: number;
   details: Array<{
     row: number;
-    status: "success" | "error" | "warning";
+    status: "success" | "error" | "warning" | "duplicate";
     message: string;
+    duplicateData?: {
+      existingFactor: EmissionFactor;
+      newFactor: RawFactorData;
+    };
   }>;
 }
 
@@ -22,11 +27,15 @@ interface RawFactorData {
   ano_validade?: string | number;
 }
 
-export async function importFactorsFromFile(file: File): Promise<ImportResult> {
+export async function importFactorsFromFile(
+  file: File, 
+  onDuplicate?: (existingFactor: EmissionFactor, newFactor: RawFactorData) => Promise<'replace' | 'keep_both' | 'skip'>
+): Promise<ImportResult> {
   const result: ImportResult = {
     success: 0,
     errors: 0,
     warnings: 0,
+    duplicates: 0,
     details: []
   };
 
@@ -40,6 +49,9 @@ export async function importFactorsFromFile(file: File): Promise<ImportResult> {
     } else {
       throw new Error('Formato de arquivo não suportado');
     }
+
+    // Load existing factors for duplicate detection
+    const existingFactors = await getEmissionFactors();
 
     // Process each row
     for (let i = 0; i < data.length; i++) {
@@ -79,6 +91,63 @@ export async function importFactorsFromFile(file: File): Promise<ImportResult> {
           source: row.fonte!,
           year_of_validity: parseYear(row.ano_validade)
         };
+
+        // Check for duplicates
+        const duplicateFactor = findDuplicateFactor(existingFactors, factorData);
+        if (duplicateFactor && onDuplicate) {
+          const action = await onDuplicate(duplicateFactor, row);
+          
+          if (action === 'skip') {
+            result.details.push({
+              row: rowNum,
+              status: "duplicate",
+              message: `Fator "${row.nome}" pulado (duplicata detectada)`
+            });
+            continue;
+          }
+          
+          if (action === 'replace') {
+            // Update existing factor
+            const { updateCustomEmissionFactor } = await import('./emissionFactors');
+            if (duplicateFactor.type === 'custom') {
+              await updateCustomEmissionFactor(duplicateFactor.id, factorData);
+              result.success++;
+              result.details.push({
+                row: rowNum,
+                status: "success",
+                message: `Fator "${row.nome}" atualizado com sucesso`
+              });
+            } else {
+              // Create as custom if trying to replace system factor
+              await createCustomEmissionFactor({
+                ...factorData,
+                name: `${factorData.name} (Customizado)`
+              });
+              result.success++;
+              result.details.push({
+                row: rowNum,
+                status: "success",
+                message: `Fator "${row.nome}" criado como customizado`
+              });
+            }
+            continue;
+          }
+          
+          if (action === 'keep_both') {
+            // Create with modified name
+            factorData.name = `${factorData.name} (${new Date().toLocaleDateString()})`;
+            result.duplicates++;
+          }
+        } else if (duplicateFactor && !onDuplicate) {
+          // Auto-skip duplicates if no handler provided
+          result.duplicates++;
+          result.details.push({
+            row: rowNum,
+            status: "duplicate",
+            message: `Fator "${row.nome}" ignorado (já existe fator similar)`
+          });
+          continue;
+        }
 
         // Create the emission factor
         await createCustomEmissionFactor(factorData);
@@ -266,4 +335,72 @@ function parseYear(value: string | number | undefined): number | undefined {
   }
   
   return year;
+}
+
+function findDuplicateFactor(
+  existingFactors: EmissionFactor[], 
+  newFactor: CreateEmissionFactorData
+): EmissionFactor | null {
+  return existingFactors.find(existing => {
+    // Exact match on name, category and unit
+    const exactMatch = (
+      existing.name.toLowerCase().trim() === newFactor.name.toLowerCase().trim() &&
+      existing.category.toLowerCase().trim() === newFactor.category.toLowerCase().trim() &&
+      existing.activity_unit.toLowerCase().trim() === newFactor.activity_unit.toLowerCase().trim()
+    );
+
+    if (exactMatch) return true;
+
+    // Similar name and same category/unit (fuzzy match for typos)
+    const nameSimilarity = calculateStringSimilarity(
+      existing.name.toLowerCase().trim(),
+      newFactor.name.toLowerCase().trim()
+    );
+    
+    const similarMatch = (
+      nameSimilarity > 0.85 && // 85% similarity
+      existing.category.toLowerCase().trim() === newFactor.category.toLowerCase().trim() &&
+      existing.activity_unit.toLowerCase().trim() === newFactor.activity_unit.toLowerCase().trim()
+    );
+
+    return similarMatch;
+  }) || null;
+}
+
+function calculateStringSimilarity(str1: string, str2: string): number {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  const distance = levenshteinDistance(longer, shorter);
+  return (longer.length - distance) / longer.length;
+}
+
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix = [];
+  
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
 }
