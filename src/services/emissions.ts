@@ -125,10 +125,29 @@ export async function addActivityData(activityData: ActivityData): Promise<void>
     throw new Error('Usuário não autenticado');
   }
 
+  // CORREÇÃO CRÍTICA: Se emission_factor_id está presente, usar a unidade do fator
+  let finalActivityData = { ...activityData };
+  
+  if (activityData.emission_factor_id) {
+    try {
+      const { data: factor } = await supabase
+        .from('emission_factors')
+        .select('activity_unit')
+        .eq('id', activityData.emission_factor_id)
+        .single();
+      
+      if (factor) {
+        finalActivityData.unit = factor.activity_unit; // Override com unidade correta
+      }
+    } catch (error) {
+      console.warn('Could not fetch factor unit, using provided unit:', error);
+    }
+  }
+
   const { data: activityRecord, error: activityError } = await supabase
     .from('activity_data')
     .insert({
-      ...activityData,
+      ...finalActivityData,
       user_id: user.id,
     })
     .select()

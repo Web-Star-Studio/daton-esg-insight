@@ -62,15 +62,30 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
     try {
       const factors = await getEmissionFactors(source.category);
       setEmissionFactors(factors);
+      
+      // Auto-select factor and lock unit if only one factor exists
+      if (factors.length === 1) {
+        setSelectedEmissionFactorId(factors[0].id);
+        setUnit(factors[0].activity_unit);
+      }
     } catch (error) {
       console.error("Erro ao carregar fatores de emissão:", error);
+    }
+  };
+
+  // Handle factor selection and unit locking
+  const handleFactorSelection = (factorId: string) => {
+    setSelectedEmissionFactorId(factorId);
+    const selectedFactor = emissionFactors.find(f => f.id === factorId);
+    if (selectedFactor) {
+      setUnit(selectedFactor.activity_unit);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!periodStartDate || !periodEndDate || !quantity || !unit) {
+    if (!periodStartDate || !periodEndDate || !quantity) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios.",
@@ -89,17 +104,29 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
       return;
     }
 
+    // Verificação crítica: deve sempre ter um fator selecionado
+    if (!selectedEmissionFactorId) {
+      toast({
+        title: "Fator de emissão obrigatório",
+        description: "Um fator de emissão deve estar selecionado para o cálculo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const selectedFactor = emissionFactors.find(f => f.id === selectedEmissionFactorId);
+      
       const activityData: ActivityData = {
         emission_source_id: source.id,
         period_start_date: format(periodStartDate, "yyyy-MM-dd"),
         period_end_date: format(periodEndDate, "yyyy-MM-dd"),
         quantity: parseFloat(quantity),
-        unit,
+        unit: selectedFactor?.activity_unit || unit, // Use unit from selected factor
         source_document: sourceDocument || undefined,
-        emission_factor_id: selectedEmissionFactorId || undefined, // CORREÇÃO CRÍTICA: Enviar ID do fator selecionado
+        emission_factor_id: selectedEmissionFactorId, // Always required now
       };
 
       await addActivityData(activityData);
@@ -251,31 +278,37 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
 
                 <div className="space-y-2">
                   <Label htmlFor="unit">Unidade *</Label>
-                  <Select value={unit} onValueChange={setUnit} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a unidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getUnitSuggestions().map((suggestedUnit) => {
-                        if (!suggestedUnit || suggestedUnit.trim() === '') return null;
-                        const unitInfo = ACTIVITY_UNITS.find(u => u.value === suggestedUnit);
-                        return (
-                          <SelectItem key={suggestedUnit} value={suggestedUnit}>
-                            {unitInfo?.label || suggestedUnit}
+                  {selectedEmissionFactorId ? (
+                    <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                      {unit} (fixada pelo tipo de combustível)
+                    </div>
+                  ) : (
+                    <Select value={unit} onValueChange={setUnit} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a unidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getUnitSuggestions().map((suggestedUnit) => {
+                          if (!suggestedUnit || suggestedUnit.trim() === '') return null;
+                          const unitInfo = ACTIVITY_UNITS.find(u => u.value === suggestedUnit);
+                          return (
+                            <SelectItem key={suggestedUnit} value={suggestedUnit}>
+                              {unitInfo?.label || suggestedUnit}
+                            </SelectItem>
+                          );
+                        })}
+                        {ACTIVITY_UNITS.filter(unit => 
+                          unit.value && 
+                          unit.value.trim() !== '' && 
+                          !getUnitSuggestions().includes(unit.value)
+                        ).map((unit) => (
+                          <SelectItem key={unit.value} value={unit.value}>
+                            {unit.label}
                           </SelectItem>
-                        );
-                      })}
-                      {ACTIVITY_UNITS.filter(unit => 
-                        unit.value && 
-                        unit.value.trim() !== '' && 
-                        !getUnitSuggestions().includes(unit.value)
-                      ).map((unit) => (
-                        <SelectItem key={unit.value} value={unit.value}>
-                          {unit.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
 
@@ -283,7 +316,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
               {emissionFactors.length > 1 && (
                 <div className="space-y-2">
                   <Label htmlFor="emission-factor">Tipo de Combustível *</Label>
-                  <Select value={selectedEmissionFactorId} onValueChange={setSelectedEmissionFactorId}>
+                  <Select value={selectedEmissionFactorId} onValueChange={handleFactorSelection}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo de combustível consumido" />
                     </SelectTrigger>
@@ -300,6 +333,12 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
                   </div>
                 </div>
               )}
+
+              {/* GHG Protocol Brasil Compliance Note */}
+              <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+                <p className="font-medium">📋 GHG Protocol Brasil 2025.0.1</p>
+                <p>Informe a quantidade já convertida na unidade base do combustível selecionado. O sistema calculará automaticamente as parcelas fóssil e biogênica conforme orientações do protocolo brasileiro.</p>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="source-document">Documento Fonte (opcional)</Label>

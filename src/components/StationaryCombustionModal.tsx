@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,14 @@ import {
   getRecommendedUnitsForFuel,
   validateFuelForSector 
 } from "@/services/stationaryCombustion";
-import { addActivityData } from "@/services/emissions";
+import { addActivityData, getEmissionFactors } from "@/services/emissions";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StationaryCombustionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   emissionSourceId: string;
+  economicSector?: string; // Pre-fill from emission source
   onSuccess: () => void;
 }
 
@@ -26,10 +28,11 @@ export const StationaryCombustionModal = ({
   open, 
   onOpenChange, 
   emissionSourceId, 
+  economicSector: initialEconomicSector,
   onSuccess 
 }: StationaryCombustionModalProps) => {
   const [formData, setFormData] = useState({
-    economicSector: '' as EconomicSector,
+    economicSector: (initialEconomicSector as EconomicSector) || ('' as EconomicSector),
     fuelName: '',
     quantity: '',
     unit: '',
@@ -42,7 +45,15 @@ export const StationaryCombustionModal = ({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableFuels, setAvailableFuels] = useState<any[]>([]);
-  const [availableUnits, setAvailableUnits] = useState<string[]>([]);
+  const [selectedFuel, setSelectedFuel] = useState<any>(null);
+  const [emissionFactorId, setEmissionFactorId] = useState<string>('');
+
+  // Pre-fill economic sector and load fuels if provided
+  useEffect(() => {
+    if (initialEconomicSector && open) {
+      handleEconomicSectorChange(initialEconomicSector as EconomicSector);
+    }
+  }, [initialEconomicSector, open]);
 
   const handleEconomicSectorChange = (sector: EconomicSector) => {
     setFormData(prev => ({
@@ -56,19 +67,33 @@ export const StationaryCombustionModal = ({
     setAvailableFuels(fuels);
   };
 
-  const handleFuelChange = (fuelName: string) => {
+  const handleFuelChange = async (fuelName: string) => {
+    const fuel = availableFuels.find(f => f.name === fuelName);
+    setSelectedFuel(fuel);
+    
+    // Lock unit to fuel's base unit
+    const baseUnit = fuel?.activity_unit || '';
+    
     setFormData(prev => ({
       ...prev,
       fuelName,
-      unit: ''
+      unit: baseUnit // Lock to base unit
     }));
-    
-    const units = getRecommendedUnitsForFuel(fuelName);
-    setAvailableUnits(units);
-    
-    // Set default unit
-    if (units.length > 0) {
-      setFormData(prev => ({ ...prev, unit: units[0] }));
+
+    // Resolve emission_factor_id from database
+    try {
+      const { data: factors } = await supabase
+        .from('emission_factors')
+        .select('id')
+        .eq('name', fuelName)
+        .eq('category', 'Combustão Estacionária')
+        .limit(1);
+      
+      if (factors && factors.length > 0) {
+        setEmissionFactorId(factors[0].id);
+      }
+    } catch (error) {
+      console.error('Error resolving emission factor:', error);
     }
   };
 
@@ -117,14 +142,15 @@ export const StationaryCombustionModal = ({
         return;
       }
 
-      // Submit activity data
+      // Submit activity data with emission factor ID for precise calculation
       await addActivityData({
         emission_source_id: emissionSourceId,
         quantity: parseFloat(formData.quantity),
-        unit: formData.unit,
+        unit: formData.unit, // Base unit from fuel
         period_start_date: formData.periodStart,
         period_end_date: formData.periodEnd,
-        source_document: formData.sourceDocument || undefined
+        source_document: formData.sourceDocument || undefined,
+        emission_factor_id: emissionFactorId // Critical: Include specific factor
       });
 
       toast.success("Dados de combustão estacionária adicionados com sucesso!");
@@ -221,24 +247,21 @@ export const StationaryCombustionModal = ({
                   value={formData.quantity}
                   onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
                 />
+                <div className="text-xs text-muted-foreground">
+                  Informe a quantidade já convertida para {formData.unit || 'unidade base'}
+                </div>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="unit">
                   Unidade <span className="text-destructive">*</span>
                 </Label>
-                <Select value={formData.unit} onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUnits.map((unit) => (
-                      <SelectItem key={unit} value={unit}>
-                        {unit}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                  {formData.unit || 'Selecione o combustível primeiro'} (unidade base)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Unidade fixa baseada no tipo de combustível selecionado
+                </div>
               </div>
             </div>
           )}
@@ -303,6 +326,16 @@ export const StationaryCombustionModal = ({
                 onChange={(e) => setFormData(prev => ({ ...prev, sourceDocument: e.target.value }))}
               />
             </div>
+          </div>
+
+          {/* GHG Protocol Brasil Compliance Note */}
+          <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">
+            <p className="font-medium mb-2">📋 GHG Protocol Brasil 2025.0.1 - Combustão Estacionária</p>
+            <ul className="space-y-1 text-xs">
+              <li>• Informe a quantidade já convertida na unidade base do combustível</li>
+              <li>• O sistema separa automaticamente as parcelas fóssil e biogênica</li>
+              <li>• Cálculo conforme metodologia brasileira de inventários GEE</li>
+            </ul>
           </div>
 
           {/* Submit Button */}
