@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Brain, FileText, AlertTriangle, Calendar, CheckCircle, XCircle, Clock, Target } from "lucide-react";
+import { Brain, FileText, AlertTriangle, Calendar, CheckCircle, XCircle, Clock, Target, Upload, RefreshCw, ArrowLeft, Eye } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LicenseReconciliationModal } from "@/components/LicenseReconciliationModal";
 import { getLicenseById } from "@/services/licenses";
 import { getLicenseAnalyses, getLicenseConditions, getLicenseAlerts, analyzeLicenseWithAI } from "@/services/licenseAI";
 import { useToast } from "@/hooks/use-toast";
@@ -36,14 +39,58 @@ const statusIcons = {
 
 export function LicenciamentoAnalise() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // New states for workflow functionality
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedLicense, setSelectedLicense] = useState<any>(null);
+  const [reconciliationOpen, setReconciliationOpen] = useState(false);
+  const [allLicenses, setAllLicenses] = useState<any[]>([]);
+  const [currentView, setCurrentView] = useState<'upload' | 'analysis'>('upload');
 
+  // Switch between list view and single license view
   const { data: license, isLoading: licenseLoading } = useQuery({
     queryKey: ['license', id],
     queryFn: () => getLicenseById(id!),
     enabled: !!id,
   });
+
+  // Load all licenses for upload workflow
+  useEffect(() => {
+    if (!id) {
+      loadAllLicenses();
+      setCurrentView('upload');
+    } else {
+      setCurrentView('analysis');
+    }
+  }, [id]);
+
+  const loadAllLicenses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('licenses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const licensesWithDocs = await Promise.all((data || []).map(async (license) => {
+        const { data: docs } = await supabase
+          .from('documents')
+          .select('id, file_name, ai_processing_status')
+          .eq('related_id', license.id)
+          .eq('related_model', 'license');
+        
+        return { ...license, documents: docs || [] };
+      }));
+      
+      setAllLicenses(licensesWithDocs);
+    } catch (error) {
+      console.error('Error loading licenses:', error);
+    }
+  };
 
   const { data: analyses, isLoading: analysesLoading } = useQuery({
     queryKey: ['license-analyses', id],
@@ -83,6 +130,339 @@ export function LicenciamentoAnalise() {
     }
   });
 
+  // Upload functionality
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.includes('pdf')) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Apenas arquivos PDF são aceitos"
+      });
+      return;
+    }
+
+    setUploadingFile(true);
+    
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+      });
+      reader.readAsDataURL(file);
+      const base64Data = await base64Promise;
+
+      const { data, error } = await supabase.functions.invoke('license-workflow-processor', {
+        body: {
+          action: 'upload',
+          file: {
+            name: file.name,
+            type: file.type,
+            data: base64Data
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Upload realizado!",
+          description: "Análise IA iniciada automaticamente."
+        });
+        loadAllLicenses();
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro durante upload",
+        description: "Tente novamente"
+      });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleReconciliation = (license: any) => {
+    setSelectedLicense(license);
+    setReconciliationOpen(true);
+  };
+
+  const handleReconciliationApprove = async (data: any) => {
+    if (!selectedLicense) return;
+
+    const { error } = await supabase.functions.invoke('license-workflow-processor', {
+      body: {
+        action: 'reconcile',
+        licenseId: selectedLicense.id,
+        reconciliationData: data
+      }
+    });
+
+    if (error) throw error;
+    
+    loadAllLicenses();
+  };
+
+  // Workflow View (no ID - list/upload view)
+  if (currentView === 'upload') {
+    const processingLicenses = allLicenses.filter(l => 
+      l.ai_processing_status === 'processing' || l.status === 'Em Análise'
+    );
+    const pendingReview = allLicenses.filter(l => 
+      l.status === 'Aguardando Revisão' || 
+      (l.ai_processing_status === 'completed' && l.status !== 'Ativa')
+    );
+    const completedLicenses = allLicenses.filter(l => 
+      l.ai_processing_status === 'completed' || l.status === 'Ativa'
+    );
+
+    return (
+      <MainLayout>
+        <div className="container mx-auto p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => navigate('/licenciamento')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">Análise Inteligente de Licenças</h1>
+                <p className="text-muted-foreground">
+                  Upload, processamento e análise automática com IA
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Tabs defaultValue="upload" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="upload" className="gap-2">
+                <Upload className="w-4 h-4" />
+                Upload & Análise
+              </TabsTrigger>
+              <TabsTrigger value="progress" className="gap-2">
+                <Clock className="w-4 h-4" />
+                Em Progresso ({processingLicenses.length})
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Concluídas ({completedLicenses.length})
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Upload Tab */}
+            <TabsContent value="upload" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    Upload de Licença Ambiental
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                    <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-medium mb-2">
+                      Faça upload da sua licença ambiental
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Apenas arquivos PDF. A IA extrairá automaticamente os dados.
+                    </p>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                      className="hidden"
+                      id="pdf-upload"
+                      disabled={uploadingFile}
+                    />
+                    <Button 
+                      asChild
+                      disabled={uploadingFile}
+                      size="lg"
+                    >
+                      <label htmlFor="pdf-upload" className="cursor-pointer">
+                        {uploadingFile ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Processando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Selecionar PDF
+                          </>
+                        )}
+                      </label>
+                    </Button>
+                  </div>
+                  
+                  {uploadingFile && (
+                    <div className="mt-4">
+                      <Progress value={50} className="w-full" />
+                      <p className="text-sm text-center text-muted-foreground mt-2">
+                        Enviando arquivo e iniciando análise IA...
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pending Review */}
+              {pendingReview.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-orange-600" />
+                      Aguardando Revisão ({pendingReview.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {pendingReview.map((license) => (
+                        <div key={license.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-orange-600" />
+                            <div>
+                              <p className="font-medium">
+                                {license.name || license.documents?.[0]?.file_name || 'Licença'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {license.ai_confidence_score && `${Math.round(license.ai_confidence_score * 100)}% confiança`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{license.status}</Badge>
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleReconciliation(license)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Revisar
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Progress Tab */}
+            <TabsContent value="progress" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-blue-600" />
+                    Análises em Progresso
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {processingLicenses.map((license) => (
+                      <div key={license.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Brain className="h-5 w-5 text-blue-600 animate-pulse" />
+                          <div>
+                            <p className="font-medium">
+                              {license.documents?.[0]?.file_name || 'Documento de Licença'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Análise IA em andamento...
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">Processando</Badge>
+                      </div>
+                    ))}
+                    
+                    {processingLicenses.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>Nenhuma análise em progresso</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Completed Tab */}
+            <TabsContent value="completed" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    Licenças Processadas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {completedLicenses.map((license) => (
+                      <div key={license.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <div>
+                            <p className="font-medium">
+                              {license.name || license.documents?.[0]?.file_name || 'Licença'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {license.type} • {license.ai_confidence_score && `${Math.round(license.ai_confidence_score * 100)}% confiança`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="default">{license.status}</Badge>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/licenciamento/${license.id}/analise`)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {completedLicenses.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>Nenhuma licença processada ainda</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Reconciliation Modal */}
+          <LicenseReconciliationModal
+            isOpen={reconciliationOpen}
+            onClose={() => setReconciliationOpen(false)}
+            onApprove={handleReconciliationApprove}
+            licenseData={selectedLicense?.ai_extracted_data || {}}
+            documentFileName={selectedLicense?.documents?.[0]?.file_name || 'Documento'}
+          />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Analysis View (with ID - single license analysis)
   if (licenseLoading) {
     return (
       <MainLayout>

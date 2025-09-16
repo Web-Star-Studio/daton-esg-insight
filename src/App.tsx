@@ -41,7 +41,7 @@ import PublicForm from "./pages/PublicForm";
 import Documentos from "./pages/Documentos";
 import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
 import LicenseAnalysis from "@/pages/LicenseAnalysis";
-import LicenseWorkflowPage from "@/components/LicenseWorkflowPage";
+
 import LicenseForm from "@/pages/LicenseForm";
 
 import TestExtraction from "./pages/TestExtraction";
@@ -136,9 +136,14 @@ const App = () => (
                 <LicenciamentoAnalise />
               </ProtectedRoute>
             } />
+            <Route path="/licenciamento/analise" element={
+              <ProtectedRoute>
+                <LicenciamentoAnalise />
+              </ProtectedRoute>
+            } />
             <Route path="/licenciamento/workflow" element={
               <ProtectedRoute>
-                <LicenseWorkflowPage />
+                <LicenciamentoAnalise />
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/reconciliacao" element={

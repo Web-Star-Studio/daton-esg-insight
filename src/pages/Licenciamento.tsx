@@ -60,7 +60,7 @@ export default function Licenciamento() {
       title: "Análise Automática de Documentos",
       description: "Upload e processamento inteligente de licenças ambientais com IA",
       icon: Brain,
-      action: () => navigate('/licenciamento/workflow'),
+      action: () => navigate('/licenciamento/analise'),
       color: "bg-blue-500",
       stats: { processed: licenses?.length || 0, pending: 0 }
     },
@@ -115,7 +115,7 @@ export default function Licenciamento() {
           <div className="flex gap-3">
             <Button 
               variant="outline"
-              onClick={() => navigate('/licenciamento/workflow')}
+              onClick={() => navigate('/licenciamento/analise')}
               className="gap-2"
             >
               <Upload className="w-4 h-4" />
@@ -355,7 +355,7 @@ export default function Licenciamento() {
                     </div>
                     <Button 
                       size="sm"
-                      onClick={() => navigate('/licenciamento/workflow')}
+                      onClick={() => navigate('/licenciamento/analise')}
                     >
                       Iniciar
                     </Button>
