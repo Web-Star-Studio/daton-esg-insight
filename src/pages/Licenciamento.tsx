@@ -6,6 +6,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { 
   Shield, 
   FileText, 
@@ -19,20 +30,27 @@ import {
   AlertTriangle,
   TrendingUp,
   Users,
-  Calendar
+  Calendar,
+  Trash2,
+  RefreshCw
 } from 'lucide-react'
 import { AIExtractionDashboard } from '@/components/AIExtractionDashboard'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getLicenses, getLicenseStats, type LicenseListItem } from '@/services/licenses'
-import { toast } from 'sonner'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Licenciamento() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [selectedLicenses, setSelectedLicenses] = useState<string[]>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Fetch real license data
-  const { data: licenses, isLoading: licensesLoading } = useQuery({
+  const { data: licenses, isLoading: licensesLoading, refetch: refetchLicenses } = useQuery({
     queryKey: ['licenses'],
     queryFn: () => getLicenses(),
     retry: 3
@@ -100,6 +118,76 @@ export default function Licenciamento() {
       </Badge>
     );
   }
+
+  const handleSelectLicense = (licenseId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedLicenses(prev => [...prev, licenseId]);
+    } else {
+      setSelectedLicenses(prev => prev.filter(id => id !== licenseId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && licenses) {
+      setSelectedLicenses(licenses.map(l => l.id));
+    } else {
+      setSelectedLicenses([]);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    setDeleting(true);
+    try {
+      // Delete documents first
+      for (const licenseId of selectedLicenses) {
+        const { error: docsError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('related_id', licenseId)
+          .eq('related_model', 'license');
+        
+        if (docsError) throw docsError;
+
+        // Delete license conditions
+        await supabase
+          .from('license_conditions')
+          .delete()
+          .eq('license_id', licenseId);
+
+        // Delete license alerts
+        await supabase
+          .from('license_alerts')
+          .delete()
+          .eq('license_id', licenseId);
+      }
+      
+      // Delete licenses
+      const { error } = await supabase
+        .from('licenses')
+        .delete()
+        .in('id', selectedLicenses);
+      
+      if (error) throw error;
+
+      toast({
+        title: "Licenças excluídas!",
+        description: `${selectedLicenses.length} licença(s) foi(ram) excluída(s) com sucesso.`
+      });
+      
+      setSelectedLicenses([]);
+      setDeleteDialogOpen(false);
+      refetchLicenses();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir licenças",
+        description: "Tente novamente"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <MainLayout>
@@ -397,6 +485,43 @@ export default function Licenciamento() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Confirmar Exclusão
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Você tem certeza que deseja excluir{' '}
+                <strong>{selectedLicenses.length}</strong>{' '}
+                licença(s) selecionada(s)? Esta ação não pode ser desfeita e também excluirá todos os documentos, condições e alertas associados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteSelected}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir {selectedLicenses.length} Licença(s)
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   )
