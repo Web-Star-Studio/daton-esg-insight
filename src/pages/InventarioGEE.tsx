@@ -47,6 +47,7 @@ import { MobileCombustionModal } from "@/components/MobileCombustionModal";
 import { FugitiveEmissionsModal } from "@/components/FugitiveEmissionsModal";
 import { IndustrialProcessesModal } from "@/components/IndustrialProcessesModal";
 import { AgricultureModal } from "@/components/AgricultureModal";
+import { Scope3CategoryModal } from "@/components/Scope3CategoryModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -67,6 +68,7 @@ const InventarioGEE = () => {
   const [isFugitiveEmissionsModalOpen, setIsFugitiveEmissionsModalOpen] = useState(false)
   const [isIndustrialProcessesModalOpen, setIsIndustrialProcessesModalOpen] = useState(false)
   const [isAgricultureModalOpen, setIsAgricultureModalOpen] = useState(false)
+  const [isScope3CategoryModalOpen, setIsScope3CategoryModalOpen] = useState(false)
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
@@ -250,6 +252,8 @@ const InventarioGEE = () => {
       setIsIndustrialProcessesModalOpen(true)
     } else if (source.category === 'Agricultura') {
       setIsAgricultureModalOpen(true)
+    } else if (source.scope === 3) {
+      setIsScope3CategoryModalOpen(true)
     } else {
       setIsActivityModalOpen(true)
     }
@@ -575,6 +579,15 @@ const InventarioGEE = () => {
                   setEditingActivityData(null);
                 }}
                 source={activityDataSource}
+              />
+            ) : activityDataSource.scope === 3 ? (
+              <Scope3CategoryModal
+                isOpen={isScope3CategoryModalOpen}
+                onClose={() => {
+                  setIsScope3CategoryModalOpen(false);
+                  setEditingActivityData(null);
+                }}
+                onSuccess={loadData}
               />
             ) : (
               <ActivityDataModal
