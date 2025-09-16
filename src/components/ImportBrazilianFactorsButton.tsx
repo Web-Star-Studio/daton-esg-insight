@@ -50,7 +50,6 @@ export function ImportBrazilianFactorsButton({ onImportComplete }: ImportBrazili
     <Button 
       onClick={handleImport}
       disabled={isImporting}
-      variant="outline"
       className="gap-2"
     >
       {isImporting ? (

@@ -163,7 +163,7 @@ function extractSource(columns: string[]): string {
 export async function importBrazilianFactors(): Promise<{ success: number; errors: number; message: string }> {
   try {
     // Read the CSV file
-    const response = await fetch('/src/data/fatores_emissao_brasil.csv');
+    const response = await fetch('/fatores_emissao_brasil.csv');
     const csvContent = await response.text();
     
     // Transform the data
