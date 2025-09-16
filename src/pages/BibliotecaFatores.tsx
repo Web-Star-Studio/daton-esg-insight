@@ -15,6 +15,7 @@ import { ImportBrazilianFactorsButton } from "@/components/ImportBrazilianFactor
 import { ImportBrazilianGHGDataButton } from "@/components/ImportBrazilianGHGDataButton";
 import { ImportMobileCombustionButton } from "@/components/ImportMobileCombustionButton";
 import { ImportIndustrialProcessesButton } from "@/components/ImportIndustrialProcessesButton";
+import { ImportAgricultureButton } from "@/components/ImportAgricultureButton";
 import { ImportGHGProtocol2025Button } from "@/components/ImportGHGProtocol2025Button";
 import { EmissionFactorCard } from "@/components/EmissionFactorCard";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
@@ -162,6 +163,7 @@ export default function BibliotecaFatores() {
             <ImportBrazilianGHGDataButton onImportComplete={() => loadData()} />
             <ImportMobileCombustionButton onSuccess={() => loadData()} />
             <ImportIndustrialProcessesButton onSuccess={() => loadData()} />
+            <ImportAgricultureButton onSuccess={() => loadData()} />
             <ImportGHGProtocol2025Button onImportComplete={() => loadData()} />
             <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />

@@ -46,6 +46,7 @@ import { StationaryCombustionModal } from "@/components/StationaryCombustionModa
 import { MobileCombustionModal } from "@/components/MobileCombustionModal";
 import { FugitiveEmissionsModal } from "@/components/FugitiveEmissionsModal";
 import { IndustrialProcessesModal } from "@/components/IndustrialProcessesModal";
+import { AgricultureModal } from "@/components/AgricultureModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -65,6 +66,7 @@ const InventarioGEE = () => {
   const [isMobileCombustionModalOpen, setIsMobileCombustionModalOpen] = useState(false)
   const [isFugitiveEmissionsModalOpen, setIsFugitiveEmissionsModalOpen] = useState(false)
   const [isIndustrialProcessesModalOpen, setIsIndustrialProcessesModalOpen] = useState(false)
+  const [isAgricultureModalOpen, setIsAgricultureModalOpen] = useState(false)
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
@@ -246,6 +248,8 @@ const InventarioGEE = () => {
       setIsFugitiveEmissionsModalOpen(true)
     } else if (source.category === 'Processos Industriais') {
       setIsIndustrialProcessesModalOpen(true)
+    } else if (source.category === 'Agricultura') {
+      setIsAgricultureModalOpen(true)
     } else {
       setIsActivityModalOpen(true)
     }
@@ -559,6 +563,15 @@ const InventarioGEE = () => {
                 isOpen={isIndustrialProcessesModalOpen}
                 onClose={() => {
                   setIsIndustrialProcessesModalOpen(false);
+                  setEditingActivityData(null);
+                }}
+                source={activityDataSource}
+              />
+            ) : activityDataSource.category === 'Agricultura' ? (
+              <AgricultureModal
+                isOpen={isAgricultureModalOpen}
+                onClose={() => {
+                  setIsAgricultureModalOpen(false);
                   setEditingActivityData(null);
                 }}
                 source={activityDataSource}
