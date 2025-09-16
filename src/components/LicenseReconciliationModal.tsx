@@ -62,17 +62,13 @@ interface EditableField {
 }
 
 const fields: EditableField[] = [
-  { key: 'license_number', label: 'Número da Licença', type: 'text', icon: Hash, required: true },
-  { key: 'license_type', label: 'Tipo da Licença', type: 'text', icon: FileText, required: true },
+  { key: 'name', label: 'Número da Licença', type: 'text', icon: Hash, required: true },
+  { key: 'type', label: 'Tipo da Licença', type: 'text', icon: FileText, required: true },
   { key: 'process_number', label: 'Número do Processo', type: 'text', icon: Hash },
   { key: 'issue_date', label: 'Data de Emissão', type: 'date', icon: Calendar },
   { key: 'expiration_date', label: 'Data de Vencimento', type: 'date', icon: Calendar, required: true },
-  { key: 'company_name', label: 'Nome da Empresa', type: 'text', icon: Building },
-  { key: 'cnpj', label: 'CNPJ', type: 'text', icon: Hash },
-  { key: 'address', label: 'Endereço', type: 'textarea', icon: MapPin },
-  { key: 'city', label: 'Cidade', type: 'text', icon: MapPin },
-  { key: 'state', label: 'Estado', type: 'text', icon: MapPin },
-  { key: 'activity', label: 'Atividade', type: 'textarea', icon: Activity },
+  { key: 'issuing_body', label: 'Órgão Emissor', type: 'text', icon: Building, required: true },
+  { key: 'conditions', label: 'Condicionantes', type: 'textarea', icon: Activity },
 ];
 
 export const LicenseReconciliationModal: React.FC<LicenseReconciliationModalProps> = ({

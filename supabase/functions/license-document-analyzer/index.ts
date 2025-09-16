@@ -195,10 +195,15 @@ serve(async (req) => {
 
     // Authenticate user
     const authHeader = req.headers.get('Authorization')!;
-    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' });
+    
+    if (!authHeader) {
+      return new Response('Missing Authorization header', { status: 401, headers: corsHeaders });
+    }
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError);
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 

@@ -129,9 +129,11 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     .insert({
       id: document.related_id,
       company_id: companyId,
-      license_number: 'Processando...',
-      license_type: 'Identificando...',
+      name: 'Processando...',
+      type: 'LO',
       status: 'Em Análise',
+      issuing_body: 'Identificando...',
+      expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
       ai_processing_status: 'processing',
       ai_confidence_score: 0
     })
@@ -161,17 +163,13 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       await supabaseClient
         .from('licenses')
         .update({
-          license_number: extractedData.license_number || 'Não identificado',
-          license_type: extractedData.license_type || 'Não identificado',
+          name: extractedData.license_number || 'Não identificado',
+          type: extractedData.license_type || 'LO',
           process_number: extractedData.process_number,
           issue_date: extractedData.issue_date,
-          expiration_date: extractedData.valid_until,
-          company_name: extractedData.company,
-          cnpj: extractedData.cnpj,
-          address: extractedData.address,
-          city: extractedData.city,
-          state: extractedData.state,
-          activity: extractedData.activity,
+          expiration_date: extractedData.valid_until || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          issuing_body: extractedData.issuing_body || 'Identificando...',
+          conditions: extractedData.conditions ? JSON.stringify(extractedData.conditions) : null,
           ai_processing_status: 'completed',
           ai_confidence_score: result.data.confidence || 0,
           ai_extracted_data: extractedData
@@ -193,7 +191,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         .from('licenses')
         .update({
           ai_processing_status: 'failed',
-          status: 'Erro na Análise'
+          status: 'Vencida'
         })
         .eq('id', document.related_id);
 
@@ -252,21 +250,17 @@ async function handleAnalyze(supabaseClient: any, licenseId: string) {
     await supabaseClient
       .from('licenses')
       .update({
-        license_number: extractedData.license_number || license.license_number,
-        license_type: extractedData.license_type || license.license_type,
+        name: extractedData.license_number || license.name,
+        type: extractedData.license_type || license.type,
         process_number: extractedData.process_number,
         issue_date: extractedData.issue_date,
-        expiration_date: extractedData.valid_until,
-        company_name: extractedData.company,
-        cnpj: extractedData.cnpj,
-        address: extractedData.address,
-        city: extractedData.city,
-        state: extractedData.state,
-        activity: extractedData.activity,
+        expiration_date: extractedData.valid_until || license.expiration_date,
+        issuing_body: extractedData.issuing_body || license.issuing_body,
+        conditions: extractedData.conditions ? JSON.stringify(extractedData.conditions) : license.conditions,
         ai_processing_status: 'completed',
         ai_confidence_score: result.confidence || 0,
         ai_extracted_data: extractedData,
-        status: 'Aguardando Revisão'
+        status: 'Ativa'
       })
       .eq('id', licenseId);
   }
@@ -287,10 +281,15 @@ async function handleReconcile(supabaseClient: any, licenseId: string, reconcili
   const { error } = await supabaseClient
     .from('licenses')
     .update({
-      ...reconciliationData,
+      name: reconciliationData.name || reconciliationData.license_number,
+      type: reconciliationData.type || reconciliationData.license_type,
+      process_number: reconciliationData.process_number,
+      issue_date: reconciliationData.issue_date,
+      expiration_date: reconciliationData.expiration_date,
+      issuing_body: reconciliationData.issuing_body || 'Órgão Ambiental',
+      conditions: reconciliationData.conditions,
       status: 'Ativa',
-      ai_processing_status: 'approved',
-      approved_at: new Date().toISOString()
+      ai_processing_status: 'approved'
     })
     .eq('id', licenseId);
 
