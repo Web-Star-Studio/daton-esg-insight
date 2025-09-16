@@ -520,6 +520,7 @@ const InventarioGEE = () => {
                 emissionSourceId={activityDataSource.id}
                 onSuccess={loadData}
                 editingData={editingActivityData}
+                source={activityDataSource}
               />
             ) : (
               <ActivityDataModal

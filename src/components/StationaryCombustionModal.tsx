@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { ActivityDataList } from "./ActivityDataList";
 import { 
   ECONOMIC_SECTORS, 
   EconomicSector, 
@@ -13,7 +15,7 @@ import {
   getRecommendedUnitsForFuel,
   validateFuelForSector 
 } from "@/services/stationaryCombustion";
-import { addActivityData, updateActivityData, getEmissionFactors } from "@/services/emissions";
+import { addActivityData, updateActivityData, getEmissionFactors, EmissionSource } from "@/services/emissions";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ActivityDataRecord {
@@ -33,6 +35,7 @@ interface StationaryCombustionModalProps {
   economicSector?: string; // Pre-fill from emission source
   onSuccess: () => void;
   editingData?: ActivityDataRecord;
+  source?: EmissionSource; // Use proper EmissionSource type
 }
 
 export const StationaryCombustionModal = ({ 
@@ -41,7 +44,8 @@ export const StationaryCombustionModal = ({
   emissionSourceId, 
   economicSector: initialEconomicSector,
   onSuccess,
-  editingData
+  editingData,
+  source
 }: StationaryCombustionModalProps) => {
   const [formData, setFormData] = useState({
     economicSector: (initialEconomicSector as EconomicSector) || ('' as EconomicSector),
@@ -59,6 +63,8 @@ export const StationaryCombustionModal = ({
   const [availableFuels, setAvailableFuels] = useState<any[]>([]);
   const [selectedFuel, setSelectedFuel] = useState<any>(null);
   const [emissionFactorId, setEmissionFactorId] = useState<string | null>(null);
+  const [refreshData, setRefreshData] = useState(0);
+  const [activeTab, setActiveTab] = useState("list");
 
   // Pre-fill economic sector and load fuels if provided, or pre-fill editing data
   useEffect(() => {
@@ -202,6 +208,7 @@ export const StationaryCombustionModal = ({
       }
       onSuccess();
       onOpenChange(false);
+      setRefreshData(prev => prev + 1);
       
       // Reset form
       setFormData({
@@ -224,17 +231,63 @@ export const StationaryCombustionModal = ({
     }
   };
 
+  const handleEditData = (data: ActivityDataRecord) => {
+    // Pre-fill form with selected data
+    setFormData(prev => ({
+      ...prev,
+      quantity: data.quantity.toString(),
+      unit: data.unit,
+      periodStart: data.period_start_date,
+      periodEnd: data.period_end_date,
+      sourceDocument: data.source_document || '',
+    }));
+    // Switch to add tab for editing
+    setActiveTab("add");
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingData ? 'Editar' : 'Registrar'} Combustão Estacionária</DialogTitle>
+          <DialogTitle>{editingData ? 'Editar' : 'Gerenciar'} Combustão Estacionária</DialogTitle>
           <DialogDescription>
-            Adicione dados de consumo de combustível conforme GHG Protocol Brasil
+            {source && (
+              <>
+                Fonte: <span className="font-medium">{source.name}</span> | 
+                Categoria: <span className="font-medium">{source.category}</span>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="list">Dados Existentes</TabsTrigger>
+            <TabsTrigger value="add">Adicionar Novo</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="space-y-4">
+            {source && (
+              <ActivityDataList 
+                source={source}
+                key={refreshData}
+                onDataChange={() => {
+                  setRefreshData(prev => prev + 1);
+                  onSuccess?.();
+                }}
+                onEditData={handleEditData}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="add" className="space-y-4">
+            {editingData && (
+              <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800 mb-4">
+                <p className="font-medium">Editando dados de combustão estacionária</p>
+                <p>Período: {editingData.period_start_date} - {editingData.period_end_date}</p>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-6">
           {/* Economic Sector Selection */}
           <div className="space-y-2">
             <Label htmlFor="economicSector">
@@ -402,6 +455,8 @@ export const StationaryCombustionModal = ({
             </Button>
           </div>
         </form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
