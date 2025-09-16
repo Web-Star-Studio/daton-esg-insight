@@ -45,6 +45,7 @@ import { ActivityDataModal } from "@/components/ActivityDataModal";
 import { StationaryCombustionModal } from "@/components/StationaryCombustionModal";
 import { MobileCombustionModal } from "@/components/MobileCombustionModal";
 import { FugitiveEmissionsModal } from "@/components/FugitiveEmissionsModal";
+import { IndustrialProcessesModal } from "@/components/IndustrialProcessesModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -63,6 +64,7 @@ const InventarioGEE = () => {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
   const [isMobileCombustionModalOpen, setIsMobileCombustionModalOpen] = useState(false)
   const [isFugitiveEmissionsModalOpen, setIsFugitiveEmissionsModalOpen] = useState(false)
+  const [isIndustrialProcessesModalOpen, setIsIndustrialProcessesModalOpen] = useState(false)
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
@@ -242,6 +244,8 @@ const InventarioGEE = () => {
       setIsMobileCombustionModalOpen(true)
     } else if (source.category === 'Emissões Fugitivas') {
       setIsFugitiveEmissionsModalOpen(true)
+    } else if (source.category === 'Processos Industriais') {
+      setIsIndustrialProcessesModalOpen(true)
     } else {
       setIsActivityModalOpen(true)
     }
@@ -546,6 +550,15 @@ const InventarioGEE = () => {
                 isOpen={isFugitiveEmissionsModalOpen}
                 onClose={() => {
                   setIsFugitiveEmissionsModalOpen(false);
+                  setEditingActivityData(null);
+                }}
+                source={activityDataSource}
+              />
+            ) : activityDataSource.category === 'Processos Industriais' ? (
+              <IndustrialProcessesModal
+                isOpen={isIndustrialProcessesModalOpen}
+                onClose={() => {
+                  setIsIndustrialProcessesModalOpen(false);
                   setEditingActivityData(null);
                 }}
                 source={activityDataSource}
