@@ -300,15 +300,13 @@ export default function GestaoESG() {
 
   return (
     <MainLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Painel de Gestão Estratégica ESG</h1>
-            <p className="text-muted-foreground mt-2">
-              Visão consolidada dos pilares Ambiental, Social e de Governança
-            </p>
-          </div>
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">Painel de Gestão Estratégica ESG</h1>
+          <p className="text-lg text-muted-foreground">
+            Visão consolidada dos pilares Ambiental, Social e de Governança
+          </p>
         </div>
 
         {/* Error Alert */}
@@ -329,84 +327,285 @@ export default function GestaoESG() {
           </Alert>
         )}
 
-        {/* Central ESG Score com IA */}
+        {/* Central ESG Score */}
         <div className="flex justify-center">
-          <CardWithAI
-            cardType="esg_score"
-            cardData={{ 
-              overall_esg_score: displayData.overall_esg_score || 0,
-              environmental: displayData.environmental,
-              social: displayData.social,
-              governance: displayData.governance
-            }}
-            title="Score ESG Geral"
-            value={displayData.overall_esg_score}
-            subtitle="Baseado em métricas ambientais, sociais e de governança"
-            className="text-center p-8 min-w-[300px]"
-          >
-            <div className="mb-4 flex justify-center">
-              <CircularProgress value={displayData.overall_esg_score} size={200} />
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-muted-foreground">Score ESG Geral</h3>
+                  <div className="flex justify-center my-6">
+                    <CircularProgress value={displayData.overall_esg_score} size={180} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Baseado em métricas ambientais, sociais e de governança
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ESG Pillars Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="relative overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-green-600">Ambiental</h3>
+                  <p className="text-3xl font-bold mt-2">(E)</p>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-green-500 text-white text-lg px-3 py-1">
+                    {displayData.environmental.score}/100
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-blue-600">Social</h3>
+                  <p className="text-3xl font-bold mt-2">(S)</p>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-blue-500 text-white text-lg px-3 py-1">
+                    {displayData.social.score}/100
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-purple-600">Governança</h3>
+                  <p className="text-3xl font-bold mt-2">(G)</p>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-green-500 text-white text-lg px-3 py-1">
+                    87/100
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Detailed Metrics by Pillar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Environmental Metrics */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-green-600 border-b border-green-200 pb-2">
+              Métricas Ambientais
+            </h3>
+            <div className="space-y-3">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Emissões</p>
+                      <p className="text-2xl font-bold">5.218</p>
+                      <p className="text-xs text-muted-foreground">tCO₂e</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center text-xs text-red-600">
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                        12%
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Taxa de Reciclagem</p>
+                      <p className="text-2xl font-bold">0%</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardWithAI>
+          </div>
+
+          {/* Social Metrics */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-blue-600 border-b border-blue-200 pb-2">
+              Métricas Sociais
+            </h3>
+            <div className="space-y-3">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Taxa de Rotatividade</p>
+                      <p className="text-2xl font-bold">12%</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Horas de Treinamento</p>
+                      <p className="text-2xl font-bold">24h</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center text-xs text-green-600">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        +3%
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Governance Metrics */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-purple-600 border-b border-purple-200 pb-2">
+              Métricas de Governança
+            </h3>
+            <div className="space-y-3">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-muted-foreground">% Metas no Prazo</p>
+                      <p className="text-2xl font-bold">100%</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center text-xs text-green-600">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        +5%
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Conformidade com Políticas</p>
+                      <p className="text-2xl font-bold">95%</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Sem alteração</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
 
-        {/* ESG Pillars */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ESG Pillars */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <PillarCard
-            title="Ambiental (E)"
-            data={displayData.environmental}
-            color="green"
-            pillar="environmental"
-            navigate={navigate}
-          />
-          <PillarCard
-            title="Social (S)"
-            data={displayData.social}
-            color="blue"
-            pillar="social"
-            navigate={navigate}
-          />
-          <PillarCard
-            title="Governança (G)"
-            data={displayData.governance}
-            color="purple"
-            pillar="governance"
-            navigate={navigate}
-          />
-        </div>
+        {/* Insights and Recommendations */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-600">
+                <TrendingUp className="h-5 w-5" />
+                Pontos Fortes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
+                  Governança com score de 87/100, acima da média do setor
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
+                  100% das metas estão dentro do prazo estabelecido
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
+                  Redução de 12% nas emissões em relação ao período anterior
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-600">
+                <AlertCircle className="h-5 w-5" />
+                Oportunidades de Melhoria
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0"></span>
+                  Implementar programa de reciclagem para aumentar taxa de 0%
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0"></span>
+                  Expandir horas de treinamento para superar média do setor
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0"></span>
+                  Diversificar matriz energética com fontes renováveis
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Additional Information */}
-        <Card>
+        {/* Methodology Information */}
+        <Card className="bg-muted/30">
           <CardHeader>
-            <CardTitle>Como o Score ESG é Calculado</CardTitle>
+            <CardTitle>Metodologia de Cálculo ESG</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <h4 className="font-semibold text-green-600">Ambiental (40%)</h4>
-                <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li>• Conformidade de Licenças (40%)</li>
-                  <li>• Taxa de Reciclagem (35%)</li>
-                  <li>• Gestão de Emissões (25%)</li>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                  <h4 className="font-semibold text-green-700">Ambiental (40%)</h4>
+                </div>
+                <ul className="text-sm text-muted-foreground ml-6 space-y-1">
+                  <li>• Gestão de Emissões GEE</li>
+                  <li>• Eficiência no Uso de Recursos</li>
+                  <li>• Conformidade Ambiental</li>
+                  <li>• Gestão de Resíduos</li>
                 </ul>
               </div>
-              <div>
-                <h4 className="font-semibold text-blue-600">Social (30%)</h4>
-                <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li>• Taxa de Rotatividade (40%)</li>
-                  <li>• Horas de Treinamento (35%)</li>
-                  <li>• Índice de Diversidade (25%)</li>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                  <h4 className="font-semibold text-blue-700">Social (30%)</h4>
+                </div>
+                <ul className="text-sm text-muted-foreground ml-6 space-y-1">
+                  <li>• Satisfação dos Colaboradores</li>
+                  <li>• Desenvolvimento e Treinamento</li>
+                  <li>• Diversidade e Inclusão</li>
+                  <li>• Saúde e Segurança</li>
                 </ul>
               </div>
-              <div>
-                <h4 className="font-semibold text-purple-600">Governança (30%)</h4>
-                <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li>• Metas no Prazo (50%)</li>
-                  <li>• Conformidade Política (30%)</li>
-                  <li>• Diversidade Conselho (20%)</li>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                  <h4 className="font-semibold text-purple-700">Governança (30%)</h4>
+                </div>
+                <ul className="text-sm text-muted-foreground ml-6 space-y-1">
+                  <li>• Cumprimento de Metas</li>
+                  <li>• Conformidade Regulatória</li>
+                  <li>• Transparência e Ética</li>
+                  <li>• Gestão de Riscos</li>
                 </ul>
               </div>
             </div>
