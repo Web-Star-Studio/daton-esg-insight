@@ -390,6 +390,14 @@ const InventarioGEE = () => {
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Fonte de Emissão
             </Button>
+            <Button 
+              onClick={() => setIsGHGCompleteModalOpen(true)} 
+              variant="outline" 
+              className="ml-2"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              GHG Protocol 2025
+            </Button>
           </div>
         </div>
 
@@ -496,6 +504,13 @@ const InventarioGEE = () => {
             onSuccess={loadData}
           />
         )}
+
+        {/* Modal GHG Protocol Completo */}
+        <GHGProtocolCompleteModal
+          isOpen={isGHGCompleteModalOpen}
+          onClose={() => setIsGHGCompleteModalOpen(false)}
+          onSuccess={loadData}
+        />
 
         {/* Gráficos e Análises */}
         {showCharts && (
