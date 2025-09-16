@@ -1,7 +1,8 @@
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { useAuth } from "@/contexts/AuthContext"
 import { AppSidebar } from "@/components/AppSidebar"
 import { AppHeader } from "@/components/AppHeader"
 import { ChatAssistant } from "@/components/ChatAssistant"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 interface MainLayoutProps {
   children: React.ReactNode

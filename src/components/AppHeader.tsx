@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,12 +32,7 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-4 w-4" />
-          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0">
-            2
-          </Badge>
-        </Button>
+        <SmartNotificationSystem />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

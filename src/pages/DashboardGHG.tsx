@@ -5,12 +5,14 @@ import { CardWithAI } from "@/components/CardWithAI"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { Skeleton } from "@/components/ui/skeleton"
-import { TrendingDown, CalendarIcon } from "lucide-react"
+import { SmartSkeleton } from "@/components/SmartSkeleton"
+import { TrendingDown, CalendarIcon, RefreshCw } from "lucide-react"
 import { format, addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
-import { useQuery } from "@tanstack/react-query"
+import { useSmartCache } from "@/hooks/useSmartCache"
+import { useAutoRefresh } from "@/hooks/useAutoRefresh"
+import { useRealTimeData } from "@/hooks/useRealTimeData"
 import { supabase } from "@/integrations/supabase/client"
 import {
   BarChart,
@@ -69,11 +71,40 @@ const DashboardGHG = () => {
     to: new Date(2025, 11, 31), // 31/12/2025
   })
 
-  // Fetch emissions data
-  const { data: emissionsData, isLoading } = useQuery({
-    queryKey: ['emissions-data', dateRange],
+  const dateRangeKey = dateRange ? `${dateRange.from?.toISOString()}-${dateRange.to?.toISOString()}` : 'no-range';
+  
+  // Smart cache with real-time updates for emissions data
+  const { data: emissionsData, isLoading, cacheInfo } = useSmartCache({
+    queryKey: ['emissions-data', dateRangeKey],
     queryFn: () => getEmissionsData(dateRange),
-  })
+    priority: 'high',
+    preloadRelated: [['emission-factors'], ['activity-data']],
+    backgroundRefetch: true,
+  });
+
+  // Auto-refresh system
+  const { refresh, isRefreshing, lastRefresh } = useAutoRefresh({
+    queryKeys: [['emissions-data', dateRangeKey]],
+    interval: 60000, // 1 minute for dashboard data
+    enableRealtime: true,
+    realtimeTable: 'calculated_emissions',
+  });
+
+  // Real-time data connection
+  useRealTimeData([
+    {
+      table: 'calculated_emissions',
+      queryKey: ['emissions-data', dateRangeKey],
+      events: ['INSERT', 'UPDATE'],
+      debounceMs: 1000,
+    },
+    {
+      table: 'activity_data',
+      queryKey: ['emissions-data', dateRangeKey],
+      events: ['INSERT', 'UPDATE', 'DELETE'],
+      debounceMs: 1000,
+    }
+  ]);
 
   // Process data for charts
   const { monthlyData, escopoData, fontesEscopo1Data, totals } = useMemo(() => {
@@ -204,6 +235,22 @@ const DashboardGHG = () => {
             <p className="text-muted-foreground mt-1">
               Análise detalhada das emissões de Gases de Efeito Estufa
             </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center text-xs text-muted-foreground">
+                <div className={`h-2 w-2 rounded-full mr-1 ${cacheInfo.isCached ? 'bg-success' : 'bg-warning'}`} />
+                {cacheInfo.isCached ? 'Dados em cache' : 'Dados atualizando'}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refresh}
+                disabled={isRefreshing}
+                className="h-6 px-2 text-xs"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
           </div>
           
           {/* Filtro de Período */}
@@ -303,9 +350,7 @@ const DashboardGHG = () => {
           <CardContent>
             <div className="h-[400px]">
               {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Skeleton className="h-full w-full" />
-                </div>
+                <SmartSkeleton variant="chart" className="h-full" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyData} barCategoryGap="20%">
@@ -338,9 +383,7 @@ const DashboardGHG = () => {
             <CardContent>
               <div className="h-[300px]">
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Skeleton className="h-32 w-32 rounded-full" />
-                  </div>
+                  <SmartSkeleton variant="chart" className="h-full" />
                 ) : escopoData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -388,9 +431,7 @@ const DashboardGHG = () => {
             <CardContent>
               <div className="h-[300px]">
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Skeleton className="h-32 w-32 rounded-full" />
-                  </div>
+                  <SmartSkeleton variant="chart" className="h-full" />
                 ) : fontesEscopo1Data.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
