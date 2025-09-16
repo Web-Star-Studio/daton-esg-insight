@@ -48,6 +48,7 @@ import { FugitiveEmissionsModal } from "@/components/FugitiveEmissionsModal";
 import { IndustrialProcessesModal } from "@/components/IndustrialProcessesModal";
 import { AgricultureModal } from "@/components/AgricultureModal";
 import { Scope3CategoryModal } from "@/components/Scope3CategoryModal";
+import { AdvancedAnalyticsModal } from "@/components/AdvancedAnalyticsModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -69,6 +70,7 @@ const InventarioGEE = () => {
   const [isIndustrialProcessesModalOpen, setIsIndustrialProcessesModalOpen] = useState(false)
   const [isAgricultureModalOpen, setIsAgricultureModalOpen] = useState(false)
   const [isScope3CategoryModalOpen, setIsScope3CategoryModalOpen] = useState(false)
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false)
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
@@ -422,6 +424,14 @@ const InventarioGEE = () => {
               Adicionar Fonte de Emissão
             </Button>
             <Button 
+              onClick={() => setIsAnalyticsModalOpen(true)}
+              variant="outline"
+              className="ml-2"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics Avançado
+            </Button>
+            <Button 
               onClick={() => setIsGHGCompleteModalOpen(true)} 
               variant="outline" 
               className="ml-2"
@@ -611,6 +621,12 @@ const InventarioGEE = () => {
           isOpen={isGHGCompleteModalOpen}
           onClose={() => setIsGHGCompleteModalOpen(false)}
           onSuccess={loadData}
+        />
+
+        {/* Modal Analytics Avançado */}
+        <AdvancedAnalyticsModal
+          isOpen={isAnalyticsModalOpen}
+          onClose={() => setIsAnalyticsModalOpen(false)}
         />
 
         {/* Gráficos e Análises */}
