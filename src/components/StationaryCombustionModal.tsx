@@ -13,8 +13,18 @@ import {
   getRecommendedUnitsForFuel,
   validateFuelForSector 
 } from "@/services/stationaryCombustion";
-import { addActivityData, getEmissionFactors } from "@/services/emissions";
+import { addActivityData, updateActivityData, getEmissionFactors } from "@/services/emissions";
 import { supabase } from "@/integrations/supabase/client";
+
+interface ActivityDataRecord {
+  id: string;
+  period_start_date: string;
+  period_end_date: string;
+  quantity: number;
+  unit: string;
+  source_document?: string;
+  created_at: string;
+}
 
 interface StationaryCombustionModalProps {
   open: boolean;
@@ -22,6 +32,7 @@ interface StationaryCombustionModalProps {
   emissionSourceId: string;
   economicSector?: string; // Pre-fill from emission source
   onSuccess: () => void;
+  editingData?: ActivityDataRecord;
 }
 
 export const StationaryCombustionModal = ({ 
@@ -29,7 +40,8 @@ export const StationaryCombustionModal = ({
   onOpenChange, 
   emissionSourceId, 
   economicSector: initialEconomicSector,
-  onSuccess 
+  onSuccess,
+  editingData
 }: StationaryCombustionModalProps) => {
   const [formData, setFormData] = useState({
     economicSector: (initialEconomicSector as EconomicSector) || ('' as EconomicSector),
@@ -48,12 +60,27 @@ export const StationaryCombustionModal = ({
   const [selectedFuel, setSelectedFuel] = useState<any>(null);
   const [emissionFactorId, setEmissionFactorId] = useState<string | null>(null);
 
-  // Pre-fill economic sector and load fuels if provided
+  // Pre-fill economic sector and load fuels if provided, or pre-fill editing data
   useEffect(() => {
-    if (initialEconomicSector && open) {
-      handleEconomicSectorChange(initialEconomicSector as EconomicSector);
+    if (open) {
+      if (editingData) {
+        setFormData({
+          economicSector: (initialEconomicSector as EconomicSector) || ('' as EconomicSector),
+          fuelName: '',
+          quantity: editingData.quantity.toString(),
+          unit: editingData.unit,
+          periodStart: editingData.period_start_date,
+          periodEnd: editingData.period_end_date,
+          sourceDocument: editingData.source_document || '',
+          sourceRegistry: '',
+          sourceDescription: ''
+        });
+      }
+      if (initialEconomicSector) {
+        handleEconomicSectorChange(initialEconomicSector as EconomicSector);
+      }
     }
-  }, [initialEconomicSector, open]);
+  }, [initialEconomicSector, open, editingData]);
 
   const handleEconomicSectorChange = (sector: EconomicSector) => {
     setFormData(prev => ({
@@ -166,9 +193,13 @@ export const StationaryCombustionModal = ({
         console.info('Enviando para cálculo automático por unidade');
       }
       
-      await addActivityData(payload);
-
-      toast.success("Dados de combustão estacionária adicionados com sucesso!");
+      if (editingData) {
+        await updateActivityData(editingData.id, payload);
+        toast.success("Dados de combustão estacionária atualizados com sucesso!");
+      } else {
+        await addActivityData(payload);
+        toast.success("Dados de combustão estacionária adicionados com sucesso!");
+      }
       onSuccess();
       onOpenChange(false);
       
@@ -197,7 +228,7 @@ export const StationaryCombustionModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar Combustão Estacionária</DialogTitle>
+          <DialogTitle>{editingData ? 'Editar' : 'Registrar'} Combustão Estacionária</DialogTitle>
           <DialogDescription>
             Adicione dados de consumo de combustível conforme GHG Protocol Brasil
           </DialogDescription>
@@ -367,7 +398,7 @@ export const StationaryCombustionModal = ({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar Dados"}
+              {isSubmitting ? "Salvando..." : (editingData ? "Salvar Alterações" : "Salvar Dados")}
             </Button>
           </div>
         </form>

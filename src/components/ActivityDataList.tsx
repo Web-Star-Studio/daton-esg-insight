@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FileText, Trash2, Calculator } from "lucide-react";
+import { Calendar, FileText, Trash2, Calculator, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,9 +22,10 @@ interface ActivityDataRecord {
 interface ActivityDataListProps {
   source: EmissionSource;
   onDataChange?: () => void;
+  onEditData?: (data: ActivityDataRecord) => void;
 }
 
-export function ActivityDataList({ source, onDataChange }: ActivityDataListProps) {
+export function ActivityDataList({ source, onDataChange, onEditData }: ActivityDataListProps) {
   const [activityData, setActivityData] = useState<ActivityDataRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -151,14 +152,26 @@ export function ActivityDataList({ source, onDataChange }: ActivityDataListProps
                   </div>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(data.id)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditData?.(data)}
+                    className="text-primary hover:text-primary"
+                    title="Editar dados"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(data.id)}
+                    className="text-destructive hover:text-destructive"
+                    title="Excluir dados"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

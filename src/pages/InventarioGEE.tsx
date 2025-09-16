@@ -62,6 +62,7 @@ const InventarioGEE = () => {
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
+  const [editingActivityData, setEditingActivityData] = useState<any>(null)
   const [emissionSources, setEmissionSources] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -232,6 +233,13 @@ const InventarioGEE = () => {
 
   const handleManageActivityData = (source: any) => {
     setActivityDataSource(source)
+    setEditingActivityData(null) // Reset editing state
+    setIsActivityModalOpen(true)
+  }
+
+  const handleEditActivityData = (source: any, activityData: any) => {
+    setActivityDataSource(source)
+    setEditingActivityData(activityData)
     setIsActivityModalOpen(true)
   }
   
@@ -503,16 +511,28 @@ const InventarioGEE = () => {
             {activityDataSource.category === 'Combustão Estacionária' ? (
               <StationaryCombustionModal
                 open={isActivityModalOpen}
-                onOpenChange={setIsActivityModalOpen}
+                onOpenChange={(open) => {
+                  setIsActivityModalOpen(open);
+                  if (!open) {
+                    setEditingActivityData(null);
+                  }
+                }}
                 emissionSourceId={activityDataSource.id}
                 onSuccess={loadData}
+                editingData={editingActivityData}
               />
             ) : (
               <ActivityDataModal
                 open={isActivityModalOpen}
-                onOpenChange={setIsActivityModalOpen}
+                onOpenChange={(open) => {
+                  setIsActivityModalOpen(open);
+                  if (!open) {
+                    setEditingActivityData(null);
+                  }
+                }}
                 source={activityDataSource}
                 onSuccess={loadData}
+                editingData={editingActivityData}
               />
             )}
           </>

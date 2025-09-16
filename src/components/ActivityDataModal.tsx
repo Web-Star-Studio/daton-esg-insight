@@ -9,18 +9,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { EmissionSource, ActivityData, addActivityData, getEmissionFactors } from "@/services/emissions";
+import { EmissionSource, ActivityData, addActivityData, updateActivityData, getEmissionFactors } from "@/services/emissions";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityDataList } from "./ActivityDataList";
 
+interface ActivityDataRecord {
+  id: string;
+  period_start_date: string;
+  period_end_date: string;
+  quantity: number;
+  unit: string;
+  source_document?: string;
+  created_at: string;
+}
+
 interface ActivityDataModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   source: EmissionSource;
   onSuccess?: () => void;
+  editingData?: ActivityDataRecord;
 }
 
 interface EmissionFactor {
@@ -40,7 +51,7 @@ const ACTIVITY_UNITS = [
   { value: "unidade", label: "Unidades" },
 ];
 
-export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: ActivityDataModalProps) {
+export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editingData }: ActivityDataModalProps) {
   const [periodStartDate, setPeriodStartDate] = useState<Date | undefined>();
   const [periodEndDate, setPeriodEndDate] = useState<Date | undefined>();
   const [quantity, setQuantity] = useState("");
@@ -55,8 +66,18 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
   useEffect(() => {
     if (open && source) {
       loadEmissionFactors();
+      // Pre-fill form when editing
+      if (editingData) {
+        setPeriodStartDate(new Date(editingData.period_start_date));
+        setPeriodEndDate(new Date(editingData.period_end_date));
+        setQuantity(editingData.quantity.toString());
+        setUnit(editingData.unit);
+        setSourceDocument(editingData.source_document || "");
+      } else {
+        resetForm();
+      }
     }
-  }, [open, source]);
+  }, [open, source, editingData]);
 
   const loadEmissionFactors = async () => {
     try {
@@ -133,12 +154,19 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
       payload.emission_factor_id = selectedEmissionFactorId;
     }
 
-    await addActivityData(payload);
-
+    if (editingData) {
+      await updateActivityData(editingData.id, payload);
+      toast({
+        title: "Sucesso",
+        description: "Dados de atividade atualizados com sucesso!",
+      });
+    } else {
+      await addActivityData(payload);
       toast({
         title: "Sucesso",
         description: "Dados de atividade adicionados com sucesso!",
       });
+    }
 
       resetForm();
       onOpenChange(false);
@@ -183,7 +211,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Gerenciar Dados de Atividade</DialogTitle>
+          <DialogTitle>{editingData ? 'Editar' : 'Gerenciar'} Dados de Atividade</DialogTitle>
           <p className="text-sm text-muted-foreground">
             Fonte: <span className="font-medium">{source.name}</span> | 
             Categoria: <span className="font-medium">{source.category}</span>
@@ -204,10 +232,26 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
                 setRefreshData(prev => prev + 1);
                 onSuccess?.();
               }}
+              onEditData={(data) => {
+                // Switch to edit tab and pre-fill form
+                setPeriodStartDate(new Date(data.period_start_date));
+                setPeriodEndDate(new Date(data.period_end_date));
+                setQuantity(data.quantity.toString());
+                setUnit(data.unit);
+                setSourceDocument(data.source_document || "");
+                // Switch to add tab for editing
+                (document.querySelector('[value="add"]') as HTMLElement)?.click();
+              }}
             />
           </TabsContent>
 
           <TabsContent value="add" className="space-y-4">
+            {editingData && (
+              <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800 mb-4">
+                <p className="font-medium">Editando dados de atividade</p>
+                <p>Período: {format(new Date(editingData.period_start_date), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(editingData.period_end_date), "dd/MM/yyyy", { locale: ptBR })}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -370,7 +414,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess }: Act
               <div className="flex justify-end space-x-2">
                 <Button type="submit" disabled={isLoading}>
                   <Plus className="w-4 h-4 mr-2" />
-                  {isLoading ? "Adicionando..." : "Adicionar Dados"}
+                  {isLoading ? (editingData ? "Salvando..." : "Adicionando...") : (editingData ? "Salvar Alterações" : "Adicionar Dados")}
                 </Button>
               </div>
             </form>

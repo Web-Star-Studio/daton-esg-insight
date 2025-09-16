@@ -117,6 +117,65 @@ export async function deleteEmissionSource(id: string): Promise<void> {
   }
 }
 
+export const updateActivityData = async (id: string, activityData: {
+  emission_source_id?: string;
+  quantity?: number;
+  unit?: string;
+  period_start_date?: string;
+  period_end_date?: string;
+  source_document?: string;
+  emission_factor_id?: string;
+}) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não encontrado');
+
+  // Sanitize emission_factor_id: only use if it's a valid UUID
+  const cleanedId = activityData.emission_factor_id && activityData.emission_factor_id.trim() !== '' 
+    ? activityData.emission_factor_id 
+    : undefined;
+
+  // Prepare final activity data
+  const finalActivityData = {
+    ...activityData,
+    emission_factor_id: cleanedId,
+  };
+
+  // If emission_factor_id is provided, get the correct unit from the factor
+  if (cleanedId) {
+    try {
+      const { data: factor } = await supabase
+        .from('emission_factors')
+        .select('activity_unit')
+        .eq('id', cleanedId)
+        .single();
+      
+      if (factor) {
+        finalActivityData.unit = factor.activity_unit; // Override with factor's unit
+        console.info('Unidade sobrescrita pelo fator:', factor.activity_unit);
+      }
+    } catch (error) {
+      console.warn('Erro ao buscar unidade do fator:', error);
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('activity_data')
+    .update(finalActivityData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Erro ao atualizar dados de atividade:', error);
+    throw error;
+  }
+
+  // Recalculate emissions automatically
+  await calculateEmissionsForActivityData(data.id);
+  
+  return data;
+};
+
 export const addActivityData = async (activityData: {
   emission_source_id: string;
   quantity: number;
