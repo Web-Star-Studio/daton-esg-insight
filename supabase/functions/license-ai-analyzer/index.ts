@@ -226,83 +226,75 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       },
       body: JSON.stringify({
         name: 'Analista de Licença Ambiental',
-        instructions: `Você é um especialista em licenciamento ambiental brasileiro. Analise DETALHADAMENTE o documento PDF anexado e extraia TODAS as informações estruturadas sobre a licença ambiental.
+        instructions: `Você é um especialista em licenciamento ambiental brasileiro. Leia o PDF ANEXADO do início ao fim e extraia informações ESTRUTURADAS, com foco em Condicionantes, Observações e Alertas que exigem ação do usuário.
 
-FOQUE ESPECIALMENTE na identificação e categorização de:
-1. CONDICIONANTES: Todas as obrigações, restrições e exigências impostas pela licença
-2. OBSERVAÇÕES: Notas importantes, alertas e informações críticas
-3. PRAZOS: Datas específicas para cumprimento de condicionantes
-4. MONITORAMENTOS: Exigências de monitoramento ambiental
-5. RELATÓRIOS: Obrigações de reportes periódicos
+REGRAS CRÍTICAS:
+- Responda SOMENTE com um JSON VÁLIDO (sem markdown, sem comentários, sem texto fora do JSON)
+- Se algum campo não existir, use null ou [] conforme o tipo
+- Identifique condicionantes mesmo quando não houver a palavra "Condicionante" explicitamente. Procure verbos de obrigação: "deve", "deverá", "fica obrigado", "apresentar", "realizar", "manter", "enviar", "comprovar", "executar"
+- Priorize seções típicas: "Condições", "Condicionantes", "Disposições", "Obrigações", "Cronograma", "Prazos", "Monitoramento", "Relatórios"
+- Extraia prazos explícitos em formato ISO (YYYY-MM-DD) quando possível; caso haja periodicidade (mensal, trimestral, semestral, anual), use em \"frequency\"
 
-Para cada CONDICIONANTE encontrada, categorize adequadamente:
-- "monitoramento": exigências de acompanhamento ambiental
-- "relatorio": obrigações de entrega de relatórios/laudos
-- "controle": medidas de controle operacional
-- "manutencao": exigências de manutenção preventiva/corretiva
-- "gestao_residuos": gerenciamento de resíduos e efluentes
-- "seguranca": medidas de segurança operacional
-- "ambiental": proteção e preservação ambiental
-- "documentacao": entrega de documentos/certidões
-- "outras": outras exigências não categorizadas
+CATEGORIAS PERMITIDAS PARA CONDICIONANTES:
+- monitoramento, relatorio, controle, manutencao, gestao_residuos, seguranca, ambiental, documentacao, outras
 
-Retorne APENAS um JSON válido com a seguinte estrutura:
+ESQUEMA DE RESPOSTA (JSON):
 {
-  "licenseType": "tipo da licença (LI, LP, LO, LAI, LAU, etc.)",
-  "issuingBody": "órgão emissor completo (IBAMA, órgão estadual, etc.)",
-  "processNumber": "número completo do processo",
-  "issueDate": "data de emissão (YYYY-MM-DD)",
-  "expirationDate": "data de vencimento (YYYY-MM-DD)",
-  "companyName": "nome da empresa titular",
-  "activity": "descrição detalhada da atividade licenciada",
-  "location": "localização/endereço da atividade",
+  "licenseType": string | null,
+  "issuingBody": string | null,
+  "processNumber": string | null,
+  "issueDate": string | null,           // YYYY-MM-DD
+  "expirationDate": string | null,      // YYYY-MM-DD
+  "companyName": string | null,
+  "activity": string | null,
+  "location": string | null,
   "conditions": [
     {
-      "text": "texto COMPLETO da condicionante/exigência (mínimo 10 palavras)",
-      "category": "uma das categorias listadas acima",
-      "priority": "high para condicionantes críticas/obrigatórias, medium para importantes, low para administrativas",
-      "frequency": "frequência específica se aplicável (diario, semanal, mensal, bimestral, trimestral, semestral, anual, unica, continuo)",
-      "dueDate": "prazo específico se mencionado (YYYY-MM-DD)",
-      "description": "descrição resumida da exigência (máximo 100 chars)",
-      "responsibleArea": "área/setor responsável se mencionado",
-      "monitoringRequired": true,
-      "complianceIndicators": ["indicadores de cumprimento se aplicável"]
+      "text": string,                   // texto completo da exigência (mín. 10 palavras)
+      "category": string,               // usar categorias permitidas
+      "priority": "high"|"medium"|"low",
+      "frequency": string | null,       // ex.: mensal, trimestral, anual, único
+      "dueDate": string | null,         // YYYY-MM-DD se houver
+      "description": string | null,     // resumo curto (<= 120 chars)
+      "responsibleArea": string | null, // se citado
+      "monitoringRequired": boolean | null,
+      "complianceIndicators": string[] | null
     }
   ],
   "observations": [
     {
-      "text": "observação completa do documento",
-      "type": "restriction, warning, note, requirement, other",
-      "priority": "critical, high, medium, low",
-      "relatedTo": "área/aspecto relacionado à observação"
+      "text": string,
+      "type": "restriction"|"warning"|"note"|"requirement"|"other",
+      "priority": "critical"|"high"|"medium"|"low",
+      "relatedTo": string | null
     }
   ],
-  "complianceScore": 85,
+  "complianceScore": number | null,
   "renewalRecommendation": {
-    "startDate": "data recomendada para iniciar renovação (6-12 meses antes do vencimento)",
-    "urgency": "high se < 6 meses, medium se < 12 meses, low se > 12 meses",
-    "requiredDocuments": ["lista ESPECÍFICA de documentos para renovação"],
-    "estimatedDuration": "prazo estimado para renovação em meses"
+    "startDate": string | null,         // sugerir 6-12 meses antes do vencimento
+    "urgency": "low"|"medium"|"high" | null,
+    "requiredDocuments": string[] | null,
+    "estimatedDuration": string | null
   },
   "alerts": [
     {
-      "type": "renewal, compliance, monitoring, environmental, safety, documentation, other",
-      "title": "título descritivo do alerta (máximo 60 chars)",
-      "message": "mensagem detalhada explicando o alerta e ações necessárias",
-      "severity": "critical para vencimentos próximos/condicionantes não cumpridas, high para exigências importantes, medium para monitoramentos, low para administrativo",
-      "actionRequired": true,
-      "dueDate": "prazo para ação se aplicável (YYYY-MM-DD)",
-      "relatedConditions": ["IDs de condicionantes relacionadas"]
+      "type": "renewal"|"compliance"|"monitoring"|"environmental"|"safety"|"documentation"|"other",
+      "title": string,
+      "message": string,
+      "severity": "low"|"medium"|"high"|"critical",
+      "actionRequired": boolean,
+      "dueDate": string | null,         // YYYY-MM-DD
+      "relatedConditions": string[] | null
     }
   ],
   "extractionQuality": {
-    "totalConditionsFound": 0,
-    "totalObservationsFound": 0,
-    "documentReadability": "excellent, good, fair, poor",
-    "extractionConfidence": 0.95
+    "totalConditionsFound": number,
+    "totalObservationsFound": number,
+    "documentReadability": "excellent"|"good"|"fair"|"poor",
+    "extractionConfidence": number      // 0..1
   }
 }`,
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4o-mini',
         tools: [{ type: 'file_search' }],
       }),
     });
@@ -368,7 +360,7 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
     // Poll for completion
     let runStatus = run.status;
     let attempts = 0;
-    const maxAttempts = 90; // 90 seconds max for thorough analysis
+    const maxAttempts = 120; // 120 seconds max for thorough analysis
 
     while (runStatus === 'queued' || runStatus === 'in_progress') {
       if (attempts >= maxAttempts) {
@@ -411,13 +403,29 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
           console.log('AI analysis result:', content.substring(0, 200));
           
           try {
-            // Extract JSON from response
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const extractedData = JSON.parse(jsonMatch[0]);
-              
-              // Calculate confidence score
-              const confidenceScore = calculateConfidenceScore(extractedData);
+            // Robust JSON extraction: prefer ```json``` blocks, then any code block, then first {...}
+            let extractedData: any | null = null;
+            const jsonBlock = content.match(/```json[\s\S]*?```/i);
+            const anyBlock = content.match(/```[\s\S]*?```/);
+            const tryParse = (txt: string) => { try { return JSON.parse(txt); } catch { return null; } };
+            if (jsonBlock) {
+              const inner = jsonBlock[0].replace(/```json/i,'').replace(/```$/,'').trim();
+              extractedData = tryParse(inner);
+            }
+            if (!extractedData && anyBlock) {
+              const inner = anyBlock[0].replace(/```/g,'').trim();
+              extractedData = tryParse(inner);
+            }
+            if (!extractedData) {
+              const braceMatch = content.match(/\{[\s\S]*\}/);
+              if (braceMatch) extractedData = tryParse(braceMatch[0]);
+            }
+            if (!extractedData) {
+              throw new Error('AI did not return valid JSON');
+            }
+            
+            // Calculate confidence score
+            const confidenceScore = calculateConfidenceScore(extractedData);
               
               // Update license with extracted data
               await supabaseClient
@@ -453,9 +461,12 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   ai_confidence: confidenceScore
                 }));
 
-                await supabaseClient
+                const { error: condInsertError } = await supabaseClient
                   .from('license_conditions')
                   .insert(conditionsToInsert);
+                if (condInsertError) {
+                  console.error('Error inserting license conditions:', condInsertError);
+                }
               }
 
               // Save alerts to database
@@ -473,9 +484,12 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   is_resolved: false
                 }));
 
-                await supabaseClient
+                const { error: alertInsertError } = await supabaseClient
                   .from('license_alerts')
                   .insert(alertsToInsert);
+                if (alertInsertError) {
+                  console.error('Error inserting license alerts:', alertInsertError);
+                }
               }
 
               // Save observations as special conditions if present
@@ -491,9 +505,12 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   ai_confidence: confidenceScore
                 }));
 
-                await supabaseClient
+                const { error: obsInsertError } = await supabaseClient
                   .from('license_conditions')
                   .insert(observationConditions);
+                if (obsInsertError) {
+                  console.error('Error inserting observation conditions:', obsInsertError);
+                }
               }
 
               // Update document status
