@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
+import { CardWithAI } from "@/components/CardWithAI";
+import { GlobalSearchInterface } from "@/components/GlobalSearchInterface";
+import { PredictiveDashboard } from "@/components/PredictiveDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -162,6 +165,7 @@ export default function Metas() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <GlobalSearchInterface onNavigate={(path) => navigate(path)} />
             <Button 
               variant="outline"
               onClick={() => window.location.reload()}
@@ -179,92 +183,66 @@ export default function Metas() {
           </div>
         </div>
 
+        {/* Predictive Insights */}
+        <PredictiveDashboard />
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Metas Ativas */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Metas Ativas
-              </CardTitle>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Target className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-foreground">
-                  {isLoading ? "--" : stats?.activeGoals || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">metas em andamento</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="goals_active"
+            cardData={{ 
+              activeGoals: stats?.activeGoals || 0,
+              totalGoals: totalCount,
+              averageProgress: stats?.averageProgress || 0 
+            }}
+            title="Metas Ativas"
+            value={stats?.activeGoals || 0}
+            subtitle="metas em andamento"
+            isLoading={isLoading}
+          />
 
           {/* Progresso Médio */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Progresso Médio
-              </CardTitle>
-              <div className="p-2 bg-success/10 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-success" />
-              </div>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-foreground">
-                  {isLoading ? "--" : `${stats?.averageProgress || 0}%`}
-                </div>
-                <p className="text-xs text-muted-foreground">das metas concluídas</p>
-              </div>
-              <CircularProgress 
-                value={isLoading ? 0 : stats?.averageProgress || 0} 
-                size={60}
-                strokeWidth={4}
-              />
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="goals_progress"
+            cardData={{ 
+              averageProgress: stats?.averageProgress || 0,
+              activeGoals: stats?.activeGoals || 0,
+              delayedGoals: stats?.delayedGoals || 0 
+            }}
+            title="Progresso Médio"
+            value={`${stats?.averageProgress || 0}%`}
+            subtitle="das metas concluídas"
+            isLoading={isLoading}
+          />
 
           {/* Metas em Atraso */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Em Atraso
-              </CardTitle>
-              <div className="p-2 bg-destructive/10 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-foreground">
-                  {isLoading ? "--" : stats?.delayedGoals || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">metas atrasadas</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="goals_delayed"
+            cardData={{ 
+              delayedGoals: stats?.delayedGoals || 0,
+              totalGoals: totalCount,
+              urgentGoals: stats?.delayedGoals || 0 
+            }}
+            title="Em Atraso"
+            value={stats?.delayedGoals || 0}
+            subtitle="metas atrasadas"
+            isLoading={isLoading}
+          />
 
           {/* Total de Metas */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Metas
-              </CardTitle>
-              <div className="p-2 bg-accent/10 rounded-lg">
-                <Flag className="h-4 w-4 text-accent-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-foreground">
-                  {isLoading ? "--" : totalCount}
-                </div>
-                <p className="text-xs text-muted-foreground">metas cadastradas</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CardWithAI
+            cardType="goals_total"
+            cardData={{ 
+              totalGoals: totalCount,
+              activeGoals: stats?.activeGoals || 0,
+              completedGoals: (totalCount - (stats?.activeGoals || 0)) 
+            }}
+            title="Total de Metas"
+            value={totalCount}
+            subtitle="metas cadastradas"
+            isLoading={isLoading}
+          />
         </div>
 
         {/* Goals Management Section */}

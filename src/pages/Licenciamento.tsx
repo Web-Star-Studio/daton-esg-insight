@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/MainLayout'
+import { CardWithAI } from '@/components/CardWithAI'
+import { GlobalSearchInterface } from '@/components/GlobalSearchInterface'
+import { IntelligentAlertsSystem } from '@/components/IntelligentAlertsSystem'
+import { PredictiveDashboard } from '@/components/PredictiveDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -201,6 +205,7 @@ export default function Licenciamento() {
             </p>
           </div>
           <div className="flex gap-3">
+            <GlobalSearchInterface onNavigate={(path) => navigate(path)} />
             <Button 
               variant="outline"
               onClick={() => navigate('/licenciamento/processar')}
@@ -242,75 +247,64 @@ export default function Licenciamento() {
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
-            {/* KPI Cards */}
+            {/* Intelligent Alerts */}
+            <IntelligentAlertsSystem />
+
+            {/* Predictive Dashboard */}
+            <PredictiveDashboard />
+          {/* KPI Cards with AI */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Licenças</CardTitle>
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {statsLoading ? (
-                    <Skeleton className="h-7 w-12" />
-                  ) : (
-                    <div className="text-2xl font-bold">{realStats.totalLicenses}</div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    {realStats.activeCount} ativas
-                  </p>
-                </CardContent>
-              </Card>
+              <CardWithAI
+                cardType="license_total"
+                cardData={{ 
+                  total: realStats.totalLicenses,
+                  active: realStats.activeCount,
+                  expiring: realStats.expiringSoon 
+                }}
+                title="Total de Licenças"
+                value={realStats.totalLicenses}
+                subtitle={`${realStats.activeCount} ativas`}
+                isLoading={statsLoading}
+              />
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Vencimento Próximo</CardTitle>
-                  <Clock className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  {statsLoading ? (
-                    <Skeleton className="h-7 w-12" />
-                  ) : (
-                    <div className="text-2xl font-bold text-yellow-600">{realStats.expiringSoon}</div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Próximos 60 dias
-                  </p>
-                </CardContent>
-              </Card>
+              <CardWithAI
+                cardType="license_expiring"
+                cardData={{ 
+                  expiring: realStats.expiringSoon,
+                  total: realStats.totalLicenses,
+                  complianceRate: realStats.complianceRate 
+                }}
+                title="Vencimento Próximo"
+                value={realStats.expiringSoon}
+                subtitle="Próximos 60 dias"
+                isLoading={statsLoading}
+              />
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Taxa de Conformidade</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  {statsLoading ? (
-                    <Skeleton className="h-7 w-12" />
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold text-green-600">{realStats.complianceRate}%</div>
-                      <Progress value={realStats.complianceRate} className="mt-2" />
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+              <CardWithAI
+                cardType="license_compliance"
+                cardData={{ 
+                  complianceRate: realStats.complianceRate,
+                  active: realStats.activeCount,
+                  total: realStats.totalLicenses 
+                }}
+                title="Taxa de Conformidade"
+                value={`${realStats.complianceRate}%`}
+                subtitle="Licenças em conformidade"
+                isLoading={statsLoading}
+              />
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Vencidas/Renovação</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                </CardHeader>
-                <CardContent>
-                  {statsLoading ? (
-                    <Skeleton className="h-7 w-12" />
-                  ) : (
-                    <div className="text-2xl font-bold text-red-600">{realStats.pendingRenewal}</div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Requerem atenção
-                  </p>
-                </CardContent>
-              </Card>
+              <CardWithAI
+                cardType="license_renewal"
+                cardData={{ 
+                  pendingRenewal: realStats.pendingRenewal,
+                  expiring: realStats.expiringSoon,
+                  processingTime: realStats.avgProcessingTime 
+                }}
+                title="Vencidas/Renovação"
+                value={realStats.pendingRenewal}
+                subtitle="Requerem atenção"
+                isLoading={statsLoading}
+              />
             </div>
 
             {/* Quick Actions */}

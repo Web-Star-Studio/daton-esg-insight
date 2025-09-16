@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
+import { GlobalSearchInterface } from "@/components/GlobalSearchInterface";
+import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
+import { PredictiveDashboard } from "@/components/PredictiveDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -303,6 +306,10 @@ export default function GestaoESG() {
       <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center space-y-2">
+          <div className="flex items-center justify-between mb-4">
+            <div />
+            <GlobalSearchInterface onNavigate={(path) => navigate(path)} />
+          </div>
           <h1 className="text-4xl font-bold tracking-tight">Painel de Gestão Estratégica ESG</h1>
           <p className="text-lg text-muted-foreground">
             Visão consolidada dos pilares Ambiental, Social e de Governança
@@ -326,6 +333,12 @@ export default function GestaoESG() {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Intelligent Alerts */}
+        <IntelligentAlertsSystem />
+
+        {/* Predictive Insights */}
+        <PredictiveDashboard />
 
         {/* Central ESG Score */}
         <div className="flex justify-center">
