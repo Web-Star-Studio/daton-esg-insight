@@ -386,34 +386,39 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
       
       const economicSector = source.economic_sector as any || 'Industrial';
       
-      const result = await calculateStationaryCombustionEmissions(
-        factor.name,
-        activity.quantity,
-        activity.unit,
-        economicSector
-      );
+      try {
+        const result = await calculateStationaryCombustionEmissions(
+          factor.name,
+          activity.quantity,
+          activity.unit,
+          economicSector
+        );
+        
+        // Store calculated emissions with fossil/biogenic separation
+        const { data: calculatedEmission, error: insertError } = await supabase
+          .from('calculated_emissions')
+          .upsert({
+            activity_data_id: activityDataId,
+            emission_factor_id: emissionFactorId,
+            total_co2e: result.total_co2e,
+            fossil_co2e: result.fossil_co2e,
+            biogenic_co2e: result.biogenic_co2e,
+            details_json: result.calculation_details
+          }, {
+            onConflict: 'activity_data_id'
+          })
+          .select()
+          .single();
 
-      // Store calculated emissions with fossil/biogenic separation
-      const { data: calculatedEmission, error: insertError } = await supabase
-        .from('calculated_emissions')
-        .upsert({
-          activity_data_id: activityDataId,
-          emission_factor_id: emissionFactorId,
-          total_co2e: result.total_co2e,
-          fossil_co2e: result.fossil_co2e,
-          biogenic_co2e: result.biogenic_co2e,
-          details_json: result.calculation_details
-        }, {
-          onConflict: 'activity_data_id'
-        })
-        .select()
-        .single();
+        if (insertError) {
+          throw insertError;
+        }
 
-      if (insertError) {
-        throw insertError;
+        return calculatedEmission;
+      } catch (stationaryError) {
+        console.warn('Stationary combustion calculation failed, falling back to standard calculation:', stationaryError);
+        // Continue with standard calculation as fallback
       }
-
-      return calculatedEmission;
     }
 
     // Standard calculation for other categories

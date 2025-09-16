@@ -42,6 +42,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal";
 import EditEmissionSourceModal from "@/components/EditEmissionSourceModal";
 import { ActivityDataModal } from "@/components/ActivityDataModal";
+import { StationaryCombustionModal } from "@/components/StationaryCombustionModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -497,12 +498,24 @@ const InventarioGEE = () => {
 
         {/* Modal para gerenciar dados de atividade */}
         {activityDataSource && (
-          <ActivityDataModal
-            open={isActivityModalOpen}
-            onOpenChange={setIsActivityModalOpen}
-            source={activityDataSource}
-            onSuccess={loadData}
-          />
+          <>
+            {/* Use specialized modal for stationary combustion */}
+            {activityDataSource.category === 'Combustão Estacionária' ? (
+              <StationaryCombustionModal
+                open={isActivityModalOpen}
+                onOpenChange={setIsActivityModalOpen}
+                emissionSourceId={activityDataSource.id}
+                onSuccess={loadData}
+              />
+            ) : (
+              <ActivityDataModal
+                open={isActivityModalOpen}
+                onOpenChange={setIsActivityModalOpen}
+                source={activityDataSource}
+                onSuccess={loadData}
+              />
+            )}
+          </>
         )}
 
         {/* Modal GHG Protocol Completo */}

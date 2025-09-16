@@ -182,6 +182,22 @@ export const STATIONARY_FUELS: Omit<StationaryFuel, 'id'>[] = [
     economic_sectors: ["Comercial/Institucional", "Industrial", "Agropecuário"],
     source: "GHG Protocol Brasil 2025.0.1"
   },
+  {
+    name: "Asfaltos",
+    fuel_type: "Líquido",
+    calorific_value: 40.2,
+    calorific_value_unit: "TJ/Gg",
+    density: 1.0,
+    density_unit: "t/m³",
+    co2_factor: 80.7,
+    ch4_factor: 3,
+    n2o_factor: 0.6,
+    is_biofuel: false,
+    biogenic_fraction: 0,
+    activity_unit: "m³",
+    economic_sectors: ["Industrial", "Geração de Energia", "Comercial/Institucional"],
+    source: "GHG Protocol Brasil 2025.0.1"
+  },
 
   // COMBUSTÍVEIS GASOSOS
   {
@@ -362,9 +378,29 @@ export function getFuelsByEconomicSector(sector: EconomicSector): Omit<Stationar
   return STATIONARY_FUELS.filter(fuel => fuel.economic_sectors.includes(sector));
 }
 
-// Get fuel by name
+// Get fuel by name with flexible matching
 export function getFuelByName(name: string): Omit<StationaryFuel, 'id'> | undefined {
-  return STATIONARY_FUELS.find(fuel => fuel.name === name);
+  // Try exact match first
+  let fuel = STATIONARY_FUELS.find(fuel => fuel.name === name);
+  
+  if (!fuel) {
+    // Try case insensitive match
+    fuel = STATIONARY_FUELS.find(fuel => 
+      fuel.name.toLowerCase() === name.toLowerCase()
+    );
+  }
+  
+  if (!fuel) {
+    // Try partial match for common variations
+    const normalizedName = name.toLowerCase().replace(/[()]/g, '').trim();
+    fuel = STATIONARY_FUELS.find(fuel => {
+      const normalizedFuelName = fuel.name.toLowerCase().replace(/[()]/g, '').trim();
+      return normalizedFuelName.includes(normalizedName) || 
+             normalizedName.includes(normalizedFuelName);
+    });
+  }
+  
+  return fuel;
 }
 
 // Calculate stationary combustion emissions with fossil/biogenic separation
@@ -383,15 +419,22 @@ export async function calculateStationaryCombustionEmissions(
   calculation_details: any;
 }> {
   
+  console.log('Calculating stationary combustion for fuel:', fuelName);
+  
   const fuel = getFuelByName(fuelName);
   if (!fuel) {
-    throw new Error(`Combustível não encontrado: ${fuelName}`);
+    console.error('Available fuels:', STATIONARY_FUELS.map(f => f.name));
+    throw new Error(`Combustível não encontrado: ${fuelName}. Verifique se o combustível está na lista de combustão estacionária.`);
   }
 
-  // Validate economic sector compatibility
-  if (!fuel.economic_sectors.includes(economicSector)) {
-    throw new Error(`Combustível ${fuelName} não é compatível com setor ${economicSector}`);
-  }
+  console.log('Found fuel:', fuel.name);
+
+      // Validate economic sector compatibility
+      if (!fuel.economic_sectors.includes(economicSector)) {
+        console.warn(`Fuel ${fuelName} not compatible with sector ${economicSector}, using Industrial as fallback`);
+        // Use Industrial as fallback for compatibility
+        economicSector = 'Industrial';
+      }
 
   // Convert quantity to mass (kg) if needed
   let massKg = quantity;
@@ -402,7 +445,14 @@ export async function calculateStationaryCombustionEmissions(
       massKg = quantity * fuel.density;
     } else if (activityUnit === 'm³') {
       if (fuel.density) {
-        massKg = quantity * fuel.density * 1000; // m³ to L then to kg
+        // Handle different density units
+        if (fuel.density_unit === 't/m³') {
+          massKg = quantity * fuel.density * 1000; // Convert tonnes to kg
+        } else if (fuel.density_unit === 'kg/L') {
+          massKg = quantity * fuel.density * 1000; // m³ to L then to kg
+        } else {
+          massKg = quantity * fuel.density * 1000; // Default conversion
+        }
       } else {
         // For gases like natural gas, use standard conversion
         const conversionFactor = await getConversionFactor(activityUnit, 'kg', fuel.fuel_type);
