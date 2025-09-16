@@ -197,6 +197,54 @@ export type Database = {
         }
         Relationships: []
       }
+      airport_factors: {
+        Row: {
+          aircraft_category: string
+          airport_code: string
+          airport_name: string
+          ch4_factor: number | null
+          co2_factor: number | null
+          created_at: string
+          factor_type: string
+          fuel_consumption_factor: number | null
+          id: string
+          n2o_factor: number | null
+          source: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          aircraft_category: string
+          airport_code: string
+          airport_name: string
+          ch4_factor?: number | null
+          co2_factor?: number | null
+          created_at?: string
+          factor_type: string
+          fuel_consumption_factor?: number | null
+          id?: string
+          n2o_factor?: number | null
+          source?: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          aircraft_category?: string
+          airport_code?: string
+          airport_name?: string
+          ch4_factor?: number | null
+          co2_factor?: number | null
+          created_at?: string
+          factor_type?: string
+          fuel_consumption_factor?: number | null
+          id?: string
+          n2o_factor?: number | null
+          source?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_type: string
@@ -653,6 +701,39 @@ export type Database = {
           methodology_reference?: string | null
           name?: string
           unit?: string | null
+        }
+        Relationships: []
+      }
+      conversion_factors: {
+        Row: {
+          category: string
+          conversion_factor: number
+          created_at: string
+          from_unit: string
+          id: string
+          source: string
+          to_unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          conversion_factor: number
+          created_at?: string
+          from_unit: string
+          id?: string
+          source?: string
+          to_unit: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          conversion_factor?: number
+          created_at?: string
+          from_unit?: string
+          id?: string
+          source?: string
+          to_unit?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2303,6 +2384,51 @@ export type Database = {
           },
         ]
       }
+      refrigerant_factors: {
+        Row: {
+          category: string
+          chemical_formula: string | null
+          chemical_name: string
+          created_at: string
+          gwp_ar4: number | null
+          gwp_ar5: number | null
+          gwp_ar6: number
+          id: string
+          is_kyoto_gas: boolean
+          refrigerant_code: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          chemical_formula?: string | null
+          chemical_name: string
+          created_at?: string
+          gwp_ar4?: number | null
+          gwp_ar5?: number | null
+          gwp_ar6: number
+          id?: string
+          is_kyoto_gas?: boolean
+          refrigerant_code: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          chemical_formula?: string | null
+          chemical_name?: string
+          created_at?: string
+          gwp_ar4?: number | null
+          gwp_ar5?: number | null
+          gwp_ar6?: number
+          id?: string
+          is_kyoto_gas?: boolean
+          refrigerant_code?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       regulatory_requirements: {
         Row: {
           company_id: string
@@ -2633,6 +2759,10 @@ export type Database = {
       exec_sql: {
         Args: { query: string }
         Returns: Json
+      }
+      get_conversion_factor: {
+        Args: { p_category?: string; p_from_unit: string; p_to_unit: string }
+        Returns: number
       }
       get_user_company_id: {
         Args: Record<PropertyKey, never>

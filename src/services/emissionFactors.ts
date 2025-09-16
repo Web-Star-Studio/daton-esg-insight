@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { calculateAdjustedFuelFactor, getElectricityFactorSIN } from "./variableFactors";
+import { getConversionFactor } from "./conversionFactors";
 
 export interface EmissionFactor {
   id: string;
