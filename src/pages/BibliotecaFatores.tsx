@@ -11,6 +11,8 @@ import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
 import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
 import { ImportFactorsModal } from "@/components/ImportFactorsModal";
 import { ExportFactorsModal } from "@/components/ExportFactorsModal";
+import { UpdateEmissionFactorsButton } from "@/components/UpdateEmissionFactorsButton";
+import { ProcessPDFFactorsButton } from "@/components/ProcessPDFFactorsButton";
 import { ImportBrazilianFactorsButton } from "@/components/ImportBrazilianFactorsButton";
 import { ImportBrazilianGHGDataButton } from "@/components/ImportBrazilianGHGDataButton";
 import { ImportMobileCombustionButton } from "@/components/ImportMobileCombustionButton";
@@ -199,6 +201,8 @@ export default function BibliotecaFatores() {
               <Info className="mr-2 h-4 w-4" />
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
             </Button>
+            <UpdateEmissionFactorsButton />
+            <ProcessPDFFactorsButton />
             <ImportBrazilianFactorsButton onImportComplete={() => loadData()} />
             <ImportBrazilianGHGDataButton onImportComplete={() => loadData()} />
             <ImportMobileCombustionButton onSuccess={() => loadData()} />
