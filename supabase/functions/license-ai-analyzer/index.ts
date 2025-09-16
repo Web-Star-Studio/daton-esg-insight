@@ -36,8 +36,6 @@ interface ExtractedLicenseData {
     titulo_resumido: string;
     descricao_detalhada: string;
     categoria: string;
-    base_legal?: string;
-    referencia?: string;
     prioridade: 'alta' | 'média' | 'baixa';
   }>;
   alertas: Array<{
@@ -78,6 +76,7 @@ function extractJsonFromResponse(content: string): any {
       } catch {}
     }
     
+    console.error('No valid JSON found in response:', content);
     throw new Error('No valid JSON found in response');
   }
 }
@@ -264,7 +263,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Phase 1: Extract license info only (fast)
     console.log('Phase 1: Extracting basic license info...');
-    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 60000);
+    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000);
     if (basicInfo) {
       extractedData.license_info = basicInfo;
       processingLog.push('Phase 1: License info extracted');
@@ -274,22 +273,24 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
     // Phase 2: Extract condicionantes (medium complexity)
     console.log('Phase 2: Extracting condicionantes...');
-    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 90000);
-    if (condicionantes) {
+    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000);
+    if (condicionantes && Array.isArray(condicionantes)) {
       extractedData.condicionantes = condicionantes;
       processingLog.push(`Phase 2: ${condicionantes.length} condicionantes extracted`);
     } else {
-      processingLog.push('Phase 2: Failed to extract condicionantes');
+      extractedData.condicionantes = [];
+      processingLog.push('Phase 2: No condicionantes extracted');
     }
 
     // Phase 3: Extract alertas (fast)
     console.log('Phase 3: Extracting alertas...');
-    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 60000);
-    if (alertas) {
+    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000);
+    if (alertas && Array.isArray(alertas)) {
       extractedData.alertas = alertas;
       processingLog.push(`Phase 3: ${alertas.length} alertas extracted`);
     } else {
-      processingLog.push('Phase 3: Failed to extract alertas');
+      extractedData.alertas = [];
+      processingLog.push('Phase 3: No alertas extracted');
     }
 
     // Determine final status based on what was extracted
@@ -330,21 +331,31 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   // ALWAYS update the license with results - this is critical
   try {
     const licenseInfo = extractedData.license_info || {};
+    
+    // Prepare license update data with only valid columns
+    const licenseUpdateData: any = {
+      name: licenseInfo.company_name || licenseInfo.license_number || file.name.replace('.pdf', ''),
+      type: licenseInfo.license_type || 'LO',
+      ai_processing_status: finalStatus,
+      ai_confidence_score: confidenceScore,
+      ai_extracted_data: extractedData,
+      ai_last_analysis_at: new Date().toISOString(),
+      compliance_score: Math.max(50, confidenceScore * 100)
+    };
+
+    // Add optional fields only if they exist
+    if (licenseInfo.process_number) licenseUpdateData.process_number = licenseInfo.process_number;
+    if (licenseInfo.issue_date) licenseUpdateData.issue_date = licenseInfo.issue_date;
+    if (licenseInfo.expiration_date) licenseUpdateData.expiration_date = licenseInfo.expiration_date;
+    else licenseUpdateData.expiration_date = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    if (licenseInfo.issuer) licenseUpdateData.issuing_body = licenseInfo.issuer;
+    else licenseUpdateData.issuing_body = 'Órgão Ambiental';
+
+    console.log('Updating license with data:', JSON.stringify(licenseUpdateData, null, 2));
+    
     const { error: licenseUpdateError } = await supabaseClient
       .from('licenses')
-      .update({
-        name: licenseInfo.company_name || licenseInfo.license_number || file.name.replace('.pdf', ''),
-        type: licenseInfo.license_type || 'LO',
-        process_number: licenseInfo.process_number,
-        issue_date: licenseInfo.issue_date,
-        expiration_date: licenseInfo.expiration_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        issuing_body: licenseInfo.issuer || 'Órgão Ambiental',
-        ai_processing_status: finalStatus,
-        ai_confidence_score: confidenceScore,
-        ai_extracted_data: extractedData,
-        ai_last_analysis_at: new Date().toISOString(),
-        compliance_score: Math.max(50, confidenceScore * 100)
-      })
+      .update(licenseUpdateData)
       .eq('id', newLicenseId);
     
     if (licenseUpdateError) {
@@ -352,60 +363,79 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       throw new Error(`Failed to update license: ${licenseUpdateError.message}`);
     }
     
-    console.log(`License updated with status: ${finalStatus}`);
+    console.log('License updated successfully with status:', finalStatus);
 
     // Save condicionantes if any were extracted
     if (extractedData.condicionantes && extractedData.condicionantes.length > 0) {
       console.log(`Inserting ${extractedData.condicionantes.length} condicionantes`);
-      const conditionsToInsert = extractedData.condicionantes.map((condicionante: any) => ({
-        license_id: newLicenseId,
-        company_id: companyId,
-        condition_text: condicionante.descricao_detalhada || condicionante.titulo_resumido,
-        condition_category: condicionante.categoria || 'Outros',
-        priority: mapPrioridade(condicionante.prioridade),
-        status: 'pending',
-        ai_extracted: true,
-        ai_confidence: confidenceScore,
-        reference: condicionante.referencia || condicionante.base_legal
-      }));
-
-      const { error: condInsertError } = await supabaseClient
-        .from('license_conditions')
-        .insert(conditionsToInsert);
       
-      if (condInsertError) {
-        console.error('Error inserting license conditions:', condInsertError);
-      } else {
-        console.log('License conditions inserted successfully');
+      try {
+        const conditionsToInsert = extractedData.condicionantes.map((condicionante: any) => ({
+          license_id: newLicenseId,
+          company_id: companyId,
+          condition_text: condicionante.descricao_detalhada || condicionante.titulo_resumido || 'Condição não especificada',
+          condition_category: condicionante.categoria || 'Outros',
+          priority: mapPrioridade(condicionante.prioridade || 'media'),
+          status: 'pending',
+          ai_extracted: true,
+          ai_confidence: confidenceScore
+        }));
+
+        console.log('Conditions to insert:', JSON.stringify(conditionsToInsert, null, 2));
+
+        const { error: condInsertError } = await supabaseClient
+          .from('license_conditions')
+          .insert(conditionsToInsert);
+        
+        if (condInsertError) {
+          console.error('Error inserting license conditions:', condInsertError);
+          processingLog.push(`Error saving conditions: ${condInsertError.message}`);
+        } else {
+          console.log('License conditions inserted successfully');
+          processingLog.push(`Saved ${conditionsToInsert.length} conditions`);
+        }
+      } catch (condError) {
+        console.error('Exception in conditions processing:', condError);
+        processingLog.push(`Exception in conditions: ${condError.message}`);
       }
     }
 
     // Save alertas if any were extracted
     if (extractedData.alertas && extractedData.alertas.length > 0) {
       console.log(`Inserting ${extractedData.alertas.length} alertas`);
-      const alertsToInsert = extractedData.alertas.map((alerta: any) => ({
-        license_id: newLicenseId,
-        company_id: companyId,
-        alert_type: alerta.tipo_alerta || 'observacao_geral',
-        title: alerta.titulo,
-        message: alerta.mensagem,
-        severity: mapSeveridade(alerta.severidade),
-        action_required: alerta.severidade === 'crítica' || alerta.severidade === 'alta',
-        is_resolved: false,
-        metadata: {
-          tipo_original: alerta.tipo_alerta,
-          severidade_original: alerta.severidade
-        }
-      }));
-
-      const { error: alertInsertError } = await supabaseClient
-        .from('license_alerts')
-        .insert(alertsToInsert);
       
-      if (alertInsertError) {
-        console.error('Error inserting license alerts:', alertInsertError);
-      } else {
-        console.log('License alerts inserted successfully');
+      try {
+        const alertsToInsert = extractedData.alertas.map((alerta: any) => ({
+          license_id: newLicenseId,
+          company_id: companyId,
+          alert_type: alerta.tipo_alerta || 'observacao_geral',
+          title: alerta.titulo || 'Alerta sem título',
+          message: alerta.mensagem || 'Mensagem não especificada',
+          severity: mapSeveridade(alerta.severidade || 'baixa'),
+          action_required: (alerta.severidade === 'crítica' || alerta.severidade === 'alta'),
+          is_resolved: false,
+          metadata: {
+            tipo_original: alerta.tipo_alerta,
+            severidade_original: alerta.severidade
+          }
+        }));
+
+        console.log('Alerts to insert:', JSON.stringify(alertsToInsert, null, 2));
+
+        const { error: alertInsertError } = await supabaseClient
+          .from('license_alerts')
+          .insert(alertsToInsert);
+        
+        if (alertInsertError) {
+          console.error('Error inserting license alerts:', alertInsertError);
+          processingLog.push(`Error saving alerts: ${alertInsertError.message}`);
+        } else {
+          console.log('License alerts inserted successfully');
+          processingLog.push(`Saved ${alertsToInsert.length} alerts`);
+        }
+      } catch (alertError) {
+        console.error('Exception in alerts processing:', alertError);
+        processingLog.push(`Exception in alerts: ${alertError.message}`);
       }
     }
 
@@ -471,181 +501,262 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
 
 // Extract a specific phase of data with timeout and retry
 async function extractPhase(openAIApiKey: string, fileId: string, phase: 'license_info' | 'condicionantes' | 'alertas', timeoutMs: number): Promise<any> {
-  try {
-    const phasePrompts = {
-      license_info: `Extraia APENAS as informações básicas da licença deste documento brasileiro:
+  const maxRetries = 2;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Phase ${phase}, attempt ${attempt}/${maxRetries}`);
+      
+      const phasePrompts = {
+        license_info: `Analise este documento de licença ambiental brasileira e extraia APENAS as informações básicas. Seja conciso e preciso:
+
 {
   "license_info": {
-    "license_number": "string",
-    "license_type": "string", 
-    "issuer": "string",
+    "license_number": "número da licença",
+    "license_type": "LO|LI|LP|LAI|outro",
+    "issuer": "órgão emissor",
     "issue_date": "YYYY-MM-DD",
-    "expiration_date": "YYYY-MM-DD",
-    "company_name": "string",
-    "cnpj": "string",
-    "process_number": "string",
-    "activity_type": "string",
-    "location": "string"
+    "expiration_date": "YYYY-MM-DD", 
+    "company_name": "nome da empresa",
+    "cnpj": "CNPJ da empresa",
+    "process_number": "número do processo",
+    "activity_type": "tipo de atividade",
+    "location": "localização"
   }
 }
-RETORNE APENAS O JSON, SEM TEXTO ADICIONAL.`,
-      condicionantes: `Extraia APENAS as condicionantes obrigatórias deste documento de licença brasileira:
+
+RESPONDA APENAS COM O JSON VÁLIDO, SEM EXPLICAÇÕES.`,
+
+        condicionantes: `Extraia APENAS as condicionantes/obrigações desta licença ambiental. Limite a 10 itens mais importantes:
+
 {
   "condicionantes": [
     {
-      "titulo_resumido": "string",
-      "descricao_detalhada": "string",
-      "categoria": "string",
-      "base_legal": "string",
-      "referencia": "string",
+      "titulo_resumido": "título breve da condição",
+      "descricao_detalhada": "descrição completa da obrigação",
+      "categoria": "Monitoramento|Controle|Gestão|Operacional|Outros",
       "prioridade": "alta|média|baixa"
     }
   ]
 }
-Procure por verbos como "deverá", "fica obrigado", "é exigido". RETORNE APENAS O JSON.`,
-      alertas: `Extraia APENAS os alertas e observações deste documento de licença brasileira:
+
+Procure por palavras: "deverá", "fica obrigado", "é exigido", "deve ser". RESPONDA APENAS COM JSON.`,
+
+        alertas: `Extraia APENAS alertas críticos desta licença. Limite a 5 itens mais relevantes:
+
 {
   "alertas": [
     {
-      "titulo": "string",
-      "mensagem": "string",
+      "titulo": "título do alerta",
+      "mensagem": "descrição do problema/risco",
       "severidade": "crítica|alta|média|baixa",
-      "tipo_alerta": "string"
+      "tipo_alerta": "Vencimento|Renovação|Descumprimento|Observação|Outros"
     }
   ]
 }
-Procure por avisos, recomendações, revogações. RETORNE APENAS O JSON.`
-    };
 
-    const assistant = await createAssistant(openAIApiKey, phasePrompts[phase]);
-    const thread = await createThread(openAIApiKey, fileId, phasePrompts[phase]);
-    const result = await runAssistantWithTimeout(openAIApiKey, assistant.id, thread.id, timeoutMs);
+Procure por: prazos, renovação, advertências, observações. RESPONDA APENAS COM JSON.`
+      };
 
-    // Cleanup
-    await cleanupResources(openAIApiKey, assistant.id);
+      const assistant = await createAssistant(openAIApiKey, phasePrompts[phase]);
+      const thread = await createThread(openAIApiKey, fileId, phasePrompts[phase]);
+      const result = await runAssistantWithTimeout(openAIApiKey, assistant.id, thread.id, timeoutMs);
 
-    if (result) {
-      const parsed = extractJsonFromResponse(result);
-      return parsed[phase] || null;
+      // Cleanup assistant
+      await cleanupResources(openAIApiKey, assistant.id);
+
+      if (result && result.trim()) {
+        const parsed = extractJsonFromResponse(result);
+        const extractedPhaseData = parsed[phase] || parsed;
+        
+        if (extractedPhaseData && (Array.isArray(extractedPhaseData) ? extractedPhaseData.length > 0 : Object.keys(extractedPhaseData).length > 0)) {
+          console.log(`Phase ${phase} succeeded on attempt ${attempt}`);
+          return extractedPhaseData;
+        }
+      }
+      
+      if (attempt === maxRetries) {
+        console.log(`Phase ${phase} failed after ${maxRetries} attempts`);
+        return null;
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+    } catch (error) {
+      console.error(`Phase ${phase} attempt ${attempt} failed:`, error);
+      
+      if (attempt === maxRetries) {
+        console.error(`Phase ${phase} failed after ${maxRetries} attempts:`, error);
+        return null;
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
-    return null;
-    
-  } catch (error) {
-    console.error(`Phase ${phase} extraction failed:`, error);
-    return null;
   }
+  
+  return null;
 }
 
 // Helper functions for OpenAI operations
 async function createAssistant(openAIApiKey: string, instructions: string) {
-  const response = await fetch('https://api.openai.com/v1/assistants', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2',
-    },
-    body: JSON.stringify({
-      name: 'Licença Ambiental Extractor',
-      instructions,
-      model: 'gpt-4o',
-      tools: [{ type: 'file_search' }],
+  const response = await withTimeout(
+    fetch('https://api.openai.com/v1/assistants', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2',
+      },
+      body: JSON.stringify({
+        name: 'Licença Ambiental Extractor',
+        instructions: `${instructions}\n\nIMPORTANTE: Responda APENAS com JSON válido. Não adicione explicações ou texto extra.`,
+        model: 'gpt-4o',
+        tools: [{ type: 'file_search' }],
+        temperature: 0.1, // More deterministic
+      }),
     }),
-  });
+    15000,
+    'Assistant creation timeout'
+  );
 
   if (!response.ok) {
-    throw new Error(`Assistant creation failed: ${await response.text()}`);
+    const errorText = await response.text();
+    console.error('Assistant creation error:', errorText);
+    throw new Error(`Assistant creation failed: ${errorText}`);
   }
 
   return await response.json();
 }
 
 async function createThread(openAIApiKey: string, fileId: string, message: string) {
-  const response = await fetch('https://api.openai.com/v1/threads', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2',
-    },
-    body: JSON.stringify({
-      messages: [{
-        role: 'user',
-        content: message,
-        attachments: [{
-          file_id: fileId,
-          tools: [{ type: 'file_search' }]
+  const response = await withTimeout(
+    fetch('https://api.openai.com/v1/threads', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2',
+      },
+      body: JSON.stringify({
+        messages: [{
+          role: 'user',
+          content: message,
+          attachments: [{
+            file_id: fileId,
+            tools: [{ type: 'file_search' }]
+          }]
         }]
-      }]
+      }),
     }),
-  });
+    15000,
+    'Thread creation timeout'
+  );
 
   if (!response.ok) {
-    throw new Error(`Thread creation failed: ${await response.text()}`);
+    const errorText = await response.text();
+    console.error('Thread creation error:', errorText);
+    throw new Error(`Thread creation failed: ${errorText}`);
   }
 
   return await response.json();
 }
 
 async function runAssistantWithTimeout(openAIApiKey: string, assistantId: string, threadId: string, timeoutMs: number): Promise<string | null> {
-  const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2',
-    },
-    body: JSON.stringify({ assistant_id: assistantId }),
-  });
+  try {
+    const runResponse = await withTimeout(
+      fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2',
+        },
+        body: JSON.stringify({ assistant_id: assistantId }),
+      }),
+      10000,
+      'Run creation timeout'
+    );
 
-  if (!runResponse.ok) {
-    throw new Error(`Run creation failed: ${await runResponse.text()}`);
-  }
+    if (!runResponse.ok) {
+      const errorText = await runResponse.text();
+      console.error('Run creation error:', errorText);
+      throw new Error(`Run creation failed: ${errorText}`);
+    }
 
-  const run = await runResponse.json();
-  const startTime = Date.now();
-  let attempts = 0;
-  const maxAttempts = Math.floor(timeoutMs / 1000);
-
-  // Poll for completion with timeout
-  while (Date.now() - startTime < timeoutMs && attempts < maxAttempts) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const run = await runResponse.json();
+    console.log(`Run started: ${run.id}`);
     
-    const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'OpenAI-Beta': 'assistants=v2',
-      },
-    });
+    const startTime = Date.now();
+    let attempts = 0;
+    const maxAttempts = Math.floor(timeoutMs / 2000); // Check every 2 seconds
 
-    if (statusResponse.ok) {
-      const statusData = await statusResponse.json();
+    // Poll for completion with timeout
+    while (Date.now() - startTime < timeoutMs && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      attempts++;
       
-      if (statusData.status === 'completed') {
-        // Get messages
-        const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'OpenAI-Beta': 'assistants=v2',
-          },
-        });
+      try {
+        const statusResponse = await withTimeout(
+          fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'OpenAI-Beta': 'assistants=v2',
+            },
+          }),
+          5000,
+          'Status check timeout'
+        );
 
-        if (messagesResponse.ok) {
-          const messages = await messagesResponse.json();
-          const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
-          return assistantMessage?.content[0]?.text?.value || null;
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          console.log(`Run status (${attempts}/${maxAttempts}): ${statusData.status}`);
+          
+          if (statusData.status === 'completed') {
+            // Get messages
+            const messagesResponse = await withTimeout(
+              fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+                headers: {
+                  'Authorization': `Bearer ${openAIApiKey}`,
+                  'OpenAI-Beta': 'assistants=v2',
+                },
+              }),
+              5000,
+              'Messages retrieval timeout'
+            );
+
+            if (messagesResponse.ok) {
+              const messages = await messagesResponse.json();
+              const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
+              const content = assistantMessage?.content[0]?.text?.value;
+              console.log(`Retrieved content length: ${content?.length || 0}`);
+              return content || null;
+            }
+            break;
+          } else if (statusData.status === 'failed' || statusData.status === 'cancelled' || statusData.status === 'expired') {
+            console.error('Assistant run failed with status:', statusData.status);
+            console.error('Run details:', statusData);
+            break;
+          }
+          // Continue polling for 'in_progress', 'queued', etc.
         }
-        break;
-      } else if (statusData.status === 'failed' || statusData.status === 'cancelled') {
-        console.error('Assistant run failed:', statusData);
-        break;
+      } catch (pollError) {
+        console.error('Error during polling:', pollError);
+        // Continue polling unless we're at max attempts
+        if (attempts >= maxAttempts) break;
       }
     }
-    
-    attempts++;
-  }
 
-  return null;
+    if (attempts >= maxAttempts) {
+      console.error('Run timed out after', timeoutMs, 'ms');
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error in runAssistantWithTimeout:', error);
+    return null;
+  }
 }
 
 async function cleanupResources(openAIApiKey: string, assistantId: string) {
