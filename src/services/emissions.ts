@@ -35,6 +35,7 @@ export interface ActivityData {
   period_end_date: string;
   source_document?: string;
   emission_factor_id?: string; // CORREÇÃO CRÍTICA: Permitir seleção específica de fator
+  metadata?: any; // Support for additional data like GHG Protocol Brasil compliance
 }
 
 // Obter todas as fontes de emissão da empresa
@@ -184,6 +185,7 @@ export const addActivityData = async (activityData: {
   period_end_date: string;
   source_document?: string;
   emission_factor_id?: string;
+  metadata?: any; // Add metadata support for GHG Protocol Brasil compliance
 }) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuário não encontrado');
