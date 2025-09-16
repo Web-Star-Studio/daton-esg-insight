@@ -43,6 +43,7 @@ import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal";
 import EditEmissionSourceModal from "@/components/EditEmissionSourceModal";
 import { ActivityDataModal } from "@/components/ActivityDataModal";
 import { StationaryCombustionModal } from "@/components/StationaryCombustionModal";
+import { MobileCombustionModal } from "@/components/MobileCombustionModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -59,6 +60,7 @@ const InventarioGEE = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
+  const [isMobileCombustionModalOpen, setIsMobileCombustionModalOpen] = useState(false)
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
@@ -234,7 +236,11 @@ const InventarioGEE = () => {
   const handleManageActivityData = (source: any) => {
     setActivityDataSource(source)
     setEditingActivityData(null) // Reset editing state
-    setIsActivityModalOpen(true)
+    if (source.category === 'Combustão Móvel') {
+      setIsMobileCombustionModalOpen(true)
+    } else {
+      setIsActivityModalOpen(true)
+    }
   }
 
   const handleEditActivityData = (source: any, activityData: any) => {
@@ -520,6 +526,15 @@ const InventarioGEE = () => {
                 emissionSourceId={activityDataSource.id}
                 onSuccess={loadData}
                 editingData={editingActivityData}
+                source={activityDataSource}
+              />
+            ) : activityDataSource.category === 'Combustão Móvel' ? (
+              <MobileCombustionModal
+                isOpen={isMobileCombustionModalOpen}
+                onClose={() => {
+                  setIsMobileCombustionModalOpen(false);
+                  setEditingActivityData(null);
+                }}
                 source={activityDataSource}
               />
             ) : (
