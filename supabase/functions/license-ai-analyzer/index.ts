@@ -23,30 +23,31 @@ interface LicenseProcessRequest {
 }
 
 interface ExtractedLicenseData {
-  licenseType: string;
-  issuingBody: string;
-  processNumber?: string;
-  issueDate?: string;
-  expirationDate?: string;
-  conditions: Array<{
-    text: string;
-    category: string;
-    priority: 'low' | 'medium' | 'high';
-    frequency?: string;
-    dueDate?: string;
-  }>;
-  complianceScore: number;
-  renewalRecommendation: {
-    startDate: string;
-    urgency: 'low' | 'medium' | 'high';
-    requiredDocuments: string[];
+  license_info: {
+    license_number?: string;
+    license_type?: string; 
+    issuer?: string;
+    issue_date?: string;
+    expiration_date?: string;
+    company_name?: string;
+    cnpj?: string;
+    process_number?: string;
+    activity_type?: string;
+    location?: string;
   };
-  alerts: Array<{
-    type: string;
-    title: string;
-    message: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    actionRequired: boolean;
+  condicionantes: Array<{
+    titulo_resumido: string;
+    descricao_detalhada: string;
+    categoria: string;
+    base_legal?: string;
+    referencia?: string;
+    prioridade: 'alta' | 'média' | 'baixa';
+  }>;
+  alertas: Array<{
+    titulo: string;
+    mensagem: string;
+    severidade: 'crítica' | 'alta' | 'média' | 'baixa';
+    tipo_alerta: string;
   }>;
 }
 
@@ -105,7 +106,6 @@ serve(async (req) => {
       default:
         throw new Error('Invalid action');
     }
-
 
   } catch (error) {
     console.error('Error in unified license processor:', error);
@@ -216,7 +216,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
     const openAIFile = await fileResponse.json();
     console.log('OpenAI file created:', openAIFile.id);
 
-    // Create assistant for license analysis
+    // Create assistant for license analysis with improved Brazilian prompt
     const assistantResponse = await fetch('https://api.openai.com/v1/assistants', {
       method: 'POST',
       headers: {
@@ -225,75 +225,100 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         'OpenAI-Beta': 'assistants=v2',
       },
       body: JSON.stringify({
-        name: 'Analista de Licença Ambiental',
-        instructions: `Você é um especialista em licenciamento ambiental brasileiro. Leia o PDF ANEXADO do início ao fim e extraia informações ESTRUTURADAS, com foco em Condicionantes, Observações e Alertas que exigem ação do usuário.
+        name: 'Analista de Licença Ambiental Brasileiro',
+        instructions: `Você é um agente inteligente treinado para analisar **documentos de licenciamento ambiental emitidos no Brasil**, de diferentes tipos e órgãos emissores (ex: FEPAM, IBAMA, CETESB, SEMA, SEMMAS, etc.).
 
-REGRAS CRÍTICAS:
-- Responda SOMENTE com um JSON VÁLIDO (sem markdown, sem comentários, sem texto fora do JSON)
-- Se algum campo não existir, use null ou [] conforme o tipo
-- Identifique condicionantes mesmo quando não houver a palavra "Condicionante" explicitamente. Procure verbos de obrigação: "deve", "deverá", "fica obrigado", "apresentar", "realizar", "manter", "enviar", "comprovar", "executar"
-- Priorize seções típicas: "Condições", "Condicionantes", "Disposições", "Obrigações", "Cronograma", "Prazos", "Monitoramento", "Relatórios"
-- Extraia prazos explícitos em formato ISO (YYYY-MM-DD) quando possível; caso haja periodicidade (mensal, trimestral, semestral, anual), use em \"frequency\"
+Seu objetivo é identificar, classificar e extrair **informações estruturadas e úteis para sistemas de gestão ambiental**, com foco em conformidade legal, acompanhamento de prazos e responsabilidades.
 
-CATEGORIAS PERMITIDAS PARA CONDICIONANTES:
-- monitoramento, relatorio, controle, manutencao, gestao_residuos, seguranca, ambiental, documentacao, outras
+🎯 **TAREFAS PRINCIPAIS:**
 
-ESQUEMA DE RESPOSTA (JSON):
+1. **Identifique automaticamente o tipo do documento**, com base no conteúdo textual:
+   - Ex: Licença de Operação (LO), Licença Prévia (LP), Licença de Instalação (LI), Autorização Ambiental, Autorização para Supressão Vegetal, etc.
+
+2. **Extraia os dados principais do cabeçalho do documento:**
+   - Nome do empreendedor
+   - CNPJ/CPF
+   - Nº do processo
+   - Nº da licença
+   - Data de emissão
+   - Data de validade (ou prazo)
+   - Órgão emissor
+   - Endereço do empreendimento
+   - Coordenadas geográficas (se houver)
+   - Tipo de atividade licenciada
+
+3. **Leia o corpo do documento e identifique trechos normativos ou obrigatórios**, classificando-os como:
+
+   ✅ **Condicionantes da Licença:**  
+   Tudo que for **obrigação direta e exigível** do empreendedor, com força de lei, norma ou resolução ambiental, incluindo:
+   - Entrega de relatórios
+   - Nomeação de responsável técnico com ART
+   - Regras de descarte de resíduos
+   - Medidas para emergências
+   - Uso de EPI, planos de controle, reuso de água, etc.
+   - Limites de emissão, ruído ou contaminação
+   - Cumprimento de Planos de Gerenciamento Ambiental, Logística Reversa, PRAD, etc.
+   - Condições para renovação, ampliação ou desativação do empreendimento
+   - Qualquer item que, se descumprido, possa gerar multa, advertência ou suspensão da licença
+
+   ⚠️ **Alertas e Observações:**
+   Trechos com avisos, recomendações, ressalvas legais e boas práticas, incluindo:
+   - Instruções sobre manter cópias no local
+   - Menções à revogação de licenças anteriores
+   - Avisos de que o documento não substitui alvarás municipais
+   - Lembretes de obrigações legais futuras
+   - Regras de publicidade da licença
+   - Declarações de validade ou autenticidade
+
+4. **🧠 CRITÉRIOS DE DECISÃO PARA CLASSIFICAR OS ITENS:**
+
+Sempre que encontrar verbos como: "deverá", "fica obrigado", "é exigido", "será responsabilizado", "deve ser mantido", "cumprir", trate como condicionante.
+
+Quando encontrar expressões como: "esta licença não substitui", "esta licença revoga", "recomenda-se", "caso ocorra", "orienta-se", classifique como alerta ou observação.
+
+Use legislação ambiental brasileira atualizada como referência (ex: CONAMA, NBRs da ABNT, Leis Federais, Portarias Estaduais).
+
+📦 **SAÍDA FINAL - RETORNE APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA EXATA:**
+
 {
-  "licenseType": string | null,
-  "issuingBody": string | null,
-  "processNumber": string | null,
-  "issueDate": string | null,           // YYYY-MM-DD
-  "expirationDate": string | null,      // YYYY-MM-DD
-  "companyName": string | null,
-  "activity": string | null,
-  "location": string | null,
-  "conditions": [
-    {
-      "text": string,                   // texto completo da exigência (mín. 10 palavras)
-      "category": string,               // usar categorias permitidas
-      "priority": "high"|"medium"|"low",
-      "frequency": string | null,       // ex.: mensal, trimestral, anual, único
-      "dueDate": string | null,         // YYYY-MM-DD se houver
-      "description": string | null,     // resumo curto (<= 120 chars)
-      "responsibleArea": string | null, // se citado
-      "monitoringRequired": boolean | null,
-      "complianceIndicators": string[] | null
-    }
-  ],
-  "observations": [
-    {
-      "text": string,
-      "type": "restriction"|"warning"|"note"|"requirement"|"other",
-      "priority": "critical"|"high"|"medium"|"low",
-      "relatedTo": string | null
-    }
-  ],
-  "complianceScore": number | null,
-  "renewalRecommendation": {
-    "startDate": string | null,         // sugerir 6-12 meses antes do vencimento
-    "urgency": "low"|"medium"|"high" | null,
-    "requiredDocuments": string[] | null,
-    "estimatedDuration": string | null
+  "license_info": {
+    "license_number": "string",
+    "license_type": "string", 
+    "issuer": "string",
+    "issue_date": "YYYY-MM-DD",
+    "expiration_date": "YYYY-MM-DD",
+    "company_name": "string",
+    "cnpj": "string",
+    "process_number": "string",
+    "activity_type": "string",
+    "location": "string"
   },
-  "alerts": [
+  "condicionantes": [
     {
-      "type": "renewal"|"compliance"|"monitoring"|"environmental"|"safety"|"documentation"|"other",
-      "title": string,
-      "message": string,
-      "severity": "low"|"medium"|"high"|"critical",
-      "actionRequired": boolean,
-      "dueDate": string | null,         // YYYY-MM-DD
-      "relatedConditions": string[] | null
+      "titulo_resumido": "Frase curta e clara explicando o item",
+      "descricao_detalhada": "Trecho original ou versão parafraseada fiel do texto legal",
+      "categoria": "Resíduos|Supervisão Técnica|Atmosférico|Hídrico|Solo|Ruído|Emergencial|Renovação|Outros",
+      "base_legal": "Se houver, cite a lei, portaria, resolução ou norma",
+      "referencia": "Item ou parágrafo original, se aplicável",
+      "prioridade": "alta|média|baixa"
     }
   ],
-  "extractionQuality": {
-    "totalConditionsFound": number,
-    "totalObservationsFound": number,
-    "documentReadability": "excellent"|"good"|"fair"|"poor",
-    "extractionConfidence": number      // 0..1
-  }
-}`,
+  "alertas": [
+    {
+      "titulo": "Título do alerta",
+      "mensagem": "Mensagem completa do alerta ou observação",
+      "severidade": "crítica|alta|média|baixa",
+      "tipo_alerta": "lembrete_renovacao|aviso_conformidade|observacao_geral|revogacao|publicidade"
+    }
+  ]
+}
+
+🛑 **IMPORTANTE:**
+- Ignore carimbos, selos, rodapés e repetições automáticas
+- Não use trechos duplicados ou genéricos
+- Priorize sempre o conteúdo jurídico, técnico e normativo
+- Caso não encontre condicionantes, retorne "condicionantes": []
+- RETORNE APENAS O JSON, SEM TEXTO ADICIONAL`,
         model: 'gpt-4o-mini',
         tools: [{ type: 'file_search' }],
       }),
@@ -318,7 +343,7 @@ ESQUEMA DE RESPOSTA (JSON):
         messages: [
           {
             role: 'user',
-            content: 'Analise este documento de licença ambiental e extraia todas as informações importantes no formato JSON especificado.',
+            content: 'Analise este documento de licença ambiental brasileira e extraia todas as informações importantes no formato JSON especificado. Foque especialmente em identificar condicionantes obrigatórias e alertas importantes.',
             attachments: [
               {
                 file_id: openAIFile.id,
@@ -400,11 +425,11 @@ ESQUEMA DE RESPOSTA (JSON):
         
         if (assistantMessage && assistantMessage.content[0]?.text?.value) {
           const content = assistantMessage.content[0].text.value;
-          console.log('AI analysis result:', content.substring(0, 200));
+          console.log('AI analysis result:', content.substring(0, 500));
           
           try {
             // Robust JSON extraction: prefer ```json``` blocks, then any code block, then first {...}
-            let extractedData: any | null = null;
+            let extractedData: ExtractedLicenseData | null = null;
             const jsonBlock = content.match(/```json[\s\S]*?```/i);
             const anyBlock = content.match(/```[\s\S]*?```/);
             const tryParse = (txt: string) => { try { return JSON.parse(txt); } catch { return null; } };
@@ -424,108 +449,108 @@ ESQUEMA DE RESPOSTA (JSON):
               throw new Error('AI did not return valid JSON');
             }
             
-            // Calculate confidence score
+            console.log('Extracted data structure:', JSON.stringify(extractedData, null, 2));
+            
+            // Calculate confidence score based on new structure
             const confidenceScore = calculateConfidenceScore(extractedData);
               
-              // Update license with extracted data
-              await supabaseClient
-                .from('licenses')
-                .update({
-                  name: extractedData.companyName || extractedData.licenseType || file.name.replace('.pdf', ''),
-                  type: extractedData.licenseType || 'LO',
-                  process_number: extractedData.processNumber,
-                  issue_date: extractedData.issueDate,
-                  expiration_date: extractedData.expirationDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  issuing_body: extractedData.issuingBody || 'Órgão Ambiental',
-                  activity_description: extractedData.activity,
-                  location: extractedData.location,
-                  ai_processing_status: 'completed',
-                  ai_confidence_score: confidenceScore,
-                  ai_extracted_data: extractedData,
-                  compliance_score: extractedData.complianceScore || 75
-                })
-                .eq('id', newLicenseId);
+            // Update license with extracted data using new structure
+            const licenseInfo = extractedData.license_info || {};
+            await supabaseClient
+              .from('licenses')
+              .update({
+                name: licenseInfo.company_name || licenseInfo.license_number || file.name.replace('.pdf', ''),
+                type: licenseInfo.license_type || 'LO',
+                process_number: licenseInfo.process_number,
+                issue_date: licenseInfo.issue_date,
+                expiration_date: licenseInfo.expiration_date || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                issuing_body: licenseInfo.issuer || 'Órgão Ambiental',
+                activity_description: licenseInfo.activity_type,
+                location: licenseInfo.location,
+                ai_processing_status: 'completed',
+                ai_confidence_score: confidenceScore,
+                ai_extracted_data: extractedData,
+                compliance_score: 75 // Default score, can be enhanced later
+              })
+              .eq('id', newLicenseId);
 
-              // Save extracted conditions to database
-              if (extractedData.conditions && extractedData.conditions.length > 0) {
-                const conditionsToInsert = extractedData.conditions.map((condition: any) => ({
-                  license_id: newLicenseId,
-                  company_id: companyId,
-                  condition_text: condition.text,
-                  condition_category: condition.category,
-                  priority: condition.priority,
-                  frequency: condition.frequency,
-                  due_date: condition.dueDate,
-                  status: 'pending',
-                  ai_extracted: true,
-                  ai_confidence: confidenceScore
-                }));
+            console.log('License updated with basic info');
 
-                const { error: condInsertError } = await supabaseClient
-                  .from('license_conditions')
-                  .insert(conditionsToInsert);
-                if (condInsertError) {
-                  console.error('Error inserting license conditions:', condInsertError);
-                }
+            // Save extracted condicionantes to database
+            if (extractedData.condicionantes && extractedData.condicionantes.length > 0) {
+              console.log(`Inserting ${extractedData.condicionantes.length} condicionantes`);
+              const conditionsToInsert = extractedData.condicionantes.map((condicionante: any) => ({
+                license_id: newLicenseId,
+                company_id: companyId,
+                condition_text: condicionante.descricao_detalhada || condicionante.titulo_resumido,
+                condition_category: condicionante.categoria || 'Outros',
+                priority: mapPrioridade(condicionante.prioridade),
+                frequency: null, // Can be enhanced later
+                due_date: null, // Can be enhanced later
+                status: 'pending',
+                ai_extracted: true,
+                ai_confidence: confidenceScore,
+                compliance_requirements: condicionante.descricao_detalhada,
+                legal_basis: condicionante.base_legal,
+                reference: condicionante.referencia
+              }));
+
+              const { error: condInsertError } = await supabaseClient
+                .from('license_conditions')
+                .insert(conditionsToInsert);
+              if (condInsertError) {
+                console.error('Error inserting license conditions:', condInsertError);
+              } else {
+                console.log('License conditions inserted successfully');
               }
-
-              // Save alerts to database
-              if (extractedData.alerts && extractedData.alerts.length > 0) {
-                const alertsToInsert = extractedData.alerts.map((alert: any) => ({
-                  license_id: newLicenseId,
-                  company_id: companyId,
-                  alert_type: alert.type,
-                  title: alert.title,
-                  message: alert.message,
-                  severity: alert.severity,
-                  action_required: alert.actionRequired,
-                  due_date: alert.dueDate,
-                  related_conditions: alert.relatedConditions || [],
-                  is_resolved: false
-                }));
-
-                const { error: alertInsertError } = await supabaseClient
-                  .from('license_alerts')
-                  .insert(alertsToInsert);
-                if (alertInsertError) {
-                  console.error('Error inserting license alerts:', alertInsertError);
-                }
-              }
-
-              // Save observations as special conditions if present
-              if (extractedData.observations && extractedData.observations.length > 0) {
-                const observationConditions = extractedData.observations.map((obs: any) => ({
-                  license_id: newLicenseId,
-                  company_id: companyId,
-                  condition_text: obs.text,
-                  condition_category: 'observacao',
-                  priority: obs.priority,
-                  status: 'noted',
-                  ai_extracted: true,
-                  ai_confidence: confidenceScore
-                }));
-
-                const { error: obsInsertError } = await supabaseClient
-                  .from('license_conditions')
-                  .insert(observationConditions);
-                if (obsInsertError) {
-                  console.error('Error inserting observation conditions:', obsInsertError);
-                }
-              }
-
-              // Update document status
-              await supabaseClient
-                .from('documents')
-                .update({
-                  ai_processing_status: 'completed',
-                  ai_confidence_score: confidenceScore
-                })
-                .eq('id', document.id);
-
-              console.log('License updated with AI data successfully');
+            } else {
+              console.log('No condicionantes found to insert');
             }
+
+            // Save alertas to database
+            if (extractedData.alertas && extractedData.alertas.length > 0) {
+              console.log(`Inserting ${extractedData.alertas.length} alertas`);
+              const alertsToInsert = extractedData.alertas.map((alerta: any) => ({
+                license_id: newLicenseId, 
+                company_id: companyId,
+                alert_type: alerta.tipo_alerta || 'observacao_geral',
+                title: alerta.titulo,
+                message: alerta.mensagem,
+                severity: mapSeveridade(alerta.severidade),
+                action_required: alerta.severidade === 'crítica' || alerta.severidade === 'alta',
+                due_date: null, // Can be enhanced later
+                is_resolved: false,
+                metadata: {
+                  tipo_original: alerta.tipo_alerta,
+                  severidade_original: alerta.severidade
+                }
+              }));
+
+              const { error: alertInsertError } = await supabaseClient
+                .from('license_alerts')
+                .insert(alertsToInsert);
+              if (alertInsertError) {
+                console.error('Error inserting license alerts:', alertInsertError);
+              } else {
+                console.log('License alerts inserted successfully');
+              }
+            } else {
+              console.log('No alertas found to insert');
+            }
+
+            // Update document status
+            await supabaseClient
+              .from('documents')
+              .update({
+                ai_processing_status: 'completed',
+                ai_confidence_score: confidenceScore
+              })
+              .eq('id', document.id);
+
+            console.log('License updated with AI data successfully');
           } catch (parseError) {
             console.error('Error parsing AI response:', parseError);
+            console.error('Raw AI response:', content);
           }
         }
       }
@@ -639,25 +664,45 @@ async function handleReconcile(supabaseClient: any, licenseId: string, reconcili
   });
 }
 
-function calculateConfidenceScore(data: any): number {
+function calculateConfidenceScore(data: ExtractedLicenseData): number {
   let score = 0;
   let totalFields = 8;
 
+  const licenseInfo = data.license_info || {};
+  
   // Basic fields
-  if (data.licenseType && data.licenseType !== 'Não identificado') score += 1;
-  if (data.issuingBody && data.issuingBody !== 'Não identificado') score += 1;
-  if (data.processNumber) score += 1;
-  if (data.issueDate) score += 1;
-  if (data.expirationDate) score += 1;
+  if (licenseInfo.license_type && licenseInfo.license_type !== 'Não identificado') score += 1;
+  if (licenseInfo.issuer && licenseInfo.issuer !== 'Não identificado') score += 1;
+  if (licenseInfo.process_number) score += 1;
+  if (licenseInfo.issue_date) score += 1;
+  if (licenseInfo.expiration_date) score += 1;
+  if (licenseInfo.company_name) score += 1;
   
-  // Conditions extracted
-  if (data.conditions && data.conditions.length > 0) score += 1;
+  // Condicionantes extracted
+  if (data.condicionantes && data.condicionantes.length > 0) score += 1;
   
-  // Compliance score calculated
-  if (data.complianceScore > 0) score += 1;
-  
-  // Alerts generated
-  if (data.alerts && data.alerts.length > 0) score += 1;
+  // Alertas generated
+  if (data.alertas && data.alertas.length > 0) score += 1;
 
   return Math.round((score / totalFields) * 100) / 100;
+}
+
+// Helper functions to map Portuguese priority/severity to English database values
+function mapPrioridade(prioridade: string): string {
+  switch (prioridade?.toLowerCase()) {
+    case 'alta': return 'high';
+    case 'média': return 'medium';
+    case 'baixa': return 'low';
+    default: return 'medium';
+  }
+}
+
+function mapSeveridade(severidade: string): string {
+  switch (severidade?.toLowerCase()) {
+    case 'crítica': return 'critical';
+    case 'alta': return 'high';
+    case 'média': return 'medium';
+    case 'baixa': return 'low';
+    default: return 'medium';
+  }
 }
