@@ -13,6 +13,10 @@ export interface ChatMessage {
     path?: string;
     action?: string;
   }>;
+  context?: string;
+  marketInfo?: string;
+  companyName?: string;
+  dataFound?: boolean;
 }
 
 export const useChatAssistant = () => {
@@ -20,7 +24,7 @@ export const useChatAssistant = () => {
     {
       id: '1',
       role: 'assistant',
-      content: 'Olá! Sou seu assistente inteligente de ESG. Posso ajudar você com informações sobre licenças, emissões, metas, documentos e muito mais. Como posso ajudar?',
+      content: 'Olá! Sou a **Assistente ESG IA da Daton**, sua especialista em sustentabilidade empresarial. Tenho acesso completo aos dados da sua empresa e posso ajudar com:\n\n🏢 **Análises da sua empresa**: licenças, emissões, metas, auditorias, documentos\n📊 **Insights de mercado**: benchmarks, tendências, regulamentações\n🎯 **Recomendações práticas**: ações específicas e oportunidades\n\nComo posso ajudar você hoje?',
       timestamp: new Date(),
     }
   ]);
@@ -65,6 +69,10 @@ export const useChatAssistant = () => {
         content: data.response,
         timestamp: new Date(),
         suggestedActions: data.suggestedActions,
+        context: data.context,
+        marketInfo: data.marketInfo,
+        companyName: data.companyName,
+        dataFound: data.dataFound,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -95,7 +103,7 @@ export const useChatAssistant = () => {
     setMessages([{
       id: '1',
       role: 'assistant',
-      content: 'Olá! Sou seu assistente inteligente de ESG. Posso ajudar você com informações sobre licenças, emissões, metas, documentos e muito mais. Como posso ajudar?',
+      content: 'Olá! Sou a **Assistente ESG IA da Daton**, sua especialista em sustentabilidade empresarial. Tenho acesso completo aos dados da sua empresa e posso ajudar com:\n\n🏢 **Análises da sua empresa**: licenças, emissões, metas, auditorias, documentos\n📊 **Insights de mercado**: benchmarks, tendências, regulamentações\n🎯 **Recomendações práticas**: ações específicas e oportunidades\n\nComo posso ajudar você hoje?',
       timestamp: new Date(),
     }]);
   }, []);
