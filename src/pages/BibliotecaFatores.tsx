@@ -20,6 +20,7 @@ import {
   deleteCustomEmissionFactor,
   type EmissionFactor 
 } from "@/services/emissionFactors";
+import { ghg2025FactorsService } from "@/services/ghgProtocol2025Factors";
 
 export default function BibliotecaFatores() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,6 +40,7 @@ export default function BibliotecaFatores() {
   const [sources, setSources] = useState<string[]>([]);
   const [years, setYears] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingGHG2025, setIsUpdatingGHG2025] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
   const { toast } = useToast();
@@ -170,6 +172,42 @@ export default function BibliotecaFatores() {
     setIsEditModalOpen(true);
   };
 
+  const handleUpdateGHG2025 = async () => {
+    if (!confirm("Isso irá atualizar/adicionar os fatores de emissão do GHG Protocol Brasil 2025. Continuar?")) {
+      return;
+    }
+
+    try {
+      setIsUpdatingGHG2025(true);
+      
+      toast({
+        title: "Atualizando base de dados...",
+        description: "Importando fatores GHG Protocol Brasil 2025",
+      });
+
+      const result = await ghg2025FactorsService.importAllFactors();
+      
+      toast({
+        title: "✅ Atualização concluída!",
+        description: `${result.success} fatores processados. ${result.errors > 0 ? `${result.errors} erros encontrados.` : ''}`,
+        variant: result.errors > 0 ? "destructive" : "default"
+      });
+
+      // Recarregar dados
+      await loadData();
+      
+    } catch (error) {
+      console.error('Erro ao atualizar GHG 2025:', error);
+      toast({
+        title: "❌ Erro na atualização",
+        description: error.message || "Erro ao importar fatores GHG Protocol Brasil 2025",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingGHG2025(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -192,6 +230,24 @@ export default function BibliotecaFatores() {
             <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)}>
               <Info className="mr-2 h-4 w-4" />
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
+            </Button>
+
+            <Button 
+              onClick={handleUpdateGHG2025} 
+              disabled={isUpdatingGHG2025}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+            >
+              {isUpdatingGHG2025 ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Atualizando...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Atualizar GHG 2025
+                </>
+              )}
             </Button>
             
             <Button onClick={() => setIsImportModalOpen(true)} className="bg-primary text-primary-foreground">
