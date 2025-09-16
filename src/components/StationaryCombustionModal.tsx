@@ -225,13 +225,21 @@ export const StationaryCombustionModal = ({
         }
       };
       
-      // Only include emission_factor_id if it's valid
-      if (emissionFactorId) {
-        payload.emission_factor_id = emissionFactorId;
-        console.info('Enviando com fator específico:', emissionFactorId);
-      } else {
-        console.info('Enviando para cálculo automático por unidade');
-      }
+      // Log detailed validation before submission
+      console.log('Dados sendo enviados:', {
+        payload,
+        emissionFactorId,
+        formDataComplete: {
+          economicSector: formData.economicSector,
+          fuelName: formData.fuelName,
+          quantity: formData.quantity,
+          unit: formData.unit,
+          periodStart: formData.periodStart,
+          periodEnd: formData.periodEnd,
+          sourceRegistry: formData.sourceRegistry,
+          sourceDescription: formData.sourceDescription
+        }
+      });
       
       if (editingData) {
         await updateActivityData(editingData.id, payload);
@@ -259,7 +267,19 @@ export const StationaryCombustionModal = ({
 
     } catch (error) {
       console.error('Erro ao adicionar dados:', error);
-      toast.error("Erro ao adicionar dados de atividade");
+      
+      // More specific error handling
+      if (error.message?.includes('violates row-level security')) {
+        toast.error("❌ Erro de permissão: Verifique se você tem acesso à fonte de emissão selecionada");
+      } else if (error.message?.includes('duplicate key')) {
+        toast.error("❌ Dados duplicados: Já existem dados para este período");
+      } else if (error.message?.includes('invalid input syntax')) {
+        toast.error("❌ Erro de formato: Verifique os dados inseridos");
+      } else if (error.message?.includes('not-null violation')) {
+        toast.error("❌ Campo obrigatório não preenchido");
+      } else {
+        toast.error(`❌ Erro ao adicionar dados: ${error.message || 'Erro desconhecido'}`);
+      }
     } finally {
       setIsSubmitting(false);
     }

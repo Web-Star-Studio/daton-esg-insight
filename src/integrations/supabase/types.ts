@@ -20,6 +20,7 @@ export type Database = {
           emission_factor_id: string | null
           emission_source_id: string
           id: string
+          metadata: Json | null
           period_end_date: string
           period_start_date: string
           quantity: number
@@ -32,6 +33,7 @@ export type Database = {
           emission_factor_id?: string | null
           emission_source_id: string
           id?: string
+          metadata?: Json | null
           period_end_date: string
           period_start_date: string
           quantity: number
@@ -44,6 +46,7 @@ export type Database = {
           emission_factor_id?: string | null
           emission_source_id?: string
           id?: string
+          metadata?: Json | null
           period_end_date?: string
           period_start_date?: string
           quantity?: number
