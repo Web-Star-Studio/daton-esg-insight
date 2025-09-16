@@ -9,16 +9,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Plus, Search, Filter, Info, Upload, Download, Calendar, Building, Zap } from "lucide-react";
 import { AddCustomFactorModal } from "@/components/AddCustomFactorModal";
 import { EditCustomFactorModal } from "@/components/EditCustomFactorModal";
-import { ImportFactorsModal } from "@/components/ImportFactorsModal";
 import { ExportFactorsModal } from "@/components/ExportFactorsModal";
-import { UpdateEmissionFactorsButton } from "@/components/UpdateEmissionFactorsButton";
-import { ProcessPDFFactorsButton } from "@/components/ProcessPDFFactorsButton";
-import { ImportBrazilianFactorsButton } from "@/components/ImportBrazilianFactorsButton";
-import { ImportBrazilianGHGDataButton } from "@/components/ImportBrazilianGHGDataButton";
-import { ImportMobileCombustionButton } from "@/components/ImportMobileCombustionButton";
-import { ImportIndustrialProcessesButton } from "@/components/ImportIndustrialProcessesButton";
-import { ImportAgricultureButton } from "@/components/ImportAgricultureButton";
-import { ImportGHGProtocol2025Button } from "@/components/ImportGHGProtocol2025Button";
+import { UnifiedFactorImportModal } from "@/components/UnifiedFactorImportModal";
 import { EmissionFactorCard } from "@/components/EmissionFactorCard";
 import { MethodologyInfo } from "@/components/MethodologyInfo";
 import { useToast } from "@/hooks/use-toast";
@@ -196,30 +188,25 @@ export default function BibliotecaFatores() {
               <span>{stats.categories} categorias</span>
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-3 flex-wrap">
             <Button variant="outline" onClick={() => setShowMethodology(!showMethodology)}>
               <Info className="mr-2 h-4 w-4" />
               {showMethodology ? 'Ocultar' : 'Ver'} Metodologia
             </Button>
-            <UpdateEmissionFactorsButton />
-            <ProcessPDFFactorsButton />
-            <ImportBrazilianFactorsButton onImportComplete={() => loadData()} />
-            <ImportBrazilianGHGDataButton onImportComplete={() => loadData()} />
-            <ImportMobileCombustionButton onSuccess={() => loadData()} />
-            <ImportIndustrialProcessesButton onSuccess={() => loadData()} />
-            <ImportAgricultureButton onSuccess={() => loadData()} />
-            <ImportGHGProtocol2025Button onImportComplete={() => loadData()} />
-            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+            
+            <Button onClick={() => setIsImportModalOpen(true)} className="bg-primary text-primary-foreground">
               <Upload className="mr-2 h-4 w-4" />
-              Importar CSV/Excel
+              Central de Importação
             </Button>
+            
             <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
               <Download className="mr-2 h-4 w-4" />
               Exportar Biblioteca
             </Button>
-            <Button onClick={() => setIsAddModalOpen(true)}>
+            
+            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Adicionar Fator Customizado
+              Adicionar Fator Manual
             </Button>
           </div>
         </div>
@@ -491,7 +478,8 @@ export default function BibliotecaFatores() {
           factor={editingFactor}
         />
 
-        <ImportFactorsModal
+        /* Unified Import Modal */
+        <UnifiedFactorImportModal
           open={isImportModalOpen}
           onOpenChange={setIsImportModalOpen}
           onImportComplete={() => {
