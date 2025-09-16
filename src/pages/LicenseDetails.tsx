@@ -105,15 +105,53 @@ const LicenseDetails = () => {
     }
   };
 
+  if (!id) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <AlertTriangle className="h-12 w-12 mx-auto text-yellow-500" />
+            <div>
+              <h2 className="text-lg font-semibold">ID da licença não fornecido</h2>
+              <p className="text-muted-foreground">
+                Não foi possível identificar qual licença exibir.
+              </p>
+              <Button 
+                onClick={() => navigate('/licenciamento')} 
+                className="mt-4"
+              >
+                Voltar ao Licenciamento
+              </Button>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (error) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <p className="text-muted-foreground">Erro ao carregar detalhes da licença</p>
-            <Button onClick={() => refetch()} className="mt-4">
-              Tentar novamente
-            </Button>
+          <div className="text-center space-y-4">
+            <AlertTriangle className="h-12 w-12 mx-auto text-red-500" />
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Erro ao carregar licença</h2>
+              <p className="text-muted-foreground mt-2">
+                {error.message.includes('No rows') 
+                  ? 'Licença não encontrada ou você não tem permissão para acessá-la.'
+                  : 'Ocorreu um erro ao carregar os detalhes da licença.'
+                }
+              </p>
+              <div className="flex gap-2 justify-center mt-4">
+                <Button variant="outline" onClick={() => navigate('/licenciamento')}>
+                  Voltar ao Licenciamento
+                </Button>
+                <Button onClick={() => refetch()}>
+                  Tentar novamente
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </MainLayout>

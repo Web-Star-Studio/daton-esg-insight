@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/MainLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import { 
   Shield, 
   FileText, 
@@ -22,19 +23,35 @@ import {
 } from 'lucide-react'
 import { AIExtractionDashboard } from '@/components/AIExtractionDashboard'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getLicenses, getLicenseStats, type LicenseListItem } from '@/services/licenses'
+import { toast } from 'sonner'
 
 export default function Licenciamento() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState("dashboard")
 
-  // Mock data - replace with real data fetching
-  const stats = {
-    totalLicenses: 24,
-    activeCount: 18,
-    expiringSoon: 3,
-    pendingRenewal: 5,
-    complianceRate: 92,
-    avgProcessingTime: 45
+  // Fetch real license data
+  const { data: licenses, isLoading: licensesLoading } = useQuery({
+    queryKey: ['licenses'],
+    queryFn: () => getLicenses(),
+    retry: 3
+  })
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['license-stats'],
+    queryFn: getLicenseStats,
+    retry: 3
+  })
+
+  // Calculate real stats from data
+  const realStats = {
+    totalLicenses: stats?.total || 0,
+    activeCount: stats?.active || 0,
+    expiringSoon: stats?.upcoming || 0,
+    pendingRenewal: stats?.expired || 0,
+    complianceRate: stats?.total ? Math.round((stats.active / stats.total) * 100) : 0,
+    avgProcessingTime: 45 // This would need a different query to calculate
   }
 
   const workflows = [
@@ -45,7 +62,7 @@ export default function Licenciamento() {
       icon: Brain,
       action: () => navigate('/licenciamento/workflow'),
       color: "bg-blue-500",
-      stats: { processed: 156, pending: 8 }
+      stats: { processed: licenses?.length || 0, pending: 0 }
     },
     {
       id: 2,
@@ -54,7 +71,7 @@ export default function Licenciamento() {
       icon: CheckCircle,
       action: () => navigate('/licenciamento/reconciliacao'),
       color: "bg-green-500",
-      stats: { approved: 142, pending: 14 }
+      stats: { approved: stats?.active || 0, pending: 0 }
     },
     {
       id: 3,
@@ -63,9 +80,26 @@ export default function Licenciamento() {
       icon: FileText,
       action: () => navigate('/licenciamento/novo'),
       color: "bg-purple-500",
-      stats: { created: 28, thisMonth: 6 }
+      stats: { created: stats?.total || 0, thisMonth: 0 }
     }
   ]
+
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      "Ativa": { variant: "default" as const, className: "bg-success/10 text-success border-success/20" },
+      "Vencida": { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
+      "Em Renovação": { variant: "secondary" as const, className: "bg-accent/10 text-accent border-accent/20" },
+      "Suspensa": { variant: "secondary" as const, className: "bg-warning/10 text-warning border-warning/20" }
+    };
+    
+    const config = statusMap[status as keyof typeof statusMap] || statusMap["Ativa"];
+    
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        {status}
+      </Badge>
+    );
+  }
 
   return (
     <MainLayout>
@@ -128,9 +162,13 @@ export default function Licenciamento() {
                   <Shield className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalLicenses}</div>
+                  {statsLoading ? (
+                    <Skeleton className="h-7 w-12" />
+                  ) : (
+                    <div className="text-2xl font-bold">{realStats.totalLicenses}</div>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    {stats.activeCount} ativas
+                    {realStats.activeCount} ativas
                   </p>
                 </CardContent>
               </Card>
@@ -141,7 +179,11 @@ export default function Licenciamento() {
                   <Clock className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">{stats.expiringSoon}</div>
+                  {statsLoading ? (
+                    <Skeleton className="h-7 w-12" />
+                  ) : (
+                    <div className="text-2xl font-bold text-yellow-600">{realStats.expiringSoon}</div>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Próximos 60 dias
                   </p>
@@ -154,20 +196,30 @@ export default function Licenciamento() {
                   <TrendingUp className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{stats.complianceRate}%</div>
-                  <Progress value={stats.complianceRate} className="mt-2" />
+                  {statsLoading ? (
+                    <Skeleton className="h-7 w-12" />
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-green-600">{realStats.complianceRate}%</div>
+                      <Progress value={realStats.complianceRate} className="mt-2" />
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Tempo Médio Proc.</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Vencidas/Renovação</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.avgProcessingTime}d</div>
+                  {statsLoading ? (
+                    <Skeleton className="h-7 w-12" />
+                  ) : (
+                    <div className="text-2xl font-bold text-red-600">{realStats.pendingRenewal}</div>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    Melhoria de 12%
+                    Requerem atenção
                   </p>
                 </CardContent>
               </Card>
@@ -220,17 +272,57 @@ export default function Licenciamento() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-4" />
-                  <p>Lista detalhada de licenças será implementada aqui</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => navigate('/licenciamento/novo')}
-                  >
-                    Adicionar Primeira Licença
-                  </Button>
-                </div>
+                {licensesLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-48" />
+                          <Skeleton className="h-3 w-32" />
+                        </div>
+                        <Skeleton className="h-6 w-16" />
+                      </div>
+                    ))}
+                  </div>
+                ) : licenses && licenses.length > 0 ? (
+                  <div className="space-y-4">
+                    {licenses.map((license) => (
+                      <div key={license.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium">{license.name}</h4>
+                            {getStatusBadge(license.status)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {license.type} • {license.issuing_body} • Vencimento: {new Date(license.expiration_date).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/licenciamento/${license.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="w-12 h-12 mx-auto mb-4" />
+                    <p>Nenhuma licença cadastrada</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => navigate('/licenciamento/novo')}
+                    >
+                      Adicionar Primeira Licença
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

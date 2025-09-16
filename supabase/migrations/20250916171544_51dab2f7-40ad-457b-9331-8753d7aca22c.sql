@@ -1,0 +1,6 @@
+-- Insert sample license data for testing
+INSERT INTO licenses (name, type, issuing_body, process_number, issue_date, expiration_date, status, conditions, company_id) VALUES
+('Licença de Operação - Unidade Principal', 'LO', 'CETESB', 'LO-2024-001', '2024-01-15', '2027-01-15', 'Ativa', 'Monitoramento mensal das emissões atmosféricas. Relatório semestral de atividades.', 'b579f7d3-690e-4308-90af-c6c41206f905'),
+('Licença de Instalação - Novo Galpão', 'LI', 'INEA', 'LI-2024-002', '2024-02-01', '2025-02-01', 'Ativa', 'Instalação de sistema de controle de efluentes. Plantio compensatório de 100 mudas.', 'b579f7d3-690e-4308-90af-c6c41206f905'),
+('Licença Prévia - Expansão Industrial', 'LP', 'IBAMA', 'LP-2024-003', '2024-03-10', '2025-03-10', 'Em Renovação', 'Estudo de Impacto Ambiental aprovado. Audiência pública realizada.', 'fdd83760-60eb-445d-b711-6a0d61859925'),
+('Licença de Operação - Vencida', 'LO', 'CETESB', 'LO-2023-004', '2021-06-01', '2024-06-01', 'Vencida', 'Licença vencida - necessita renovação urgente.', 'b579f7d3-690e-4308-90af-c6c41206f905');
