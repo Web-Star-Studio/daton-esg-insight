@@ -105,6 +105,10 @@ const App = () => (
                 <ProcessarLicenca />
               </ProtectedRoute>
             } />
+            {/* Legacy redirects for backward compatibility */}
+            <Route path="/licenciamento/analise" element={<Navigate to="/licenciamento/processar" replace />} />
+            <Route path="/licenciamento/nova" element={<Navigate to="/licenciamento/novo" replace />} />
+            <Route path="/licenciamento/:id/analise" element={<Navigate to="/licenciamento/processar" replace />} />
             <Route path="/licenciamento/novo" element={
               <ProtectedRoute requiredRole="Editor">
                 <LicenseForm />

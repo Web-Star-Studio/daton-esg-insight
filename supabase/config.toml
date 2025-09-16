@@ -95,7 +95,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.license-document-analyzer]
-verify_jwt = true
+verify_jwt = false
 
 [functions.license-workflow-processor]
 verify_jwt = true

@@ -387,7 +387,7 @@ const LicenseDetails = () => {
                       variant="outline" 
                       size="sm" 
                       className="w-full"
-                      onClick={() => navigate(`/licenciamento/${id}/analise`)}
+                      onClick={() => navigate('/licenciamento/processar')}
                     >
                       <Brain className="h-4 w-4 mr-2" />
                       Ver Análise Completa
