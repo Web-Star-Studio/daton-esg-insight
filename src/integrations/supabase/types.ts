@@ -442,25 +442,31 @@ export type Database = {
       calculated_emissions: {
         Row: {
           activity_data_id: string
+          biogenic_co2e: number | null
           calculation_date: string
           details_json: Json | null
           emission_factor_id: string
+          fossil_co2e: number | null
           id: string
           total_co2e: number
         }
         Insert: {
           activity_data_id: string
+          biogenic_co2e?: number | null
           calculation_date?: string
           details_json?: Json | null
           emission_factor_id: string
+          fossil_co2e?: number | null
           id?: string
           total_co2e: number
         }
         Update: {
           activity_data_id?: string
+          biogenic_co2e?: number | null
           calculation_date?: string
           details_json?: Json | null
           emission_factor_id?: string
+          fossil_co2e?: number | null
           id?: string
           total_co2e?: number
         }
@@ -1153,13 +1159,20 @@ export type Database = {
       emission_factors: {
         Row: {
           activity_unit: string
+          biogenic_fraction: number | null
+          calorific_value: number | null
+          calorific_value_unit: string | null
           category: string
           ch4_factor: number | null
           co2_factor: number | null
           company_id: string | null
           created_at: string
+          density: number | null
+          density_unit: string | null
           details_json: Json | null
+          fuel_type: string | null
           id: string
+          is_biofuel: boolean | null
           n2o_factor: number | null
           name: string
           source: string
@@ -1169,13 +1182,20 @@ export type Database = {
         }
         Insert: {
           activity_unit: string
+          biogenic_fraction?: number | null
+          calorific_value?: number | null
+          calorific_value_unit?: string | null
           category: string
           ch4_factor?: number | null
           co2_factor?: number | null
           company_id?: string | null
           created_at?: string
+          density?: number | null
+          density_unit?: string | null
           details_json?: Json | null
+          fuel_type?: string | null
           id?: string
+          is_biofuel?: boolean | null
           n2o_factor?: number | null
           name: string
           source: string
@@ -1185,13 +1205,20 @@ export type Database = {
         }
         Update: {
           activity_unit?: string
+          biogenic_fraction?: number | null
+          calorific_value?: number | null
+          calorific_value_unit?: string | null
           category?: string
           ch4_factor?: number | null
           co2_factor?: number | null
           company_id?: string | null
           created_at?: string
+          density?: number | null
+          density_unit?: string | null
           details_json?: Json | null
+          fuel_type?: string | null
           id?: string
+          is_biofuel?: boolean | null
           n2o_factor?: number | null
           name?: string
           source?: string
@@ -1216,6 +1243,7 @@ export type Database = {
           company_id: string
           created_at: string
           description: string | null
+          economic_sector: string | null
           id: string
           name: string
           scope: number
@@ -1230,6 +1258,7 @@ export type Database = {
           company_id: string
           created_at?: string
           description?: string | null
+          economic_sector?: string | null
           id?: string
           name: string
           scope: number
@@ -1244,6 +1273,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           description?: string | null
+          economic_sector?: string | null
           id?: string
           name?: string
           scope?: number

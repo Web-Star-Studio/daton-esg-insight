@@ -5,10 +5,13 @@ export interface EmissionSource {
   name: string;
   scope: number;
   category: string;
+  subcategory?: string;
   description?: string;
   status: string;
   asset_id?: string;
   company_id: string;
+  economic_sector?: string;
+  scope_3_category_number?: number;
   created_at: string;
   updated_at: string;
 }
@@ -17,8 +20,11 @@ export interface CreateEmissionSourceData {
   name: string;
   scope: number;
   category: string;
+  subcategory?: string;
   description?: string;
   asset_id?: string;
+  economic_sector?: string;
+  scope_3_category_number?: number;
 }
 
 export interface ActivityData {
@@ -339,11 +345,11 @@ export async function getEmissionSourcesWithEmissions() {
   return sourcesWithEmissions;
 }
 
-// Calculate emissions for activity data
+// Calculate emissions for activity data with GHG Protocol compliance
 export async function calculateEmissions(activityDataId: string, emissionFactorId: string) {
   try {
     // Fetch activity data and emission factor
-    const [activityResponse, factorResponse] = await Promise.all([
+    const [activityResponse, factorResponse, sourceResponse] = await Promise.all([
       supabase
         .from('activity_data')
         .select('*')
@@ -353,42 +359,123 @@ export async function calculateEmissions(activityDataId: string, emissionFactorI
         .from('emission_factors')
         .select('*')
         .eq('id', emissionFactorId)
+        .single(),
+      supabase
+        .from('activity_data')
+        .select(`
+          emission_sources (
+            category,
+            economic_sector
+          )
+        `)
+        .eq('id', activityDataId)
         .single()
     ]);
 
-    if (activityResponse.error || factorResponse.error) {
+    if (activityResponse.error || factorResponse.error || sourceResponse.error) {
       throw new Error('Error fetching data for calculation');
     }
 
     const activity = activityResponse.data;
     const factor = factorResponse.data;
+    const source = sourceResponse.data.emission_sources;
 
-    // Calculate emissions (quantity * emission factors)
-    const co2_emissions = activity.quantity * (factor.co2_factor || 0);
-    const ch4_emissions = activity.quantity * (factor.ch4_factor || 0);
-    const n2o_emissions = activity.quantity * (factor.n2o_factor || 0);
+    // For stationary combustion, use enhanced calculation
+    if (source?.category === 'Combustão Estacionária') {
+      const { calculateStationaryCombustionEmissions } = await import('./stationaryCombustion');
+      
+      const economicSector = source.economic_sector as any || 'Industrial';
+      
+      const result = await calculateStationaryCombustionEmissions(
+        factor.name,
+        activity.quantity,
+        activity.unit,
+        economicSector
+      );
+
+      // Store calculated emissions with fossil/biogenic separation
+      const { data: calculatedEmission, error: insertError } = await supabase
+        .from('calculated_emissions')
+        .upsert({
+          activity_data_id: activityDataId,
+          emission_factor_id: emissionFactorId,
+          total_co2e: result.total_co2e,
+          fossil_co2e: result.fossil_co2e,
+          biogenic_co2e: result.biogenic_co2e,
+          details_json: result.calculation_details
+        }, {
+          onConflict: 'activity_data_id'
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      return calculatedEmission;
+    }
+
+    // Standard calculation for other categories
+    let co2_emissions = activity.quantity * (factor.co2_factor || 0);
+    let ch4_emissions = activity.quantity * (factor.ch4_factor || 0);  
+    let n2o_emissions = activity.quantity * (factor.n2o_factor || 0);
+
+    // Apply unit conversions if needed
+    const { getConversionFactor } = await import('./conversionFactors');
     
-    // Convert to CO2 equivalent using GWP factors from IPCC AR6 (Correção Emergencial)
-    const gwpCH4 = 27; // IPCC AR6 GWP for CH4 over 100 years (não-fóssil/combustão)
-    const gwpN2O = 273; // IPCC AR6 GWP for N2O over 100 years
+    if (activity.unit !== factor.activity_unit) {
+      const conversionFactor = await getConversionFactor(
+        activity.unit, 
+        factor.activity_unit, 
+        source?.category
+      );
+      const convertedQuantity = activity.quantity * conversionFactor;
+      
+      co2_emissions = convertedQuantity * (factor.co2_factor || 0);
+      ch4_emissions = convertedQuantity * (factor.ch4_factor || 0);
+      n2o_emissions = convertedQuantity * (factor.n2o_factor || 0);
+    }
+
+    // GWP factors IPCC AR6
+    const gwpCH4 = factor.is_biofuel ? 27 : 30; // Different for fossil vs biogenic
+    const gwpN2O = 273;
     
-    // Total CO2 equivalent using corrected GWP values
-    const total_co2e = co2_emissions + (ch4_emissions * gwpCH4) + (n2o_emissions * gwpN2O);
+    // CO2 equivalent calculation
+    const ch4_co2e = ch4_emissions * gwpCH4;
+    const n2o_co2e = n2o_emissions * gwpN2O;
+    
+    // Fossil vs biogenic separation
+    const biogenic_fraction = factor.biogenic_fraction || 0;
+    const fossil_fraction = 1 - biogenic_fraction;
+    
+    const fossil_co2e = (co2_emissions * fossil_fraction) + ch4_co2e + n2o_co2e;
+    const biogenic_co2e = co2_emissions * biogenic_fraction;
+    const total_co2e = fossil_co2e + biogenic_co2e;
 
     // Store calculated emissions
     const { data: calculatedEmission, error: insertError } = await supabase
       .from('calculated_emissions')
-      .insert({
+      .upsert({
         activity_data_id: activityDataId,
         emission_factor_id: emissionFactorId,
         total_co2e,
+        fossil_co2e,
+        biogenic_co2e,
         details_json: {
           co2_emissions,
           ch4_emissions,
           n2o_emissions,
-          calculation_method: 'simple_multiplication',
-          gwp_factors: { ch4: gwpCH4, n2o: gwpN2O }
+          ch4_co2e,
+          n2o_co2e,
+          biogenic_fraction,
+          fossil_fraction,
+          calculation_method: 'ghg_protocol_2025',
+          gwp_factors: { ch4: gwpCH4, n2o: gwpN2O },
+          conversion_applied: activity.unit !== factor.activity_unit
         }
+      }, {
+        onConflict: 'activity_data_id'
       })
       .select()
       .single();
