@@ -42,6 +42,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { getLicenseById, getDocumentUrl, type LicenseDetail } from '@/services/licenses';
+import { getLicenseConditions, getLicenseAlerts, updateConditionStatus, resolveAlert } from '@/services/licenseAI';
 import { LicenseDocumentUploadModal } from '@/components/LicenseDocumentUploadModal';
 
 const LicenseDetails = () => {
@@ -52,6 +53,18 @@ const LicenseDetails = () => {
   const { data: license, isLoading, error, refetch } = useQuery({
     queryKey: ['license-details', id],
     queryFn: () => getLicenseById(id!),
+    enabled: !!id,
+  });
+
+  const { data: conditions, isLoading: conditionsLoading, refetch: refetchConditions } = useQuery({
+    queryKey: ['license-conditions', id],
+    queryFn: () => getLicenseConditions(id!),
+    enabled: !!id,
+  });
+
+  const { data: alerts, isLoading: alertsLoading, refetch: refetchAlerts } = useQuery({
+    queryKey: ['license-alerts', id],
+    queryFn: () => getLicenseAlerts(id!),
     enabled: !!id,
   });
 
@@ -78,6 +91,59 @@ const LicenseDetails = () => {
         {status}
       </Badge>
     );
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityMap = {
+      "high": { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
+      "medium": { variant: "secondary" as const, className: "bg-warning/10 text-warning border-warning/20" },
+      "low": { variant: "outline" as const, className: "bg-muted/10" }
+    };
+
+    const config = priorityMap[priority as keyof typeof priorityMap] || priorityMap["medium"];
+    
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        {priority === 'high' ? 'Alta' : priority === 'medium' ? 'Média' : 'Baixa'}
+      </Badge>
+    );
+  };
+
+  const getSeverityBadge = (severity: string) => {
+    const severityMap = {
+      "critical": { variant: "destructive" as const, className: "bg-destructive text-destructive-foreground" },
+      "high": { variant: "destructive" as const, className: "bg-destructive/10 text-destructive border-destructive/20" },
+      "medium": { variant: "secondary" as const, className: "bg-warning/10 text-warning border-warning/20" },
+      "low": { variant: "outline" as const, className: "bg-muted/10" }
+    };
+
+    const config = severityMap[severity as keyof typeof severityMap] || severityMap["medium"];
+    
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        {severity === 'critical' ? 'Crítico' : severity === 'high' ? 'Alto' : severity === 'medium' ? 'Médio' : 'Baixo'}
+      </Badge>
+    );
+  };
+
+  const handleUpdateConditionStatus = async (conditionId: string, newStatus: string) => {
+    try {
+      await updateConditionStatus(conditionId, newStatus);
+      refetchConditions();
+      toast.success('Status da condicionante atualizado');
+    } catch (error) {
+      toast.error('Erro ao atualizar status da condicionante');
+    }
+  };
+
+  const handleResolveAlert = async (alertId: string) => {
+    try {
+      await resolveAlert(alertId);
+      refetchAlerts();
+      toast.success('Alerta resolvido');
+    } catch (error) {
+      toast.error('Erro ao resolver alerta');
+    }
   };
 
   const handleDownloadDocument = async (filePath: string, fileName: string) => {
@@ -245,6 +311,184 @@ const LicenseDetails = () => {
               </CardContent>
             </Card>
 
+            {/* Condicionantes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Condicionantes da Licença
+                  {conditions && conditions.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {conditions.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {conditionsLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="p-4 border rounded space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-16" />
+                          <Skeleton className="h-6 w-20" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : conditions && conditions.length > 0 ? (
+                  <div className="space-y-3">
+                    {conditions.map((condition) => (
+                      <div key={condition.id} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium mb-2">{condition.condition_text}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                              <span className="capitalize">{condition.condition_category?.replace('_', ' ')}</span>
+                              {condition.frequency && (
+                                <>
+                                  <span>•</span>
+                                  <span className="capitalize">{condition.frequency}</span>
+                                </>
+                              )}
+                              {condition.due_date && (
+                                <>
+                                  <span>•</span>
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{formatDate(condition.due_date)}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {getPriorityBadge(condition.priority)}
+                              <Badge 
+                                variant={condition.status === 'completed' ? 'default' : condition.status === 'in_progress' ? 'secondary' : 'outline'}
+                                className={
+                                  condition.status === 'completed' ? 'bg-success/10 text-success border-success/20' :
+                                  condition.status === 'in_progress' ? 'bg-warning/10 text-warning border-warning/20' : ''
+                                }
+                              >
+                                {condition.status === 'completed' ? 'Concluída' : 
+                                 condition.status === 'in_progress' ? 'Em Andamento' : 
+                                 condition.status === 'noted' ? 'Anotada' : 'Pendente'}
+                              </Badge>
+                              {condition.ai_extracted && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Brain className="h-3 w-3 mr-1" />
+                                  IA {Math.round((condition.ai_confidence || 0) * 100)}%
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleUpdateConditionStatus(condition.id, 'in_progress')}>
+                                Em Andamento
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUpdateConditionStatus(condition.id, 'completed')}>
+                                Marcar como Concluída
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleUpdateConditionStatus(condition.id, 'pending')}>
+                                Voltar para Pendente
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        {condition.condition_text && (
+                          <p className="text-xs text-muted-foreground">{condition.condition_text.length > 100 ? condition.condition_text.substring(0, 100) + '...' : condition.condition_text}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma condicionante identificada</p>
+                    <p className="text-xs mt-1">As condicionantes serão extraídas automaticamente durante a análise IA</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Alertas e Observações */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Alertas e Observações
+                  {alerts && alerts.length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {alerts.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {alertsLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <div key={i} className="p-4 border rounded space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    ))}
+                  </div>
+                ) : alerts && alerts.length > 0 ? (
+                  <div className="space-y-3">
+                    {alerts.map((alert) => (
+                      <div key={alert.id} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-sm font-medium">{alert.title}</h4>
+                              {getSeverityBadge(alert.severity)}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="capitalize">{alert.alert_type?.replace('_', ' ')}</span>
+                              {alert.due_date && (
+                                <>
+                                  <span>•</span>
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{formatDate(alert.due_date)}</span>
+                                </>
+                              )}
+                              {alert.action_required && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-destructive font-medium">Ação Requerida</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleResolveAlert(alert.id)}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Nenhum alerta ativo</p>
+                    <p className="text-xs mt-1">Alertas importantes serão exibidos aqui</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Documents */}
             <Card>
               <CardHeader>
@@ -407,9 +651,14 @@ const LicenseDetails = () => {
                   <Calendar className="h-4 w-4 mr-2" />
                   Agendar Renovação
                 </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={() => document.getElementById('condicionantes')?.scrollIntoView({ behavior: 'smooth' })}
+                >
                   <AlertTriangle className="h-4 w-4 mr-2" />
-                  Verificar Condicionantes
+                  Ver Condicionantes ({conditions?.length || 0})
                 </Button>
                 <Button variant="outline" size="sm" className="w-full justify-start">
                   <FileText className="h-4 w-4 mr-2" />
@@ -428,6 +677,8 @@ const LicenseDetails = () => {
           onClose={() => setShowUploadModal(false)}
           onSuccess={() => {
             refetch();
+            refetchConditions();
+            refetchAlerts();
             setShowUploadModal(false);
           }}
           licenseId={license.id}

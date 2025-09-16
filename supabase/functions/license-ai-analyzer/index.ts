@@ -226,43 +226,83 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       },
       body: JSON.stringify({
         name: 'Analista de Licença Ambiental',
-        instructions: `Você é um especialista em licenciamento ambiental brasileiro. Analise o documento PDF anexado e extraia informações estruturadas sobre a licença ambiental.
+        instructions: `Você é um especialista em licenciamento ambiental brasileiro. Analise DETALHADAMENTE o documento PDF anexado e extraia TODAS as informações estruturadas sobre a licença ambiental.
+
+FOQUE ESPECIALMENTE na identificação e categorização de:
+1. CONDICIONANTES: Todas as obrigações, restrições e exigências impostas pela licença
+2. OBSERVAÇÕES: Notas importantes, alertas e informações críticas
+3. PRAZOS: Datas específicas para cumprimento de condicionantes
+4. MONITORAMENTOS: Exigências de monitoramento ambiental
+5. RELATÓRIOS: Obrigações de reportes periódicos
+
+Para cada CONDICIONANTE encontrada, categorize adequadamente:
+- "monitoramento": exigências de acompanhamento ambiental
+- "relatorio": obrigações de entrega de relatórios/laudos
+- "controle": medidas de controle operacional
+- "manutencao": exigências de manutenção preventiva/corretiva
+- "gestao_residuos": gerenciamento de resíduos e efluentes
+- "seguranca": medidas de segurança operacional
+- "ambiental": proteção e preservação ambiental
+- "documentacao": entrega de documentos/certidões
+- "outras": outras exigências não categorizadas
 
 Retorne APENAS um JSON válido com a seguinte estrutura:
 {
-  "licenseType": "tipo da licença (LI, LP, LO, LAI, etc.)",
-  "issuingBody": "órgão emissor completo",
-  "processNumber": "número do processo",
+  "licenseType": "tipo da licença (LI, LP, LO, LAI, LAU, etc.)",
+  "issuingBody": "órgão emissor completo (IBAMA, órgão estadual, etc.)",
+  "processNumber": "número completo do processo",
   "issueDate": "data de emissão (YYYY-MM-DD)",
   "expirationDate": "data de vencimento (YYYY-MM-DD)",
   "companyName": "nome da empresa titular",
-  "activity": "descrição da atividade licenciada",  
+  "activity": "descrição detalhada da atividade licenciada",
+  "location": "localização/endereço da atividade",
   "conditions": [
     {
-      "text": "texto completo da condicionante",
-      "category": "categoria (monitoramento, relatório, controle, etc.)",
-      "priority": "low, medium ou high baseado na importância",
-      "frequency": "frequência se aplicável (mensal, trimestral, anual, etc.)",
-      "dueDate": "prazo específico se aplicável (YYYY-MM-DD)"
+      "text": "texto COMPLETO da condicionante/exigência (mínimo 10 palavras)",
+      "category": "uma das categorias listadas acima",
+      "priority": "high para condicionantes críticas/obrigatórias, medium para importantes, low para administrativas",
+      "frequency": "frequência específica se aplicável (diario, semanal, mensal, bimestral, trimestral, semestral, anual, unica, continuo)",
+      "dueDate": "prazo específico se mencionado (YYYY-MM-DD)",
+      "description": "descrição resumida da exigência (máximo 100 chars)",
+      "responsibleArea": "área/setor responsável se mencionado",
+      "monitoringRequired": true,
+      "complianceIndicators": ["indicadores de cumprimento se aplicável"]
+    }
+  ],
+  "observations": [
+    {
+      "text": "observação completa do documento",
+      "type": "restriction, warning, note, requirement, other",
+      "priority": "critical, high, medium, low",
+      "relatedTo": "área/aspecto relacionado à observação"
     }
   ],
   "complianceScore": 85,
   "renewalRecommendation": {
-    "startDate": "data recomendada para iniciar renovação (YYYY-MM-DD)",
-    "urgency": "low, medium ou high",
-    "requiredDocuments": ["lista de documentos necessários para renovação"]
+    "startDate": "data recomendada para iniciar renovação (6-12 meses antes do vencimento)",
+    "urgency": "high se < 6 meses, medium se < 12 meses, low se > 12 meses",
+    "requiredDocuments": ["lista ESPECÍFICA de documentos para renovação"],
+    "estimatedDuration": "prazo estimado para renovação em meses"
   },
   "alerts": [
     {
-      "type": "tipo do alerta (renewal, compliance, monitoring, etc.)",
-      "title": "título curto do alerta",
-      "message": "mensagem detalhada do alerta",
-      "severity": "low, medium, high ou critical",
-      "actionRequired": true
+      "type": "renewal, compliance, monitoring, environmental, safety, documentation, other",
+      "title": "título descritivo do alerta (máximo 60 chars)",
+      "message": "mensagem detalhada explicando o alerta e ações necessárias",
+      "severity": "critical para vencimentos próximos/condicionantes não cumpridas, high para exigências importantes, medium para monitoramentos, low para administrativo",
+      "actionRequired": true,
+      "dueDate": "prazo para ação se aplicável (YYYY-MM-DD)",
+      "relatedConditions": ["IDs de condicionantes relacionadas"]
     }
-  ]
+  ],
+  "extractionQuality": {
+    "totalConditionsFound": 0,
+    "totalObservationsFound": 0,
+    "documentReadability": "excellent, good, fair, poor",
+    "extractionConfidence": 0.95
+  }
 }`,
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-2025-08-07',
         tools: [{ type: 'file_search' }],
       }),
     });
@@ -328,7 +368,7 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
     // Poll for completion
     let runStatus = run.status;
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds max
+    const maxAttempts = 90; // 90 seconds max for thorough analysis
 
     while (runStatus === 'queued' || runStatus === 'in_progress') {
       if (attempts >= maxAttempts) {
@@ -389,12 +429,72 @@ Retorne APENAS um JSON válido com a seguinte estrutura:
                   issue_date: extractedData.issueDate,
                   expiration_date: extractedData.expirationDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                   issuing_body: extractedData.issuingBody || 'Órgão Ambiental',
+                  activity_description: extractedData.activity,
+                  location: extractedData.location,
                   ai_processing_status: 'completed',
                   ai_confidence_score: confidenceScore,
                   ai_extracted_data: extractedData,
                   compliance_score: extractedData.complianceScore || 75
                 })
                 .eq('id', newLicenseId);
+
+              // Save extracted conditions to database
+              if (extractedData.conditions && extractedData.conditions.length > 0) {
+                const conditionsToInsert = extractedData.conditions.map((condition: any) => ({
+                  license_id: newLicenseId,
+                  company_id: companyId,
+                  condition_text: condition.text,
+                  condition_category: condition.category,
+                  priority: condition.priority,
+                  frequency: condition.frequency,
+                  due_date: condition.dueDate,
+                  status: 'pending',
+                  ai_extracted: true,
+                  ai_confidence: confidenceScore
+                }));
+
+                await supabaseClient
+                  .from('license_conditions')
+                  .insert(conditionsToInsert);
+              }
+
+              // Save alerts to database
+              if (extractedData.alerts && extractedData.alerts.length > 0) {
+                const alertsToInsert = extractedData.alerts.map((alert: any) => ({
+                  license_id: newLicenseId,
+                  company_id: companyId,
+                  alert_type: alert.type,
+                  title: alert.title,
+                  message: alert.message,
+                  severity: alert.severity,
+                  action_required: alert.actionRequired,
+                  due_date: alert.dueDate,
+                  related_conditions: alert.relatedConditions || [],
+                  is_resolved: false
+                }));
+
+                await supabaseClient
+                  .from('license_alerts')
+                  .insert(alertsToInsert);
+              }
+
+              // Save observations as special conditions if present
+              if (extractedData.observations && extractedData.observations.length > 0) {
+                const observationConditions = extractedData.observations.map((obs: any) => ({
+                  license_id: newLicenseId,
+                  company_id: companyId,
+                  condition_text: obs.text,
+                  condition_category: 'observacao',
+                  priority: obs.priority,
+                  status: 'noted',
+                  ai_extracted: true,
+                  ai_confidence: confidenceScore
+                }));
+
+                await supabaseClient
+                  .from('license_conditions')
+                  .insert(observationConditions);
+              }
 
               // Update document status
               await supabaseClient
