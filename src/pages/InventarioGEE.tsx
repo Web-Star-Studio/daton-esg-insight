@@ -43,6 +43,7 @@ import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal";
 import EditEmissionSourceModal from "@/components/EditEmissionSourceModal";
 import { ActivityDataModal } from "@/components/ActivityDataModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
+import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
   getEmissionSourcesWithEmissions, 
   getEmissionStats, 
@@ -57,6 +58,7 @@ const InventarioGEE = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
+  const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
   const [emissionSources, setEmissionSources] = useState<any[]>([])

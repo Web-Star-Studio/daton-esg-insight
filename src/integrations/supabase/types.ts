@@ -1138,7 +1138,9 @@ export type Database = {
           id: string
           name: string
           scope: number
+          scope_3_category_number: number | null
           status: Database["public"]["Enums"]["emission_source_status_enum"]
+          subcategory: string | null
           updated_at: string
         }
         Insert: {
@@ -1150,7 +1152,9 @@ export type Database = {
           id?: string
           name: string
           scope: number
+          scope_3_category_number?: number | null
           status?: Database["public"]["Enums"]["emission_source_status_enum"]
+          subcategory?: string | null
           updated_at?: string
         }
         Update: {
@@ -1162,7 +1166,9 @@ export type Database = {
           id?: string
           name?: string
           scope?: number
+          scope_3_category_number?: number | null
           status?: Database["public"]["Enums"]["emission_source_status_enum"]
+          subcategory?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1643,6 +1649,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ghg_reports: {
+        Row: {
+          biogenic_co2: number
+          company_id: string
+          created_at: string
+          generated_at: string
+          id: string
+          methodology_version: string | null
+          report_data: Json
+          report_type: string
+          report_year: number
+          scope_1_total: number
+          scope_2_location_total: number
+          scope_2_market_total: number
+          scope_3_total: number
+          updated_at: string
+          verification_status: string | null
+        }
+        Insert: {
+          biogenic_co2?: number
+          company_id: string
+          created_at?: string
+          generated_at?: string
+          id?: string
+          methodology_version?: string | null
+          report_data?: Json
+          report_type: string
+          report_year: number
+          scope_1_total?: number
+          scope_2_location_total?: number
+          scope_2_market_total?: number
+          scope_3_total?: number
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Update: {
+          biogenic_co2?: number
+          company_id?: string
+          created_at?: string
+          generated_at?: string
+          id?: string
+          methodology_version?: string | null
+          report_data?: Json
+          report_type?: string
+          report_year?: number
+          scope_1_total?: number
+          scope_2_location_total?: number
+          scope_2_market_total?: number
+          scope_3_total?: number
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
       goal_progress_updates: {
         Row: {
           created_at: string
@@ -1753,6 +1813,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      land_use_change: {
+        Row: {
+          area_hectares: number
+          calculation_method: string | null
+          carbon_stock_after: number | null
+          carbon_stock_before: number | null
+          change_year: number
+          climate_zone: string | null
+          co2_emissions: number | null
+          company_id: string
+          created_at: string
+          current_use: string
+          id: string
+          location_state: string | null
+          previous_use: string
+          updated_at: string
+          vegetation_type: string | null
+        }
+        Insert: {
+          area_hectares: number
+          calculation_method?: string | null
+          carbon_stock_after?: number | null
+          carbon_stock_before?: number | null
+          change_year: number
+          climate_zone?: string | null
+          co2_emissions?: number | null
+          company_id: string
+          created_at?: string
+          current_use: string
+          id?: string
+          location_state?: string | null
+          previous_use: string
+          updated_at?: string
+          vegetation_type?: string | null
+        }
+        Update: {
+          area_hectares?: number
+          calculation_method?: string | null
+          carbon_stock_after?: number | null
+          carbon_stock_before?: number | null
+          change_year?: number
+          climate_zone?: string | null
+          co2_emissions?: number | null
+          company_id?: string
+          created_at?: string
+          current_use?: string
+          id?: string
+          location_state?: string | null
+          previous_use?: string
+          updated_at?: string
+          vegetation_type?: string | null
+        }
+        Relationships: []
       }
       license_ai_analysis: {
         Row: {
@@ -2295,6 +2409,81 @@ export type Database = {
           },
         ]
       }
+      transport_distribution: {
+        Row: {
+          company_id: string
+          created_at: string
+          direction: string
+          distance_km: number | null
+          emission_source_id: string | null
+          fuel_consumption: number | null
+          fuel_type: string | null
+          id: string
+          transport_mode: string
+          updated_at: string
+          weight_tonnes: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          direction: string
+          distance_km?: number | null
+          emission_source_id?: string | null
+          fuel_consumption?: number | null
+          fuel_type?: string | null
+          id?: string
+          transport_mode: string
+          updated_at?: string
+          weight_tonnes?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          direction?: string
+          distance_km?: number | null
+          emission_source_id?: string | null
+          fuel_consumption?: number | null
+          fuel_type?: string | null
+          id?: string
+          transport_mode?: string
+          updated_at?: string
+          weight_tonnes?: number | null
+        }
+        Relationships: []
+      }
+      variable_factors: {
+        Row: {
+          biodiesel_percentage: number
+          created_at: string
+          electricity_sin_factor: number | null
+          ethanol_percentage: number
+          id: string
+          month: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          biodiesel_percentage?: number
+          created_at?: string
+          electricity_sin_factor?: number | null
+          ethanol_percentage?: number
+          id?: string
+          month: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          biodiesel_percentage?: number
+          created_at?: string
+          electricity_sin_factor?: number | null
+          ethanol_percentage?: number
+          id?: string
+          month?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       waste_logs: {
         Row: {
           asset_id: string | null
@@ -2372,6 +2561,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wastewater_treatment: {
+        Row: {
+          ch4_emissions: number | null
+          company_id: string
+          created_at: string
+          discharge_pathway: string | null
+          id: string
+          methane_recovered: boolean | null
+          n2o_emissions: number | null
+          nitrogen_content: number | null
+          organic_load_bod: number | null
+          sludge_removed: boolean | null
+          temperature: number | null
+          treatment_type: string
+          updated_at: string
+          volume_treated: number | null
+        }
+        Insert: {
+          ch4_emissions?: number | null
+          company_id: string
+          created_at?: string
+          discharge_pathway?: string | null
+          id?: string
+          methane_recovered?: boolean | null
+          n2o_emissions?: number | null
+          nitrogen_content?: number | null
+          organic_load_bod?: number | null
+          sludge_removed?: boolean | null
+          temperature?: number | null
+          treatment_type: string
+          updated_at?: string
+          volume_treated?: number | null
+        }
+        Update: {
+          ch4_emissions?: number | null
+          company_id?: string
+          created_at?: string
+          discharge_pathway?: string | null
+          id?: string
+          methane_recovered?: boolean | null
+          n2o_emissions?: number | null
+          nitrogen_content?: number | null
+          organic_load_bod?: number | null
+          sludge_removed?: boolean | null
+          temperature?: number | null
+          treatment_type?: string
+          updated_at?: string
+          volume_treated?: number | null
+        }
+        Relationships: []
       }
     }
     Views: {
