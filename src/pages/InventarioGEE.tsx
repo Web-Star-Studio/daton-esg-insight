@@ -44,6 +44,7 @@ import EditEmissionSourceModal from "@/components/EditEmissionSourceModal";
 import { ActivityDataModal } from "@/components/ActivityDataModal";
 import { StationaryCombustionModal } from "@/components/StationaryCombustionModal";
 import { MobileCombustionModal } from "@/components/MobileCombustionModal";
+import { FugitiveEmissionsModal } from "@/components/FugitiveEmissionsModal";
 import { RecalculateEmissionsButton } from "@/components/RecalculateEmissionsButton";
 import { GHGProtocolCompleteModal } from "@/components/GHGProtocolCompleteModal";
 import { 
@@ -61,6 +62,7 @@ const InventarioGEE = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
   const [isMobileCombustionModalOpen, setIsMobileCombustionModalOpen] = useState(false)
+  const [isFugitiveEmissionsModalOpen, setIsFugitiveEmissionsModalOpen] = useState(false)
   const [isGHGCompleteModalOpen, setIsGHGCompleteModalOpen] = useState(false)
   const [selectedSource, setSelectedSource] = useState<any>(null)
   const [activityDataSource, setActivityDataSource] = useState<any>(null)
@@ -238,6 +240,8 @@ const InventarioGEE = () => {
     setEditingActivityData(null) // Reset editing state
     if (source.category === 'Combustão Móvel') {
       setIsMobileCombustionModalOpen(true)
+    } else if (source.category === 'Emissões Fugitivas') {
+      setIsFugitiveEmissionsModalOpen(true)
     } else {
       setIsActivityModalOpen(true)
     }
@@ -533,6 +537,15 @@ const InventarioGEE = () => {
                 isOpen={isMobileCombustionModalOpen}
                 onClose={() => {
                   setIsMobileCombustionModalOpen(false);
+                  setEditingActivityData(null);
+                }}
+                source={activityDataSource}
+              />
+            ) : activityDataSource.category === 'Emissões Fugitivas' ? (
+              <FugitiveEmissionsModal
+                isOpen={isFugitiveEmissionsModalOpen}
+                onClose={() => {
+                  setIsFugitiveEmissionsModalOpen(false);
                   setEditingActivityData(null);
                 }}
                 source={activityDataSource}
