@@ -45,7 +45,6 @@ import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
 import TestExtraction from "./pages/TestExtraction";
 import Auditoria from "./pages/Auditoria";
 import Compliance from "./pages/Compliance";
-import BancoDados from "./pages/BancoDados";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -222,11 +221,6 @@ const App = () => (
             <Route path="/compliance" element={
               <ProtectedRoute>
                 <Compliance />
-              </ProtectedRoute>
-            } />
-            <Route path="/banco-dados" element={
-              <ProtectedRoute>
-                <BancoDados />
               </ProtectedRoute>
             } />
             

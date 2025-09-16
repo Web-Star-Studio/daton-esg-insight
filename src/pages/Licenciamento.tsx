@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/MainLayout'
 import { CardWithAI } from '@/components/CardWithAI'
-import { GlobalSearchInterface } from '@/components/GlobalSearchInterface'
 import { IntelligentAlertsSystem } from '@/components/IntelligentAlertsSystem'
 import { PredictiveDashboard } from '@/components/PredictiveDashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -205,7 +204,6 @@ export default function Licenciamento() {
             </p>
           </div>
           <div className="flex gap-3">
-            <GlobalSearchInterface onNavigate={(path) => navigate(path)} />
             <Button 
               variant="outline"
               onClick={() => navigate('/licenciamento/processar')}

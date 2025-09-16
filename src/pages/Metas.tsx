@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { CardWithAI } from "@/components/CardWithAI";
-import { GlobalSearchInterface } from "@/components/GlobalSearchInterface";
 import { PredictiveDashboard } from "@/components/PredictiveDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -165,7 +164,6 @@ export default function Metas() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <GlobalSearchInterface onNavigate={(path) => navigate(path)} />
             <Button 
               variant="outline"
               onClick={() => window.location.reload()}

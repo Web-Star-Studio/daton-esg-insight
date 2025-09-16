@@ -21,8 +21,7 @@ import {
   ShieldCheck, 
   Settings, 
   Wand2, 
-  ShoppingCart,
-  Database
+  ShoppingCart
 } from "lucide-react"
 import { 
   Sidebar,
@@ -103,7 +102,6 @@ const menuSections: MenuSection[] = [
       { id: "reconciliacao-documentos", title: "Reconciliação IA", icon: Wand2, path: "/reconciliacao-documentos" },
       { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
       { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
-      { id: "banco-dados", title: "Banco de Dados", icon: Database, path: "/banco-dados" },
     ]
   },
   {

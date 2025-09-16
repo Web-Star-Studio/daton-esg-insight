@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
-import { GlobalSearchInterface } from "@/components/GlobalSearchInterface";
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
 import { PredictiveDashboard } from "@/components/PredictiveDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -308,7 +307,6 @@ export default function GestaoESG() {
         <div className="text-center space-y-2">
           <div className="flex items-center justify-between mb-4">
             <div />
-            <GlobalSearchInterface onNavigate={(path) => navigate(path)} />
           </div>
           <h1 className="text-4xl font-bold tracking-tight">Painel de Gestão Estratégica ESG</h1>
           <p className="text-lg text-muted-foreground">
