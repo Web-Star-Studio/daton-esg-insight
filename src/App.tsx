@@ -40,7 +40,7 @@ import FormulariosCustomizados from "./pages/FormulariosCustomizados";
 import PublicForm from "./pages/PublicForm";
 import Documentos from "./pages/Documentos";
 import { ReconciliacaoDocumentos } from "./pages/ReconciliacaoDocumentos";
-import LicenseAnalysis from "@/pages/LicenseAnalysis";
+
 
 import LicenseForm from "@/pages/LicenseForm";
 
@@ -109,11 +109,6 @@ const App = () => (
             <Route path="/licenciamento/teste" element={
               <ProtectedRoute>
                 <TestExtraction />
-              </ProtectedRoute>
-            } />
-            <Route path="/licenciamento/analise" element={
-              <ProtectedRoute>
-                <LicenseAnalysis />
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/nova" element={

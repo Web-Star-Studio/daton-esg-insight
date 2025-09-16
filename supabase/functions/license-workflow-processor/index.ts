@@ -131,7 +131,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
       company_id: companyId,
       name: 'Processando...',
       type: 'LO',
-      status: 'Em Análise',
+      status: 'Ativa',
       issuing_body: 'Identificando...',
       expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
       ai_processing_status: 'processing',

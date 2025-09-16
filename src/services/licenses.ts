@@ -208,7 +208,7 @@ export async function getLicenseById(id: string): Promise<LicenseDetail> {
         file_path,
         upload_date
       `)
-      .eq('related_model', 'licenses')
+      .in('related_model', ['license', 'licenses'])
       .eq('related_id', id)
 
     if (documentsError) {
@@ -519,7 +519,7 @@ export async function analyzeLicenseDocument(file: File): Promise<DocumentAnalys
     try {
       // Call the document analyzer edge function
       const { data, error } = await supabase.functions.invoke('license-document-analyzer', {
-        body: { documentPath: tempFilePath }
+        body: { filePath: tempFilePath }
       })
 
       if (error) {
