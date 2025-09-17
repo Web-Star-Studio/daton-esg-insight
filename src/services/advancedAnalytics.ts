@@ -104,9 +104,18 @@ function processEmissionData(emissionData: any[], startDate: Date, endDate: Date
 
   emissionData.forEach(source => {
     const sourceEmissions = source.activity_data?.reduce((sum: number, activity: any) => {
-      return sum + (activity.calculated_emissions?.reduce((calcSum: number, calc: any) => {
-        return calcSum + (calc.total_co2e || 0);
-      }, 0) || 0);
+      // Handle both array and object structures for calculated_emissions
+      const calculations = activity.calculated_emissions;
+      if (!calculations) return sum;
+      
+      if (Array.isArray(calculations)) {
+        return sum + calculations.reduce((calcSum: number, calc: any) => {
+          return calcSum + (calc.total_co2e || 0);
+        }, 0);
+      } else {
+        // Single calculation object
+        return sum + (calculations.total_co2e || 0);
+      }
     }, 0) || 0;
 
     if (sourceEmissions > 0) {
@@ -179,28 +188,16 @@ function processEmissionData(emissionData: any[], startDate: Date, endDate: Date
 
   return {
     summary: {
-      total_emissions: totalEmissions / 1000, // Convert to tCO2e
+      total_emissions: totalEmissions, // Keep in original units (kg CO2e)
       trend: (Math.random() - 0.5) * 20, // Mock trend data
       scope1_percentage: totalEmissions > 0 ? (scope1Total / totalEmissions) * 100 : 0,
       scope2_percentage: totalEmissions > 0 ? (scope2Total / totalEmissions) * 100 : 0,
       scope3_percentage: totalEmissions > 0 ? (scope3Total / totalEmissions) * 100 : 0,
-      intensity: totalEmissions > 0 ? (totalEmissions / 1000) / emissionData.length : 0
+      intensity: totalEmissions > 0 ? totalEmissions / emissionData.length : 0
     },
-    monthly_trends: monthlyTrends.map(trend => ({
-      ...trend,
-      scope1: trend.scope1 / 1000,
-      scope2: trend.scope2 / 1000,
-      scope3: trend.scope3 / 1000,
-      total: trend.total / 1000
-    })),
-    category_breakdown: categoryBreakdown.map(cat => ({
-      ...cat,
-      emissions: cat.emissions / 1000
-    })),
-    top_sources: topSources.map(source => ({
-      ...source,
-      emissions: source.emissions / 1000
-    })),
+    monthly_trends: monthlyTrends,
+    category_breakdown: categoryBreakdown,
+    top_sources: topSources,
     insights,
     recommendations
   };

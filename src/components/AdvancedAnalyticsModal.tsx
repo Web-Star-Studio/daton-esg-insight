@@ -24,6 +24,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('12months');
   const [selectedMetric, setSelectedMetric] = useState('total');
   const [isExporting, setIsExporting] = useState(false);
@@ -37,11 +38,14 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
 
   const loadAnalyticsData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await getAdvancedEmissionAnalytics(selectedPeriod);
       setAnalyticsData(data);
-    } catch (error) {
+      console.log('Analytics data loaded:', data);
+    } catch (error: any) {
       console.error('Erro ao carregar analytics:', error);
+      setError(error.message || 'Erro ao carregar dados analíticos');
       toast.error("Erro ao carregar dados analíticos");
     } finally {
       setIsLoading(false);
@@ -77,7 +81,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
     }
   };
 
-  if (!analyticsData || isLoading) {
+  if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -86,6 +90,49 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
           </DialogHeader>
           <div className="flex items-center justify-center h-96">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Erro ao Carregar Analytics</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center h-96 space-y-4">
+            <AlertCircle className="h-16 w-16 text-red-500" />
+            <div className="text-center">
+              <h3 className="text-lg font-semibold">Não foi possível carregar os dados</h3>
+              <p className="text-muted-foreground mt-2">{error}</p>
+            </div>
+            <Button onClick={loadAnalyticsData} variant="outline">
+              Tentar Novamente
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nenhum Dado Disponível</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center h-96 space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold">Nenhum dado de emissões encontrado</h3>
+              <p className="text-muted-foreground mt-2">Adicione algumas fontes de emissão e dados de atividade para visualizar as análises.</p>
+            </div>
+            <Button onClick={onClose} variant="outline">
+              Fechar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -104,7 +151,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-primary">{analyticsData.summary.total_emissions.toFixed(1)} tCO₂e</div>
+              <div className="text-2xl font-bold text-primary">{(analyticsData.summary.total_emissions / 1000).toFixed(1)} tCO₂e</div>
               <div className="text-sm text-muted-foreground">Total de Emissões</div>
               {analyticsData.summary.trend > 0 ? (
                 <div className="flex items-center justify-center gap-1 text-red-600">
@@ -126,7 +173,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
             </div>
 
             <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">{analyticsData.summary.intensity.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-orange-600">{(analyticsData.summary.intensity / 1000).toFixed(2)}</div>
               <div className="text-sm text-muted-foreground">Intensidade de Carbono</div>
               <div className="text-xs text-muted-foreground">tCO₂e por fonte</div>
             </div>
@@ -186,7 +233,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip 
-                formatter={(value, name) => [`${Number(value).toFixed(2)} tCO₂e`, name]}
+                formatter={(value, name) => [`${(Number(value) / 1000).toFixed(2)} tCO₂e`, name]}
                 labelFormatter={(label) => `Mês: ${label}`}
               />
               <Legend />
@@ -251,7 +298,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} tCO₂e`, 'Emissões']} />
+                <Tooltip formatter={(value) => [`${(Number(value) / 1000).toFixed(2)} tCO₂e`, 'Emissões']} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -271,7 +318,7 @@ export function AdvancedAnalyticsModal({ isOpen, onClose }: AdvancedAnalyticsMod
                     <Progress value={(source.emissions / analyticsData.top_sources[0].emissions) * 100} className="h-2 mt-1" />
                   </div>
                   <div className="text-right ml-4">
-                    <div className="font-bold">{source.emissions.toFixed(1)} tCO₂e</div>
+                    <div className="font-bold">{(source.emissions / 1000).toFixed(1)} tCO₂e</div>
                     <div className="text-xs text-muted-foreground">{source.percentage}%</div>
                   </div>
                 </div>
