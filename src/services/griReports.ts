@@ -266,7 +266,7 @@ export async function createOrUpdateGRIIndicatorData(
     .select('*')
     .eq('report_id', reportId)
     .eq('indicator_id', indicatorId)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     // Update existing
@@ -328,7 +328,7 @@ export async function createOrUpdateGRIReportSection(
     .select('*')
     .eq('report_id', reportId)
     .eq('section_key', sectionKey)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     // Update existing

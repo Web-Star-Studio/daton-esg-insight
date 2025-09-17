@@ -1,32 +1,31 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { 
   FileText, 
   Download, 
-  Globe, 
-  FileSpreadsheet, 
-  Eye, 
-  Printer,
-  Share2,
-  CheckCircle2,
-  AlertCircle
+  ExternalLink, 
+  Share2, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle,
+  Eye,
+  FileSpreadsheet,
+  Printer
 } from "lucide-react";
-import { toast } from "sonner";
-import { GRIReport } from "@/services/griReports";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GRIReportExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  report: GRIReport;
+  report: any;
 }
 
-export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExportModalProps) {
+export const GRIReportExportModal: React.FC<GRIReportExportModalProps> = ({ isOpen, onClose, report }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportType, setExportType] = useState<string>('');
@@ -48,6 +47,8 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
         });
       }, 200);
 
+      console.log(`Exporting report ${report.id} as ${type}`);
+      
       const { data, error } = await supabase.functions.invoke('gri-content-generator', {
         body: {
           action: 'export',
@@ -61,32 +62,47 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
 
       if (error) {
         console.error('Export error details:', error);
-        throw new Error(error.message || 'Erro ao exportar relatório');
+        throw new Error(`Erro na exportação: ${error.message || 'Função edge retornou erro'}`);
       }
 
-      if (!data?.content) {
-        throw new Error('Conteúdo do relatório não foi gerado');
+      if (!data) {
+        throw new Error('Nenhum conteúdo foi retornado pela função de exportação');
       }
 
-      // Create and download file (HTML format for all types initially)
-      const blob = new Blob([data.content], { 
+      // For now, create HTML file for all formats since the edge function returns HTML
+      const htmlContent = typeof data === 'string' ? data : data.content || JSON.stringify(data);
+      
+      const blob = new Blob([htmlContent], { 
         type: 'text/html'
       });
       
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Relatório_GRI_${report.title}_${report.year}.${type === 'pdf' || type === 'docx' ? 'html' : type}`;
+      a.download = `Relatório_GRI_${report.title.replace(/\s+/g, '_')}_${report.year}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Relatório exportado com sucesso! ${type === 'pdf' ? 'Use "Imprimir > Salvar como PDF" no navegador para converter.' : ''}`);
+      let successMessage = 'Relatório exportado com sucesso!';
+      if (type === 'pdf') {
+        successMessage += ' Use "Imprimir > Salvar como PDF" no navegador para converter.';
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: successMessage,
+      });
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast.error(`Erro ao exportar: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao exportar';
+      
+      toast({
+        title: "Erro na Exportação",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
       setExportProgress(0);
@@ -96,6 +112,8 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
 
   const handlePreview = async () => {
     try {
+      console.log(`Generating preview for report ${report.id}`);
+      
       const { data, error } = await supabase.functions.invoke('gri-content-generator', {
         body: {
           action: 'preview',
@@ -105,26 +123,42 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
 
       if (error) {
         console.error('Preview error details:', error);
-        throw new Error(error.message || 'Erro ao gerar prévia');
+        throw new Error(`Erro na prévia: ${error.message || 'Função edge retornou erro'}`);
       }
 
-      if (!data?.content) {
-        throw new Error('Conteúdo da prévia não foi gerado');
+      if (!data) {
+        throw new Error('Nenhum conteúdo foi gerado para a prévia');
       }
 
       // Open preview in new window
+      const htmlContent = typeof data === 'string' ? data : data.content || JSON.stringify(data);
       const previewWindow = window.open('', '_blank');
+      
       if (previewWindow) {
-        previewWindow.document.write(data.content);
+        previewWindow.document.write(htmlContent);
         previewWindow.document.close();
         previewWindow.document.title = `Prévia - ${report.title} ${report.year}`;
+        
+        toast({
+          title: "Sucesso",
+          description: "Prévia do relatório aberta em nova janela",
+        });
       } else {
-        toast.error('Não foi possível abrir nova janela. Verifique o bloqueador de popups.');
+        toast({
+          title: "Erro",
+          description: "Não foi possível abrir nova janela. Verifique o bloqueador de popups.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Erro ao gerar prévia:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      toast.error(`Erro na prévia: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido na prévia';
+      
+      toast({
+        title: "Erro na Prévia",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -132,33 +166,55 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
     try {
       const shareUrl = `${window.location.origin}/relatorio-publico/${report.id}`;
       await navigator.clipboard.writeText(shareUrl);
-      toast.success('Link do relatório copiado para a área de transferência!');
+      
+      toast({
+        title: "Sucesso",
+        description: "Link do relatório copiado para a área de transferência!",
+      });
     } catch (error) {
-      toast.error('Erro ao copiar link do relatório.');
+      toast({
+        title: "Erro",
+        description: "Erro ao copiar link do relatório.",
+        variant: "destructive",
+      });
     }
   };
 
   const getCompletionStatus = () => {
-    if (report.completion_percentage >= 100) {
-      return { icon: CheckCircle2, color: "text-green-600", text: "Completo" };
-    } else if (report.completion_percentage >= 70) {
-      return { icon: AlertCircle, color: "text-yellow-600", text: "Quase Completo" };
+    const percentage = report.completion_percentage || 0;
+    
+    if (percentage >= 100) {
+      return { 
+        icon: <CheckCircle className="h-5 w-5 text-green-600" />, 
+        color: "text-green-600", 
+        text: "Completo" 
+      };
+    } else if (percentage >= 70) {
+      return { 
+        icon: <Clock className="h-5 w-5 text-yellow-600" />, 
+        color: "text-yellow-600", 
+        text: "Quase Completo" 
+      };
     } else {
-      return { icon: AlertCircle, color: "text-red-600", text: "Incompleto" };
+      return { 
+        icon: <AlertCircle className="h-5 w-5 text-red-600" />, 
+        color: "text-red-600", 
+        text: "Incompleto" 
+      };
     }
   };
 
-  const status = getCompletionStatus();
-  const StatusIcon = status.icon;
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
             Prévia e Exportação - {report.title}
+            {getCompletionStatus().icon}
           </DialogTitle>
+          <DialogDescription>
+            Visualize, exporte ou compartilhe seu relatório de sustentabilidade GRI em diferentes formatos.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -166,28 +222,25 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Status do Relatório</span>
-                <div className="flex items-center gap-2">
-                  <StatusIcon className={`h-5 w-5 ${status.color}`} />
-                  <Badge variant={report.completion_percentage >= 100 ? "default" : "secondary"}>
-                    {status.text}
-                  </Badge>
-                </div>
+                Status do Relatório
+                <Badge variant={report.completion_percentage >= 70 ? "default" : "secondary"}>
+                  {getCompletionStatus().text}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span>Progresso Geral</span>
-                <span className="font-semibold">{report.completion_percentage}%</span>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progresso Geral</span>
+                  <span>{Math.round(report.completion_percentage || 0)}%</span>
+                </div>
+                <Progress value={report.completion_percentage || 0} className="h-2" />
               </div>
-              <Progress value={report.completion_percentage} className="h-3" />
               
-              {report.completion_percentage < 100 && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <AlertCircle className="h-4 w-4 inline mr-2" />
-                    Para uma exportação completa, recomendamos finalizar todos os indicadores obrigatórios e seções principais.
-                  </p>
+              {report.completion_percentage < 70 && (
+                <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
+                  <AlertCircle className="h-4 w-4 inline mr-2" />
+                  Para uma exportação completa, recomendamos finalizar todos os indicadores obrigatórios e seções principais.
                 </div>
               )}
             </CardContent>
@@ -198,9 +251,9 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>Exportando {exportType.toUpperCase()}...</span>
-                    <span className="font-semibold">{exportProgress}%</span>
+                    <span>{exportProgress}%</span>
                   </div>
                   <Progress value={exportProgress} className="h-2" />
                 </div>
@@ -208,80 +261,90 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
             </Card>
           )}
 
-          {/* Export Options */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Actions */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Preview and Share */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Eye className="h-5 w-5" />
                   Prévia e Compartilhamento
                 </CardTitle>
+                <CardDescription>
+                  Visualize o relatório online ou compartilhe com stakeholders
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
                   onClick={handlePreview}
-                  className="w-full justify-start gap-2"
-                  variant="outline"
+                  disabled={isExporting}
                 >
-                  <Globe className="h-4 w-4" />
+                  <ExternalLink className="mr-2 h-4 w-4" />
                   Prévia Online
                 </Button>
                 
                 <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
                   onClick={handleShare}
-                  className="w-full justify-start gap-2"
-                  variant="outline"
+                  disabled={isExporting}
                 >
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="mr-2 h-4 w-4" />
                   Compartilhar Link
                 </Button>
                 
                 <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
                   onClick={() => window.print()}
-                  className="w-full justify-start gap-2"
-                  variant="outline"
+                  disabled={isExporting}
                 >
-                  <Printer className="h-4 w-4" />
+                  <Printer className="mr-2 h-4 w-4" />
                   Imprimir
                 </Button>
               </CardContent>
             </Card>
 
+            {/* Downloads */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Download className="h-5 w-5" />
                   Downloads
                 </CardTitle>
+                <CardDescription>
+                  Baixe o relatório em diferentes formatos
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
+                  className="w-full justify-start"
                   onClick={() => handleExport('pdf')}
                   disabled={isExporting}
-                  className="w-full justify-start gap-2"
-                  variant="default"
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   Exportar PDF
                 </Button>
                 
                 <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
                   onClick={() => handleExport('docx')}
                   disabled={isExporting}
-                  className="w-full justify-start gap-2"
-                  variant="outline"
                 >
-                  <FileSpreadsheet className="h-4 w-4" />
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Exportar Word
                 </Button>
                 
                 <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
                   onClick={() => handleExport('html')}
                   disabled={isExporting}
-                  className="w-full justify-start gap-2"
-                  variant="outline"
                 >
-                  <Globe className="h-4 w-4" />
+                  <ExternalLink className="mr-2 h-4 w-4" />
                   Exportar HTML
                 </Button>
               </CardContent>
@@ -294,33 +357,32 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
               <CardTitle>Informações do Relatório</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">Padrão GRI:</span>
-                  <p className="text-muted-foreground">{report.gri_standard_version}</p>
+                  <div className="font-medium">Padrão GRI:</div>
+                  <div className="text-muted-foreground">{report.gri_standard_version || 'GRI Standards'}</div>
                 </div>
                 <div>
-                  <span className="font-medium">Período:</span>
-                  <p className="text-muted-foreground">
+                  <div className="font-medium">Período:</div>
+                  <div className="text-muted-foreground">
                     {report.reporting_period_start} a {report.reporting_period_end}
-                  </p>
+                  </div>
                 </div>
                 <div>
-                  <span className="font-medium">Última Atualização:</span>
-                  <p className="text-muted-foreground">
+                  <div className="font-medium">Última Atualização:</div>
+                  <div className="text-muted-foreground">
                     {new Date(report.updated_at).toLocaleDateString('pt-BR')}
-                  </p>
+                  </div>
                 </div>
                 <div>
-                  <span className="font-medium">Status:</span>
-                  <p className="text-muted-foreground">{report.status}</p>
+                  <div className="font-medium">Status:</div>
+                  <div className="text-muted-foreground">{report.status || 'Rascunho'}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Separator />
-
+          {/* Close Button */}
           <div className="flex justify-end">
             <Button variant="outline" onClick={onClose}>
               Fechar
@@ -330,4 +392,4 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
       </DialogContent>
     </Dialog>
   );
-}
+};

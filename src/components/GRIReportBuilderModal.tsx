@@ -1,32 +1,20 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 import { 
-  GRIReport, 
-  GRIIndicatorData,
-  GRIReportSection,
-  MaterialityTopic,
-  SDGAlignment,
-  getGRIIndicatorData,
-  getGRIReportSections,
-  getMaterialityTopics,
-  getSDGAlignment,
-  createOrUpdateGRIIndicatorData,
-  createOrUpdateGRIReportSection,
-  updateGRIReport,
-  calculateReportCompletion
-} from "@/services/griReports";
-import { supabase } from "@/integrations/supabase/client";
-import { 
+  Loader2, 
+  Sparkles, 
+  Save, 
+  RefreshCw, 
+  AlertCircle,
   FileText, 
   CheckCircle, 
   Clock, 
@@ -34,13 +22,28 @@ import {
   Users, 
   Leaf, 
   Building2,
-  Sparkles,
-  Save,
   Eye
 } from "lucide-react";
-import { SmartSkeleton } from "@/components/SmartSkeleton";
-import { AIContentGeneratorModal } from "@/components/AIContentGeneratorModal";
-import { GRIReportExportModal } from "@/components/GRIReportExportModal";
+import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { 
+  GRIReport,
+  GRIIndicatorData,
+  GRIReportSection,
+  MaterialityTopic,
+  SDGAlignment,
+  getGRIIndicatorData, 
+  createOrUpdateGRIIndicatorData,
+  getGRIReportSections,
+  createOrUpdateGRIReportSection,
+  getMaterialityTopics,
+  getSDGAlignment,
+  calculateReportCompletion,
+  updateGRIReport
+} from "@/services/griReports";
+import { GRIReportExportModal } from "./GRIReportExportModal";
+import { AIContentGeneratorModal } from "./AIContentGeneratorModal";
 
 interface GRIReportBuilderModalProps {
   isOpen: boolean;
@@ -62,6 +65,7 @@ export function GRIReportBuilderModal({
   const [sdgAlignment, setSdgAlignment] = useState<SDGAlignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState<string | null>(null);
   
   // Report metadata states
   const [ceoMessage, setCeoMessage] = useState(report.ceo_message || '');
@@ -100,7 +104,11 @@ export function GRIReportBuilderModal({
       setMethodology(report.methodology || '');
     } catch (error) {
       console.error('Erro ao carregar dados do relatório:', error);
-      toast.error("Erro ao carregar dados do relatório");
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados do relatório",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -109,83 +117,100 @@ export function GRIReportBuilderModal({
   const handleSaveMetadata = async () => {
     setIsSaving(true);
     try {
+      // Save metadata first
       await updateGRIReport(report.id, {
         ceo_message: ceoMessage,
         executive_summary: executiveSummary,
         methodology: methodology,
       });
-      
-      // Recalculate completion and reload data
-      await calculateReportCompletion(report.id);
-      await loadReportData();
-      
-      toast.success("Metadados salvos com sucesso!");
-      onUpdate();
-    } catch (error) {
-      console.error('Erro ao salvar metadados:', error);
-      console.log('Detalhes do erro de salvamento:', {
-        error,
-        code: (error as any)?.code,
-        details: (error as any)?.details,
-        message: (error as any)?.message
+
+      toast({
+        title: "Sucesso",
+        description: "Metadados salvos com sucesso!",
       });
+
+      // Try to recalculate completion, but don't fail if it doesn't work
+      try {
+        await calculateReportCompletion(report.id);
+        // Reload report data to get updated completion percentage
+        await loadReportData();
+        onUpdate();
+      } catch (completionError) {
+        console.warn('Erro ao recalcular progresso (não crítico):', completionError);
+        // Show a warning but don't fail the save operation
+        toast({
+          title: "Aviso",
+          description: "Metadados salvos, mas houve erro ao atualizar o progresso.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao salvar metadados:', error);
       
-      let errorMessage = 'Erro desconhecido ao salvar metadados';
-      if (error instanceof Error) {
-        errorMessage = error.message;
+      let errorMessage = "Erro ao salvar metadados. Tente novamente.";
+      if (error.message) {
+        errorMessage = `Erro: ${error.message}`;
       }
       
-      toast.error(`Erro ao salvar metadados: ${errorMessage}`);
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const generateAIMetadata = async (field: 'ceo_message' | 'executive_summary' | 'methodology') => {
+  const generateAIMetadata = async (type: 'ceo_message' | 'executive_summary' | 'methodology') => {
+    setGeneratingAI(type);
     try {
       const { data, error } = await supabase.functions.invoke('gri-content-generator', {
         body: {
           reportId: report.id,
-          sectionKey: field,
-          contentType: field === 'ceo_message' ? 'Mensagem da Liderança' :
-                      field === 'executive_summary' ? 'Sumário Executivo' :
-                      'Metodologia',
-          context: `Gere conteúdo profissional para ${field === 'ceo_message' ? 'mensagem da liderança' :
-                   field === 'executive_summary' ? 'sumário executivo' :
-                   'metodologia'} do relatório GRI ${report.year}`,
-          regenerate: true
+          metadataType: type
         }
       });
 
-      if (error) throw error;
-
-      const content = data.content;
-      
-      // Update the appropriate field
-      if (field === 'ceo_message') {
-        setCeoMessage(content);
-      } else if (field === 'executive_summary') {
-        setExecutiveSummary(content);
-      } else if (field === 'methodology') {
-        setMethodology(content);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
       }
 
-      // Auto-save the generated content
-      const updates = {
-        [field]: content,
-        updated_at: new Date().toISOString()
-      };
-      
-      await updateGRIReport(report.id, updates);
-      onUpdate(); // Refresh parent data
-      
-      toast.success(`${field === 'ceo_message' ? 'Mensagem da liderança' :
-                   field === 'executive_summary' ? 'Sumário executivo' :
-                   'Metodologia'} gerado com IA e salvo com sucesso!`);
+      if (data?.content) {
+        switch (type) {
+          case 'ceo_message':
+            setCeoMessage(data.content);
+            break;
+          case 'executive_summary':
+            setExecutiveSummary(data.content);
+            break;
+          case 'methodology':
+            setMethodology(data.content);
+            break;
+        }
 
-    } catch (error) {
+        toast({
+          title: "Sucesso",
+          description: "Conteúdo gerado com IA!",
+        });
+      } else {
+        throw new Error('Nenhum conteúdo retornado pela IA');
+      }
+    } catch (error: any) {
       console.error('Erro ao gerar conteúdo com IA:', error);
-      toast.error('Erro ao gerar conteúdo com IA');
+      
+      let errorMessage = "Erro ao gerar conteúdo. Tente novamente.";
+      if (error.message?.includes('404')) {
+        errorMessage = "Serviço de IA temporariamente indisponível. Tente novamente em alguns instantes.";
+      }
+      
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingAI(null);
     }
   };
 
@@ -220,10 +245,17 @@ export function GRIReportBuilderModal({
       // Recalculate completion
       await calculateReportCompletion(report.id);
       
-      toast.success("Indicador atualizado com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Indicador atualizado com sucesso!",
+      });
     } catch (error) {
       console.error('Erro ao atualizar indicador:', error);
-      toast.error("Erro ao atualizar indicador");
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar indicador",
+        variant: "destructive",
+      });
     }
   };
 
@@ -249,19 +281,6 @@ export function GRIReportBuilderModal({
           suggestedValue = emissions.reduce((sum, e) => sum + (e.total_co2e || 0), 0);
           confidence = 85;
         }
-      } else if (indicatorCode?.includes('302-1')) {
-        // Energy consumption - could be derived from activity data
-        const { data: activities } = await supabase
-          .from('activity_data')
-          .select('quantity, unit')
-          .ilike('unit', '%energy%')
-          .gte('created_at', `${report.year}-01-01`)
-          .lt('created_at', `${report.year + 1}-01-01`);
-        
-        if (activities && activities.length > 0) {
-          suggestedValue = activities.reduce((sum, a) => sum + (a.quantity || 0), 0);
-          confidence = 70;
-        }
       }
       
       if (suggestedValue !== null) {
@@ -279,14 +298,25 @@ export function GRIReportBuilderModal({
             suggestedValue, 
             indicator.indicator?.data_type || 'Numérico'
           );
-          toast.success(`Valor sugerido aplicado com ${confidence}% de confiança!`);
+          
+          toast({
+            title: "Sucesso",
+            description: `Valor sugerido aplicado com ${confidence}% de confiança!`,
+          });
         }
       } else {
-        toast.info("Nenhuma sugestão encontrada para este indicador. Tente inserir dados manualmente.");
+        toast({
+          title: "Info",
+          description: "Nenhuma sugestão encontrada para este indicador. Tente inserir dados manualmente.",
+        });
       }
     } catch (error) {
       console.error('Erro ao buscar sugestão:', error);
-      toast.error("Erro ao gerar sugestão");
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar sugestão",
+        variant: "destructive",
+      });
     }
   };
 
@@ -298,125 +328,119 @@ export function GRIReportBuilderModal({
             <FileText className="h-5 w-5" />
             {report.title} - {report.year}
           </CardTitle>
+          <CardDescription>
+            Progresso geral do relatório: {Math.round(report.completion_percentage || 0)}% completo
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span>Progresso Geral</span>
-            <span className="font-semibold">{report.completion_percentage}%</span>
-          </div>
-          <Progress value={report.completion_percentage} className="h-3" />
-          
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-primary">
-                {indicatorData.filter(i => i.is_complete).length}
-              </div>
-              <div className="text-sm text-muted-foreground">Indicadores Completos</div>
-              <div className="text-xs text-muted-foreground">
-                de {indicatorData.length} total
-              </div>
-            </div>
-            
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-2xl font-bold text-secondary">
-                {sections.filter(s => s.is_complete).length}
-              </div>
-              <div className="text-sm text-muted-foreground">Seções Completas</div>
-              <div className="text-xs text-muted-foreground">
-                de {sections.length} total
-              </div>
-            </div>
-          </div>
-
-          <Badge variant="outline" className="w-full justify-center py-2">
-            Status: {report.status}
-          </Badge>
+        <CardContent>
+          <Progress value={report.completion_percentage || 0} className="h-3" />
         </CardContent>
       </Card>
 
       {/* Metadata Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Metadados do Relatório</CardTitle>
+          <CardTitle>Informações Básicas do Relatório</CardTitle>
+          <CardDescription>
+            Configure as informações principais que aparecerão no relatório
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ceo-message">Mensagem da Liderança</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateAIMetadata('ceo_message')}
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Gerar com IA
-                </Button>
-              </div>
-              <Textarea
-                id="ceo-message"
-                value={ceoMessage}
-                onChange={(e) => setCeoMessage(e.target.value)}
-                placeholder="Mensagem do CEO/Presidente sobre os compromissos de sustentabilidade..."
-                rows={4}
-              />
+        <CardContent className="space-y-6">
+          {/* CEO Message */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ceo_message">Mensagem da Liderança</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => generateAIMetadata('ceo_message')}
+                disabled={generatingAI === 'ceo_message'}
+              >
+                {generatingAI === 'ceo_message' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1" />
+                )}
+                Gerar com IA
+              </Button>
             </div>
+            <Textarea
+              id="ceo_message"
+              value={ceoMessage}
+              onChange={(e) => setCeoMessage(e.target.value)}
+              placeholder="Mensagem do CEO/Presidente sobre sustentabilidade..."
+              rows={4}
+            />
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="executive-summary">Sumário Executivo</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateAIMetadata('executive_summary')}
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Gerar com IA
-                </Button>
-              </div>
-              <Textarea
-                id="executive-summary"
-                value={executiveSummary}
-                onChange={(e) => setExecutiveSummary(e.target.value)}
-                placeholder="Resumo executivo dos principais temas e resultados..."
-                rows={4}
-              />
+          {/* Executive Summary */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="executive_summary">Resumo Executivo</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => generateAIMetadata('executive_summary')}
+                disabled={generatingAI === 'executive_summary'}
+              >
+                {generatingAI === 'executive_summary' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1" />
+                )}
+                Gerar com IA
+              </Button>
             </div>
+            <Textarea
+              id="executive_summary"
+              value={executiveSummary}
+              onChange={(e) => setExecutiveSummary(e.target.value)}
+              placeholder="Resumo executivo dos principais pontos do relatório..."
+              rows={4}
+            />
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="methodology">Metodologia</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateAIMetadata('methodology')}
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Gerar com IA
-                </Button>
-              </div>
-              <Textarea
-                id="methodology"
-                value={methodology}
-                onChange={(e) => setMethodology(e.target.value)}
-                placeholder="Descreva a metodologia utilizada para coleta e análise dos dados..."
-                rows={3}
-              />
+          {/* Methodology */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="methodology">Metodologia</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => generateAIMetadata('methodology')}
+                disabled={generatingAI === 'methodology'}
+              >
+                {generatingAI === 'methodology' ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Sparkles className="h-3 w-3 mr-1" />
+                )}
+                Gerar com IA
+              </Button>
             </div>
+            <Textarea
+              id="methodology"
+              value={methodology}
+              onChange={(e) => setMethodology(e.target.value)}
+              placeholder="Metodologia utilizada no relatório (padrões GRI, processo de coleta de dados, etc.)..."
+              rows={3}
+            />
+          </div>
 
+          <div className="flex justify-end">
             <Button 
-              onClick={handleSaveMetadata} 
+              onClick={handleSaveMetadata}
               disabled={isSaving}
-              className="w-full gap-2"
             >
-              <Save className="h-4 w-4" />
-              {isSaving ? "Salvando..." : "Salvar Metadados"}
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Salvar Metadados
             </Button>
           </div>
         </CardContent>
@@ -424,224 +448,252 @@ export function GRIReportBuilderModal({
     </div>
   );
 
-  const renderIndicators = () => (
-    <div className="space-y-6">
-      {isLoading ? (
-        <SmartSkeleton variant="dashboard" className="h-64" />
-      ) : (
-        <>
-          {['Universal', 'Ambiental', 'Social', 'Econômico', 'Governança'].map((type) => {
-            const typeIndicators = indicatorData.filter(i => i.indicator?.indicator_type === type);
-            if (typeIndicators.length === 0) return null;
+  const renderIndicators = () => {
+    if (isLoading) {
+      return <div>Carregando indicadores...</div>;
+    }
 
-            return (
-              <Card key={type}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {type === 'Universal' && <Building2 className="h-5 w-5" />}
-                    {type === 'Ambiental' && <Leaf className="h-5 w-5" />}
-                    {type === 'Social' && <Users className="h-5 w-5" />}
-                    {type === 'Econômico' && <Target className="h-5 w-5" />}
-                    {type === 'Governança' && <CheckCircle className="h-5 w-5" />}
-                    Indicadores {type}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {typeIndicators.map((indicator) => (
-                      <div key={indicator.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline">
-                                {indicator.indicator?.code}
-                              </Badge>
-                              {indicator.indicator?.is_mandatory && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Obrigatório
-                                </Badge>
-                              )}
-                              {indicator.is_complete && (
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                              )}
-                            </div>
-                            <h4 className="font-medium">{indicator.indicator?.title}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {indicator.indicator?.description}
-                            </p>
-                          </div>
+    const indicatorsByType = indicatorData.reduce((acc, ind) => {
+      const type = ind.indicator?.indicator_type || 'Outros';
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(ind);
+      return acc;
+    }, {} as Record<string, GRIIndicatorData[]>);
+
+    return (
+      <div className="space-y-6">
+        {Object.entries(indicatorsByType).map(([type, indicators]) => (
+          <Card key={type}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {type === 'Universal' && <Building2 className="h-5 w-5" />}
+                {type === 'Ambiental' && <Leaf className="h-5 w-5" />}
+                {type === 'Social' && <Users className="h-5 w-5" />}
+                {type === 'Econômico' && <Target className="h-5 w-5" />}
+                {type === 'Governança' && <CheckCircle className="h-5 w-5" />}
+                Indicadores {type}
+              </CardTitle>
+              <CardDescription>
+                {indicators.filter(i => i.is_complete).length} de {indicators.length} completos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {indicators.map((indicator) => (
+                  <div key={indicator.id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="font-medium">{indicator.indicator?.code}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {indicator.indicator?.title}
                         </div>
-
-                        <div className="space-y-2">
-                           {(indicator.indicator?.data_type === 'Numérico' || indicator.indicator?.data_type === 'Percentual') && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                placeholder={indicator.indicator?.data_type === 'Percentual' ? '0-100' : 'Valor'}
-                                min={indicator.indicator?.data_type === 'Percentual' ? '0' : undefined}
-                                max={indicator.indicator?.data_type === 'Percentual' ? '100' : undefined}
-                                defaultValue={indicator.indicator?.data_type === 'Percentual' 
-                                  ? (indicator.percentage_value || '') 
-                                  : (indicator.numeric_value || '')}
-                                onBlur={(e) => handleIndicatorUpdate(
-                                  indicator.indicator_id, 
-                                  e.target.value, 
-                                  indicator.indicator?.data_type || 'Numérico'
-                                )}
-                                className="max-w-xs"
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                {indicator.indicator?.data_type === 'Percentual' ? '%' : indicator.indicator?.unit}
-                              </span>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleSmartSuggestion(indicator)}
-                                className="ml-2"
-                              >
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                Sugerir
-                              </Button>
-                            </div>
-                           )}
-
-                          {indicator.indicator?.data_type === 'Texto' && (
-                            <Textarea
-                              placeholder="Descrição detalhada..."
-                              defaultValue={indicator.text_value || ''}
-                              onBlur={(e) => handleIndicatorUpdate(
-                                indicator.indicator_id, 
-                                e.target.value, 
-                                'Texto'
-                              )}
-                              rows={3}
-                            />
-                          )}
-
-                        </div>
-
-                        {indicator.indicator?.guidance_text && (
-                          <div className="mt-3 p-3 bg-muted rounded-lg">
-                            <p className="text-xs text-muted-foreground">
-                              <strong>Orientação:</strong> {indicator.indicator.guidance_text}
-                            </p>
-                          </div>
+                        {indicator.indicator?.is_mandatory && (
+                          <Badge variant="destructive">Obrigatório</Badge>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </>
-      )}
-    </div>
-  );
+                      <div className="flex items-center gap-2">
+                        {indicator.is_complete && (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSmartSuggestion(indicator)}
+                        >
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Sugerir
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {indicator.indicator?.guidance_text && (
+                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                        {indicator.indicator.guidance_text}
+                      </div>
+                    )}
 
-  const renderSections = () => (
-    <div className="space-y-6">
-      {isLoading ? (
-        <SmartSkeleton variant="dashboard" className="h-64" />
-      ) : (
-        sections.map((section) => (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={`Valor (${indicator.indicator?.unit || 'sem unidade'})`}
+                        value={
+                          indicator.numeric_value || 
+                          indicator.text_value || 
+                          indicator.percentage_value || 
+                          indicator.boolean_value?.toString() || 
+                          indicator.date_value || 
+                          ''
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleIndicatorUpdate(
+                            indicator.indicator_id, 
+                            value, 
+                            indicator.indicator?.data_type || 'Texto'
+                          );
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const renderSections = () => {
+    if (isLoading) {
+      return <div>Carregando seções...</div>;
+    }
+
+    return (
+      <div className="space-y-4">
+        {sections.map((section) => (
           <Card key={section.id}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   {section.title}
-                </CardTitle>
+                </div>
                 <div className="flex items-center gap-2">
                   {section.is_complete && (
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   )}
-                  <Badge variant="outline">
-                    {section.completion_percentage}%
-                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedSection(section);
+                      setIsAIModalOpen(true);
+                    }}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Gerar Conteúdo
+                  </Button>
                 </div>
-              </div>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={section.content || ''}
-                onChange={(e) => {
-                  const updated = sections.map(s => 
-                    s.id === section.id 
-                      ? { ...s, content: e.target.value }
-                      : s
-                  );
-                  setSections(updated);
-                }}
-                onBlur={async (e) => {
+                onChange={async (e) => {
+                  const content = e.target.value;
+                  
+                  // Update local state
+                  setSections(prev => prev.map(s => 
+                    s.id === section.id ? { ...s, content } : s
+                  ));
+                  
+                  // Save to database
                   try {
                     await createOrUpdateGRIReportSection(report.id, section.section_key, {
-                      content: e.target.value,
-                      is_complete: e.target.value.length > 50,
-                      completion_percentage: e.target.value.length > 50 ? 100 : 
-                                           e.target.value.length > 0 ? 50 : 0,
+                      content,
+                      is_complete: content.length > 50,
+                      completion_percentage: content.length > 50 ? 100 : content.length > 0 ? 50 : 0,
                     });
-                    await calculateReportCompletion(report.id);
-                    toast.success("Seção atualizada!");
+                    
+                    toast({
+                      title: "Sucesso",
+                      description: "Seção salva automaticamente",
+                    });
                   } catch (error) {
-                    console.error('Erro ao salvar seção:', error);
-                    toast.error("Erro ao salvar seção");
+                    toast({
+                      title: "Erro",
+                      description: "Erro ao salvar seção",
+                      variant: "destructive",
+                    });
                   }
                 }}
-                placeholder={`Escreva o conteúdo para a seção "${section.title}"`}
-                rows={8}
-                className="min-h-[200px]"
+                placeholder={`Conteúdo da seção ${section.title}...`}
+                rows={6}
               />
-              
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-2">
-                  {section.ai_generated_content && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      IA
-                    </Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {section.content?.length || 0} caracteres
-                  </span>
-                </div>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedSection(section);
-                    setIsAIModalOpen(true);
-                  }}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Gerar com IA
-                </Button>
-              </div>
             </CardContent>
           </Card>
-        ))
-      )}
+        ))}
+      </div>
+    );
+  };
+
+  const renderExport = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            Central de Exportação
+          </CardTitle>
+          <CardDescription>
+            Acesse a central completa para prévia, exportação e compartilhamento
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Button 
+              onClick={() => setIsExportModalOpen(true)}
+              className="w-full gap-2" 
+              size="lg"
+            >
+              <Eye className="h-4 w-4" />
+              Abrir Central de Exportação
+            </Button>
+            
+            <div className="grid grid-cols-3 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({
+                  title: "Info",
+                  description: "Use a Central de Exportação para acessar a prévia.",
+                })}
+              >
+                Prévia Rápida
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({
+                  title: "Info", 
+                  description: "Use a Central de Exportação para download em PDF.",
+                })}
+              >
+                PDF Direto
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({
+                  title: "Info",
+                  description: "Use a Central de Exportação para compartilhar.",
+                })}
+              >
+                Compartilhar
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              {report.title} - {report.year}
-            </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{report.status}</Badge>
-              <Badge variant="secondary">{report.completion_percentage}%</Badge>
-            </div>
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            Construtor de Relatório GRI - {report.title}
+            <Badge variant="outline">
+              {Math.round(report.completion_percentage || 0)}% completo
+            </Badge>
+          </DialogTitle>
+          <DialogDescription>
+            Construa seu relatório de sustentabilidade GRI preenchendo os indicadores obrigatórios e seções do relatório.
+          </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="indicators">Indicadores</TabsTrigger>
@@ -649,77 +701,23 @@ export function GRIReportBuilderModal({
             <TabsTrigger value="export">Exportar</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            {renderOverview()}
-          </TabsContent>
+          <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+            <TabsContent value="overview" className="mt-4">
+              {renderOverview()}
+            </TabsContent>
 
-          <TabsContent value="indicators" className="space-y-4">
-            {renderIndicators()}
-          </TabsContent>
+            <TabsContent value="indicators" className="mt-4">
+              {renderIndicators()}
+            </TabsContent>
 
-          <TabsContent value="sections" className="space-y-4">
-            {renderSections()}
-          </TabsContent>
+            <TabsContent value="sections" className="mt-4">
+              {renderSections()}
+            </TabsContent>
 
-          <TabsContent value="export" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Prévia e Exportação
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-blue-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <span className="font-medium">Sistema de Exportação Avançado</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Gere relatórios completos em diferentes formatos seguindo os padrões GRI. 
-                      Inclui prévia online, download em PDF/Word e opções de compartilhamento.
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <Button 
-                      onClick={() => setIsExportModalOpen(true)}
-                      className="w-full gap-2" 
-                      size="lg"
-                    >
-                      <Eye className="h-4 w-4" />
-                      Abrir Central de Exportação
-                    </Button>
-                    
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => toast.info("Use a Central de Exportação para acessar a prévia.")}
-                      >
-                        Prévia Rápida
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => toast.info("Use a Central de Exportação para download em PDF.")}
-                      >
-                        PDF Direto
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => toast.info("Use a Central de Exportação para compartilhar.")}
-                      >
-                        Compartilhar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="export" className="mt-4">
+              {renderExport()}
+            </TabsContent>
+          </div>
         </Tabs>
         
         {/* AI Content Generator Modal */}
@@ -754,13 +752,15 @@ export function GRIReportBuilderModal({
             }}
           />
         )}
-        
+
         {/* Export Modal */}
-        <GRIReportExportModal
-          isOpen={isExportModalOpen}
-          onClose={() => setIsExportModalOpen(false)}
-          report={report}
-        />
+        {isExportModalOpen && (
+          <GRIReportExportModal
+            isOpen={isExportModalOpen}
+            onClose={() => setIsExportModalOpen(false)}
+            report={report}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
