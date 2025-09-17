@@ -86,7 +86,7 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
       const reportData = {
         title,
         year,
-        gri_version: griVersion,
+        gri_standard_version: griVersion,
         reporting_period_start: format(startDate, 'yyyy-MM-dd'),
         reporting_period_end: format(endDate, 'yyyy-MM-dd'),
       };

@@ -7,7 +7,7 @@ export function buildMetadataPrompt(report, metadataType) {
   const baseContext = `
 Empresa: ${companyName}
 Ano do relatório: ${year}
-Versão GRI: ${report.gri_version || 'GRI Standards'}
+Versão GRI: ${report.gri_standard_version || 'GRI Standards'}
 `;
 
   switch (metadataType) {

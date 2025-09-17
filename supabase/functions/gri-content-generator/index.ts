@@ -368,7 +368,7 @@ function buildMetadataPrompt(report, metadataType) {
   const baseContext = `
 Empresa: ${companyName}
 Ano do relatório: ${year}
-Versão GRI: ${report.gri_version || 'GRI Standards'}
+Versão GRI: ${report.gri_standard_version || 'GRI Standards'}
 `;
 
   switch (metadataType) {
@@ -471,7 +471,7 @@ Contexto do relatório:
 - Empresa: ${companyName}
 - Ano: ${year}
 - Setor: ${report.companies?.sector || 'Não especificado'}
-- Versão GRI: ${report.gri_version || 'GRI Standards'}
+- Versão GRI: ${report.gri_standard_version || 'GRI Standards'}
 
 `;
 
@@ -555,7 +555,7 @@ function generateHTMLReport(report, sections, indicators) {
         <h3>Informações do Relatório</h3>
         <p><strong>Empresa:</strong> ${companyName}</p>
         <p><strong>Ano:</strong> ${year}</p>
-        <p><strong>Versão GRI:</strong> ${report.gri_version || 'GRI Standards'}</p>
+        <p><strong>Versão GRI:</strong> ${report.gri_standard_version || 'GRI Standards'}</p>
         <p><strong>Período:</strong> ${report.reporting_period_start} a ${report.reporting_period_end}</p>
         <p><strong>Conclusão:</strong> ${Math.round(report.completion_percentage || 0)}%</p>
     </div>

@@ -450,12 +450,20 @@ export async function deleteSDGAlignment(id: string): Promise<void> {
 
 // Utility Functions
 export async function calculateReportCompletion(reportId: string): Promise<number> {
-  const { data, error } = await supabase.rpc('calculate_gri_report_completion', {
-    p_report_id: reportId,
-  });
+  try {
+    const { data, error } = await supabase.rpc('calculate_gri_report_completion', {
+      p_report_id: reportId,
+    });
 
-  if (error) throw error;
-  return data || 0;
+    if (error) {
+      console.error('Erro ao recalcular conclusão do relatório:', error);
+      return 0;
+    }
+    return data || 0;
+  } catch (e) {
+    console.error('Exceção em calculateReportCompletion:', e);
+    return 0;
+  }
 }
 
 export async function initializeGRIReport(reportId: string): Promise<void> {
