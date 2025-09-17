@@ -1,47 +1,56 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, AlertTriangle } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, AlertTriangle, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { GRIReport, createGRIReport, initializeGRIReport, getGRIReports } from "@/services/griReports";
-import { toast } from "sonner";
+import { createGRIReport, initializeGRIReport } from "@/services/griReports";
+import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CreateGRIReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (report: GRIReport) => void;
+  onSubmit: (report: any) => void;
 }
 
-export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIReportModalProps) {
+export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+}) => {
   const [title, setTitle] = useState("Relatório de Sustentabilidade");
   const [year, setYear] = useState(new Date().getFullYear());
-  const [griVersion, setGriVersion] = useState("2023");
+  const [griVersion, setGriVersion] = useState("GRI Standards");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [existingReport, setExistingReport] = useState<GRIReport | null>(null);
-  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [duplicateReport, setDuplicateReport] = useState<any>(null);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
 
-  const checkForDuplicateYear = async (selectedYear: number) => {
-    if (!selectedYear) return;
-    
-    setIsCheckingDuplicates(true);
+  const checkForDuplicateYear = async (year: number) => {
+    if (!year || year < 2000 || year > 2100) {
+      setDuplicateReport(null);
+      return;
+    }
+
+    setIsCheckingDuplicate(true);
     try {
-      const reports = await getGRIReports();
-      const duplicate = reports.find(r => r.year === selectedYear);
-      setExistingReport(duplicate || null);
+      // Import the service dynamically to avoid circular dependencies
+      const { getGRIReports } = await import("@/services/griReports");
+      const existingReports = await getGRIReports();
+      const duplicate = existingReports.find(report => report.year === year);
+      setDuplicateReport(duplicate || null);
     } catch (error) {
-      console.error('Erro ao verificar relatórios existentes:', error);
+      console.error('Erro ao verificar duplicatas:', error);
+      setDuplicateReport(null);
     } finally {
-      setIsCheckingDuplicates(false);
+      setIsCheckingDuplicate(false);
     }
   };
 
@@ -50,233 +59,233 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
     checkForDuplicateYear(newYear);
   };
 
-  const handleOpenExisting = () => {
-    if (existingReport) {
-      onSubmit(existingReport);
-      onClose();
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!startDate || !endDate) {
-      toast.error("Selecione as datas de início e fim do período de relatório");
+    if (!title || !year || !startDate || !endDate || !griVersion) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
       return;
     }
 
-    if (existingReport) {
-      const confirmed = window.confirm(
-        `Já existe um relatório GRI para o ano ${year}. Deseja continuar criando um novo relatório?`
-      );
-      if (!confirmed) return;
+    if (startDate >= endDate) {
+      toast({
+        title: "Erro",
+        description: "A data de início deve ser anterior à data de fim",
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsSubmitting(true);
-    let createdReport: GRIReport | null = null;
-    
+
     try {
-      // Create the report
-      createdReport = await createGRIReport({
+      const reportData = {
         title,
         year,
-        gri_standard_version: griVersion,
+        gri_version: griVersion,
         reporting_period_start: format(startDate, 'yyyy-MM-dd'),
         reporting_period_end: format(endDate, 'yyyy-MM-dd'),
-        status: 'Rascunho',
-        completion_percentage: 0,
-      });
+      };
 
-      toast.success("Relatório GRI criado com sucesso!");
-      
-      // Try to initialize - but don't fail the creation if this fails
-      try {
-        await initializeGRIReport(createdReport.id);
-        toast.success("Relatório inicializado com indicadores padrão!");
-      } catch (initError) {
-        console.error('Erro ao inicializar relatório:', initError);
-        const errorMessage = initError instanceof Error ? initError.message : 'Erro desconhecido';
-        console.log('Detalhes do erro de inicialização:', {
-          error: initError,
-          code: (initError as any)?.code,
-          details: (initError as any)?.details,
-          message: (initError as any)?.message
+      console.log('Criando relatório GRI:', reportData);
+      const newReport = await createGRIReport(reportData);
+      console.log('Relatório criado:', newReport);
+
+      if (newReport?.id) {
+        console.log('Inicializando relatório GRI:', newReport.id);
+        await initializeGRIReport(newReport.id);
+        console.log('Relatório inicializado com sucesso');
+
+        toast({
+          title: "Sucesso",
+          description: "Relatório GRI criado com sucesso!",
         });
-        toast.warning("Relatório criado, mas houve erro na inicialização. Você pode adicionar indicadores manualmente.");
+
+        onSubmit(newReport);
+        onClose();
+        
+        // Reset form
+        setTitle("");
+        setYear(new Date().getFullYear());
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setGriVersion("GRI Standards");
+        setDuplicateReport(null);
       }
+    } catch (error: any) {
+      console.error('Erro na inserção do relatório GRI:', error);
       
-      onSubmit(createdReport);
-      
-      // Reset form
-      setTitle("Relatório de Sustentabilidade");
-      setYear(new Date().getFullYear());
-      setGriVersion("2023");
-      setStartDate(undefined);
-      setEndDate(undefined);
-      setExistingReport(null);
-    } catch (error) {
-      console.error('Erro ao criar relatório:', error);
-      console.log('Detalhes do erro:', {
-        error,
-        code: (error as any)?.code,
-        details: (error as any)?.details,
-        message: (error as any)?.message
-      });
-      
-      let errorMessage = "Erro ao criar relatório. Tente novamente.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('duplicate key value violates unique constraint')) {
-          errorMessage = `Já existe um relatório para o ano ${year}. Tente um ano diferente ou edite o existente.`;
-        } else if (error.message.includes('company_id')) {
-          errorMessage = "Erro: empresa não identificada. Verifique seu perfil de usuário.";
-        } else {
-          errorMessage = `Erro: ${error.message}`;
-        }
+      // Handle duplicate key error specifically
+      if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('já existe')) {
+        toast({
+          title: "Relatório Já Existe",
+          description: `Um relatório GRI para o ano ${year} já foi criado para sua empresa.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao criar relatório GRI. Tente novamente.",
+          variant: "destructive",
+        });
       }
-      
-      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleOpenExisting = () => {
+    if (duplicateReport) {
+      onSubmit(duplicateReport);
+      onClose();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Criar Novo Relatório GRI</DialogTitle>
+          <DialogDescription>
+            Crie um novo relatório de sustentabilidade seguindo os padrões GRI. Preencha as informações básicas para começar.
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Título do Relatório</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Relatório de Sustentabilidade 2024"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="year">Ano de Referência</Label>
+              <Label htmlFor="title">Título do Relatório *</Label>
               <Input
-                id="year"
-                type="number"
-                value={year}
-                onChange={(e) => handleYearChange(parseInt(e.target.value))}
-                min="2020"
-                max="2030"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Relatório de Sustentabilidade 2024"
                 required
-                disabled={isCheckingDuplicates}
               />
-              {isCheckingDuplicates && (
-                <p className="text-xs text-muted-foreground">Verificando relatórios existentes...</p>
-              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="gri-version">Versão GRI</Label>
-              <Select value={griVersion} onValueChange={setGriVersion}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2023">GRI Standards 2023</SelectItem>
-                  <SelectItem value="2021">GRI Standards 2021</SelectItem>
-                  <SelectItem value="2016">GRI Standards 2016</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="year">Ano do Relatório *</Label>
+                <Input
+                  id="year"
+                  type="number"
+                  min="2000"
+                  max="2100"
+                  value={year}
+                  onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                  required
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Data de Início</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="space-y-2">
+                <Label htmlFor="gri_version">Versão GRI *</Label>
+                <Select value={griVersion} onValueChange={setGriVersion}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a versão GRI" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GRI Standards">GRI Standards</SelectItem>
+                    <SelectItem value="GRI Standards 2021">GRI Standards 2021</SelectItem>
+                    <SelectItem value="GRI G4">GRI G4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Data de Fim</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "dd/MM/yyyy") : "Selecionar data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                    disabled={(date) => startDate ? date < startDate : false}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {existingReport && (
-            <Alert>
+          {duplicateReport && (
+            <Alert className="mb-4">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Já existe um relatório GRI para {year}: "{existingReport.title}". 
+              <AlertDescription className="flex items-center justify-between">
+                <span>Já existe um relatório GRI para o ano {year}: "{duplicateReport.title}"</span>
                 <Button 
-                  variant="link" 
-                  className="p-0 h-auto font-normal underline" 
+                  variant="outline" 
+                  size="sm" 
                   onClick={handleOpenExisting}
+                  className="ml-2"
                 >
-                  Abrir relatório existente
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Abrir Existente
                 </Button>
               </AlertDescription>
             </Alert>
           )}
 
-          <div className="flex justify-end space-x-2 pt-4">
+            <div className="space-y-2">
+              <Label>Período de Reporte *</Label>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Data de Início</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "dd/MM/yyyy") : "Selecione"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">Data de Fim</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "dd/MM/yyyy") : "Selecione"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
             <Button 
               type="submit" 
-              disabled={isSubmitting || !startDate || !endDate}
+              disabled={isSubmitting || isCheckingDuplicate || duplicateReport || !title || !year || !startDate || !endDate || !griVersion}
             >
-              {isSubmitting ? "Criando..." : "Criar Relatório"}
+              {isSubmitting ? "Criando..." : isCheckingDuplicate ? "Verificando..." : "Criar Relatório"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

@@ -1,15 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -17,282 +13,271 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    {
+      auth: {
+        persistSession: false,
+      },
+    }
+  );
+
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+
   try {
-    console.log('Starting GRI content generation...');
-    
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    const { authorization } = Object.fromEntries(req.headers.entries());
     
     // Authenticate user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response('Missing Authorization header', { status: 401, headers: corsHeaders });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+      authorization?.replace('Bearer ', '') || ''
+    );
     
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
-    }
-
-    // Parse request body - handle different action types
-    const body = await req.json();
-    const { action, reportId, sectionKey, contentType, context, regenerate, format } = body;
-    
-    // Handle legacy format from AIContentGeneratorModal
-    if (body.prompt && !action) {
-      const legacyReportId = body.reportId;
-      const legacySectionKey = body.sectionType;
-      const legacyContentType = body.sectionTitle;
-      const legacyContext = body.prompt;
-      
-      console.log(`Generating GRI content for section: ${legacySectionKey}, type: ${legacyContentType}`);
-      
-      return await handleSectionGeneration(supabaseClient, {
-        reportId: legacyReportId,
-        sectionKey: legacySectionKey,
-        contentType: legacyContentType,
-        context: legacyContext,
-        regenerate: false
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const { action, reportId, sectionKey, sectionType, regenerate, metadataType } = await req.json();
+    
     console.log(`GRI content generator called with action: ${action}, reportId: ${reportId}`);
 
-    // Handle different actions
-    switch (action) {
-      case 'preview':
-      case 'export':
-        return await handleReportGeneration(supabaseClient, reportId, format);
-      
-      default:
-        // Section generation (requires sectionKey)
-        if (!sectionKey) {
-          return new Response(
-            JSON.stringify({ error: 'sectionKey is required for content generation' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        console.log(`Generating GRI content for section: ${sectionKey}, type: ${contentType}`);
-        
-        return await handleSectionGeneration(supabaseClient, {
-          reportId,
-          sectionKey,
-          contentType,
-          context,
-          regenerate
-        });
+    if (action === 'preview' || action === 'export') {
+      return await handleReportGeneration(supabaseClient, reportId, action);
+    } else if (metadataType) {
+      // Handle metadata generation
+      return await handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, metadataType);
+    } else if (sectionKey && sectionType) {
+      return await handleSectionGeneration(supabaseClient, openaiApiKey, reportId, sectionKey, sectionType, regenerate);
+    } else {
+      // Legacy support for direct section generation
+      return await handleSectionGeneration(supabaseClient, openaiApiKey, reportId, 'overview', 'Visão Geral', false);
     }
 
   } catch (error) {
     console.error('Error in GRI content generator:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to generate GRI content', 
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
 
-// Handle section generation
-async function handleSectionGeneration(supabaseClient: any, params: any) {
-  const { reportId, sectionKey, contentType, context, regenerate } = params;
+// Handle metadata generation (ceo_message, executive_summary, methodology)
+async function handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, metadataType) {
+  console.log(`Generating metadata for type: ${metadataType}`);
   
-  // Get report and company information
-  const { data: reportData } = await supabaseClient
-    .from('gri_reports')
-    .select(`
-      *,
-      companies!inner(name, sector)
-    `)
-    .eq('id', reportId)
-    .single();
-
-  if (!reportData) {
-    return new Response('Report not found', { status: 404, headers: corsHeaders });
-  }
-
-  // Get relevant indicators and existing content
-  const { data: indicatorData } = await supabaseClient
-    .from('gri_indicator_data')
-    .select(`
-      *,
-      indicator:gri_indicators_library(*)
-    `)
-    .eq('report_id', reportId);
-
-  // Get existing section content if not regenerating
-  let existingContent = '';
-  if (!regenerate) {
-    const { data: sectionData } = await supabaseClient
-      .from('gri_report_sections')
-      .select('content')
-      .eq('report_id', reportId)
-      .eq('section_key', sectionKey)
-      .single();
-    
-    existingContent = sectionData?.content || '';
-  }
-
-  // Generate content using AI
-  const generatedContent = await generateGRIContent({
-    reportData,
-    sectionKey,
-    contentType,
-    context,
-    indicatorData,
-    existingContent,
-    regenerate
-  });
-
-  // Update the section in database
-  await supabaseClient
-    .from('gri_report_sections')
-    .upsert({
-      report_id: reportId,
-      section_key: sectionKey,
-      content: generatedContent,
-      ai_generated_content: true,
-      last_ai_update: new Date().toISOString(),
-      is_complete: generatedContent.length > 50,
-      completion_percentage: generatedContent.length > 100 ? 100 : 50,
-    });
-
-  // Recalculate report completion
-  await supabaseClient.rpc('calculate_gri_report_completion', {
-    p_report_id: reportId
-  });
-
-  console.log('GRI content generated successfully');
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      content: generatedContent,
-      section_key: sectionKey
-    }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
-}
-
-// Handle report generation for preview/export
-async function handleReportGeneration(supabaseClient: any, reportId: string, format?: string) {
   try {
-    console.log(`Generating full report for ${format || 'preview'}, reportId: ${reportId}`);
-    
-    // Get complete report data
-    const { data: report } = await supabaseClient
+    // Fetch report and company data
+    const { data: report, error: reportError } = await supabaseClient
       .from('gri_reports')
       .select(`
         *,
-        companies!inner(name, sector, cnpj)
+        companies (
+          name,
+          sector
+        )
       `)
       .eq('id', reportId)
       .single();
 
-    if (!report) {
-      return new Response(
-        JSON.stringify({ error: 'Report not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (reportError || !report) {
+      console.error('Error fetching report:', reportError);
+      return new Response(JSON.stringify({ error: 'Report not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Get all report sections
+    // Generate content using AI
+    const content = await generateMetadataContent(openaiApiKey, report, metadataType);
+    
+    return new Response(JSON.stringify({ content }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in metadata generation:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, sectionKey, sectionType, regenerate) {
+  console.log(`Generating GRI content for section: ${sectionKey}, type: ${sectionType}`);
+  
+  try {
+    // Fetch report and company data
+    const { data: report, error: reportError } = await supabaseClient
+      .from('gri_reports')
+      .select(`
+        *,
+        companies (
+          name,
+          sector
+        )
+      `)
+      .eq('id', reportId)
+      .single();
+
+    if (reportError || !report) {
+      console.error('Error fetching report:', reportError);
+      return new Response(JSON.stringify({ error: 'Report not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fetch relevant GRI indicators
+    const { data: indicators } = await supabaseClient
+      .from('gri_indicator_data')
+      .select(`
+        *,
+        gri_indicators_library (
+          code,
+          name,
+          description
+        )
+      `)
+      .eq('report_id', reportId);
+
+    // Fetch existing section content if not regenerating
+    let existingContent = null;
+    if (!regenerate) {
+      const { data: existingSection } = await supabaseClient
+        .from('gri_report_sections')
+        .select('content')
+        .eq('report_id', reportId)
+        .eq('section_key', sectionKey)
+        .single();
+      
+      existingContent = existingSection?.content;
+    }
+
+    // Generate content using AI
+    const content = await generateGRIContent(openaiApiKey, report, sectionKey, sectionType, indicators || [], existingContent);
+    
+    // Update the report section in the database
+    const { error: upsertError } = await supabaseClient
+      .from('gri_report_sections')
+      .upsert({
+        report_id: reportId,
+        section_key: sectionKey,
+        section_title: sectionType,
+        content: content,
+        is_complete: true,
+        updated_at: new Date().toISOString()
+      });
+
+    if (upsertError) {
+      console.error('Error updating section:', upsertError);
+      throw upsertError;
+    }
+
+    // Recalculate report completion
+    await supabaseClient.rpc('calculate_gri_report_completion', {
+      p_report_id: reportId
+    });
+
+    return new Response(JSON.stringify({ content }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in section generation:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+async function handleReportGeneration(supabaseClient, reportId, action) {
+  console.log(`Generating full report for action: ${action}`);
+  
+  try {
+    // Fetch complete report data
+    const { data: report, error: reportError } = await supabaseClient
+      .from('gri_reports')
+      .select(`
+        *,
+        companies (
+          name,
+          sector,
+          cnpj
+        )
+      `)
+      .eq('id', reportId)
+      .single();
+
+    if (reportError || !report) {
+      throw new Error('Report not found');
+    }
+
+    // Fetch report sections
     const { data: sections } = await supabaseClient
       .from('gri_report_sections')
       .select('*')
       .eq('report_id', reportId)
       .order('section_key');
 
-    // Get all indicators with data
+    // Fetch GRI indicators
     const { data: indicators } = await supabaseClient
       .from('gri_indicator_data')
       .select(`
         *,
-        indicator:gri_indicators_library(*)
+        gri_indicators_library (
+          code,
+          name,
+          description,
+          category
+        )
       `)
       .eq('report_id', reportId)
-      .order('indicator.code');
+      .order('indicator_id');
 
     // Generate HTML report
-    const htmlContent = generateHTMLReport({
-      report,
-      sections: sections || [],
-      indicators: indicators || []
+    const htmlContent = generateHTMLReport(report, sections || [], indicators || []);
+
+    return new Response(htmlContent, {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'text/html; charset=utf-8'
+      },
     });
 
-    console.log(`Generated HTML report with ${htmlContent.length} characters`);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        content: htmlContent,
-        format: format || 'html'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
   } catch (error) {
-    console.error('Error generating report:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to generate report', 
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    console.error('Error in report generation:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 }
 
-async function generateGRIContent({
-  reportData,
-  sectionKey,
-  contentType,
-  context,
-  indicatorData,
-  existingContent,
-  regenerate
-}: {
-  reportData: any;
-  sectionKey: string;
-  contentType: string;
-  context: any;
-  indicatorData: any[];
-  existingContent: string;
-  regenerate: boolean;
-}): Promise<string> {
-  if (!openAIApiKey) {
-    console.log('OpenAI API key not found, returning template content');
-    return generateTemplateContent(sectionKey, reportData);
+async function generateGRIContent(openaiApiKey, report, sectionKey, sectionType, indicators, existingContent = null) {
+  if (!openaiApiKey) {
+    console.log('OpenAI API key not found, using template content');
+    return generateTemplateContent(sectionKey, sectionType, report);
   }
 
-  const prompt = buildGRIPrompt({
-    reportData,
-    sectionKey,
-    contentType,
-    context,
-    indicatorData,
-    existingContent,
-    regenerate
-  });
-
   try {
-    console.log('Calling OpenAI API for GRI content generation...');
+    const prompt = buildGRIPrompt(report, sectionKey, sectionType, indicators, existingContent);
+    
+    console.log(`Calling OpenAI API for section: ${sectionKey}`);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -300,357 +285,348 @@ async function generateGRIContent({
         messages: [
           {
             role: 'system',
-            content: `Você é um especialista em relatórios de sustentabilidade GRI. Sua função é gerar conteúdo profissional, técnico e alinhado com as melhores práticas GRI para relatórios corporativos de sustentabilidade.
-            
-            DIRETRIZES IMPORTANTES:
-            - Use linguagem institucional profissional
-            - Siga rigorosamente os padrões GRI
-            - Inclua dados quantitativos quando disponíveis
-            - Mantenha transparência e objetividade
-            - Use formatação em markdown quando apropriado
-            - Sugira onde dados adicionais são necessários`
+            content: 'You are an expert in GRI sustainability reporting. Generate comprehensive, professional content for GRI sustainability reports in Portuguese. Focus on being specific, data-driven, and aligned with GRI standards.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.3,
         max_tokens: 2000,
+        temperature: 0.7
       }),
     });
 
     if (!response.ok) {
-      console.error(`OpenAI API error: ${response.status}`);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error response:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
-    
-    console.log('OpenAI content generated successfully');
-    return content;
+    return data.choices[0].message.content;
 
   } catch (error) {
-    console.error('Error calling OpenAI:', error);
-    return generateTemplateContent(sectionKey, reportData);
+    console.error('Error calling OpenAI API:', error);
+    return generateTemplateContent(sectionKey, sectionType, report);
   }
 }
 
-function buildGRIPrompt({
-  reportData,
-  sectionKey,
-  contentType,
-  context,
-  indicatorData,
-  existingContent,
-  regenerate
-}: any): string {
-  const companyName = reportData.companies?.name || 'a organização';
-  const sector = reportData.companies?.sector || 'não especificado';
-  const year = reportData.year;
-
-  let prompt = `Gere conteúdo para a seção "${sectionKey}" do relatório de sustentabilidade GRI ${year} da empresa "${companyName}" do setor "${sector}".`;
-
-  // Add section-specific instructions
-  switch (sectionKey) {
-    case 'organizational_profile':
-      prompt += `\n\nGere o perfil organizacional incluindo:
-      - Visão geral da empresa e suas atividades
-      - Estrutura organizacional
-      - Localização das operações
-      - Propriedade e forma jurídica`;
-      break;
-      
-    case 'strategy':
-      prompt += `\n\nGere conteúdo sobre estratégia de sustentabilidade incluindo:
-      - Declaração de estratégia da alta liderança
-      - Principais impactos, riscos e oportunidades
-      - Compromissos e metas de sustentabilidade`;
-      break;
-      
-    case 'environmental_performance':
-      prompt += `\n\nGere conteúdo sobre performance ambiental incluindo:
-      - Consumo de energia e água
-      - Emissões de gases de efeito estufa
-      - Gestão de resíduos
-      - Impactos na biodiversidade`;
-      break;
-      
-    case 'social_performance':
-      prompt += `\n\nGere conteúdo sobre performance social incluindo:
-      - Práticas de emprego
-      - Saúde e segurança ocupacional
-      - Treinamento e educação
-      - Diversidade e igualdade de oportunidades`;
-      break;
+// Generate metadata content (ceo_message, executive_summary, methodology)
+async function generateMetadataContent(openaiApiKey, report, metadataType) {
+  if (!openaiApiKey) {
+    return getDefaultMetadataContent(metadataType, report);
   }
 
-  // Add available indicator data
-  if (indicatorData && indicatorData.length > 0) {
-    prompt += `\n\nDados de indicadores disponíveis:\n`;
-    indicatorData.forEach((indicator: any) => {
-      if (indicator.indicator && (indicator.numeric_value || indicator.text_value || indicator.percentage_value)) {
-        prompt += `- ${indicator.indicator.code}: ${indicator.indicator.title}\n`;
-        if (indicator.numeric_value) prompt += `  Valor: ${indicator.numeric_value} ${indicator.indicator.unit || ''}\n`;
-        if (indicator.text_value) prompt += `  Descrição: ${indicator.text_value}\n`;
-        if (indicator.percentage_value) prompt += `  Percentual: ${indicator.percentage_value}%\n`;
-      }
+  try {
+    const prompt = buildMetadataPrompt(report, metadataType);
+    
+    console.log(`Generating metadata content for: ${metadataType}`);
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert in GRI sustainability reporting. Generate professional, executive-level content for GRI sustainability reports in Portuguese.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.7
+      }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error response:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+
+  } catch (error) {
+    console.error('Error generating metadata content:', error);
+    return getDefaultMetadataContent(metadataType, report);
+  }
+}
+
+function buildMetadataPrompt(report, metadataType) {
+  const companyName = report.companies?.name || 'Nossa empresa';
+  const year = report.year;
+  
+  const baseContext = `
+Empresa: ${companyName}
+Ano do relatório: ${year}
+Versão GRI: ${report.gri_version || 'GRI Standards'}
+`;
+
+  switch (metadataType) {
+    case 'ceo_message':
+      return `${baseContext}
+      
+Gere uma mensagem do CEO/Presidente para o relatório de sustentabilidade GRI ${year}. A mensagem deve:
+- Ser escrita em primeira pessoa
+- Demonstrar comprometimento com a sustentabilidade
+- Mencionar conquistas e desafios do ano
+- Destacar a importância da transparência e prestação de contas
+- Incluir uma visão para o futuro
+- Ser profissional mas humana
+- Ter aproximadamente 300-500 palavras
+
+Formato: Texto corrido, sem título, pronto para ser incluído no relatório.`;
+
+    case 'executive_summary':
+      return `${baseContext}
+      
+Gere um resumo executivo para o relatório de sustentabilidade GRI ${year}. O resumo deve:
+- Apresentar os principais pontos do relatório
+- Incluir destaques de performance ESG
+- Mencionar metodologia GRI utilizada
+- Destacar principais conquistas e desafios
+- Ser objetivo e direto
+- Usar linguagem executiva profissional
+- Ter aproximadamente 400-600 palavras
+
+Formato: Texto estruturado com parágrafos bem definidos, sem título, pronto para inclusão no relatório.`;
+
+    case 'methodology':
+      return `${baseContext}
+      
+Gere uma seção de metodologia para o relatório de sustentabilidade GRI ${year}. A seção deve:
+- Explicar a adoção dos padrões GRI
+- Descrever o processo de materialidade
+- Mencionar período e escopo do relatório
+- Explicar coleta e verificação de dados
+- Incluir limitações e premissas
+- Ser técnica mas acessível
+- Ter aproximadamente 300-450 palavras
+
+Formato: Texto técnico estruturado, sem título, pronto para inclusão no relatório.`;
+
+    default:
+      return `${baseContext}
+      
+Gere conteúdo relevante para o relatório de sustentabilidade GRI ${year}.`;
+  }
+}
+
+function getDefaultMetadataContent(metadataType, report) {
+  const companyName = report.companies?.name || 'Nossa empresa';
+  const year = report.year;
+  
+  switch (metadataType) {
+    case 'ceo_message':
+      return `É com satisfação que apresento o Relatório de Sustentabilidade ${year} da ${companyName}, elaborado de acordo com os padrões GRI.
+
+Este relatório reflete nosso compromisso contínuo com a transparência e a prestação de contas às partes interessadas. Durante ${year}, continuamos a integrar práticas sustentáveis em todas as nossas operações, reconhecendo que a sustentabilidade é fundamental para o sucesso a longo prazo de nosso negócio.
+
+Enfrentamos desafios significativos, mas também celebramos conquistas importantes que nos aproximam de nossos objetivos de sustentabilidade. Nosso foco permanece em criar valor compartilhado para todos os stakeholders, contribuindo para um futuro mais sustentável.
+
+A transparência é um pilar fundamental de nossa estratégia corporativa. Por meio deste relatório, compartilhamos nossos progressos, desafios e compromissos futuros, demonstrando nossa responsabilidade com o desenvolvimento sustentável.
+
+Continuaremos a trabalhar com determinação para alcançar nossas metas e contribuir positivamente para a sociedade e o meio ambiente.`;
+
+    case 'executive_summary':
+      return `Este Relatório de Sustentabilidade ${year} da ${companyName} foi elaborado em conformidade com os padrões GRI, demonstrando nosso compromisso com a transparência e a prestação de contas às partes interessadas.
+
+O relatório apresenta nosso desempenho em aspectos ambientais, sociais e de governança (ESG), destacando as principais iniciativas, conquistas e desafios enfrentados durante o período. A metodologia GRI foi aplicada para garantir a comparabilidade e a qualidade das informações divulgadas.
+
+Durante ${year}, focamos em fortalecer nossa gestão de sustentabilidade, implementando práticas que contribuem para o desenvolvimento sustentável e a criação de valor compartilhado. Nossos esforços concentram-se em áreas materiais identificadas através de processo estruturado de engajamento com stakeholders.
+
+Os dados e informações apresentados neste relatório refletem nosso compromisso com a melhoria contínua e a transparência em nossas práticas de sustentabilidade, servindo como base para o planejamento estratégico futuro.`;
+
+    case 'methodology':
+      return `Este relatório foi elaborado em conformidade com os padrões GRI (Global Reporting Initiative), seguindo a abordagem "de acordo com os padrões GRI". A metodologia adotada garante a qualidade, comparabilidade e transparência das informações divulgadas.
+
+O período de reporte compreende o ano de ${year}, com dados coletados sistematicamente através de nossos sistemas de gestão internos. O escopo do relatório abrange as principais operações da ${companyName}, incluindo aspectos ambientais, sociais e econômicos relevantes.
+
+A definição dos temas materiais foi realizada através de processo estruturado que considerou a relevância para o negócio e o impacto sobre as partes interessadas. Este processo orienta a seleção dos indicadores GRI reportados e garante o foco nos aspectos mais significativos.
+
+Os dados apresentados foram coletados e validados através de procedimentos internos de controle de qualidade, assegurando a confiabilidade das informações. Eventuais limitações ou estimativas utilizadas são devidamente indicadas no relatório.`;
+
+    default:
+      return `Conteúdo em desenvolvimento para o Relatório de Sustentabilidade ${year} da ${companyName}.`;
+  }
+}
+
+function buildGRIPrompt(report, sectionKey, sectionType, indicators, existingContent) {
+  const companyName = report.companies?.name || 'Nossa empresa';
+  const year = report.year;
+  
+  let prompt = `
+Gere conteúdo para a seção "${sectionType}" do relatório de sustentabilidade GRI ${year} da empresa ${companyName}.
+
+Contexto do relatório:
+- Empresa: ${companyName}
+- Ano: ${year}
+- Setor: ${report.companies?.sector || 'Não especificado'}
+- Versão GRI: ${report.gri_version || 'GRI Standards'}
+
+`;
+
+  if (indicators && indicators.length > 0) {
+    prompt += `
+Indicadores GRI disponíveis:
+${indicators.map(ind => `- ${ind.gri_indicators_library?.code}: ${ind.gri_indicators_library?.name} (Valor: ${ind.value || 'Não informado'})`).join('\n')}
+
+`;
   }
 
-  // Add existing content context if not regenerating
-  if (existingContent && !regenerate) {
-    prompt += `\n\nConteúdo existente para referência:\n${existingContent}`;
-    prompt += `\n\nPor favor, melhore e expanda o conteúdo existente mantendo as informações já inseridas.`;
+  if (existingContent) {
+    prompt += `
+Conteúdo existente para referência:
+${existingContent}
+
+`;
   }
 
-  prompt += `\n\nGere um conteúdo profissional, bem estruturado e alinhado aos padrões GRI. Use markdown para formatação.`;
+  prompt += `
+Instruções:
+- Gere conteúdo em português brasileiro
+- Use linguagem profissional e técnica apropriada para relatórios GRI
+- Seja específico e baseado em dados quando possível
+- Mantenha foco na transparência e prestação de contas
+- O conteúdo deve ter entre 300-600 palavras
+- Não inclua títulos ou cabeçalhos, apenas o conteúdo da seção
+`;
 
   return prompt;
 }
 
-function generateTemplateContent(sectionKey: string, reportData: any): string {
-  const companyName = reportData.companies?.name || '[Nome da Empresa]';
-  const year = reportData.year;
-
-  const templates: Record<string, string> = {
-    organizational_profile: `# Perfil Organizacional
-
-## Sobre ${companyName}
-
-${companyName} é uma organização comprometida com práticas sustentáveis e transparência em suas operações. Este relatório apresenta nosso desempenho em sustentabilidade para o ano de ${year}.
-
-### Principais Atividades
-[Descrever as principais atividades da organização]
-
-### Localização das Operações
-[Informar onde a organização opera]
-
-### Estrutura Organizacional
-[Descrever a estrutura legal e operacional]
-
-*Este conteúdo é um modelo base. Por favor, personalize com informações específicas da sua organização.*`,
-
-    strategy: `# Estratégia de Sustentabilidade
-
-## Mensagem da Liderança
-
-A sustentabilidade está no centro da estratégia de ${companyName}. Reconhecemos nossa responsabilidade em contribuir para um futuro mais sustentável.
-
-## Principais Impactos, Riscos e Oportunidades
-
-### Impactos Positivos
-[Listar principais impactos positivos]
-
-### Riscos Identificados  
-[Descrever principais riscos relacionados à sustentabilidade]
-
-### Oportunidades
-[Identificar oportunidades de melhoria e crescimento sustentável]
-
-*Este conteúdo é um modelo base. Por favor, personalize com informações específicas da sua estratégia.*`,
-
-    environmental_performance: `# Performance Ambiental
-
-## Gestão Ambiental
-
-${companyName} implementa práticas de gestão ambiental baseadas nos melhores padrões internacionais.
-
-## Principais Indicadores Ambientais
-
-### Energia
-[Reportar consumo energético e iniciativas de eficiência]
-
-### Emissões
-[Detalhar emissões de GEE por escopo]
-
-### Água
-[Informar consumo e gestão de recursos hídricos]
-
-### Resíduos
-[Descrever geração e destinação de resíduos]
-
-*Este conteúdo é um modelo base. Por favor, personalize com dados específicos da sua performance ambiental.*`
+function generateTemplateContent(sectionKey, sectionType, report) {
+  const companyName = report.companies?.name || 'Nossa empresa';
+  const year = report.year;
+  
+  const templates = {
+    overview: `Este relatório de sustentabilidade ${year} da ${companyName} apresenta nosso compromisso com práticas empresariais responsáveis e transparentes. Elaborado seguindo os padrões GRI, o documento demonstra nossa dedicação à prestação de contas junto às partes interessadas e ao desenvolvimento sustentável.`,
+    
+    methodology: `A metodologia deste relatório segue os padrões GRI (Global Reporting Initiative), garantindo comparabilidade e transparência nas informações divulgadas. O período de reporte abrange o ano de ${year}, com dados coletados através de nossos sistemas de gestão internos.`,
+    
+    governance: `Nossa estrutura de governança corporativa está alinhada com as melhores práticas de mercado, garantindo transparência, responsabilidade e prestação de contas. O Conselho de Administração e a alta gestão da ${companyName} são responsáveis pela supervisão das estratégias de sustentabilidade.`,
+    
+    environmental: `A ${companyName} reconhece a importância da gestão ambiental responsável para a sustentabilidade do negócio e da sociedade. Durante ${year}, implementamos diversas iniciativas para reduzir nosso impacto ambiental e promover a conservação dos recursos naturais.`,
+    
+    social: `Nosso compromisso social se reflete no investimento contínuo em nossos colaboradores, comunidades e stakeholders. A ${companyName} promove práticas inclusivas, desenvolvimento profissional e contribui para o bem-estar das comunidades onde atua.`,
+    
+    economic: `O desempenho econômico da ${companyName} está intrinsecamente ligado à criação de valor sustentável para todos os stakeholders. Durante ${year}, mantivemos nosso foco na geração de resultados financeiros sólidos while contributing to sustainable development.`
   };
-
-  return templates[sectionKey] || `# ${sectionKey}
-
-Conteúdo da seção ${sectionKey} para ${companyName} - ${year}.
-
-*Este é um modelo base. Por favor, personalize com informações específicas da sua organização.*`;
+  
+  return templates[sectionKey] || `Conteúdo da seção ${sectionType} em desenvolvimento para o relatório ${year} da ${companyName}.`;
 }
 
-// Generate complete HTML report
-function generateHTMLReport(data: any): string {
-  const { report, sections, indicators } = data;
+function generateHTMLReport(report, sections, indicators) {
   const companyName = report.companies?.name || 'Empresa';
   const year = report.year;
   
-  let html = `<!DOCTYPE html>
+  let html = `
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório GRI ${year} - ${companyName}</title>
+    <title>Relatório de Sustentabilidade GRI ${year} - ${companyName}</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-        .report-header {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-        .report-title { font-size: 2.5rem; margin-bottom: 0.5rem; }
-        .report-subtitle { font-size: 1.2rem; opacity: 0.9; }
-        .section {
-            background: white;
-            margin: 2rem 0;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .section h1 { color: #2563eb; border-bottom: 3px solid #e5e7eb; padding-bottom: 0.5rem; }
-        .section h2 { color: #374151; margin-top: 2rem; }
-        .metadata-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-        .metadata-item {
-            padding: 1rem;
-            background: #f3f4f6;
-            border-radius: 8px;
-            border-left: 4px solid #2563eb;
-        }
-        .metadata-label { font-weight: bold; color: #374151; margin-bottom: 0.5rem; }
-        .indicators-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-        .indicator-card {
-            padding: 1.5rem;
-            background: #f9fafb;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-        .indicator-code { font-weight: bold; color: #2563eb; margin-bottom: 0.5rem; }
-        .indicator-title { font-size: 1.1rem; margin-bottom: 1rem; color: #374151; }
-        .indicator-value { font-size: 1.3rem; font-weight: bold; color: #059669; }
-        .print-break { page-break-before: always; }
-        @media print {
-            body { background: white; }
-            .section { box-shadow: none; border: 1px solid #e5e7eb; }
-        }
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        .metadata { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .section { margin: 30px 0; }
+        .indicators { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .indicator { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+        .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <div class="report-header">
-        <h1 class="report-title">Relatório de Sustentabilidade GRI</h1>
-        <p class="report-subtitle">${companyName} • ${year}</p>
-    </div>`;
+    <h1>Relatório de Sustentabilidade GRI ${year}</h1>
+    <h2>${companyName}</h2>
+    
+    <div class="metadata">
+        <h3>Informações do Relatório</h3>
+        <p><strong>Empresa:</strong> ${companyName}</p>
+        <p><strong>Ano:</strong> ${year}</p>
+        <p><strong>Versão GRI:</strong> ${report.gri_version || 'GRI Standards'}</p>
+        <p><strong>Período:</strong> ${report.reporting_period_start} a ${report.reporting_period_end}</p>
+        <p><strong>Conclusão:</strong> ${Math.round(report.completion_percentage || 0)}%</p>
+    </div>
+`;
 
-  // Report metadata
-  html += `
-    <div class="section">
-        <h1>Informações do Relatório</h1>
-        <div class="metadata-grid">
-            <div class="metadata-item">
-                <div class="metadata-label">Padrão GRI</div>
-                <div>${report.gri_standard_version}</div>
-            </div>
-            <div class="metadata-item">
-                <div class="metadata-label">Período de Reporte</div>
-                <div>${report.reporting_period_start} a ${report.reporting_period_end}</div>
-            </div>
-            <div class="metadata-item">
-                <div class="metadata-label">Status</div>
-                <div>${report.status}</div>
-            </div>
-            <div class="metadata-item">
-                <div class="metadata-label">Progresso</div>
-                <div>${report.completion_percentage}% completo</div>
-            </div>
-        </div>`;
-
-  // Executive Summary
-  if (report.executive_summary) {
-    html += `
-        <h2>Sumário Executivo</h2>
-        <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #3b82f6;">
-            ${report.executive_summary.replace(/\n/g, '<br>')}
-        </div>`;
-  }
-
-  // CEO Message
+  // Add CEO Message if available
   if (report.ceo_message) {
     html += `
+    <div class="section">
         <h2>Mensagem da Liderança</h2>
-        <div style="background: #fefce8; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #eab308;">
-            ${report.ceo_message.replace(/\n/g, '<br>')}
-        </div>`;
+        <div>${report.ceo_message.replace(/\n/g, '<br>')}</div>
+    </div>`;
   }
 
-  html += `</div>`;
-
-  // Sections
-  if (sections.length > 0) {
-    sections.forEach((section: any) => {
-      if (section.content) {
-        html += `
-            <div class="section print-break">
-                <h1>${section.section_key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</h1>
-                <div>${section.content.replace(/\n/g, '<br>').replace(/#{1,6}\s/g, '<strong>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</div>
-            </div>`;
-      }
-    });
+  // Add Executive Summary if available
+  if (report.executive_summary) {
+    html += `
+    <div class="section">
+        <h2>Resumo Executivo</h2>
+        <div>${report.executive_summary.replace(/\n/g, '<br>')}</div>
+    </div>`;
   }
 
-  // Indicators
+  // Add sections
+  sections.forEach(section => {
+    if (section.content) {
+      html += `
+    <div class="section">
+        <h2>${section.section_title}</h2>
+        <div>${section.content.replace(/\n/g, '<br>')}</div>
+    </div>`;
+    }
+  });
+
+  // Add methodology if available
+  if (report.methodology) {
+    html += `
+    <div class="section">
+        <h2>Metodologia</h2>
+        <div>${report.methodology.replace(/\n/g, '<br>')}</div>
+    </div>`;
+  }
+
+  // Add indicators
   if (indicators.length > 0) {
     html += `
-        <div class="section print-break">
-            <h1>Indicadores GRI</h1>
-            <div class="indicators-grid">`;
+    <div class="section">
+        <h2>Indicadores GRI</h2>
+        <div class="indicators">`;
     
-    indicators.forEach((indicator: any) => {
-      if (indicator.indicator && (indicator.numeric_value || indicator.text_value || indicator.percentage_value)) {
-        let value = '';
-        if (indicator.numeric_value) value = `${indicator.numeric_value} ${indicator.indicator.unit || ''}`;
-        else if (indicator.percentage_value) value = `${indicator.percentage_value}%`;
-        else if (indicator.text_value) value = indicator.text_value;
-        
+    indicators.forEach(indicator => {
+      if (indicator.gri_indicators_library) {
         html += `
-            <div class="indicator-card">
-                <div class="indicator-code">${indicator.indicator.code}</div>
-                <div class="indicator-title">${indicator.indicator.title}</div>
-                <div class="indicator-value">${value}</div>
+            <div class="indicator">
+                <h4>${indicator.gri_indicators_library.code}</h4>
+                <p><strong>${indicator.gri_indicators_library.name}</strong></p>
+                <p>Valor: ${indicator.value || 'Não informado'}</p>
+                ${indicator.gri_indicators_library.description ? `<p><small>${indicator.gri_indicators_library.description}</small></p>` : ''}
             </div>`;
       }
     });
     
-    html += `</div></div>`;
+    html += `
+        </div>
+    </div>`;
   }
 
   html += `
-    <div class="section">
-        <h1>Informações Técnicas</h1>
-        <p><strong>Gerado em:</strong> ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
-        <p><strong>Empresa:</strong> ${companyName}</p>
-        <p><strong>CNPJ:</strong> ${report.companies?.cnpj || 'Não informado'}</p>
+    <div class="footer">
+        <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} pelo Sistema GRI</p>
+        <p>Este relatório segue os padrões GRI (Global Reporting Initiative)</p>
     </div>
 </body>
 </html>`;
