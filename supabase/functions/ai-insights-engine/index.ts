@@ -50,11 +50,16 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const authHeader = req.headers.get('Authorization')!
-    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response('Missing Authorization header', { status: 401, headers: corsHeaders })
+    }
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) {
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
+    
+    if (userError || !user) {
+      console.error('Authentication error:', userError)
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
@@ -147,13 +152,14 @@ async function fetchCompanyData(companyId: string, supabaseClient: any) {
 
 async function callOpenAIForInsights(cardType: string, cardData: any, context: any): Promise<AIInsight[]> {
   if (!openAIApiKey) {
-    console.error('OpenAI API key not found')
-    return []
+    console.error('OpenAI API key not found - returning fallback insights')
+    return generateFallbackInsights(cardType, cardData, context)
   }
 
   const prompt = buildPromptForCardType(cardType, cardData, context)
   
   try {
+    console.log('Calling OpenAI API...')
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -211,13 +217,14 @@ Retorne SEMPRE um JSON válido seguindo exatamente esta estrutura:
     });
 
     if (!response.ok) {
+      console.error(`OpenAI API error: ${response.status} ${response.statusText}`)
       throw new Error(`OpenAI API error: ${response.status}`)
     }
 
     const data = await response.json()
     const content = data.choices[0].message.content
     
-    console.log('OpenAI Raw Response:', content)
+    console.log('OpenAI Raw Response:', content.substring(0, 200) + '...')
     
     // Parse JSON response
     const parsedResponse = JSON.parse(content)
