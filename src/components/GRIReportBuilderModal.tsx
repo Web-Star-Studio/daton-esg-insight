@@ -38,6 +38,8 @@ import {
   Eye
 } from "lucide-react";
 import { SmartSkeleton } from "@/components/SmartSkeleton";
+import { AIContentGeneratorModal } from "@/components/AIContentGeneratorModal";
+import { GRIReportExportModal } from "@/components/GRIReportExportModal";
 
 interface GRIReportBuilderModalProps {
   isOpen: boolean;
@@ -64,6 +66,11 @@ export function GRIReportBuilderModal({
   const [ceoMessage, setCeoMessage] = useState(report.ceo_message || '');
   const [executiveSummary, setExecutiveSummary] = useState(report.executive_summary || '');
   const [methodology, setMethodology] = useState(report.methodology || '');
+  
+  // AI and Export modals
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<GRIReportSection | null>(null);
 
   useEffect(() => {
     if (isOpen && report.id) {
@@ -85,6 +92,11 @@ export function GRIReportBuilderModal({
       setSections(reportSections);
       setMaterialityTopics(topics);
       setSdgAlignment(sdgs);
+      
+      // Update metadata states when data loads
+      setCeoMessage(report.ceo_message || '');
+      setExecutiveSummary(report.executive_summary || '');
+      setMethodology(report.methodology || '');
     } catch (error) {
       console.error('Erro ao carregar dados do relatório:', error);
       toast.error("Erro ao carregar dados do relatório");
@@ -440,8 +452,8 @@ export function GRIReportBuilderModal({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // TODO: Implement AI content generation
-                    toast.info("Geração de conteúdo com IA em breve!");
+                    setSelectedSection(section);
+                    setIsAIModalOpen(true);
                   }}
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
@@ -501,29 +513,96 @@ export function GRIReportBuilderModal({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-muted/50">
+                  <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-blue-50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <span className="font-medium">Sistema de Exportação Avançado</span>
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      Funcionalidade de exportação em desenvolvimento. 
-                      Em breve você poderá gerar relatórios PDF completos seguindo os padrões GRI.
+                      Gere relatórios completos em diferentes formatos seguindo os padrões GRI. 
+                      Inclui prévia online, download em PDF/Word e opções de compartilhamento.
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-4">
-                    <Button variant="outline" disabled>
-                      Prévia HTML
+                  <div className="grid grid-cols-1 gap-4">
+                    <Button 
+                      onClick={() => setIsExportModalOpen(true)}
+                      className="w-full gap-2" 
+                      size="lg"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Abrir Central de Exportação
                     </Button>
-                    <Button variant="outline" disabled>
-                      Exportar PDF
-                    </Button>
-                    <Button variant="outline" disabled>
-                      Exportar Word
-                    </Button>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast.info("Use a Central de Exportação para acessar a prévia.")}
+                      >
+                        Prévia Rápida
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast.info("Use a Central de Exportação para download em PDF.")}
+                      >
+                        PDF Direto
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => toast.info("Use a Central de Exportação para compartilhar.")}
+                      >
+                        Compartilhar
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* AI Content Generator Modal */}
+        {isAIModalOpen && selectedSection && (
+          <AIContentGeneratorModal
+            isOpen={isAIModalOpen}
+            onClose={() => {
+              setIsAIModalOpen(false);
+              setSelectedSection(null);
+            }}
+            reportId={report.id}
+            sectionType={selectedSection.section_key}
+            sectionTitle={selectedSection.title}
+            currentContent={selectedSection.content || ''}
+            onContentGenerated={(content) => {
+              const updatedSections = sections.map(s => 
+                s.id === selectedSection.id 
+                  ? { ...s, content, ai_generated_content: true }
+                  : s
+              );
+              setSections(updatedSections);
+              
+              // Save to database
+              createOrUpdateGRIReportSection(report.id, selectedSection.section_key, {
+                content,
+                is_complete: content.length > 50,
+                completion_percentage: content.length > 50 ? 100 : content.length > 0 ? 50 : 0,
+                ai_generated_content: true,
+              }).then(() => {
+                calculateReportCompletion(report.id);
+              });
+            }}
+          />
+        )}
+        
+        {/* Export Modal */}
+        <GRIReportExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          report={report}
+        />
       </DialogContent>
     </Dialog>
   );

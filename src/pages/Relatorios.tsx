@@ -198,7 +198,7 @@ const Relatorios = () => {
                     </TableHeader>
                     <TableBody>
                       {griReports.map((report) => (
-                        <TableRow key={report.id}>
+                        <TableRow key={`gri-report-${report.id}`}>
                           <TableCell className="font-medium">{report.title}</TableCell>
                           <TableCell>{report.year}</TableCell>
                           <TableCell>
@@ -282,7 +282,7 @@ const Relatorios = () => {
                       </TableHeader>
                       <TableBody>
                         {getFilteredReports().map((report) => (
-                          <TableRow key={report.id}>
+                          <TableRow key={`traditional-report-${report.id}`}>
                             <TableCell className="font-medium">{report.titulo}</TableCell>
                             <TableCell>{report.tipo}</TableCell>
                             <TableCell>{report.periodo}</TableCell>
