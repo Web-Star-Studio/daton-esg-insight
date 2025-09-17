@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { GRIReport, createGRIReport, initializeGRIReport } from "@/services/griReports";
+import { GRIReport, createGRIReport, initializeGRIReport, getGRIReports } from "@/services/griReports";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CreateGRIReportModalProps {
   isOpen: boolean;
@@ -26,6 +27,35 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingReport, setExistingReport] = useState<GRIReport | null>(null);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+
+  const checkForDuplicateYear = async (selectedYear: number) => {
+    if (!selectedYear) return;
+    
+    setIsCheckingDuplicates(true);
+    try {
+      const reports = await getGRIReports();
+      const duplicate = reports.find(r => r.year === selectedYear);
+      setExistingReport(duplicate || null);
+    } catch (error) {
+      console.error('Erro ao verificar relatórios existentes:', error);
+    } finally {
+      setIsCheckingDuplicates(false);
+    }
+  };
+
+  const handleYearChange = (newYear: number) => {
+    setYear(newYear);
+    checkForDuplicateYear(newYear);
+  };
+
+  const handleOpenExisting = () => {
+    if (existingReport) {
+      onSubmit(existingReport);
+      onClose();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,10 +65,19 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
       return;
     }
 
+    if (existingReport) {
+      const confirmed = window.confirm(
+        `Já existe um relatório GRI para o ano ${year}. Deseja continuar criando um novo relatório?`
+      );
+      if (!confirmed) return;
+    }
+
     setIsSubmitting(true);
+    let createdReport: GRIReport | null = null;
+    
     try {
       // Create the report
-      const createdReport = await createGRIReport({
+      createdReport = await createGRIReport({
         title,
         year,
         gri_standard_version: griVersion,
@@ -48,10 +87,24 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
         completion_percentage: 0,
       });
 
-      // Initialize with mandatory indicators and default sections
-      await initializeGRIReport(createdReport.id);
-      
       toast.success("Relatório GRI criado com sucesso!");
+      
+      // Try to initialize - but don't fail the creation if this fails
+      try {
+        await initializeGRIReport(createdReport.id);
+        toast.success("Relatório inicializado com indicadores padrão!");
+      } catch (initError) {
+        console.error('Erro ao inicializar relatório:', initError);
+        const errorMessage = initError instanceof Error ? initError.message : 'Erro desconhecido';
+        console.log('Detalhes do erro de inicialização:', {
+          error: initError,
+          code: (initError as any)?.code,
+          details: (initError as any)?.details,
+          message: (initError as any)?.message
+        });
+        toast.warning("Relatório criado, mas houve erro na inicialização. Você pode adicionar indicadores manualmente.");
+      }
+      
       onSubmit(createdReport);
       
       // Reset form
@@ -60,9 +113,29 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
       setGriVersion("2023");
       setStartDate(undefined);
       setEndDate(undefined);
+      setExistingReport(null);
     } catch (error) {
       console.error('Erro ao criar relatório:', error);
-      toast.error("Erro ao criar relatório. Tente novamente.");
+      console.log('Detalhes do erro:', {
+        error,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        message: (error as any)?.message
+      });
+      
+      let errorMessage = "Erro ao criar relatório. Tente novamente.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          errorMessage = `Já existe um relatório para o ano ${year}. Tente um ano diferente ou edite o existente.`;
+        } else if (error.message.includes('company_id')) {
+          errorMessage = "Erro: empresa não identificada. Verifique seu perfil de usuário.";
+        } else {
+          errorMessage = `Erro: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,11 +167,15 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
                 id="year"
                 type="number"
                 value={year}
-                onChange={(e) => setYear(parseInt(e.target.value))}
+                onChange={(e) => handleYearChange(parseInt(e.target.value))}
                 min="2020"
                 max="2030"
                 required
+                disabled={isCheckingDuplicates}
               />
+              {isCheckingDuplicates && (
+                <p className="text-xs text-muted-foreground">Verificando relatórios existentes...</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -170,6 +247,22 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
               </Popover>
             </div>
           </div>
+
+          {existingReport && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Já existe um relatório GRI para {year}: "{existingReport.title}". 
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto font-normal underline" 
+                  onClick={handleOpenExisting}
+                >
+                  Abrir relatório existente
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>

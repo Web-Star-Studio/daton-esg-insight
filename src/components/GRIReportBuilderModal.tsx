@@ -115,14 +115,26 @@ export function GRIReportBuilderModal({
         methodology: methodology,
       });
       
-      // Recalculate completion
+      // Recalculate completion and reload data
       await calculateReportCompletion(report.id);
+      await loadReportData();
       
       toast.success("Metadados salvos com sucesso!");
       onUpdate();
     } catch (error) {
       console.error('Erro ao salvar metadados:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao salvar';
+      console.log('Detalhes do erro de salvamento:', {
+        error,
+        code: (error as any)?.code,
+        details: (error as any)?.details,
+        message: (error as any)?.message
+      });
+      
+      let errorMessage = 'Erro desconhecido ao salvar metadados';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast.error(`Erro ao salvar metadados: ${errorMessage}`);
     } finally {
       setIsSaving(false);
