@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,12 +42,12 @@ serve(async (req) => {
       });
     }
 
-    const { action, reportId, sectionKey, sectionType, regenerate, metadataType } = await req.json();
+    const { action, reportId, sectionKey, sectionType, regenerate, metadataType, format } = await req.json();
     
     console.log(`GRI content generator called with action: ${action}, reportId: ${reportId}`);
 
     if (action === 'preview' || action === 'export') {
-      return await handleReportGeneration(supabaseClient, reportId, action);
+      return await handleReportGeneration(supabaseClient, reportId, action, format);
     } else if (metadataType) {
       // Handle metadata generation
       return await handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, metadataType);
@@ -74,16 +75,10 @@ async function handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, 
   console.log(`Generating metadata for type: ${metadataType}`);
   
   try {
-    // Fetch report and company data
+    // Fetch report data
     const { data: report, error: reportError } = await supabaseClient
       .from('gri_reports')
-      .select(`
-        *,
-        companies (
-          name,
-          sector
-        )
-      `)
+      .select('*')
       .eq('id', reportId)
       .single();
 
@@ -94,6 +89,16 @@ async function handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Fetch company data separately
+    const { data: company, error: companyError } = await supabaseClient
+      .from('companies')
+      .select('name, sector')
+      .eq('id', report.company_id)
+      .single();
+
+    // Attach company data to report
+    report.companies = company;
 
     // Generate content using AI
     const content = await generateMetadataContent(openaiApiKey, report, metadataType);
@@ -115,16 +120,10 @@ async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, s
   console.log(`Generating GRI content for section: ${sectionKey}, type: ${sectionType}`);
   
   try {
-    // Fetch report and company data
+    // Fetch report data
     const { data: report, error: reportError } = await supabaseClient
       .from('gri_reports')
-      .select(`
-        *,
-        companies (
-          name,
-          sector
-        )
-      `)
+      .select('*')
       .eq('id', reportId)
       .single();
 
@@ -135,6 +134,16 @@ async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, s
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Fetch company data separately
+    const { data: company, error: companyError } = await supabaseClient
+      .from('companies')
+      .select('name, sector')
+      .eq('id', report.company_id)
+      .single();
+
+    // Attach company data to report
+    report.companies = company;
 
     // Fetch relevant GRI indicators
     const { data: indicators } = await supabaseClient
@@ -200,27 +209,30 @@ async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, s
   }
 }
 
-async function handleReportGeneration(supabaseClient, reportId, action) {
-  console.log(`Generating full report for action: ${action}`);
+async function handleReportGeneration(supabaseClient, reportId, action, format = null) {
+  console.log(`Generating full report for action: ${action}, format: ${format}`);
   
   try {
     // Fetch complete report data
     const { data: report, error: reportError } = await supabaseClient
       .from('gri_reports')
-      .select(`
-        *,
-        companies (
-          name,
-          sector,
-          cnpj
-        )
-      `)
+      .select('*')
       .eq('id', reportId)
       .single();
 
     if (reportError || !report) {
       throw new Error('Report not found');
     }
+
+    // Fetch company data separately
+    const { data: company, error: companyError } = await supabaseClient
+      .from('companies')
+      .select('name, sector, cnpj')
+      .eq('id', report.company_id)
+      .single();
+
+    // Attach company data to report
+    report.companies = company;
 
     // Fetch report sections
     const { data: sections } = await supabaseClient
@@ -244,7 +256,20 @@ async function handleReportGeneration(supabaseClient, reportId, action) {
       .eq('report_id', reportId)
       .order('indicator_id');
 
-    // Generate HTML report
+    // Handle PDF export
+    if (action === 'export' && format === 'pdf') {
+      const pdfBuffer = await generatePDFReport(report, sections || [], indicators || []);
+      const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+      
+      return new Response(JSON.stringify({ pdfBase64 }), {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        },
+      });
+    }
+
+    // Generate HTML report (default)
     const htmlContent = generateHTMLReport(report, sections || [], indicators || []);
 
     return new Response(htmlContent, {
@@ -523,6 +548,189 @@ function generateTemplateContent(sectionKey, sectionType, report) {
   };
   
   return templates[sectionKey] || `Conteúdo da seção ${sectionType} em desenvolvimento para o relatório ${year} da ${companyName}.`;
+}
+
+async function generatePDFReport(report, sections, indicators) {
+  const pdfDoc = await PDFDocument.create();
+  const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+  const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+  
+  const companyName = report.companies?.name || 'Empresa';
+  const year = report.year;
+  
+  // Cover page
+  let page = pdfDoc.addPage([595.28, 841.89]); // A4 size
+  const { width, height } = page.getSize();
+  
+  // Title
+  page.drawText('Relatório de Sustentabilidade GRI', {
+    x: 50,
+    y: height - 150,
+    size: 24,
+    font: timesRomanBold,
+    color: rgb(0.17, 0.24, 0.31),
+  });
+  
+  page.drawText(`${companyName} - ${year}`, {
+    x: 50,
+    y: height - 200,
+    size: 18,
+    font: timesRomanFont,
+    color: rgb(0.2, 0.28, 0.36),
+  });
+  
+  // Report info
+  const reportInfo = [
+    `Versão GRI: ${report.gri_standard_version || 'GRI Standards'}`,
+    `Período: ${report.reporting_period_start} a ${report.reporting_period_end}`,
+    `Conclusão: ${Math.round(report.completion_percentage || 0)}%`,
+    `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`
+  ];
+  
+  let yPosition = height - 280;
+  reportInfo.forEach(info => {
+    page.drawText(info, {
+      x: 50,
+      y: yPosition,
+      size: 12,
+      font: timesRomanFont,
+    });
+    yPosition -= 25;
+  });
+  
+  // Content pages
+  yPosition = height - 100;
+  const pageMargin = 50;
+  const lineHeight = 20;
+  const maxWidth = width - (pageMargin * 2);
+  
+  // Add CEO Message if available
+  if (report.ceo_message) {
+    if (yPosition < 150) {
+      page = pdfDoc.addPage([595.28, 841.89]);
+      yPosition = height - 100;
+    }
+    
+    page.drawText('Mensagem da Liderança', {
+      x: pageMargin,
+      y: yPosition,
+      size: 16,
+      font: timesRomanBold,
+      color: rgb(0.17, 0.24, 0.31),
+    });
+    yPosition -= 30;
+    
+    const messageLines = wrapText(report.ceo_message, maxWidth, 11, timesRomanFont);
+    for (const line of messageLines) {
+      if (yPosition < 50) {
+        page = pdfDoc.addPage([595.28, 841.89]);
+        yPosition = height - 50;
+      }
+      page.drawText(line, {
+        x: pageMargin,
+        y: yPosition,
+        size: 11,
+        font: timesRomanFont,
+      });
+      yPosition -= lineHeight;
+    }
+    yPosition -= 20;
+  }
+  
+  // Add sections
+  sections.forEach(section => {
+    if (section.content && yPosition < 150) {
+      page = pdfDoc.addPage([595.28, 841.89]);
+      yPosition = height - 100;
+    }
+    
+    if (section.content) {
+      page.drawText(section.section_title, {
+        x: pageMargin,
+        y: yPosition,
+        size: 16,
+        font: timesRomanBold,
+        color: rgb(0.17, 0.24, 0.31),
+      });
+      yPosition -= 30;
+      
+      const contentLines = wrapText(section.content, maxWidth, 11, timesRomanFont);
+      for (const line of contentLines) {
+        if (yPosition < 50) {
+          page = pdfDoc.addPage([595.28, 841.89]);
+          yPosition = height - 50;
+        }
+        page.drawText(line, {
+          x: pageMargin,
+          y: yPosition,
+          size: 11,
+          font: timesRomanFont,
+        });
+        yPosition -= lineHeight;
+      }
+      yPosition -= 20;
+    }
+  });
+  
+  // Add indicators summary
+  if (indicators.length > 0) {
+    if (yPosition < 200) {
+      page = pdfDoc.addPage([595.28, 841.89]);
+      yPosition = height - 100;
+    }
+    
+    page.drawText('Indicadores GRI', {
+      x: pageMargin,
+      y: yPosition,
+      size: 16,
+      font: timesRomanBold,
+      color: rgb(0.17, 0.24, 0.31),
+    });
+    yPosition -= 30;
+    
+    indicators.slice(0, 10).forEach(indicator => { // Limit to first 10 indicators
+      if (indicator.gri_indicators_library && yPosition > 50) {
+        page.drawText(`${indicator.gri_indicators_library.code}: ${indicator.value || 'Não informado'}`, {
+          x: pageMargin,
+          y: yPosition,
+          size: 10,
+          font: timesRomanFont,
+        });
+        yPosition -= 15;
+      }
+    });
+  }
+  
+  return await pdfDoc.save();
+}
+
+// Helper function to wrap text
+function wrapText(text, maxWidth, fontSize, font) {
+  const words = text.replace(/\n+/g, ' ').split(' ');
+  const lines = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+    const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+    
+    if (textWidth <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        lines.push(word); // Word is too long, add it anyway
+      }
+    }
+  }
+  
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  return lines;
 }
 
 function generateHTMLReport(report, sections, indicators) {

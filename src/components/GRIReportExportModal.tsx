@@ -62,38 +62,72 @@ export const GRIReportExportModal: React.FC<GRIReportExportModalProps> = ({ isOp
 
       if (error) {
         console.error('Export error details:', error);
-        throw new Error(`Erro na exportação: ${error.message || 'Função edge retornou erro'}`);
+        
+        // Provide specific error messages based on response
+        let errorMessage = 'Erro desconhecido na exportação';
+        if (error.message?.includes('Report not found') || error.message?.includes('404')) {
+          errorMessage = 'Relatório não encontrado. Verifique se o relatório existe e tente novamente.';
+        } else if (error.message?.includes('422')) {
+          errorMessage = 'Dados do relatório inválidos. Verifique se todos os campos obrigatórios estão preenchidos.';
+        } else if (error.message?.includes('500')) {
+          errorMessage = 'Erro interno do servidor. Tente novamente em alguns instantes.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!data) {
         throw new Error('Nenhum conteúdo foi retornado pela função de exportação');
       }
 
-      // For now, create HTML file for all formats since the edge function returns HTML
-      const htmlContent = typeof data === 'string' ? data : data.content || JSON.stringify(data);
-      
-      const blob = new Blob([htmlContent], { 
-        type: 'text/html'
-      });
-      
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Relatório_GRI_${report.title.replace(/\s+/g, '_')}_${report.year}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Handle PDF export
+      if (type === 'pdf' && data.pdfBase64) {
+        const pdfBytes = Uint8Array.from(atob(data.pdfBase64), c => c.charCodeAt(0));
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Relatório_GRI_${report.title.replace(/\s+/g, '_')}_${report.year}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Sucesso",
+          description: "Relatório PDF exportado com sucesso!",
+        });
+      } else {
+        // Handle HTML and other formats
+        const htmlContent = typeof data === 'string' ? data : data.content || JSON.stringify(data);
+        
+        const blob = new Blob([htmlContent], { 
+          type: type === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html'
+        });
+        
+        const extension = type === 'docx' ? 'docx' : 'html';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Relatório_GRI_${report.title.replace(/\s+/g, '_')}_${report.year}.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-      let successMessage = 'Relatório exportado com sucesso!';
-      if (type === 'pdf') {
-        successMessage += ' Use "Imprimir > Salvar como PDF" no navegador para converter.';
+        let successMessage = 'Relatório exportado com sucesso!';
+        if (type === 'docx') {
+          successMessage += ' Abra o arquivo em um editor de texto para melhor formatação.';
+        }
+        
+        toast({
+          title: "Sucesso",
+          description: successMessage,
+        });
       }
-      
-      toast({
-        title: "Sucesso",
-        description: successMessage,
-      });
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao exportar';
