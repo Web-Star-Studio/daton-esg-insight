@@ -40,8 +40,8 @@ const getGoals = async () => {
   const { data, error } = await supabase
     .from('goals')
     .select('*')
-    .eq('status', 'active')
-    .order('target_date', { ascending: true });
+    .eq('status', 'No Caminho Certo')
+    .order('deadline_date', { ascending: true });
 
   if (error) throw error;
   return data || [];
@@ -62,35 +62,29 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
     const targetValue = goal.target_value;
     const currentValue = currentEmissions;
     
-    if (goal.goal_type === 'reduce_emissions') {
-      const totalReduction = startValue - targetValue;
-      const currentReduction = startValue - currentValue;
-      return Math.min(100, Math.max(0, (currentReduction / totalReduction) * 100));
-    } else {
-      // For increase goals (like renewable energy %)
-      const totalIncrease = targetValue - startValue;
-      const currentIncrease = currentValue - startValue;
-      return Math.min(100, Math.max(0, (currentIncrease / totalIncrease) * 100));
-    }
+    // For emission reduction goals
+    const totalReduction = startValue - targetValue;
+    const currentReduction = startValue - currentValue;
+    return Math.min(100, Math.max(0, (currentReduction / totalReduction) * 100));
   };
 
   const getGoalStatus = (goal: any) => {
     const progress = calculateProgress(goal);
-    const daysRemaining = differenceInDays(new Date(goal.target_date), new Date());
-    const monthsTotal = differenceInMonths(new Date(goal.target_date), new Date(goal.created_at));
-    const monthsElapsed = monthsTotal - differenceInMonths(new Date(goal.target_date), new Date());
+    const daysRemaining = differenceInDays(new Date(goal.deadline_date), new Date());
+    const monthsTotal = differenceInMonths(new Date(goal.deadline_date), new Date(goal.created_at));
+    const monthsElapsed = monthsTotal - differenceInMonths(new Date(goal.deadline_date), new Date());
     const expectedProgress = monthsTotal > 0 ? (monthsElapsed / monthsTotal) * 100 : 0;
 
-    if (progress >= 100) return { status: 'completed', color: 'success', icon: CheckCircle2 };
+    if (progress >= 100) return { status: 'completed', color: 'secondary', icon: CheckCircle2 };
     if (daysRemaining < 0) return { status: 'overdue', color: 'destructive', icon: AlertTriangle };
     if (progress < expectedProgress - 20) return { status: 'at_risk', color: 'destructive', icon: AlertTriangle };
-    if (progress < expectedProgress - 10) return { status: 'behind', color: 'warning', icon: Clock };
-    if (progress >= expectedProgress + 10) return { status: 'ahead', color: 'success', icon: TrendingUp };
-    return { status: 'on_track', color: 'primary', icon: Target };
+    if (progress < expectedProgress - 10) return { status: 'behind', color: 'secondary', icon: Clock };
+    if (progress >= expectedProgress + 10) return { status: 'ahead', color: 'secondary', icon: TrendingUp };
+    return { status: 'on_track', color: 'default', icon: Target };
   };
 
   const generateProgressChart = (goal: any) => {
-    const monthsTotal = differenceInMonths(new Date(goal.target_date), new Date(goal.created_at));
+    const monthsTotal = differenceInMonths(new Date(goal.deadline_date), new Date(goal.created_at));
     const currentProgress = calculateProgress(goal);
     
     return Array.from({ length: monthsTotal + 1 }, (_, i) => {
@@ -106,9 +100,8 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
     });
   };
 
-  const priorityGoals = goals?.filter(goal => goal.priority === 'high') || [];
   const activeGoals = goals?.filter(goal => {
-    const daysRemaining = differenceInDays(new Date(goal.target_date), new Date());
+    const daysRemaining = differenceInDays(new Date(goal.deadline_date), new Date());
     return daysRemaining >= 0;
   }) || [];
 
@@ -123,7 +116,7 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Metas Ativas</p>
                 <p className="text-2xl font-bold">
-                  {loading ? <SmartSkeleton variant="text" className="w-8 h-6" /> : activeGoals.length}
+                  {loading ? <SmartSkeleton variant="card" className="w-8 h-6" /> : activeGoals.length}
                 </p>
                 <p className="text-xs text-muted-foreground">em progresso</p>
               </div>
@@ -134,11 +127,11 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
-              <Award className="h-4 w-4 text-success" />
+              <Award className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Concluídas</p>
                 <p className="text-2xl font-bold">
-                  {loading ? <SmartSkeleton variant="text" className="w-8 h-6" /> : 
+                  {loading ? <SmartSkeleton variant="card" className="w-8 h-6" /> : 
                    goals?.filter(g => calculateProgress(g) >= 100).length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">100% atingidas</p>
@@ -150,11 +143,11 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
+              <AlertTriangle className="h-4 w-4 text-secondary" />
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Em Risco</p>
                 <p className="text-2xl font-bold">
-                  {loading ? <SmartSkeleton variant="text" className="w-8 h-6" /> : 
+                  {loading ? <SmartSkeleton variant="card" className="w-8 h-6" /> : 
                    goals?.filter(g => getGoalStatus(g).status === 'at_risk').length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">requer atenção</p>
@@ -166,13 +159,13 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-info" />
+              <Calendar className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Próximo Prazo</p>
                 <p className="text-2xl font-bold">
-                  {loading ? <SmartSkeleton variant="text" className="w-16 h-6" /> : 
+                  {loading ? <SmartSkeleton variant="card" className="w-16 h-6" /> : 
                    activeGoals.length > 0 ? 
-                   Math.min(...activeGoals.map(g => differenceInDays(new Date(g.target_date), new Date()))) + 'd' : 
+                   Math.min(...activeGoals.map(g => differenceInDays(new Date(g.deadline_date), new Date()))) + 'd' : 
                    'N/A'}
                 </p>
                 <p className="text-xs text-muted-foreground">dias restantes</p>
@@ -192,32 +185,29 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
         </CardHeader>
         <CardContent>
           {loading ? (
-            <SmartSkeleton variant="list" items={3} className="space-y-4" />
+            <SmartSkeleton variant="list" className="space-y-4" />
           ) : activeGoals.length > 0 ? (
             <div className="space-y-4">
               {activeGoals.map((goal, index) => {
                 const progress = calculateProgress(goal);
                 const status = getGoalStatus(goal);
                 const StatusIcon = status.icon;
-                const daysRemaining = differenceInDays(new Date(goal.target_date), new Date());
+                const daysRemaining = differenceInDays(new Date(goal.deadline_date), new Date());
 
                 return (
                   <div key={index} className="p-4 rounded-lg border space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="font-semibold">{goal.title || `Meta de ${goal.goal_type}`}</h4>
-                          <Badge variant={status.color as any} className="flex items-center space-x-1">
+                          <h4 className="font-semibold">{goal.name || `Meta de redução de emissões`}</h4>
+                          <Badge variant={status.color as "default" | "destructive" | "secondary" | "outline"} className="flex items-center space-x-1">
                             <StatusIcon className="h-3 w-3" />
                             <span className="capitalize">{status.status.replace('_', ' ')}</span>
                           </Badge>
-                          {goal.priority === 'high' && (
-                            <Badge variant="destructive" size="sm">Alta Prioridade</Badge>
-                          )}
                         </div>
                         
                         <p className="text-sm text-muted-foreground mb-2">
-                          {goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${format(new Date(goal.target_date), 'dd/MM/yyyy')}`}
+                          {goal.description || `Reduzir emissões para ${goal.target_value} tCO₂e até ${format(new Date(goal.deadline_date), 'dd/MM/yyyy')}`}
                         </p>
                         
                         <div className="flex items-center space-x-4 text-sm">
@@ -270,7 +260,7 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
                             strokeWidth={2}
                             name="Atual"
                           />
-                          <ReferenceLine y={100} stroke="hsl(var(--success))" strokeDasharray="3 3" />
+                          <ReferenceLine y={100} stroke="hsl(var(--primary))" strokeDasharray="3 3" />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -291,50 +281,6 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
         </CardContent>
       </Card>
 
-      {/* Priority Goals Dashboard */}
-      {priorityGoals.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5" />
-              <span>Metas de Alta Prioridade</span>
-              <Badge variant="destructive" className="ml-auto">
-                Críticas
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {priorityGoals.slice(0, 4).map((goal, index) => {
-                const progress = calculateProgress(goal);
-                const status = getGoalStatus(goal);
-                const StatusIcon = status.icon;
-
-                return (
-                  <div key={index} className="p-4 rounded-lg border-2 border-destructive/20 bg-destructive/5">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <StatusIcon className="h-4 w-4 text-destructive" />
-                      <span className="font-semibold text-sm">{goal.title || `Meta ${index + 1}`}</span>
-                    </div>
-                    
-                    <div className="text-xs text-muted-foreground mb-2">
-                      Prazo: {format(new Date(goal.target_date), 'dd/MM/yyyy')}
-                    </div>
-                    
-                    <Progress value={progress} className="h-1 mb-2" />
-                    
-                    <div className="flex justify-between text-xs">
-                      <span>{progress.toFixed(0)}% concluído</span>
-                      <span className="font-medium">{goal.target_value} tCO₂e</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Action Items */}
       <Card>
         <CardHeader>
@@ -346,18 +292,18 @@ export function GoalTrackingWidget({ currentEmissions, isLoading }: GoalTracking
         <CardContent>
           <div className="space-y-3">
             {goals?.filter(g => getGoalStatus(g).status === 'at_risk').map((goal, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-warning/10">
-                <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
+              <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/10">
+                <AlertTriangle className="h-4 w-4 text-secondary mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Meta em risco: {goal.title}</p>
+                  <p className="text-sm font-medium">Meta em risco: {goal.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Acelerar ações de redução para atingir {goal.target_value} tCO₂e até {format(new Date(goal.target_date), 'dd/MM/yyyy')}
+                    Acelerar ações de redução para atingir {goal.target_value} tCO₂e até {format(new Date(goal.deadline_date), 'dd/MM/yyyy')}
                   </p>
                 </div>
               </div>
             )) || (
               <div className="text-center py-4 text-muted-foreground">
-                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary" />
                 <p className="text-sm">Todas as metas estão no caminho certo!</p>
               </div>
             )}

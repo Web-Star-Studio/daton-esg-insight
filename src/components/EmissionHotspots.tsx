@@ -21,8 +21,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Treemap,
-  Cell
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from "recharts";
 
 interface EmissionSource {
@@ -47,7 +49,7 @@ interface EmissionHotspotsProps {
 export function EmissionHotspots({ sources, categories, isLoading }: EmissionHotspotsProps) {
   const getHotspotLevel = (percentage: number) => {
     if (percentage >= 50) return { level: 'critical', color: 'destructive', icon: AlertTriangle };
-    if (percentage >= 25) return { level: 'high', color: 'warning', icon: Flame };
+    if (percentage >= 25) return { level: 'high', color: 'secondary', icon: Flame };
     if (percentage >= 10) return { level: 'medium', color: 'default', icon: TrendingUp };
     return { level: 'low', color: 'secondary', icon: Target };
   };
@@ -59,7 +61,7 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
     return Building2;
   };
 
-  const treeMapData = categories.map((cat, index) => ({
+  const chartData = categories.map((cat, index) => ({
     name: cat.category,
     value: cat.emissions,
     percentage: cat.percentage,
@@ -90,7 +92,7 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <SmartSkeleton variant="list" items={5} className="space-y-3" />
+            <SmartSkeleton variant="list" className="space-y-3" />
           ) : (
             <div className="space-y-4">
               {sources.map((source, index) => {
@@ -103,7 +105,7 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
                       <div className="p-2 rounded-full bg-muted">
                         <IconComponent className="h-4 w-4" />
                       </div>
-                      <Badge variant={hotspot.color as any} size="sm">
+                      <Badge variant={hotspot.color as "default" | "destructive" | "secondary" | "outline"}>
                         {hotspot.level.toUpperCase()}
                       </Badge>
                     </div>
@@ -118,7 +120,7 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
                       <p className="text-sm text-muted-foreground">{source.percentage}% do total</p>
                     </div>
                     
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -129,12 +131,12 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
         </CardContent>
       </Card>
 
-      {/* Category TreeMap */}
+      {/* Category Breakdown Chart */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Building2 className="h-5 w-5" />
-            <span>Mapa de Emissões por Categoria</span>
+            <span>Distribuição por Categoria</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -143,49 +145,25 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
               <SmartSkeleton variant="chart" className="h-full" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <Treemap
-                  data={treeMapData}
-                  dataKey="value"
-                  aspectRatio={4/3}
-                  stroke="hsl(var(--border))"
-                  content={({ x, y, width, height, name, value, percentage, fill }) => (
-                    <g>
-                      <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        fill={fill}
-                        stroke="hsl(var(--border))"
-                        strokeWidth={2}
-                        rx={4}
-                      />
-                      {width > 60 && height > 40 && (
-                        <>
-                          <text
-                            x={x + width / 2}
-                            y={y + height / 2 - 8}
-                            textAnchor="middle"
-                            fill="white"
-                            fontSize="12"
-                            fontWeight="bold"
-                          >
-                            {name}
-                          </text>
-                          <text
-                            x={x + width / 2}
-                            y={y + height / 2 + 8}
-                            textAnchor="middle"
-                            fill="white"
-                            fontSize="10"
-                          >
-                            {percentage}%
-                          </text>
-                        </>
-                      )}
-                    </g>
-                  )}
-                />
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ percentage }) => `${percentage}%`}
+                    outerRadius={80}
+                    innerRadius={40}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => [`${value.toFixed(1)} tCO₂e`, 'Emissões']} />
+                  <Legend />
+                </PieChart>
               </ResponsiveContainer>
             )}
           </div>
@@ -202,7 +180,7 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <SmartSkeleton variant="list" items={3} className="space-y-4" />
+            <SmartSkeleton variant="list" className="space-y-4" />
           ) : (
             <div className="space-y-4">
               {reductionOpportunities.map((opportunity, index) => (
@@ -216,7 +194,6 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
                             opportunity.implementation_effort === 'high' ? 'destructive' :
                             opportunity.implementation_effort === 'medium' ? 'default' : 'secondary'
                           }
-                          size="sm"
                         >
                           {opportunity.implementation_effort === 'high' ? 'Alto Esforço' :
                            opportunity.implementation_effort === 'medium' ? 'Médio Esforço' : 'Baixo Esforço'}
@@ -232,14 +209,14 @@ export function EmissionHotspots({ sources, categories, isLoading }: EmissionHot
                         </div>
                         <div>
                           <span className="text-muted-foreground">Redução potencial:</span>
-                          <span className="font-medium ml-1 text-success">
+                          <span className="font-medium ml-1 text-primary">
                             -{opportunity.reduction_potential.toFixed(1)}%
                           </span>
                         </div>
                       </div>
                     </div>
                     
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline">
                       Analisar
                     </Button>
                   </div>

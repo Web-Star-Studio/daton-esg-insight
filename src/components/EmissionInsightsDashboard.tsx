@@ -52,7 +52,7 @@ export function EmissionInsightsDashboard({ dateRange, emissionData }: EmissionI
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Intensidade de Carbono</p>
                 <p className="text-2xl font-bold">
-                  {isLoading ? <SmartSkeleton variant="text" className="w-16 h-6" /> : 
+                  {isLoading ? <SmartSkeleton variant="card" className="w-16 h-6" /> : 
                    `${summary?.intensity?.toFixed(2) || 0}`}
                 </p>
                 <p className="text-xs text-muted-foreground">tCO₂e/unidade</p>
@@ -64,16 +64,16 @@ export function EmissionInsightsDashboard({ dateRange, emissionData }: EmissionI
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
-              <Target className="h-4 w-4 text-success" />
+              <Target className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Tendência</p>
                 <p className="text-2xl font-bold flex items-center">
-                  {isLoading ? <SmartSkeleton variant="text" className="w-16 h-6" /> : (
+                  {isLoading ? <SmartSkeleton variant="card" className="w-16 h-6" /> : (
                     <>
                       {summary?.trend > 0 ? (
                         <TrendingUp className="h-5 w-5 text-destructive mr-1" />
                       ) : (
-                        <TrendingDown className="h-5 w-5 text-success mr-1" />
+                        <TrendingDown className="h-5 w-5 text-primary mr-1" />
                       )}
                       {Math.abs(summary?.trend || 0).toFixed(1)}%
                     </>
@@ -88,11 +88,11 @@ export function EmissionInsightsDashboard({ dateRange, emissionData }: EmissionI
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
-              <Zap className="h-4 w-4 text-warning" />
+              <Zap className="h-4 w-4 text-secondary" />
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Oportunidades</p>
                 <p className="text-2xl font-bold">
-                  {isLoading ? <SmartSkeleton variant="text" className="w-16 h-6" /> : 
+                  {isLoading ? <SmartSkeleton variant="card" className="w-16 h-6" /> : 
                    recommendations.filter(r => r.priority === 'high').length}
                 </p>
                 <p className="text-xs text-muted-foreground">alta prioridade</p>
@@ -104,11 +104,11 @@ export function EmissionInsightsDashboard({ dateRange, emissionData }: EmissionI
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2">
-              <BarChart3 className="h-4 w-4 text-info" />
+              <BarChart3 className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Qualidade dos Dados</p>
                 <p className="text-2xl font-bold flex items-center">
-                  <CheckCircle2 className="h-5 w-5 text-success mr-1" />
+                  <CheckCircle2 className="h-5 w-5 text-primary mr-1" />
                   95%
                 </p>
                 <p className="text-xs text-muted-foreground">completude</p>

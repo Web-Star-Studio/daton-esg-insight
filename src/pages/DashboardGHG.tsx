@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { SmartSkeleton } from "@/components/SmartSkeleton"
+import { EmissionInsightsDashboard } from "@/components/EmissionInsightsDashboard"
 import { TrendingDown, CalendarIcon, RefreshCw } from "lucide-react"
 import { format, addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
@@ -471,6 +472,12 @@ const DashboardGHG = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Enhanced Analytics Dashboard */}
+        <EmissionInsightsDashboard 
+          dateRange={dateRange?.from && dateRange?.to ? dateRange as { from: Date; to: Date } : undefined}
+          emissionData={emissionsData || []}
+        />
       </div>
     </MainLayout>
   )

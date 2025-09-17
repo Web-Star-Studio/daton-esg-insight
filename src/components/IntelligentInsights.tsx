@@ -69,9 +69,9 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
 
   const getInsightColor = (type: string, impact?: string) => {
     if (type === 'alert') return 'destructive';
-    if (type === 'achievement') return 'success';
-    if (type === 'opportunity') return 'primary';
-    return impact === 'high' ? 'warning' : 'secondary';
+    if (type === 'achievement') return 'secondary';
+    if (type === 'opportunity') return 'default';
+    return impact === 'high' ? 'secondary' : 'outline';
   };
 
   const getPriorityColor = (priority: string) => {
@@ -121,8 +121,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2 mb-2">
                         <Badge 
-                          variant={getInsightColor(insight.type, insight.impact) as any}
-                          size="sm"
+                          variant={getInsightColor(insight.type, insight.impact) as "default" | "destructive" | "secondary" | "outline"}
                         >
                           {insight.type === 'trend' ? 'Tendência' :
                            insight.type === 'alert' ? 'Alerta' :
@@ -172,7 +171,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <SmartSkeleton variant="list" items={3} className="space-y-4" />
+            <SmartSkeleton variant="list" className="space-y-4" />
           ) : highPriorityRecommendations.length > 0 ? (
             <div className="space-y-4">
               {highPriorityRecommendations.map((rec, index) => (
@@ -185,7 +184,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
                       <div className="flex flex-wrap gap-4 text-xs">
                         {rec.potential_reduction && (
                           <div className="flex items-center space-x-1">
-                            <TrendingUp className="h-3 w-3 text-success" />
+                            <TrendingUp className="h-3 w-3 text-primary" />
                             <span>Redução: {rec.potential_reduction}%</span>
                           </div>
                         )}
@@ -197,14 +196,14 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
                         )}
                         {rec.cost_estimate && (
                           <div className="flex items-center space-x-1">
-                            <DollarSign className="h-3 w-3 text-warning" />
+                            <DollarSign className="h-3 w-3 text-secondary" />
                             <span>Custo: {rec.cost_estimate}</span>
                           </div>
                         )}
                       </div>
                     </div>
                     
-                    <Button variant="outline" size="sm" className="ml-4">
+                    <Button variant="outline" className="ml-4">
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -213,7 +212,7 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-success" />
+              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-primary" />
               <p>Excelente! Nenhuma ação crítica pendente.</p>
               <p className="text-sm">Continue monitorando e otimizando suas emissões.</p>
             </div>
@@ -227,23 +226,23 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
           <CardTitle className="flex items-center space-x-2">
             <Target className="h-5 w-5" />
             <span>Oportunidades de Quick Wins</span>
-            <Badge variant="success" className="ml-auto">
+            <Badge variant="secondary" className="ml-auto">
               Alto Impacto
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <SmartSkeleton variant="list" items={3} className="space-y-3" />
+            <SmartSkeleton variant="list" className="space-y-3" />
           ) : quickWins.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {quickWins.map((win, index) => (
-                <div key={index} className="p-4 rounded-lg border bg-gradient-to-br from-success/5 to-transparent">
+                <div key={index} className="p-4 rounded-lg border bg-gradient-to-br from-primary/5 to-transparent">
                   <div className="flex items-center space-x-2 mb-3">
-                    <div className="p-1 rounded-full bg-success/20">
-                      <Zap className="h-3 w-3 text-success" />
+                    <div className="p-1 rounded-full bg-primary/20">
+                      <Zap className="h-3 w-3 text-primary" />
                     </div>
-                    <Badge variant="success" size="sm">
+                    <Badge variant="secondary">
                       -{win.potential_reduction}%
                     </Badge>
                   </div>
@@ -255,18 +254,18 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
                     {win.roi_estimate && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">ROI:</span>
-                        <span className="font-medium text-success">{win.roi_estimate}</span>
+                        <span className="font-medium text-primary">{win.roi_estimate}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Prioridade:</span>
-                      <Badge variant={getPriorityColor(win.priority) as any} size="sm">
+                      <Badge variant={getPriorityColor(win.priority) as "default" | "destructive" | "secondary" | "outline"}>
                         {win.priority === 'high' ? 'Alta' : win.priority === 'medium' ? 'Média' : 'Baixa'}
                       </Badge>
                     </div>
                   </div>
                   
-                  <Button variant="outline" size="sm" className="w-full mt-3">
+                  <Button variant="outline" className="w-full mt-3">
                     Implementar
                   </Button>
                 </div>
@@ -295,13 +294,13 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <SmartSkeleton variant="list" items={5} className="space-y-3" />
+            <SmartSkeleton variant="list" className="space-y-3" />
           ) : (
             <div className="space-y-3">
               {recommendations.map((rec, index) => (
                 <div key={index} className="flex items-center space-x-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                   <div className="flex-shrink-0">
-                    <Badge variant={getPriorityColor(rec.priority) as any} size="sm">
+                    <Badge variant={getPriorityColor(rec.priority) as "default" | "destructive" | "secondary" | "outline"}>
                       {rec.priority === 'high' ? 'Alta' : rec.priority === 'medium' ? 'Média' : 'Baixa'}
                     </Badge>
                   </div>
@@ -313,12 +312,12 @@ export function IntelligentInsights({ insights, recommendations, isLoading }: In
                   
                   {rec.potential_reduction && (
                     <div className="text-right">
-                      <p className="text-sm font-medium text-success">-{rec.potential_reduction}%</p>
+                      <p className="text-sm font-medium text-primary">-{rec.potential_reduction}%</p>
                       <p className="text-xs text-muted-foreground">redução</p>
                     </div>
                   )}
                   
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost">
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>

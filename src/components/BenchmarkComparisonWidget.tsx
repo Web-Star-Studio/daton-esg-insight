@@ -34,9 +34,9 @@ export function BenchmarkComparisonWidget({ currentData, isLoading }: BenchmarkC
   const loading = isLoading || isBenchmarkLoading;
 
   const getPerformanceStatus = (value: number, average: number, bestPractice: number) => {
-    if (value <= bestPractice * 1.1) return { status: 'Excelente', color: 'success', icon: Award };
-    if (value <= average) return { status: 'Acima da Média', color: 'primary', icon: TrendingUp };
-    if (value <= average * 1.2) return { status: 'Na Média', color: 'warning', icon: Target };
+    if (value <= bestPractice * 1.1) return { status: 'Excelente', color: 'secondary', icon: Award };
+    if (value <= average) return { status: 'Acima da Média', color: 'default', icon: TrendingUp };
+    if (value <= average * 1.2) return { status: 'Na Média', color: 'secondary', icon: Target };
     return { status: 'Abaixo da Média', color: 'destructive', icon: TrendingDown };
   };
 
@@ -77,7 +77,7 @@ export function BenchmarkComparisonWidget({ currentData, isLoading }: BenchmarkC
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{metric.metric}</span>
-                    <Badge variant={performance.color as any} className="flex items-center space-x-1">
+                    <Badge variant={performance.color as "default" | "destructive" | "secondary" | "outline"} className="flex items-center space-x-1">
                       <IconComponent className="h-3 w-3" />
                       <span>{performance.status}</span>
                     </Badge>
@@ -140,7 +140,7 @@ export function BenchmarkComparisonWidget({ currentData, isLoading }: BenchmarkC
                   <p className="text-sm text-muted-foreground">{indicator.description}</p>
                   <Badge 
                     variant={
-                      indicator.score >= 8 ? 'success' : 
+                      indicator.score >= 8 ? 'secondary' : 
                       indicator.score >= 6 ? 'default' : 
                       'destructive'
                     }
@@ -176,7 +176,7 @@ export function BenchmarkComparisonWidget({ currentData, isLoading }: BenchmarkC
             </div>
             
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <Target className="h-4 w-4 text-success mt-0.5" />
+              <Target className="h-4 w-4 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Energia Renovável</p>
                 <p className="text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ export function BenchmarkComparisonWidget({ currentData, isLoading }: BenchmarkC
             </div>
             
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-              <Award className="h-4 w-4 text-warning mt-0.5" />
+              <Award className="h-4 w-4 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Gestão de Resíduos</p>
                 <p className="text-xs text-muted-foreground">
