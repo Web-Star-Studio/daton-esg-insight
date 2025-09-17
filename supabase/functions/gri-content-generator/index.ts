@@ -252,20 +252,6 @@ async function handleReportGeneration(supabaseClient: any, reportId: string, for
       }
     );
   }
-
-  } catch (error) {
-    console.error('Error in GRI content generator:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to generate GRI content', 
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
 });
 
 async function generateGRIContent({
