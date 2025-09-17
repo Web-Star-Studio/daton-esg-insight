@@ -152,7 +152,7 @@ async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, s
         *,
         gri_indicators_library (
           code,
-          name,
+          title,
           description
         )
       `)
@@ -248,7 +248,7 @@ async function handleReportGeneration(supabaseClient, reportId, action, format =
         *,
         gri_indicators_library (
           code,
-          name,
+          title,
           description,
           category
         )
@@ -310,7 +310,7 @@ async function generateGRIContent(openaiApiKey, report, sectionKey, sectionType,
         messages: [
           {
             role: 'system',
-            content: 'You are an expert in GRI sustainability reporting. Generate comprehensive, professional content for GRI sustainability reports in Portuguese. Focus on being specific, data-driven, and aligned with GRI standards.'
+            content: 'Você é um especialista em relatórios de sustentabilidade GRI. Gere conteúdo abrangente e profissional para relatórios de sustentabilidade GRI em português. Foque em ser específico, baseado em dados e alinhado com os padrões GRI. Se encontrar informações em inglês nos indicadores, traduza-as para português de forma natural e profissional.'
           },
           {
             role: 'user',
@@ -359,7 +359,7 @@ async function generateMetadataContent(openaiApiKey, report, metadataType) {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert in GRI sustainability reporting. Generate professional, executive-level content for GRI sustainability reports in Portuguese.'
+            content: 'Você é um especialista em relatórios de sustentabilidade GRI. Gere conteúdo profissional e executivo para relatórios de sustentabilidade GRI em português. Mantenha um tom formal e corporativo adequado para alta gestão.'
           },
           {
             role: 'user',
@@ -503,7 +503,7 @@ Contexto do relatório:
   if (indicators && indicators.length > 0) {
     prompt += `
 Indicadores GRI disponíveis:
-${indicators.map(ind => `- ${ind.gri_indicators_library?.code}: ${ind.gri_indicators_library?.name} (Valor: ${ind.value || 'Não informado'})`).join('\n')}
+${indicators.map(ind => `- ${ind.gri_indicators_library?.code}: ${ind.gri_indicators_library?.title} (Valor: ${ind.value || 'Não informado'})`).join('\n')}
 
 `;
   }
@@ -819,7 +819,7 @@ function generateHTMLReport(report, sections, indicators) {
         html += `
             <div class="indicator">
                 <h4>${indicator.gri_indicators_library.code}</h4>
-                <p><strong>${indicator.gri_indicators_library.name}</strong></p>
+                <p><strong>${indicator.gri_indicators_library.title}</strong></p>
                 <p>Valor: ${indicator.value || 'Não informado'}</p>
                 ${indicator.gri_indicators_library.description ? `<p><small>${indicator.gri_indicators_library.description}</small></p>` : ''}
             </div>`;
