@@ -1928,6 +1928,263 @@ export type Database = {
           },
         ]
       }
+      gri_indicator_data: {
+        Row: {
+          boolean_value: boolean | null
+          created_at: string
+          data_source: string | null
+          date_value: string | null
+          id: string
+          indicator_id: string
+          is_complete: boolean | null
+          last_updated_by: string | null
+          methodology: string | null
+          notes: string | null
+          numeric_value: number | null
+          percentage_value: number | null
+          report_id: string
+          supporting_documents: string[] | null
+          text_value: string | null
+          unit: string | null
+          updated_at: string
+          verification_level: string | null
+        }
+        Insert: {
+          boolean_value?: boolean | null
+          created_at?: string
+          data_source?: string | null
+          date_value?: string | null
+          id?: string
+          indicator_id: string
+          is_complete?: boolean | null
+          last_updated_by?: string | null
+          methodology?: string | null
+          notes?: string | null
+          numeric_value?: number | null
+          percentage_value?: number | null
+          report_id: string
+          supporting_documents?: string[] | null
+          text_value?: string | null
+          unit?: string | null
+          updated_at?: string
+          verification_level?: string | null
+        }
+        Update: {
+          boolean_value?: boolean | null
+          created_at?: string
+          data_source?: string | null
+          date_value?: string | null
+          id?: string
+          indicator_id?: string
+          is_complete?: boolean | null
+          last_updated_by?: string | null
+          methodology?: string | null
+          notes?: string | null
+          numeric_value?: number | null
+          percentage_value?: number | null
+          report_id?: string
+          supporting_documents?: string[] | null
+          text_value?: string | null
+          unit?: string | null
+          updated_at?: string
+          verification_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_indicator_data_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicators_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_indicator_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_indicators_library: {
+        Row: {
+          calculation_method: string | null
+          code: string
+          created_at: string
+          data_sources_suggestions: string[] | null
+          data_type: Database["public"]["Enums"]["gri_data_type_enum"]
+          description: string
+          gri_standard: string
+          guidance_text: string | null
+          id: string
+          indicator_type: Database["public"]["Enums"]["gri_indicator_type_enum"]
+          is_mandatory: boolean | null
+          sector_specific: boolean | null
+          sectors: string[] | null
+          title: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          calculation_method?: string | null
+          code: string
+          created_at?: string
+          data_sources_suggestions?: string[] | null
+          data_type: Database["public"]["Enums"]["gri_data_type_enum"]
+          description: string
+          gri_standard: string
+          guidance_text?: string | null
+          id?: string
+          indicator_type: Database["public"]["Enums"]["gri_indicator_type_enum"]
+          is_mandatory?: boolean | null
+          sector_specific?: boolean | null
+          sectors?: string[] | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          calculation_method?: string | null
+          code?: string
+          created_at?: string
+          data_sources_suggestions?: string[] | null
+          data_type?: Database["public"]["Enums"]["gri_data_type_enum"]
+          description?: string
+          gri_standard?: string
+          guidance_text?: string | null
+          id?: string
+          indicator_type?: Database["public"]["Enums"]["gri_indicator_type_enum"]
+          is_mandatory?: boolean | null
+          sector_specific?: boolean | null
+          sectors?: string[] | null
+          title?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gri_report_sections: {
+        Row: {
+          ai_generated_content: boolean | null
+          completion_percentage: number | null
+          content: string | null
+          created_at: string
+          id: string
+          is_complete: boolean | null
+          last_ai_update: string | null
+          order_index: number | null
+          report_id: string
+          section_key: string
+          template_used: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated_content?: boolean | null
+          completion_percentage?: number | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_complete?: boolean | null
+          last_ai_update?: string | null
+          order_index?: number | null
+          report_id: string
+          section_key: string
+          template_used?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated_content?: boolean | null
+          completion_percentage?: number | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_complete?: boolean | null
+          last_ai_update?: string | null
+          order_index?: number | null
+          report_id?: string
+          section_key?: string
+          template_used?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_report_sections_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_reports: {
+        Row: {
+          ceo_message: string | null
+          company_id: string
+          completion_percentage: number | null
+          created_at: string
+          executive_summary: string | null
+          gri_standard_version: string
+          id: string
+          materiality_assessment: Json | null
+          methodology: string | null
+          publication_date: string | null
+          published_at: string | null
+          reporting_period_end: string
+          reporting_period_start: string
+          stakeholder_engagement: Json | null
+          status: Database["public"]["Enums"]["report_gri_status_enum"]
+          template_config: Json | null
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          ceo_message?: string | null
+          company_id: string
+          completion_percentage?: number | null
+          created_at?: string
+          executive_summary?: string | null
+          gri_standard_version?: string
+          id?: string
+          materiality_assessment?: Json | null
+          methodology?: string | null
+          publication_date?: string | null
+          published_at?: string | null
+          reporting_period_end: string
+          reporting_period_start: string
+          stakeholder_engagement?: Json | null
+          status?: Database["public"]["Enums"]["report_gri_status_enum"]
+          template_config?: Json | null
+          title?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          ceo_message?: string | null
+          company_id?: string
+          completion_percentage?: number | null
+          created_at?: string
+          executive_summary?: string | null
+          gri_standard_version?: string
+          id?: string
+          materiality_assessment?: Json | null
+          methodology?: string | null
+          publication_date?: string | null
+          published_at?: string | null
+          reporting_period_end?: string
+          reporting_period_start?: string
+          stakeholder_engagement?: Json | null
+          status?: Database["public"]["Enums"]["report_gri_status_enum"]
+          template_config?: Json | null
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       land_use_change: {
         Row: {
           area_hectares: number
@@ -2340,6 +2597,62 @@ export type Database = {
           },
         ]
       }
+      materiality_topics: {
+        Row: {
+          business_impact: number | null
+          created_at: string
+          description: string | null
+          goals_targets: string | null
+          id: string
+          management_approach: string | null
+          policies_commitments: string | null
+          related_indicators: string[] | null
+          report_id: string
+          significance_level: number | null
+          stakeholder_importance: number | null
+          topic_name: string
+          updated_at: string
+        }
+        Insert: {
+          business_impact?: number | null
+          created_at?: string
+          description?: string | null
+          goals_targets?: string | null
+          id?: string
+          management_approach?: string | null
+          policies_commitments?: string | null
+          related_indicators?: string[] | null
+          report_id: string
+          significance_level?: number | null
+          stakeholder_importance?: number | null
+          topic_name: string
+          updated_at?: string
+        }
+        Update: {
+          business_impact?: number | null
+          created_at?: string
+          description?: string | null
+          goals_targets?: string | null
+          id?: string
+          management_approach?: string | null
+          policies_commitments?: string | null
+          related_indicators?: string[] | null
+          report_id?: string
+          significance_level?: number | null
+          stakeholder_importance?: number | null
+          topic_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiality_topics_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -2497,6 +2810,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      sdg_alignment: {
+        Row: {
+          actions_taken: string | null
+          contribution_level: string | null
+          created_at: string
+          description: string | null
+          future_commitments: string | null
+          id: string
+          report_id: string
+          results_achieved: string | null
+          sdg_number: number
+          sdg_target: string | null
+        }
+        Insert: {
+          actions_taken?: string | null
+          contribution_level?: string | null
+          created_at?: string
+          description?: string | null
+          future_commitments?: string | null
+          id?: string
+          report_id: string
+          results_achieved?: string | null
+          sdg_number: number
+          sdg_target?: string | null
+        }
+        Update: {
+          actions_taken?: string | null
+          contribution_level?: string | null
+          created_at?: string
+          description?: string | null
+          future_commitments?: string | null
+          id?: string
+          report_id?: string
+          results_achieved?: string | null
+          sdg_number?: number
+          sdg_target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdg_alignment_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       solution_reviews: {
         Row: {
@@ -2781,6 +3141,10 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: Json
       }
+      calculate_gri_report_completion: {
+        Args: { p_report_id: string }
+        Returns: number
+      }
       calculate_license_status: {
         Args: {
           current_status: Database["public"]["Enums"]["license_status_enum"]
@@ -2849,9 +3213,28 @@ export type Database = {
         | "Atenção Necessária"
         | "Atingida"
         | "Atrasada"
+      gri_data_type_enum:
+        | "Numérico"
+        | "Percentual"
+        | "Texto"
+        | "Booleano"
+        | "Data"
+        | "Anexo"
+      gri_indicator_type_enum:
+        | "Universal"
+        | "Econômico"
+        | "Ambiental"
+        | "Social"
+        | "Governança"
       jurisdiction_enum: "Federal" | "Estadual" | "Municipal"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
+      report_gri_status_enum:
+        | "Rascunho"
+        | "Em Andamento"
+        | "Em Revisão"
+        | "Finalizado"
+        | "Publicado"
       report_status_enum: "Rascunho" | "Gerando" | "Concluído"
       report_template_enum:
         | "GHG_PROTOCOL"
@@ -3015,9 +3398,31 @@ export const Constants = {
         "Atingida",
         "Atrasada",
       ],
+      gri_data_type_enum: [
+        "Numérico",
+        "Percentual",
+        "Texto",
+        "Booleano",
+        "Data",
+        "Anexo",
+      ],
+      gri_indicator_type_enum: [
+        "Universal",
+        "Econômico",
+        "Ambiental",
+        "Social",
+        "Governança",
+      ],
       jurisdiction_enum: ["Federal", "Estadual", "Municipal"],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
+      report_gri_status_enum: [
+        "Rascunho",
+        "Em Andamento",
+        "Em Revisão",
+        "Finalizado",
+        "Publicado",
+      ],
       report_status_enum: ["Rascunho", "Gerando", "Concluído"],
       report_template_enum: [
         "GHG_PROTOCOL",
