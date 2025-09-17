@@ -12,7 +12,6 @@ import {
   FileSpreadsheet, 
   Eye, 
   Printer,
-  Mail,
   Share2,
   CheckCircle2,
   AlertCircle
@@ -53,38 +52,41 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
         body: {
           action: 'export',
           reportId: report.id,
-          format: type,
-          includeMetadata: true,
-          includeIndicators: true,
-          includeSections: true
+          format: type
         }
       });
 
       clearInterval(progressInterval);
       setExportProgress(100);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Export error details:', error);
+        throw new Error(error.message || 'Erro ao exportar relatório');
+      }
 
-      // Simulate file download
+      if (!data?.content) {
+        throw new Error('Conteúdo do relatório não foi gerado');
+      }
+
+      // Create and download file (HTML format for all types initially)
       const blob = new Blob([data.content], { 
-        type: type === 'pdf' ? 'application/pdf' : 
-              type === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
-              'text/html'
+        type: 'text/html'
       });
       
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${report.title}_${report.year}.${type}`;
+      a.download = `Relatório_GRI_${report.title}_${report.year}.${type === 'pdf' || type === 'docx' ? 'html' : type}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Relatório exportado em ${type.toUpperCase()} com sucesso!`);
+      toast.success(`Relatório exportado com sucesso! ${type === 'pdf' ? 'Use "Imprimir > Salvar como PDF" no navegador para converter.' : ''}`);
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
-      toast.error('Erro ao exportar relatório. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro ao exportar: ${errorMessage}`);
     } finally {
       setIsExporting(false);
       setExportProgress(0);
@@ -101,17 +103,28 @@ export function GRIReportExportModal({ isOpen, onClose, report }: GRIReportExpor
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Preview error details:', error);
+        throw new Error(error.message || 'Erro ao gerar prévia');
+      }
+
+      if (!data?.content) {
+        throw new Error('Conteúdo da prévia não foi gerado');
+      }
 
       // Open preview in new window
       const previewWindow = window.open('', '_blank');
       if (previewWindow) {
         previewWindow.document.write(data.content);
         previewWindow.document.close();
+        previewWindow.document.title = `Prévia - ${report.title} ${report.year}`;
+      } else {
+        toast.error('Não foi possível abrir nova janela. Verifique o bloqueador de popups.');
       }
     } catch (error) {
       console.error('Erro ao gerar prévia:', error);
-      toast.error('Erro ao gerar prévia do relatório.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro na prévia: ${errorMessage}`);
     }
   };
 

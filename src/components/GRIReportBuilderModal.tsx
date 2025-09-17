@@ -122,9 +122,58 @@ export function GRIReportBuilderModal({
       onUpdate();
     } catch (error) {
       console.error('Erro ao salvar metadados:', error);
-      toast.error("Erro ao salvar metadados");
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao salvar';
+      toast.error(`Erro ao salvar metadados: ${errorMessage}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const generateAIMetadata = async (field: 'ceo_message' | 'executive_summary' | 'methodology') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('gri-content-generator', {
+        body: {
+          reportId: report.id,
+          sectionKey: field,
+          contentType: field === 'ceo_message' ? 'Mensagem da Liderança' :
+                      field === 'executive_summary' ? 'Sumário Executivo' :
+                      'Metodologia',
+          context: `Gere conteúdo profissional para ${field === 'ceo_message' ? 'mensagem da liderança' :
+                   field === 'executive_summary' ? 'sumário executivo' :
+                   'metodologia'} do relatório GRI ${report.year}`,
+          regenerate: true
+        }
+      });
+
+      if (error) throw error;
+
+      const content = data.content;
+      
+      // Update the appropriate field
+      if (field === 'ceo_message') {
+        setCeoMessage(content);
+      } else if (field === 'executive_summary') {
+        setExecutiveSummary(content);
+      } else if (field === 'methodology') {
+        setMethodology(content);
+      }
+
+      // Auto-save the generated content
+      const updates = {
+        [field]: content,
+        updated_at: new Date().toISOString()
+      };
+      
+      await updateGRIReport(report.id, updates);
+      onUpdate(); // Refresh parent data
+      
+      toast.success(`${field === 'ceo_message' ? 'Mensagem da liderança' :
+                   field === 'executive_summary' ? 'Sumário executivo' :
+                   'Metodologia'} gerado com IA e salvo com sucesso!`);
+
+    } catch (error) {
+      console.error('Erro ao gerar conteúdo com IA:', error);
+      toast.error('Erro ao gerar conteúdo com IA');
     }
   };
 
@@ -279,47 +328,85 @@ export function GRIReportBuilderModal({
           <CardTitle>Metadados do Relatório</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="ceo-message">Mensagem da Liderança</Label>
-            <Textarea
-              id="ceo-message"
-              value={ceoMessage}
-              onChange={(e) => setCeoMessage(e.target.value)}
-              placeholder="Mensagem do CEO/Presidente sobre os compromissos de sustentabilidade..."
-              rows={4}
-            />
-          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ceo-message">Mensagem da Liderança</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAIMetadata('ceo_message')}
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Gerar com IA
+                </Button>
+              </div>
+              <Textarea
+                id="ceo-message"
+                value={ceoMessage}
+                onChange={(e) => setCeoMessage(e.target.value)}
+                placeholder="Mensagem do CEO/Presidente sobre os compromissos de sustentabilidade..."
+                rows={4}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="executive-summary">Sumário Executivo</Label>
-            <Textarea
-              id="executive-summary"
-              value={executiveSummary}
-              onChange={(e) => setExecutiveSummary(e.target.value)}
-              placeholder="Resumo executivo dos principais temas e resultados..."
-              rows={4}
-            />
-          </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="executive-summary">Sumário Executivo</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAIMetadata('executive_summary')}
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Gerar com IA
+                </Button>
+              </div>
+              <Textarea
+                id="executive-summary"
+                value={executiveSummary}
+                onChange={(e) => setExecutiveSummary(e.target.value)}
+                placeholder="Resumo executivo dos principais temas e resultados..."
+                rows={4}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="methodology">Metodologia</Label>
-            <Textarea
-              id="methodology"
-              value={methodology}
-              onChange={(e) => setMethodology(e.target.value)}
-              placeholder="Descreva a metodologia utilizada para coleta e análise dos dados..."
-              rows={3}
-            />
-          </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="methodology">Metodologia</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAIMetadata('methodology')}
+                  className="gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Gerar com IA
+                </Button>
+              </div>
+              <Textarea
+                id="methodology"
+                value={methodology}
+                onChange={(e) => setMethodology(e.target.value)}
+                placeholder="Descreva a metodologia utilizada para coleta e análise dos dados..."
+                rows={3}
+              />
+            </div>
 
-          <Button 
-            onClick={handleSaveMetadata} 
-            disabled={isSaving}
-            className="w-full"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Salvando..." : "Salvar Metadados"}
-          </Button>
+            <Button 
+              onClick={handleSaveMetadata} 
+              disabled={isSaving}
+              className="w-full gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {isSaving ? "Salvando..." : "Salvar Metadados"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
