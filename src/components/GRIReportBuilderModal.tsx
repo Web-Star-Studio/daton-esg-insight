@@ -25,6 +25,7 @@ import {
   updateGRIReport,
   calculateReportCompletion
 } from "@/services/griReports";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   FileText, 
   CheckCircle, 
@@ -162,6 +163,69 @@ export function GRIReportBuilderModal({
     } catch (error) {
       console.error('Erro ao atualizar indicador:', error);
       toast.error("Erro ao atualizar indicador");
+    }
+  };
+
+  const handleSmartSuggestion = async (indicator: GRIIndicatorData) => {
+    try {
+      // Look for relevant data in the system based on indicator code/type
+      let suggestedValue = null;
+      let confidence = 0;
+      
+      // Map GRI indicators to system data
+      const indicatorCode = indicator.indicator?.code;
+      
+      if (indicatorCode?.includes('305-1') || indicatorCode?.includes('305-2')) {
+        // GHG emissions indicators - get from calculated emissions
+        const { data: emissions } = await supabase
+          .from('calculated_emissions')
+          .select('total_co2e')
+          .gte('calculation_date', `${report.year}-01-01`)
+          .lt('calculation_date', `${report.year + 1}-01-01`)
+          .order('calculation_date', { ascending: false });
+        
+        if (emissions && emissions.length > 0) {
+          suggestedValue = emissions.reduce((sum, e) => sum + (e.total_co2e || 0), 0);
+          confidence = 85;
+        }
+      } else if (indicatorCode?.includes('302-1')) {
+        // Energy consumption - could be derived from activity data
+        const { data: activities } = await supabase
+          .from('activity_data')
+          .select('quantity, unit')
+          .ilike('unit', '%energy%')
+          .gte('created_at', `${report.year}-01-01`)
+          .lt('created_at', `${report.year + 1}-01-01`);
+        
+        if (activities && activities.length > 0) {
+          suggestedValue = activities.reduce((sum, a) => sum + (a.quantity || 0), 0);
+          confidence = 70;
+        }
+      }
+      
+      if (suggestedValue !== null) {
+        const confirmed = window.confirm(
+          `Sugestão inteligente encontrada!\n\n` +
+          `Indicador: ${indicator.indicator?.title}\n` +
+          `Valor sugerido: ${suggestedValue.toFixed(2)} ${indicator.indicator?.unit || ''}\n` +
+          `Confiança: ${confidence}%\n\n` +
+          `Deseja aplicar este valor?`
+        );
+        
+        if (confirmed) {
+          await handleIndicatorUpdate(
+            indicator.indicator_id, 
+            suggestedValue, 
+            indicator.indicator?.data_type || 'Numérico'
+          );
+          toast.success(`Valor sugerido aplicado com ${confidence}% de confiança!`);
+        }
+      } else {
+        toast.info("Nenhuma sugestão encontrada para este indicador. Tente inserir dados manualmente.");
+      }
+    } catch (error) {
+      console.error('Erro ao buscar sugestão:', error);
+      toast.error("Erro ao gerar sugestão");
     }
   };
 
@@ -310,24 +374,37 @@ export function GRIReportBuilderModal({
                         </div>
 
                         <div className="space-y-2">
-                          {indicator.indicator?.data_type === 'Numérico' && (
+                           {(indicator.indicator?.data_type === 'Numérico' || indicator.indicator?.data_type === 'Percentual') && (
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
-                                placeholder="Valor"
-                                defaultValue={indicator.numeric_value || ''}
+                                placeholder={indicator.indicator?.data_type === 'Percentual' ? '0-100' : 'Valor'}
+                                min={indicator.indicator?.data_type === 'Percentual' ? '0' : undefined}
+                                max={indicator.indicator?.data_type === 'Percentual' ? '100' : undefined}
+                                defaultValue={indicator.indicator?.data_type === 'Percentual' 
+                                  ? (indicator.percentage_value || '') 
+                                  : (indicator.numeric_value || '')}
                                 onBlur={(e) => handleIndicatorUpdate(
                                   indicator.indicator_id, 
                                   e.target.value, 
-                                  'Numérico'
+                                  indicator.indicator?.data_type || 'Numérico'
                                 )}
                                 className="max-w-xs"
                               />
                               <span className="text-sm text-muted-foreground">
-                                {indicator.indicator?.unit}
+                                {indicator.indicator?.data_type === 'Percentual' ? '%' : indicator.indicator?.unit}
                               </span>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleSmartSuggestion(indicator)}
+                                className="ml-2"
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Sugerir
+                              </Button>
                             </div>
-                          )}
+                           )}
 
                           {indicator.indicator?.data_type === 'Texto' && (
                             <Textarea
@@ -342,24 +419,6 @@ export function GRIReportBuilderModal({
                             />
                           )}
 
-                          {indicator.indicator?.data_type === 'Percentual' && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                placeholder="0"
-                                min="0"
-                                max="100"
-                                defaultValue={indicator.percentage_value || ''}
-                                onBlur={(e) => handleIndicatorUpdate(
-                                  indicator.indicator_id, 
-                                  e.target.value, 
-                                  'Percentual'
-                                )}
-                                className="max-w-xs"
-                              />
-                              <span className="text-sm text-muted-foreground">%</span>
-                            </div>
-                          )}
                         </div>
 
                         {indicator.indicator?.guidance_text && (

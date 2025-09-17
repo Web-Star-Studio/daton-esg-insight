@@ -102,10 +102,11 @@ export function AIContentGeneratorModal({
 
       const { data, error } = await supabase.functions.invoke('gri-content-generator', {
         body: {
-          prompt: fullPrompt,
           reportId,
-          sectionType,
-          sectionTitle
+          sectionKey: sectionType,
+          contentType: sectionTitle,
+          context: fullPrompt,
+          regenerate: !!currentContent
         }
       });
 

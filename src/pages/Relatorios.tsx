@@ -83,6 +83,7 @@ const Relatorios = () => {
     setGriReports(prev => prev.map(report => 
       report.id === updatedReport.id ? updatedReport : report
     ));
+    setSelectedGRIReport(updatedReport);
   };
 
   const getStatusBadge = (status: string) => {
@@ -361,9 +362,14 @@ const Relatorios = () => {
               setSelectedGRIReport(null);
             }}
             report={selectedGRIReport}
-            onUpdate={() => {
-              loadGRIReports();
-              handleGRIReportUpdated;
+            onUpdate={async () => {
+              await loadGRIReports();
+              // Find the updated report and set it as selected
+              const updatedReports = await getGRIReports();
+              const updatedReport = updatedReports.find(r => r.id === selectedGRIReport?.id);
+              if (updatedReport) {
+                setSelectedGRIReport(updatedReport);
+              }
             }}
           />
         )}

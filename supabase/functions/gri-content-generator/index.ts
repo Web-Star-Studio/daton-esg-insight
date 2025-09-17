@@ -36,13 +36,21 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    const { 
-      reportId, 
-      sectionKey, 
-      contentType, 
-      context = {},
-      regenerate = false 
-    } = await req.json();
+    // Parse request body - handle both old and new payload formats
+    let reportId, sectionKey, contentType, context, regenerate;
+    const body = await req.json();
+    
+    if (body.prompt) {
+      // Legacy format from AIContentGeneratorModal
+      reportId = body.reportId;
+      sectionKey = body.sectionType;
+      contentType = body.sectionTitle;
+      context = body.prompt;
+      regenerate = false;
+    } else {
+      // New format
+      ({ reportId, sectionKey, contentType, context, regenerate } = body);
+    }
 
     console.log(`Generating GRI content for section: ${sectionKey}, type: ${contentType}`);
 

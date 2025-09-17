@@ -10,12 +10,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { GRIReport } from "@/services/griReports";
+import { GRIReport, createGRIReport, initializeGRIReport } from "@/services/griReports";
+import { toast } from "sonner";
 
 interface CreateGRIReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (report: Partial<GRIReport>) => void;
+  onSubmit: (report: GRIReport) => void;
 }
 
 export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIReportModalProps) {
@@ -30,12 +31,14 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
     e.preventDefault();
     
     if (!startDate || !endDate) {
+      toast.error("Selecione as datas de início e fim do período de relatório");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await onSubmit({
+      // Create the report
+      const createdReport = await createGRIReport({
         title,
         year,
         gri_standard_version: griVersion,
@@ -44,6 +47,12 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
         status: 'Rascunho',
         completion_percentage: 0,
       });
+
+      // Initialize with mandatory indicators and default sections
+      await initializeGRIReport(createdReport.id);
+      
+      toast.success("Relatório GRI criado com sucesso!");
+      onSubmit(createdReport);
       
       // Reset form
       setTitle("Relatório de Sustentabilidade");
@@ -53,6 +62,7 @@ export function CreateGRIReportModal({ isOpen, onClose, onSubmit }: CreateGRIRep
       setEndDate(undefined);
     } catch (error) {
       console.error('Erro ao criar relatório:', error);
+      toast.error("Erro ao criar relatório. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
