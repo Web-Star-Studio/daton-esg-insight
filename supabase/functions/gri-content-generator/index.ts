@@ -252,7 +252,7 @@ async function handleReportGeneration(supabaseClient: any, reportId: string, for
       }
     );
   }
-});
+}
 
 async function generateGRIContent({
   reportData,
