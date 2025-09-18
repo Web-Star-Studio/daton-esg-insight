@@ -78,43 +78,44 @@ const sourceTypes = [
   'Escritório',
   'Produção',
   'Laboratório',
-  'Almoxarifado',
-  'Manutenção',
-  'Limpeza',
-  'Outros'
+  'Área Externa',
+  'Outras'
 ];
 
 const hazardClasses = [
   'Classe I - Perigosos',
-  'Classe II A - Não Inertes',
-  'Classe II B - Inertes'
+  'Classe II-A - Não Inertes',
+  'Classe II-B - Inertes'
 ];
 
 const procedureTypes = [
-  { value: 'segregation', label: 'Segregação na Fonte' },
-  { value: 'internal_storage', label: 'Armazenamento Interno' },
-  { value: 'external_storage', label: 'Armazenamento Externo' },
-  { value: 'collection', label: 'Coleta Interna' },
-  { value: 'transport', label: 'Transporte Externo' }
+  'Segregação',
+  'Acondicionamento',
+  'Transporte Interno',
+  'Armazenamento Temporário',
+  'Destinação Final'
 ];
 
 const goalTypes = [
-  { value: 'reduction', label: 'Redução de Geração' },
-  { value: 'recycling', label: 'Aumento da Reciclagem' },
-  { value: 'reuse', label: 'Aumento da Reutilização' },
-  { value: 'cost_reduction', label: 'Redução de Custos' }
+  'Redução de Resíduos',
+  'Aumento de Reciclagem',
+  'Redução de Custos',
+  'Treinamento'
 ];
 
-export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
+const units = ['kg', 'ton', 'L', 'm³', '%'];
+
+export default function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState('plan');
-  const [isLoading, setIsLoading] = useState(false);
+  
   const [wizardData, setWizardData] = useState<WizardData>({
-    plan: { plan_name: '' },
+    plan: { plan_name: '', responsible_user_id: '' },
     sources: [],
     procedures: [],
     goals: []
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const addSource = () => {
     setWizardData(prev => ({
@@ -199,7 +200,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
         goal_type: '',
         baseline_value: '0',
         target_value: '0',
-        unit: 'kg',
+        unit: '',
         deadline: '',
         responsible_user_id: ''
       }]
@@ -213,20 +214,16 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
     }));
   };
 
-  const handleSubmit = async () => {
-    if (!wizardData.plan.plan_name) {
-      toast({
-        title: "Erro",
-        description: "Nome do plano é obrigatório",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Create PGRS Plan
-      const plan = await createPGRSPlan(wizardData.plan);
+      // Create Plan
+      const plan = await createPGRSPlan({
+        plan_name: wizardData.plan.plan_name,
+        responsible_user_id: wizardData.plan.responsible_user_id,
+        version: '1.0',
+        status: 'Em desenvolvimento'
+      });
 
       // Create Sources and Waste Types
       for (const sourceData of wizardData.sources) {
@@ -239,8 +236,13 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
         // Create waste types for this source
         for (const wasteType of waste_types) {
           await createWasteType({
-            ...wasteType,
-            source_id: source.id
+            source_id: source.id,
+            waste_name: wasteType.waste_name,
+            hazard_class: wasteType.hazard_class,
+            ibama_code: wasteType.ibama_code,
+            composition: wasteType.composition,
+            estimated_quantity_monthly: parseFloat(wasteType.estimated_quantity_monthly) || 0,
+            unit: wasteType.unit
           });
         }
       }
@@ -256,8 +258,13 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
       // Create Goals
       for (const goal of wizardData.goals) {
         await createPGRSGoal({
-          ...goal,
-          pgrs_plan_id: plan.id
+          pgrs_plan_id: plan.id,
+          goal_type: goal.goal_type,
+          baseline_value: parseFloat(goal.baseline_value) || 0,
+          target_value: parseFloat(goal.target_value) || 0,
+          unit: goal.unit,
+          deadline: goal.deadline,
+          responsible_user_id: goal.responsible_user_id
         });
       }
 
@@ -269,22 +276,13 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
 
       onSuccess?.();
       onOpenChange(false);
-      
-      // Reset wizard data
-      setWizardData({
-        plan: { plan_name: '' },
-        sources: [],
-        procedures: [],
-        goals: []
-      });
-      setCurrentStep('plan');
-
     } catch (error) {
       toast({
         title: "Erro",
-        description: `Erro ao criar PGRS: ${error}`,
+        description: "Erro ao criar plano PGRS",
         variant: "destructive"
       });
+      console.error('Error creating PGRS plan:', error);
     } finally {
       setIsLoading(false);
     }
@@ -294,54 +292,66 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Assistente de Criação do PGRS
-          </DialogTitle>
+          <DialogTitle>Assistente para Criação de Plano PGRS</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={currentStep} onValueChange={setCurrentStep}>
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="plan">1. Plano</TabsTrigger>
-            <TabsTrigger value="sources">2. Fontes</TabsTrigger>
-            <TabsTrigger value="procedures">3. Procedimentos</TabsTrigger>
-            <TabsTrigger value="goals">4. Metas</TabsTrigger>
+        <Tabs defaultValue="plan" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="plan">Plano</TabsTrigger>
+            <TabsTrigger value="sources">Fontes Geradoras</TabsTrigger>
+            <TabsTrigger value="procedures">Procedimentos</TabsTrigger>
+            <TabsTrigger value="goals">Metas</TabsTrigger>
           </TabsList>
 
+          {/* Plan Tab */}
           <TabsContent value="plan" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Informações do Plano PGRS</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Informações do Plano
+                </CardTitle>
                 <CardDescription>
-                  Defina as informações básicas do seu Plano de Gerenciamento de Resíduos Sólidos
+                  Defina as informações básicas do Plano de Gerenciamento de Resíduos Sólidos
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="plan_name">Nome do Plano *</Label>
+                  <Label>Nome do Plano</Label>
                   <Input
-                    id="plan_name"
                     value={wizardData.plan.plan_name}
                     onChange={(e) => setWizardData(prev => ({
                       ...prev,
                       plan: { ...prev.plan, plan_name: e.target.value }
                     }))}
-                    placeholder="Ex: PGRS - Unidade São Paulo 2024"
+                    placeholder="Ex: PGRS - Empresa ABC 2024"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Responsável pelo Plano</Label>
+                  <Input
+                    value={wizardData.plan.responsible_user_id || ''}
+                    onChange={(e) => setWizardData(prev => ({
+                      ...prev,
+                      plan: { ...prev.plan, responsible_user_id: e.target.value }
+                    }))}
+                    placeholder="ID do usuário responsável"
                   />
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Sources Tab */}
           <TabsContent value="sources" className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-medium">Fontes Geradoras de Resíduos</h3>
+                <h3 className="text-lg font-semibold">Fontes Geradoras de Resíduos</h3>
                 <p className="text-sm text-muted-foreground">
-                  Identifique as áreas onde são gerados resíduos e os tipos produzidos
+                  Cadastre as áreas e tipos de resíduos gerados
                 </p>
               </div>
-              <Button onClick={addSource} size="sm">
+              <Button onClick={addSource}>
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Fonte
               </Button>
@@ -349,17 +359,17 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
 
             {wizardData.sources.map((source, sourceIndex) => (
               <Card key={sourceIndex}>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <div>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
                     <CardTitle className="text-base">Fonte Geradora {sourceIndex + 1}</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeSource(sourceIndex)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeSource(sourceIndex)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -373,7 +383,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                             i === sourceIndex ? { ...s, source_name: e.target.value } : s
                           )
                         }))}
-                        placeholder="Ex: Restaurante Principal"
+                        placeholder="Ex: Refeitório Principal"
                       />
                     </div>
                     <div className="space-y-2">
@@ -392,7 +402,9 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {sourceTypes.map(type => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -410,43 +422,46 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                             i === sourceIndex ? { ...s, location: e.target.value } : s
                           )
                         }))}
-                        placeholder="Ex: Térreo - Ala Sul"
+                        placeholder="Ex: 1º Andar - Ala Norte"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Descrição</Label>
+                      <Textarea
+                        value={source.description}
+                        onChange={(e) => setWizardData(prev => ({
+                          ...prev,
+                          sources: prev.sources.map((s, i) => 
+                            i === sourceIndex ? { ...s, description: e.target.value } : s
+                          )
+                        }))}
+                        placeholder="Descrição da fonte geradora"
+                        className="min-h-[60px]"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Descrição</Label>
-                    <Textarea
-                      value={source.description}
-                      onChange={(e) => setWizardData(prev => ({
-                        ...prev,
-                        sources: prev.sources.map((s, i) => 
-                          i === sourceIndex ? { ...s, description: e.target.value } : s
-                        )
-                      }))}
-                      placeholder="Descreva as atividades realizadas nesta área"
-                    />
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium">Tipos de Resíduos</h4>
+                  {/* Waste Types */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-sm font-medium">Tipos de Resíduos</Label>
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => addWasteType(sourceIndex)}
                       >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Adicionar Tipo
+                        <Plus className="w-3 h-3 mr-1" />
+                        Tipo de Resíduo
                       </Button>
                     </div>
 
                     {source.waste_types.map((wasteType, typeIndex) => (
-                      <div key={typeIndex} className="border rounded p-3 mb-3 bg-muted/30">
+                      <div key={typeIndex} className="border rounded-lg p-3 bg-muted/30">
                         <div className="flex justify-between items-start mb-3">
-                          <h5 className="font-medium text-sm">Resíduo {typeIndex + 1}</h5>
+                          <span className="text-sm font-medium">Resíduo {typeIndex + 1}</span>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => removeWasteType(sourceIndex, typeIndex)}
@@ -459,7 +474,6 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                           <div className="space-y-1">
                             <Label className="text-xs">Nome do Resíduo</Label>
                             <Input
-                              size="sm"
                               value={wasteType.waste_name}
                               onChange={(e) => setWizardData(prev => ({
                                 ...prev,
@@ -481,7 +495,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                               value={wasteType.hazard_class}
                               onValueChange={(value) => setWizardData(prev => ({
                                 ...prev,
-                                sources: prev.sources.map((s, i) => 
+                                sources: prev.sources.map((s, i) =>   
                                   i === sourceIndex ? {
                                     ...s,
                                     waste_types: s.waste_types.map((wt, j) =>
@@ -509,7 +523,6 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                           <div className="space-y-1">
                             <Label className="text-xs">Código IBAMA</Label>
                             <Input
-                              size="sm"
                               value={wasteType.ibama_code}
                               onChange={(e) => setWizardData(prev => ({
                                 ...prev,
@@ -528,16 +541,15 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                           <div className="space-y-1">
                             <Label className="text-xs">Quantidade/Mês</Label>
                             <Input
-                              size="sm"
                               type="number"
-                              value={wasteType.estimated_quantity_monthly.toString()}
+                              value={wasteType.estimated_quantity_monthly}
                               onChange={(e) => setWizardData(prev => ({
                                 ...prev,
                                 sources: prev.sources.map((s, i) => 
                                   i === sourceIndex ? {
                                     ...s,
                                     waste_types: s.waste_types.map((wt, j) =>
-                                      j === typeIndex ? { ...wt, estimated_quantity_monthly: parseFloat(e.target.value) || 0 } : wt
+                                      j === typeIndex ? { ...wt, estimated_quantity_monthly: e.target.value } : wt
                                     )
                                   } : s
                                 )
@@ -561,17 +573,37 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                               }))}
                             >
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Unidade" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="kg">kg</SelectItem>
-                                <SelectItem value="toneladas">toneladas</SelectItem>
-                                <SelectItem value="litros">litros</SelectItem>
-                                <SelectItem value="m³">m³</SelectItem>
-                                <SelectItem value="unidades">unidades</SelectItem>
+                                {units.map(unit => (
+                                  <SelectItem key={unit} value={unit}>
+                                    {unit}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">Composição</Label>
+                          <Textarea
+                            value={wasteType.composition}
+                            onChange={(e) => setWizardData(prev => ({
+                              ...prev,
+                              sources: prev.sources.map((s, i) => 
+                                i === sourceIndex ? {
+                                  ...s,
+                                  waste_types: s.waste_types.map((wt, j) =>
+                                    j === typeIndex ? { ...wt, composition: e.target.value } : wt
+                                  )
+                                } : s
+                              )
+                            }))}
+                            placeholder="Descreva a composição do resíduo"
+                            className="min-h-[50px]"
+                          />
                         </div>
                       </div>
                     ))}
@@ -581,15 +613,16 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
             ))}
           </TabsContent>
 
+          {/* Procedures Tab */}
           <TabsContent value="procedures" className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-medium">Procedimentos Operacionais</h3>
+                <h3 className="text-lg font-semibold">Procedimentos de Manejo</h3>
                 <p className="text-sm text-muted-foreground">
-                  Descreva os procedimentos para manejo dos resíduos
+                  Defina os procedimentos para cada etapa do manejo dos resíduos
                 </p>
               </div>
-              <Button onClick={addProcedure} size="sm">
+              <Button onClick={addProcedure}>
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Procedimento
               </Button>
@@ -597,18 +630,19 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
 
             {wizardData.procedures.map((procedure, index) => (
               <Card key={index}>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <CardTitle className="text-base">Procedimento {index + 1}</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeProcedure(index)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="font-medium">Procedimento {index + 1}</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeProcedure(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
                       <Label>Tipo de Procedimento</Label>
                       <Select
@@ -625,8 +659,8 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {procedureTypes.map(type => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
+                            <SelectItem key={type} value={type}>
+                              {type}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -642,51 +676,68 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                             i === index ? { ...p, title: e.target.value } : p
                           )
                         }))}
-                        placeholder="Ex: Segregação na fonte de papéis"
+                        placeholder="Título do procedimento"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Descrição do Procedimento</Label>
-                    <Textarea
-                      value={procedure.description}
-                      onChange={(e) => setWizardData(prev => ({
-                        ...prev,
-                        procedures: prev.procedures.map((p, i) => 
-                          i === index ? { ...p, description: e.target.value } : p
-                        )
-                      }))}
-                      placeholder="Descreva detalhadamente como o procedimento deve ser executado..."
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Responsável</Label>
-                      <Input
-                        value={procedure.responsible_role}
+                      <Label>Descrição</Label>
+                      <Textarea
+                        value={procedure.description}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           procedures: prev.procedures.map((p, i) => 
-                            i === index ? { ...p, responsible_role: e.target.value } : p
+                            i === index ? { ...p, description: e.target.value } : p
                           )
                         }))}
-                        placeholder="Ex: Equipe de Limpeza"
+                        placeholder="Descreva o procedimento detalhadamente"
+                        className="min-h-[100px]"
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Responsável</Label>
+                        <Input
+                          value={procedure.responsible_role}
+                          onChange={(e) => setWizardData(prev => ({
+                            ...prev,
+                            procedures: prev.procedures.map((p, i) => 
+                              i === index ? { ...p, responsible_role: e.target.value } : p
+                            )
+                          }))}
+                          placeholder="Ex: Encarregado de limpeza"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Frequência</Label>
+                        <Input
+                          value={procedure.frequency}
+                          onChange={(e) => setWizardData(prev => ({
+                            ...prev,
+                            procedures: prev.procedures.map((p, i) => 
+                              i === index ? { ...p, frequency: e.target.value } : p
+                            )
+                          }))}
+                          placeholder="Ex: Diária, Semanal"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label>Frequência</Label>
-                      <Input
-                        value={procedure.frequency}
+                      <Label>Detalhes da Infraestrutura</Label>
+                      <Textarea
+                        value={procedure.infrastructure_details}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           procedures: prev.procedures.map((p, i) => 
-                            i === index ? { ...p, frequency: e.target.value } : p
+                            i === index ? { ...p, infrastructure_details: e.target.value } : p
                           )
                         }))}
-                        placeholder="Ex: Diária"
+                        placeholder="Descreva a infraestrutura necessária"
+                        className="min-h-[80px]"
                       />
                     </div>
                   </div>
@@ -695,15 +746,16 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
             ))}
           </TabsContent>
 
+          {/* Goals Tab */}
           <TabsContent value="goals" className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-medium">Metas e Objetivos</h3>
+                <h3 className="text-lg font-semibold">Metas e Objetivos</h3>
                 <p className="text-sm text-muted-foreground">
-                  Defina metas quantitativas para o gerenciamento dos resíduos
+                  Estabeleça metas quantitativas para o plano
                 </p>
               </div>
-              <Button onClick={addGoal} size="sm">
+              <Button onClick={addGoal}>
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Meta
               </Button>
@@ -711,18 +763,76 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
 
             {wizardData.goals.map((goal, index) => (
               <Card key={index}>
-                <CardHeader className="flex flex-row items-start justify-between">
-                  <CardTitle className="text-base">Meta {index + 1}</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeGoal(index)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Meta {index + 1}
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeGoal(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Valor Baseline</Label>
+                      <Input
+                        type="number"
+                        value={goal.baseline_value}
+                        onChange={(e) => setWizardData(prev => ({
+                          ...prev,
+                          goals: prev.goals.map((g, i) => 
+                            i === index ? { ...g, baseline_value: e.target.value } : g
+                          )
+                        }))}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Valor Meta</Label>
+                      <Input
+                        type="number"
+                        value={goal.target_value}
+                        onChange={(e) => setWizardData(prev => ({
+                          ...prev,
+                          goals: prev.goals.map((g, i) => 
+                            i === index ? { ...g, target_value: e.target.value } : g
+                          )
+                        }))}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Unidade</Label>
+                      <Select
+                        value={goal.unit}
+                        onValueChange={(value) => setWizardData(prev => ({
+                          ...prev,
+                          goals: prev.goals.map((g, i) => 
+                            i === index ? { ...g, unit: value } : g
+                          )
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Unidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {units.map(unit => (
+                            <SelectItem key={unit} value={unit}>
+                              {unit}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4">
                     <div className="space-y-2">
                       <Label>Tipo de Meta</Label>
                       <Select
@@ -739,8 +849,8 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {goalTypes.map(type => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
+                            <SelectItem key={type} value={type}>
+                              {type}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -761,75 +871,36 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="mt-4">
                     <div className="space-y-2">
-                      <Label>Valor Baseline</Label>
+                      <Label>Responsável</Label>
                       <Input
-                        type="number"
-                        value={goal.baseline_value.toString()}
+                        value={goal.responsible_user_id}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           goals: prev.goals.map((g, i) => 
-                            i === index ? { ...g, baseline_value: parseFloat(e.target.value) || 0 } : g
+                            i === index ? { ...g, responsible_user_id: e.target.value } : g
                           )
                         }))}
-                        placeholder="0"
+                        placeholder="ID do usuário responsável"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Valor Meta</Label>
-                      <Input
-                        type="number"
-                        value={goal.target_value.toString()}
-                        onChange={(e) => setWizardData(prev => ({
-                          ...prev,
-                          goals: prev.goals.map((g, i) => 
-                            i === index ? { ...g, target_value: parseFloat(e.target.value) || 0 } : g
-                          )
-                        }))}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Unidade</Label>
-                      <Select
-                        value={goal.unit}
-                        onValueChange={(value) => setWizardData(prev => ({
-                          ...prev,
-                          goals: prev.goals.map((g, i) => 
-                            i === index ? { ...g, unit: value } : g
-                          )
-                        }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="kg">kg</SelectItem>
-                          <SelectItem value="toneladas">toneladas</SelectItem>
-                          <SelectItem value="%">%</SelectItem>
-                          <SelectItem value="R$">R$</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
-
-            <div className="pt-4 border-t">
-              <Button
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="w-full"
-                size="lg"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {isLoading ? 'Criando PGRS...' : 'Criar Plano PGRS'}
-              </Button>
-            </div>
           </TabsContent>
         </Tabs>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} disabled={isLoading}>
+            <Save className="w-4 h-4 mr-2" />
+            {isLoading ? 'Salvando...' : 'Salvar Plano PGRS'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
