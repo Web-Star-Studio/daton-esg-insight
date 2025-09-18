@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getIntegratedReports } from "@/services/integratedReports";
 import { getESGDashboard } from "@/services/esg";
+import { MainLayout } from "@/components/MainLayout";
 
 export default function RelatoriosIntegrados() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -53,7 +54,8 @@ export default function RelatoriosIntegrados() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Relatórios ESG Integrados</h1>
@@ -387,6 +389,7 @@ export default function RelatoriosIntegrados() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

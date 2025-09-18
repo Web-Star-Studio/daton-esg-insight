@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getBoardMembers, getCorporatePolicies, getWhistleblowerReports, getGovernanceMetrics } from "@/services/governance";
 import { getESGRisks, getRiskMetrics } from "@/services/esgRisks";
+import { MainLayout } from "@/components/MainLayout";
 
 export default function GovernancaESG() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -54,7 +55,8 @@ export default function GovernancaESG() {
   });
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
@@ -379,6 +381,7 @@ export default function GovernancaESG() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
