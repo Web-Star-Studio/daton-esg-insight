@@ -23,11 +23,14 @@ import {
 } from "lucide-react";
 import { getBoardMembers, getCorporatePolicies, getWhistleblowerReports, getGovernanceMetrics } from "@/services/governance";
 import { getESGRisks, getRiskMetrics } from "@/services/esgRisks";
+import { getEmployees, getEmployeesStats } from "@/services/employees";
 import { MainLayout } from "@/components/MainLayout";
 import { BoardMemberModal } from "@/components/BoardMemberModal";
 import { CorporatePolicyModal } from "@/components/CorporatePolicyModal";
 import { WhistleblowerModal } from "@/components/WhistleblowerModal";
 import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
+import { EmployeeModal } from "@/components/EmployeeModal";
+import { GovernanceDashboard } from "@/components/GovernanceDashboard";
 import { toast } from "@/hooks/use-toast";
 
 export default function GovernancaESG() {
@@ -38,14 +41,26 @@ export default function GovernancaESG() {
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
   const [isWhistleblowerModalOpen, setIsWhistleblowerModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modalMode, setModalMode] = useState('create');
 
   const { data: governanceMetrics } = useQuery({
     queryKey: ['governance-metrics'],
     queryFn: getGovernanceMetrics
+  });
+
+  const { data: employees, refetch: refetchEmployees } = useQuery({
+    queryKey: ['employees'],
+    queryFn: getEmployees
+  });
+
+  const { data: employeeStats } = useQuery({
+    queryKey: ['employee-stats'],
+    queryFn: getEmployeesStats
   });
 
   const { data: riskMetrics } = useQuery({
@@ -106,6 +121,12 @@ export default function GovernancaESG() {
     setIsWhistleblowerModalOpen(true);
   };
 
+  const handleEditEmployee = (employee: any) => {
+    setSelectedEmployee(employee);
+    setModalMode('edit');
+    setIsEmployeeModalOpen(true);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -136,15 +157,18 @@ export default function GovernancaESG() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="structure">Estrutura</TabsTrigger>
           <TabsTrigger value="policies">Políticas</TabsTrigger>
+          <TabsTrigger value="employees">Funcionários</TabsTrigger>
           <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
           <TabsTrigger value="ethics">Ética</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <GovernanceDashboard governanceMetrics={governanceMetrics} />
+        </TabsContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -416,6 +440,139 @@ export default function GovernancaESG() {
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
                     Adicionar Primeiro Membro
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="employees" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Funcionários</CardTitle>
+                  <CardDescription>Gestão de funcionários e diversidade</CardDescription>
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectedEmployee(null);
+                    setModalMode('create');
+                    setIsEmployeeModalOpen(true);
+                  }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Novo Funcionário
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {employees && employees.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Employee Stats Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Total</p>
+                            <p className="text-2xl font-bold">{employeeStats?.totalEmployees || 0}</p>
+                          </div>
+                          <Users className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Ativos</p>
+                            <p className="text-2xl font-bold">{employeeStats?.activeEmployees || 0}</p>
+                          </div>
+                          <CheckCircle className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Departamentos</p>
+                            <p className="text-2xl font-bold">{employeeStats?.departments || 0}</p>
+                          </div>
+                          <TrendingUp className="h-8 w-8 text-blue-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Employees List */}
+                  <div className="grid gap-4">
+                    {employees.map((employee) => (
+                      <div key={employee.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium">{employee.full_name}</h4>
+                              <Badge variant="outline">{employee.employee_code}</Badge>
+                              <Badge 
+                                variant={
+                                  employee.status === 'Ativo' ? 'default' :
+                                  employee.status === 'Inativo' ? 'secondary' : 'outline'
+                                }
+                              >
+                                {employee.status}
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                              <div>
+                                <span className="font-medium">Cargo:</span> {employee.position || 'N/A'}
+                              </div>
+                              <div>
+                                <span className="font-medium">Departamento:</span> {employee.department || 'N/A'}
+                              </div>
+                              <div>
+                                <span className="font-medium">Admissão:</span> {employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('pt-BR') : 'N/A'}
+                              </div>
+                              <div>
+                                <span className="font-medium">Tipo:</span> {employee.employment_type || 'N/A'}
+                              </div>
+                            </div>
+                            {employee.email && (
+                              <p className="text-sm text-muted-foreground mt-1">{employee.email}</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditEmployee(employee)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Nenhum funcionário cadastrado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Comece adicionando funcionários para gerenciar diversidade e recursos humanos.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setSelectedEmployee(null);
+                      setModalMode('create');
+                      setIsEmployeeModalOpen(true);
+                    }}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Adicionar Primeiro Funcionário
                   </Button>
                 </div>
               )}
@@ -717,7 +874,7 @@ export default function GovernancaESG() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+         </TabsContent>
       </Tabs>
 
       {/* Board Member Modal */}
@@ -754,11 +911,54 @@ export default function GovernancaESG() {
         onUpdate={refetchData}
       />
 
-      {/* Governance Reports Modal */}
+      </Tabs>
+
+      {/* Modals */}
+      <BoardMemberModal
+        isOpen={isBoardModalOpen}
+        onClose={() => {
+          setIsBoardModalOpen(false);
+          setSelectedMember(null);
+        }}
+        member={selectedMember}
+        onUpdate={refetchData}
+      />
+
+      <CorporatePolicyModal
+        isOpen={isPolicyModalOpen}
+        onClose={() => {
+          setIsPolicyModalOpen(false);
+          setSelectedPolicy(null);
+        }}
+        policy={selectedPolicy}
+        onUpdate={refetchData}
+      />
+
+      <WhistleblowerModal
+        isOpen={isWhistleblowerModalOpen}
+        onClose={() => {
+          setIsWhistleblowerModalOpen(false);
+          setSelectedReport(null);
+        }}
+        report={selectedReport}
+        mode={modalMode as any}
+        onUpdate={refetchData}
+      />
+
       <GovernanceReportsModal
         isOpen={isReportsModalOpen}
         onClose={() => setIsReportsModalOpen(false)}
         governanceMetrics={governanceMetrics}
+      />
+
+      <EmployeeModal
+        isOpen={isEmployeeModalOpen}
+        onClose={() => {
+          setIsEmployeeModalOpen(false);
+          setSelectedEmployee(null);
+        }}
+        employee={selectedEmployee}
+        onUpdate={refetchEmployees}
       />
 
       </div>
