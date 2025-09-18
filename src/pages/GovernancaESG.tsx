@@ -333,26 +333,92 @@ export default function GovernancaESG() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Estrutura Corporativa</CardTitle>
-                  <CardDescription>Conselho de administração e comitês</CardDescription>
+                  <CardTitle>Conselho de Administração</CardTitle>
+                  <CardDescription>Membros do conselho e comitês</CardDescription>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <Button
+                  onClick={() => {
+                    setSelectedMember(null);
+                    setModalMode('create');
+                    setIsBoardModalOpen(true);
+                  }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
                   Novo Membro
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Estrutura Corporativa</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para gestão da estrutura de governança
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá conselho de administração, comitês, matriz de competências e avaliações
-                </p>
-              </div>
+              {boardMembers && boardMembers.length > 0 ? (
+                <div className="space-y-4">
+                  {boardMembers.map((member) => (
+                    <div key={member.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium">{member.full_name}</h4>
+                            <Badge variant={member.status === 'Ativo' ? 'default' : 'secondary'}>
+                              {member.status}
+                            </Badge>
+                            {member.is_independent && (
+                              <Badge variant="outline">Independente</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">{member.position}</p>
+                          {member.committee && (
+                            <p className="text-sm text-muted-foreground">Comitê: {member.committee}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span>Nomeação: {new Date(member.appointment_date).toLocaleDateString('pt-BR')}</span>
+                            {member.experience_years && (
+                              <span>{member.experience_years} anos de experiência</span>
+                            )}
+                          </div>
+                          {member.expertise_areas && member.expertise_areas.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {member.expertise_areas.slice(0, 3).map((area, index) => (
+                                <Badge key={index} variant="secondary" className="text-xs">
+                                  {area}
+                                </Badge>
+                              ))}
+                              {member.expertise_areas.length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{member.expertise_areas.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditMember(member)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">Nenhum membro cadastrado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Adicione membros do conselho de administração
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setSelectedMember(null);
+                      setModalMode('create');
+                      setIsBoardModalOpen(true);
+                    }}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Adicionar Primeiro Membro
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -365,54 +431,180 @@ export default function GovernancaESG() {
                   <CardTitle>Políticas Corporativas</CardTitle>
                   <CardDescription>Gestão de políticas e procedimentos</CardDescription>
                 </div>
-                <Button>
+                <Button
+                  onClick={() => {
+                    setSelectedPolicy(null);
+                    setModalMode('create');
+                    setIsPolicyModalOpen(true);
+                  }}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Nova Política
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Políticas</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para gestão de políticas corporativas
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá criação, aprovação, versionamento e monitoramento de políticas
-                </p>
-              </div>
+              {policies && policies.length > 0 ? (
+                <div className="space-y-4">
+                  {policies.map((policy) => (
+                    <div key={policy.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium">{policy.title}</h4>
+                            <Badge 
+                              variant={
+                                policy.status === 'Ativo' ? 'default' :
+                                policy.status === 'Aprovada' ? 'secondary' :
+                                policy.status === 'Em Revisão' ? 'outline' : 'destructive'
+                              }
+                            >
+                              {policy.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">{policy.category}</p>
+                          {policy.description && (
+                            <p className="text-sm text-muted-foreground mb-2">{policy.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>Versão: {policy.version}</span>
+                            <span>Vigência: {new Date(policy.effective_date).toLocaleDateString('pt-BR')}</span>
+                            {policy.review_date && (
+                              <span className={new Date(policy.review_date) < new Date() ? 'text-red-600' : ''}>
+                                Revisão: {new Date(policy.review_date).toLocaleDateString('pt-BR')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditPolicy(policy)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          {policy.file_path && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(policy.file_path, '_blank')}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">Nenhuma política cadastrada</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Crie políticas corporativas para sua organização
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setSelectedPolicy(null);
+                      setModalMode('create');
+                      setIsPolicyModalOpen(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Criar Primeira Política
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="risks" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Gestão de Riscos ESG</CardTitle>
-                  <CardDescription>Identificação e mitigação de riscos</CardDescription>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Matriz de Riscos ESG</CardTitle>
+                <CardDescription>Distribuição por categoria e criticidade</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {risks && risks.length > 0 ? (
+                  <div className="space-y-4">
+                    {risks.slice(0, 5).map((risk) => (
+                      <div key={risk.id} className="border rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-sm">{risk.risk_title}</h4>
+                          <div className="flex gap-1">
+                            <Badge 
+                              variant={
+                                risk.inherent_risk_level === 'Crítico' ? 'destructive' :
+                                risk.inherent_risk_level === 'Alto' ? 'default' :
+                                risk.inherent_risk_level === 'Médio' ? 'secondary' : 'outline'
+                              }
+                              className="text-xs"
+                            >
+                              {risk.inherent_risk_level}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-1">{risk.esg_category}</p>
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Probabilidade: {risk.probability}</span>
+                          <span>Impacto: {risk.impact}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {risks.length > 5 && (
+                      <p className="text-center text-sm text-muted-foreground">
+                        +{risks.length - 5} riscos adicionais
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Nenhum risco cadastrado</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Indicadores de Risco</CardTitle>
+                <CardDescription>Resumo executivo</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {riskMetrics?.criticalRisks || 0}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Riscos Críticos</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {riskMetrics?.highRisks || 0}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Riscos Altos</p>
+                  </div>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Risco
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Riscos ESG</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para gestão de riscos ESG
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá matriz de riscos, planos de mitigação, controles e monitoramento
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                
+                {riskMetrics?.risksByCategory && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Por Categoria</h4>
+                    {Object.entries(riskMetrics.risksByCategory).map(([category, count]) => (
+                      <div key={category} className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">{category}</span>
+                        <Badge variant="outline">{count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="ethics" className="space-y-6">
@@ -423,23 +615,106 @@ export default function GovernancaESG() {
                   <CardTitle>Canal de Denúncias</CardTitle>
                   <CardDescription>Sistema de ética e compliance</CardDescription>
                 </div>
-                <Button>
+                <Button
+                  onClick={() => {
+                    setSelectedReport(null);
+                    setModalMode('create');
+                    setIsWhistleblowerModalOpen(true);
+                  }}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Nova Denúncia
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Ética</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para canal de denúncias
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá recebimento, triagem, investigação e resolução de denúncias
-                </p>
-              </div>
+              {reports && reports.length > 0 ? (
+                <div className="space-y-4">
+                  {reports.map((report) => (
+                    <div key={report.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium">#{report.report_code}</h4>
+                            <Badge 
+                              variant={
+                                report.status === 'Nova' ? 'secondary' :
+                                report.status === 'Em Investigação' ? 'default' :
+                                report.status === 'Concluída' ? 'default' : 'outline'
+                              }
+                            >
+                              {report.status}
+                            </Badge>
+                            <Badge 
+                              variant={
+                                report.priority === 'Alta' ? 'destructive' :
+                                report.priority === 'Média' ? 'default' : 'secondary'
+                              }
+                            >
+                              {report.priority}
+                            </Badge>
+                            {report.is_anonymous && (
+                              <Badge variant="outline">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Anônima
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">{report.category}</p>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {report.description}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>Criada: {new Date(report.created_at).toLocaleDateString('pt-BR')}</span>
+                            {report.incident_date && (
+                              <span>Incidente: {new Date(report.incident_date).toLocaleDateString('pt-BR')}</span>
+                            )}
+                            {report.location && (
+                              <span>Local: {report.location}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewReport(report)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {report.status !== 'Fechada' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleInvestigateReport(report)}
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">Nenhuma denúncia registrada</h3>
+                  <p className="text-muted-foreground mb-4">
+                    O canal de denúncias está disponível para relatos confidenciais
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setSelectedReport(null);
+                      setModalMode('create');
+                      setIsWhistleblowerModalOpen(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Registrar Denúncia
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
