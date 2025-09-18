@@ -3488,6 +3488,56 @@ export type Database = {
           },
         ]
       }
+      mtr_documents: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          extracted_data: Json | null
+          file_name: string
+          file_path: string
+          id: string
+          upload_date: string
+          validated_by_user_id: string | null
+          validation_date: string | null
+          validation_status: string | null
+          waste_log_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          extracted_data?: Json | null
+          file_name: string
+          file_path: string
+          id?: string
+          upload_date?: string
+          validated_by_user_id?: string | null
+          validation_date?: string | null
+          validation_status?: string | null
+          waste_log_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          extracted_data?: Json | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          upload_date?: string
+          validated_by_user_id?: string | null
+          validation_date?: string | null
+          validation_status?: string | null
+          waste_log_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_mtr_documents_waste_log"
+            columns: ["waste_log_id"]
+            isOneToOne: false
+            referencedRelation: "waste_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -3529,6 +3579,299 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pgrs_actions: {
+        Row: {
+          action_description: string
+          completion_date: string | null
+          created_at: string
+          due_date: string
+          goal_id: string
+          id: string
+          notes: string | null
+          responsible_user_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_description: string
+          completion_date?: string | null
+          created_at?: string
+          due_date: string
+          goal_id: string
+          id?: string
+          notes?: string | null
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_description?: string
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string
+          goal_id?: string
+          id?: string
+          notes?: string | null
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pgrs_actions_goal"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "pgrs_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pgrs_goals: {
+        Row: {
+          baseline_value: number
+          created_at: string
+          current_value: number | null
+          deadline: string
+          goal_type: string
+          id: string
+          pgrs_plan_id: string
+          progress_percentage: number | null
+          responsible_user_id: string | null
+          status: string | null
+          target_value: number
+          unit: string
+          updated_at: string
+          waste_type_id: string | null
+        }
+        Insert: {
+          baseline_value?: number
+          created_at?: string
+          current_value?: number | null
+          deadline: string
+          goal_type: string
+          id?: string
+          pgrs_plan_id: string
+          progress_percentage?: number | null
+          responsible_user_id?: string | null
+          status?: string | null
+          target_value: number
+          unit?: string
+          updated_at?: string
+          waste_type_id?: string | null
+        }
+        Update: {
+          baseline_value?: number
+          created_at?: string
+          current_value?: number | null
+          deadline?: string
+          goal_type?: string
+          id?: string
+          pgrs_plan_id?: string
+          progress_percentage?: number | null
+          responsible_user_id?: string | null
+          status?: string | null
+          target_value?: number
+          unit?: string
+          updated_at?: string
+          waste_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pgrs_goals_plan"
+            columns: ["pgrs_plan_id"]
+            isOneToOne: false
+            referencedRelation: "pgrs_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pgrs_goals_waste_type"
+            columns: ["waste_type_id"]
+            isOneToOne: false
+            referencedRelation: "pgrs_waste_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pgrs_plans: {
+        Row: {
+          approval_date: string | null
+          company_id: string
+          created_at: string
+          creation_date: string
+          id: string
+          next_review_date: string | null
+          plan_name: string
+          responsible_user_id: string | null
+          status: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          company_id: string
+          created_at?: string
+          creation_date?: string
+          id?: string
+          next_review_date?: string | null
+          plan_name: string
+          responsible_user_id?: string | null
+          status?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          company_id?: string
+          created_at?: string
+          creation_date?: string
+          id?: string
+          next_review_date?: string | null
+          plan_name?: string
+          responsible_user_id?: string | null
+          status?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
+      pgrs_procedures: {
+        Row: {
+          created_at: string
+          description: string
+          frequency: string | null
+          id: string
+          infrastructure_details: string | null
+          pgrs_plan_id: string
+          procedure_type: string
+          responsible_role: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          frequency?: string | null
+          id?: string
+          infrastructure_details?: string | null
+          pgrs_plan_id: string
+          procedure_type: string
+          responsible_role?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          frequency?: string | null
+          id?: string
+          infrastructure_details?: string | null
+          pgrs_plan_id?: string
+          procedure_type?: string
+          responsible_role?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pgrs_procedures_plan"
+            columns: ["pgrs_plan_id"]
+            isOneToOne: false
+            referencedRelation: "pgrs_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pgrs_waste_sources: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          pgrs_plan_id: string
+          source_name: string
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          pgrs_plan_id: string
+          source_name: string
+          source_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          pgrs_plan_id?: string
+          source_name?: string
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pgrs_waste_sources_plan"
+            columns: ["pgrs_plan_id"]
+            isOneToOne: false
+            referencedRelation: "pgrs_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pgrs_waste_types: {
+        Row: {
+          composition: string | null
+          conama_code: string | null
+          created_at: string
+          estimated_quantity_monthly: number | null
+          hazard_class: string
+          ibama_code: string | null
+          id: string
+          source_id: string
+          unit: string | null
+          updated_at: string
+          waste_name: string
+        }
+        Insert: {
+          composition?: string | null
+          conama_code?: string | null
+          created_at?: string
+          estimated_quantity_monthly?: number | null
+          hazard_class: string
+          ibama_code?: string | null
+          id?: string
+          source_id: string
+          unit?: string | null
+          updated_at?: string
+          waste_name: string
+        }
+        Update: {
+          composition?: string | null
+          conama_code?: string | null
+          created_at?: string
+          estimated_quantity_monthly?: number | null
+          hazard_class?: string
+          ibama_code?: string | null
+          id?: string
+          source_id?: string
+          unit?: string | null
+          updated_at?: string
+          waste_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pgrs_waste_types_source"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "pgrs_waste_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -4251,6 +4594,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      waste_suppliers: {
+        Row: {
+          address: string | null
+          cnpj: string | null
+          company_id: string
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          license_expiry: string | null
+          license_issuing_body: string | null
+          license_number: string | null
+          license_type: string | null
+          notes: string | null
+          rating: number | null
+          status: string | null
+          supplier_type: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cnpj?: string | null
+          company_id: string
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          license_expiry?: string | null
+          license_issuing_body?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          notes?: string | null
+          rating?: number | null
+          status?: string | null
+          supplier_type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cnpj?: string | null
+          company_id?: string
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          license_expiry?: string | null
+          license_issuing_body?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          notes?: string | null
+          rating?: number | null
+          status?: string | null
+          supplier_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       wastewater_treatment: {
         Row: {
