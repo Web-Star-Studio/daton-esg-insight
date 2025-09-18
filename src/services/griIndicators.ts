@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Interfaces using Database types
 export interface GRIIndicatorMapping {
   id: string;
   company_id: string;
@@ -7,24 +8,24 @@ export interface GRIIndicatorMapping {
   source_table: string;
   source_column: string;
   mapping_formula?: string;
-  mapping_type: 'direct' | 'calculated' | 'aggregated';
+  mapping_type: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface GRIIndicatorTarget {
-  id: string;
-  company_id: string;
+  id?: string;
+  company_id?: string;
   indicator_id: string;
   target_year: number;
   target_value?: number;
   target_description?: string;
   baseline_value?: number;
   baseline_year?: number;
-  progress_tracking: any;
-  created_at: string;
-  updated_at: string;
+  progress_tracking?: any;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface GRIIndicatorBenchmark {
@@ -41,25 +42,25 @@ export interface GRIIndicatorBenchmark {
 }
 
 export interface GRIIndicatorEvidence {
-  id: string;
-  company_id: string;
+  id?: string;
+  company_id?: string;
   indicator_data_id: string;
   document_id?: string;
-  evidence_type: 'document' | 'calculation' | 'external_source';
+  evidence_type?: string;
   evidence_description?: string;
   file_path?: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface GRIIndicatorHistory {
-  id: string;
-  company_id: string;
+  id?: string;
+  company_id?: string;
   indicator_data_id: string;
   previous_value?: string;
   new_value?: string;
   change_reason?: string;
-  changed_by_user_id: string;
-  created_at: string;
+  changed_by_user_id?: string;
+  created_at?: string;
 }
 
 export interface SuggestedValue {
@@ -68,6 +69,32 @@ export interface SuggestedValue {
   data_source: string;
   confidence: 'high' | 'medium' | 'low';
 }
+
+// Helper functions
+const getCompanyId = async (): Promise<string> => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .single();
+  return profile?.company_id || '';
+};
+
+const getCurrentUserId = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id || '';
+};
+
+export const getIndicatorValue = (indicatorData: any): string | number | null => {
+  if (!indicatorData) return null;
+  
+  if (indicatorData.numeric_value !== null && indicatorData.numeric_value !== undefined) return indicatorData.numeric_value;
+  if (indicatorData.percentage_value !== null && indicatorData.percentage_value !== undefined) return indicatorData.percentage_value;
+  if (indicatorData.text_value !== null && indicatorData.text_value !== undefined) return indicatorData.text_value;
+  if (indicatorData.boolean_value !== null && indicatorData.boolean_value !== undefined) return indicatorData.boolean_value ? 'Sim' : 'Não';
+  if (indicatorData.date_value !== null && indicatorData.date_value !== undefined) return indicatorData.date_value;
+  
+  return null;
+};
 
 // Mappings API
 export async function getIndicatorMappings(companyId?: string): Promise<GRIIndicatorMapping[]> {
@@ -82,10 +109,10 @@ export async function getIndicatorMappings(companyId?: string): Promise<GRIIndic
     throw error;
   }
 
-  return (data || []) as GRIIndicatorMapping[];
+  return data || [];
 }
 
-export async function createIndicatorMapping(mapping: Partial<GRIIndicatorMapping>): Promise<GRIIndicatorMapping> {
+export async function createIndicatorMapping(mapping: Partial<GRIIndicatorMapping>): Promise<any> {
   const { data, error } = await supabase
     .from('gri_indicator_mappings')
     .insert(mapping as any)
@@ -97,10 +124,10 @@ export async function createIndicatorMapping(mapping: Partial<GRIIndicatorMappin
     throw error;
   }
 
-  return data as GRIIndicatorMapping;
+  return data;
 }
 
-export async function updateIndicatorMapping(id: string, updates: Partial<GRIIndicatorMapping>): Promise<GRIIndicatorMapping> {
+export async function updateIndicatorMapping(id: string, updates: Partial<GRIIndicatorMapping>): Promise<any> {
   const { data, error } = await supabase
     .from('gri_indicator_mappings')
     .update(updates)
@@ -149,10 +176,19 @@ export async function getIndicatorTargets(indicatorId?: string): Promise<GRIIndi
   return data || [];
 }
 
-export async function createIndicatorTarget(target: Partial<GRIIndicatorTarget>): Promise<GRIIndicatorTarget> {
+export async function createIndicatorTarget(target: Partial<GRIIndicatorTarget>): Promise<any> {
+  const companyId = await getCompanyId();
+  
+  const targetData = {
+    ...target,
+    company_id: target.company_id || companyId,
+    indicator_id: target.indicator_id!,
+    target_year: target.target_year!,
+  };
+
   const { data, error } = await supabase
     .from('gri_indicator_targets')
-    .insert(target)
+    .insert(targetData)
     .select()
     .single();
 
@@ -164,7 +200,7 @@ export async function createIndicatorTarget(target: Partial<GRIIndicatorTarget>)
   return data;
 }
 
-export async function updateIndicatorTarget(id: string, updates: Partial<GRIIndicatorTarget>): Promise<GRIIndicatorTarget> {
+export async function updateIndicatorTarget(id: string, updates: Partial<GRIIndicatorTarget>): Promise<any> {
   const { data, error } = await supabase
     .from('gri_indicator_targets')
     .update(updates)
@@ -233,10 +269,19 @@ export async function getIndicatorEvidence(indicatorDataId: string): Promise<GRI
   return data || [];
 }
 
-export async function createIndicatorEvidence(evidence: Partial<GRIIndicatorEvidence>): Promise<GRIIndicatorEvidence> {
+export async function createIndicatorEvidence(evidence: Partial<GRIIndicatorEvidence>): Promise<any> {
+  const companyId = await getCompanyId();
+  
+  const evidenceData = {
+    ...evidence,
+    company_id: evidence.company_id || companyId,
+    indicator_data_id: evidence.indicator_data_id!,
+    evidence_type: evidence.evidence_type || 'document',
+  };
+
   const { data, error } = await supabase
     .from('gri_indicator_evidence')
-    .insert(evidence)
+    .insert(evidenceData)
     .select()
     .single();
 
@@ -264,10 +309,20 @@ export async function getIndicatorHistory(indicatorDataId: string): Promise<GRII
   return data || [];
 }
 
-export async function createIndicatorHistory(history: Partial<GRIIndicatorHistory>): Promise<GRIIndicatorHistory> {
+export async function createIndicatorHistory(history: Partial<GRIIndicatorHistory>): Promise<any> {
+  const companyId = await getCompanyId();
+  const userId = await getCurrentUserId();
+  
+  const historyData = {
+    ...history,
+    company_id: history.company_id || companyId,
+    changed_by_user_id: history.changed_by_user_id || userId,
+    indicator_data_id: history.indicator_data_id!,
+  };
+
   const { data, error } = await supabase
     .from('gri_indicator_history')
-    .insert(history)
+    .insert(historyData)
     .select()
     .single();
 
@@ -280,7 +335,7 @@ export async function createIndicatorHistory(history: Partial<GRIIndicatorHistor
 }
 
 // Intelligent Suggestions API
-export async function getSuggestedValue(indicatorCode: string): Promise<SuggestedValue | null> {
+export async function getSuggestedValue(indicatorCode: string): Promise<any> {
   try {
     const { data, error } = await supabase.rpc('get_indicator_suggested_value', {
       p_company_id: null, // Will use get_user_company_id() in the function
@@ -292,7 +347,7 @@ export async function getSuggestedValue(indicatorCode: string): Promise<Suggeste
       return null;
     }
 
-    return data as SuggestedValue || null;
+    return data;
   } catch (error) {
     console.error('Error calling suggested value function:', error);
     return null;
@@ -317,7 +372,7 @@ export async function getIndicatorCompletionStats(): Promise<{
 
     const total = allIndicators?.length || 0;
     const completed = allIndicators?.filter(ind => ind.is_complete).length || 0;
-    const in_progress = allIndicators?.filter(ind => ind.value && !ind.is_complete).length || 0;
+    const in_progress = allIndicators?.filter(ind => getIndicatorValue(ind) && !ind.is_complete).length || 0;
     const not_started = total - completed - in_progress;
     const completion_percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -353,7 +408,7 @@ export async function getIndicatorsByCategory(): Promise<Record<string, any[]>> 
     if (error) throw error;
 
     const categorized = (data || []).reduce((acc, indicator) => {
-      const category = indicator.indicator?.category || 'Outros';
+      const category = indicator.indicator?.indicator_type || 'Outros';
       if (!acc[category]) {
         acc[category] = [];
       }
