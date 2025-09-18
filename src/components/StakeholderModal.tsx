@@ -16,10 +16,9 @@ interface StakeholderModalProps {
   onOpenChange: (open: boolean) => void;
   stakeholder?: Stakeholder | null;
   onSave: (stakeholder: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  companyId: string;
 }
 
-export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, companyId }: StakeholderModalProps) => {
+export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: StakeholderModalProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,7 +53,7 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
     try {
       await onSave({
         ...formData,
-        company_id: companyId,
+        company_id: '', // Será preenchido automaticamente via RLS
         is_active: true,
         category: formData.category as Stakeholder['category'],
         influence_level: formData.influence_level as Stakeholder['influence_level'],

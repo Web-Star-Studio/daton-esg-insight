@@ -18,6 +18,7 @@ import {
   Play
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   getMaterialityThemes,
   getMaterialityAssessments,
@@ -31,19 +32,19 @@ import {
 export default function AnaliseMaterialidade() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedAssessment, setSelectedAssessment] = useState<MaterialityAssessment | null>(null);
-
-  // Simulando company_id - em produção viria do contexto de autenticação
-  const companyId = "company-id";
 
   const { data: themes = [], isLoading: loadingThemes } = useQuery({
     queryKey: ['materiality-themes'],
     queryFn: () => getMaterialityThemes(),
+    enabled: !!user,
   });
 
   const { data: assessments = [], isLoading: loadingAssessments } = useQuery({
-    queryKey: ['materiality-assessments', companyId],
-    queryFn: () => getMaterialityAssessments(companyId),
+    queryKey: ['materiality-assessments'],
+    queryFn: () => getMaterialityAssessments(),
+    enabled: !!user,
   });
 
   const createAssessmentMutation = useMutation({
@@ -58,9 +59,11 @@ export default function AnaliseMaterialidade() {
   });
 
   const handleCreateAssessment = async () => {
+    if (!user) return;
+    
     const currentYear = new Date().getFullYear();
     const assessment: Omit<MaterialityAssessment, 'id' | 'created_at' | 'updated_at'> = {
-      company_id: companyId,
+      company_id: '', // Será obtido via RLS policy automaticamente
       title: `Avaliação de Materialidade ${currentYear}`,
       description: `Análise de materialidade para o exercício de ${currentYear}`,
       assessment_year: currentYear,
@@ -71,7 +74,7 @@ export default function AnaliseMaterialidade() {
       internal_score: {},
       external_score: {},
       final_matrix: {},
-      created_by_user_id: 'user-id', // Em produção viria do contexto
+      created_by_user_id: user.id,
     };
 
     await createAssessmentMutation.mutateAsync(assessment);

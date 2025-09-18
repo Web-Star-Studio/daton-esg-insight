@@ -24,6 +24,7 @@ import {
   Target
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   getStakeholders, 
   getStakeholderEngagementStats, 
@@ -37,22 +38,22 @@ import {
 export default function GestaoStakeholders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedStakeholder, setSelectedStakeholder] = useState<Stakeholder | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // Simulando company_id - em produção viria do contexto de autenticação
-  const companyId = "company-id";
-
   const { data: stakeholders = [], isLoading } = useQuery({
-    queryKey: ['stakeholders', companyId],
-    queryFn: () => getStakeholders(companyId),
+    queryKey: ['stakeholders'],
+    queryFn: () => getStakeholders(),
+    enabled: !!user,
   });
 
   const { data: engagementStats } = useQuery({
-    queryKey: ['stakeholder-stats', companyId],
-    queryFn: () => getStakeholderEngagementStats(companyId),
+    queryKey: ['stakeholder-stats'],
+    queryFn: () => getStakeholderEngagementStats(),
+    enabled: !!user,
   });
 
   const createMutation = useMutation({
@@ -425,7 +426,6 @@ export default function GestaoStakeholders() {
           onOpenChange={setIsModalOpen}
           stakeholder={selectedStakeholder}
           onSave={handleSave}
-          companyId={companyId}
         />
       </div>
     </MainLayout>
