@@ -542,25 +542,70 @@ export type Database = {
       }
       companies: {
         Row: {
+          annual_revenue: number | null
+          business_units: Json | null
           cnpj: string
           created_at: string
+          employee_count: number | null
+          fiscal_year_end: string | null
+          fiscal_year_start: string | null
+          governance_model: string | null
+          headquarters_address: string | null
+          headquarters_coordinates: Json | null
+          headquarters_country: string | null
           id: string
+          legal_structure: string | null
           name: string
+          reporting_scope: string | null
           sector: string | null
+          stock_exchange: string | null
+          stock_symbol: string | null
+          subsidiaries_excluded: Json | null
+          subsidiaries_included: Json | null
         }
         Insert: {
+          annual_revenue?: number | null
+          business_units?: Json | null
           cnpj: string
           created_at?: string
+          employee_count?: number | null
+          fiscal_year_end?: string | null
+          fiscal_year_start?: string | null
+          governance_model?: string | null
+          headquarters_address?: string | null
+          headquarters_coordinates?: Json | null
+          headquarters_country?: string | null
           id?: string
+          legal_structure?: string | null
           name: string
+          reporting_scope?: string | null
           sector?: string | null
+          stock_exchange?: string | null
+          stock_symbol?: string | null
+          subsidiaries_excluded?: Json | null
+          subsidiaries_included?: Json | null
         }
         Update: {
+          annual_revenue?: number | null
+          business_units?: Json | null
           cnpj?: string
           created_at?: string
+          employee_count?: number | null
+          fiscal_year_end?: string | null
+          fiscal_year_start?: string | null
+          governance_model?: string | null
+          headquarters_address?: string | null
+          headquarters_coordinates?: Json | null
+          headquarters_country?: string | null
           id?: string
+          legal_structure?: string | null
           name?: string
+          reporting_scope?: string | null
           sector?: string | null
+          stock_exchange?: string | null
+          stock_symbol?: string | null
+          subsidiaries_excluded?: Json | null
+          subsidiaries_included?: Json | null
         }
         Relationships: []
       }
@@ -2868,6 +2913,105 @@ export type Database = {
           },
         ]
       }
+      materiality_assessments: {
+        Row: {
+          assessment_year: number
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          external_score: Json | null
+          final_matrix: Json | null
+          id: string
+          internal_score: Json | null
+          methodology: string | null
+          report_summary: string | null
+          selected_themes: Json | null
+          stakeholder_participation: number | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_year: number
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          external_score?: Json | null
+          final_matrix?: Json | null
+          id?: string
+          internal_score?: Json | null
+          methodology?: string | null
+          report_summary?: string | null
+          selected_themes?: Json | null
+          stakeholder_participation?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_year?: number
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          external_score?: Json | null
+          final_matrix?: Json | null
+          id?: string
+          internal_score?: Json | null
+          methodology?: string | null
+          report_summary?: string | null
+          selected_themes?: Json | null
+          stakeholder_participation?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      materiality_themes: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string | null
+          gri_indicators: string[] | null
+          id: string
+          is_active: boolean
+          sector_relevance: string[] | null
+          subcategory: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          description?: string | null
+          gri_indicators?: string[] | null
+          id?: string
+          is_active?: boolean
+          sector_relevance?: string[] | null
+          subcategory?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          gri_indicators?: string[] | null
+          id?: string
+          is_active?: boolean
+          sector_relevance?: string[] | null
+          subcategory?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       materiality_topics: {
         Row: {
           business_impact: number | null
@@ -3198,6 +3342,174 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stakeholder_surveys: {
+        Row: {
+          assessment_id: string
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          instructions: string | null
+          is_anonymous: boolean
+          response_deadline: string | null
+          status: string
+          survey_config: Json
+          target_stakeholder_categories: string[] | null
+          title: string
+          total_invitations: number | null
+          total_responses: number | null
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          is_anonymous?: boolean
+          response_deadline?: string | null
+          status?: string
+          survey_config?: Json
+          target_stakeholder_categories?: string[] | null
+          title: string
+          total_invitations?: number | null
+          total_responses?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          is_anonymous?: boolean
+          response_deadline?: string | null
+          status?: string
+          survey_config?: Json
+          target_stakeholder_categories?: string[] | null
+          title?: string
+          total_invitations?: number | null
+          total_responses?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stakeholders: {
+        Row: {
+          category: string
+          company_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          engagement_frequency: string | null
+          id: string
+          influence_level: string | null
+          interest_level: string | null
+          is_active: boolean
+          name: string
+          notes: string | null
+          organization: string | null
+          position: string | null
+          preferred_communication: string | null
+          subcategory: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          engagement_frequency?: string | null
+          id?: string
+          influence_level?: string | null
+          interest_level?: string | null
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          organization?: string | null
+          position?: string | null
+          preferred_communication?: string | null
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          engagement_frequency?: string | null
+          id?: string
+          influence_level?: string | null
+          interest_level?: string | null
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          organization?: string | null
+          position?: string | null
+          preferred_communication?: string | null
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      survey_responses: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          completion_percentage: number | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          response_data: Json
+          stakeholder_category: string | null
+          stakeholder_id: string | null
+          stakeholder_organization: string | null
+          started_at: string | null
+          survey_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          response_data?: Json
+          stakeholder_category?: string | null
+          stakeholder_id?: string | null
+          stakeholder_organization?: string | null
+          started_at?: string | null
+          survey_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          response_data?: Json
+          stakeholder_category?: string | null
+          stakeholder_id?: string | null
+          stakeholder_organization?: string | null
+          started_at?: string | null
+          survey_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       transport_distribution: {
         Row: {
