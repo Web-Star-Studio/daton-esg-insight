@@ -44,6 +44,7 @@ import {
 } from "@/services/griReports";
 import { GRIReportExportModal } from "./GRIReportExportModal";
 import { AIContentGeneratorModal } from "./AIContentGeneratorModal";
+import { GRIAutoFillModal } from "./GRIAutoFillModal";
 
 interface GRIReportBuilderModalProps {
   isOpen: boolean;
@@ -75,6 +76,7 @@ export function GRIReportBuilderModal({
   // AI and Export modals
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<GRIReportSection | null>(null);
 
   useEffect(() => {
@@ -332,8 +334,42 @@ export function GRIReportBuilderModal({
             Progresso geral do relatório: {Math.round(report.completion_percentage || 0)}% completo
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Progress value={report.completion_percentage || 0} className="h-3" />
+          
+          {/* Auto Fill Quick Actions */}
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAutoFillModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Auto Preenchimento
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast({
+                title: "Em breve",
+                description: "Funcionalidade de validação em desenvolvimento.",
+              })}
+              className="flex items-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Validar Dados
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Prévia
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -759,6 +795,20 @@ export function GRIReportBuilderModal({
             isOpen={isExportModalOpen}
             onClose={() => setIsExportModalOpen(false)}
             report={report}
+          />
+        )}
+
+        {/* Auto Fill Modal */}
+        {isAutoFillModalOpen && (
+          <GRIAutoFillModal
+            isOpen={isAutoFillModalOpen}
+            onClose={() => setIsAutoFillModalOpen(false)}
+            reportId={report.id}
+            companyId={report.company_id}
+            onUpdate={() => {
+              loadReportData();
+              onUpdate();
+            }}
           />
         )}
       </DialogContent>

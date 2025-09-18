@@ -205,7 +205,11 @@ export function GRIIndicatorDashboard({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => window.dispatchEvent(new CustomEvent('autoFillAll'))}
+            >
               <Bot className="h-6 w-6" />
               <div className="text-center">
                 <p className="font-medium">Preenchimento Automático</p>
@@ -215,17 +219,25 @@ export function GRIIndicatorDashboard({
               </div>
             </Button>
             
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => window.dispatchEvent(new CustomEvent('autoFillMandatory'))}
+            >
               <TrendingUp className="h-6 w-6" />
               <div className="text-center">
-                <p className="font-medium">Sugestões Inteligentes</p>
+                <p className="font-medium">Obrigatórios Primeiro</p>
                 <p className="text-xs text-muted-foreground">
-                  Receba sugestões baseadas em IA
+                  Preencher apenas indicadores obrigatórios
                 </p>
               </div>
             </Button>
             
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => window.dispatchEvent(new CustomEvent('showTargets'))}
+            >
               <Target className="h-6 w-6" />
               <div className="text-center">
                 <p className="font-medium">Definir Metas</p>

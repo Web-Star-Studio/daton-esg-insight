@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "@/hooks/use-toast";
 import { 
   Search, 
   Filter, 
@@ -19,6 +20,7 @@ import {
   Plus
 } from "lucide-react";
 import { GRIIndicatorManagementModal } from "@/components/GRIIndicatorManagementModal";
+import { AutoFillDemoButton } from "@/components/AutoFillDemoButton";
 import { GRIIndicatorDashboard } from "@/components/GRIIndicatorDashboard";
 import { GRIEnvironmentalModule } from "@/components/GRIEnvironmentalModule";
 import { GRISocialModule } from "@/components/GRISocialModule";
@@ -226,6 +228,16 @@ export default function IndicadoresGRI() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Auto Fill Demo Section */}
+      <AutoFillDemoButton 
+        onUpdate={() => {
+          toast({
+            title: "Demonstração",
+            description: "Esta é uma demonstração do auto preenchimento!",
+          });
+        }}
+      />
 
       {/* Management Modal */}
       {showManagementModal && (
