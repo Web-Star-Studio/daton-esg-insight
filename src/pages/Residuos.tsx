@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { getWasteLogs, getWasteDashboard } from "@/services/waste"
 import { useToast } from "@/hooks/use-toast"
+import PGRSStatusCard from "@/components/PGRSStatusCard"
+import { getActivePGRSStatus } from "@/services/pgrsReports"
 
 const Residuos = () => {
   const navigate = useNavigate()
@@ -32,6 +34,12 @@ const Residuos = () => {
   const { data: dashboard, isLoading: isLoadingDashboard, error: dashboardError } = useQuery({
     queryKey: ['waste-dashboard'],
     queryFn: () => getWasteDashboard(),
+  })
+
+  // Fetch PGRS status
+  const { data: pgrsStatus, isLoading: isLoadingPGRS, refetch: refetchPGRS } = useQuery({
+    queryKey: ['pgrs-status'],
+    queryFn: () => getActivePGRSStatus(),
   })
 
   // Show error toast if any query fails
@@ -122,6 +130,12 @@ const Residuos = () => {
             + Registrar Destinação
           </Button>
         </div>
+
+        {/* PGRS Status Card */}
+        <PGRSStatusCard 
+          pgrsStatus={pgrsStatus} 
+          onUpdate={refetchPGRS}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
