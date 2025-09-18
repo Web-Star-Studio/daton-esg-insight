@@ -13,12 +13,15 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Upload, X } from "lucide-react"
+import { CalendarIcon, Upload, X, FileText } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState, useEffect } from "react"
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
 import { createWasteLog, uploadWasteDocument } from "@/services/waste"
 import { useToast } from "@/hooks/use-toast"
+import { getActivePGRSPlan } from "@/services/pgrsReports"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
@@ -33,6 +36,8 @@ const formSchema = z.object({
   cnpjDestinador: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ inválido").optional().or(z.literal("")),
   tipoDestinacao: z.string().min(1, "Tipo de destinação é obrigatório"),
   custo: z.number().min(0, "Custo deve ser positivo").optional(),
+  pgrsSourceId: z.string().optional(),
+  pgrsWasteTypeId: z.string().optional(),
 })
 
 const RegistrarDestinacao = () => {
@@ -40,6 +45,13 @@ const RegistrarDestinacao = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+
+  // Fetch active PGRS plan
+  const { data: activePGRS } = useQuery({
+    queryKey: ['active-pgrs'],
+    queryFn: getActivePGRSPlan,
+    staleTime: 5 * 60 * 1000 // 5 minutes
+  })
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -55,8 +67,26 @@ const RegistrarDestinacao = () => {
       cnpjDestinador: "",
       tipoDestinacao: "",
       custo: 0,
+      pgrsSourceId: "",
+      pgrsWasteTypeId: "",
     },
   })
+
+  // Auto-fill waste type when PGRS waste type is selected
+  useEffect(() => {
+    const selectedPgrsWasteTypeId = form.watch("pgrsWasteTypeId")
+    if (selectedPgrsWasteTypeId && activePGRS?.sources) {
+      for (const source of activePGRS.sources) {
+        const wasteType = source.waste_types?.find(wt => wt.id === selectedPgrsWasteTypeId)
+        if (wasteType) {
+          form.setValue("descricaoResiduo", wasteType.waste_name)
+          form.setValue("classe", wasteType.hazard_class)
+          form.setValue("unidade", wasteType.unit)
+          break
+        }
+      }
+    }
+  }, [form.watch("pgrsWasteTypeId"), activePGRS, form])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -136,13 +166,27 @@ const RegistrarDestinacao = () => {
 
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+        {/* PGRS Status Alert */}
+        {activePGRS && (
+          <Alert className="border-green-200 bg-green-50">
+            <FileText className="h-4 w-4" />
+            <AlertDescription>
+              <div className="flex items-center gap-2">
+                <span>PGRS Ativo: <strong>{activePGRS.plan_name}</strong></span>
+                <Badge variant="outline">v{activePGRS.version}</Badge>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Cabeçalho da página */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Registrar Destinação de Resíduo</h1>
             <p className="text-muted-foreground mt-1">
               Preencha os dados da movimentação de resíduo
+              {activePGRS && " - Relacionar com PGRS ativo"}
             </p>
           </div>
           <div className="flex gap-3">
@@ -232,6 +276,63 @@ const RegistrarDestinacao = () => {
                 <CardTitle>Caracterização do Resíduo</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* PGRS Integration Section */}
+                {activePGRS && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <FormField
+                      control={form.control}
+                      name="pgrsSourceId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fonte Geradora (PGRS)</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma fonte do PGRS" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {activePGRS.sources?.map((source) => (
+                                <SelectItem key={source.id} value={source.id}>
+                                  {source.source_name} - {source.source_type}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="pgrsWasteTypeId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Resíduo (PGRS)</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um tipo do PGRS" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {activePGRS.sources?.flatMap(source => 
+                                source.waste_types?.map(wasteType => (
+                                  <SelectItem key={wasteType.id} value={wasteType.id}>
+                                    {wasteType.waste_name} ({wasteType.hazard_class})
+                                  </SelectItem>
+                                )) || []
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
                 <FormField
                   control={form.control}
                   name="descricaoResiduo"

@@ -207,6 +207,27 @@ export async function downloadPGRSReport(planId: string, filename?: string): Pro
   }
 }
 
+export const getActivePGRSPlan = async () => {
+  const { data, error } = await supabase
+    .from('pgrs_plans')
+    .select(`
+      *,
+      sources:pgrs_waste_sources(
+        *,
+        waste_types:pgrs_waste_types(*)
+      )
+    `)
+    .eq('status', 'Ativo')
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching active PGRS plan:', error)
+    throw error
+  }
+
+  return data
+}
+
 export async function getActivePGRSStatus() {
   try {
     const { data: profile } = await supabase
