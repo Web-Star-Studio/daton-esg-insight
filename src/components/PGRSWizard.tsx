@@ -9,7 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, FileText, Target, ClipboardList, Save } from "lucide-react";
-import { createPGRSPlan, createWasteSource, createWasteType, createProcedure, createPGRSGoal } from "@/services/pgrs";
+import { 
+  createPGRSPlan, 
+  createWasteSource, 
+  createWasteType, 
+  createProcedure, 
+  createPGRSGoal,
+  CreatePGRSPlanData,
+  CreateWasteSourceData,
+  CreateWasteTypeData,
+  CreatePGRSProcedureData,
+  CreatePGRSGoalData
+} from "@/services/pgrs";
 
 interface PGRSWizardProps {
   open: boolean;
@@ -17,41 +28,49 @@ interface PGRSWizardProps {
   onSuccess?: () => void;
 }
 
+interface WizardWasteType {
+  waste_name: string;
+  hazard_class: string;
+  ibama_code: string;
+  composition: string;
+  estimated_quantity_monthly: string;
+  unit: string;
+}
+
+interface WizardSource {
+  source_name: string;
+  source_type: string;
+  location: string;
+  description: string;
+  waste_types: WizardWasteType[];
+}
+
+interface WizardProcedure {
+  procedure_type: string;
+  title: string;
+  description: string;
+  infrastructure_details: string;
+  responsible_role: string;
+  frequency: string;
+}
+
+interface WizardGoal {
+  goal_type: string;
+  baseline_value: string;
+  target_value: string;
+  unit: string;
+  deadline: string;
+  responsible_user_id: string;
+}
+
 interface WizardData {
   plan: {
     plan_name: string;
     responsible_user_id?: string;
   };
-  sources: Array<{
-    source_name: string;
-    source_type: string;
-    location?: string;
-    description?: string;
-    waste_types: Array<{
-      waste_name: string;
-      hazard_class: string;
-      ibama_code?: string;
-      composition?: string;
-      estimated_quantity_monthly: number;
-      unit: string;
-    }>;
-  }>;
-  procedures: Array<{
-    procedure_type: string;
-    title: string;
-    description: string;
-    infrastructure_details?: string;
-    responsible_role?: string;
-    frequency?: string;
-  }>;
-  goals: Array<{
-    goal_type: string;
-    baseline_value: number;
-    target_value: number;
-    unit: string;
-    deadline: string;
-    responsible_user_id?: string;
-  }>;
+  sources: WizardSource[];
+  procedures: WizardProcedure[];
+  goals: WizardGoal[];
 }
 
 const sourceTypes = [
@@ -129,7 +148,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                 hazard_class: '',
                 ibama_code: '',
                 composition: '',
-                estimated_quantity_monthly: 0,
+                estimated_quantity_monthly: '0',
                 unit: 'kg'
               }]
             }
@@ -178,8 +197,8 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
       ...prev,
       goals: [...prev.goals, {
         goal_type: '',
-        baseline_value: 0,
-        target_value: 0,
+        baseline_value: '0',
+        target_value: '0',
         unit: 'kg',
         deadline: '',
         responsible_user_id: ''
@@ -384,7 +403,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                     <div className="space-y-2">
                       <Label>Localização</Label>
                       <Input
-                        value={source.location || ''}
+                        value={source.location}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           sources: prev.sources.map((s, i) => 
@@ -399,7 +418,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                   <div className="space-y-2">
                     <Label>Descrição</Label>
                     <Textarea
-                      value={source.description || ''}
+                      value={source.description}
                       onChange={(e) => setWizardData(prev => ({
                         ...prev,
                         sources: prev.sources.map((s, i) => 
@@ -491,7 +510,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                             <Label className="text-xs">Código IBAMA</Label>
                             <Input
                               size="sm"
-                              value={wasteType.ibama_code || ''}
+                              value={wasteType.ibama_code}
                               onChange={(e) => setWizardData(prev => ({
                                 ...prev,
                                 sources: prev.sources.map((s, i) => 
@@ -511,18 +530,18 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                             <Input
                               size="sm"
                               type="number"
-                              value={wasteType.estimated_quantity_monthly}
-                      onChange={(e) => setWizardData(prev => ({
-                        ...prev,
-                        sources: prev.sources.map((s, i) => 
-                          i === sourceIndex ? {
-                            ...s,
-                            waste_types: s.waste_types.map((wt, j) =>
-                              j === typeIndex ? { ...wt, estimated_quantity_monthly: Number(e.target.value) || 0 } : wt
-                            )
-                          } : s
-                        )
-                      }))}
+                              value={wasteType.estimated_quantity_monthly.toString()}
+                              onChange={(e) => setWizardData(prev => ({
+                                ...prev,
+                                sources: prev.sources.map((s, i) => 
+                                  i === sourceIndex ? {
+                                    ...s,
+                                    waste_types: s.waste_types.map((wt, j) =>
+                                      j === typeIndex ? { ...wt, estimated_quantity_monthly: parseFloat(e.target.value) || 0 } : wt
+                                    )
+                                  } : s
+                                )
+                              }))}
                             />
                           </div>
                           <div className="space-y-1">
@@ -647,7 +666,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                     <div className="space-y-2">
                       <Label>Responsável</Label>
                       <Input
-                        value={procedure.responsible_role || ''}
+                        value={procedure.responsible_role}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           procedures: prev.procedures.map((p, i) => 
@@ -660,7 +679,7 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                     <div className="space-y-2">
                       <Label>Frequência</Label>
                       <Input
-                        value={procedure.frequency || ''}
+                        value={procedure.frequency}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           procedures: prev.procedures.map((p, i) => 
@@ -747,11 +766,11 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                       <Label>Valor Baseline</Label>
                       <Input
                         type="number"
-                        value={goal.baseline_value}
+                        value={goal.baseline_value.toString()}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           goals: prev.goals.map((g, i) => 
-                            i === index ? { ...g, baseline_value: Number(e.target.value) || 0 } : g
+                            i === index ? { ...g, baseline_value: parseFloat(e.target.value) || 0 } : g
                           )
                         }))}
                         placeholder="0"
@@ -761,11 +780,11 @@ export function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizardProps) {
                       <Label>Valor Meta</Label>
                       <Input
                         type="number"
-                        value={goal.target_value}
+                        value={goal.target_value.toString()}
                         onChange={(e) => setWizardData(prev => ({
                           ...prev,
                           goals: prev.goals.map((g, i) => 
-                            i === index ? { ...g, target_value: Number(e.target.value) || 0 } : g
+                            i === index ? { ...g, target_value: parseFloat(e.target.value) || 0 } : g
                           )
                         }))}
                         placeholder="0"

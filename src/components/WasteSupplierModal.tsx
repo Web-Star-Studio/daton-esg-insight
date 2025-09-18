@@ -30,7 +30,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
   const [formData, setFormData] = useState({
     company_name: '',
     cnpj: '',
-    supplier_type: '' as 'transporter' | 'destination' | 'both',
+    supplier_type: '' as string,
     contact_name: '',
     contact_email: '',
     contact_phone: '',

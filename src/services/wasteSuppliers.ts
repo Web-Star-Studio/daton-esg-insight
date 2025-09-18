@@ -5,7 +5,7 @@ export interface WasteSupplier {
   company_id: string;
   company_name: string;
   cnpj?: string;
-  supplier_type: 'transporter' | 'destination' | 'both';
+  supplier_type: string;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
@@ -24,7 +24,7 @@ export interface WasteSupplier {
 export interface CreateWasteSupplierData {
   company_name: string;
   cnpj?: string;
-  supplier_type: 'transporter' | 'destination' | 'both';
+  supplier_type: string;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
@@ -58,6 +58,21 @@ export interface WasteSuppliersStats {
     both: number;
   };
 }
+
+// Helper function to get current company ID
+const getCurrentUserCompanyId = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  return profile.company_id;
+};
 
 // Get all waste suppliers with filters
 export const getWasteSuppliers = async (filters?: WasteSupplierFilters): Promise<WasteSupplier[]> => {
@@ -98,9 +113,11 @@ export const getWasteSupplierById = async (id: string): Promise<WasteSupplier> =
 
 // Create waste supplier
 export const createWasteSupplier = async (supplierData: CreateWasteSupplierData): Promise<WasteSupplier> => {
+  const companyId = await getCurrentUserCompanyId();
+  
   const { data, error } = await supabase
     .from('waste_suppliers')
-    .insert(supplierData)
+    .insert({ ...supplierData, company_id: companyId })
     .select()
     .single();
 

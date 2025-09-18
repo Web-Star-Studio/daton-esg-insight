@@ -14,6 +14,13 @@ export interface PGRSPlan {
   updated_at: string;
 }
 
+export interface CreatePGRSPlanData {
+  plan_name: string;
+  responsible_user_id?: string;
+  version?: string;
+  status?: string;
+}
+
 export interface WasteSource {
   id: string;
   pgrs_plan_id: string;
@@ -22,6 +29,14 @@ export interface WasteSource {
   location?: string;
   description?: string;
   waste_types?: WasteType[];
+}
+
+export interface CreateWasteSourceData {
+  pgrs_plan_id: string;
+  source_name: string;
+  source_type: string;
+  location?: string;
+  description?: string;
 }
 
 export interface WasteType {
@@ -36,8 +51,29 @@ export interface WasteType {
   unit: string;
 }
 
+export interface CreateWasteTypeData {
+  source_id: string;
+  waste_name: string;
+  hazard_class: string;
+  ibama_code?: string;
+  conama_code?: string;
+  composition?: string;
+  estimated_quantity_monthly: number;
+  unit: string;
+}
+
 export interface PGRSProcedure {
   id: string;
+  pgrs_plan_id: string;
+  procedure_type: string;
+  title: string;
+  description: string;
+  infrastructure_details?: string;
+  responsible_role?: string;
+  frequency?: string;
+}
+
+export interface CreatePGRSProcedureData {
   pgrs_plan_id: string;
   procedure_type: string;
   title: string;
@@ -62,6 +98,19 @@ export interface PGRSGoal {
   progress_percentage: number;
 }
 
+export interface CreatePGRSGoalData {
+  pgrs_plan_id: string;
+  goal_type: string;
+  target_value: number;
+  unit: string;
+  deadline: string;
+  waste_type_id?: string;
+  baseline_value?: number;
+  current_value?: number;
+  responsible_user_id?: string;
+  status?: string;
+}
+
 export interface PGRSAction {
   id: string;
   goal_id: string;
@@ -72,6 +121,30 @@ export interface PGRSAction {
   completion_date?: string;
   notes?: string;
 }
+
+export interface CreatePGRSActionData {
+  goal_id: string;
+  action_description: string;
+  due_date: string;
+  responsible_user_id?: string;
+  status?: string;
+  notes?: string;
+}
+
+// Helper function to get current user's company ID
+const getCurrentUserCompanyId = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  return profile.company_id;
+};
 
 // PGRS Plans Management
 export const getPGRSPlans = async (): Promise<PGRSPlan[]> => {
@@ -95,10 +168,12 @@ export const getPGRSPlanById = async (id: string): Promise<PGRSPlan | null> => {
   return data;
 };
 
-export const createPGRSPlan = async (planData: Partial<PGRSPlan>): Promise<PGRSPlan> => {
+export const createPGRSPlan = async (planData: CreatePGRSPlanData): Promise<PGRSPlan> => {
+  const companyId = await getCurrentUserCompanyId();
+  
   const { data, error } = await supabase
     .from('pgrs_plans')
-    .insert(planData)
+    .insert({ ...planData, company_id: companyId })
     .select()
     .single();
 
@@ -133,7 +208,7 @@ export const getWasteSourcesByPlan = async (planId: string): Promise<WasteSource
   return data || [];
 };
 
-export const createWasteSource = async (sourceData: Partial<WasteSource>): Promise<WasteSource> => {
+export const createWasteSource = async (sourceData: CreateWasteSourceData): Promise<WasteSource> => {
   const { data, error } = await supabase
     .from('pgrs_waste_sources')
     .insert(sourceData)
@@ -166,7 +241,7 @@ export const deleteWasteSource = async (id: string): Promise<void> => {
 };
 
 // Waste Types Management
-export const createWasteType = async (typeData: Partial<WasteType>): Promise<WasteType> => {
+export const createWasteType = async (typeData: CreateWasteTypeData): Promise<WasteType> => {
   const { data, error } = await supabase
     .from('pgrs_waste_types')
     .insert(typeData)
@@ -210,7 +285,7 @@ export const getProceduresByPlan = async (planId: string): Promise<PGRSProcedure
   return data || [];
 };
 
-export const createProcedure = async (procedureData: Partial<PGRSProcedure>): Promise<PGRSProcedure> => {
+export const createProcedure = async (procedureData: CreatePGRSProcedureData): Promise<PGRSProcedure> => {
   const { data, error } = await supabase
     .from('pgrs_procedures')
     .insert(procedureData)
@@ -245,7 +320,7 @@ export const getGoalsByPlan = async (planId: string): Promise<PGRSGoal[]> => {
   return data || [];
 };
 
-export const createPGRSGoal = async (goalData: Partial<PGRSGoal>): Promise<PGRSGoal> => {
+export const createPGRSGoal = async (goalData: CreatePGRSGoalData): Promise<PGRSGoal> => {
   const { data, error } = await supabase
     .from('pgrs_goals')
     .insert(goalData)
@@ -280,7 +355,7 @@ export const getActionsByGoal = async (goalId: string): Promise<PGRSAction[]> =>
   return data || [];
 };
 
-export const createPGRSAction = async (actionData: Partial<PGRSAction>): Promise<PGRSAction> => {
+export const createPGRSAction = async (actionData: CreatePGRSActionData): Promise<PGRSAction> => {
   const { data, error } = await supabase
     .from('pgrs_actions')
     .insert(actionData)
