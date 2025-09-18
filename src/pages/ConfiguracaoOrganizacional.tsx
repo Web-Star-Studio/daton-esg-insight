@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OrganizationalProfile {
   id: string;
@@ -66,9 +67,7 @@ interface Subsidiary {
 export default function ConfiguracaoOrganizacional() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Simulando company_id - em produção viria do contexto de autenticação
-  const companyId = "company-id";
+  const { user } = useAuth();
 
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
   const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([]);
@@ -76,17 +75,18 @@ export default function ConfiguracaoOrganizacional() {
   const [newSubsidiary, setNewSubsidiary] = useState<Partial<Subsidiary>>({});
 
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['organizational-profile', companyId],
+    queryKey: ['organizational-profile'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
         .select('*')
-        .eq('id', companyId)
+        .limit(1)
         .single();
       
       if (error) throw error;
       return data as OrganizationalProfile;
     },
+    enabled: !!user,
   });
 
   const updateProfileMutation = useMutation({
@@ -94,7 +94,7 @@ export default function ConfiguracaoOrganizacional() {
       const { data, error } = await supabase
         .from('companies')
         .update(updates)
-        .eq('id', companyId)
+        .eq('id', profile?.id)
         .select()
         .single();
       
@@ -113,7 +113,7 @@ export default function ConfiguracaoOrganizacional() {
   const [formData, setFormData] = useState<Partial<OrganizationalProfile>>({});
 
   // Atualizar formData quando profile for carregado
-  useState(() => {
+  useEffect(() => {
     if (profile) {
       setFormData(profile);
       setBusinessUnits(profile.business_units || []);
@@ -122,7 +122,7 @@ export default function ConfiguracaoOrganizacional() {
         ...(profile.subsidiaries_excluded || []).map((s: any) => ({ ...s, included_in_scope: false }))
       ]);
     }
-  });
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
