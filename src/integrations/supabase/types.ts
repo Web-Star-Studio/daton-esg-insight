@@ -442,6 +442,63 @@ export type Database = {
         }
         Relationships: []
       }
+      board_members: {
+        Row: {
+          age: number | null
+          appointment_date: string
+          biography: string | null
+          committee: string | null
+          company_id: string
+          created_at: string
+          experience_years: number | null
+          expertise_areas: string[] | null
+          full_name: string
+          gender: string | null
+          id: string
+          is_independent: boolean | null
+          position: string
+          status: string | null
+          term_end_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          appointment_date: string
+          biography?: string | null
+          committee?: string | null
+          company_id: string
+          created_at?: string
+          experience_years?: number | null
+          expertise_areas?: string[] | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          is_independent?: boolean | null
+          position: string
+          status?: string | null
+          term_end_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          appointment_date?: string
+          biography?: string | null
+          committee?: string | null
+          company_id?: string
+          created_at?: string
+          experience_years?: number | null
+          expertise_areas?: string[] | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          is_independent?: boolean | null
+          position?: string
+          status?: string | null
+          term_end_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calculated_emissions: {
         Row: {
           activity_data_id: string
@@ -788,6 +845,63 @@ export type Database = {
           source?: string
           to_unit?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      corporate_policies: {
+        Row: {
+          approval_date: string | null
+          approved_by_user_id: string | null
+          category: string
+          company_id: string
+          content: string | null
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          effective_date: string
+          file_path: string | null
+          id: string
+          review_date: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          category: string
+          company_id: string
+          content?: string | null
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          effective_date: string
+          file_path?: string | null
+          id?: string
+          review_date?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          category?: string
+          company_id?: string
+          content?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          effective_date?: string
+          file_path?: string | null
+          id?: string
+          review_date?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          version?: string | null
         }
         Relationships: []
       }
@@ -1347,6 +1461,120 @@ export type Database = {
           },
         ]
       }
+      employee_trainings: {
+        Row: {
+          company_id: string
+          completion_date: string | null
+          created_at: string
+          employee_id: string
+          expiration_date: string | null
+          id: string
+          notes: string | null
+          score: number | null
+          status: string | null
+          trainer: string | null
+          training_program_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          completion_date?: string | null
+          created_at?: string
+          employee_id: string
+          expiration_date?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          status?: string | null
+          trainer?: string | null
+          training_program_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          completion_date?: string | null
+          created_at?: string
+          employee_id?: string
+          expiration_date?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          status?: string | null
+          trainer?: string | null
+          training_program_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          birth_date: string | null
+          company_id: string
+          created_at: string
+          department: string | null
+          education_level: string | null
+          email: string | null
+          employee_code: string
+          employment_type: string | null
+          ethnicity: string | null
+          full_name: string
+          gender: string | null
+          hire_date: string
+          id: string
+          location: string | null
+          manager_id: string | null
+          phone: string | null
+          position: string | null
+          salary: number | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          birth_date?: string | null
+          company_id: string
+          created_at?: string
+          department?: string | null
+          education_level?: string | null
+          email?: string | null
+          employee_code: string
+          employment_type?: string | null
+          ethnicity?: string | null
+          full_name: string
+          gender?: string | null
+          hire_date: string
+          id?: string
+          location?: string | null
+          manager_id?: string | null
+          phone?: string | null
+          position?: string | null
+          salary?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          birth_date?: string | null
+          company_id?: string
+          created_at?: string
+          department?: string | null
+          education_level?: string | null
+          email?: string | null
+          employee_code?: string
+          employment_type?: string | null
+          ethnicity?: string | null
+          full_name?: string
+          gender?: string | null
+          hire_date?: string
+          id?: string
+          location?: string | null
+          manager_id?: string | null
+          phone?: string | null
+          position?: string | null
+          salary?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       esg_metrics: {
         Row: {
           company_id: string
@@ -1387,6 +1615,132 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      esg_performance_indicators: {
+        Row: {
+          benchmark_value: number | null
+          calculation_method: string | null
+          company_id: string
+          created_at: string
+          current_value: number | null
+          data_source: string | null
+          esg_category: string
+          id: string
+          indicator_code: string
+          indicator_name: string
+          is_kpi: boolean | null
+          measurement_unit: string | null
+          reporting_period: string
+          responsible_user_id: string | null
+          target_value: number | null
+          trend: string | null
+          updated_at: string
+        }
+        Insert: {
+          benchmark_value?: number | null
+          calculation_method?: string | null
+          company_id: string
+          created_at?: string
+          current_value?: number | null
+          data_source?: string | null
+          esg_category: string
+          id?: string
+          indicator_code: string
+          indicator_name: string
+          is_kpi?: boolean | null
+          measurement_unit?: string | null
+          reporting_period: string
+          responsible_user_id?: string | null
+          target_value?: number | null
+          trend?: string | null
+          updated_at?: string
+        }
+        Update: {
+          benchmark_value?: number | null
+          calculation_method?: string | null
+          company_id?: string
+          created_at?: string
+          current_value?: number | null
+          data_source?: string | null
+          esg_category?: string
+          id?: string
+          indicator_code?: string
+          indicator_name?: string
+          is_kpi?: boolean | null
+          measurement_unit?: string | null
+          reporting_period?: string
+          responsible_user_id?: string | null
+          target_value?: number | null
+          trend?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      esg_risks: {
+        Row: {
+          company_id: string
+          control_measures: string | null
+          created_at: string
+          esg_category: string
+          id: string
+          impact: string
+          inherent_risk_level: string | null
+          last_review_date: string | null
+          mitigation_actions: string | null
+          next_review_date: string | null
+          owner_user_id: string | null
+          probability: string
+          residual_risk_level: string | null
+          review_frequency: string | null
+          risk_category: string | null
+          risk_description: string
+          risk_title: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          control_measures?: string | null
+          created_at?: string
+          esg_category: string
+          id?: string
+          impact: string
+          inherent_risk_level?: string | null
+          last_review_date?: string | null
+          mitigation_actions?: string | null
+          next_review_date?: string | null
+          owner_user_id?: string | null
+          probability: string
+          residual_risk_level?: string | null
+          review_frequency?: string | null
+          risk_category?: string | null
+          risk_description: string
+          risk_title: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          control_measures?: string | null
+          created_at?: string
+          esg_category?: string
+          id?: string
+          impact?: string
+          inherent_risk_level?: string | null
+          last_review_date?: string | null
+          mitigation_actions?: string | null
+          next_review_date?: string | null
+          owner_user_id?: string | null
+          probability?: string
+          residual_risk_level?: string | null
+          review_frequency?: string | null
+          risk_category?: string | null
+          risk_description?: string
+          risk_title?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       esg_solution_providers: {
         Row: {
@@ -2501,6 +2855,72 @@ export type Database = {
         }
         Relationships: []
       }
+      integrated_reports: {
+        Row: {
+          approved_by_user_id: string | null
+          company_id: string
+          content: Json | null
+          created_at: string
+          created_by_user_id: string
+          environmental_score: number | null
+          file_path: string | null
+          framework: string | null
+          governance_score: number | null
+          id: string
+          overall_esg_score: number | null
+          published_at: string | null
+          report_title: string
+          report_type: string
+          reporting_period_end: string
+          reporting_period_start: string
+          social_score: number | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by_user_id?: string | null
+          company_id: string
+          content?: Json | null
+          created_at?: string
+          created_by_user_id: string
+          environmental_score?: number | null
+          file_path?: string | null
+          framework?: string | null
+          governance_score?: number | null
+          id?: string
+          overall_esg_score?: number | null
+          published_at?: string | null
+          report_title: string
+          report_type: string
+          reporting_period_end: string
+          reporting_period_start: string
+          social_score?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by_user_id?: string | null
+          company_id?: string
+          content?: Json | null
+          created_at?: string
+          created_by_user_id?: string
+          environmental_score?: number | null
+          file_path?: string | null
+          framework?: string | null
+          governance_score?: number | null
+          id?: string
+          overall_esg_score?: number | null
+          published_at?: string | null
+          report_title?: string
+          report_type?: string
+          reporting_period_end?: string
+          reporting_period_start?: string
+          social_score?: number | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       land_use_change: {
         Row: {
           area_hectares: number
@@ -3226,6 +3646,72 @@ export type Database = {
         }
         Relationships: []
       }
+      safety_incidents: {
+        Row: {
+          company_id: string
+          corrective_actions: string | null
+          created_at: string
+          days_lost: number | null
+          description: string
+          employee_id: string | null
+          id: string
+          immediate_cause: string | null
+          incident_date: string
+          incident_time: string | null
+          incident_type: string
+          investigation_completed_at: string | null
+          location: string | null
+          medical_treatment_required: boolean | null
+          reported_by_user_id: string
+          root_cause: string | null
+          severity: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          corrective_actions?: string | null
+          created_at?: string
+          days_lost?: number | null
+          description: string
+          employee_id?: string | null
+          id?: string
+          immediate_cause?: string | null
+          incident_date: string
+          incident_time?: string | null
+          incident_type: string
+          investigation_completed_at?: string | null
+          location?: string | null
+          medical_treatment_required?: boolean | null
+          reported_by_user_id: string
+          root_cause?: string | null
+          severity: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          corrective_actions?: string | null
+          created_at?: string
+          days_lost?: number | null
+          description?: string
+          employee_id?: string | null
+          id?: string
+          immediate_cause?: string | null
+          incident_date?: string
+          incident_time?: string | null
+          incident_type?: string
+          investigation_completed_at?: string | null
+          location?: string | null
+          medical_treatment_required?: boolean | null
+          reported_by_user_id?: string
+          root_cause?: string | null
+          severity?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sdg_alignment: {
         Row: {
           actions_taken: string | null
@@ -3272,6 +3758,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      social_projects: {
+        Row: {
+          budget: number | null
+          company_id: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          impact_metrics: Json | null
+          invested_amount: number | null
+          location: string | null
+          name: string
+          objective: string | null
+          responsible_user_id: string | null
+          start_date: string
+          status: string | null
+          target_audience: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          impact_metrics?: Json | null
+          invested_amount?: number | null
+          location?: string | null
+          name: string
+          objective?: string | null
+          responsible_user_id?: string | null
+          start_date: string
+          status?: string | null
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          impact_metrics?: Json | null
+          invested_amount?: number | null
+          location?: string | null
+          name?: string
+          objective?: string | null
+          responsible_user_id?: string | null
+          start_date?: string
+          status?: string | null
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       solution_reviews: {
         Row: {
@@ -3511,6 +4054,51 @@ export type Database = {
         }
         Relationships: []
       }
+      training_programs: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          duration_hours: number | null
+          id: string
+          is_mandatory: boolean | null
+          name: string
+          status: string | null
+          updated_at: string
+          valid_for_months: number | null
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_mandatory?: boolean | null
+          name: string
+          status?: string | null
+          updated_at?: string
+          valid_for_months?: number | null
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_mandatory?: boolean | null
+          name?: string
+          status?: string | null
+          updated_at?: string
+          valid_for_months?: number | null
+        }
+        Relationships: []
+      }
       transport_distribution: {
         Row: {
           company_id: string
@@ -3715,6 +4303,78 @@ export type Database = {
         }
         Relationships: []
       }
+      whistleblower_reports: {
+        Row: {
+          assigned_to_user_id: string | null
+          category: string
+          closed_at: string | null
+          company_id: string
+          created_at: string
+          description: string
+          evidence_description: string | null
+          id: string
+          incident_date: string | null
+          investigation_notes: string | null
+          is_anonymous: boolean | null
+          location: string | null
+          people_involved: string | null
+          priority: string | null
+          report_code: string
+          reporter_email: string | null
+          reporter_name: string | null
+          reporter_phone: string | null
+          resolution_summary: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          category: string
+          closed_at?: string | null
+          company_id: string
+          created_at?: string
+          description: string
+          evidence_description?: string | null
+          id?: string
+          incident_date?: string | null
+          investigation_notes?: string | null
+          is_anonymous?: boolean | null
+          location?: string | null
+          people_involved?: string | null
+          priority?: string | null
+          report_code: string
+          reporter_email?: string | null
+          reporter_name?: string | null
+          reporter_phone?: string | null
+          resolution_summary?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          category?: string
+          closed_at?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string
+          evidence_description?: string | null
+          id?: string
+          incident_date?: string | null
+          investigation_notes?: string | null
+          is_anonymous?: boolean | null
+          location?: string | null
+          people_involved?: string | null
+          priority?: string | null
+          report_code?: string
+          reporter_email?: string | null
+          reporter_name?: string | null
+          reporter_phone?: string | null
+          resolution_summary?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -3735,6 +4395,10 @@ export type Database = {
           issue_date_param: string
         }
         Returns: Database["public"]["Enums"]["license_status_enum"]
+      }
+      calculate_risk_level: {
+        Args: { p_impact: string; p_probability: string }
+        Returns: string
       }
       calculate_simple_emissions: {
         Args: {
