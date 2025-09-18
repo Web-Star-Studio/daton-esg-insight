@@ -5,7 +5,8 @@ import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MaterialityMatrix } from "@/components/MaterialityMatrix";
+import { MaterialityInteractiveMatrix } from "@/components/MaterialityInteractiveMatrix";
+import { MaterialityAssessmentWizard } from "@/components/MaterialityAssessmentWizard";
 import { 
   Target, 
   Plus, 
@@ -15,7 +16,8 @@ import {
   TrendingUp,
   Eye,
   Settings,
-  Play
+  Play,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +36,7 @@ export default function AnaliseMaterialidade() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [selectedAssessment, setSelectedAssessment] = useState<MaterialityAssessment | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
 
   const { data: themes = [], isLoading: loadingThemes } = useQuery({
     queryKey: ['materiality-themes'],
@@ -58,26 +61,19 @@ export default function AnaliseMaterialidade() {
     },
   });
 
-  const handleCreateAssessment = async () => {
+  const handleCreateAssessment = async (assessment: Omit<MaterialityAssessment, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user) return;
     
-    const currentYear = new Date().getFullYear();
-    const assessment: Omit<MaterialityAssessment, 'id' | 'created_at' | 'updated_at'> = {
-      company_id: '', // Será obtido via RLS policy automaticamente
-      title: `Avaliação de Materialidade ${currentYear}`,
-      description: `Análise de materialidade para o exercício de ${currentYear}`,
-      assessment_year: currentYear,
-      status: 'draft',
-      methodology: 'GRI Standards',
-      selected_themes: themes.map(t => t.id),
-      stakeholder_participation: 0,
-      internal_score: {},
-      external_score: {},
-      final_matrix: {},
+    const assessmentWithUser = {
+      ...assessment,
       created_by_user_id: user.id,
     };
 
-    await createAssessmentMutation.mutateAsync(assessment);
+    await createAssessmentMutation.mutateAsync(assessmentWithUser);
+  };
+
+  const handleQuickCreate = () => {
+    setShowWizard(true);
   };
 
   // Dados de exemplo para demonstração
@@ -119,10 +115,16 @@ export default function AnaliseMaterialidade() {
               Identifique e priorize os temas ESG mais relevantes para sua organização
             </p>
           </div>
-          <Button onClick={handleCreateAssessment}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Avaliação
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleQuickCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Avaliação
+            </Button>
+            <Button variant="outline" onClick={handleQuickCreate}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Wizard Avançado
+            </Button>
+          </div>
         </div>
 
         {/* Estatísticas Gerais */}
@@ -185,7 +187,7 @@ export default function AnaliseMaterialidade() {
 
           <TabsContent value="matriz" className="space-y-4">
             {Object.keys(sampleMatrix).length > 0 ? (
-              <MaterialityMatrix
+              <MaterialityInteractiveMatrix
                 themes={themes}
                 matrix={sampleMatrix}
               />
@@ -195,9 +197,9 @@ export default function AnaliseMaterialidade() {
                   <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Nenhuma matriz disponível</h3>
                   <p className="text-muted-foreground mb-4">
-                    Crie uma nova avaliação de materialidade para visualizar a matriz
+                    Crie uma nova avaliação de materialidade para começar a análise
                   </p>
-                  <Button onClick={handleCreateAssessment}>
+                  <Button onClick={handleQuickCreate}>
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Primeira Avaliação
                   </Button>
@@ -329,7 +331,7 @@ export default function AnaliseMaterialidade() {
                   <p className="text-muted-foreground mb-4">
                     Inicie sua primeira análise de materialidade
                   </p>
-                  <Button onClick={handleCreateAssessment}>
+                  <Button onClick={handleQuickCreate}>
                     <Play className="h-4 w-4 mr-2" />
                     Iniciar Avaliação
                   </Button>
@@ -338,6 +340,14 @@ export default function AnaliseMaterialidade() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Wizard Modal */}
+        <MaterialityAssessmentWizard
+          open={showWizard}
+          onClose={() => setShowWizard(false)}
+          onSubmit={handleCreateAssessment}
+          themes={themes}
+        />
       </div>
     </MainLayout>
   );
