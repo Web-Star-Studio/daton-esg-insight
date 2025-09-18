@@ -1,12 +1,15 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { MaterialityTheme, MATERIALITY_CATEGORIES } from "@/services/materiality";
-import { Target, TrendingUp, AlertTriangle, Filter, Download, Maximize2 } from "lucide-react";
+import { Target, TrendingUp, AlertTriangle, Filter, Download, Maximize2, Grid3X3, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MaterialityInteractiveMatrixProps {
   themes: MaterialityTheme[];
@@ -18,6 +21,46 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const matrixRef = useRef<HTMLDivElement>(null);
+  const [matrixDimensions, setMatrixDimensions] = useState({ width: 0, height: 0 });
+
+  // Calculate responsive matrix dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (matrixRef.current) {
+        const containerWidth = matrixRef.current.offsetWidth;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        let baseWidth = Math.min(containerWidth - 32, 600);
+        let baseHeight;
+        
+        if (viewportWidth < 640) { // Mobile
+          baseWidth = Math.min(containerWidth - 16, viewportWidth - 32);
+          baseHeight = Math.min(baseWidth * 0.8, viewportHeight * 0.4);
+        } else if (viewportWidth < 1024) { // Tablet
+          baseWidth = Math.min(containerWidth - 32, 500);
+          baseHeight = Math.min(baseWidth * 0.75, viewportHeight * 0.5);
+        } else { // Desktop
+          baseWidth = Math.min(containerWidth - 48, 600);
+          baseHeight = Math.min(baseWidth * 0.7, viewportHeight * 0.6);
+        }
+        
+        setMatrixDimensions({ 
+          width: Math.max(320, baseWidth), 
+          height: Math.max(240, baseHeight) 
+        });
+      }
+    };
+
+    updateDimensions();
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (matrixRef.current) {
+      resizeObserver.observe(matrixRef.current);
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const { themesMap, filteredMatrix, priorityStats } = useMemo(() => {
     const themesMap = themes.reduce((acc, theme) => {
@@ -25,7 +68,6 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
       return acc;
     }, {} as Record<string, MaterialityTheme>);
 
-    // Filtrar matrix baseado nos filtros selecionados
     const filteredMatrix = Object.entries(matrix).reduce((acc, [themeId, position]) => {
       const theme = themesMap[themeId];
       if (!theme) return acc;
@@ -50,252 +92,386 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
 
   const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
-      case 'high': return 'bg-destructive border-destructive/70 shadow-destructive/20';
-      case 'medium': return 'bg-warning border-warning/70 shadow-warning/20';
-      case 'low': return 'bg-success border-success/70 shadow-success/20';
-      default: return 'bg-muted border-muted-foreground/70';
+      case 'high': return 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive';
+      case 'medium': return 'bg-warning text-warning-foreground hover:bg-warning/90 border-warning';
+      case 'low': return 'bg-success text-success-foreground hover:bg-success/90 border-success';
+      default: return 'bg-muted text-muted-foreground hover:bg-muted/90 border-muted';
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'environmental': return 'text-success bg-success/10';
-      case 'social': return 'text-primary bg-primary/10';
-      case 'governance': return 'text-secondary bg-secondary/10';
-      case 'economic': return 'text-warning bg-warning/10';
-      default: return 'text-muted-foreground bg-muted';
+      case 'environmental': return 'text-success bg-success/10 border-success/30';
+      case 'social': return 'text-primary bg-primary/10 border-primary/30';
+      case 'governance': return 'text-secondary bg-secondary/10 border-secondary/30';
+      case 'economic': return 'text-warning bg-warning/10 border-warning/30';
+      default: return 'text-muted-foreground bg-muted/10 border-muted/30';
     }
   };
 
   const handleExport = () => {
-    // Funcionalidade de exportação - poderia gerar PDF, imagem, etc.
     console.log('Exportar matriz', { filteredMatrix, themes: themesMap });
   };
 
-  const matrixSize = isFullscreen ? 'h-[70vh]' : 'h-[40vh] sm:h-80';
+  // Matrix visualization component
+  const MatrixVisualization = ({ compact = false }: { compact?: boolean }) => {
+    const { width, height } = matrixDimensions;
+    const isMobile = window.innerWidth < 640;
+    
+    // Responsive margins and calculations
+    const margin = isMobile ? 35 : 50;
+    const plotWidth = width - 2 * margin;
+    const plotHeight = height - 2 * margin;
+
+    if (width === 0 || height === 0) {
+      return (
+        <div className="flex items-center justify-center h-64 bg-muted/20 rounded-lg">
+          <div className="text-muted-foreground">Carregando matriz...</div>
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        ref={!compact ? matrixRef : undefined}
+        className={cn(
+          "relative w-full flex flex-col items-center bg-background rounded-lg overflow-hidden",
+          compact ? "h-[400px]" : "min-h-[320px]"
+        )}
+      >
+        <div className="relative border border-border rounded-lg bg-gradient-to-br from-background to-muted/10" style={{ width, height }}>
+          {/* SVG Matrix with proper scaling */}
+          <svg width={width} height={height} className="absolute inset-0">
+            {/* Background grid */}
+            <defs>
+              <pattern id="smallGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="0.3" opacity="0.3"/>
+              </pattern>
+              <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                <rect width="50" height="50" fill="url(#smallGrid)"/>
+                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" opacity="0.5"/>
+              </pattern>
+            </defs>
+            
+            {/* Plot area background with grid */}
+            <rect 
+              x={margin} 
+              y={margin} 
+              width={plotWidth} 
+              height={plotHeight} 
+              fill="url(#grid)" 
+              opacity="0.1"
+            />
+            
+            {/* Quadrant backgrounds with subtle gradients */}
+            <rect 
+              x={margin} 
+              y={margin} 
+              width={plotWidth/2} 
+              height={plotHeight/2} 
+              fill="hsl(var(--warning))" 
+              opacity="0.05"
+            />
+            <rect 
+              x={margin + plotWidth/2} 
+              y={margin} 
+              width={plotWidth/2} 
+              height={plotHeight/2} 
+              fill="hsl(var(--destructive))" 
+              opacity="0.08"
+            />
+            <rect 
+              x={margin} 
+              y={margin + plotHeight/2} 
+              width={plotWidth/2} 
+              height={plotHeight/2} 
+              fill="hsl(var(--success))" 
+              opacity="0.05"
+            />
+            <rect 
+              x={margin + plotWidth/2} 
+              y={margin + plotHeight/2} 
+              width={plotWidth/2} 
+              height={plotHeight/2} 
+              fill="hsl(var(--warning))" 
+              opacity="0.06"
+            />
+            
+            {/* Main axes */}
+            <line 
+              x1={margin} 
+              y1={height - margin} 
+              x2={width - margin} 
+              y2={height - margin} 
+              stroke="hsl(var(--foreground))" 
+              strokeWidth="2"
+            />
+            <line 
+              x1={margin} 
+              y1={margin} 
+              x2={margin} 
+              y2={height - margin} 
+              stroke="hsl(var(--foreground))" 
+              strokeWidth="2"
+            />
+            
+            {/* Center guide lines */}
+            <line 
+              x1={margin + plotWidth/2} 
+              y1={margin} 
+              x2={margin + plotWidth/2} 
+              y2={height - margin} 
+              stroke="hsl(var(--muted-foreground))" 
+              strokeWidth="1" 
+              strokeDasharray="4,4"
+              opacity="0.5"
+            />
+            <line 
+              x1={margin} 
+              y1={margin + plotHeight/2} 
+              x2={width - margin} 
+              y2={margin + plotHeight/2} 
+              stroke="hsl(var(--muted-foreground))" 
+              strokeWidth="1" 
+              strokeDasharray="4,4"
+              opacity="0.5"
+            />
+          </svg>
+          
+          {/* Axis Labels - Positioned outside the plot area */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* X-axis label */}
+            <div 
+              className="absolute text-xs font-medium text-foreground text-center select-none"
+              style={{
+                bottom: '8px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                fontSize: isMobile ? '11px' : '13px'
+              }}
+            >
+              {isMobile ? 'Stakeholders →' : 'Relevância para Stakeholders →'}
+            </div>
+            
+            {/* Y-axis label */}
+            <div 
+              className="absolute text-xs font-medium text-foreground select-none"
+              style={{
+                left: '6px',
+                top: '50%',
+                transform: 'translateY(-50%) rotate(-90deg)',
+                transformOrigin: 'center',
+                fontSize: isMobile ? '11px' : '13px'
+              }}
+            >
+              {isMobile ? '← Organização' : '← Impacto na Organização'}
+            </div>
+            
+            {/* Scale indicators */}
+            {!isMobile && (
+              <>
+                <div className="absolute text-xs text-muted-foreground" style={{ left: margin - 5, bottom: margin - 20 }}>0</div>
+                <div className="absolute text-xs text-muted-foreground" style={{ right: margin - 10, bottom: margin - 20 }}>10</div>
+                <div className="absolute text-xs text-muted-foreground" style={{ left: margin - 10, top: margin - 5 }}>10</div>
+                <div className="absolute text-xs text-muted-foreground" style={{ left: margin - 5, bottom: margin - 5 }}>0</div>
+              </>
+            )}
+          </div>
+          
+          {/* Theme Points */}
+          <div className="absolute inset-0">
+            <TooltipProvider>
+              {Object.entries(filteredMatrix).map(([themeId, data]) => {
+                const theme = themesMap[themeId];
+                if (!theme) return null;
+                
+                // Ensure coordinates are within bounds and add some padding
+                const clampedX = Math.max(0.05, Math.min(0.95, data.x / 10));
+                const clampedY = Math.max(0.05, Math.min(0.95, data.y / 10));
+                
+                const x = margin + (clampedX * plotWidth);
+                const y = height - margin - (clampedY * plotHeight);
+                
+                const pointSize = isMobile ? 'w-3 h-3' : 'w-4 h-4';
+                
+                return (
+                  <Tooltip key={themeId}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          `absolute ${pointSize} rounded-full cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 hover:scale-125 hover:z-20 shadow-lg border-2 border-background`,
+                          getPriorityColor(data.priority)
+                        )}
+                        style={{ left: x, top: y }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      side="top" 
+                      className="max-w-sm p-3 text-sm z-50"
+                      sideOffset={8}
+                      avoidCollisions={true}
+                    >
+                      <div className="space-y-2">
+                        <div className="font-semibold">{theme.title}</div>
+                        <div className="text-muted-foreground text-xs line-clamp-3">
+                          {theme.description}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge 
+                            variant="outline" 
+                            className={cn("text-xs px-2 py-0.5", getCategoryColor(theme.category))}
+                          >
+                            {MATERIALITY_CATEGORIES.find(c => c.value === theme.category)?.label || theme.category}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className={cn("text-xs px-2 py-0.5", getPriorityColor(data.priority))}
+                          >
+                            {data.priority === 'high' ? 'Alta' : data.priority === 'medium' ? 'Média' : 'Baixa'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground grid grid-cols-2 gap-3 pt-2 border-t">
+                          <span>Stakeholders: <strong>{data.x.toFixed(1)}</strong></span>
+                          <span>Organização: <strong>{data.y.toFixed(1)}</strong></span>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </TooltipProvider>
+          </div>
+          
+          {/* Priority Legend - Positioned better */}
+          <div className="absolute bottom-2 right-2 bg-background/95 backdrop-blur-sm p-2 rounded-lg border shadow-sm text-xs min-w-[90px]">
+            <div className="font-medium text-center mb-2">Prioridade</div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-destructive"></div>
+                <span>Alta</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-warning"></div>
+                <span>Média</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-success"></div>
+                <span>Baixa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={className}>
       <Tabs defaultValue="matrix" className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <TabsList>
-            <TabsTrigger value="matrix">Matriz Visual</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="themes">Lista de Temas</TabsTrigger>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <TabsList className="grid w-full sm:w-auto grid-cols-3">
+            <TabsTrigger value="matrix" className="text-xs sm:text-sm">Matriz</TabsTrigger>
+            <TabsTrigger value="insights" className="text-xs sm:text-sm">Insights</TabsTrigger>
+            <TabsTrigger value="themes" className="text-xs sm:text-sm">Temas</TabsTrigger>
           </TabsList>
           
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 sm:flex-none">
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Exportar</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)}>
-              <Maximize2 className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setIsFullscreen(true)} className="flex-1 sm:flex-none">
+              <Maximize2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Tela Cheia</span>
             </Button>
           </div>
         </div>
 
-        <TabsContent value="matrix" className="space-y-3">
-          {/* Filtros Compactos */}
-          <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/30 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Filter className="h-3 w-3 text-muted-foreground" />
-              <span className="text-sm font-medium">Filtros:</span>
+        <TabsContent value="matrix" className="space-y-4">
+          {/* Compact Filters */}
+          <Card className="p-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filtros:</span>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-full sm:w-[150px] h-9">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas Categorias</SelectItem>
+                    {MATERIALITY_CATEGORIES.map(cat => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                  <SelectTrigger className="w-full sm:w-[130px] h-9">
+                    <SelectValue placeholder="Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas Prioridades</SelectItem>
+                    <SelectItem value="high">Alta Prioridade</SelectItem>
+                    <SelectItem value="medium">Média Prioridade</SelectItem>
+                    <SelectItem value="low">Baixa Prioridade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {Object.keys(filteredMatrix).length !== Object.keys(matrix).length && (
+                <Badge variant="secondary" className="ml-auto">
+                  {Object.keys(filteredMatrix).length}/{Object.keys(matrix).length} temas
+                </Badge>
+              )}
             </div>
-            
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[140px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {MATERIALITY_CATEGORIES.map(cat => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-              <SelectTrigger className="w-[120px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="low">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {Object.keys(filteredMatrix).length !== Object.keys(matrix).length && (
-              <Badge variant="secondary" className="text-xs">
-                {Object.keys(filteredMatrix).length}/{Object.keys(matrix).length} temas
-              </Badge>
-            )}
+          </Card>
+
+          {/* Compact Statistics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Alta', value: priorityStats.high, color: 'destructive', icon: AlertTriangle },
+              { label: 'Média', value: priorityStats.medium, color: 'warning', icon: TrendingUp },
+              { label: 'Baixa', value: priorityStats.low, color: 'success', icon: Target },
+              { label: 'Total', value: Object.keys(filteredMatrix).length, color: 'muted', icon: Grid3X3 }
+            ].map(({ label, value, color, icon: Icon }) => (
+              <Card key={label} className="p-3">
+                <div className="flex items-center gap-2">
+                  <Icon className={cn("h-4 w-4", {
+                    'text-destructive': color === 'destructive',
+                    'text-warning': color === 'warning',
+                    'text-success': color === 'success',
+                    'text-muted-foreground': color === 'muted'
+                  })} />
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                    <p className={cn("text-xl font-bold", {
+                      'text-destructive': color === 'destructive',
+                      'text-warning': color === 'warning',
+                      'text-success': color === 'success',
+                      'text-foreground': color === 'muted'
+                    })}>{value}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
 
-          {/* Estatísticas Compactas */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <Card className="p-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-3 w-3 text-destructive" />
-                <div>
-                  <p className="text-xs font-medium">Alta</p>
-                  <p className="text-lg font-bold text-destructive">{priorityStats.high}</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-3 w-3 text-warning" />
-                <div>
-                  <p className="text-xs font-medium">Média</p>
-                  <p className="text-lg font-bold text-warning">{priorityStats.medium}</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-3 w-3 text-success" />
-                <div>
-                  <p className="text-xs font-medium">Baixa</p>
-                  <p className="text-lg font-bold text-success">{priorityStats.low}</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-3 w-3 text-muted-foreground" />
-                <div>
-                  <p className="text-xs font-medium">Total</p>
-                  <p className="text-lg font-bold">{Object.keys(filteredMatrix).length}</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Matriz Interativa Compacta */}
+          {/* Matrix Visualization */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Matriz de Materialidade</CardTitle>
-              <CardDescription className="text-sm">
-                Stakeholders (X) vs. Organização (Y)
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Matriz de Materialidade</CardTitle>
+              <CardDescription>
+                Visualização interativa dos temas por relevância para stakeholders e impacto organizacional
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-2 sm:p-4">
-              <div className={`relative w-full ${matrixSize} border-2 border-border rounded-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden`}>
-                {/* Quadrantes com gradientes */}
-                <div className="absolute inset-0">
-                  {/* Quadrante superior direito - Alta prioridade */}
-                  <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-br from-destructive/20 to-destructive/10 rounded-tr-lg"></div>
-                  {/* Quadrante superior esquerdo - Média prioridade */}
-                  <div className="absolute top-0 left-[8%] sm:left-8 right-1/2 h-1/2 bg-gradient-to-bl from-warning/15 to-warning/8"></div>
-                  {/* Quadrante inferior direita - Média prioridade */}
-                  <div className="absolute bottom-[8%] sm:bottom-8 right-0 w-1/2 top-1/2 bg-gradient-to-tr from-warning/15 to-warning/8"></div>
-                  {/* Quadrante inferior esquerdo - Baixa prioridade */}
-                  <div className="absolute bottom-[8%] sm:bottom-8 left-[8%] sm:left-8 w-1/2 h-1/2 bg-gradient-to-tl from-success/15 to-success/8 rounded-bl-lg"></div>
-                </div>
-
-                {/* Eixos */}
-                <div className="absolute left-[8%] sm:left-8 top-0 w-px h-full bg-border z-10"></div>
-                <div className="absolute bottom-[8%] sm:bottom-8 left-0 w-full h-px bg-border z-10"></div>
-                
-                {/* Labels dos eixos - Compactos */}
-                <div className="absolute bottom-1 right-2 text-[10px] sm:text-xs font-medium text-muted-foreground">
-                  <span className="hidden sm:inline">Stakeholders →</span>
-                  <span className="sm:hidden">S →</span>
-                </div>
-                <div className="absolute top-2 left-1 text-[10px] sm:text-xs font-medium text-muted-foreground transform -rotate-90 origin-left">
-                  <span className="hidden sm:inline">← Organização</span>
-                  <span className="sm:hidden">← O</span>
-                </div>
-
-                {/* Linhas de grade - Mais sutis */}
-                {[25, 50, 75].map(percent => (
-                  <div key={`v-${percent}`}>
-                    <div 
-                      className="absolute top-0 h-full w-px bg-border/20"
-                      style={{ left: `${8 + (percent * 0.84)}%` }}
-                    ></div>
-                    <div 
-                      className="absolute left-0 w-full h-px bg-border/20"
-                      style={{ bottom: `${8 + (percent * 0.84)}%` }}
-                    ></div>
-                  </div>
-                ))}
-
-                {/* Pontos dos temas */}
-                <TooltipProvider>
-                  {Object.entries(filteredMatrix).map(([themeId, position]) => {
-                    const theme = themesMap[themeId];
-                    if (!theme) return null;
-
-                    const x = 8 + (position.x * 0.84); // 8% offset + 84% useful width
-                    const y = 92 - (position.y * 0.84); // Inverted Y + 84% useful height
-
-                    return (
-                      <Tooltip key={themeId}>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={`absolute w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-150 hover:shadow-lg z-20 ${getPriorityColor(position.priority)}`}
-                            style={{
-                              left: `${x}%`,
-                              top: `${y}%`,
-                              transform: 'translate(-50%, -50%)'
-                            }}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <div className="space-y-1.5">
-                            <div className="font-semibold text-sm">{theme.title}</div>
-                            <div className="text-xs text-muted-foreground line-clamp-2">{theme.description}</div>
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <Badge 
-                                variant="outline" 
-                                className={`text-[10px] ${getCategoryColor(theme.category)}`}
-                              >
-                                {MATERIALITY_CATEGORIES.find(c => c.value === theme.category)?.label}
-                              </Badge>
-                              <Badge 
-                                variant={position.priority === 'high' ? 'destructive' : position.priority === 'medium' ? 'default' : 'secondary'}
-                                className="text-[10px]"
-                              >
-                                {position.priority === 'high' ? 'Alta' : position.priority === 'medium' ? 'Média' : 'Baixa'}
-                              </Badge>
-                            </div>
-                            <div className="text-[10px] grid grid-cols-2 gap-1 pt-1 border-t">
-                              <div>S: <span className="font-mono">{position.x.toFixed(1)}</span></div>
-                              <div>O: <span className="font-mono">{position.y.toFixed(1)}</span></div>
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </TooltipProvider>
-
-                {/* Legenda Compacta - Reposicionada */}
-                <div className="absolute bottom-2 right-2 bg-background/95 backdrop-blur-sm p-2 rounded border text-[10px] sm:text-xs space-y-1 min-w-[80px]">
-                  <div className="font-medium text-center">Prioridade</div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-destructive"></div>
-                    <span>Alta</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-warning"></div>
-                    <span>Média</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
-                    <span>Baixa</span>
-                  </div>
-                </div>
-              </div>
+            <CardContent className="p-4">
+              <MatrixVisualization />
             </CardContent>
           </Card>
         </TabsContent>
@@ -304,40 +480,47 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
           <div className="grid gap-4">
             <Card>
               <CardHeader>
-                <CardTitle>Insights da Matriz</CardTitle>
+                <CardTitle>Análise de Materialidade</CardTitle>
+                <CardDescription>Insights baseados na distribuição dos temas na matriz</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{priorityStats.high}</div>
-                    <div className="text-sm text-red-800">Temas Críticos</div>
-                    <div className="text-xs text-red-600 mt-1">Requerem ação imediata</div>
+                  <div className="text-center p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+                    <div className="text-3xl font-bold text-destructive">{priorityStats.high}</div>
+                    <div className="text-sm font-medium text-destructive">Temas Críticos</div>
+                    <div className="text-xs text-muted-foreground mt-1">Requerem ação imediata</div>
                   </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">{priorityStats.medium}</div>
-                    <div className="text-sm text-yellow-800">Temas Importantes</div>
-                    <div className="text-xs text-yellow-600 mt-1">Monitoramento contínuo</div>
+                  <div className="text-center p-4 bg-warning/5 border border-warning/20 rounded-lg">
+                    <div className="text-3xl font-bold text-warning">{priorityStats.medium}</div>
+                    <div className="text-sm font-medium text-warning">Temas Importantes</div>
+                    <div className="text-xs text-muted-foreground mt-1">Monitoramento contínuo</div>
                   </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{priorityStats.low}</div>
-                    <div className="text-sm text-green-800">Temas de Base</div>
-                    <div className="text-xs text-green-600 mt-1">Revisão periódica</div>
+                  <div className="text-center p-4 bg-success/5 border border-success/20 rounded-lg">
+                    <div className="text-3xl font-bold text-success">{priorityStats.low}</div>
+                    <div className="text-sm font-medium text-success">Temas de Base</div>
+                    <div className="text-xs text-muted-foreground mt-1">Revisão periódica</div>
                   </div>
                 </div>
 
                 {priorityStats.high > 0 && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h4 className="font-semibold text-red-800 mb-2">🔴 Ação Recomendada</h4>
-                    <p className="text-sm text-red-700">
+                  <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+                    <h4 className="font-semibold text-destructive mb-2 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Ação Recomendada
+                    </h4>
+                    <p className="text-sm text-foreground">
                       {priorityStats.high} tema(s) identificado(s) como alta prioridade. 
                       Desenvolva planos de ação específicos e defina metas mensuráveis para estes temas.
                     </p>
                   </div>
                 )}
 
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">💡 Próximos Passos</h4>
-                  <ul className="text-sm text-blue-700 space-y-1">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Próximos Passos
+                  </h4>
+                  <ul className="text-sm text-foreground space-y-1">
                     <li>• Desenvolver estratégias específicas para temas de alta prioridade</li>
                     <li>• Definir indicadores de monitoramento para todos os temas</li>
                     <li>• Estabelecer metas e cronogramas de implementação</li>
@@ -350,52 +533,82 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
         </TabsContent>
 
         <TabsContent value="themes" className="space-y-4">
-          <div className="grid gap-2">
-            {Object.entries(filteredMatrix)
-              .sort((a, b) => {
-                // Ordenar por prioridade (alta -> média -> baixa) e depois por score
-                const priorityOrder = { high: 3, medium: 2, low: 1 };
-                const priorityDiff = priorityOrder[b[1].priority] - priorityOrder[a[1].priority];
-                if (priorityDiff !== 0) return priorityDiff;
-                
-                const scoreA = Math.sqrt(a[1].x ** 2 + a[1].y ** 2);
-                const scoreB = Math.sqrt(b[1].x ** 2 + b[1].y ** 2);
-                return scoreB - scoreA;
-              })
-              .map(([themeId, position]) => {
-                const theme = themesMap[themeId];
-                if (!theme) return null;
+          <ScrollArea className="h-[600px]">
+            <div className="grid gap-3">
+              {Object.entries(filteredMatrix)
+                .sort((a, b) => {
+                  const priorityOrder = { high: 3, medium: 2, low: 1 };
+                  const priorityDiff = priorityOrder[b[1].priority] - priorityOrder[a[1].priority];
+                  if (priorityDiff !== 0) return priorityDiff;
+                  return (b[1].x + b[1].y) - (a[1].x + a[1].y);
+                })
+                .map(([themeId, position]) => {
+                  const theme = themesMap[themeId];
+                  if (!theme) return null;
 
-                return (
-                  <Card key={themeId} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-3 h-3 rounded-full ${getPriorityColor(position.priority).split(' ')[0]}`}></div>
-                          <h4 className="font-medium">{theme.title}</h4>
-                          <Badge 
-                            variant={position.priority === 'high' ? 'destructive' : position.priority === 'medium' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {position.priority === 'high' ? 'Alta' : position.priority === 'medium' ? 'Média' : 'Baixa'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">{theme.description}</p>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span>Stakeholders: <strong>{position.x.toFixed(1)}</strong></span>
-                          <span>Organização: <strong>{position.y.toFixed(1)}</strong></span>
-                          <Badge variant="outline" className={getCategoryColor(theme.category)}>
-                            {MATERIALITY_CATEGORIES.find(c => c.value === theme.category)?.label}
-                          </Badge>
+                  return (
+                    <Card key={themeId} className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-start gap-3 mb-2">
+                            <h4 className="font-semibold text-base">{theme.title}</h4>
+                            <div className="flex gap-1 flex-wrap">
+                              <Badge 
+                                variant="outline" 
+                                className={cn("text-xs", getCategoryColor(theme.category))}
+                              >
+                                {MATERIALITY_CATEGORIES.find(c => c.value === theme.category)?.label || theme.category}
+                              </Badge>
+                              <Badge 
+                                variant="outline"
+                                className={cn("text-xs", getPriorityColor(position.priority))}
+                              >
+                                {position.priority === 'high' ? 'Alta' : position.priority === 'medium' ? 'Média' : 'Baixa'}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{theme.description}</p>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Stakeholders:</span>
+                              <span className="ml-2 font-mono font-semibold">{position.x.toFixed(1)}/10</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Organização:</span>
+                              <span className="ml-2 font-mono font-semibold">{position.y.toFixed(1)}/10</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                );
-              })}
-          </div>
+                    </Card>
+                  );
+                })}
+            </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
+
+      {/* Fullscreen Dialog */}
+      <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-6">
+          <DialogHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl">Matriz de Materialidade - Visualização Completa</DialogTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsFullscreen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto">
+            <MatrixVisualization compact />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
