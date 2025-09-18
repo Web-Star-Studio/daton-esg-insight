@@ -129,53 +129,45 @@ export default function AnaliseMaterialidade() {
         </div>
 
         {/* Estatísticas Gerais */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-blue-500" />
-                <div>
-                  <p className="text-sm font-medium">Temas Disponíveis</p>
-                  <p className="text-2xl font-bold">{themes.length}</p>
-                </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <Target className="h-3 w-3 text-primary" />
+              <div>
+                <p className="text-xs font-medium">Temas Disponíveis</p>
+                <p className="text-lg font-bold">{themes.length}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Avaliações Realizadas</p>
-                  <p className="text-2xl font-bold">{assessments.length}</p>
-                </div>
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-3 w-3 text-success" />
+              <div>
+                <p className="text-xs font-medium">Avaliações</p>
+                <p className="text-lg font-bold">{assessments.length}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-orange-500" />
-                <div>
-                  <p className="text-sm font-medium">Temas Alta Prioridade</p>
-                  <p className="text-2xl font-bold">{insights?.highPriority || 0}</p>
-                </div>
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-3 w-3 text-destructive" />
+              <div>
+                <p className="text-xs font-medium">Alta Prioridade</p>
+                <p className="text-lg font-bold text-destructive">{insights?.highPriority || 0}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-purple-500" />
-                <div>
-                  <p className="text-sm font-medium">Participação Stakeholders</p>
-                  <p className="text-2xl font-bold">{latestAssessment?.stakeholder_participation || 0}</p>
-                </div>
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-3 w-3 text-secondary" />
+              <div>
+                <p className="text-xs font-medium">Participação</p>
+                <p className="text-lg font-bold">{latestAssessment?.stakeholder_participation || 0}</p>
               </div>
-            </CardContent>
+            </div>
           </Card>
         </div>
 

@@ -50,20 +50,20 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
 
   const getPriorityColor = (priority: 'low' | 'medium' | 'high') => {
     switch (priority) {
-      case 'high': return 'bg-red-500 border-red-600 shadow-red-200';
-      case 'medium': return 'bg-yellow-500 border-yellow-600 shadow-yellow-200';
-      case 'low': return 'bg-green-500 border-green-600 shadow-green-200';
-      default: return 'bg-gray-500 border-gray-600';
+      case 'high': return 'bg-destructive border-destructive/70 shadow-destructive/20';
+      case 'medium': return 'bg-warning border-warning/70 shadow-warning/20';
+      case 'low': return 'bg-success border-success/70 shadow-success/20';
+      default: return 'bg-muted border-muted-foreground/70';
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'environmental': return 'text-green-600 bg-green-50';
-      case 'social': return 'text-blue-600 bg-blue-50';
-      case 'governance': return 'text-purple-600 bg-purple-50';
-      case 'economic': return 'text-orange-600 bg-orange-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'environmental': return 'text-success bg-success/10';
+      case 'social': return 'text-primary bg-primary/10';
+      case 'governance': return 'text-secondary bg-secondary/10';
+      case 'economic': return 'text-warning bg-warning/10';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
@@ -72,7 +72,7 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     console.log('Exportar matriz', { filteredMatrix, themes: themesMap });
   };
 
-  const matrixSize = isFullscreen ? 'h-[80vh]' : 'h-[50vh] sm:h-96';
+  const matrixSize = isFullscreen ? 'h-[70vh]' : 'h-[40vh] sm:h-80';
 
   return (
     <div className={className}>
@@ -95,154 +95,136 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
           </div>
         </div>
 
-        <TabsContent value="matrix" className="space-y-4">
-          {/* Filtros */}
-          <Card>
-            <CardHeader className="pb-3">
+        <TabsContent value="matrix" className="space-y-3">
+          {/* Filtros Compactos */}
+          <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/30 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Filter className="h-3 w-3 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros:</span>
+            </div>
+            
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {MATERIALITY_CATEGORIES.map(cat => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+              <SelectTrigger className="w-[120px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {Object.keys(filteredMatrix).length !== Object.keys(matrix).length && (
+              <Badge variant="secondary" className="text-xs">
+                {Object.keys(filteredMatrix).length}/{Object.keys(matrix).length} temas
+              </Badge>
+            )}
+          </div>
+
+          {/* Estatísticas Compactas */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <Card className="p-3">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <CardTitle className="text-base">Filtros</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Categoria</label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as Categorias</SelectItem>
-                      {MATERIALITY_CATEGORIES.map(cat => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Prioridade</label>
-                  <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as Prioridades</SelectItem>
-                      <SelectItem value="high">Alta Prioridade</SelectItem>
-                      <SelectItem value="medium">Média Prioridade</SelectItem>
-                      <SelectItem value="low">Baixa Prioridade</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <AlertTriangle className="h-3 w-3 text-destructive" />
+                <div>
+                  <p className="text-xs font-medium">Alta</p>
+                  <p className="text-lg font-bold text-destructive">{priorityStats.high}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Estatísticas */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                  <div>
-                    <p className="text-sm font-medium">Alta Prioridade</p>
-                    <p className="text-2xl font-bold text-red-600">{priorityStats.high}</p>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-yellow-500" />
-                  <div>
-                    <p className="text-sm font-medium">Média Prioridade</p>
-                    <p className="text-2xl font-bold text-yellow-600">{priorityStats.medium}</p>
-                  </div>
+            <Card className="p-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-3 w-3 text-warning" />
+                <div>
+                  <p className="text-xs font-medium">Média</p>
+                  <p className="text-lg font-bold text-warning">{priorityStats.medium}</p>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-sm font-medium">Baixa Prioridade</p>
-                    <p className="text-2xl font-bold text-green-600">{priorityStats.low}</p>
-                  </div>
+            <Card className="p-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-3 w-3 text-success" />
+                <div>
+                  <p className="text-xs font-medium">Baixa</p>
+                  <p className="text-lg font-bold text-success">{priorityStats.low}</p>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  <div>
-                    <p className="text-sm font-medium">Total Filtrado</p>
-                    <p className="text-2xl font-bold">{Object.keys(filteredMatrix).length}</p>
-                  </div>
+            <Card className="p-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-3 w-3 text-muted-foreground" />
+                <div>
+                  <p className="text-xs font-medium">Total</p>
+                  <p className="text-lg font-bold">{Object.keys(filteredMatrix).length}</p>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </div>
 
-          {/* Matriz Interativa */}
+          {/* Matriz Interativa Compacta */}
           <Card>
-            <CardHeader>
-              <CardTitle>Matriz de Materialidade</CardTitle>
-              <CardDescription>
-                Importância para Stakeholders (X) vs. Impacto para Organização (Y)
-                {Object.keys(filteredMatrix).length !== Object.keys(matrix).length && (
-                  <span className="ml-2 text-blue-600">
-                    • Filtrado: {Object.keys(filteredMatrix).length} de {Object.keys(matrix).length} temas
-                  </span>
-                )}
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Matriz de Materialidade</CardTitle>
+              <CardDescription className="text-sm">
+                Stakeholders (X) vs. Organização (Y)
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-2 sm:p-6">
+            <CardContent className="p-2 sm:p-4">
               <div className={`relative w-full ${matrixSize} border-2 border-border rounded-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden`}>
                 {/* Quadrantes com gradientes */}
                 <div className="absolute inset-0">
                   {/* Quadrante superior direito - Alta prioridade */}
-                  <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-br from-red-100/60 to-red-200/40 rounded-tr-lg"></div>
+                  <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-br from-destructive/20 to-destructive/10 rounded-tr-lg"></div>
                   {/* Quadrante superior esquerdo - Média prioridade */}
-                  <div className="absolute top-0 left-[10%] sm:left-12 right-1/2 h-1/2 bg-gradient-to-bl from-yellow-100/40 to-yellow-200/30"></div>
+                  <div className="absolute top-0 left-[8%] sm:left-8 right-1/2 h-1/2 bg-gradient-to-bl from-warning/15 to-warning/8"></div>
                   {/* Quadrante inferior direita - Média prioridade */}
-                  <div className="absolute bottom-[10%] sm:bottom-12 right-0 w-1/2 top-1/2 bg-gradient-to-tr from-yellow-100/40 to-yellow-200/30"></div>
+                  <div className="absolute bottom-[8%] sm:bottom-8 right-0 w-1/2 top-1/2 bg-gradient-to-tr from-warning/15 to-warning/8"></div>
                   {/* Quadrante inferior esquerdo - Baixa prioridade */}
-                  <div className="absolute bottom-[10%] sm:bottom-12 left-[10%] sm:left-12 w-1/2 h-1/2 bg-gradient-to-tl from-green-100/40 to-green-200/30 rounded-bl-lg"></div>
+                  <div className="absolute bottom-[8%] sm:bottom-8 left-[8%] sm:left-8 w-1/2 h-1/2 bg-gradient-to-tl from-success/15 to-success/8 rounded-bl-lg"></div>
                 </div>
 
                 {/* Eixos */}
-                <div className="absolute left-[10%] sm:left-12 top-0 w-px h-full bg-border z-10"></div>
-                <div className="absolute bottom-[10%] sm:bottom-12 left-0 w-full h-px bg-border z-10"></div>
+                <div className="absolute left-[8%] sm:left-8 top-0 w-px h-full bg-border z-10"></div>
+                <div className="absolute bottom-[8%] sm:bottom-8 left-0 w-full h-px bg-border z-10"></div>
                 
-                {/* Labels dos eixos */}
-                <div className="absolute bottom-1 right-1 text-xs sm:text-sm font-medium text-muted-foreground">
-                  <span className="hidden sm:inline">Importância para Stakeholders →</span>
-                  <span className="sm:hidden">Stakeholders →</span>
+                {/* Labels dos eixos - Compactos */}
+                <div className="absolute bottom-1 right-2 text-[10px] sm:text-xs font-medium text-muted-foreground">
+                  <span className="hidden sm:inline">Stakeholders →</span>
+                  <span className="sm:hidden">S →</span>
                 </div>
-                <div className="absolute top-1 left-1 text-xs sm:text-sm font-medium text-muted-foreground transform -rotate-90 origin-left">
-                  <span className="hidden sm:inline">← Impacto para Organização</span>
-                  <span className="sm:hidden">← Impacto</span>
+                <div className="absolute top-2 left-1 text-[10px] sm:text-xs font-medium text-muted-foreground transform -rotate-90 origin-left">
+                  <span className="hidden sm:inline">← Organização</span>
+                  <span className="sm:hidden">← O</span>
                 </div>
 
-                {/* Linhas de grade */}
+                {/* Linhas de grade - Mais sutis */}
                 {[25, 50, 75].map(percent => (
                   <div key={`v-${percent}`}>
                     <div 
-                      className="absolute top-0 h-full w-px bg-border/30"
-                      style={{ left: `${10 + (percent * 0.80)}%` }}
+                      className="absolute top-0 h-full w-px bg-border/20"
+                      style={{ left: `${8 + (percent * 0.84)}%` }}
                     ></div>
                     <div 
-                      className="absolute left-0 w-full h-px bg-border/30"
-                      style={{ bottom: `${10 + (percent * 0.80)}%` }}
+                      className="absolute left-0 w-full h-px bg-border/20"
+                      style={{ bottom: `${8 + (percent * 0.84)}%` }}
                     ></div>
                   </div>
                 ))}
@@ -253,14 +235,14 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                     const theme = themesMap[themeId];
                     if (!theme) return null;
 
-                    const x = 10 + (position.x * 0.80); // 10% offset + 80% useful width
-                    const y = 90 - (position.y * 0.80); // Inverted Y + 80% useful height
+                    const x = 8 + (position.x * 0.84); // 8% offset + 84% useful width
+                    const y = 92 - (position.y * 0.84); // Inverted Y + 84% useful height
 
                     return (
                       <Tooltip key={themeId}>
                         <TooltipTrigger asChild>
                           <div
-                            className={`absolute w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-150 hover:shadow-lg z-20 ${getPriorityColor(position.priority)}`}
+                            className={`absolute w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-150 hover:shadow-lg z-20 ${getPriorityColor(position.priority)}`}
                             style={{
                               left: `${x}%`,
                               top: `${y}%`,
@@ -268,31 +250,27 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                             }}
                           />
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-sm">
-                          <div className="space-y-2">
-                            <div className="font-semibold text-base">{theme.title}</div>
-                            <div className="text-sm text-muted-foreground">{theme.description}</div>
-                            <div className="flex items-center gap-2 flex-wrap">
+                        <TooltipContent side="top" className="max-w-xs">
+                          <div className="space-y-1.5">
+                            <div className="font-semibold text-sm">{theme.title}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">{theme.description}</div>
+                            <div className="flex items-center gap-1 flex-wrap">
                               <Badge 
                                 variant="outline" 
-                                className={`text-xs ${getCategoryColor(theme.category)}`}
+                                className={`text-[10px] ${getCategoryColor(theme.category)}`}
                               >
                                 {MATERIALITY_CATEGORIES.find(c => c.value === theme.category)?.label}
                               </Badge>
                               <Badge 
                                 variant={position.priority === 'high' ? 'destructive' : position.priority === 'medium' ? 'default' : 'secondary'}
-                                className="text-xs"
+                                className="text-[10px]"
                               >
-                                {position.priority === 'high' ? 'Alta' : position.priority === 'medium' ? 'Média' : 'Baixa'} Prioridade
+                                {position.priority === 'high' ? 'Alta' : position.priority === 'medium' ? 'Média' : 'Baixa'}
                               </Badge>
                             </div>
-                            <div className="text-xs grid grid-cols-2 gap-2 pt-2 border-t">
-                              <div>Stakeholders: <span className="font-mono">{position.x.toFixed(1)}</span></div>
-                              <div>Organização: <span className="font-mono">{position.y.toFixed(1)}</span></div>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              GRI: {theme.gri_indicators.slice(0, 3).join(', ')}
-                              {theme.gri_indicators.length > 3 && ` +${theme.gri_indicators.length - 3}`}
+                            <div className="text-[10px] grid grid-cols-2 gap-1 pt-1 border-t">
+                              <div>S: <span className="font-mono">{position.x.toFixed(1)}</span></div>
+                              <div>O: <span className="font-mono">{position.y.toFixed(1)}</span></div>
                             </div>
                           </div>
                         </TooltipContent>
@@ -301,20 +279,20 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                   })}
                 </TooltipProvider>
 
-                {/* Legenda das zonas - Reposicionada para não sair da tela */}
-                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-background/90 backdrop-blur-sm p-2 sm:p-3 rounded-lg border text-xs space-y-1 max-w-[200px] sm:max-w-none">
-                  <div className="font-medium text-center sm:text-left">Zonas de Prioridade</div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                    <span className="text-xs">Alta</span>
+                {/* Legenda Compacta - Reposicionada */}
+                <div className="absolute bottom-2 right-2 bg-background/95 backdrop-blur-sm p-2 rounded border text-[10px] sm:text-xs space-y-1 min-w-[80px]">
+                  <div className="font-medium text-center">Prioridade</div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-destructive"></div>
+                    <span>Alta</span>
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                    <span className="text-xs">Média</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-warning"></div>
+                    <span>Média</span>
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-xs">Baixa</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
+                    <span>Baixa</span>
                   </div>
                 </div>
               </div>
