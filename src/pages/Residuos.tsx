@@ -19,6 +19,7 @@ import {
 import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { getWasteLogs, getWasteDashboard } from "@/services/waste"
+import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import PGRSStatusCard from "@/components/PGRSStatusCard"
 import { PGRSGoalsProgressChart } from "@/components/PGRSGoalsProgressChart"
@@ -49,7 +50,18 @@ const Residuos = () => {
   // Fetch active PGRS plan for goals
   const { data: activePGRS } = useQuery({
     queryKey: ['active-pgrs-goals'],
-    queryFn: getActivePGRSPlan,
+    queryFn: async () => {
+      const plan = await getActivePGRSPlan();
+      if (plan) {
+        // Fetch goals for the plan
+        const { data: goals } = await supabase
+          .from('pgrs_goals')
+          .select('*')
+          .eq('pgrs_plan_id', plan.id);
+        return { ...plan, goals: goals || [] };
+      }
+      return null;
+    },
     enabled: !!pgrsStatus,
   })
 
@@ -168,6 +180,31 @@ const Residuos = () => {
               </Card>
             )
           })}
+        </div>
+
+        {/* PGRS Goals Progress Chart */}
+        {activePGRS?.goals && activePGRS.goals.length > 0 && (
+          <PGRSGoalsProgressChart goals={activePGRS.goals} />
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/fornecedores-residuos")}
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Gerenciar Fornecedores
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate("/residuos/relatorios")}
+            className="flex items-center gap-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Relatórios PGRS
+          </Button>
         </div>
 
         {/* Tabela de Movimentações de Resíduos (MTR) */}

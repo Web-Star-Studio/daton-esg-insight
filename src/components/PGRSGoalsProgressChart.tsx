@@ -11,19 +11,19 @@ interface PGRSGoalsProgressChartProps {
 
 export const PGRSGoalsProgressChart = ({ goals, title = "Progresso das Metas PGRS" }: PGRSGoalsProgressChartProps) => {
   const getStatusIcon = (progress: number) => {
-    if (progress >= 100) return <TrendingUp className="h-4 w-4 text-green-600" />
-    if (progress >= 75) return <TrendingUp className="h-4 w-4 text-blue-600" />
-    if (progress >= 50) return <Target className="h-4 w-4 text-yellow-600" />
-    if (progress >= 25) return <TrendingDown className="h-4 w-4 text-orange-600" />
-    return <AlertTriangle className="h-4 w-4 text-red-600" />
+    if (progress >= 100) return <TrendingUp className="h-4 w-4 text-success" />
+    if (progress >= 75) return <TrendingUp className="h-4 w-4 text-primary" />
+    if (progress >= 50) return <Target className="h-4 w-4 text-warning" />
+    if (progress >= 25) return <TrendingDown className="h-4 w-4 text-warning" />
+    return <AlertTriangle className="h-4 w-4 text-destructive" />
   }
 
   const getStatusColor = (progress: number) => {
-    if (progress >= 100) return "bg-green-500"
-    if (progress >= 75) return "bg-blue-500"
-    if (progress >= 50) return "bg-yellow-500"
-    if (progress >= 25) return "bg-orange-500"
-    return "bg-red-500"
+    if (progress >= 100) return "bg-success"
+    if (progress >= 75) return "bg-primary"
+    if (progress >= 50) return "bg-warning"
+    if (progress >= 25) return "bg-warning"
+    return "bg-destructive"
   }
 
   const getStatusText = (progress: number) => {
@@ -112,25 +112,25 @@ export const PGRSGoalsProgressChart = ({ goals, title = "Progresso das Metas PGR
         <div className="border-t pt-4 mt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-success">
                 {goals.filter(g => g.progress_percentage >= 100).length}
               </div>
               <div className="text-xs text-muted-foreground">Concluídas</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-primary">
                 {goals.filter(g => g.progress_percentage >= 75 && g.progress_percentage < 100).length}
               </div>
               <div className="text-xs text-muted-foreground">Em Progresso</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-2xl font-bold text-warning">
                 {goals.filter(g => g.progress_percentage >= 25 && g.progress_percentage < 75).length}
               </div>
               <div className="text-xs text-muted-foreground">Atenção</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-bold text-destructive">
                 {goals.filter(g => g.progress_percentage < 25).length}
               </div>
               <div className="text-xs text-muted-foreground">Críticas</div>
