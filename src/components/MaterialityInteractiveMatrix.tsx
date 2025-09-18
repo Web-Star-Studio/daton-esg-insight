@@ -22,44 +22,76 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const matrixRef = useRef<HTMLDivElement>(null);
-  const [matrixDimensions, setMatrixDimensions] = useState({ width: 0, height: 0 });
+  
+  // Initialize with fallback dimensions to prevent loading state
+  const [matrixDimensions, setMatrixDimensions] = useState({ 
+    width: 500, 
+    height: 350 
+  });
 
   // Calculate responsive matrix dimensions
   useEffect(() => {
     const updateDimensions = () => {
+      // Get viewport dimensions first as fallback
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Try to get container dimensions, fallback to viewport if not available
+      let containerWidth = viewportWidth - 64; // Default fallback
+      
       if (matrixRef.current) {
-        const containerWidth = matrixRef.current.offsetWidth;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        let baseWidth = Math.min(containerWidth - 32, 600);
-        let baseHeight;
-        
-        if (viewportWidth < 640) { // Mobile
-          baseWidth = Math.min(containerWidth - 16, viewportWidth - 32);
-          baseHeight = Math.min(baseWidth * 0.8, viewportHeight * 0.4);
-        } else if (viewportWidth < 1024) { // Tablet
-          baseWidth = Math.min(containerWidth - 32, 500);
-          baseHeight = Math.min(baseWidth * 0.75, viewportHeight * 0.5);
-        } else { // Desktop
-          baseWidth = Math.min(containerWidth - 48, 600);
-          baseHeight = Math.min(baseWidth * 0.7, viewportHeight * 0.6);
-        }
-        
-        setMatrixDimensions({ 
-          width: Math.max(320, baseWidth), 
-          height: Math.max(240, baseHeight) 
-        });
+        const rect = matrixRef.current.getBoundingClientRect();
+        containerWidth = rect.width || matrixRef.current.offsetWidth || containerWidth;
       }
+      
+      let baseWidth, baseHeight;
+      
+      if (viewportWidth < 640) { // Mobile
+        baseWidth = Math.min(containerWidth - 16, viewportWidth - 32, 350);
+        baseHeight = Math.min(baseWidth * 0.8, viewportHeight * 0.4, 280);
+      } else if (viewportWidth < 1024) { // Tablet
+        baseWidth = Math.min(containerWidth - 32, 500);
+        baseHeight = Math.min(baseWidth * 0.75, viewportHeight * 0.5, 375);
+      } else { // Desktop
+        baseWidth = Math.min(containerWidth - 48, 600);
+        baseHeight = Math.min(baseWidth * 0.7, viewportHeight * 0.6, 420);
+      }
+      
+      const finalDimensions = { 
+        width: Math.max(300, baseWidth), 
+        height: Math.max(220, baseHeight) 
+      };
+      
+      setMatrixDimensions(finalDimensions);
     };
 
-    updateDimensions();
-    const resizeObserver = new ResizeObserver(updateDimensions);
-    if (matrixRef.current) {
-      resizeObserver.observe(matrixRef.current);
-    }
+    // Initial calculation with slight delay to ensure DOM is ready
+    const timer = setTimeout(updateDimensions, 100);
     
-    return () => resizeObserver.disconnect();
+    // Set up resize observer
+    let resizeObserver: ResizeObserver | null = null;
+    
+    const setupObserver = () => {
+      if (matrixRef.current && window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(updateDimensions);
+        resizeObserver.observe(matrixRef.current);
+      }
+    };
+    
+    // Set up observer after a short delay
+    const observerTimer = setTimeout(setupObserver, 200);
+    
+    // Also listen to window resize as backup
+    window.addEventListener('resize', updateDimensions);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(observerTimer);
+      window.removeEventListener('resize', updateDimensions);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
   }, []);
 
   const { themesMap, filteredMatrix, priorityStats } = useMemo(() => {
@@ -123,10 +155,16 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     const plotWidth = width - 2 * margin;
     const plotHeight = height - 2 * margin;
 
-    if (width === 0 || height === 0) {
+    // Ensure we have valid dimensions before rendering
+    if (width <= 0 || height <= 0) {
       return (
-        <div className="flex items-center justify-center h-64 bg-muted/20 rounded-lg">
-          <div className="text-muted-foreground">Carregando matriz...</div>
+        <div className="flex items-center justify-center h-80 bg-muted/10 rounded-lg border border-dashed border-muted-foreground/30">
+          <div className="text-center space-y-2">
+            <div className="text-muted-foreground">Preparando visualização...</div>
+            <div className="text-xs text-muted-foreground">
+              Dimensões: {width}x{height}
+            </div>
+          </div>
         </div>
       );
     }
