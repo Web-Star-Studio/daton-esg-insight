@@ -106,29 +106,30 @@ export default function AnaliseMaterialidade() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 sm:p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Análise de Materialidade</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Análise de Materialidade</h1>
             <p className="text-muted-foreground">
               Identifique e priorize os temas ESG mais relevantes para sua organização
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button onClick={handleQuickCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Avaliação
             </Button>
             <Button variant="outline" onClick={handleQuickCreate}>
               <Sparkles className="h-4 w-4 mr-2" />
-              Wizard Avançado
+              <span className="hidden sm:inline">Wizard Avançado</span>
+              <span className="sm:hidden">Wizard</span>
             </Button>
           </div>
         </div>
 
         {/* Estatísticas Gerais */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -293,7 +294,7 @@ export default function AnaliseMaterialidade() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="text-center">
                           <p className="text-2xl font-bold">{assessment.selected_themes.length}</p>
                           <p className="text-sm text-muted-foreground">Temas Selecionados</p>

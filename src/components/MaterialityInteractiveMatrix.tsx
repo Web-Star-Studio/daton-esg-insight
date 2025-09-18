@@ -72,12 +72,12 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
     console.log('Exportar matriz', { filteredMatrix, themes: themesMap });
   };
 
-  const matrixSize = isFullscreen ? 'h-[70vh]' : 'h-96';
+  const matrixSize = isFullscreen ? 'h-[80vh]' : 'h-[50vh] sm:h-96';
 
   return (
     <div className={className}>
       <Tabs defaultValue="matrix" className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <TabsList>
             <TabsTrigger value="matrix">Matriz Visual</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
@@ -86,8 +86,8 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
           
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Exportar</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)}>
               <Maximize2 className="h-4 w-4" />
@@ -105,7 +105,7 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-2 block">Categoria</label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -142,7 +142,7 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
           </Card>
 
           {/* Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
@@ -205,30 +205,32 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                 )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className={`relative w-full ${matrixSize} border-2 border-border rounded-lg bg-gradient-to-br from-background to-muted/20`}>
+            <CardContent className="p-2 sm:p-6">
+              <div className={`relative w-full ${matrixSize} border-2 border-border rounded-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden`}>
                 {/* Quadrantes com gradientes */}
                 <div className="absolute inset-0">
                   {/* Quadrante superior direito - Alta prioridade */}
                   <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-br from-red-100/60 to-red-200/40 rounded-tr-lg"></div>
                   {/* Quadrante superior esquerdo - Média prioridade */}
-                  <div className="absolute top-0 left-12 w-1/2 h-1/2 bg-gradient-to-bl from-yellow-100/40 to-yellow-200/30"></div>
+                  <div className="absolute top-0 left-[10%] sm:left-12 right-1/2 h-1/2 bg-gradient-to-bl from-yellow-100/40 to-yellow-200/30"></div>
                   {/* Quadrante inferior direita - Média prioridade */}
-                  <div className="absolute bottom-12 right-0 w-1/2 h-1/2 bg-gradient-to-tr from-yellow-100/40 to-yellow-200/30"></div>
+                  <div className="absolute bottom-[10%] sm:bottom-12 right-0 w-1/2 top-1/2 bg-gradient-to-tr from-yellow-100/40 to-yellow-200/30"></div>
                   {/* Quadrante inferior esquerdo - Baixa prioridade */}
-                  <div className="absolute bottom-12 left-12 w-1/2 h-1/2 bg-gradient-to-tl from-green-100/40 to-green-200/30 rounded-bl-lg"></div>
+                  <div className="absolute bottom-[10%] sm:bottom-12 left-[10%] sm:left-12 w-1/2 h-1/2 bg-gradient-to-tl from-green-100/40 to-green-200/30 rounded-bl-lg"></div>
                 </div>
 
                 {/* Eixos */}
-                <div className="absolute left-12 top-0 w-px h-full bg-border z-10"></div>
-                <div className="absolute bottom-12 left-0 w-full h-px bg-border z-10"></div>
+                <div className="absolute left-[10%] sm:left-12 top-0 w-px h-full bg-border z-10"></div>
+                <div className="absolute bottom-[10%] sm:bottom-12 left-0 w-full h-px bg-border z-10"></div>
                 
                 {/* Labels dos eixos */}
-                <div className="absolute bottom-2 right-2 text-sm font-medium text-muted-foreground">
-                  Importância para Stakeholders →
+                <div className="absolute bottom-1 right-1 text-xs sm:text-sm font-medium text-muted-foreground">
+                  <span className="hidden sm:inline">Importância para Stakeholders →</span>
+                  <span className="sm:hidden">Stakeholders →</span>
                 </div>
-                <div className="absolute top-2 left-2 text-sm font-medium text-muted-foreground transform -rotate-90 origin-center">
-                  ← Impacto para Organização
+                <div className="absolute top-1 left-1 text-xs sm:text-sm font-medium text-muted-foreground transform -rotate-90 origin-left">
+                  <span className="hidden sm:inline">← Impacto para Organização</span>
+                  <span className="sm:hidden">← Impacto</span>
                 </div>
 
                 {/* Linhas de grade */}
@@ -236,11 +238,11 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                   <div key={`v-${percent}`}>
                     <div 
                       className="absolute top-0 h-full w-px bg-border/30"
-                      style={{ left: `${12 + (percent * 0.88)}%` }}
+                      style={{ left: `${10 + (percent * 0.80)}%` }}
                     ></div>
                     <div 
                       className="absolute left-0 w-full h-px bg-border/30"
-                      style={{ bottom: `${12 + (percent * 0.76)}%` }}
+                      style={{ bottom: `${10 + (percent * 0.80)}%` }}
                     ></div>
                   </div>
                 ))}
@@ -251,14 +253,14 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                     const theme = themesMap[themeId];
                     if (!theme) return null;
 
-                    const x = 12 + (position.x * 0.88); // 12% offset + 88% useful width
-                    const y = 88 - (position.y * 0.76); // Inverted Y + 76% useful height
+                    const x = 10 + (position.x * 0.80); // 10% offset + 80% useful width
+                    const y = 90 - (position.y * 0.80); // Inverted Y + 80% useful height
 
                     return (
                       <Tooltip key={themeId}>
                         <TooltipTrigger asChild>
                           <div
-                            className={`absolute w-4 h-4 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-150 hover:shadow-lg z-20 ${getPriorityColor(position.priority)}`}
+                            className={`absolute w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 cursor-pointer transition-all duration-200 hover:scale-150 hover:shadow-lg z-20 ${getPriorityColor(position.priority)}`}
                             style={{
                               left: `${x}%`,
                               top: `${y}%`,
@@ -299,20 +301,20 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                   })}
                 </TooltipProvider>
 
-                {/* Legenda das zonas */}
-                <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm p-3 rounded-lg border text-xs space-y-1">
-                  <div className="font-medium">Zonas de Prioridade</div>
-                  <div className="flex items-center gap-2">
+                {/* Legenda das zonas - Reposicionada para não sair da tela */}
+                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-background/90 backdrop-blur-sm p-2 sm:p-3 rounded-lg border text-xs space-y-1 max-w-[200px] sm:max-w-none">
+                  <div className="font-medium text-center sm:text-left">Zonas de Prioridade</div>
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                    <span>Alta (Superior Direito)</span>
+                    <span className="text-xs">Alta</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                    <span>Média (Intermediária)</span>
+                    <span className="text-xs">Média</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span>Baixa (Inferior Esquerdo)</span>
+                    <span className="text-xs">Baixa</span>
                   </div>
                 </div>
               </div>
@@ -327,7 +329,7 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
                 <CardTitle>Insights da Matriz</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-red-50 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">{priorityStats.high}</div>
                     <div className="text-sm text-red-800">Temas Críticos</div>
