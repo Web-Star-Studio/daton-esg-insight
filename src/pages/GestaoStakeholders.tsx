@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { MainLayout } from "@/components/MainLayout";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -228,203 +229,205 @@ export default function GestaoStakeholders() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gestão de Stakeholders</h1>
-          <p className="text-muted-foreground">
-            Gerencie e engaje com todas as partes interessadas da organização
-          </p>
-        </div>
-        <Button onClick={() => {
-          setSelectedStakeholder(null);
-          setIsModalOpen(true);
-        }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Stakeholder
-        </Button>
-      </div>
-
-      {/* Estatísticas */}
-      {engagementStats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-500" />
-                <div>
-                  <p className="text-sm font-medium">Total de Stakeholders</p>
-                  <p className="text-2xl font-bold">{engagementStats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-red-500" />
-                <div>
-                  <p className="text-sm font-medium">Alta Influência/Interesse</p>
-                  <p className="text-2xl font-bold">{engagementStats.highInfluenceHighInterest}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Categorias Ativas</p>
-                  <p className="text-2xl font-bold">{Object.keys(engagementStats.byCategory).length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-orange-500" />
-                <div>
-                  <p className="text-sm font-medium">Engajamento Anual</p>
-                  <p className="text-2xl font-bold">{engagementStats.byEngagementFrequency.annual || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filtros e Busca */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome, organização ou cargo..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filtrar por categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as categorias</SelectItem>
-                {STAKEHOLDER_CATEGORIES.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <MainLayout>
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Gestão de Stakeholders</h1>
+            <p className="text-muted-foreground">
+              Gerencie e engaje com todas as partes interessadas da organização
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Button onClick={() => {
+            setSelectedStakeholder(null);
+            setIsModalOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Stakeholder
+          </Button>
+        </div>
 
-      {/* Tabela de Stakeholders */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Stakeholders</CardTitle>
-          <CardDescription>
-            {filteredStakeholders.length} stakeholder(s) encontrado(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Cargo/Posição</TableHead>
-                <TableHead>Influência</TableHead>
-                <TableHead>Interesse</TableHead>
-                <TableHead>Frequência</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStakeholders.map((stakeholder) => (
-                <TableRow key={stakeholder.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{stakeholder.name}</div>
-                        {stakeholder.organization && (
-                          <div className="text-sm text-muted-foreground">{stakeholder.organization}</div>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {getCategoryLabel(stakeholder.category)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{stakeholder.position}</TableCell>
-                  <TableCell>
-                    <Badge variant={getInfluenceBadgeVariant(stakeholder.influence_level)}>
-                      {stakeholder.influence_level === 'high' ? 'Alta' : 
-                       stakeholder.influence_level === 'medium' ? 'Média' : 'Baixa'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getInfluenceBadgeVariant(stakeholder.interest_level)}>
-                      {stakeholder.interest_level === 'high' ? 'Alto' : 
-                       stakeholder.interest_level === 'medium' ? 'Médio' : 'Baixo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {stakeholder.engagement_frequency === 'monthly' ? 'Mensal' :
-                     stakeholder.engagement_frequency === 'quarterly' ? 'Trimestral' :
-                     stakeholder.engagement_frequency === 'biannual' ? 'Semestral' : 'Anual'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(stakeholder)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(stakeholder)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        {/* Estatísticas */}
+        {engagementStats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-medium">Total de Stakeholders</p>
+                    <p className="text-2xl font-bold">{engagementStats.total}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-red-500" />
+                  <div>
+                    <p className="text-sm font-medium">Alta Influência/Interesse</p>
+                    <p className="text-2xl font-bold">{engagementStats.highInfluenceHighInterest}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium">Categorias Ativas</p>
+                    <p className="text-2xl font-bold">{Object.keys(engagementStats.byCategory).length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-orange-500" />
+                  <div>
+                    <p className="text-sm font-medium">Engajamento Anual</p>
+                    <p className="text-2xl font-bold">{engagementStats.byEngagementFrequency.annual || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filtros e Busca */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome, organização ou cargo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filtrar por categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {STAKEHOLDER_CATEGORIES.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabela de Stakeholders */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Stakeholders</CardTitle>
+            <CardDescription>
+              {filteredStakeholders.length} stakeholder(s) encontrado(s)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Cargo/Posição</TableHead>
+                  <TableHead>Influência</TableHead>
+                  <TableHead>Interesse</TableHead>
+                  <TableHead>Frequência</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredStakeholders.map((stakeholder) => (
+                  <TableRow key={stakeholder.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{stakeholder.name}</div>
+                          {stakeholder.organization && (
+                            <div className="text-sm text-muted-foreground">{stakeholder.organization}</div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getCategoryLabel(stakeholder.category)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{stakeholder.position}</TableCell>
+                    <TableCell>
+                      <Badge variant={getInfluenceBadgeVariant(stakeholder.influence_level)}>
+                        {stakeholder.influence_level === 'high' ? 'Alta' : 
+                         stakeholder.influence_level === 'medium' ? 'Média' : 'Baixa'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getInfluenceBadgeVariant(stakeholder.interest_level)}>
+                        {stakeholder.interest_level === 'high' ? 'Alto' : 
+                         stakeholder.interest_level === 'medium' ? 'Médio' : 'Baixo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {stakeholder.engagement_frequency === 'monthly' ? 'Mensal' :
+                       stakeholder.engagement_frequency === 'quarterly' ? 'Trimestral' :
+                       stakeholder.engagement_frequency === 'biannual' ? 'Semestral' : 'Anual'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(stakeholder)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(stakeholder)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      {/* Modal */}
-      <StakeholderModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        stakeholder={selectedStakeholder}
-        onSave={handleSave}
-        companyId={companyId}
-      />
-    </div>
+        {/* Modal */}
+        <StakeholderModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          stakeholder={selectedStakeholder}
+          onSave={handleSave}
+          companyId={companyId}
+        />
+      </div>
+    </MainLayout>
   );
 }
