@@ -13,7 +13,7 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Upload, X, FileText } from "lucide-react"
+import { CalendarIcon, Upload, X, FileText, Eye } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 import { getActivePGRSPlan } from "@/services/pgrsReports"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { MTROCRModal } from "@/components/MTROCRModal"
 
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
@@ -43,6 +44,7 @@ const formSchema = z.object({
 const RegistrarDestinacao = () => {
   const navigate = useNavigate()
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [showMTROCR, setShowMTROCR] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -77,7 +79,7 @@ const RegistrarDestinacao = () => {
     const selectedPgrsWasteTypeId = form.watch("pgrsWasteTypeId")
     if (selectedPgrsWasteTypeId && activePGRS?.sources) {
       for (const source of activePGRS.sources) {
-        const wasteType = source.waste_types?.find(wt => wt.id === selectedPgrsWasteTypeId)
+        const wasteType = source.waste_types?.find((wt: any) => wt.id === selectedPgrsWasteTypeId)
         if (wasteType) {
           form.setValue("descricaoResiduo", wasteType.waste_name)
           form.setValue("classe", wasteType.hazard_class)
@@ -97,6 +99,26 @@ const RegistrarDestinacao = () => {
 
   const removeFile = () => {
     setUploadedFile(null)
+  }
+
+  const handleOCRDataExtracted = (extractedData: any) => {
+    // Auto-fill form with OCR data
+    if (extractedData.mtr_number) form.setValue("mtr", extractedData.mtr_number)
+    if (extractedData.collection_date) form.setValue("dataColeta", new Date(extractedData.collection_date))
+    if (extractedData.waste_description) form.setValue("descricaoResiduo", extractedData.waste_description)
+    if (extractedData.waste_class) form.setValue("classe", extractedData.waste_class)
+    if (extractedData.quantity) form.setValue("quantidade", extractedData.quantity)
+    if (extractedData.unit) form.setValue("unidade", extractedData.unit)
+    if (extractedData.transporter_name) form.setValue("transportador", extractedData.transporter_name)
+    if (extractedData.transporter_cnpj) form.setValue("cnpjTransportador", extractedData.transporter_cnpj)
+    if (extractedData.destination_name) form.setValue("destinador", extractedData.destination_name)
+    if (extractedData.destination_cnpj) form.setValue("cnpjDestinador", extractedData.destination_cnpj)
+    if (extractedData.final_treatment_type) form.setValue("tipoDestinacao", extractedData.final_treatment_type)
+
+    toast({
+      title: "Dados Preenchidos!",
+      description: "Os campos foram preenchidos automaticamente com os dados extraídos do MTR.",
+    })
   }
 
   // Create waste log mutation
@@ -166,15 +188,15 @@ const RegistrarDestinacao = () => {
 
   return (
     <MainLayout>
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* PGRS Status Alert */}
         {activePGRS && (
           <Alert className="border-green-200 bg-green-50">
             <FileText className="h-4 w-4" />
             <AlertDescription>
               <div className="flex items-center gap-2">
-                <span>PGRS Ativo: <strong>{activePGRS.plan_name}</strong></span>
-                <Badge variant="outline">v{activePGRS.version}</Badge>
+                <span>PGRS Ativo: <strong>{(activePGRS as any).plan_name}</strong></span>
+                <Badge variant="outline">v{(activePGRS as any).version}</Badge>
               </div>
             </AlertDescription>
           </Alert>
@@ -292,7 +314,7 @@ const RegistrarDestinacao = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {activePGRS.sources?.map((source) => (
+                              {(activePGRS as any).sources?.map((source: any) => (
                                 <SelectItem key={source.id} value={source.id}>
                                   {source.source_name} - {source.source_type}
                                 </SelectItem>
@@ -317,8 +339,8 @@ const RegistrarDestinacao = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {activePGRS.sources?.flatMap(source => 
-                                source.waste_types?.map(wasteType => (
+                              {(activePGRS as any).sources?.flatMap((source: any) => 
+                                source.waste_types?.map((wasteType: any) => (
                                   <SelectItem key={wasteType.id} value={wasteType.id}>
                                     {wasteType.waste_name} ({wasteType.hazard_class})
                                   </SelectItem>
@@ -537,50 +559,82 @@ const RegistrarDestinacao = () => {
                     )}
                   />
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Upload de CDF */}
-                <div className="space-y-3">
-                  <Label>Anexar Certificado de Destinação Final (CDF)</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    {!uploadedFile ? (
-                      <div className="space-y-2">
-                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <div className="text-sm text-muted-foreground">
-                          Arraste um arquivo aqui ou
-                        </div>
-                        <Button type="button" variant="outline" size="sm">
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={handleFileUpload}
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          />
-                          Selecionar arquivo
-                        </Button>
-                        <div className="text-xs text-muted-foreground">
-                          PDF, DOC, JPG até 10MB
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between bg-muted/50 p-3 rounded-md">
-                        <span className="text-sm font-medium">{uploadedFile.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={removeFile}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+            {/* Seção 5: Upload de Documentos */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Documentos e OCR
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex gap-4 mb-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowMTROCR(true)}
+                    className="gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Extrair dados do MTR (OCR)
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Upload Manual de Documento (Opcional)</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-6">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer flex flex-col items-center space-y-2"
+                    >
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Clique para fazer upload ou arraste o arquivo aqui
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        PDF, JPG, PNG (máx. 10MB)
+                      </span>
+                    </label>
                   </div>
+
+                  {uploadedFile && (
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm font-medium">{uploadedFile.name}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeFile}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </form>
         </Form>
+
+        {/* MTR OCR Modal */}
+        <MTROCRModal
+          open={showMTROCR}
+          onOpenChange={setShowMTROCR}
+          onDataExtracted={handleOCRDataExtracted}
+        />
       </div>
     </MainLayout>
   )

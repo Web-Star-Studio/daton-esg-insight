@@ -11,14 +11,18 @@ import {
   DollarSign,
   Eye,
   Pencil,
-  FileText
+  FileText,
+  Users,
+  Plus,
+  BarChart3
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { getWasteLogs, getWasteDashboard } from "@/services/waste"
 import { useToast } from "@/hooks/use-toast"
 import PGRSStatusCard from "@/components/PGRSStatusCard"
-import { getActivePGRSStatus } from "@/services/pgrsReports"
+import { PGRSGoalsProgressChart } from "@/components/PGRSGoalsProgressChart"
+import { getActivePGRSStatus, getActivePGRSPlan } from "@/services/pgrsReports"
 
 const Residuos = () => {
   const navigate = useNavigate()
@@ -40,6 +44,13 @@ const Residuos = () => {
   const { data: pgrsStatus, isLoading: isLoadingPGRS, refetch: refetchPGRS } = useQuery({
     queryKey: ['pgrs-status'],
     queryFn: () => getActivePGRSStatus(),
+  })
+
+  // Fetch active PGRS plan for goals
+  const { data: activePGRS } = useQuery({
+    queryKey: ['active-pgrs-goals'],
+    queryFn: getActivePGRSPlan,
+    enabled: !!pgrsStatus,
   })
 
   // Show error toast if any query fails

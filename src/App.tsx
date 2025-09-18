@@ -26,6 +26,7 @@ import Relatorios from "./pages/Relatorios";
 import BibliotecaFatores from "./pages/BibliotecaFatores";
 import ProjetosCarbono from "./pages/ProjetosCarbono";
 import RegistrarAtividadeConservacao from "./pages/RegistrarAtividadeConservacao";
+import FornecedoresResiduos from "./pages/FornecedoresResiduos";
 // Backward-compat alias to avoid runtime errors from stale references
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
 import Ativos from "./pages/Ativos";
@@ -140,9 +141,9 @@ const App = () => (
                 <Residuos />
               </ProtectedRoute>
             } />
-            <Route path="/residuos/novo" element={
+            <Route path="/fornecedores-residuos" element={
               <ProtectedRoute requiredRole="Editor">
-                <RegistrarDestinacao />
+                <FornecedoresResiduos />
               </ProtectedRoute>
             } />
             <Route path="/metas" element={
