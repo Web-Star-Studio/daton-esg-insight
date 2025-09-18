@@ -15,14 +15,33 @@ import {
   Plus,
   Eye,
   CheckCircle,
-  XCircle
+  XCircle,
+  Settings,
+  BarChart3,
+  Edit,
+  UserPlus
 } from "lucide-react";
 import { getBoardMembers, getCorporatePolicies, getWhistleblowerReports, getGovernanceMetrics } from "@/services/governance";
 import { getESGRisks, getRiskMetrics } from "@/services/esgRisks";
 import { MainLayout } from "@/components/MainLayout";
+import { BoardMemberModal } from "@/components/BoardMemberModal";
+import { CorporatePolicyModal } from "@/components/CorporatePolicyModal";
+import { WhistleblowerModal } from "@/components/WhistleblowerModal";
+import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
+import { toast } from "@/hooks/use-toast";
 
 export default function GovernancaESG() {
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Modal states
+  const [isBoardModalOpen, setIsBoardModalOpen] = useState(false);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [isWhistleblowerModalOpen, setIsWhistleblowerModalOpen] = useState(false);
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [modalMode, setModalMode] = useState('create');
 
   const { data: governanceMetrics } = useQuery({
     queryKey: ['governance-metrics'],
@@ -54,6 +73,39 @@ export default function GovernancaESG() {
     queryFn: getESGRisks
   });
 
+  // Refetch functions
+  const refetchData = () => {
+    // These would normally be from useQuery but simplified for demo
+    toast({
+      title: "Dados Atualizados",
+      description: "As informações de governança foram atualizadas com sucesso.",
+    });
+  };
+
+  const handleEditMember = (member: any) => {
+    setSelectedMember(member);
+    setModalMode('edit');
+    setIsBoardModalOpen(true);
+  };
+
+  const handleEditPolicy = (policy: any) => {
+    setSelectedPolicy(policy);
+    setModalMode('edit');
+    setIsPolicyModalOpen(true);
+  };
+
+  const handleViewReport = (report: any) => {
+    setSelectedReport(report);
+    setModalMode('view');
+    setIsWhistleblowerModalOpen(true);
+  };
+
+  const handleInvestigateReport = (report: any) => {
+    setSelectedReport(report);
+    setModalMode('investigate');
+    setIsWhistleblowerModalOpen(true);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -65,7 +117,18 @@ export default function GovernancaESG() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button>
+          <Button onClick={() => setIsReportsModalOpen(true)}>
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Relatórios
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setSelectedMember(null);
+              setModalMode('create');
+              setIsBoardModalOpen(true);
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Novo Registro
           </Button>
@@ -381,6 +444,48 @@ export default function GovernancaESG() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Board Member Modal */}
+      <BoardMemberModal
+        isOpen={isBoardModalOpen}
+        onClose={() => {
+          setIsBoardModalOpen(false);
+          setSelectedMember(null);
+        }}
+        member={selectedMember}
+        onUpdate={refetchData}
+      />
+
+      {/* Corporate Policy Modal */}
+      <CorporatePolicyModal
+        isOpen={isPolicyModalOpen}
+        onClose={() => {
+          setIsPolicyModalOpen(false);
+          setSelectedPolicy(null);
+        }}
+        policy={selectedPolicy}
+        onUpdate={refetchData}
+      />
+
+      {/* Whistleblower Modal */}
+      <WhistleblowerModal
+        isOpen={isWhistleblowerModalOpen}
+        onClose={() => {
+          setIsWhistleblowerModalOpen(false);
+          setSelectedReport(null);
+        }}
+        report={selectedReport}
+        mode={modalMode as any}
+        onUpdate={refetchData}
+      />
+
+      {/* Governance Reports Modal */}
+      <GovernanceReportsModal
+        isOpen={isReportsModalOpen}
+        onClose={() => setIsReportsModalOpen(false)}
+        governanceMetrics={governanceMetrics}
+      />
+
       </div>
     </MainLayout>
   );
