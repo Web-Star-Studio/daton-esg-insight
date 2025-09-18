@@ -54,6 +54,11 @@ import GestaoStakeholders from "./pages/GestaoStakeholders";
 import AnaliseMaterialidade from "./pages/AnaliseMaterialidade";
 import ConfiguracaoOrganizacional from "./pages/ConfiguracaoOrganizacional";
 
+// Novos módulos ESG completos
+import SocialESG from "./pages/SocialESG";
+import GovernancaESG from "./pages/GovernancaESG";
+import RelatoriosIntegrados from "./pages/RelatoriosIntegrados";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -252,6 +257,24 @@ const App = () => (
             <Route path="/configuracao-organizacional" element={
               <ProtectedRoute>
                 <ConfiguracaoOrganizacional />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/social-esg" element={
+              <ProtectedRoute>
+                <SocialESG />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/governanca-esg" element={
+              <ProtectedRoute>
+                <GovernancaESG />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/relatorios-integrados" element={
+              <ProtectedRoute>
+                <RelatoriosIntegrados />
               </ProtectedRoute>
             } />
             

@@ -24,7 +24,10 @@ import {
   ShoppingCart,
   Users,
   Target,
-  Building2
+  Building2,
+  Heart,
+  Shield,
+  FileSpreadsheet
 } from "lucide-react"
 import { 
   Sidebar,
@@ -114,6 +117,14 @@ const menuSections: MenuSection[] = [
       { id: "gestao-stakeholders", title: "Gestão de Stakeholders", icon: Users, path: "/gestao-stakeholders" },
       { id: "analise-materialidade", title: "Análise de Materialidade", icon: Target, path: "/analise-materialidade" },
       { id: "relatorios-sustentabilidade", title: "Relatórios de Sustentabilidade", icon: FileText, path: "/relatorios-sustentabilidade" },
+    ]
+  },
+  {
+    title: "ESG COMPLETO",
+    items: [
+      { id: "social-esg", title: "Social ESG", icon: Heart, path: "/social-esg" },
+      { id: "governanca-esg", title: "Governança ESG", icon: Shield, path: "/governanca-esg" },
+      { id: "relatorios-integrados", title: "Relatórios Integrados", icon: FileSpreadsheet, path: "/relatorios-integrados" },
     ]
   },
   {
