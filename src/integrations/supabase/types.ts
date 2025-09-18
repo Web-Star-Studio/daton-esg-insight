@@ -1928,6 +1928,91 @@ export type Database = {
           },
         ]
       }
+      gri_data_validations: {
+        Row: {
+          company_id: string
+          created_at: string
+          error_message: string
+          id: string
+          indicator_id: string
+          is_active: boolean
+          validation_rule: Json
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          error_message: string
+          id?: string
+          indicator_id: string
+          is_active?: boolean
+          validation_rule: Json
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          error_message?: string
+          id?: string
+          indicator_id?: string
+          is_active?: boolean
+          validation_rule?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_data_validations_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicators_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_indicator_benchmarks: {
+        Row: {
+          benchmark_range_max: number | null
+          benchmark_range_min: number | null
+          benchmark_value: number | null
+          created_at: string
+          data_source: string | null
+          id: string
+          indicator_id: string
+          reference_year: number | null
+          region: string | null
+          sector: string
+        }
+        Insert: {
+          benchmark_range_max?: number | null
+          benchmark_range_min?: number | null
+          benchmark_value?: number | null
+          created_at?: string
+          data_source?: string | null
+          id?: string
+          indicator_id: string
+          reference_year?: number | null
+          region?: string | null
+          sector: string
+        }
+        Update: {
+          benchmark_range_max?: number | null
+          benchmark_range_min?: number | null
+          benchmark_value?: number | null
+          created_at?: string
+          data_source?: string | null
+          id?: string
+          indicator_id?: string
+          reference_year?: number | null
+          region?: string | null
+          sector?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_indicator_benchmarks_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicators_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_indicator_data: {
         Row: {
           boolean_value: boolean | null
@@ -2002,6 +2087,192 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_indicator_evidence: {
+        Row: {
+          company_id: string
+          created_at: string
+          document_id: string | null
+          evidence_description: string | null
+          evidence_type: string
+          file_path: string | null
+          id: string
+          indicator_data_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          document_id?: string | null
+          evidence_description?: string | null
+          evidence_type: string
+          file_path?: string | null
+          id?: string
+          indicator_data_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          document_id?: string | null
+          evidence_description?: string | null
+          evidence_type?: string
+          file_path?: string | null
+          id?: string
+          indicator_data_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_indicator_evidence_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_indicator_evidence_indicator_data_id_fkey"
+            columns: ["indicator_data_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicator_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_indicator_history: {
+        Row: {
+          change_reason: string | null
+          changed_by_user_id: string
+          company_id: string
+          created_at: string
+          id: string
+          indicator_data_id: string
+          new_value: string | null
+          previous_value: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by_user_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          indicator_data_id: string
+          new_value?: string | null
+          previous_value?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by_user_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          indicator_data_id?: string
+          new_value?: string | null
+          previous_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_indicator_history_indicator_data_id_fkey"
+            columns: ["indicator_data_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicator_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_indicator_mappings: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          indicator_id: string
+          is_active: boolean
+          mapping_formula: string | null
+          mapping_type: string
+          source_column: string
+          source_table: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          indicator_id: string
+          is_active?: boolean
+          mapping_formula?: string | null
+          mapping_type?: string
+          source_column: string
+          source_table: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          indicator_id?: string
+          is_active?: boolean
+          mapping_formula?: string | null
+          mapping_type?: string
+          source_column?: string
+          source_table?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_indicator_mappings_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicators_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gri_indicator_targets: {
+        Row: {
+          baseline_value: number | null
+          baseline_year: number | null
+          company_id: string
+          created_at: string
+          id: string
+          indicator_id: string
+          progress_tracking: Json | null
+          target_description: string | null
+          target_value: number | null
+          target_year: number
+          updated_at: string
+        }
+        Insert: {
+          baseline_value?: number | null
+          baseline_year?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          indicator_id: string
+          progress_tracking?: Json | null
+          target_description?: string | null
+          target_value?: number | null
+          target_year: number
+          updated_at?: string
+        }
+        Update: {
+          baseline_value?: number | null
+          baseline_year?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          indicator_id?: string
+          progress_tracking?: Json | null
+          target_description?: string | null
+          target_value?: number | null
+          target_year?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_indicator_targets_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicators_library"
             referencedColumns: ["id"]
           },
         ]
@@ -3171,6 +3442,10 @@ export type Database = {
       get_conversion_factor: {
         Args: { p_category?: string; p_from_unit: string; p_to_unit: string }
         Returns: number
+      }
+      get_indicator_suggested_value: {
+        Args: { p_company_id: string; p_indicator_code: string }
+        Returns: Json
       }
       get_user_company_id: {
         Args: Record<PropertyKey, never>
