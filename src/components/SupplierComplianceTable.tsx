@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AlertTriangle, CheckCircle, Clock, Search, FileText, Phone, Mail, Calendar } from "lucide-react"
-import { WasteSupplier } from "@/services/wasteSuppliers"
+import { WasteSupplier, formatSupplierType } from "@/services/wasteSuppliers"
 import { format, differenceInDays, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -19,7 +19,7 @@ export const SupplierComplianceTable = ({ suppliers, onSupplierSelect }: Supplie
 
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.cnpj.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (supplier.cnpj || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.supplier_type.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -172,7 +172,7 @@ export const SupplierComplianceTable = ({ suppliers, onSupplierSelect }: Supplie
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{supplier.supplier_type}</Badge>
+                        <Badge variant="outline">{formatSupplierType(supplier.supplier_type)}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">

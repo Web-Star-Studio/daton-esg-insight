@@ -62,7 +62,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
       setFormData({
         company_name: '',
         cnpj: '',
-        supplier_type: '' as 'transporter' | 'destination' | 'both',
+        supplier_type: '' as string,
         contact_name: '',
         contact_email: '',
         contact_phone: '',
@@ -190,7 +190,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                 <Label htmlFor="supplier_type">Tipo de Fornecedor *</Label>
                 <Select
                   value={formData.supplier_type}
-                  onValueChange={(value: 'transporter' | 'destination' | 'both') => 
+                  onValueChange={(value) => 
                     setFormData(prev => ({ ...prev, supplier_type: value }))
                   }
                 >

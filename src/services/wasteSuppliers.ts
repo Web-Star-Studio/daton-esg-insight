@@ -59,7 +59,7 @@ export interface WasteSuppliersStats {
   };
 }
 
-// Helper function to get current company ID
+// Helper function to get current user's company ID
 const getCurrentUserCompanyId = async (): Promise<string> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuário não autenticado');
@@ -90,7 +90,7 @@ export const getWasteSuppliers = async (filters?: WasteSupplierFilters): Promise
   }
 
   if (filters?.search) {
-    query = query.or(`company_name.ilike.%${filters.search}%,cnpj.ilike.%${filters.search}%`);
+    query = query.or(`company_name.ilike.%${filters.search}%,cnpj.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%`);
   }
 
   const { data, error } = await query;
@@ -99,8 +99,8 @@ export const getWasteSuppliers = async (filters?: WasteSupplierFilters): Promise
   return data || [];
 };
 
-// Get waste supplier by ID
-export const getWasteSupplierById = async (id: string): Promise<WasteSupplier> => {
+// Get single waste supplier by ID
+export const getWasteSupplierById = async (id: string): Promise<WasteSupplier | null> => {
   const { data, error } = await supabase
     .from('waste_suppliers')
     .select('*')
@@ -111,13 +111,18 @@ export const getWasteSupplierById = async (id: string): Promise<WasteSupplier> =
   return data;
 };
 
-// Create waste supplier
+// Create new waste supplier
 export const createWasteSupplier = async (supplierData: CreateWasteSupplierData): Promise<WasteSupplier> => {
   const companyId = await getCurrentUserCompanyId();
   
   const { data, error } = await supabase
     .from('waste_suppliers')
-    .insert({ ...supplierData, company_id: companyId })
+    .insert({ 
+      ...supplierData, 
+      company_id: companyId,
+      status: 'Ativo',
+      rating: 0
+    })
     .select()
     .single();
 
@@ -149,9 +154,10 @@ export const deleteWasteSupplier = async (id: string): Promise<void> => {
 };
 
 // Get suppliers with expiring licenses
-export const getSuppliersWithExpiringLicenses = async (days: number = 30): Promise<WasteSupplier[]> => {
+export const getExpiringLicenses = async (daysAhead: number = 30): Promise<WasteSupplier[]> => {
+  const currentDate = new Date();
   const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + days);
+  expiryDate.setDate(currentDate.getDate() + daysAhead);
 
   const { data, error } = await supabase
     .from('waste_suppliers')
@@ -205,26 +211,37 @@ export const getWasteSuppliersStats = async (): Promise<WasteSuppliersStats> => 
   return stats;
 };
 
-// Helper function to format supplier type
+// Utility functions
 export const formatSupplierType = (type: string): string => {
-  const types = {
-    transporter: 'Transportador',
-    destination: 'Destinador',
-    both: 'Transportador e Destinador'
-  };
-  return types[type as keyof typeof types] || type;
+  switch (type) {
+    case 'transporter':
+      return 'Transportador';
+    case 'destination':
+      return 'Destinador';
+    case 'both':
+      return 'Transportador e Destinador';
+    default:
+      return type;
+  }
 };
 
-// Helper function to get license status
-export const getLicenseStatus = (expiryDate?: string): 'valid' | 'expiring' | 'expired' | 'unknown' => {
+export const getLicenseStatus = (expiryDate: string): 'valid' | 'expiring' | 'expired' | 'unknown' => {
   if (!expiryDate) return 'unknown';
   
+  const currentDate = new Date();
   const expiry = new Date(expiryDate);
-  const today = new Date();
   const thirtyDaysFromNow = new Date();
-  thirtyDaysFromNow.setDate(today.getDate() + 30);
+  thirtyDaysFromNow.setDate(currentDate.getDate() + 30);
 
-  if (expiry < today) return 'expired';
-  if (expiry <= thirtyDaysFromNow) return 'expiring';
-  return 'valid';
+  if (expiry < currentDate) {
+    return 'expired';
+  } else if (expiry <= thirtyDaysFromNow) {
+    return 'expiring';
+  } else {
+    return 'valid';
+  }
+};
+
+export const getSuppliersByType = async (type: string): Promise<WasteSupplier[]> => {
+  return getWasteSuppliers({ supplier_type: type, status: 'Ativo' });
 };
