@@ -47,6 +47,13 @@ import Auditoria from "./pages/Auditoria";
 import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
 
+import RelatoriosSustentabilidade from "./pages/RelatoriosSustentabilidade";
+
+// Novos módulos de materialidade e stakeholders
+import GestaoStakeholders from "./pages/GestaoStakeholders";
+import AnaliseMaterialidade from "./pages/AnaliseMaterialidade";
+import ConfiguracaoOrganizacional from "./pages/ConfiguracaoOrganizacional";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -148,6 +155,12 @@ const App = () => (
                 <Relatorios />
               </ProtectedRoute>
             } />
+            
+            <Route path="/relatorios-sustentabilidade" element={
+              <ProtectedRoute>
+                <RelatoriosSustentabilidade />
+              </ProtectedRoute>
+            } />
             <Route path="/biblioteca-fatores" element={
               <ProtectedRoute>
                 <BibliotecaFatores />
@@ -221,6 +234,24 @@ const App = () => (
             <Route path="/compliance" element={
               <ProtectedRoute>
                 <Compliance />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/gestao-stakeholders" element={
+              <ProtectedRoute>
+                <GestaoStakeholders />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/analise-materialidade" element={
+              <ProtectedRoute>
+                <AnaliseMaterialidade />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/configuracao-organizacional" element={
+              <ProtectedRoute>
+                <ConfiguracaoOrganizacional />
               </ProtectedRoute>
             } />
             

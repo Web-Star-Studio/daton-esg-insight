@@ -21,7 +21,10 @@ import {
   ShieldCheck, 
   Settings, 
   Wand2, 
-  ShoppingCart
+  ShoppingCart,
+  Users,
+  Target,
+  Building2
 } from "lucide-react"
 import { 
   Sidebar,
@@ -102,6 +105,15 @@ const menuSections: MenuSection[] = [
       { id: "reconciliacao-documentos", title: "Reconciliação IA", icon: Wand2, path: "/reconciliacao-documentos" },
       { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
       { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
+    ]
+  },
+  {
+    title: "SUSTENTABILIDADE",
+    items: [
+      { id: "configuracao-organizacional", title: "Configuração Organizacional", icon: Building2, path: "/configuracao-organizacional" },
+      { id: "gestao-stakeholders", title: "Gestão de Stakeholders", icon: Users, path: "/gestao-stakeholders" },
+      { id: "analise-materialidade", title: "Análise de Materialidade", icon: Target, path: "/analise-materialidade" },
+      { id: "relatorios-sustentabilidade", title: "Relatórios de Sustentabilidade", icon: FileText, path: "/relatorios-sustentabilidade" },
     ]
   },
   {

@@ -56,11 +56,11 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
         ...formData,
         company_id: companyId,
         is_active: true,
-        category: formData.category as any,
-        influence_level: formData.influence_level as any,
-        interest_level: formData.interest_level as any,
-        engagement_frequency: formData.engagement_frequency as any,
-        preferred_communication: formData.preferred_communication as any,
+        category: formData.category as Stakeholder['category'],
+        influence_level: formData.influence_level as Stakeholder['influence_level'],
+        interest_level: formData.interest_level as Stakeholder['interest_level'],
+        engagement_frequency: formData.engagement_frequency as Stakeholder['engagement_frequency'],
+        preferred_communication: formData.preferred_communication as Stakeholder['preferred_communication'],
       });
       
       toast({
@@ -121,7 +121,7 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
                   <Label htmlFor="category">Categoria *</Label>
                   <Select 
                     value={formData.category} 
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    onValueChange={(value) => setFormData({ ...formData, category: value as Stakeholder['category'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -214,7 +214,7 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
                     <Label htmlFor="influence_level">Nível de Influência</Label>
                     <Select 
                       value={formData.influence_level} 
-                      onValueChange={(value) => setFormData({ ...formData, influence_level: value })}
+                      onValueChange={(value) => setFormData({ ...formData, influence_level: value as Stakeholder['influence_level'] })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -231,7 +231,7 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
                     <Label htmlFor="interest_level">Nível de Interesse</Label>
                     <Select 
                       value={formData.interest_level} 
-                      onValueChange={(value) => setFormData({ ...formData, interest_level: value })}
+                      onValueChange={(value) => setFormData({ ...formData, interest_level: value as Stakeholder['interest_level'] })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -249,7 +249,7 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
                   <Label htmlFor="engagement_frequency">Frequência de Engajamento</Label>
                   <Select 
                     value={formData.engagement_frequency} 
-                    onValueChange={(value) => setFormData({ ...formData, engagement_frequency: value })}
+                    onValueChange={(value) => setFormData({ ...formData, engagement_frequency: value as Stakeholder['engagement_frequency'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -267,7 +267,7 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave, comp
                   <Label htmlFor="preferred_communication">Comunicação Preferida</Label>
                   <Select 
                     value={formData.preferred_communication} 
-                    onValueChange={(value) => setFormData({ ...formData, preferred_communication: value })}
+                    onValueChange={(value) => setFormData({ ...formData, preferred_communication: value as Stakeholder['preferred_communication'] })}
                   >
                     <SelectTrigger>
                       <SelectValue />
