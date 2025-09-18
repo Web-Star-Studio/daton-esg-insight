@@ -1,6 +1,28 @@
 import { supabase } from "@/integrations/supabase/client"
 import { PGRSDocumentData, generatePGRSDocument, downloadPGRSDocument } from "./pgrsDocumentGenerator"
 
+// Export the function at the top level to ensure proper module resolution
+export const getActivePGRSPlan = async () => {
+  const { data, error } = await supabase
+    .from('pgrs_plans')
+    .select(`
+      *,
+      sources:pgrs_waste_sources(
+        *,
+        waste_types:pgrs_waste_types(*)
+      )
+    `)
+    .eq('status', 'Ativo')
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching active PGRS plan:', error)
+    throw error
+  }
+
+  return data
+}
+
 export interface PGRSPlanWithDetails {
   id: string
   plan_name: string
@@ -205,27 +227,6 @@ export async function downloadPGRSReport(planId: string, filename?: string): Pro
     console.error('Error downloading PGRS report:', error)
     return false
   }
-}
-
-export const getActivePGRSPlan = async () => {
-  const { data, error } = await supabase
-    .from('pgrs_plans')
-    .select(`
-      *,
-      sources:pgrs_waste_sources(
-        *,
-        waste_types:pgrs_waste_types(*)
-      )
-    `)
-    .eq('status', 'Ativo')
-    .single()
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching active PGRS plan:', error)
-    throw error
-  }
-
-  return data
 }
 
 export async function getActivePGRSStatus() {
