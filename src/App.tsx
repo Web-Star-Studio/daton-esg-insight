@@ -51,8 +51,8 @@ import NotFound from "./pages/NotFound";
 import RelatoriosSustentabilidade from "./pages/RelatoriosSustentabilidade";
 
 // Novos módulos de materialidade e stakeholders
-import SmartNotificationSystem from "@/components/SmartNotificationSystem";
-import IntelligentAlertsSystem from "@/components/IntelligentAlertsSystem";
+import { SmartNotificationSystem } from "@/components/SmartNotificationSystem";
+import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
 import GestaoStakeholders from "./pages/GestaoStakeholders";
 import AnaliseMaterialidade from "./pages/AnaliseMaterialidade";
 import ConfiguracaoOrganizacional from "./pages/ConfiguracaoOrganizacional";
@@ -258,6 +258,18 @@ const App = () => (
             <Route path="/gestao-stakeholders" element={
               <ProtectedRoute>
                 <GestaoStakeholders />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/smart-notifications" element={
+              <ProtectedRoute>
+                <SmartNotificationSystem />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/intelligent-alerts" element={
+              <ProtectedRoute>
+                <IntelligentAlertsSystem />
               </ProtectedRoute>
             } />
             
