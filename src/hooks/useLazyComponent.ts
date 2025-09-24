@@ -78,7 +78,7 @@ export const LazyComponents = {
   ),
   
   MaterialityInteractiveMatrix: createLazyComponent(
-    () => import('@/components/MaterialityInteractiveMatrix').then(module => ({ default: module.default })), 
+    () => import('@/components/MaterialityInteractiveMatrix').then(module => ({ default: module.MaterialityInteractiveMatrix })), 
     'MaterialityInteractiveMatrix'
   )
 };

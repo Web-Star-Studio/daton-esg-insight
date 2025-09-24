@@ -10,10 +10,7 @@ interface OptimizedQueryOptions<T> {
   enabled?: boolean;
   retry?: number | boolean;
   refetchOnWindowFocus?: boolean;
-  placeholderData?: T;
   select?: (data: T) => any;
-  onSuccess?: (data: T) => void;
-  onError?: (error: Error) => void;
 }
 
 // Enhanced query hook with intelligent caching and performance optimizations
@@ -30,7 +27,6 @@ export function useOptimizedQuery<T>(options: OptimizedQueryOptions<T>) {
     enabled: options.enabled ?? true,
     retry: options.retry ?? 3,
     refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
-    placeholderData: options.placeholderData,
     select: options.select,
   }), [options]);
 
@@ -188,7 +184,7 @@ export function useCacheManager() {
     return {
       totalQueries: cache.getAll().length,
       staleQueries: 0,
-      fetchingQueries: cache.getAll().filter(q => q.state.isFetching).length,
+      fetchingQueries: cache.getAll().filter(q => q.state.status === 'pending').length,
     };
   }, [queryClient]);
 
