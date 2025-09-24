@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ArticleViewModal } from "@/components/ArticleViewModal";
 
 interface KnowledgeArticle {
   id: string;
@@ -45,6 +46,8 @@ const KNOWLEDGE_CATEGORIES = [
 
 export default function BaseConhecimento() {
   const [isCreateArticleOpen, setIsCreateArticleOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<KnowledgeArticle | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [newArticleData, setNewArticleData] = useState({
@@ -118,6 +121,21 @@ export default function BaseConhecimento() {
       category: newArticleData.category,
       tags: newArticleData.tags
     });
+  };
+
+  const handleViewArticle = (article: KnowledgeArticle) => {
+    setSelectedArticle(article);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEditArticle = (article: KnowledgeArticle) => {
+    // TODO: Implement edit functionality in next phase
+    toast.info("Funcionalidade de edição será implementada na próxima fase");
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedArticle(null);
   };
 
   const getCategoryColor = (category: string) => {
@@ -337,11 +355,21 @@ export default function BaseConhecimento() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleViewArticle(article)}
+                >
                   <Eye className="h-4 w-4 mr-1" />
                   Ver
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditArticle(article)}
+                >
                   <Edit className="h-4 w-4 mr-1" />
                   Editar
                 </Button>
@@ -376,6 +404,14 @@ export default function BaseConhecimento() {
           </CardContent>
         </Card>
       )}
+
+      {/* Article View Modal */}
+      <ArticleViewModal
+        article={selectedArticle}
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        onEdit={handleEditArticle}
+      />
     </>
   );
 }

@@ -468,6 +468,41 @@ class QualityManagementService {
     return data;
   }
 
+  async getKnowledgeArticle(id: string) {
+    const { data, error } = await supabase
+      .from('knowledge_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async incrementArticleViewCount(id: string) {
+    // First get the current view count
+    const { data: currentData, error: fetchError } = await supabase
+      .from('knowledge_articles')
+      .select('view_count')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newViewCount = (currentData.view_count || 0) + 1;
+
+    // Then update with the incremented value
+    const { data, error } = await supabase
+      .from('knowledge_articles')
+      .update({ view_count: newViewCount })
+      .eq('id', id)
+      .select('view_count')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   // Suppliers methods
   async getSuppliers() {
     const { data, error } = await supabase
