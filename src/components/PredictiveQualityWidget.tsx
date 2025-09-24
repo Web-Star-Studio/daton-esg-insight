@@ -145,7 +145,7 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
                 ) : (
                   <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
                 )}
-                <span className="font-bold text-lg">
+                <span className="font-bold text-lg text-foreground">
                   {metrics.qualityScore}%
                 </span>
               </div>
