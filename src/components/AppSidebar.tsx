@@ -39,7 +39,8 @@ import {
   UserCheck,
   GraduationCap,
   DollarSign,
-  Search
+  Search,
+  Clock
 } from "lucide-react"
 import { 
   Sidebar,
@@ -158,6 +159,7 @@ const menuSections: MenuSection[] = [
       { id: "beneficios-remuneracao", title: "Benefícios e Remuneração", icon: DollarSign, path: "/beneficios-remuneracao" },
       { id: "recrutamento", title: "Recrutamento e Seleção", icon: Search, path: "/recrutamento" },
       { id: "seguranca-trabalho", title: "Segurança do Trabalho", icon: ShieldCheck, path: "/seguranca-trabalho" },
+      { id: "ponto-frequencia", title: "Ponto e Frequência", icon: Clock, path: "/ponto-frequencia" },
     ]
   },
   {

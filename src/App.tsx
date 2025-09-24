@@ -81,6 +81,7 @@ import GestaoDesempenho from "./pages/GestaoDesempenho";
 import BeneficiosRemuneracao from "./pages/BeneficiosRemuneracao";
 import Recrutamento from "./pages/Recrutamento";
 import SeguracaTrabalho from "./pages/SeguracaTrabalho";
+import PontoFrequencia from "./pages/PontoFrequencia";
 
 const queryClient = new QueryClient();
 
@@ -382,6 +383,11 @@ const App = () => (
           <Route path="/seguranca-trabalho" element={
             <ProtectedRoute>
               <SeguracaTrabalho />
+            </ProtectedRoute>
+          } />
+          <Route path="/ponto-frequencia" element={
+            <ProtectedRoute>
+              <PontoFrequencia />
             </ProtectedRoute>
           } />
             <Route path="/simulador" element={
