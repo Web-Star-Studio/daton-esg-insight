@@ -99,8 +99,7 @@ const App = () => (
             {/* Documentação - público */}
             <Route path="/documentacao" element={<Documentacao />} />
             
-            {/* Simulador - público */}
-            <Route path="/simulador" element={<SimuladorEcoImpacto />} />
+            {/* Simulador moved to protected routes */}
             
             {/* Rotas protegidas - agrupadas sob um único MainLayout */}
             <Route path="/dashboard" element={
@@ -335,6 +334,11 @@ const App = () => (
             <Route path="/quality-dashboard" element={
               <ProtectedRoute>
                 <QualityDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/simulador" element={
+              <ProtectedRoute>
+                <SimuladorEcoImpacto />
               </ProtectedRoute>
             } />
           
