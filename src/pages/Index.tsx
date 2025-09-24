@@ -9,6 +9,9 @@ import SGQDashboardWidget from "@/components/SGQDashboardWidget"
 import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
 import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
+import UnifiedDashboardWidget from "@/components/UnifiedDashboardWidget"
+import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
+import SystemPerformanceMonitor from "@/components/SystemPerformanceMonitor"
 import { 
   Flag, 
   AlertTriangle, 
@@ -25,7 +28,9 @@ import {
   Activity,
   Target,
   AlertCircle,
-  Zap
+  Zap,
+  Settings,
+  Bell
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { getESGDashboard } from "@/services/esg"
@@ -33,8 +38,11 @@ import { getEmissionStats } from "@/services/emissions"
 import { getDashboardStats } from "@/services/goals"
 import { getLicenseStats } from "@/services/licenses"
 import { getWasteDashboard } from "@/services/waste"
+import { useSystemOptimization } from "@/hooks/useSystemOptimization"
 
 const Index = () => {
+  const { metrics, isOptimized } = useSystemOptimization();
+  
   // Fetch real data from various services
   const { data: esgData, isLoading: esgLoading } = useQuery({
     queryKey: ['esg-dashboard'],
@@ -68,15 +76,29 @@ const Index = () => {
       <div className="space-y-6">
         {/* Cabeçalho da página */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-foreground">Centro de Comando ESG</h1>
-          <p className="text-muted-foreground">
-            Dashboard inteligente com insights em tempo real e alertas preditivos
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Centro de Comando ESG</h1>
+              <p className="text-muted-foreground">
+                Dashboard inteligente com insights em tempo real e alertas preditivos
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant={isOptimized ? 'default' : 'secondary'} className="text-xs">
+                <Zap className="h-3 w-3 mr-1" />
+                Sistema {metrics.system_health.toUpperCase()}
+              </Badge>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Tabs para diferentes visões do dashboard */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -92,6 +114,10 @@ const Index = () => {
             <TabsTrigger value="insights" className="flex items-center space-x-2">
               <Brain className="h-4 w-4" />
               <span>Insights de IA</span>
+            </TabsTrigger>
+            <TabsTrigger value="system" className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span>Sistema</span>
             </TabsTrigger>
           </TabsList>
 
@@ -254,37 +280,9 @@ const Index = () => {
           {/* SGQ Dashboard Widget */}
           <SGQDashboardWidget />
 
-          {/* Card Próximas Tarefas */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Próximas Tarefas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Circle className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Atualizar relatório trimestral de emissões</span>
-                  <Badge variant="outline" className="ml-auto text-xs">Pendente</Badge>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="h-4 w-4 text-warning" />
-                  <span className="text-sm text-foreground">Revisar metas de redução de carbono 2024</span>
-                  <Badge variant="secondary" className="ml-auto text-xs bg-warning/10 text-warning">Em Andamento</Badge>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Circle className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Instalar sensores IoT de emissão</span>
-                  <Badge variant="outline" className="ml-auto text-xs">Pendente</Badge>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  <span className="text-sm line-through text-muted-foreground">Enviar relatório de água</span>
-                  <Badge variant="secondary" className="ml-auto text-xs bg-success/10 text-success">Concluído</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-            </div>
+          {/* Unified Dashboard Widget */}
+          <UnifiedDashboardWidget />
+        </div>
           </TabsContent>
 
           {/* Performance Tab */}
@@ -402,6 +400,14 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+          
+          {/* System Tab */}
+          <TabsContent value="system" className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <SystemPerformanceMonitor />
+              <AdvancedNotificationPanel />
             </div>
           </TabsContent>
         </Tabs>

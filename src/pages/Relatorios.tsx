@@ -5,13 +5,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileBarChart, Plus, FileText, FileSpreadsheet, MoreHorizontal, Edit, Copy, Trash2, Loader2, Leaf, Activity, Brain, Sparkles } from "lucide-react";
+import { FileBarChart, Plus, FileText, FileSpreadsheet, MoreHorizontal, Edit, Copy, Trash2, Loader2, Leaf, Activity, Brain, Sparkles, Settings, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CreateGRIReportModal } from "@/components/CreateGRIReportModal";
 import { GRIReportBuilderModal } from "@/components/GRIReportBuilderModal";
 import SGQReportsModal from "@/components/SGQReportsModal";
 import { IntelligentReportingDashboard } from "@/components/IntelligentReportingDashboard";
+import { SystemPerformanceMonitor } from "@/components/SystemPerformanceMonitor";
+import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
 import { getGRIReports, type GRIReport } from "@/services/griReports";
+import { useSystemOptimization } from "@/hooks/useSystemOptimization";
 import { toast } from "sonner";
 
 const mockReports = [
@@ -56,6 +59,7 @@ const Relatorios = () => {
   const [selectedGRIReport, setSelectedGRIReport] = useState<GRIReport | null>(null);
   const [isGRIBuilderOpen, setIsGRIBuilderOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { metrics, isOptimized } = useSystemOptimization();
 
   useEffect(() => {
     loadGRIReports();
@@ -134,11 +138,20 @@ const Relatorios = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Cabeçalho */}
+        {/* Header with System Status */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <FileBarChart className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Central de Relatórios</h1>
+            <div>
+              <h1 className="text-3xl font-bold">Central de Relatórios Inteligentes</h1>
+              <p className="text-muted-foreground flex items-center gap-2">
+                Sistema de última geração com IA integrada
+                <Badge variant={isOptimized ? 'default' : 'secondary'} className="text-xs">
+                  <Zap className="h-3 w-3 mr-1" />
+                  {metrics.system_health.toUpperCase()}
+                </Badge>
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button className="gap-2" onClick={() => setIsCreateGRIModalOpen(true)}>
@@ -152,8 +165,8 @@ const Relatorios = () => {
               </Button>
             </SGQReportsModal>
             <Button variant="outline" className="gap-2">
-              <Brain className="h-4 w-4" />
-              IA Reports
+              <Settings className="h-4 w-4" />
+              Sistema
             </Button>
             <Button variant="outline" className="gap-2">
               <Plus className="h-4 w-4" />
@@ -169,7 +182,7 @@ const Relatorios = () => {
           <CardContent>
             {/* Abas de Filtragem */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-              <TabsList>
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="todos">Todos</TabsTrigger>
                 <TabsTrigger value="ia" className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4" />
@@ -177,12 +190,15 @@ const Relatorios = () => {
                 </TabsTrigger>
                 <TabsTrigger value="gri">Relatórios GRI</TabsTrigger>
                 <TabsTrigger value="sgq">Sistema de Qualidade</TabsTrigger>
+                <TabsTrigger value="sistema">Sistema</TabsTrigger>
                 <TabsTrigger value="rascunhos">Rascunhos</TabsTrigger>
-                <TabsTrigger value="concluidos">Concluídos</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="ia" className="mt-6">
-                <IntelligentReportingDashboard />
+              <TabsContent value="sistema" className="mt-6">
+                <div className="space-y-6">
+                  <SystemPerformanceMonitor />
+                  <UnifiedDashboardWidget />
+                </div>
               </TabsContent>
 
               <TabsContent value="gri" className="mt-6">
@@ -304,7 +320,7 @@ const Relatorios = () => {
               </TabsContent>
 
               <TabsContent value={activeTab} className="mt-6">
-                {activeTab !== "gri" && (
+                {activeTab !== "gri" && activeTab !== "sgq" && activeTab !== "ia" && activeTab !== "sistema" && (
                   <>
                     {/* Tabela de Relatórios Tradicionais */}
                     <Table>
