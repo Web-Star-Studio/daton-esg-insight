@@ -123,20 +123,20 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           {/* Next Month Prediction */}
           <div className="p-3 rounded-lg border bg-background space-y-2">
             <div className="flex justify-between items-center text-sm">
-              <span className="font-medium">NCs Previstas</span>
-              <span className="font-bold text-lg">{predictions.nextMonthNCs}</span>
+              <span className="font-medium text-white">NCs Previstas</span>
+              <span className="font-bold text-lg text-white">{predictions.nextMonthNCs}</span>
             </div>
             <Progress 
               value={Math.min((predictions.nextMonthNCs / 10) * 100, 100)} 
               className="h-2"
             />
-            <p className="text-xs text-muted-foreground">Próximo mês</p>
+            <p className="text-xs text-white">Próximo mês</p>
           </div>
 
           {/* Quality Score Trend */}
           <div className="p-3 rounded-lg border bg-background space-y-2">
             <div className="flex justify-between items-center text-sm">
-              <span className="font-medium">Qualidade</span>
+              <span className="font-medium text-white">Qualidade</span>
               <div className="flex items-center space-x-1">
                 {trendDirection === 'up' ? (
                   <TrendingUp className="h-4 w-4 text-success" />
@@ -145,13 +145,13 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
                 ) : (
                   <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
                 )}
-                <span className="font-bold text-lg text-foreground">
+                <span className="font-bold text-lg text-white">
                   {metrics.qualityScore}%
                 </span>
               </div>
             </div>
             <Progress value={metrics.qualityScore} className="h-2" />
-            <p className="text-xs text-muted-foreground">Tendência atual</p>
+            <p className="text-xs text-white">Tendência atual</p>
           </div>
         </div>
 
