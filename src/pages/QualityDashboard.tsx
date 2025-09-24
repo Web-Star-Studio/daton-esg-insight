@@ -4,19 +4,23 @@ import QualityDashboard from '@/components/QualityDashboard';
 import QualityMatrix from '@/components/QualityMatrix';
 import AIQualityInsights from '@/components/AIQualityInsights';
 import { EnhancedQualityDashboard } from '@/components/EnhancedQualityDashboard';
+import { PredictiveQualityWidget } from '@/components/PredictiveQualityWidget';
+import { MainLayout } from '@/components/MainLayout';
 import { BarChart3, Brain, Grid3X3, Zap } from 'lucide-react';
 
 const QualityDashboardPage = () => {
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard de Qualidade</h1>
-          <p className="text-muted-foreground">
-            Visão completa do Sistema de Gestão da Qualidade
-          </p>
+    <MainLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Sistema de Gestão da Qualidade</h1>
+            <p className="text-muted-foreground">
+              Visão completa com análises preditivas e inteligência artificial
+            </p>
+          </div>
+          <PredictiveQualityWidget className="max-w-sm" />
         </div>
-      </div>
 
       <Tabs defaultValue="enhanced" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -53,8 +57,9 @@ const QualityDashboardPage = () => {
         <TabsContent value="insights">
           <AIQualityInsights />
         </TabsContent>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </MainLayout>
   );
 };
 

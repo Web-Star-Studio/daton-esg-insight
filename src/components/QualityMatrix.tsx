@@ -5,8 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Activity, Shield, TrendingUp } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AlertTriangle, Activity, Shield, TrendingUp, Bell } from 'lucide-react';
 import { qualityManagementService } from '@/services/qualityManagement';
+import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
+import { useToast } from '@/hooks/use-toast';
 
 interface QualityMatrixProps {
   matrixId?: string;
@@ -14,6 +17,8 @@ interface QualityMatrixProps {
 
 const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   const [selectedMatrixId, setSelectedMatrixId] = useState(matrixId || '');
+  const { toast } = useToast();
+  const { triggerQualityIssueDetected } = useNotificationTriggers();
   
   const { data: matrices } = useQuery({
     queryKey: ['risk-matrices'],
@@ -53,10 +58,56 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
     return 'Muito Baixo';
   };
 
+  const handleRiskClick = async (probability: string, impact: string, risksCount: number) => {
+    if (risksCount > 0) {
+      const riskLevel = getRiskLevelText(probability, impact);
+      if (riskLevel === 'Crítico' || riskLevel === 'Alto') {
+        try {
+          await triggerQualityIssueDetected(
+            `risk-${Date.now()}`,
+            `${risksCount} riscos identificados: ${probability} probabilidade, ${impact} impacto`,
+            riskLevel.toLowerCase()
+          );
+          toast({
+            title: "Alerta de Qualidade",
+            description: `Notificação enviada sobre riscos ${riskLevel.toLowerCase()}s detectados`,
+          });
+        } catch (error) {
+          console.error('Error triggering quality notification:', error);
+        }
+      }
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-12" />
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-80" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-80 w-full" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -177,7 +228,8 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
                             <DialogTrigger asChild>
                               <Button
                                 variant="outline"
-                                className={`h-20 ${getRiskColor(probability, impact)} hover:opacity-80 transition-opacity`}
+                                className={`h-20 ${getRiskColor(probability, impact)} hover:opacity-80 transition-opacity relative`}
+                                onClick={() => handleRiskClick(probability, impact, cellRisks.length)}
                               >
                                 <div className="text-center">
                                   <div className="text-xs font-medium">
@@ -186,6 +238,9 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
                                   <div className="text-lg font-bold mt-1">
                                     {cellRisks.length}
                                   </div>
+                                  {cellRisks.length > 0 && (getRiskLevelText(probability, impact) === 'Crítico' || getRiskLevelText(probability, impact) === 'Alto') && (
+                                    <Bell className="h-3 w-3 absolute top-1 right-1 text-destructive animate-pulse" />
+                                  )}
                                 </div>
                               </Button>
                             </DialogTrigger>
