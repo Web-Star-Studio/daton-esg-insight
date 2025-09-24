@@ -5,11 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileBarChart, Plus, FileText, FileSpreadsheet, MoreHorizontal, Edit, Copy, Trash2, Loader2, Leaf, Activity } from "lucide-react";
+import { FileBarChart, Plus, FileText, FileSpreadsheet, MoreHorizontal, Edit, Copy, Trash2, Loader2, Leaf, Activity, Brain, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CreateGRIReportModal } from "@/components/CreateGRIReportModal";
 import { GRIReportBuilderModal } from "@/components/GRIReportBuilderModal";
 import SGQReportsModal from "@/components/SGQReportsModal";
+import { IntelligentReportingDashboard } from "@/components/IntelligentReportingDashboard";
 import { getGRIReports, type GRIReport } from "@/services/griReports";
 import { toast } from "sonner";
 
@@ -151,6 +152,10 @@ const Relatorios = () => {
               </Button>
             </SGQReportsModal>
             <Button variant="outline" className="gap-2">
+              <Brain className="h-4 w-4" />
+              IA Reports
+            </Button>
+            <Button variant="outline" className="gap-2">
               <Plus className="h-4 w-4" />
               Outros Relatórios
             </Button>
@@ -166,11 +171,19 @@ const Relatorios = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
               <TabsList>
                 <TabsTrigger value="todos">Todos</TabsTrigger>
+                <TabsTrigger value="ia" className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  IA Reports
+                </TabsTrigger>
                 <TabsTrigger value="gri">Relatórios GRI</TabsTrigger>
                 <TabsTrigger value="sgq">Sistema de Qualidade</TabsTrigger>
                 <TabsTrigger value="rascunhos">Rascunhos</TabsTrigger>
                 <TabsTrigger value="concluidos">Concluídos</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="ia" className="mt-6">
+                <IntelligentReportingDashboard />
+              </TabsContent>
 
               <TabsContent value="gri" className="mt-6">
                 {/* Tabela de Relatórios GRI */}
