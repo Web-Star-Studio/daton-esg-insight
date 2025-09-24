@@ -169,15 +169,14 @@ const RegistrarAtividadeConservacao = () => {
   const selectedType = activityTypes.find(t => t.name === formData.activity_type);
 
   return (
-    <MainLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Cabeçalho da página */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Registrar Atividade de Conservação</h1>
-            <p className="text-muted-foreground mt-1">
-              Crie uma nova atividade de conservação, reflorestamento ou recuperação ambiental
-            </p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Cabeçalho da página */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Registrar Atividade de Conservação</h1>
+          <p className="text-muted-foreground mt-1">
+            Crie uma nova atividade de conservação, reflorestamento ou recuperação ambiental
+          </p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={handleCancel}>
@@ -462,10 +461,9 @@ const RegistrarAtividadeConservacao = () => {
               </Card>
             </div>
           </div>
-        </form>
-      </div>
-    </MainLayout>
-  )
+      </form>
+    </div>
+  );
 }
 
 export default RegistrarAtividadeConservacao

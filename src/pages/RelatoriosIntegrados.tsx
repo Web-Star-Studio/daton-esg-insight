@@ -388,8 +388,6 @@ export default function RelatoriosIntegrados() {
           </Card>
         </TabsContent>
       </Tabs>
-      </div>
     </div>
-    }
   );
 }

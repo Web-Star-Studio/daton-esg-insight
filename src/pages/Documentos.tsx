@@ -260,7 +260,8 @@ export default function Documentos() {
   ).sort();
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -563,6 +564,6 @@ export default function Documentos() {
         isOpen={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
       />
-    </div>
+    </>
   );
 }

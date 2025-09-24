@@ -187,12 +187,11 @@ const RegistrarDestinacao = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* PGRS Status Alert */}
-        {activePGRS && (
-          <Alert className="border-green-200 bg-green-50">
-            <FileText className="h-4 w-4" />
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* PGRS Status Alert */}
+      {activePGRS && (
+        <Alert className="border-green-200 bg-green-50">
+          <FileText className="h-4 w-4" />
             <AlertDescription>
               <div className="flex items-center gap-2">
                 <span>PGRS Ativo: <strong>{(activePGRS as any).plan_name}</strong></span>
@@ -634,10 +633,9 @@ const RegistrarDestinacao = () => {
           open={showMTROCR}
           onOpenChange={setShowMTROCR}
           onDataExtracted={handleOCRDataExtracted}
-        />
-      </div>
-    </MainLayout>
-  )
+      />
+    </div>
+  );
 }
 
 export default RegistrarDestinacao

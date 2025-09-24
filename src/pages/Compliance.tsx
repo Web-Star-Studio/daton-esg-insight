@@ -155,13 +155,12 @@ export default function Compliance() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Painel de Conformidade Regulatória</h1>
-            <p className="text-muted-foreground">Monitore e gerencie todas as obrigações regulatórias da empresa</p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Painel de Conformidade Regulatória</h1>
+          <p className="text-muted-foreground">Monitore e gerencie todas as obrigações regulatórias da empresa</p>
+        </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={exportComplianceReport}>
               <Download className="mr-2 h-4 w-4" />
@@ -611,7 +610,6 @@ export default function Compliance() {
         open={showRequirementModal} 
         onOpenChange={setShowRequirementModal}
       />
-      </div>
-    </MainLayout>
+    </div>
   );
 }

@@ -460,9 +460,8 @@ export function SimuladorEcoImpacto() {
                 </CardContent>
               </Card>
             </div>
-          </div>
         </div>
       </div>
     </div>
-  }
+  );
 }

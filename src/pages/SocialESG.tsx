@@ -65,14 +65,13 @@ export default function SocialESG() {
   });
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">ESG Social</h1>
-          <p className="text-muted-foreground">
-            Gestão completa dos aspectos sociais da sustentabilidade
-          </p>
+    <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">ESG Social</h1>
+        <p className="text-muted-foreground">
+          Gestão completa dos aspectos sociais da sustentabilidade
+        </p>
         </div>
         <div className="flex gap-2">
           <Button>
@@ -337,7 +336,6 @@ export default function SocialESG() {
           </Card>
         </TabsContent>
       </Tabs>
-      </div>
-    </MainLayout>
+    </div>
   );
 }

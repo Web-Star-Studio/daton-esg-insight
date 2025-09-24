@@ -173,11 +173,10 @@ const CriarMeta = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Cabeçalho da página */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Cabeçalho da página */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
             <h1 className="text-3xl font-bold text-foreground">Criar Nova Meta de Sustentabilidade</h1>
             <p className="text-muted-foreground mt-1">
               Defina os objetivos e indicadores para acompanhar o progresso
@@ -521,8 +520,7 @@ const CriarMeta = () => {
           </form>
         </Form>
       </div>
-    </MainLayout>
-  )
+    </Card>
+  </div>
+  );
 }
-
-export default CriarMeta

@@ -661,7 +661,6 @@ const LicenseDetails = () => {
                 </Button>
               </CardContent>
             </Card>
-          </div>
         </div>
       </div>
 

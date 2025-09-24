@@ -10,14 +10,13 @@ import { BarChart3, Brain, Grid3X3, Zap } from 'lucide-react';
 
 const QualityDashboardPage = () => {
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Sistema de Gestão da Qualidade</h1>
-            <p className="text-muted-foreground">
-              Visão completa com análises preditivas e inteligência artificial
-            </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Sistema de Gestão da Qualidade</h1>
+          <p className="text-muted-foreground">
+            Visão completa com análises preditivas e inteligência artificial
+          </p>
           </div>
           <PredictiveQualityWidget className="max-w-sm" />
         </div>
@@ -59,8 +58,6 @@ const QualityDashboardPage = () => {
         </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
+    </div>
   );
 };
-
-export default QualityDashboardPage;
