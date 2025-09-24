@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,27 +24,67 @@ interface NotificationPreferences {
 export const SmartNotificationSystem: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
-    emailEnabled: true,
-    pushEnabled: true,
-    soundEnabled: false,
-    priority: 'all'
+  const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
+    // Carregar preferências do localStorage se disponível
+    try {
+      const stored = localStorage.getItem('notification-preferences');
+      return stored ? JSON.parse(stored) : {
+        emailEnabled: true,
+        pushEnabled: true,
+        soundEnabled: false,
+        priority: 'all'
+      };
+    } catch {
+      return {
+        emailEnabled: true,
+        pushEnabled: true,
+        soundEnabled: false,
+        priority: 'all'
+      };
+    }
   });
   
   const queryClient = useQueryClient();
 
-  // Smart cache for notifications
-  const { data: notifications = [], isLoading } = useQuery({
+  // Persistir preferências quando mudarem
+  useEffect(() => {
+    try {
+      localStorage.setItem('notification-preferences', JSON.stringify(preferences));
+    } catch (error) {
+      console.warn('Falha ao salvar preferências de notificação:', error);
+    }
+  }, [preferences]);
+
+  // Smart cache for notifications com error handling robusto
+  const { data: notifications = [], isLoading, error: notificationsError } = useQuery({
     queryKey: ['smart-notifications'],
-    queryFn: () => getNotifications(50),
+    queryFn: async () => {
+      try {
+        return await getNotifications(50);
+      } catch (error) {
+        console.error('Erro ao carregar notificações:', error);
+        toast.error('Falha ao carregar notificações');
+        return [];
+      }
+    },
     staleTime: 1 * 60 * 1000, // 1 minute - high priority
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  const { data: unreadCount = 0 } = useQuery({
+  const { data: unreadCount = 0, error: unreadError } = useQuery({
     queryKey: ['smart-notifications-unread-count'],
-    queryFn: getUnreadCount,
+    queryFn: async () => {
+      try {
+        return await getUnreadCount();
+      } catch (error) {
+        console.error('Erro ao carregar contagem de não lidas:', error);
+        return 0;
+      }
+    },
     staleTime: 30 * 1000, // 30 seconds - very high priority
+    retry: 2,
   });
 
   // Auto-refresh notifications with real-time updates
@@ -53,7 +93,7 @@ export const SmartNotificationSystem: React.FC = () => {
     interval: 15000, // 15 seconds
     enableRealtime: true,
     realtimeTable: 'notifications',
-    onDataChange: (payload) => {
+    onDataChange: useCallback((payload) => {
       if (payload.eventType === 'INSERT' && payload.new) {
         const newNotification = payload.new as Notification;
         
@@ -62,7 +102,7 @@ export const SmartNotificationSystem: React.FC = () => {
           showSmartNotification(newNotification);
         }
       }
-    }
+    }, [preferences])
   });
 
   const markAsReadMutation = useMutation({
@@ -71,7 +111,8 @@ export const SmartNotificationSystem: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['smart-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['smart-notifications-unread-count'] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Erro ao marcar como lida:', error);
       toast.error('Erro ao marcar notificação como lida');
     },
   });
@@ -83,18 +124,19 @@ export const SmartNotificationSystem: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['smart-notifications-unread-count'] });
       toast.success('Todas as notificações foram marcadas como lidas');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Erro ao marcar todas como lidas:', error);
       toast.error('Erro ao marcar todas as notificações como lidas');
     },
   });
 
-  const shouldShowNotification = (type: string, prefs: NotificationPreferences): boolean => {
+  const shouldShowNotification = useCallback((type: string, prefs: NotificationPreferences): boolean => {
     if (prefs.priority === 'critical' && type !== 'error') return false;
     if (prefs.priority === 'high' && !['error', 'warning'].includes(type)) return false;
     return true;
-  };
+  }, []);
 
-  const showSmartNotification = (notification: Notification) => {
+  const showSmartNotification = useCallback((notification: Notification) => {
     const config = getNotificationConfig(notification.type);
     
     toast(notification.title, {
@@ -102,7 +144,14 @@ export const SmartNotificationSystem: React.FC = () => {
       duration: config.duration,
       action: notification.action_url ? {
         label: 'Ver',
-        onClick: () => window.open(notification.action_url, '_blank')
+        onClick: () => {
+          try {
+            window.open(notification.action_url, '_blank');
+          } catch (error) {
+            console.error('Erro ao abrir URL:', error);
+            toast.error('Não foi possível abrir o link');
+          }
+        }
       } : undefined,
       style: {
         backgroundColor: config.backgroundColor,
@@ -114,9 +163,9 @@ export const SmartNotificationSystem: React.FC = () => {
     if (preferences.soundEnabled && config.playSound) {
       playNotificationSound(notification.type);
     }
-  };
+  }, [preferences.soundEnabled]);
 
-  const getNotificationConfig = (type: string) => {
+  const getNotificationConfig = useCallback((type: string) => {
     const configs = {
       error: {
         duration: 8000,
@@ -144,35 +193,44 @@ export const SmartNotificationSystem: React.FC = () => {
       }
     };
     return configs[type as keyof typeof configs] || configs.info;
-  };
+  }, []);
 
-  const playNotificationSound = (type: string) => {
-    // Simple audio feedback - could be enhanced with actual sound files
-    if ('AudioContext' in window) {
-      const audioContext = new AudioContext();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = type === 'error' ? 400 : 800;
-      gainNode.gain.value = 0.1;
-      
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.2);
+  const playNotificationSound = useCallback((type: string) => {
+    try {
+      // Simple audio feedback - could be enhanced with actual sound files
+      if ('AudioContext' in window) {
+        const audioContext = new AudioContext();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = type === 'error' ? 400 : 800;
+        gainNode.gain.value = 0.1;
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.2);
+      }
+    } catch (error) {
+      console.warn('Não foi possível reproduzir som da notificação:', error);
     }
-  };
+  }, []);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = useCallback((notification: Notification) => {
     if (!notification.is_read) {
       markAsReadMutation.mutate(notification.id);
     }
 
     if (notification.action_url) {
-      window.open(notification.action_url, '_blank');
+      try {
+        window.open(notification.action_url, '_blank');
+      } catch (error) {
+        console.error('Erro ao abrir URL:', error);
+        toast.error('Não foi possível abrir o link');
+      }
     }
-  };
+  }, [markAsReadMutation]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -196,21 +254,37 @@ export const SmartNotificationSystem: React.FC = () => {
     }
   };
 
-  const groupedNotifications = notifications.reduce((groups, notification) => {
-    const today = new Date();
-    const notificationDate = new Date(notification.created_at);
-    const diffInHours = (today.getTime() - notificationDate.getTime()) / (1000 * 60 * 60);
-    
-    let group = 'Antigas';
-    if (diffInHours < 1) group = 'Última hora';
-    else if (diffInHours < 24) group = 'Hoje';
-    else if (diffInHours < 48) group = 'Ontem';
-    else if (diffInHours < 168) group = 'Esta semana';
-    
-    if (!groups[group]) groups[group] = [];
-    groups[group].push(notification);
-    return groups;
-  }, {} as Record<string, Notification[]>);
+  // Memoizar agrupamento de notificações para melhor performance
+  const groupedNotifications = useMemo(() => {
+    return notifications.reduce((groups, notification) => {
+      const today = new Date();
+      const notificationDate = new Date(notification.created_at);
+      const diffInHours = (today.getTime() - notificationDate.getTime()) / (1000 * 60 * 60);
+      
+      let group = 'Antigas';
+      if (diffInHours < 1) group = 'Última hora';
+      else if (diffInHours < 24) group = 'Hoje';
+      else if (diffInHours < 48) group = 'Ontem';
+      else if (diffInHours < 168) group = 'Esta semana';
+      
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(notification);
+      return groups;
+    }, {} as Record<string, Notification[]>);
+  }, [notifications]);
+
+  // Função para atualizar preferências com validação
+  const updatePreference = useCallback((key: keyof NotificationPreferences, value: any) => {
+    setPreferences(prev => {
+      try {
+        return { ...prev, [key]: value };
+      } catch (error) {
+        console.error('Erro ao atualizar preferência:', error);
+        toast.error('Erro ao salvar configuração');
+        return prev;
+      }
+    });
+  }, []);
 
   return (
     <>
@@ -283,18 +357,14 @@ export const SmartNotificationSystem: React.FC = () => {
                   <span className="text-sm">Notificações por email</span>
                   <Switch
                     checked={preferences.emailEnabled}
-                    onCheckedChange={(checked) => 
-                      setPreferences(prev => ({ ...prev, emailEnabled: checked }))
-                    }
+                    onCheckedChange={(checked) => updatePreference('emailEnabled', checked)}
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Som das notificações</span>
                   <Switch
                     checked={preferences.soundEnabled}
-                    onCheckedChange={(checked) => 
-                      setPreferences(prev => ({ ...prev, soundEnabled: checked }))
-                    }
+                    onCheckedChange={(checked) => updatePreference('soundEnabled', checked)}
                   />
                 </div>
               </CardContent>
@@ -306,6 +376,19 @@ export const SmartNotificationSystem: React.FC = () => {
               <div className="p-4 text-center text-muted-foreground">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
                 Carregando...
+              </div>
+            ) : (notificationsError || unreadError) ? (
+              <div className="p-4 text-center text-destructive">
+                <AlertTriangle className="h-6 w-6 mx-auto mb-2" />
+                <p className="text-sm">Erro ao carregar notificações</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refresh}
+                  className="mt-2"
+                >
+                  Tentar novamente
+                </Button>
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
