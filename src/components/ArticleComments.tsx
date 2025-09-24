@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MessageSquare, Send, User, Clock, CheckCircle, AlertCircle, Lightbulb } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { qualityManagementService } from "@/services/qualityManagement";
 
 interface ArticleComment {
@@ -34,6 +34,7 @@ const COMMENT_TYPES = [
 ];
 
 export function ArticleComments({ articleId }: ArticleCommentsProps) {
+  const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
   const [commentType, setCommentType] = useState("comment");
   const queryClient = useQueryClient();
@@ -49,10 +50,17 @@ export function ArticleComments({ articleId }: ArticleCommentsProps) {
       queryClient.invalidateQueries({ queryKey: ["article-comments", articleId] });
       setNewComment("");
       setCommentType("comment");
-      toast.success("Comentário adicionado com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Comentário adicionado com sucesso!",
+      });
     },
     onError: (error: any) => {
-      toast.error("Erro ao adicionar comentário: " + error.message);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar comentário: " + error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -60,13 +68,20 @@ export function ArticleComments({ articleId }: ArticleCommentsProps) {
     mutationFn: qualityManagementService.resolveComment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["article-comments", articleId] });
-      toast.success("Comentário marcado como resolvido!");
+      toast({
+        title: "Sucesso",
+        description: "Comentário marcado como resolvido!",
+      });
     },
   });
 
   const handleSubmitComment = () => {
     if (!newComment.trim()) {
-      toast.error("Digite um comentário");
+      toast({
+        title: "Erro",
+        description: "Digite um comentário",
+        variant: "destructive",
+      });
       return;
     }
 

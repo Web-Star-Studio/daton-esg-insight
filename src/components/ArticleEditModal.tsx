@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Save, X, Tag, Eye, History, MessageSquare } from "lucide-react";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { qualityManagementService } from "@/services/qualityManagement";
 import { ArticleVersionHistory } from "./ArticleVersionHistory";
 import { ArticleComments } from "./ArticleComments";
@@ -49,6 +49,7 @@ const KNOWLEDGE_CATEGORIES = [
 ];
 
 export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'edit' | 'history' | 'comments'>('edit');
   const [formData, setFormData] = useState({
     title: "",
@@ -65,11 +66,18 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
     mutationFn: (data: any) => qualityManagementService.updateKnowledgeArticle(article!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-articles"] });
-      toast.success("Artigo atualizado com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Artigo atualizado com sucesso!",
+      });
       onClose();
     },
     onError: (error: any) => {
-      toast.error("Erro ao atualizar artigo: " + error.message);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar artigo: " + error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -105,12 +113,20 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
 
   const handleSave = () => {
     if (!formData.title || !formData.content || !formData.category) {
-      toast.error("Preencha todos os campos obrigatórios");
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
       return;
     }
 
     if (!formData.changes_summary) {
-      toast.error("Descreva as alterações realizadas");
+      toast({
+        title: "Erro", 
+        description: "Descreva as alterações realizadas",
+        variant: "destructive",
+      });
       return;
     }
 
