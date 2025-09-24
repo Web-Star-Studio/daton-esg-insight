@@ -127,7 +127,7 @@ export const getSWOTItems = async (analysisId: string): Promise<SWOTItem[]> => {
     .order("order_index");
   
   if (error) throw error;
-  return data;
+  return (data || []) as SWOTItem[];
 };
 
 export const createSWOTAnalysis = async (analysisData: Omit<SWOTAnalysis, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {
@@ -176,7 +176,7 @@ export const deleteSWOTItem = async (itemId: string) => {
 };
 
 // OKRs Service
-export const getOKRs = async (strategicMapId?: string): Promise<OKR[]> => {
+export const getOKRs = async (strategicMapId?: string) => {
   let query = supabase
     .from("okrs")
     .select("*")
@@ -188,10 +188,10 @@ export const getOKRs = async (strategicMapId?: string): Promise<OKR[]> => {
 
   const { data, error } = await query;
   if (error) throw error;
-  return data as OKR[];
+  return (data || []) as OKR[];
 };
 
-export const getKeyResults = async (okrId: string): Promise<KeyResult[]> => {
+export const getKeyResults = async (okrId: string) => {
   const { data, error } = await supabase
     .from("key_results")
     .select("*")
@@ -199,7 +199,7 @@ export const getKeyResults = async (okrId: string): Promise<KeyResult[]> => {
     .order("order_index");
   
   if (error) throw error;
-  return data as KeyResult[];
+  return (data || []) as KeyResult[];
 };
 
 export const createOKR = async (okrData: Omit<OKR, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {

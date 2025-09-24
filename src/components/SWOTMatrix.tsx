@@ -37,10 +37,14 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [newAnalysis, setNewAnalysis] = useState({ title: "", description: "" });
-  const [newItem, setNewItem] = useState({ 
+  const [newItem, setNewItem] = useState<{
+    item_text: string;
+    description: string;
+    impact_level: 'low' | 'medium' | 'high';
+  }>({ 
     item_text: "", 
     description: "", 
-    impact_level: "medium" as const 
+    impact_level: "medium"
   });
 
   const queryClient = useQueryClient();
