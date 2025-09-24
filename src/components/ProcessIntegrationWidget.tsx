@@ -69,7 +69,7 @@ export const ProcessIntegrationWidget = ({ strategicMapId }: ProcessIntegrationW
     queryFn: async () => {
       if (!strategicMapId) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('process_integrations')
         .select(`
           *,
@@ -98,7 +98,7 @@ export const ProcessIntegrationWidget = ({ strategicMapId }: ProcessIntegrationW
 
       if (!profile?.company_id) throw new Error('Company not found');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('process_integrations')
         .insert({
           ...integrationData,
