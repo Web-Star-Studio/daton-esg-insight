@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, AlertTriangle, Shield, TrendingUp, Eye } from "lucide-react";
+import { Plus, AlertTriangle, Shield, TrendingUp, Eye, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { ESGRisksMatrix } from "@/components/ESGRisksMatrix";
+import SWOTMatrix from "@/components/SWOTMatrix";
+import { RiskManagementDashboard } from "@/components/RiskManagementDashboard";
+import { OpportunityMapWidget } from "@/components/OpportunityMapWidget";
+import { RiskOccurrencesList } from "@/components/RiskOccurrencesList";
 
 interface RiskMatrix {
   id: string;
@@ -264,12 +269,19 @@ export default function GestaoRiscos() {
         </div>
       </div>
 
-      <Tabs defaultValue="matrices" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="matrices">Matrizes de Risco</TabsTrigger>
           <TabsTrigger value="risks">Riscos Identificados</TabsTrigger>
+          <TabsTrigger value="occurrences">Ocorrências</TabsTrigger>
           <TabsTrigger value="opportunities">Oportunidades</TabsTrigger>
+          <TabsTrigger value="swot">Análise SWOT</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          <RiskManagementDashboard />
+        </TabsContent>
 
         <TabsContent value="matrices" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -324,38 +336,22 @@ export default function GestaoRiscos() {
         </TabsContent>
 
         <TabsContent value="risks" className="space-y-4">
-          <Card>
-            <CardContent className="text-center py-8">
-              <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum risco identificado</h3>
-              <p className="text-muted-foreground mb-4">
-                Identifique e avalie os riscos da sua organização
-              </p>
-              <Button onClick={() => setIsCreateRiskOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Identificar Primeiro Risco
-              </Button>
-            </CardContent>
-          </Card>
+          <ESGRisksMatrix 
+            onEditRisk={(risk) => console.log('Edit risk:', risk)}
+            onCreateRisk={() => setIsCreateRiskOpen(true)}
+          />
         </TabsContent>
 
-        <TabsContent value="opportunities" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Mapa de Oportunidades
-              </CardTitle>
-              <CardDescription>
-                Identifique e gerencie oportunidades de melhoria
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <p className="text-muted-foreground">
-                Módulo de oportunidades estará disponível em breve
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="occurrences" className="space-y-6">
+          <RiskOccurrencesList />
+        </TabsContent>
+
+        <TabsContent value="opportunities" className="space-y-6">
+          <OpportunityMapWidget />
+        </TabsContent>
+
+        <TabsContent value="swot" className="space-y-6">
+          <SWOTMatrix />
         </TabsContent>
       </Tabs>
     </>
