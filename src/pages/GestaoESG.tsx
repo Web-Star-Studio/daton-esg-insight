@@ -209,15 +209,13 @@ export default function GestaoESG() {
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Painel de Gestão Estratégica ESG</h1>
-          </div>
-
-          <SmartSkeleton variant="dashboard" />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Painel de Gestão Estratégica ESG</h1>
         </div>
-      </MainLayout>
+
+        <SmartSkeleton variant="dashboard" />
+      </div>
     );
   }
 
@@ -284,8 +282,7 @@ export default function GestaoESG() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-between mb-4">
@@ -613,6 +610,5 @@ export default function GestaoESG() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
-  );
-}
+    );
+  }

@@ -358,46 +358,43 @@ export default function IAInsights() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-              <h1 className="text-3xl font-bold tracking-tight">Central de Inteligência & Insights</h1>
-            </div>
-            <p className="text-muted-foreground">
-              A IA está analisando seus dados para gerar insights personalizados...
-            </p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <h1 className="text-3xl font-bold tracking-tight">Central de Inteligência & Insights</h1>
           </div>
-          
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="w-10 h-10 rounded-lg" />
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="w-32 h-4" />
-                      <Skeleton className="w-64 h-5" />
-                    </div>
-                  </div>
-                  <Skeleton className="w-full h-16" />
-                  <div className="flex gap-2">
-                    <Skeleton className="w-24 h-8" />
-                    <Skeleton className="w-20 h-8" />
+          <p className="text-muted-foreground">
+            A IA está analisando seus dados para gerar insights personalizados...
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-lg" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="w-32 h-4" />
+                    <Skeleton className="w-64 h-5" />
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
+                <Skeleton className="w-full h-16" />
+                <div className="flex gap-2">
+                  <Skeleton className="w-24 h-8" />
+                  <Skeleton className="w-20 h-8" />
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
-      </MainLayout>
+      </div>
     )
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -504,6 +501,5 @@ export default function IAInsights() {
           </div>
         </ScrollArea>
       </div>
-    </MainLayout>
-  )
-}
+    )
+  }

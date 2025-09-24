@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MainLayout } from '@/components/MainLayout';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -57,5 +58,9 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     }
   }
 
-  return <>{children}</>;
+  return (
+    <MainLayout>
+      {children}
+    </MainLayout>
+  );
 }

@@ -133,8 +133,7 @@ export default function GovernancaESG() {
 
   return (
     <ErrorBoundary>
-      <MainLayout>
-        <div className="space-y-6">
+      <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
@@ -256,7 +255,6 @@ export default function GovernancaESG() {
             onClose={() => setIsReportsModalOpen(false)}
           />
         </div>
-      </MainLayout>
-    </ErrorBoundary>
-  );
-}
+      </ErrorBoundary>
+    );
+  }
