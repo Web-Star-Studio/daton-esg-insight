@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Interfaces for GED
+// Interfaces for GED - Adjusted for Supabase types
 export interface DocumentVersion {
   id: string;
   document_id: string;
@@ -16,18 +16,6 @@ export interface DocumentVersion {
   metadata?: any;
 }
 
-export interface ApprovalWorkflow {
-  id: string;
-  company_id: string;
-  name: string;
-  description?: string;
-  steps: ApprovalStep[];
-  is_active: boolean;
-  created_by_user_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ApprovalStep {
   id: string;
   step_number: number;
@@ -37,6 +25,18 @@ export interface ApprovalStep {
   approver_user_ids: string[];
   required_approvals: number;
   parallel_approval: boolean;
+}
+
+export interface ApprovalWorkflow {
+  id: string;
+  company_id: string;
+  name: string;
+  description?: string;
+  steps: any; // Changed to any to work with Json type
+  is_active: boolean;
+  created_by_user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DocumentApproval {
@@ -63,7 +63,7 @@ export interface MasterListItem {
   effective_date?: string;
   review_date?: string;
   responsible_department?: string;
-  distribution_list: string[];
+  distribution_list: any; // Changed to any to work with Json type
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -172,7 +172,7 @@ export const documentVersionsService = {
 
 // Approval Workflows Service
 export const approvalWorkflowsService = {
-  async getWorkflows(): Promise<ApprovalWorkflow[]> {
+  async getWorkflows(): Promise<any[]> {
     const { data, error } = await supabase
       .from('document_approval_workflows')
       .select('*')
@@ -180,13 +180,16 @@ export const approvalWorkflowsService = {
       .order('name');
 
     if (error) throw error;
-    return (data || []) as ApprovalWorkflow[];
+    return data || [];
   },
 
-  async createWorkflow(workflow: Omit<ApprovalWorkflow, 'id' | 'created_at' | 'updated_at'>): Promise<ApprovalWorkflow> {
+  async createWorkflow(workflow: any): Promise<any> {
     const { data, error } = await supabase
       .from('document_approval_workflows')
-      .insert(workflow)
+      .insert({
+        ...workflow,
+        steps: JSON.stringify(workflow.steps || [])
+      })
       .select()
       .single();
 
@@ -194,10 +197,15 @@ export const approvalWorkflowsService = {
     return data;
   },
 
-  async updateWorkflow(id: string, updates: Partial<ApprovalWorkflow>): Promise<ApprovalWorkflow> {
+  async updateWorkflow(id: string, updates: any): Promise<any> {
+    const updateData = { ...updates };
+    if (updates.steps) {
+      updateData.steps = JSON.stringify(updates.steps);
+    }
+
     const { data, error } = await supabase
       .from('document_approval_workflows')
-      .update(updates)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -251,7 +259,7 @@ export const documentApprovalsService = {
     approverUserId?: string,
     notes?: string
   ): Promise<DocumentApproval> {
-    const updates: Partial<DocumentApproval> = { 
+    const updates: any = { 
       status,
       approver_user_id: approverUserId,
       approval_date: new Date().toISOString(),
@@ -274,7 +282,7 @@ export const documentApprovalsService = {
     return data;
   },
 
-  async getPendingApprovals(): Promise<DocumentApproval[]> {
+  async getPendingApprovals(): Promise<any[]> {
     const { data, error } = await supabase
       .from('document_approvals')
       .select(`
@@ -295,7 +303,7 @@ export const documentApprovalsService = {
 
 // Master List Service
 export const masterListService = {
-  async getMasterList(): Promise<MasterListItem[]> {
+  async getMasterList(): Promise<any[]> {
     const { data, error } = await supabase
       .from('document_master_list')
       .select(`
@@ -314,10 +322,15 @@ export const masterListService = {
     return data || [];
   },
 
-  async addToMasterList(item: Omit<MasterListItem, 'id' | 'created_at' | 'updated_at'>): Promise<MasterListItem> {
+  async addToMasterList(item: any): Promise<any> {
+    const insertData = {
+      ...item,
+      distribution_list: JSON.stringify(item.distribution_list || [])
+    };
+
     const { data, error } = await supabase
       .from('document_master_list')
-      .insert(item)
+      .insert(insertData)
       .select()
       .single();
 
@@ -325,10 +338,15 @@ export const masterListService = {
     return data;
   },
 
-  async updateMasterListItem(id: string, updates: Partial<MasterListItem>): Promise<MasterListItem> {
+  async updateMasterListItem(id: string, updates: any): Promise<any> {
+    const updateData = { ...updates };
+    if (updates.distribution_list) {
+      updateData.distribution_list = JSON.stringify(updates.distribution_list);
+    }
+
     const { data, error } = await supabase
       .from('document_master_list')
-      .update(updates)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -514,7 +532,7 @@ export const legalDocumentsService = {
 
 // Audit Trail Service
 export const auditTrailService = {
-  async getAuditTrail(documentId: string): Promise<AuditTrailEntry[]> {
+  async getAuditTrail(documentId: string): Promise<any[]> {
     const { data, error } = await supabase
       .from('document_audit_trail')
       .select('*')
@@ -566,9 +584,14 @@ export const gedDocumentsService = {
       distribution_list?: string[];
     }
   ): Promise<any> {
+    const updateData = { ...updates };
+    if (updates.distribution_list) {
+    updateData.distribution_list = updates.distribution_list;
+    }
+
     const { data, error } = await supabase
       .from('documents')
-      .update(updates)
+      .update(updateData)
       .eq('id', documentId)
       .select()
       .single();

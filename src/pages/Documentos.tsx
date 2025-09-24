@@ -473,6 +473,11 @@ export default function Documentos() {
                         isSelected={isDocumentSelected(document.id)}
                         onToggleSelect={() => toggleDocumentSelection(document)}
                         onAnalyze={() => handleAnalyze(document)}
+                        extraActions={
+                          <div className="flex gap-1">
+                            {/* GED components will be added here */}
+                          </div>
+                        }
                       />
                     </div>
                   ))}

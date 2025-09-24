@@ -35,6 +35,7 @@ interface DocumentCardProps {
   isSelected?: boolean;
   onToggleSelect?: () => void;
   onAnalyze?: () => void;
+  extraActions?: React.ReactNode;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -46,7 +47,8 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onUpdate,
   isSelected = false,
   onToggleSelect,
-  onAnalyze
+  onAnalyze,
+  extraActions
 }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -178,36 +180,39 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="text-4xl">{getFileIcon(document.file_type)}</div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onPreview}>
-                <Eye className="h-4 w-4 mr-2" />
-                Visualizar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDownload}>
-                <Download className="h-4 w-4 mr-2" />
-                Baixar
-              </DropdownMenuItem>
-              {onAnalyze && (
-                <DropdownMenuItem onClick={onAnalyze}>
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  Analisar com IA
+          <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onPreview}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Visualizar
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem 
-                onClick={onDelete}
-                className="text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem onClick={onDownload}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Baixar
+                </DropdownMenuItem>
+                {onAnalyze && (
+                  <DropdownMenuItem onClick={onAnalyze}>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Analisar com IA
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem 
+                  onClick={onDelete}
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {extraActions}
+          </div>
         </div>
 
         {/* File Name */}
@@ -257,6 +262,13 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             </Badge>
           )}
         </div>
+
+        {/* Extra Actions at bottom for grid view */}
+        {extraActions && (
+          <div className="pt-2 border-t">
+            {extraActions}
+          </div>
+        )}
       </div>
     </Card>
   );
