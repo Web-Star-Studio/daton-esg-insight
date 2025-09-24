@@ -3990,6 +3990,81 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          identification_date: string
+          impact: string
+          implementation_cost: number | null
+          mitigation_actions: string | null
+          monitoring_indicators: string | null
+          next_review_date: string | null
+          opportunity_level: string | null
+          potential_value: number | null
+          probability: string
+          responsible_user_id: string | null
+          review_date: string | null
+          roi_estimate: number | null
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          identification_date?: string
+          impact: string
+          implementation_cost?: number | null
+          mitigation_actions?: string | null
+          monitoring_indicators?: string | null
+          next_review_date?: string | null
+          opportunity_level?: string | null
+          potential_value?: number | null
+          probability: string
+          responsible_user_id?: string | null
+          review_date?: string | null
+          roi_estimate?: number | null
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          identification_date?: string
+          impact?: string
+          implementation_cost?: number | null
+          mitigation_actions?: string | null
+          monitoring_indicators?: string | null
+          next_review_date?: string | null
+          opportunity_level?: string | null
+          potential_value?: number | null
+          probability?: string
+          responsible_user_id?: string | null
+          review_date?: string | null
+          roi_estimate?: number | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pgrs_actions: {
         Row: {
           action_description: string
@@ -4711,6 +4786,69 @@ export type Database = {
           id?: string
           matrix_type?: string | null
           name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_occurrences: {
+        Row: {
+          actual_impact: string
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          financial_impact: number | null
+          id: string
+          lessons_learned: string | null
+          occurrence_date: string
+          operational_impact: string | null
+          prevention_measures: string | null
+          resolution_date: string | null
+          response_actions: string | null
+          responsible_user_id: string | null
+          risk_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_impact: string
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          financial_impact?: number | null
+          id?: string
+          lessons_learned?: string | null
+          occurrence_date: string
+          operational_impact?: string | null
+          prevention_measures?: string | null
+          resolution_date?: string | null
+          response_actions?: string | null
+          responsible_user_id?: string | null
+          risk_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_impact?: string
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          financial_impact?: number | null
+          id?: string
+          lessons_learned?: string | null
+          occurrence_date?: string
+          operational_impact?: string | null
+          prevention_measures?: string | null
+          resolution_date?: string | null
+          response_actions?: string | null
+          responsible_user_id?: string | null
+          risk_id?: string
+          status?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -5957,6 +6095,10 @@ export type Database = {
         Args: { p_impact: string; p_probability: string }
         Returns: string
       }
+      calculate_risk_management_stats: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
       calculate_simple_emissions: {
         Args: {
           p_activity_quantity: number
@@ -5993,6 +6135,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      policy_exists: {
+        Args: { policy_name: string; table_name: string }
+        Returns: boolean
       }
       update_overdue_tasks: {
         Args: Record<PropertyKey, never>
