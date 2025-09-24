@@ -78,6 +78,7 @@ import EstruturaOrganizacional from "./pages/EstruturaOrganizacional";
 import GestaoFuncionarios from "./pages/GestaoFuncionarios";
 import GestaoTreinamentos from "./pages/GestaoTreinamentos";
 import GestaoDesempenho from "./pages/GestaoDesempenho";
+import BeneficiosRemuneracao from "./pages/BeneficiosRemuneracao";
 
 const queryClient = new QueryClient();
 
@@ -364,6 +365,11 @@ const App = () => (
           <Route path="/gestao-desempenho" element={
             <ProtectedRoute>
               <GestaoDesempenho />
+            </ProtectedRoute>
+          } />
+          <Route path="/beneficios-remuneracao" element={
+            <ProtectedRoute>
+              <BeneficiosRemuneracao />
             </ProtectedRoute>
           } />
             <Route path="/simulador" element={

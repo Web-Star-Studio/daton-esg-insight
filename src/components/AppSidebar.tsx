@@ -37,7 +37,8 @@ import {
   Brain,
   FolderKanban,
   UserCheck,
-  GraduationCap
+  GraduationCap,
+  DollarSign
 } from "lucide-react"
 import { 
   Sidebar,
@@ -153,6 +154,7 @@ const menuSections: MenuSection[] = [
       { id: "gestao-funcionarios", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios" },
       { id: "gestao-treinamentos", title: "Gestão de Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos" },
       { id: "gestao-desempenho", title: "Gestão de Desempenho", icon: TrendingUp, path: "/gestao-desempenho" },
+      { id: "beneficios-remuneracao", title: "Benefícios e Remuneração", icon: DollarSign, path: "/beneficios-remuneracao" },
     ]
   },
   {
