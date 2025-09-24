@@ -36,7 +36,8 @@ import {
   Handshake,
   Brain,
   FolderKanban,
-  UserCheck
+  UserCheck,
+  GraduationCap
 } from "lucide-react"
 import { 
   Sidebar,
@@ -150,6 +151,7 @@ const menuSections: MenuSection[] = [
       { id: "gestao-fornecedores", title: "Gestão de Fornecedores", icon: Handshake, path: "/gestao-fornecedores" },
       { id: "estrutura-organizacional", title: "Estrutura Organizacional", icon: Users, path: "/estrutura-organizacional" },
       { id: "gestao-funcionarios", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios" },
+      { id: "gestao-treinamentos", title: "Gestão de Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos" },
     ]
   },
   {
