@@ -21,18 +21,21 @@ import {
   getProjectMilestones, 
   getProjectResources 
 } from '@/services/projectManagement';
+import { TaskModal } from '@/components/TaskModal';
 
 interface ProjectDashboardProps {
   projectId: string;
 }
 
 export function ProjectDashboard({ projectId }: ProjectDashboardProps) {
+  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
+
   const { data: project } = useQuery({
     queryKey: ['project', projectId],
     queryFn: () => getProject(projectId),
   });
 
-  const { data: tasks = [] } = useQuery({
+  const { data: tasks = [], refetch: refetchTasks } = useQuery({
     queryKey: ['project-tasks', projectId],
     queryFn: () => getProjectTasks(projectId),
   });
@@ -282,16 +285,16 @@ export function ProjectDashboard({ projectId }: ProjectDashboardProps) {
       </div>
 
       {/* Recent Tasks */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Tarefas Recentes</CardTitle>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Tarefa
-            </Button>
-          </div>
-        </CardHeader>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Tarefas Recentes</CardTitle>
+              <Button size="sm" onClick={() => setIsTaskModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Tarefa
+              </Button>
+            </div>
+          </CardHeader>
         <CardContent>
           {tasks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -325,6 +328,16 @@ export function ProjectDashboard({ projectId }: ProjectDashboardProps) {
           )}
         </CardContent>
       </Card>
+
+      <TaskModal 
+        open={isTaskModalOpen}
+        onOpenChange={setIsTaskModalOpen}
+        projectId={projectId}
+        onSuccess={() => {
+          refetchTasks();
+          setIsTaskModalOpen(false);
+        }}
+      />
     </div>
   );
 }

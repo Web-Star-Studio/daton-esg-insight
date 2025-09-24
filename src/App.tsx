@@ -73,6 +73,7 @@ import PlanoAcao5W2H from "./pages/PlanoAcao5W2H";
 import BaseConhecimento from "./pages/BaseConhecimento";
 import GestaoFornecedores from "./pages/GestaoFornecedores";
 import QualityDashboard from "./pages/QualityDashboard";
+import { GerenciamentoProjetos } from "./pages/GerenciamentoProjetos";
 
 const queryClient = new QueryClient();
 
@@ -334,6 +335,11 @@ const App = () => (
             <Route path="/quality-dashboard" element={
               <ProtectedRoute>
                 <QualityDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/gerenciamento-projetos" element={
+              <ProtectedRoute>
+                <GerenciamentoProjetos />
               </ProtectedRoute>
             } />
             <Route path="/simulador" element={

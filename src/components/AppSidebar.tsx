@@ -34,7 +34,8 @@ import {
   ClipboardCheck,
   BookMarked,
   Handshake,
-  Brain
+  Brain,
+  FolderKanban
 } from "lucide-react"
 import { 
   Sidebar,
@@ -139,6 +140,7 @@ const menuSections: MenuSection[] = [
     items: [
       { id: "quality-dashboard", title: "Dashboard SGQ", icon: Brain, path: "/quality-dashboard" },
       { id: "planejamento-estrategico", title: "Planejamento Estratégico", icon: Target, path: "/planejamento-estrategico" },
+      { id: "gerenciamento-projetos", title: "Gerenciamento de Projetos", icon: FolderKanban, path: "/gerenciamento-projetos" },
       { id: "mapeamento-processos", title: "Mapeamento de Processos", icon: Workflow, path: "/mapeamento-processos" },
       { id: "gestao-riscos", title: "Gestão de Riscos", icon: Shield, path: "/gestao-riscos" },
       { id: "nao-conformidades", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades" },
