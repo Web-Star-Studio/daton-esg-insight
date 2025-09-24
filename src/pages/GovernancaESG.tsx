@@ -31,6 +31,9 @@ import { WhistleblowerModal } from "@/components/WhistleblowerModal";
 import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
 import { EmployeeModal } from "@/components/EmployeeModal";
 import { GovernanceDashboard } from "@/components/GovernanceDashboard";
+import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
+import { SystemPerformanceMonitor } from "@/components/SystemPerformanceMonitor";
+import { AdvancedNotificationPanel } from "@/components/AdvancedNotificationPanel";
 import { toast } from "@/hooks/use-toast";
 
 export default function GovernancaESG() {
@@ -157,17 +160,22 @@ export default function GovernancaESG() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="structure">Estrutura</TabsTrigger>
           <TabsTrigger value="policies">Políticas</TabsTrigger>
           <TabsTrigger value="employees">Funcionários</TabsTrigger>
           <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
           <TabsTrigger value="ethics">Ética</TabsTrigger>
+          <TabsTrigger value="insights">IA Insights</TabsTrigger>
+          <TabsTrigger value="system">Sistema</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <GovernanceDashboard governanceMetrics={governanceMetrics} riskMetrics={riskMetrics} />
+          <div className="grid gap-6">
+            <GovernanceDashboard governanceMetrics={governanceMetrics} riskMetrics={riskMetrics} />
+            <UnifiedDashboardWidget />
+          </div>
         </TabsContent>
 
         <TabsContent value="structure" className="space-y-6">
@@ -693,6 +701,46 @@ export default function GovernancaESG() {
             </CardContent>
           </Card>
          </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Insights de IA - Governança ESG</CardTitle>
+              <CardDescription>
+                Análises inteligentes e recomendações baseadas em dados de governança
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UnifiedDashboardWidget />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Notificações Avançadas</CardTitle>
+              <CardDescription>
+                Sistema inteligente de alertas e notificações em tempo real
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AdvancedNotificationPanel />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance do Sistema</CardTitle>
+              <CardDescription>
+                Monitoramento e otimização do desempenho da plataforma
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SystemPerformanceMonitor />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Board Member Modal */}
