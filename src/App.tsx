@@ -66,6 +66,8 @@ import MapeamentoProcessos from "./pages/MapeamentoProcessos";
 import GestaoRiscos from "./pages/GestaoRiscos";
 import NaoConformidades from "./pages/NaoConformidades";
 import PlanoAcao5W2H from "./pages/PlanoAcao5W2H";
+import BaseConhecimento from "./pages/BaseConhecimento";
+import GestaoFornecedores from "./pages/GestaoFornecedores";
 
 const queryClient = new QueryClient();
 
@@ -314,6 +316,18 @@ const App = () => (
             <Route path="/plano-acao-5w2h" element={
               <ProtectedRoute>
                 <PlanoAcao5W2H />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/base-conhecimento" element={
+              <ProtectedRoute>
+                <BaseConhecimento />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/gestao-fornecedores" element={
+              <ProtectedRoute>
+                <GestaoFornecedores />
               </ProtectedRoute>
             } />
             
