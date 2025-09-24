@@ -64,7 +64,7 @@ export const ProcessIntegrationWidget = ({ strategicMapId }: ProcessIntegrationW
   });
 
   // Fetch existing integrations
-  const { data: integrations } = useQuery({
+  const { data: integrations } = useQuery<any[]>({
     queryKey: ['processIntegrations', strategicMapId],
     queryFn: async () => {
       if (!strategicMapId) return [];
@@ -85,7 +85,7 @@ export const ProcessIntegrationWidget = ({ strategicMapId }: ProcessIntegrationW
   });
 
   // Create integration mutation
-  const createIntegrationMutation = useMutation({
+  const createIntegrationMutation = useMutation<any, Error, typeof newIntegration>({
     mutationFn: async (integrationData: typeof newIntegration) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -109,7 +109,7 @@ export const ProcessIntegrationWidget = ({ strategicMapId }: ProcessIntegrationW
         .single();
 
       if (error) throw error;
-      return data;
+      return data as any;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processIntegrations'] });
@@ -123,7 +123,7 @@ export const ProcessIntegrationWidget = ({ strategicMapId }: ProcessIntegrationW
       });
       toast.success('Integração criada com sucesso!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Erro ao criar integração: ${error.message}`);
     },
   });
