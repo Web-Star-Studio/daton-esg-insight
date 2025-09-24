@@ -147,6 +147,7 @@ const menuSections: MenuSection[] = [
       { id: "plano-acao-5w2h", title: "Planos de Ação 5W2H", icon: ClipboardCheck, path: "/plano-acao-5w2h" },
       { id: "base-conhecimento", title: "Base de Conhecimento", icon: BookMarked, path: "/base-conhecimento" },
       { id: "gestao-fornecedores", title: "Gestão de Fornecedores", icon: Handshake, path: "/gestao-fornecedores" },
+      { id: "estrutura-organizacional", title: "Estrutura Organizacional", icon: Users, path: "/estrutura-organizacional" },
     ]
   },
   {
