@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { 
   Shield, 
   FileText, 
@@ -15,7 +14,6 @@ import {
   Plus,
   Eye,
   CheckCircle,
-  XCircle,
   Settings,
   BarChart3,
   Edit,
@@ -32,8 +30,10 @@ import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
 import { EmployeeModal } from "@/components/EmployeeModal";
 import { GovernanceDashboard } from "@/components/GovernanceDashboard";
 import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
-import { SystemPerformanceMonitor } from "@/components/SystemPerformanceMonitor";
-import IntelligenceHub from "@/components/IntelligenceHub";
+import { LazyIntelligenceHub, LazySystemPerformanceMonitor } from "@/components/optimized/LazyGovernanceComponents";
+import { LoadingState } from "@/components/ui/loading-state";
+import { DashboardSkeleton } from "@/components/ui/skeleton-loader";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { toast } from "@/hooks/use-toast";
 
 export default function GovernancaESG() {
@@ -51,49 +51,50 @@ export default function GovernancaESG() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modalMode, setModalMode] = useState('create');
 
-  const { data: governanceMetrics } = useQuery({
+  // Optimized queries with caching and error handling
+  const { data: governanceMetrics, isLoading: loadingGovernance, error: governanceError } = useOptimizedQuery({
     queryKey: ['governance-metrics'],
-    queryFn: getGovernanceMetrics
+    queryFn: getGovernanceMetrics,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: employees, refetch: refetchEmployees } = useQuery({
+  const { data: employees, refetch: refetchEmployees, isLoading: loadingEmployees } = useOptimizedQuery({
     queryKey: ['employees'],
-    queryFn: getEmployees
+    queryFn: getEmployees,
   });
 
-  const { data: employeeStats } = useQuery({
+  const { data: employeeStats, isLoading: loadingEmployeeStats } = useOptimizedQuery({
     queryKey: ['employee-stats'],
-    queryFn: getEmployeesStats
+    queryFn: getEmployeesStats,
   });
 
-  const { data: riskMetrics } = useQuery({
+  const { data: riskMetrics, isLoading: loadingRisks } = useOptimizedQuery({
     queryKey: ['risk-metrics'],
-    queryFn: getRiskMetrics
+    queryFn: getRiskMetrics,
   });
 
-  const { data: boardMembers } = useQuery({
+  const { data: boardMembers, isLoading: loadingBoard } = useOptimizedQuery({
     queryKey: ['board-members'],
-    queryFn: getBoardMembers
+    queryFn: getBoardMembers,
   });
 
-  const { data: policies } = useQuery({
+  const { data: policies, isLoading: loadingPolicies } = useOptimizedQuery({
     queryKey: ['corporate-policies'],
-    queryFn: getCorporatePolicies
+    queryFn: getCorporatePolicies,
   });
 
-  const { data: reports } = useQuery({
+  const { data: reports, isLoading: loadingReports } = useOptimizedQuery({
     queryKey: ['whistleblower-reports'],
-    queryFn: getWhistleblowerReports
+    queryFn: getWhistleblowerReports,
   });
 
-  const { data: risks } = useQuery({
+  const { data: risks, isLoading: loadingESGRisks } = useOptimizedQuery({
     queryKey: ['esg-risks'],
-    queryFn: getESGRisks
+    queryFn: getESGRisks,
   });
 
-  // Refetch functions
+  // Event handlers
   const refetchData = () => {
-    // These would normally be from useQuery but simplified for demo
     toast({
       title: "Dados Atualizados",
       description: "As informações de governança foram atualizadas com sucesso.",
@@ -131,631 +132,131 @@ export default function GovernancaESG() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
-          <p className="text-muted-foreground">
-            Gestão completa dos aspectos de governança corporativa
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsReportsModalOpen(true)}>
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Relatórios
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => {
+    <ErrorBoundary>
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">ESG Governança</h1>
+              <p className="text-muted-foreground">
+                Gestão completa dos aspectos de governança corporativa
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => setIsReportsModalOpen(true)}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Relatórios
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSelectedMember(null);
+                  setModalMode('create');
+                  setIsBoardModalOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Registro
+              </Button>
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-8">
+              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+              <TabsTrigger value="structure">Estrutura</TabsTrigger>
+              <TabsTrigger value="policies">Políticas</TabsTrigger>
+              <TabsTrigger value="employees">Funcionários</TabsTrigger>
+              <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
+              <TabsTrigger value="ethics">Ética</TabsTrigger>
+              <TabsTrigger value="intelligence">Central IA</TabsTrigger>
+              <TabsTrigger value="system">Sistema</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <LoadingState 
+                loading={loadingGovernance || loadingRisks} 
+                error={governanceError}
+                skeleton={<DashboardSkeleton />}
+              >
+                <div className="grid gap-6 animate-fade-in">
+                  <GovernanceDashboard governanceMetrics={governanceMetrics} riskMetrics={riskMetrics} />
+                  <UnifiedDashboardWidget />
+                </div>
+              </LoadingState>
+            </TabsContent>
+
+            <TabsContent value="intelligence" className="space-y-6">
+              <ErrorBoundary>
+                <LazyIntelligenceHub />
+              </ErrorBoundary>
+            </TabsContent>
+
+            <TabsContent value="system" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance do Sistema</CardTitle>
+                  <CardDescription>
+                    Monitoramento e otimização do desempenho da plataforma
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ErrorBoundary>
+                    <LazySystemPerformanceMonitor />
+                  </ErrorBoundary>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Modals */}
+          <BoardMemberModal
+            isOpen={isBoardModalOpen}
+            onClose={() => {
+              setIsBoardModalOpen(false);
               setSelectedMember(null);
-              setModalMode('create');
-              setIsBoardModalOpen(true);
             }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Registro
-          </Button>
+            member={selectedMember}
+            onUpdate={refetchData}
+          />
+
+          <CorporatePolicyModal
+            isOpen={isPolicyModalOpen}
+            onClose={() => {
+              setIsPolicyModalOpen(false);
+              setSelectedPolicy(null);
+            }}
+            policy={selectedPolicy}
+            onUpdate={refetchData}
+          />
+
+          <WhistleblowerModal
+            isOpen={isWhistleblowerModalOpen}
+            onClose={() => {
+              setIsWhistleblowerModalOpen(false);
+              setSelectedReport(null);
+            }}
+            report={selectedReport}
+            mode={modalMode as any}
+            onUpdate={refetchData}
+          />
+
+          <EmployeeModal
+            isOpen={isEmployeeModalOpen}
+            onClose={() => {
+              setIsEmployeeModalOpen(false);
+              setSelectedEmployee(null);
+            }}
+            employee={selectedEmployee}
+            onUpdate={refetchData}
+          />
+
+          <GovernanceReportsModal
+            isOpen={isReportsModalOpen}
+            onClose={() => setIsReportsModalOpen(false)}
+          />
         </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="structure">Estrutura</TabsTrigger>
-          <TabsTrigger value="policies">Políticas</TabsTrigger>
-          <TabsTrigger value="employees">Funcionários</TabsTrigger>
-          <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
-          <TabsTrigger value="ethics">Ética</TabsTrigger>
-          <TabsTrigger value="intelligence">Central IA</TabsTrigger>
-          <TabsTrigger value="system">Sistema</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-6">
-            <GovernanceDashboard governanceMetrics={governanceMetrics} riskMetrics={riskMetrics} />
-            <UnifiedDashboardWidget />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="structure" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Conselho de Administração</CardTitle>
-                  <CardDescription>Membros do conselho e comitês</CardDescription>
-                </div>
-                <Button
-                  onClick={() => {
-                    setSelectedMember(null);
-                    setModalMode('create');
-                    setIsBoardModalOpen(true);
-                  }}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Novo Membro
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {boardMembers && boardMembers.length > 0 ? (
-                <div className="space-y-4">
-                  {boardMembers.map((member) => (
-                    <div key={member.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium">{member.full_name}</h4>
-                            <Badge variant={member.status === 'Ativo' ? 'default' : 'secondary'}>
-                              {member.status}
-                            </Badge>
-                            {member.is_independent && (
-                              <Badge variant="outline">Independente</Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-1">{member.position}</p>
-                          {member.committee && (
-                            <p className="text-sm text-muted-foreground">Comitê: {member.committee}</p>
-                          )}
-                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            <span>Nomeação: {new Date(member.appointment_date).toLocaleDateString('pt-BR')}</span>
-                            {member.experience_years && (
-                              <span>{member.experience_years} anos de experiência</span>
-                            )}
-                          </div>
-                          {member.expertise_areas && member.expertise_areas.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {member.expertise_areas.slice(0, 3).map((area, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  {area}
-                                </Badge>
-                              ))}
-                              {member.expertise_areas.length > 3 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{member.expertise_areas.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditMember(member)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">Nenhum membro cadastrado</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Adicione membros do conselho de administração
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSelectedMember(null);
-                      setModalMode('create');
-                      setIsBoardModalOpen(true);
-                    }}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Adicionar Primeiro Membro
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="employees" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Funcionários</CardTitle>
-                  <CardDescription>Gestão de funcionários e diversidade</CardDescription>
-                </div>
-                <Button
-                  onClick={() => {
-                    setSelectedEmployee(null);
-                    setModalMode('create');
-                    setIsEmployeeModalOpen(true);
-                  }}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Novo Funcionário
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {employees && employees.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Employee Stats Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Total</p>
-                            <p className="text-2xl font-bold">{employeeStats?.totalEmployees || 0}</p>
-                          </div>
-                          <Users className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Ativos</p>
-                            <p className="text-2xl font-bold">{employeeStats?.activeEmployees || 0}</p>
-                          </div>
-                          <CheckCircle className="h-8 w-8 text-green-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-muted-foreground">Departamentos</p>
-                            <p className="text-2xl font-bold">{employeeStats?.departments || 0}</p>
-                          </div>
-                          <TrendingUp className="h-8 w-8 text-blue-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Employees List */}
-                  <div className="grid gap-4">
-                    {employees.map((employee) => (
-                      <div key={employee.id} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium">{employee.full_name}</h4>
-                              <Badge variant="outline">{employee.employee_code}</Badge>
-                              <Badge 
-                                variant={
-                                  employee.status === 'Ativo' ? 'default' :
-                                  employee.status === 'Inativo' ? 'secondary' : 'outline'
-                                }
-                              >
-                                {employee.status}
-                              </Badge>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                              <div>
-                                <span className="font-medium">Cargo:</span> {employee.position || 'N/A'}
-                              </div>
-                              <div>
-                                <span className="font-medium">Departamento:</span> {employee.department || 'N/A'}
-                              </div>
-                              <div>
-                                <span className="font-medium">Admissão:</span> {employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('pt-BR') : 'N/A'}
-                              </div>
-                              <div>
-                                <span className="font-medium">Tipo:</span> {employee.employment_type || 'N/A'}
-                              </div>
-                            </div>
-                            {employee.email && (
-                              <p className="text-sm text-muted-foreground mt-1">{employee.email}</p>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditEmployee(employee)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum funcionário cadastrado</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Comece adicionando funcionários para gerenciar diversidade e recursos humanos.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSelectedEmployee(null);
-                      setModalMode('create');
-                      setIsEmployeeModalOpen(true);
-                    }}
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Adicionar Primeiro Funcionário
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="policies" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Políticas Corporativas</CardTitle>
-                  <CardDescription>Gestão de políticas e procedimentos</CardDescription>
-                </div>
-                <Button
-                  onClick={() => {
-                    setSelectedPolicy(null);
-                    setModalMode('create');
-                    setIsPolicyModalOpen(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Política
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {policies && policies.length > 0 ? (
-                <div className="space-y-4">
-                  {policies.map((policy) => (
-                    <div key={policy.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium">{policy.title}</h4>
-                            <Badge 
-                              variant={
-                                policy.status === 'Ativo' ? 'default' :
-                                policy.status === 'Aprovada' ? 'secondary' :
-                                policy.status === 'Em Revisão' ? 'outline' : 'destructive'
-                              }
-                            >
-                              {policy.status}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-1">{policy.category}</p>
-                          {policy.description && (
-                            <p className="text-sm text-muted-foreground mb-2">{policy.description}</p>
-                          )}
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>Versão: {policy.version}</span>
-                            <span>Vigência: {new Date(policy.effective_date).toLocaleDateString('pt-BR')}</span>
-                            {policy.review_date && (
-                              <span className={new Date(policy.review_date) < new Date() ? 'text-red-600' : ''}>
-                                Revisão: {new Date(policy.review_date).toLocaleDateString('pt-BR')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditPolicy(policy)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {policy.file_path && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(policy.file_path, '_blank')}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">Nenhuma política cadastrada</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Crie políticas corporativas para sua organização
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSelectedPolicy(null);
-                      setModalMode('create');
-                      setIsPolicyModalOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Criar Primeira Política
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="risks" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Matriz de Riscos ESG</CardTitle>
-                <CardDescription>Distribuição por categoria e criticidade</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {risks && risks.length > 0 ? (
-                  <div className="space-y-4">
-                    {risks.slice(0, 5).map((risk) => (
-                      <div key={risk.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-sm">{risk.risk_title}</h4>
-                          <div className="flex gap-1">
-                            <Badge 
-                              variant={
-                                risk.inherent_risk_level === 'Crítico' ? 'destructive' :
-                                risk.inherent_risk_level === 'Alto' ? 'default' :
-                                risk.inherent_risk_level === 'Médio' ? 'secondary' : 'outline'
-                              }
-                              className="text-xs"
-                            >
-                              {risk.inherent_risk_level}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-1">{risk.esg_category}</p>
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>Probabilidade: {risk.probability}</span>
-                          <span>Impacto: {risk.impact}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {risks.length > 5 && (
-                      <p className="text-center text-sm text-muted-foreground">
-                        +{risks.length - 5} riscos adicionais
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">Nenhum risco cadastrado</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Indicadores de Risco</CardTitle>
-                <CardDescription>Resumo executivo</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">
-                      {riskMetrics?.criticalRisks || 0}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Riscos Críticos</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {riskMetrics?.highRisks || 0}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Riscos Altos</p>
-                  </div>
-                </div>
-                
-                {riskMetrics?.risksByCategory && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Por Categoria</h4>
-                    {Object.entries(riskMetrics.risksByCategory).map(([category, count]) => (
-                      <div key={category} className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">{category}</span>
-                        <Badge variant="outline">{count}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="ethics" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Canal de Denúncias</CardTitle>
-                  <CardDescription>Sistema de ética e compliance</CardDescription>
-                </div>
-                <Button
-                  onClick={() => {
-                    setSelectedReport(null);
-                    setModalMode('create');
-                    setIsWhistleblowerModalOpen(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Denúncia
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {reports && reports.length > 0 ? (
-                <div className="space-y-4">
-                  {reports.map((report) => (
-                    <div key={report.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium">#{report.report_code}</h4>
-                            <Badge 
-                              variant={
-                                report.status === 'Nova' ? 'secondary' :
-                                report.status === 'Em Investigação' ? 'default' :
-                                report.status === 'Concluída' ? 'default' : 'outline'
-                              }
-                            >
-                              {report.status}
-                            </Badge>
-                            <Badge 
-                              variant={
-                                report.priority === 'Alta' ? 'destructive' :
-                                report.priority === 'Média' ? 'default' : 'secondary'
-                              }
-                            >
-                              {report.priority}
-                            </Badge>
-                            {report.is_anonymous && (
-                              <Badge variant="outline">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Anônima
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">{report.category}</p>
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                            {report.description}
-                          </p>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>Criada: {new Date(report.created_at).toLocaleDateString('pt-BR')}</span>
-                            {report.incident_date && (
-                              <span>Incidente: {new Date(report.incident_date).toLocaleDateString('pt-BR')}</span>
-                            )}
-                            {report.location && (
-                              <span>Local: {report.location}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewReport(report)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {report.status !== 'Fechada' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleInvestigateReport(report)}
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">Nenhuma denúncia registrada</h3>
-                  <p className="text-muted-foreground mb-4">
-                    O canal de denúncias está disponível para relatos confidenciais
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSelectedReport(null);
-                      setModalMode('create');
-                      setIsWhistleblowerModalOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Registrar Denúncia
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-         </TabsContent>
-
-        <TabsContent value="intelligence" className="space-y-6">
-          <IntelligenceHub />
-        </TabsContent>
-
-        <TabsContent value="system" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance do Sistema</CardTitle>
-              <CardDescription>
-                Monitoramento e otimização do desempenho da plataforma
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SystemPerformanceMonitor />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Board Member Modal */}
-      <BoardMemberModal
-        isOpen={isBoardModalOpen}
-        onClose={() => {
-          setIsBoardModalOpen(false);
-          setSelectedMember(null);
-        }}
-        member={selectedMember}
-        onUpdate={refetchData}
-      />
-
-      {/* Corporate Policy Modal */}
-      <CorporatePolicyModal
-        isOpen={isPolicyModalOpen}
-        onClose={() => {
-          setIsPolicyModalOpen(false);
-          setSelectedPolicy(null);
-        }}
-        policy={selectedPolicy}
-        onUpdate={refetchData}
-      />
-
-      {/* Whistleblower Modal */}
-      <WhistleblowerModal
-        isOpen={isWhistleblowerModalOpen}
-        onClose={() => {
-          setIsWhistleblowerModalOpen(false);
-          setSelectedReport(null);
-        }}
-        report={selectedReport}
-        mode={modalMode as any}
-        onUpdate={refetchData}
-      />
-
-      </div>
-    </MainLayout>
+      </MainLayout>
+    </ErrorBoundary>
   );
 }
