@@ -75,6 +75,7 @@ import GestaoFornecedores from "./pages/GestaoFornecedores";
 import QualityDashboard from "./pages/QualityDashboard";
 import { GerenciamentoProjetos } from "./pages/GerenciamentoProjetos";
 import EstruturaOrganizacional from "./pages/EstruturaOrganizacional";
+import GestaoFuncionarios from "./pages/GestaoFuncionarios";
 
 const queryClient = new QueryClient();
 
@@ -346,6 +347,11 @@ const App = () => (
           <Route path="/estrutura-organizacional" element={
             <ProtectedRoute>
               <EstruturaOrganizacional />
+            </ProtectedRoute>
+          } />
+          <Route path="/gestao-funcionarios" element={
+            <ProtectedRoute>
+              <GestaoFuncionarios />
             </ProtectedRoute>
           } />
             <Route path="/simulador" element={

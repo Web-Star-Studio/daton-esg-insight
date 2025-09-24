@@ -35,7 +35,8 @@ import {
   BookMarked,
   Handshake,
   Brain,
-  FolderKanban
+  FolderKanban,
+  UserCheck
 } from "lucide-react"
 import { 
   Sidebar,
@@ -148,6 +149,7 @@ const menuSections: MenuSection[] = [
       { id: "base-conhecimento", title: "Base de Conhecimento", icon: BookMarked, path: "/base-conhecimento" },
       { id: "gestao-fornecedores", title: "Gestão de Fornecedores", icon: Handshake, path: "/gestao-fornecedores" },
       { id: "estrutura-organizacional", title: "Estrutura Organizacional", icon: Users, path: "/estrutura-organizacional" },
+      { id: "gestao-funcionarios", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios" },
     ]
   },
   {
