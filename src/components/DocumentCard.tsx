@@ -164,6 +164,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {extraActions}
           </div>
         </div>
       </Card>

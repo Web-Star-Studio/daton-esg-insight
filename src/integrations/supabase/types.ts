@@ -1550,6 +1550,190 @@ export type Database = {
           },
         ]
       }
+      document_approval_workflows: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          steps?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_approvals: {
+        Row: {
+          approval_date: string | null
+          approval_notes: string | null
+          approver_user_id: string | null
+          created_at: string
+          current_step: number
+          document_id: string
+          id: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["approval_status_enum"]
+          updated_at: string
+          workflow_id: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          approval_notes?: string | null
+          approver_user_id?: string | null
+          created_at?: string
+          current_step?: number
+          document_id: string
+          id?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["approval_status_enum"]
+          updated_at?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          approval_notes?: string | null
+          approver_user_id?: string | null
+          created_at?: string
+          current_step?: number
+          document_id?: string
+          id?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["approval_status_enum"]
+          updated_at?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_approvals_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_approvals_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "document_approval_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_audit_trail: {
+        Row: {
+          action: string
+          details: string | null
+          document_id: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          timestamp: string
+          user_id: string
+          user_ip_address: unknown | null
+        }
+        Insert: {
+          action: string
+          details?: string | null
+          document_id: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          timestamp?: string
+          user_id: string
+          user_ip_address?: unknown | null
+        }
+        Update: {
+          action?: string
+          details?: string | null
+          document_id?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          timestamp?: string
+          user_id?: string
+          user_ip_address?: unknown | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_audit_trail_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_controlled_copies: {
+        Row: {
+          assigned_department: string | null
+          assigned_to_user_id: string | null
+          copy_number: number
+          distributed_date: string
+          document_id: string
+          id: string
+          last_updated: string
+          location: string | null
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          assigned_department?: string | null
+          assigned_to_user_id?: string | null
+          copy_number: number
+          distributed_date?: string
+          document_id: string
+          id?: string
+          last_updated?: string
+          location?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          assigned_department?: string | null
+          assigned_to_user_id?: string | null
+          copy_number?: number
+          distributed_date?: string
+          document_id?: string
+          id?: string
+          last_updated?: string
+          location?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_controlled_copies_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_extraction_jobs: {
         Row: {
           ai_model_used: string | null
@@ -1641,20 +1825,201 @@ export type Database = {
           },
         ]
       }
+      document_master_list: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string
+          distribution_list: Json | null
+          document_id: string
+          effective_date: string | null
+          id: string
+          is_active: boolean
+          responsible_department: string | null
+          review_date: string | null
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string
+          distribution_list?: Json | null
+          document_id: string
+          effective_date?: string | null
+          id?: string
+          is_active?: boolean
+          responsible_department?: string | null
+          review_date?: string | null
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string
+          distribution_list?: Json | null
+          document_id?: string
+          effective_date?: string | null
+          id?: string
+          is_active?: boolean
+          responsible_department?: string | null
+          review_date?: string | null
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_master_list_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_permissions: {
+        Row: {
+          document_id: string | null
+          expires_at: string | null
+          folder_id: string | null
+          granted_at: string
+          granted_by_user_id: string
+          id: string
+          is_active: boolean
+          permission_level: Database["public"]["Enums"]["permission_level_enum"]
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          document_id?: string | null
+          expires_at?: string | null
+          folder_id?: string | null
+          granted_at?: string
+          granted_by_user_id: string
+          id?: string
+          is_active?: boolean
+          permission_level: Database["public"]["Enums"]["permission_level_enum"]
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          document_id?: string | null
+          expires_at?: string | null
+          folder_id?: string | null
+          granted_at?: string
+          granted_by_user_id?: string
+          id?: string
+          is_active?: boolean
+          permission_level?: Database["public"]["Enums"]["permission_level_enum"]
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_permissions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_permissions_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          changes_summary: string | null
+          content_hash: string | null
+          created_at: string
+          created_by_user_id: string
+          document_id: string
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_current: boolean
+          metadata: Json | null
+          title: string
+          version_number: number
+        }
+        Insert: {
+          changes_summary?: string | null
+          content_hash?: string | null
+          created_at?: string
+          created_by_user_id: string
+          document_id: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_current?: boolean
+          metadata?: Json | null
+          title: string
+          version_number: number
+        }
+        Update: {
+          changes_summary?: string | null
+          content_hash?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          document_id?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_current?: boolean
+          metadata?: Json | null
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           ai_confidence_score: number | null
           ai_extracted_category: string | null
           ai_processing_status: string | null
+          approval_status:
+            | Database["public"]["Enums"]["approval_status_enum"]
+            | null
+          code: string | null
           company_id: string
+          controlled_copy: boolean | null
+          distribution_list: Json | null
+          document_type:
+            | Database["public"]["Enums"]["document_type_enum"]
+            | null
+          effective_date: string | null
           file_name: string
           file_path: string
           file_size: number | null
           file_type: string
           folder_id: string | null
           id: string
+          master_list_included: boolean | null
+          next_review_date: string | null
           related_id: string
           related_model: string
+          requires_approval: boolean | null
+          responsible_department: string | null
+          retention_period: unknown | null
+          review_frequency:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
           tags: string[] | null
           upload_date: string
           uploader_user_id: string
@@ -1663,15 +2028,33 @@ export type Database = {
           ai_confidence_score?: number | null
           ai_extracted_category?: string | null
           ai_processing_status?: string | null
+          approval_status?:
+            | Database["public"]["Enums"]["approval_status_enum"]
+            | null
+          code?: string | null
           company_id: string
+          controlled_copy?: boolean | null
+          distribution_list?: Json | null
+          document_type?:
+            | Database["public"]["Enums"]["document_type_enum"]
+            | null
+          effective_date?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
           file_type: string
           folder_id?: string | null
           id?: string
+          master_list_included?: boolean | null
+          next_review_date?: string | null
           related_id: string
           related_model: string
+          requires_approval?: boolean | null
+          responsible_department?: string | null
+          retention_period?: unknown | null
+          review_frequency?:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
           tags?: string[] | null
           upload_date?: string
           uploader_user_id: string
@@ -1680,15 +2063,33 @@ export type Database = {
           ai_confidence_score?: number | null
           ai_extracted_category?: string | null
           ai_processing_status?: string | null
+          approval_status?:
+            | Database["public"]["Enums"]["approval_status_enum"]
+            | null
+          code?: string | null
           company_id?: string
+          controlled_copy?: boolean | null
+          distribution_list?: Json | null
+          document_type?:
+            | Database["public"]["Enums"]["document_type_enum"]
+            | null
+          effective_date?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
           file_type?: string
           folder_id?: string | null
           id?: string
+          master_list_included?: boolean | null
+          next_review_date?: string | null
           related_id?: string
           related_model?: string
+          requires_approval?: boolean | null
+          responsible_department?: string | null
+          retention_period?: unknown | null
+          review_frequency?:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
           tags?: string[] | null
           upload_date?: string
           uploader_user_id?: string
@@ -3503,6 +3904,80 @@ export type Database = {
           vegetation_type?: string | null
         }
         Relationships: []
+      }
+      legal_documents: {
+        Row: {
+          company_id: string
+          compliance_status: string | null
+          created_at: string
+          document_id: string | null
+          effective_date: string | null
+          expiration_date: string | null
+          id: string
+          issuing_authority: string | null
+          law_number: string | null
+          legislation_type: string
+          next_review_date: string | null
+          notes: string | null
+          publication_date: string | null
+          responsible_user_id: string | null
+          review_frequency:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          compliance_status?: string | null
+          created_at?: string
+          document_id?: string | null
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          issuing_authority?: string | null
+          law_number?: string | null
+          legislation_type: string
+          next_review_date?: string | null
+          notes?: string | null
+          publication_date?: string | null
+          responsible_user_id?: string | null
+          review_frequency?:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          compliance_status?: string | null
+          created_at?: string
+          document_id?: string | null
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          issuing_authority?: string | null
+          law_number?: string | null
+          legislation_type?: string
+          next_review_date?: string | null
+          notes?: string | null
+          publication_date?: string | null
+          responsible_user_id?: string | null
+          review_frequency?:
+            | Database["public"]["Enums"]["review_frequency_enum"]
+            | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       license_ai_analysis: {
         Row: {
@@ -6859,6 +7334,12 @@ export type Database = {
       }
     }
     Enums: {
+      approval_status_enum:
+        | "rascunho"
+        | "em_aprovacao"
+        | "aprovado"
+        | "rejeitado"
+        | "obsoleto"
       carbon_project_status_enum: "Ativo" | "Encerrado" | "Suspenso"
       compliance_task_status_enum:
         | "Pendente"
@@ -6866,6 +7347,7 @@ export type Database = {
         | "Concluído"
         | "Em Atraso"
       credit_status_enum: "Disponível" | "Aposentado" | "Reservado"
+      document_type_enum: "interno" | "externo" | "registro" | "legal"
       emission_factor_type_enum: "system" | "custom"
       emission_source_status_enum: "Ativo" | "Inativo"
       frequency_enum:
@@ -6896,6 +7378,7 @@ export type Database = {
       jurisdiction_enum: "Federal" | "Estadual" | "Municipal"
       license_status_enum: "Ativa" | "Em Renovação" | "Vencida" | "Suspensa"
       license_type_enum: "LP" | "LI" | "LO" | "LAS" | "LOC" | "Outra"
+      permission_level_enum: "leitura" | "escrita" | "aprovacao" | "admin"
       report_gri_status_enum:
         | "Rascunho"
         | "Em Andamento"
@@ -6908,12 +7391,19 @@ export type Database = {
         | "GRI_STANDARD"
         | "GOALS_PERFORMANCE"
         | "CUSTOM_REPORT"
+      review_frequency_enum:
+        | "mensal"
+        | "trimestral"
+        | "semestral"
+        | "anual"
+        | "bienal"
       user_role_enum: "Admin" | "Editor" | "Leitor"
       waste_class_enum:
         | "Classe I - Perigoso"
         | "Classe II A - Não Inerte"
         | "Classe II B - Inerte"
       waste_status_enum: "Coletado" | "Em Trânsito" | "Destinação Finalizada"
+      workflow_step_type_enum: "approval" | "review" | "notification"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7041,6 +7531,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      approval_status_enum: [
+        "rascunho",
+        "em_aprovacao",
+        "aprovado",
+        "rejeitado",
+        "obsoleto",
+      ],
       carbon_project_status_enum: ["Ativo", "Encerrado", "Suspenso"],
       compliance_task_status_enum: [
         "Pendente",
@@ -7049,6 +7546,7 @@ export const Constants = {
         "Em Atraso",
       ],
       credit_status_enum: ["Disponível", "Aposentado", "Reservado"],
+      document_type_enum: ["interno", "externo", "registro", "legal"],
       emission_factor_type_enum: ["system", "custom"],
       emission_source_status_enum: ["Ativo", "Inativo"],
       frequency_enum: [
@@ -7083,6 +7581,7 @@ export const Constants = {
       jurisdiction_enum: ["Federal", "Estadual", "Municipal"],
       license_status_enum: ["Ativa", "Em Renovação", "Vencida", "Suspensa"],
       license_type_enum: ["LP", "LI", "LO", "LAS", "LOC", "Outra"],
+      permission_level_enum: ["leitura", "escrita", "aprovacao", "admin"],
       report_gri_status_enum: [
         "Rascunho",
         "Em Andamento",
@@ -7097,6 +7596,13 @@ export const Constants = {
         "GOALS_PERFORMANCE",
         "CUSTOM_REPORT",
       ],
+      review_frequency_enum: [
+        "mensal",
+        "trimestral",
+        "semestral",
+        "anual",
+        "bienal",
+      ],
       user_role_enum: ["Admin", "Editor", "Leitor"],
       waste_class_enum: [
         "Classe I - Perigoso",
@@ -7104,6 +7610,7 @@ export const Constants = {
         "Classe II B - Inerte",
       ],
       waste_status_enum: ["Coletado", "Em Trânsito", "Destinação Finalizada"],
+      workflow_step_type_enum: ["approval", "review", "notification"],
     },
   },
 } as const
