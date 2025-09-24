@@ -764,6 +764,49 @@ class QualityManagementService {
     if (error) throw error;
     return data || [];
   }
+
+  async getArticleAnalytics() {
+    const { data: articles } = await supabase
+      .from("knowledge_articles")
+      .select("id, title, category, view_count, is_published")
+      .eq("is_published", true);
+
+    if (!articles) return null;
+
+    // Calculate basic stats
+    const totalViews = articles.reduce((sum, article) => sum + (article.view_count || 0), 0);
+    const categories = [...new Set(articles.map(article => article.category))];
+    
+    // Most viewed articles
+    const mostViewed = articles
+      .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+      .slice(0, 5);
+
+    // Category distribution
+    const categoryDistribution = categories.map(category => ({
+      category,
+      count: articles.filter(article => article.category === category).length
+    })).sort((a, b) => b.count - a.count);
+
+    return {
+      total_articles: articles.length,
+      total_views: totalViews,
+      categories_count: categories.length,
+      most_viewed_articles: mostViewed,
+      category_distribution: categoryDistribution
+    };
+  }
+
+  async getRecentActivities() {
+    const { data, error } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 export const qualityManagementService = new QualityManagementService();

@@ -17,6 +17,8 @@ import { ptBR } from "date-fns/locale";
 import { ArticleViewModal } from "@/components/ArticleViewModal";
 import { ArticleEditModal } from "@/components/ArticleEditModal";
 import { PendingApprovalsWidget } from "@/components/PendingApprovalsWidget";
+import { ArticleAnalyticsWidget } from "@/components/ArticleAnalyticsWidget";
+import { RecentActivityWidget } from "@/components/RecentActivityWidget";
 
 interface KnowledgeArticle {
   id: string;
@@ -148,18 +150,18 @@ export default function BaseConhecimento() {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      "Processos": "bg-blue-100 text-blue-800",
-      "Qualidade": "bg-green-100 text-green-800",
-      "Segurança": "bg-red-100 text-red-800",
-      "Meio Ambiente": "bg-emerald-100 text-emerald-800",
-      "Procedimentos": "bg-purple-100 text-purple-800",
-      "Políticas": "bg-orange-100 text-orange-800",
-      "Treinamentos": "bg-yellow-100 text-yellow-800",
-      "FAQ": "bg-pink-100 text-pink-800",
-      "Manuais": "bg-indigo-100 text-indigo-800",
-      "Outros": "bg-gray-100 text-gray-800"
+      "Processos": "bg-primary/10 text-primary",
+      "Qualidade": "bg-secondary/10 text-secondary-foreground",
+      "Segurança": "bg-destructive/10 text-destructive",
+      "Meio Ambiente": "bg-accent/10 text-accent-foreground",
+      "Procedimentos": "bg-muted text-muted-foreground",
+      "Políticas": "bg-primary/20 text-primary",
+      "Treinamentos": "bg-secondary/20 text-secondary-foreground",
+      "FAQ": "bg-accent/20 text-accent-foreground",
+      "Manuais": "bg-muted/80 text-foreground",
+      "Outros": "bg-muted/50 text-muted-foreground"
     };
-    return colors[category] || "bg-gray-100 text-gray-800";
+    return colors[category] || "bg-muted/50 text-muted-foreground";
   };
 
   const filteredArticles = articles.filter((article: KnowledgeArticle) => {
@@ -285,9 +287,11 @@ export default function BaseConhecimento() {
         </Dialog>
       </div>
 
-      {/* Pending Approvals Widget */}
-      <div className="mb-6">
+      {/* Dashboard Widgets */}
+      <div className="grid gap-6 md:grid-cols-3 mb-6">
         <PendingApprovalsWidget />
+        <ArticleAnalyticsWidget />
+        <RecentActivityWidget />
       </div>
 
       {/* Search and Filters */}
