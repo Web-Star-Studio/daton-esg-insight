@@ -30,6 +30,16 @@ import { EmployeeModal } from "@/components/EmployeeModal";
 import { GovernanceDashboard } from "@/components/GovernanceDashboard";
 import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
 import { LazyIntelligenceHub, LazySystemPerformanceMonitor } from "@/components/optimized/LazyGovernanceComponents";
+import { GovernanceStructure } from "@/components/GovernanceStructure";
+import { CorporatePolicies } from "@/components/CorporatePolicies";
+import { EmployeesList } from "@/components/EmployeesList";
+import { ESGRisksMatrix } from "@/components/ESGRisksMatrix";
+import { EthicsChannel } from "@/components/EthicsChannel";
+import { GovernanceStructure } from "@/components/GovernanceStructure";
+import { CorporatePolicies } from "@/components/CorporatePolicies";
+import { EmployeesList } from "@/components/EmployeesList";
+import { ESGRisksMatrix } from "@/components/ESGRisksMatrix";
+import { EthicsChannel } from "@/components/EthicsChannel";
 import { LoadingState } from "@/components/ui/loading-state";
 import { DashboardSkeleton } from "@/components/ui/skeleton-loader";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -182,6 +192,46 @@ export default function GovernancaESG() {
                   <UnifiedDashboardWidget />
                 </div>
               </LoadingState>
+            </TabsContent>
+
+            <TabsContent value="structure">
+              <GovernanceStructure onEditMember={handleEditMember} />
+            </TabsContent>
+
+            <TabsContent value="policies">
+              <CorporatePolicies 
+                onEditPolicy={handleEditPolicy}
+                onCreatePolicy={() => {
+                  setSelectedPolicy(null);
+                  setModalMode('create');
+                  setIsPolicyModalOpen(true);
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="employees">
+              <EmployeesList 
+                onEditEmployee={handleEditEmployee}
+                onCreateEmployee={() => {
+                  setSelectedEmployee(null);
+                  setModalMode('create');
+                  setIsEmployeeModalOpen(true);
+                }}
+              />
+            </TabsContent>
+
+            <TabsContent value="risks">
+              <ESGRisksMatrix 
+                onEditRisk={() => {}} 
+                onCreateRisk={() => {}}
+              />
+            </TabsContent>
+
+            <TabsContent value="ethics">
+              <EthicsChannel 
+                onViewReport={handleViewReport}
+                onInvestigateReport={handleInvestigateReport}
+              />
             </TabsContent>
 
             <TabsContent value="intelligence" className="space-y-6">
