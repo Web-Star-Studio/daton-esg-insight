@@ -33,7 +33,7 @@ import { EmployeeModal } from "@/components/EmployeeModal";
 import { GovernanceDashboard } from "@/components/GovernanceDashboard";
 import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
 import { SystemPerformanceMonitor } from "@/components/SystemPerformanceMonitor";
-import { AdvancedNotificationPanel } from "@/components/AdvancedNotificationPanel";
+import IntelligenceHub from "@/components/IntelligenceHub";
 import { toast } from "@/hooks/use-toast";
 
 export default function GovernancaESG() {
@@ -167,7 +167,7 @@ export default function GovernancaESG() {
           <TabsTrigger value="employees">Funcionários</TabsTrigger>
           <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
           <TabsTrigger value="ethics">Ética</TabsTrigger>
-          <TabsTrigger value="insights">IA Insights</TabsTrigger>
+          <TabsTrigger value="intelligence">Central IA</TabsTrigger>
           <TabsTrigger value="system">Sistema</TabsTrigger>
         </TabsList>
 
@@ -702,30 +702,8 @@ export default function GovernancaESG() {
           </Card>
          </TabsContent>
 
-        <TabsContent value="insights" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Insights de IA - Governança ESG</CardTitle>
-              <CardDescription>
-                Análises inteligentes e recomendações baseadas em dados de governança
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <UnifiedDashboardWidget />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Notificações Avançadas</CardTitle>
-              <CardDescription>
-                Sistema inteligente de alertas e notificações em tempo real
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AdvancedNotificationPanel />
-            </CardContent>
-          </Card>
+        <TabsContent value="intelligence" className="space-y-6">
+          <IntelligenceHub />
         </TabsContent>
 
         <TabsContent value="system" className="space-y-6">
