@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MainLayout } from '@/components/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -292,17 +291,16 @@ export default function ProcessarLicenca() {
   );
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/licenciamento')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Processar Licenças</h1>
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" onClick={() => navigate('/licenciamento')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Processar Licenças</h1>
               <p className="text-muted-foreground">
                 Upload → Análise IA → Reconciliação Manual
               </p>
@@ -754,7 +752,6 @@ export default function ProcessarLicenca() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
-    </MainLayout>
-  );
-}
+      </>
+    );
+  }

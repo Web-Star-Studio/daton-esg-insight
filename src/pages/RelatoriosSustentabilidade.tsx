@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MainLayout } from "@/components/MainLayout";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -100,17 +99,16 @@ export default function RelatoriosSustentabilidade() {
   };
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Relatórios de Sustentabilidade</h1>
-            <p className="text-muted-foreground">
-              Crie, gerencie e publique relatórios de sustentabilidade completos
-            </p>
-          </div>
-          <Button onClick={handleCreateReport}>
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Relatórios de Sustentabilidade</h1>
+          <p className="text-muted-foreground">
+            Crie, gerencie e publique relatórios de sustentabilidade completos
+          </p>
+        </div>
+        <Button onClick={handleCreateReport}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Relatório
           </Button>
@@ -314,7 +312,6 @@ export default function RelatoriosSustentabilidade() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </MainLayout>
+    </>
   );
 }

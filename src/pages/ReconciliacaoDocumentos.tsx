@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { MainLayout } from '@/components/MainLayout';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -374,26 +373,23 @@ export const ReconciliacaoDocumentos = () => {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Bot className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Reconciliação de Documentos IA</h1>
-              <p className="text-muted-foreground">
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Bot className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Reconciliação de Documentos IA</h1>
+            <p className="text-muted-foreground">
                 Revise e aprove dados extraídos automaticamente pela IA
               </p>
             </div>
@@ -795,7 +791,6 @@ export const ReconciliacaoDocumentos = () => {
             </Card>
           </div>
         )}
-      </div>
-    </MainLayout>
-  );
-};
+      </>
+    );
+  };
