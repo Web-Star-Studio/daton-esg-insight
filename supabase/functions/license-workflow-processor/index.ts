@@ -73,7 +73,7 @@ serve(async (req) => {
     console.error('Error in license-workflow-processor:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: error instanceof Error ? error.message : String(error) 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -153,7 +153,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   });
 
   // Don't wait for analysis to complete - return immediately
-  analysisPromise.then(async (result) => {
+  analysisPromise.then(async (result: any) => {
     console.log('AI analysis completed:', result);
     
     if (result.data?.success && result.data?.data) {
@@ -202,7 +202,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         })
         .eq('id', document.id);
     }
-  }).catch(error => {
+  }).catch((error: any) => {
     console.error('Background analysis failed:', error);
   });
 

@@ -109,7 +109,7 @@ async function executeQuery(queryConfig: any, userCompanyId: string) {
   try {
     // Query para emissões GEE
     if (metric_key.includes('EMISSIONS')) {
-      const scopeFilter = metric.filters?.scope ? ` AND es.scope = ${metric.filters.scope}` : '';
+      const scopeFilter = 'filters' in metric && metric.filters && 'scope' in metric.filters && metric.filters.scope ? ` AND es.scope = ${metric.filters.scope}` : '';
       const assetFilter = comparison_dimension === 'asset' && filter_ids?.length 
         ? ` AND es.asset_id = ANY(ARRAY['${filter_ids.join("','")}']::uuid[])` 
         : '';
@@ -427,7 +427,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro na análise de desempenho:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Erro interno do servidor' 
+      error: error instanceof Error ? error.message : 'Erro interno do servidor' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

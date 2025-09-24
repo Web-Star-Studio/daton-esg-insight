@@ -148,11 +148,11 @@ function extractJsonFromText(text: string): any {
         return parsed;
       } catch (secondError) {
         console.error('Failed to parse JSON after cleanup:', secondError);
-        throw new Error(`Invalid JSON format: ${secondError.message}`);
+        throw new Error(`Invalid JSON format: ${secondError instanceof Error ? secondError.message : String(secondError)}`);
       }
     }
     
-    throw new Error(`Unable to extract valid JSON: ${error.message}`);
+    throw new Error(`Unable to extract valid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -470,7 +470,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       processing_time_ms: processingTime,
       confidence: 0,
       data: {

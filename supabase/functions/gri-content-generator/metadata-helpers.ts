@@ -1,6 +1,6 @@
 // Helper functions for metadata generation
 
-export function buildMetadataPrompt(report, metadataType) {
+export function buildMetadataPrompt(report: any, metadataType: string): string {
   const companyName = report.companies?.name || 'Nossa empresa';
   const year = report.year;
   
@@ -60,7 +60,7 @@ Gere conteúdo relevante para o relatório de sustentabilidade GRI ${year}.`;
   }
 }
 
-export function getDefaultMetadataContent(metadataType, report) {
+export function getDefaultMetadataContent(metadataType: string, report: any): string {
   const companyName = report.companies?.name || 'Nossa empresa';
   const year = report.year;
   

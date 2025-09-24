@@ -80,7 +80,7 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Error in quality-management function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -134,7 +134,7 @@ async function getQualityDashboard(supabase: any, company_id: string) {
         overdueActions: overdueActions?.length || 0
       },
       recentNCs: recentNCs || [],
-      plansProgress: plansProgress?.map(plan => ({
+      plansProgress: plansProgress?.map((plan: any) => ({
         ...plan,
         avgProgress: plan.action_plan_items?.length > 0 
           ? plan.action_plan_items.reduce((sum: number, item: any) => sum + (item.progress_percentage || 0), 0) / plan.action_plan_items.length
@@ -156,7 +156,12 @@ async function getNonConformityStats(supabase: any, company_id: string) {
     .select('severity, status, source, created_at')
     .eq('company_id', company_id);
 
-  const stats = {
+  const stats: {
+    bySeverity: Record<string, number>;
+    byStatus: Record<string, number>;
+    bySource: Record<string, number>;
+    monthly: Record<string, number>;
+  } = {
     bySeverity: {},
     byStatus: {},
     bySource: {},

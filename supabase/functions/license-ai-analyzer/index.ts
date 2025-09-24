@@ -150,7 +150,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -325,7 +325,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   } catch (error) {
     console.error('AI analysis error:', error);
     finalStatus = 'failed';
-    processingLog.push(`Error: ${error.message}`);
+    processingLog.push(`Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // ALWAYS update the license with results - this is critical
@@ -396,7 +396,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         }
       } catch (condError) {
         console.error('Exception in conditions processing:', condError);
-        processingLog.push(`Exception in conditions: ${condError.message}`);
+        processingLog.push(`Exception in conditions: ${condError instanceof Error ? condError.message : String(condError)}`);
       }
     }
 
@@ -435,7 +435,7 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
         }
       } catch (alertError) {
         console.error('Exception in alerts processing:', alertError);
-        processingLog.push(`Exception in alerts: ${alertError.message}`);
+        processingLog.push(`Exception in alerts: ${alertError instanceof Error ? alertError.message : String(alertError)}`);
       }
     }
 
