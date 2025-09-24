@@ -82,6 +82,7 @@ import BeneficiosRemuneracao from "./pages/BeneficiosRemuneracao";
 import Recrutamento from "./pages/Recrutamento";
 import SeguracaTrabalho from "./pages/SeguracaTrabalho";
 import PontoFrequencia from "./pages/PontoFrequencia";
+import DesenvolvimentoCarreira from "./pages/DesenvolvimentoCarreira";
 
 const queryClient = new QueryClient();
 
@@ -388,6 +389,11 @@ const App = () => (
           <Route path="/ponto-frequencia" element={
             <ProtectedRoute>
               <PontoFrequencia />
+            </ProtectedRoute>
+          } />
+          <Route path="/desenvolvimento-carreira" element={
+            <ProtectedRoute>
+              <DesenvolvimentoCarreira />
             </ProtectedRoute>
           } />
             <Route path="/simulador" element={

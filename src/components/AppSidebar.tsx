@@ -40,7 +40,8 @@ import {
   GraduationCap,
   DollarSign,
   Search,
-  Clock
+  Clock,
+  Zap
 } from "lucide-react"
 import { 
   Sidebar,
@@ -160,6 +161,7 @@ const menuSections: MenuSection[] = [
       { id: "recrutamento", title: "Recrutamento e Seleção", icon: Search, path: "/recrutamento" },
       { id: "seguranca-trabalho", title: "Segurança do Trabalho", icon: ShieldCheck, path: "/seguranca-trabalho" },
       { id: "ponto-frequencia", title: "Ponto e Frequência", icon: Clock, path: "/ponto-frequencia" },
+      { id: "desenvolvimento-carreira", title: "Desenvolvimento de Carreira", icon: Zap, path: "/desenvolvimento-carreira" },
     ]
   },
   {
