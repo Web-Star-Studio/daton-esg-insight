@@ -320,6 +320,9 @@ export const usePredictiveAlerts = () => {
             alert.description,
             'warning',
             undefined,
+            undefined,
+            'predictive',
+            'high',
             { alertId: alert.id, type: 'predictive' }
           );
         } catch (error) {

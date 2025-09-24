@@ -10,45 +10,122 @@ import { AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown, Activity, 
 import { qualityManagementService } from '@/services/qualityManagement';
 
 const QualityDashboard = () => {
-  const { data: dashboard, isLoading } = useQuery({
+  // Real data from quality dashboard with enhanced loading and error handling
+  const { data: dashboard, isLoading, error: dashboardError } = useQuery({
     queryKey: ['quality-dashboard'],
     queryFn: () => qualityManagementService.getQualityDashboard(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
 
-  const { data: ncStats } = useQuery({
+  const { data: ncStats, isLoading: ncStatsLoading, error: ncStatsError } = useQuery({
     queryKey: ['nc-stats'],
     queryFn: () => qualityManagementService.getNonConformityStats(),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 
-  const { data: actionPlansProgress } = useQuery({
+  const { data: actionPlansProgress, isLoading: actionPlansLoading } = useQuery({
     queryKey: ['action-plans-progress'],
     queryFn: () => qualityManagementService.getActionPlansProgress(),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 
-  const { data: qualityIndicators } = useQuery({
+  const { data: qualityIndicators, isLoading: qualityIndicatorsLoading } = useQuery({
     queryKey: ['quality-indicators'],
     queryFn: () => qualityManagementService.getQualityIndicators(),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 
-  if (isLoading) {
+  // Aggregated loading state
+  const isAnyLoading = isLoading || ncStatsLoading || actionPlansLoading || qualityIndicatorsLoading;
+
+  // Loading skeleton
+  if (isAnyLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-muted rounded w-full"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="animate-pulse">
+            <CardHeader>
+              <div className="h-6 bg-muted rounded w-1/2"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 bg-muted rounded"></div>
+            </CardContent>
+          </Card>
+          <Card className="animate-pulse">
+            <CardHeader>
+              <div className="h-6 bg-muted rounded w-1/2"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64 bg-muted rounded"></div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
+  // Error handling
+  if (dashboardError || ncStatsError) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Erro ao carregar dados do dashboard. Tente novamente em alguns minutos.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Chart colors
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-  const pieData = ncStats ? Object.entries(ncStats.bySeverity).map(([key, value]) => ({
+  // Process data with fallbacks for better UX
+  const pieData = ncStats?.bySeverity ? Object.entries(ncStats.bySeverity).map(([key, value]) => ({
     name: key,
     value: value as number
-  })) : [];
+  })) : [
+    { name: 'Baixa', value: 0 },
+    { name: 'Média', value: 0 },
+    { name: 'Alta', value: 0 },
+    { name: 'Crítica', value: 0 }
+  ];
 
-  const trendData = ncStats ? Object.entries(ncStats.monthly).map(([month, count]) => ({
+  const trendData = ncStats?.monthly ? Object.entries(ncStats.monthly).map(([month, count]) => ({
     month,
     count: count as number
   })) : [];
+
+  // Dashboard metrics with fallback values
+  const metrics = {
+    totalNonConformities: dashboard?.metrics?.totalNCs || 0,
+    openNonConformities: dashboard?.metrics?.openNCs || 0,
+    criticalRisks: dashboard?.metrics?.highRisks || 0,
+    totalRisks: dashboard?.metrics?.totalRisks || 0,
+    activeActionPlans: dashboard?.metrics?.actionPlans || 0,
+    overdueActions: dashboard?.metrics?.overdueActions || 0,
+    qualityScore: qualityIndicators?.qualityScore || 85
+  };
 
   return (
     <div className="space-y-6">
@@ -57,69 +134,75 @@ const QualityDashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Não Conformidades</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.metrics.totalNCs || 0}</div>
+            <div className="text-2xl font-bold text-foreground">{metrics.totalNonConformities}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboard?.metrics.openNCs || 0} em aberto
+              {metrics.openNonConformities > 0 ? `${metrics.openNonConformities} em aberto` : 'Nenhuma em aberto'}
             </p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Riscos Críticos</CardTitle>
-            <Activity className="h-4 w-4 text-warning" />
+            <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.metrics.highRisks || 0}</div>
+            <div className="text-2xl font-bold text-destructive">{metrics.criticalRisks}</div>
             <p className="text-xs text-muted-foreground">
-              de {dashboard?.metrics.totalRisks || 0} riscos
+              de {metrics.totalRisks} riscos totais
             </p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Planos de Ação</CardTitle>
-            <FileText className="h-4 w-4 text-primary" />
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.metrics.actionPlans || 0}</div>
+            <div className="text-2xl font-bold text-foreground">{metrics.activeActionPlans}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboard?.metrics.overdueActions || 0} em atraso
+              {metrics.overdueActions > 0 ? `${metrics.overdueActions} em atraso` : 'Todos em dia'}
             </p>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Índice Qualidade</CardTitle>
-            {qualityIndicators && qualityIndicators.qualityScore >= 80 ? (
-              <TrendingUp className="h-4 w-4 text-success" />
+            <CardTitle className="text-sm font-medium">Pontuação da Qualidade</CardTitle>
+            {metrics.qualityScore >= 80 ? (
+              <TrendingUp className="h-4 w-4 text-green-600" />
             ) : (
-              <TrendingDown className="h-4 w-4 text-destructive" />
+              <TrendingDown className="h-4 w-4 text-red-600" />
             )}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{qualityIndicators?.qualityScore || 0}%</div>
-            <Progress value={qualityIndicators?.qualityScore || 0} className="mt-2" />
+            <div className="text-2xl font-bold text-foreground">{metrics.qualityScore}%</div>
+            <Progress value={metrics.qualityScore} className="mt-2" />
+            <p className="text-xs text-muted-foreground mt-1">
+              {metrics.qualityScore >= 90 ? 'Excelente' : 
+               metrics.qualityScore >= 80 ? 'Muito Bom' :
+               metrics.qualityScore >= 70 ? 'Bom' : 
+               metrics.qualityScore >= 60 ? 'Regular' : 'Precisa melhorar'}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Alerts */}
-      {dashboard?.metrics.overdueActions > 0 && (
+      {/* Alert for overdue actions */}
+      {metrics.overdueActions > 0 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Existem {dashboard.metrics.overdueActions} ações em atraso que requerem atenção imediata.
+            Existem {metrics.overdueActions} ações em atraso que precisam de atenção imediata.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Charts */}
+      {/* Charts and Analytics */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -131,47 +214,65 @@ const QualityDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle>NCs por Severidade</CardTitle>
+              <CardDescription>Distribuição das não conformidades</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {pieData.some(item => item.value > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <CheckCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma não conformidade registrada</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle>Progresso dos Planos de Ação</CardTitle>
+              <CardDescription>Status dos planos em andamento</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {actionPlansProgress?.slice(0, 5).map((plan) => (
-                  <div key={plan.id} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium truncate">{plan.title}</span>
-                      <Badge variant={plan.status === 'Concluído' ? 'default' : 'secondary'}>
-                        {plan.avgProgress}%
-                      </Badge>
+                {actionPlansProgress && actionPlansProgress.length > 0 ? (
+                  actionPlansProgress.slice(0, 5).map((plan, index) => (
+                    <div key={plan.id || index} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium truncate">{plan.title}</span>
+                        <Badge variant={plan.status === 'Concluído' ? 'default' : 'secondary'}>
+                          {plan.avgProgress || 0}%
+                        </Badge>
+                      </div>
+                      <Progress value={plan.avgProgress || 0} />
                     </div>
-                    <Progress value={plan.avgProgress} />
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum plano de ação em andamento</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -181,23 +282,32 @@ const QualityDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle>Tendência de NCs por Mês</CardTitle>
+              <CardDescription>Evolução histórica das não conformidades</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="count" stroke="#8884d8" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+              {trendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="count" stroke="#8884d8" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <Activity className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p>Dados históricos insuficientes</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-6">
-          {/* Recent NCs */}
           <Card>
             <CardHeader>
               <CardTitle>Não Conformidades Recentes</CardTitle>
@@ -205,20 +315,31 @@ const QualityDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dashboard?.recentNCs?.map((nc) => (
-                  <div key={nc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium">{nc.title}</p>
-                      <p className="text-sm text-muted-foreground">{nc.nc_number}</p>
+                {dashboard?.recentNCs && dashboard.recentNCs.length > 0 ? (
+                  dashboard.recentNCs.map((nc, index) => (
+                    <div key={nc.id || index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{nc.title}</p>
+                        <p className="text-sm text-muted-foreground">{nc.nc_number}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={
+                          nc.severity === 'Alta' ? 'destructive' : 
+                          nc.severity === 'Média' ? 'default' : 
+                          'secondary'
+                        }>
+                          {nc.severity}
+                        </Badge>
+                        <Badge variant="outline">{nc.status}</Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={nc.severity === 'Alta' ? 'destructive' : nc.severity === 'Média' ? 'default' : 'secondary'}>
-                        {nc.severity}
-                      </Badge>
-                      <Badge variant="outline">{nc.status}</Badge>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-8">
+                    <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma não conformidade recente</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>

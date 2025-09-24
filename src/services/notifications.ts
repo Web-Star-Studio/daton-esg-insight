@@ -7,11 +7,15 @@ export interface Notification {
   title: string;
   message: string;
   type: string;
+  category?: string;
+  priority?: string;
   is_read: boolean;
   action_url?: string;
+  action_label?: string;
   metadata?: any;
   created_at: string;
   read_at?: string;
+  updated_at?: string;
 }
 
 export const getNotifications = async (limit: number = 50): Promise<Notification[]> => {
@@ -76,6 +80,9 @@ export const createNotification = async (
   message: string,
   type: 'info' | 'success' | 'warning' | 'error' = 'info',
   actionUrl?: string,
+  actionLabel?: string,
+  category?: string,
+  priority?: string,
   metadata?: any
 ): Promise<Notification> => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -97,7 +104,10 @@ export const createNotification = async (
       title,
       message,
       type,
+      category,
+      priority: priority || 'medium',
       action_url: actionUrl,
+      action_label: actionLabel,
       metadata,
     })
     .select()
@@ -105,4 +115,22 @@ export const createNotification = async (
 
   if (error) throw error;
   return data;
+};
+
+export const triggerSmartNotifications = async (action: string): Promise<void> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('smart-notifications', {
+      body: { action }
+    });
+
+    if (error) {
+      console.error(`Error triggering smart notifications for ${action}:`, error);
+      throw error;
+    }
+
+    console.log(`Smart notifications triggered for ${action}:`, data);
+  } catch (error) {
+    console.error(`Failed to trigger smart notifications:`, error);
+    throw error;
+  }
 };
