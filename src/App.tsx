@@ -51,6 +51,8 @@ import NotFound from "./pages/NotFound";
 import RelatoriosSustentabilidade from "./pages/RelatoriosSustentabilidade";
 
 // Novos módulos de materialidade e stakeholders
+import SmartNotificationSystem from "@/components/SmartNotificationSystem";
+import IntelligentAlertsSystem from "@/components/IntelligentAlertsSystem";
 import GestaoStakeholders from "./pages/GestaoStakeholders";
 import AnaliseMaterialidade from "./pages/AnaliseMaterialidade";
 import ConfiguracaoOrganizacional from "./pages/ConfiguracaoOrganizacional";
