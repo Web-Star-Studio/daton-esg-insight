@@ -56,7 +56,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in data-import-processor function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -192,7 +192,7 @@ async function processImportFile(supabase: any, job: any, file: File) {
       .from('data_import_jobs')
       .update({
         status: 'Falhou',
-        log: { error: error.message },
+        log: { error: error instanceof Error ? error.message : 'Unknown error' },
         updated_at: new Date().toISOString()
       })
       .eq('id', job.id)

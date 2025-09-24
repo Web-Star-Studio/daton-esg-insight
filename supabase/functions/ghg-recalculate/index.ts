@@ -78,18 +78,18 @@ serve(async (req) => {
     for (const activity of activityData || []) {
       try {
         processedRecords++
-        console.log(`Processing activity ${activity.id} - ${activity.emission_source.name}`)
+        console.log(`Processing activity ${activity.id} - ${(activity.emission_source as any).name}`)
 
         // Get compatible emission factors
         const { data: factors } = await supabaseClient
           .from('emission_factors')
           .select('*')
-          .eq('category', activity.emission_source.category)
+          .eq('category', (activity.emission_source as any).category)
           .eq('type', 'system')
           .limit(5)
 
         if (!factors || factors.length === 0) {
-          console.log(`No emission factors found for category: ${activity.emission_source.category}`)
+          console.log(`No emission factors found for category: ${(activity.emission_source as any).category}`)
           continue
         }
 
@@ -179,7 +179,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       }),
       { 
         status: 500,

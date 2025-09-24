@@ -50,19 +50,19 @@ serve(async (req) => {
       return await handleReportGeneration(supabaseClient, reportId, action, format);
     } else if (metadataType) {
       // Handle metadata generation
-      return await handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, metadataType);
+      return await handleMetadataGeneration(supabaseClient, openaiApiKey!, reportId, metadataType!);
     } else if (sectionKey && sectionType) {
-      return await handleSectionGeneration(supabaseClient, openaiApiKey, reportId, sectionKey, sectionType, regenerate);
+      return await handleSectionGeneration(supabaseClient, openaiApiKey!, reportId, sectionKey!, sectionType!, regenerate!);
     } else {
       // Legacy support for direct section generation
-      return await handleSectionGeneration(supabaseClient, openaiApiKey, reportId, 'overview', 'Visão Geral', false);
+      return await handleSectionGeneration(supabaseClient, openaiApiKey!, reportId, 'overview', 'Visão Geral', false);
     }
 
   } catch (error) {
     console.error('Error in GRI content generator:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
-      details: error.stack 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? error.stack : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,7 +71,7 @@ serve(async (req) => {
 });
 
 // Handle metadata generation (ceo_message, executive_summary, methodology)
-async function handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, metadataType) {
+async function handleMetadataGeneration(supabaseClient: any, openaiApiKey: string, reportId: string, metadataType: string) {
   console.log(`Generating metadata for type: ${metadataType}`);
   
   try {
@@ -109,14 +109,14 @@ async function handleMetadataGeneration(supabaseClient, openaiApiKey, reportId, 
 
   } catch (error) {
     console.error('Error in metadata generation:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
 
-async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, sectionKey, sectionType, regenerate) {
+async function handleSectionGeneration(supabaseClient: any, openaiApiKey: string, reportId: string, sectionKey: string, sectionType: string, regenerate: boolean) {
   console.log(`Generating GRI content for section: ${sectionKey}, type: ${sectionType}`);
   
   try {
@@ -202,14 +202,14 @@ async function handleSectionGeneration(supabaseClient, openaiApiKey, reportId, s
 
   } catch (error) {
     console.error('Error in section generation:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
 
-async function handleReportGeneration(supabaseClient, reportId, action, format = null) {
+async function handleReportGeneration(supabaseClient: any, reportId: string, action: string, format: string | null = null) {
   console.log(`Generating full report for action: ${action}, format: ${format}`);
   
   try {
@@ -281,14 +281,14 @@ async function handleReportGeneration(supabaseClient, reportId, action, format =
 
   } catch (error) {
     console.error('Error in report generation:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
 
-async function generateGRIContent(openaiApiKey, report, sectionKey, sectionType, indicators, existingContent = null) {
+async function generateGRIContent(openaiApiKey: string, report: any, sectionKey: string, sectionType: string, indicators: any[], existingContent: any = null) {
   if (!openaiApiKey) {
     console.log('OpenAI API key not found, using template content');
     return generateTemplateContent(sectionKey, sectionType, report);
@@ -338,7 +338,7 @@ async function generateGRIContent(openaiApiKey, report, sectionKey, sectionType,
 }
 
 // Generate metadata content (ceo_message, executive_summary, methodology)
-async function generateMetadataContent(openaiApiKey, report, metadataType) {
+async function generateMetadataContent(openaiApiKey: string, report: any, metadataType: string) {
   if (!openaiApiKey) {
     return getDefaultMetadataContent(metadataType, report);
   }
@@ -386,7 +386,7 @@ async function generateMetadataContent(openaiApiKey, report, metadataType) {
   }
 }
 
-function buildMetadataPrompt(report, metadataType) {
+function buildMetadataPrompt(report: any, metadataType: string) {
   const companyName = report.companies?.name || 'Nossa empresa';
   const year = report.year;
   
@@ -446,7 +446,7 @@ Gere conteúdo relevante para o relatório de sustentabilidade GRI ${year}.`;
   }
 }
 
-function getDefaultMetadataContent(metadataType, report) {
+function getDefaultMetadataContent(metadataType: string, report: any) {
   const companyName = report.companies?.name || 'Nossa empresa';
   const year = report.year;
   
@@ -485,7 +485,7 @@ Os dados apresentados foram coletados e validados através de procedimentos inte
   }
 }
 
-function buildGRIPrompt(report, sectionKey, sectionType, indicators, existingContent) {
+function buildGRIPrompt(report: any, sectionKey: string, sectionType: string, indicators: any[], existingContent: any) {
   const companyName = report.companies?.name || 'Nossa empresa';
   const year = report.year;
   
@@ -529,7 +529,7 @@ Instruções:
   return prompt;
 }
 
-function generateTemplateContent(sectionKey, sectionType, report) {
+function generateTemplateContent(sectionKey: string, sectionType: string, report: any) {
   const companyName = report.companies?.name || 'Nossa empresa';
   const year = report.year;
   
@@ -547,10 +547,10 @@ function generateTemplateContent(sectionKey, sectionType, report) {
     economic: `O desempenho econômico da ${companyName} está intrinsecamente ligado à criação de valor sustentável para todos os stakeholders. Durante ${year}, mantivemos nosso foco na geração de resultados financeiros sólidos while contributing to sustainable development.`
   };
   
-  return templates[sectionKey] || `Conteúdo da seção ${sectionType} em desenvolvimento para o relatório ${year} da ${companyName}.`;
+  return (templates as any)[sectionKey] || `Conteúdo da seção ${sectionType} em desenvolvimento para o relatório ${year} da ${companyName}.`;
 }
 
-async function generatePDFReport(report, sections, indicators) {
+async function generatePDFReport(report: any, sections: any[], indicators: any[]) {
   const pdfDoc = await PDFDocument.create();
   const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
   const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
@@ -638,7 +638,7 @@ async function generatePDFReport(report, sections, indicators) {
   }
   
   // Add sections
-  sections.forEach(section => {
+  sections.forEach((section: any) => {
     if (section.content && yPosition < 150) {
       page = pdfDoc.addPage([595.28, 841.89]);
       yPosition = height - 100;
@@ -688,7 +688,7 @@ async function generatePDFReport(report, sections, indicators) {
     });
     yPosition -= 30;
     
-    indicators.slice(0, 10).forEach(indicator => { // Limit to first 10 indicators
+    indicators.slice(0, 10).forEach((indicator: any) => { // Limit to first 10 indicators
       if (indicator.gri_indicators_library && yPosition > 50) {
         page.drawText(`${indicator.gri_indicators_library.code}: ${indicator.value || 'Não informado'}`, {
           x: pageMargin,
@@ -705,7 +705,7 @@ async function generatePDFReport(report, sections, indicators) {
 }
 
 // Helper function to wrap text
-function wrapText(text, maxWidth, fontSize, font) {
+function wrapText(text: string, maxWidth: number, fontSize: number, font: any) {
   const words = text.replace(/\n+/g, ' ').split(' ');
   const lines = [];
   let currentLine = '';
@@ -733,7 +733,7 @@ function wrapText(text, maxWidth, fontSize, font) {
   return lines;
 }
 
-function generateHTMLReport(report, sections, indicators) {
+function generateHTMLReport(report: any, sections: any[], indicators: any[]) {
   const companyName = report.companies?.name || 'Empresa';
   const year = report.year;
   
@@ -788,7 +788,7 @@ function generateHTMLReport(report, sections, indicators) {
   }
 
   // Add sections
-  sections.forEach(section => {
+  sections.forEach((section: any) => {
     if (section.content) {
       html += `
     <div class="section">

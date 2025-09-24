@@ -279,8 +279,8 @@ const processUserIntent = async (message: string, companyId: string, currentPage
       const emissionsData = await queryBuilders.emissions(companyId);
       relevantData = emissionsData;
       
-      const totalEmissions = emissionsData.calculated?.reduce((sum, item) => sum + (item.total_co2e || 0), 0) || 0;
-      const scopeBreakdown = emissionsData.sources?.reduce((acc, source) => {
+      const totalEmissions = emissionsData.calculated?.reduce((sum: number, item: any) => sum + (item.total_co2e || 0), 0) || 0;
+      const scopeBreakdown = emissionsData.sources?.reduce((acc: any, source: any) => {
         acc[`scope${source.scope}`] = (acc[`scope${source.scope}`] || 0) + 1;
         return acc;
       }, {});
@@ -304,7 +304,7 @@ const processUserIntent = async (message: string, companyId: string, currentPage
       const { data } = await queryBuilders.audits(companyId);
       relevantData = { audits: data };
       
-      const openFindings = data?.reduce((acc, audit) => acc + (audit.audit_findings?.filter(f => f.status === 'Aberta').length || 0), 0);
+      const openFindings = data?.reduce((acc: number, audit: any) => acc + (audit.audit_findings?.filter((f: any) => f.status === 'Aberta').length || 0), 0);
       context = `Auditorias: ${data?.length || 0} realizadas, ${openFindings} findings abertas`;
     }
     
@@ -404,13 +404,13 @@ const processUserIntent = async (message: string, companyId: string, currentPage
       relevantData = {
         company: company.data,
         licenses: licenses.data,
-        emissions: emissions.data,
+        emissions: emissions,
         goals: goals.data,
         audits: audits.data,
         compliance: compliance.data
       };
       
-      const totalEmissions = emissions.data?.calculated?.reduce((sum, item) => sum + (item.total_co2e || 0), 0) || 0;
+      const totalEmissions = emissions.calculated?.reduce((sum: number, item: any) => sum + (item.total_co2e || 0), 0) || 0;
       context = `Overview Completo: ${licenses.data?.length} licenças, ${totalEmissions.toFixed(2)} tCO2e, ${goals.data?.length} metas, ${audits.data?.length} auditorias, ${compliance.data?.length} tarefas compliance`;
     }
     
@@ -439,7 +439,7 @@ const processUserIntent = async (message: string, companyId: string, currentPage
     
   } catch (error) {
     console.error('Error fetching data:', error);
-    context = `Erro ao buscar dados: ${error.message}`;
+    context = `Erro ao buscar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
   }
   
   return { relevantData, context, marketInfo };
@@ -477,8 +477,8 @@ serve(async (req) => {
     
     // Prepare enhanced OpenAI request
     const systemPrompt = getSystemPrompt(currentPage, { 
-      companyName: profile.companies?.name,
-      sector: profile.companies?.sector 
+      companyName: (profile.companies as any)?.name || ((profile.companies as any[])?.[0]?.name),
+      sector: (profile.companies as any)?.sector || ((profile.companies as any[])?.[0]?.sector)
     });
     
     let userPrompt = `Pergunta do usuário: ${message}
@@ -569,8 +569,8 @@ ${marketInfo}`;
     // Action suggestions based on data analysis
     if (relevantData) {
       // License expiry warnings
-      if (relevantData.licenses) {
-        const nearExpiry = relevantData.licenses.filter(l => {
+      if ('licenses' in relevantData && relevantData.licenses) {
+        const nearExpiry = relevantData.licenses.filter((l: any) => {
           const expDate = new Date(l.expiration_date);
           const today = new Date();
           const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -587,8 +587,8 @@ ${marketInfo}`;
       }
       
       // Goals behind schedule
-      if (relevantData.goals) {
-        const delayed = relevantData.goals.filter(g => g.status === 'Em Atraso');
+      if ('goals' in relevantData && relevantData.goals) {
+        const delayed = relevantData.goals.filter((g: any) => g.status === 'Em Atraso');
         if (delayed.length > 0) {
           suggestedActions.push({ 
             type: 'action', 
@@ -599,9 +599,9 @@ ${marketInfo}`;
       }
       
       // Open audit findings
-      if (relevantData.audits) {
-        const openFindings = relevantData.audits.reduce((acc, audit) => 
-          acc + (audit.audit_findings?.filter(f => f.status === 'Aberta').length || 0), 0);
+      if ('audits' in relevantData && relevantData.audits) {
+        const openFindings = relevantData.audits.reduce((acc: number, audit: any) => 
+          acc + (audit.audit_findings?.filter((f: any) => f.status === 'Aberta').length || 0), 0);
         if (openFindings > 0) {
           suggestedActions.push({ 
             type: 'action', 
@@ -612,8 +612,8 @@ ${marketInfo}`;
       }
       
       // Overdue compliance tasks
-      if (relevantData.compliance) {
-        const overdue = relevantData.compliance.filter(t => 
+      if ('compliance' in relevantData && relevantData.compliance) {
+        const overdue = relevantData.compliance.filter((t: any) => 
           new Date(t.due_date) < new Date() && t.status === 'Pendente');
         if (overdue.length > 0) {
           suggestedActions.push({ 
@@ -649,7 +649,7 @@ ${marketInfo}`;
       marketInfo: marketInfo || null,
       suggestedActions: suggestedActions.slice(0, 4), // Limit to 4 suggestions
       dataFound: !!relevantData,
-      companyName: profile.companies?.name
+      companyName: (profile.companies as any)?.name || ((profile.companies as any[])?.[0]?.name)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -657,7 +657,7 @@ ${marketInfo}`;
   } catch (error) {
     console.error('Error in ai-chat-assistant:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
       response: 'Desculpe, ocorreu um erro ao processar sua solicitação. Nossa equipe técnica foi notificada. Tente novamente em alguns momentos ou reformule sua pergunta.' 
     }), {
       status: 500,

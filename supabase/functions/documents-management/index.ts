@@ -87,7 +87,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in documents-management function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -229,7 +229,7 @@ async function uploadDocument(supabase: any, company_id: string, user_id: string
   } catch (error) {
     console.error('Upload error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
