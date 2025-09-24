@@ -666,6 +666,104 @@ class QualityManagementService {
     if (error) throw error;
     return data;
   }
+
+  // Article Approval Management
+  async requestArticleApproval(articleId: string, approverUserId: string, notes?: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Usuário não autenticado");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user.user.id)
+      .single();
+
+    if (!profile?.company_id) throw new Error("Company ID não encontrado");
+
+    // Get current article version
+    const { data: article } = await supabase
+      .from("knowledge_articles")
+      .select("version")
+      .eq("id", articleId)
+      .single();
+
+    const { data, error } = await supabase
+      .from("article_approvals")
+      .insert({
+        article_id: articleId,
+        approver_user_id: approverUserId,
+        version_number: article?.version || 1,
+        approval_status: "pending",
+        approval_notes: notes,
+        company_id: profile.company_id
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getArticleApprovals(articleId: string) {
+    const { data, error } = await supabase
+      .from("article_approvals")
+      .select(`
+        *,
+        approver_profile:profiles!article_approvals_approver_user_id_fkey(full_name)
+      `)
+      .eq("article_id", articleId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updateApprovalStatus(approvalId: string, status: "approved" | "rejected", notes?: string) {
+    const { data, error } = await supabase
+      .from("article_approvals")
+      .update({
+        approval_status: status,
+        approval_notes: notes,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", approvalId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // If approved, update article status
+    if (status === "approved") {
+      await supabase
+        .from("knowledge_articles")
+        .update({ 
+          status: "Aprovado",
+          is_published: true 
+        })
+        .eq("id", data.article_id);
+    }
+
+    return data;
+  }
+
+  async getPendingApprovals() {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Usuário não autenticado");
+
+    const { data, error } = await supabase
+      .from("article_approvals")
+      .select(`
+        *,
+        article:knowledge_articles(title, author_user_id),
+        requester_profile:profiles!article_approvals_approver_user_id_fkey(full_name)
+      `)
+      .eq("approver_user_id", user.user.id)
+      .eq("approval_status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 export const qualityManagementService = new QualityManagementService();

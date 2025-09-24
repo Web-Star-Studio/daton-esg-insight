@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArticleViewModal } from "@/components/ArticleViewModal";
 import { ArticleEditModal } from "@/components/ArticleEditModal";
+import { PendingApprovalsWidget } from "@/components/PendingApprovalsWidget";
 
 interface KnowledgeArticle {
   id: string;
@@ -282,6 +283,11 @@ export default function BaseConhecimento() {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Pending Approvals Widget */}
+      <div className="mb-6">
+        <PendingApprovalsWidget />
       </div>
 
       {/* Search and Filters */}
