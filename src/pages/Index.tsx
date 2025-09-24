@@ -4,7 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SGQDashboardWidget from "@/components/SGQDashboardWidget"
+import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
+import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
+import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
 import { 
   Flag, 
   AlertTriangle, 
@@ -14,7 +18,14 @@ import {
   Sparkles,
   CheckCircle,
   Clock,
-  Circle
+  Circle,
+  Brain,
+  BarChart3,
+  Users,
+  Activity,
+  Target,
+  AlertCircle,
+  Zap
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { getESGDashboard } from "@/services/esg"
@@ -22,7 +33,6 @@ import { getEmissionStats } from "@/services/emissions"
 import { getDashboardStats } from "@/services/goals"
 import { getLicenseStats } from "@/services/licenses"
 import { getWasteDashboard } from "@/services/waste"
-import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
 
 const Index = () => {
   // Fetch real data from various services
@@ -58,11 +68,35 @@ const Index = () => {
       <div className="space-y-6">
         {/* Cabeçalho da página */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-foreground">Dashboard ESG</h1>
+          <h1 className="text-3xl font-bold text-foreground">Centro de Comando ESG</h1>
           <p className="text-muted-foreground">
-            Visão geral do desempenho ambiental, social e de governança
+            Dashboard inteligente com insights em tempo real e alertas preditivos
           </p>
         </div>
+
+        {/* Tabs para diferentes visões do dashboard */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview" className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4" />
+              <span>Visão Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="flex items-center space-x-2">
+              <Target className="h-4 w-4" />
+              <span>Performance</span>
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4" />
+              <span>Alertas Inteligentes</span>
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center space-x-2">
+              <Brain className="h-4 w-4" />
+              <span>Insights de IA</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
 
         {/* Primeira Linha - Cards de Resumo Rápido */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -250,7 +284,127 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
+            </div>
+          </TabsContent>
+
+          {/* Performance Tab */}
+          <TabsContent value="performance" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Performance Metrics */}
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-accent" />
+                    Métricas de Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Eficiência Energética</span>
+                      <span className="text-sm text-muted-foreground">85%</span>
+                    </div>
+                    <Progress value={85} className="h-2" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Redução de Resíduos</span>
+                      <span className="text-sm text-muted-foreground">92%</span>
+                    </div>
+                    <Progress value={92} className="h-2" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Compliance Regulatório</span>
+                      <span className="text-sm text-muted-foreground">98%</span>
+                    </div>
+                    <Progress value={98} className="h-2" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Goal Tracking */}
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-accent" />
+                    Acompanhamento de Metas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">Redução CO₂ 2024</p>
+                        <p className="text-xs text-muted-foreground">Meta: -15%</p>
+                      </div>
+                      <Badge variant="secondary" className="bg-success/10 text-success">No prazo</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">Energia Renovável</p>
+                        <p className="text-xs text-muted-foreground">Meta: 60%</p>
+                      </div>
+                      <Badge variant="secondary" className="bg-warning/10 text-warning">Atenção</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">Diversidade</p>
+                        <p className="text-xs text-muted-foreground">Meta: 40%</p>
+                      </div>
+                      <Badge variant="secondary" className="bg-success/10 text-success">Alcançado</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Alerts Tab */}
+          <TabsContent value="alerts" className="space-y-6">
+            <IntelligentAlertsSystem />
+          </TabsContent>
+
+          {/* Insights Tab */}
+          <TabsContent value="insights" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* AI Processing Status */}
+              <AIProcessingStatusWidget />
+              
+              {/* Smart Insights */}
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-accent" />
+                    Insights Inteligentes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="p-3 bg-accent/10 rounded-lg border-l-4 border-accent">
+                      <p className="text-sm font-medium">Oportunidade Identificada</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Implementação de painéis solares pode reduzir 23% das emissões Escopo 2
+                      </p>
+                    </div>
+                    <div className="p-3 bg-warning/10 rounded-lg border-l-4 border-warning">
+                      <p className="text-sm font-medium">Atenção Necessária</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        3 licenças ambientais precisam de renovação nos próximos 60 dias
+                      </p>
+                    </div>
+                    <div className="p-3 bg-success/10 rounded-lg border-l-4 border-success">
+                      <p className="text-sm font-medium">Meta Superada</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Taxa de reciclagem 12% acima da meta anual estabelecida
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );

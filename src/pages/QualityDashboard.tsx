@@ -3,7 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import QualityDashboard from '@/components/QualityDashboard';
 import QualityMatrix from '@/components/QualityMatrix';
 import AIQualityInsights from '@/components/AIQualityInsights';
-import { BarChart3, Brain, Grid3X3 } from 'lucide-react';
+import { EnhancedQualityDashboard } from '@/components/EnhancedQualityDashboard';
+import { BarChart3, Brain, Grid3X3, Zap } from 'lucide-react';
 
 const QualityDashboardPage = () => {
   return (
@@ -17,8 +18,12 @@ const QualityDashboardPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="enhanced" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="enhanced" className="flex items-center space-x-2">
+            <Zap className="h-4 w-4" />
+            <span>Sistema Avançado</span>
+          </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>Visão Geral</span>
@@ -32,6 +37,10 @@ const QualityDashboardPage = () => {
             <span>Insights de IA</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="enhanced">
+          <EnhancedQualityDashboard />
+        </TabsContent>
 
         <TabsContent value="overview">
           <QualityDashboard />

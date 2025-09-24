@@ -53,6 +53,7 @@ import RelatoriosSustentabilidade from "./pages/RelatoriosSustentabilidade";
 // Novos módulos de materialidade e stakeholders
 import { SmartNotificationSystem } from "@/components/SmartNotificationSystem";
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
+import { AdvancedReportingSystem } from "@/components/AdvancedReportingSystem";
 import GestaoStakeholders from "./pages/GestaoStakeholders";
 import AnaliseMaterialidade from "./pages/AnaliseMaterialidade";
 import ConfiguracaoOrganizacional from "./pages/ConfiguracaoOrganizacional";
@@ -270,6 +271,12 @@ const App = () => (
             <Route path="/intelligent-alerts" element={
               <ProtectedRoute>
                 <IntelligentAlertsSystem />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/advanced-reports" element={
+              <ProtectedRoute>
+                <AdvancedReportingSystem />
               </ProtectedRoute>
             } />
             
