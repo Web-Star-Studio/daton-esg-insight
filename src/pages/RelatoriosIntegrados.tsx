@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { getIntegratedReports } from "@/services/integratedReports";
 import { getESGDashboard } from "@/services/esg";
-import { MainLayout } from "@/components/MainLayout";
+
 
 export default function RelatoriosIntegrados() {
   const [activeTab, setActiveTab] = useState("dashboard");

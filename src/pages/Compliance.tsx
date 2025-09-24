@@ -16,7 +16,7 @@ import { ComplianceTaskModal } from "@/components/ComplianceTaskModal";
 import { RegulatoryRequirementModal } from "@/components/RegulatoryRequirementModal";
 import { TaskCalendarView } from "@/components/TaskCalendarView";
 import { RequirementsLibrary } from "@/components/RequirementsLibrary";
-import { MainLayout } from "@/components/MainLayout";
+
 
 export default function Compliance() {
   const [showTaskModal, setShowTaskModal] = useState(false);

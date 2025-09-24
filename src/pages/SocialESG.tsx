@@ -19,7 +19,7 @@ import { getEmployees, getEmployeesStats } from "@/services/employees";
 import { getSafetyIncidents, getSafetyMetrics } from "@/services/safetyIncidents";
 import { getTrainingPrograms, getTrainingMetrics } from "@/services/trainingPrograms";
 import { getSocialProjects, getSocialImpactMetrics } from "@/services/socialProjects";
-import { MainLayout } from "@/components/MainLayout";
+
 
 export default function SocialESG() {
   const [activeTab, setActiveTab] = useState("overview");

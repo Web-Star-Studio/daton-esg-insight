@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate } from "react-router-dom"
 import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus } from "lucide-react"
-import { MainLayout } from "@/components/MainLayout"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -128,8 +128,7 @@ export default function Configuracao() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
         </div>
@@ -504,6 +503,5 @@ export default function Configuracao() {
           </div>
         </div>
       </div>
-    </MainLayout>
   );
 }

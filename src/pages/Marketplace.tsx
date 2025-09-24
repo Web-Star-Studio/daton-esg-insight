@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,8 +86,7 @@ export default function Marketplace() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -406,17 +405,16 @@ export default function Marketplace() {
             )}
           </TabsContent>
         </Tabs>
-      </div>
 
-      {/* Marketplace Modal */}
-      <MarketplaceModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedCategory(null);
-        }}
-        identifiedProblems={selectedCategory ? [selectedCategory] : []}
-      />
-    </MainLayout>
+        {/* Marketplace Modal */}
+        <MarketplaceModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedCategory(null);
+          }}
+          identifiedProblems={selectedCategory ? [selectedCategory] : []}
+        />
+      </div>
   );
 }

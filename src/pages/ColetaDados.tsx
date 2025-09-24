@@ -18,7 +18,7 @@ import { TaskKanbanBoard } from '@/components/TaskKanbanBoard';
 import { DataImportZone } from '@/components/DataImportZone';
 import { ImportHistoryTable } from '@/components/ImportHistoryTable';
 import { RecurringTaskModal } from '@/components/RecurringTaskModal';
-import { MainLayout } from '@/components/MainLayout';
+
 import { 
   ClipboardList, 
   Upload, 
@@ -189,8 +189,7 @@ export default function ColetaDados() {
   };
 
   return (
-    <MainLayout>
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Central de Coleta de Dados</h1>
@@ -871,6 +870,5 @@ export default function ColetaDados() {
         </DialogContent>
       </Dialog>
       </div>
-    </MainLayout>
   );
 }

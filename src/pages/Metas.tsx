@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MainLayout } from "@/components/MainLayout";
+
 import { CardWithAI } from "@/components/CardWithAI";
 import { PredictiveDashboard } from "@/components/PredictiveDashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,8 +151,7 @@ export default function Metas() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
@@ -429,6 +428,5 @@ export default function Metas() {
           goalId={selectedGoal?.id || null}
         />
       </div>
-    </MainLayout>
   );
 }

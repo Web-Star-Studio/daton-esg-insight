@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -105,8 +105,7 @@ export default function AnaliseMaterialidade() {
   }
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-4 sm:p-6 space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -342,6 +341,5 @@ export default function AnaliseMaterialidade() {
           themes={themes}
         />
       </div>
-    </MainLayout>
   );
 }

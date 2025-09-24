@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { MainLayout } from "@/components/MainLayout"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -119,8 +119,7 @@ export default function CompensacaoCarbono() {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="space-y-6">
+      <div className="space-y-6">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Compensação de Carbono</h1>
@@ -143,13 +142,11 @@ export default function CompensacaoCarbono() {
             ))}
           </div>
         </div>
-      </MainLayout>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
@@ -309,30 +306,29 @@ export default function CompensacaoCarbono() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Modals */}
-      <ConservationActivityModal
-        open={activityModalOpen}
-        onClose={() => {
-          setActivityModalOpen(false);
-          setSelectedActivity(null);
-        }}
-        onActivityCreated={loadData}
-        activity={selectedActivity}
-      />
-      
-      {selectedActivity && (
-        <ActivityMonitoringModal
-          open={monitoringModalOpen}
+        {/* Modals */}
+        <ConservationActivityModal
+          open={activityModalOpen}
           onClose={() => {
-            setMonitoringModalOpen(false);
+            setActivityModalOpen(false);
             setSelectedActivity(null);
           }}
-          onMonitoringCreated={loadData}
+          onActivityCreated={loadData}
           activity={selectedActivity}
         />
-      )}
-    </MainLayout>
+        
+        {selectedActivity && (
+          <ActivityMonitoringModal
+            open={monitoringModalOpen}
+            onClose={() => {
+              setMonitoringModalOpen(false);
+              setSelectedActivity(null);
+            }}
+            onMonitoringCreated={loadData}
+            activity={selectedActivity}
+          />
+        )}
+      </div>
   )
 }

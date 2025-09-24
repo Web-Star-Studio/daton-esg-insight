@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MainLayout } from '@/components/MainLayout';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -260,8 +260,7 @@ export default function Documentos() {
   ).sort();
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -564,6 +563,6 @@ export default function Documentos() {
         isOpen={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
       />
-    </MainLayout>
+    </div>
   );
 }

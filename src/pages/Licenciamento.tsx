@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MainLayout } from '@/components/MainLayout'
+
 import { CardWithAI } from '@/components/CardWithAI'
 import { IntelligentAlertsSystem } from '@/components/IntelligentAlertsSystem'
 import { PredictiveDashboard } from '@/components/PredictiveDashboard'
@@ -193,8 +193,7 @@ export default function Licenciamento() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -513,8 +512,7 @@ export default function Licenciamento() {
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </MainLayout>
+      </AlertDialog>
+    </div>
   )
 }

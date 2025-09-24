@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -399,8 +399,7 @@ const InventarioGEE = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Cabeçalho da página */}
         <div className="flex justify-between items-center">
           <div>
@@ -791,7 +790,6 @@ const InventarioGEE = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
   )
 }
 

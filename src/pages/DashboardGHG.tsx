@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { MainLayout } from "@/components/MainLayout"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CardWithAI } from "@/components/CardWithAI"
 import { Button } from "@/components/ui/button"
@@ -227,8 +227,7 @@ const DashboardGHG = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Cabeçalho da página */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -479,7 +478,6 @@ const DashboardGHG = () => {
           emissionData={emissionsData || []}
         />
       </div>
-    </MainLayout>
   )
 }
 

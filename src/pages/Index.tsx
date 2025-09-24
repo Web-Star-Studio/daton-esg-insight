@@ -1,4 +1,4 @@
-import { MainLayout } from "@/components/MainLayout"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -72,8 +72,7 @@ const Index = () => {
   const isLoading = esgLoading || emissionsLoading || goalsLoading || licensesLoading || wasteLoading
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Cabeçalho da página */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -412,7 +411,6 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -132,8 +132,7 @@ export default function Desempenho() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
           <BarChart3 className="h-8 w-8 text-primary" />
@@ -415,6 +414,5 @@ export default function Desempenho() {
           </div>
         </div>
       </div>
-    </MainLayout>
   );
 }

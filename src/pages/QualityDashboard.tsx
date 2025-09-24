@@ -5,7 +5,7 @@ import QualityMatrix from '@/components/QualityMatrix';
 import AIQualityInsights from '@/components/AIQualityInsights';
 import { EnhancedQualityDashboard } from '@/components/EnhancedQualityDashboard';
 import { PredictiveQualityWidget } from '@/components/PredictiveQualityWidget';
-import { MainLayout } from '@/components/MainLayout';
+
 import { BarChart3, Brain, Grid3X3, Zap } from 'lucide-react';
 
 const QualityDashboardPage = () => {
