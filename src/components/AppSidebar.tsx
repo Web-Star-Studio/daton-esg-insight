@@ -157,6 +157,7 @@ const menuSections: MenuSection[] = [
       { id: "gestao-desempenho", title: "Gestão de Desempenho", icon: TrendingUp, path: "/gestao-desempenho" },
       { id: "beneficios-remuneracao", title: "Benefícios e Remuneração", icon: DollarSign, path: "/beneficios-remuneracao" },
       { id: "recrutamento", title: "Recrutamento e Seleção", icon: Search, path: "/recrutamento" },
+      { id: "seguranca-trabalho", title: "Segurança do Trabalho", icon: ShieldCheck, path: "/seguranca-trabalho" },
     ]
   },
   {

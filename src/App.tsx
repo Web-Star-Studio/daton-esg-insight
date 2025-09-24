@@ -80,6 +80,7 @@ import GestaoTreinamentos from "./pages/GestaoTreinamentos";
 import GestaoDesempenho from "./pages/GestaoDesempenho";
 import BeneficiosRemuneracao from "./pages/BeneficiosRemuneracao";
 import Recrutamento from "./pages/Recrutamento";
+import SeguracaTrabalho from "./pages/SeguracaTrabalho";
 
 const queryClient = new QueryClient();
 
@@ -376,6 +377,11 @@ const App = () => (
           <Route path="/recrutamento" element={
             <ProtectedRoute>
               <Recrutamento />
+            </ProtectedRoute>
+          } />
+          <Route path="/seguranca-trabalho" element={
+            <ProtectedRoute>
+              <SeguracaTrabalho />
             </ProtectedRoute>
           } />
             <Route path="/simulador" element={
