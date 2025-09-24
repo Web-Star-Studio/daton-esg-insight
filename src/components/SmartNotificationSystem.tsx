@@ -11,40 +11,77 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, Notification } from '@/services/notifications';
+import { NotificationPreferencesModal, NotificationPreferences } from '@/components/NotificationPreferencesModal';
+import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
 import { toast } from 'sonner';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 
-interface NotificationPreferences {
-  emailEnabled: boolean;
-  pushEnabled: boolean;
-  soundEnabled: boolean;
-  priority: 'all' | 'high' | 'critical';
-}
-
 export const SmartNotificationSystem: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
     // Carregar preferências do localStorage se disponível
     try {
       const stored = localStorage.getItem('notification-preferences');
       return stored ? JSON.parse(stored) : {
+        enabled: true,
         emailEnabled: true,
+        emailAddress: '',
+        emailFrequency: 'immediate',
         pushEnabled: true,
         soundEnabled: false,
-        priority: 'all'
+        priority: 'all',
+        categories: {
+          emissions: true,
+          goals: true,
+          compliance: true,
+          audit: true,
+          documents: true,
+          quality: true,
+          gri: true,
+          risk: true,
+          predictive: true,
+        },
+        quietHours: {
+          enabled: false,
+          startTime: '22:00',
+          endTime: '08:00'
+        },
+        maxNotificationsPerHour: 20
       };
     } catch {
       return {
+        enabled: true,
         emailEnabled: true,
+        emailAddress: '',
+        emailFrequency: 'immediate',
         pushEnabled: true,
         soundEnabled: false,
-        priority: 'all'
+        priority: 'all',
+        categories: {
+          emissions: true,
+          goals: true,
+          compliance: true,
+          audit: true,
+          documents: true,
+          quality: true,
+          gri: true,
+          risk: true,
+          predictive: true,
+        },
+        quietHours: {
+          enabled: false,
+          startTime: '22:00',
+          endTime: '08:00'
+        },
+        maxNotificationsPerHour: 20
       };
     }
   });
   
   const queryClient = useQueryClient();
+  
+  // Initialize notification triggers
+  useNotificationTriggers();
 
   // Persistir preferências quando mudarem
   useEffect(() => {
@@ -131,8 +168,19 @@ export const SmartNotificationSystem: React.FC = () => {
   });
 
   const shouldShowNotification = useCallback((type: string, prefs: NotificationPreferences): boolean => {
+    if (!prefs.enabled) return false;
     if (prefs.priority === 'critical' && type !== 'error') return false;
     if (prefs.priority === 'high' && !['error', 'warning'].includes(type)) return false;
+    
+    // Check quiet hours
+    if (prefs.quietHours.enabled) {
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      if (currentTime >= prefs.quietHours.startTime || currentTime <= prefs.quietHours.endTime) {
+        return type === 'error'; // Only show critical errors during quiet hours
+      }
+    }
+    
     return true;
   }, []);
 
@@ -315,14 +363,15 @@ export const SmartNotificationSystem: React.FC = () => {
               </Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSettings(!showSettings)}
-                className="h-8 w-8 p-0"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+              <NotificationPreferencesModal
+                preferences={preferences}
+                onPreferencesChange={setPreferences}
+                trigger={
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                }
+              />
               {unreadCount > 0 && (
                 <Button
                   variant="ghost"
@@ -347,29 +396,6 @@ export const SmartNotificationSystem: React.FC = () => {
             </div>
           </div>
 
-          {showSettings && (
-            <Card className="m-4 mb-0">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Configurações</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Notificações por email</span>
-                  <Switch
-                    checked={preferences.emailEnabled}
-                    onCheckedChange={(checked) => updatePreference('emailEnabled', checked)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Som das notificações</span>
-                  <Switch
-                    checked={preferences.soundEnabled}
-                    onCheckedChange={(checked) => updatePreference('soundEnabled', checked)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           <ScrollArea className="h-96">
             {isLoading ? (
