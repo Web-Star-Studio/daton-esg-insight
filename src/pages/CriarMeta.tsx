@@ -521,6 +521,6 @@ const CriarMeta = () => {
         </Form>
     </div>
   );
-}
+};
 
 export default CriarMeta;
