@@ -4634,6 +4634,357 @@ export type Database = {
           },
         ]
       }
+      project_burndown_data: {
+        Row: {
+          actual_work_remaining: number
+          created_at: string
+          date: string
+          id: string
+          planned_work_remaining: number
+          project_id: string
+          work_completed: number | null
+        }
+        Insert: {
+          actual_work_remaining: number
+          created_at?: string
+          date: string
+          id?: string
+          planned_work_remaining: number
+          project_id: string
+          work_completed?: number | null
+        }
+        Update: {
+          actual_work_remaining?: number
+          created_at?: string
+          date?: string
+          id?: string
+          planned_work_remaining?: number
+          project_id?: string
+          work_completed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_burndown_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_milestones: {
+        Row: {
+          actual_date: string | null
+          created_at: string
+          criteria: string | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          status: string
+          target_date: string
+          updated_at: string
+        }
+        Insert: {
+          actual_date?: string | null
+          created_at?: string
+          criteria?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          status?: string
+          target_date: string
+          updated_at?: string
+        }
+        Update: {
+          actual_date?: string | null
+          created_at?: string
+          criteria?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          status?: string
+          target_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_resources: {
+        Row: {
+          allocation_percentage: number | null
+          created_at: string
+          employee_id: string | null
+          end_date: string | null
+          hourly_rate: number | null
+          id: string
+          notes: string | null
+          project_id: string
+          role_name: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          created_at?: string
+          employee_id?: string | null
+          end_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          notes?: string | null
+          project_id: string
+          role_name: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allocation_percentage?: number | null
+          created_at?: string
+          employee_id?: string | null
+          end_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+          role_name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_resources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_scope_changes: {
+        Row: {
+          approval_date: string | null
+          approved_by_user_id: string | null
+          budget_impact: number | null
+          change_request: string
+          created_at: string
+          id: string
+          impact_description: string | null
+          justification: string | null
+          project_id: string
+          requested_by_user_id: string
+          schedule_impact_days: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          budget_impact?: number | null
+          change_request: string
+          created_at?: string
+          id?: string
+          impact_description?: string | null
+          justification?: string | null
+          project_id: string
+          requested_by_user_id: string
+          schedule_impact_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          budget_impact?: number | null
+          change_request?: string
+          created_at?: string
+          id?: string
+          impact_description?: string | null
+          justification?: string | null
+          project_id?: string
+          requested_by_user_id?: string
+          schedule_impact_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_scope_changes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          actual_hours: number | null
+          assigned_to_user_id: string | null
+          created_at: string
+          created_by_user_id: string
+          dependencies: Json | null
+          description: string | null
+          end_date: string | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          parent_task_id: string | null
+          planned_end_date: string | null
+          planned_start_date: string | null
+          priority: string | null
+          progress_percentage: number | null
+          project_id: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to_user_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          dependencies?: Json | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          parent_task_id?: string | null
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          project_id: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to_user_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          dependencies?: Json | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          parent_task_id?: string | null
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          project_id?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          budget: number | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          end_date: string | null
+          id: string
+          manager_user_id: string | null
+          methodology: string | null
+          name: string
+          phase: string
+          planned_end_date: string | null
+          planned_start_date: string | null
+          priority: string | null
+          progress_percentage: number | null
+          project_type: string
+          scope_description: string | null
+          spent_budget: number | null
+          sponsor_user_id: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          manager_user_id?: string | null
+          methodology?: string | null
+          name: string
+          phase?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          project_type?: string
+          scope_description?: string | null
+          spent_budget?: number | null
+          sponsor_user_id?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          manager_user_id?: string | null
+          methodology?: string | null
+          name?: string
+          phase?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          project_type?: string
+          scope_description?: string | null
+          spent_budget?: number | null
+          sponsor_user_id?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refrigerant_factors: {
         Row: {
           category: string
