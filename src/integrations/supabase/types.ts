@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_plan_items: {
+        Row: {
+          action_plan_id: string
+          created_at: string
+          how_method: string | null
+          how_much_cost: number | null
+          id: string
+          progress_percentage: number | null
+          status: string | null
+          updated_at: string
+          what_action: string
+          when_deadline: string | null
+          where_location: string | null
+          who_responsible_user_id: string | null
+          why_reason: string | null
+        }
+        Insert: {
+          action_plan_id: string
+          created_at?: string
+          how_method?: string | null
+          how_much_cost?: number | null
+          id?: string
+          progress_percentage?: number | null
+          status?: string | null
+          updated_at?: string
+          what_action: string
+          when_deadline?: string | null
+          where_location?: string | null
+          who_responsible_user_id?: string | null
+          why_reason?: string | null
+        }
+        Update: {
+          action_plan_id?: string
+          created_at?: string
+          how_method?: string | null
+          how_much_cost?: number | null
+          id?: string
+          progress_percentage?: number | null
+          status?: string | null
+          updated_at?: string
+          what_action?: string
+          when_deadline?: string | null
+          where_location?: string | null
+          who_responsible_user_id?: string | null
+          why_reason?: string | null
+        }
+        Relationships: []
+      }
+      action_plans: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          objective: string | null
+          plan_type: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          objective?: string | null
+          plan_type?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          objective?: string | null
+          plan_type?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       activity_data: {
         Row: {
           created_at: string
@@ -499,6 +586,69 @@ export type Database = {
         }
         Relationships: []
       }
+      bsc_objectives: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          description: string | null
+          id: string
+          name: string
+          perspective_id: string
+          target_value: number | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          name: string
+          perspective_id: string
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          name?: string
+          perspective_id?: string
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bsc_perspectives: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          order_index: number | null
+          strategic_map_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          strategic_map_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          strategic_map_id?: string
+        }
+        Relationships: []
+      }
       calculated_emissions: {
         Row: {
           activity_data_id: string
@@ -902,6 +1052,45 @@ export type Database = {
           title?: string
           updated_at?: string
           version?: string | null
+        }
+        Relationships: []
+      }
+      corrective_actions: {
+        Row: {
+          action_description: string
+          completion_date: string | null
+          created_at: string
+          due_date: string | null
+          effectiveness_verification: string | null
+          id: string
+          non_conformity_id: string
+          responsible_user_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_description: string
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          effectiveness_verification?: string | null
+          id?: string
+          non_conformity_id: string
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_description?: string
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          effectiveness_verification?: string | null
+          id?: string
+          non_conformity_id?: string
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2921,6 +3110,54 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_articles: {
+        Row: {
+          author_user_id: string
+          category: string | null
+          company_id: string
+          content: string
+          created_at: string
+          id: string
+          is_published: boolean | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          version: number | null
+          view_count: number | null
+        }
+        Insert: {
+          author_user_id: string
+          category?: string | null
+          company_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_published?: boolean | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          version?: number | null
+          view_count?: number | null
+        }
+        Update: {
+          author_user_id?: string
+          category?: string | null
+          company_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          version?: number | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       land_use_change: {
         Row: {
           area_hectares: number
@@ -3538,6 +3775,60 @@ export type Database = {
           },
         ]
       }
+      non_conformities: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          description: string
+          detected_by_user_id: string | null
+          detected_date: string
+          id: string
+          nc_number: string
+          responsible_user_id: string | null
+          root_cause_analysis: string | null
+          severity: string
+          source: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          description: string
+          detected_by_user_id?: string | null
+          detected_date: string
+          id?: string
+          nc_number: string
+          responsible_user_id?: string | null
+          root_cause_analysis?: string | null
+          severity: string
+          source?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string
+          detected_by_user_id?: string | null
+          detected_date?: string
+          id?: string
+          nc_number?: string
+          responsible_user_id?: string | null
+          root_cause_analysis?: string | null
+          severity?: string
+          source?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -3873,6 +4164,78 @@ export type Database = {
           },
         ]
       }
+      process_activities: {
+        Row: {
+          activity_type: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          name: string
+          order_index: number | null
+          process_map_id: string
+          responsible_role: string | null
+        }
+        Insert: {
+          activity_type?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          name: string
+          order_index?: number | null
+          process_map_id: string
+          responsible_role?: string | null
+        }
+        Update: {
+          activity_type?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          process_map_id?: string
+          responsible_role?: string | null
+        }
+        Relationships: []
+      }
+      process_maps: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_user_id: string | null
+          process_type: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_user_id?: string | null
+          process_type?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_user_id?: string | null
+          process_type?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string
@@ -3985,6 +4348,117 @@ export type Database = {
           source_url?: string | null
           summary?: string | null
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_assessments: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          impact: string
+          owner_user_id: string | null
+          probability: string
+          risk_description: string | null
+          risk_level: string | null
+          risk_matrix_id: string
+          risk_title: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          impact: string
+          owner_user_id?: string | null
+          probability: string
+          risk_description?: string | null
+          risk_level?: string | null
+          risk_matrix_id: string
+          risk_title: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          impact?: string
+          owner_user_id?: string | null
+          probability?: string
+          risk_description?: string | null
+          risk_level?: string | null
+          risk_matrix_id?: string
+          risk_title?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_matrices: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          matrix_type: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          matrix_type?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          matrix_type?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_treatments: {
+        Row: {
+          action_description: string
+          created_at: string
+          due_date: string | null
+          id: string
+          responsible_user_id: string | null
+          risk_assessment_id: string
+          status: string | null
+          treatment_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_description: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          responsible_user_id?: string | null
+          risk_assessment_id: string
+          status?: string | null
+          treatment_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_description?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          responsible_user_id?: string | null
+          risk_assessment_id?: string
+          status?: string | null
+          treatment_type?: string
           updated_at?: string
         }
         Relationships: []
@@ -4342,6 +4816,117 @@ export type Database = {
           position?: string | null
           preferred_communication?: string | null
           subcategory?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      strategic_maps: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      supplier_evaluations: {
+        Row: {
+          comments: string | null
+          created_at: string
+          delivery_score: number | null
+          evaluation_date: string
+          evaluator_user_id: string | null
+          id: string
+          overall_score: number | null
+          quality_score: number | null
+          service_score: number | null
+          supplier_id: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          delivery_score?: number | null
+          evaluation_date: string
+          evaluator_user_id?: string | null
+          id?: string
+          overall_score?: number | null
+          quality_score?: number | null
+          service_score?: number | null
+          supplier_id: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          delivery_score?: number | null
+          evaluation_date?: string
+          evaluator_user_id?: string | null
+          id?: string
+          overall_score?: number | null
+          quality_score?: number | null
+          service_score?: number | null
+          supplier_id?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          category: string | null
+          cnpj: string | null
+          company_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          qualification_status: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          cnpj?: string | null
+          company_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          qualification_status?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          cnpj?: string | null
+          company_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          qualification_status?: string | null
+          status?: string | null
           updated_at?: string
         }
         Relationships: []

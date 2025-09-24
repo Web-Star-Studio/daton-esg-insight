@@ -60,6 +60,13 @@ import SocialESG from "./pages/SocialESG";
 import GovernancaESG from "./pages/GovernancaESG";
 import RelatoriosIntegrados from "./pages/RelatoriosIntegrados";
 
+// SGQ (Sistema de Gestão da Qualidade) modules
+import PlanejamentoEstrategico from "./pages/PlanejamentoEstrategico";
+import MapeamentoProcessos from "./pages/MapeamentoProcessos";
+import GestaoRiscos from "./pages/GestaoRiscos";
+import NaoConformidades from "./pages/NaoConformidades";
+import PlanoAcao5W2H from "./pages/PlanoAcao5W2H";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -276,6 +283,37 @@ const App = () => (
             <Route path="/relatorios-integrados" element={
               <ProtectedRoute>
                 <RelatoriosIntegrados />
+              </ProtectedRoute>
+            } />
+            
+            {/* SGQ (Sistema de Gestão da Qualidade) Routes */}
+            <Route path="/planejamento-estrategico" element={
+              <ProtectedRoute>
+                <PlanejamentoEstrategico />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/mapeamento-processos" element={
+              <ProtectedRoute>
+                <MapeamentoProcessos />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/gestao-riscos" element={
+              <ProtectedRoute>
+                <GestaoRiscos />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/nao-conformidades" element={
+              <ProtectedRoute>
+                <NaoConformidades />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/plano-acao-5w2h" element={
+              <ProtectedRoute>
+                <PlanoAcao5W2H />
               </ProtectedRoute>
             } />
             
