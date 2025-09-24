@@ -22,7 +22,6 @@ import {
 import { getBoardMembers, getCorporatePolicies, getWhistleblowerReports, getGovernanceMetrics } from "@/services/governance";
 import { getESGRisks, getRiskMetrics } from "@/services/esgRisks";
 import { getEmployees, getEmployeesStats } from "@/services/employees";
-import { MainLayout } from "@/components/MainLayout";
 import { BoardMemberModal } from "@/components/BoardMemberModal";
 import { CorporatePolicyModal } from "@/components/CorporatePolicyModal";
 import { WhistleblowerModal } from "@/components/WhistleblowerModal";

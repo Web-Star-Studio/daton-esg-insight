@@ -173,87 +173,82 @@ const LicenseDetails = () => {
 
   if (!id) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center space-y-4">
-            <AlertTriangle className="h-12 w-12 mx-auto text-yellow-500" />
-            <div>
-              <h2 className="text-lg font-semibold">ID da licença não fornecido</h2>
-              <p className="text-muted-foreground">
-                Não foi possível identificar qual licença exibir.
-              </p>
-              <Button 
-                onClick={() => navigate('/licenciamento')} 
-                className="mt-4"
-              >
-                Voltar ao Licenciamento
-              </Button>
-            </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 mx-auto text-yellow-500" />
+          <div>
+            <h2 className="text-lg font-semibold">ID da licença não fornecido</h2>
+            <p className="text-muted-foreground">
+              Não foi possível identificar qual licença exibir.
+            </p>
+            <Button 
+              onClick={() => navigate('/licenciamento')} 
+              className="mt-4"
+            >
+              Voltar ao Licenciamento
+            </Button>
           </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center space-y-4">
-            <AlertTriangle className="h-12 w-12 mx-auto text-red-500" />
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Erro ao carregar licença</h2>
-              <p className="text-muted-foreground mt-2">
-                {error.message.includes('No rows') 
-                  ? 'Licença não encontrada ou você não tem permissão para acessá-la.'
-                  : 'Ocorreu um erro ao carregar os detalhes da licença.'
-                }
-              </p>
-              <div className="flex gap-2 justify-center mt-4">
-                <Button variant="outline" onClick={() => navigate('/licenciamento')}>
-                  Voltar ao Licenciamento
-                </Button>
-                <Button onClick={() => refetch()}>
-                  Tentar novamente
-                </Button>
-              </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 mx-auto text-red-500" />
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Erro ao carregar licença</h2>
+            <p className="text-muted-foreground mt-2">
+              {error.message.includes('No rows') 
+                ? 'Licença não encontrada ou você não tem permissão para acessá-la.'
+                : 'Ocorreu um erro ao carregar os detalhes da licença.'
+              }
+            </p>
+            <div className="flex gap-2 justify-center mt-4">
+              <Button variant="outline" onClick={() => navigate('/licenciamento')}>
+                Voltar ao Licenciamento
+              </Button>
+              <Button onClick={() => refetch()}>
+                Tentar novamente
+              </Button>
             </div>
           </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/licenciamento')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">
-                {isLoading ? <Skeleton className="h-8 w-64" /> : license?.name}
-              </h1>
-              <p className="text-muted-foreground">
-                {isLoading ? <Skeleton className="h-4 w-48" /> : `Licença ${license?.type} - ${license?.process_number}`}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={() => setShowUploadModal(true)}>
-              <Paperclip className="h-4 w-4 mr-2" />
-              Anexar Documento
-            </Button>
-            <Button onClick={() => navigate(`/licenciamento/${id}/editar`)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" onClick={() => navigate('/licenciamento')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {isLoading ? <Skeleton className="h-8 w-64" /> : license?.name}
+            </h1>
+            <p className="text-muted-foreground">
+              {isLoading ? <Skeleton className="h-4 w-48" /> : `Licença ${license?.type} - ${license?.process_number}`}
+            </p>
           </div>
         </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={() => setShowUploadModal(true)}>
+            <Paperclip className="h-4 w-4 mr-2" />
+            Anexar Documento
+          </Button>
+          <Button onClick={() => navigate(`/licenciamento/${id}/editar`)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+        </div>
+      </div>
 
         {/* License Information */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -685,7 +680,7 @@ const LicenseDetails = () => {
           licenseName={license.name}
         />
       )}
-    </MainLayout>
+    </div>
   );
 };
 

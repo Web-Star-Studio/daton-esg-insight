@@ -294,15 +294,14 @@ export function SimuladorEcoImpacto() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Simulador de Eco Impacto</h1>
-          <p className="text-muted-foreground">
-            Modele cenários e projete o impacto de suas ações antes de investir. Compare os resultados com seus dados atuais.
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Simulador de Eco Impacto</h1>
+        <p className="text-muted-foreground">
+          Modele cenários e projete o impacto de suas ações antes de investir. Compare os resultados com seus dados atuais.
+        </p>
+      </div>
 
         {/* Layout de duas colunas */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -464,6 +463,6 @@ export function SimuladorEcoImpacto() {
           </div>
         </div>
       </div>
-    </MainLayout>
-  )
+    </div>
+  }
 }

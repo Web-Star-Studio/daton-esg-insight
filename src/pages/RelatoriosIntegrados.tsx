@@ -54,15 +54,14 @@ export default function RelatoriosIntegrados() {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Relatórios ESG Integrados</h1>
-          <p className="text-muted-foreground">
-            Relatórios consolidados de sustentabilidade e performance ESG
-          </p>
-        </div>
+    <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Relatórios ESG Integrados</h1>
+        <p className="text-muted-foreground">
+          Relatórios consolidados de sustentabilidade e performance ESG
+        </p>
+      </div>
         <div className="flex gap-2">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
@@ -390,6 +389,7 @@ export default function RelatoriosIntegrados() {
         </TabsContent>
       </Tabs>
       </div>
-    </MainLayout>
+    </div>
+    }
   );
 }

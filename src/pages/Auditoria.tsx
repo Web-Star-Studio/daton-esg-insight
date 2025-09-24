@@ -18,63 +18,58 @@ export default function Auditoria() {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
   const [filters, setFilters] = useState({
-    search: "",
-    actionType: "all",
-    startDate: "",
-    endDate: ""
+    type: 'all',
+    status: 'all',
+    search: ''
   });
 
-  const { data: audits, isLoading: auditsLoading, refetch: refetchAudits } = useQuery({
+  const { data: audits = [], isLoading: loadingAudits, refetch: refetchAudits } = useQuery({
     queryKey: ['audits'],
-    queryFn: () => auditService.getAudits()
+    queryFn: auditService.getAudits,
   });
 
-  const { data: activityLogs, isLoading: logsLoading } = useQuery({
-    queryKey: ['audit-trail', filters],
-    queryFn: () => auditService.getAuditTrail({
-      action_type: filters.actionType || undefined,
-      start_date: filters.startDate || undefined,
-      end_date: filters.endDate || undefined
-    })
+  const { data: activityLogs = [], isLoading: loadingLogs } = useQuery({
+    queryKey: ['activity-logs'],
+    queryFn: auditService.getActivityLogs,
+  });
+
+  const filteredAudits = audits.filter(audit => {
+    if (filters.type !== 'all' && audit.type !== filters.type) return false;
+    if (filters.status !== 'all' && audit.status !== filters.status) return false;
+    if (filters.search && !audit.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    return true;
   });
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      "Planejada": "outline",
-      "Em Andamento": "default",
-      "Concluída": "secondary"
-    };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+    switch (status) {
+      case 'Agendada':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Agendada</Badge>;
+      case 'Em Andamento':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Em Andamento</Badge>;
+      case 'Concluída':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Concluída</Badge>;
+      case 'Cancelada':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Cancelada</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
 
-  const getSeverityBadge = (severity: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      "Crítica": "destructive",
-      "Maior": "default",
-      "Menor": "secondary",
-      "Oportunidade": "outline"
-    };
-    return <Badge variant={variants[severity] || "outline"}>{severity}</Badge>;
+  const handleAuditClick = (audit: Audit) => {
+    setSelectedAudit(audit);
   };
 
-  const getActionTypeIcon = (actionType: string) => {
-    const icons: Record<string, JSX.Element> = {
-      "CREATE_AUDIT": <FileText className="h-4 w-4" />,
-      "CREATE_FINDING": <AlertTriangle className="h-4 w-4" />,
-      "UPDATE_FINDING": <Activity className="h-4 w-4" />
-    };
-    return icons[actionType] || <Activity className="h-4 w-4" />;
-  };
-
-  const stats = {
-    totalAudits: audits?.length || 0,
-    activeAudits: audits?.filter(a => a.status === 'Em Andamento').length || 0,
-    completedAudits: audits?.filter(a => a.status === 'Concluída').length || 0,
-    plannedAudits: audits?.filter(a => a.status === 'Planejada').length || 0
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+    } catch {
+      return dateString;
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Central de Auditoria</h1>
           <p className="text-muted-foreground mt-2">
@@ -90,232 +85,206 @@ export default function Auditoria() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAudits}</div>
+              <div className="text-2xl font-bold">{audits.length}</div>
+              <p className="text-xs text-muted-foreground">auditorias registradas</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Em Andamento</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.activeAudits}</div>
+              <div className="text-2xl font-bold">
+                {audits.filter(a => a.status === 'Em Andamento').length}
+              </div>
+              <p className="text-xs text-muted-foreground">auditorias ativas</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.completedAudits}</div>
+              <div className="text-2xl font-bold">
+                {audits.filter(a => a.status === 'Concluída').length}
+              </div>
+              <p className="text-xs text-muted-foreground">este ano</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Planejadas</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Ações de Sistema</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.plannedAudits}</div>
+              <div className="text-2xl font-bold">{activityLogs.length}</div>
+              <p className="text-xs text-muted-foreground">últimas 24h</p>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="audits" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="audits">Gestão de Auditorias</TabsTrigger>
-            <TabsTrigger value="activity-log">Log de Atividades do Sistema</TabsTrigger>
+        <Tabs defaultValue="auditorias" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="auditorias">Auditorias Formais</TabsTrigger>
+            <TabsTrigger value="atividades">Log de Atividades</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="audits" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-medium">Auditorias</h3>
-                <p className="text-sm text-muted-foreground">
-                  Gerencie suas auditorias formais e achados
-                </p>
-              </div>
-              <Button onClick={() => setIsAuditModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Planejar Auditoria
-              </Button>
-            </div>
-
+          <TabsContent value="auditorias" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Lista de Auditorias</CardTitle>
-                <CardDescription>
-                  Clique em uma auditoria para ver seus detalhes e achados
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Auditorias Formais</CardTitle>
+                  <Button onClick={() => setIsAuditModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Auditoria
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {auditsLoading ? (
-                  <div className="space-y-2">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="h-12 bg-muted rounded animate-pulse" />
-                    ))}
+                {/* Filtros */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <Input
+                      placeholder="Buscar auditorias..."
+                      value={filters.search}
+                      onChange={(e) => setFilters({...filters, search: e.target.value})}
+                      className="w-64"
+                    />
                   </div>
-                ) : audits?.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium">Nenhuma auditoria encontrada</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Comece criando sua primeira auditoria.
-                    </p>
-                    <div className="mt-6">
+                  <Select 
+                    value={filters.type} 
+                    onValueChange={(value) => setFilters({...filters, type: value})}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os Tipos</SelectItem>
+                      <SelectItem value="Interna">Interna</SelectItem>
+                      <SelectItem value="Externa">Externa</SelectItem>
+                      <SelectItem value="Compliance">Compliance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select 
+                    value={filters.status} 
+                    onValueChange={(value) => setFilters({...filters, status: value})}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Status</SelectItem>
+                      <SelectItem value="Agendada">Agendada</SelectItem>
+                      <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                      <SelectItem value="Concluída">Concluída</SelectItem>
+                      <SelectItem value="Cancelada">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Lista de Auditorias */}
+                <div className="space-y-4">
+                  {loadingAudits ? (
+                    <div className="text-center py-8">
+                      <div className="text-muted-foreground">Carregando auditorias...</div>
+                    </div>
+                  ) : filteredAudits.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium">Nenhuma auditoria encontrada</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Crie sua primeira auditoria para começar
+                      </p>
                       <Button onClick={() => setIsAuditModalOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Planejar Auditoria
+                        Nova Auditoria
                       </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {audits?.map((audit) => (
-                      <div
-                        key={audit.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => setSelectedAudit(audit)}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{audit.title}</h4>
-                            {getStatusBadge(audit.status)}
+                  ) : (
+                    filteredAudits.map((audit) => (
+                      <Card key={audit.id} className="cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => handleAuditClick(audit)}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-medium">{audit.title}</h3>
+                                {getStatusBadge(audit.status)}
+                                <Badge variant="outline">{audit.type}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {audit.description}
+                              </p>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>Início: {formatDate(audit.start_date)}</span>
+                                </div>
+                                {audit.end_date && (
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>Fim: {formatDate(audit.end_date)}</span>
+                                  </div>
+                                )}
+                                <span>Auditor: {audit.auditor}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                            <span>Tipo: {audit.audit_type}</span>
-                            {audit.auditor && <span>Auditor: {audit.auditor}</span>}
-                            {audit.end_date && (
-                              <span>
-                                Prazo: {format(new Date(audit.end_date), "dd/MM/yyyy", { locale: ptBR })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="activity-log" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-medium">Log de Atividades</h3>
-                <p className="text-sm text-muted-foreground">
-                  Histórico completo de ações no sistema
-                </p>
-              </div>
-            </div>
-
-            {/* Filters */}
+          <TabsContent value="atividades" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filtros
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-4">
-                  <div>
-                    <label className="text-sm font-medium">Tipo de Ação</label>
-                    <Select value={filters.actionType} onValueChange={(value) => setFilters(prev => ({ ...prev, actionType: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Todos os tipos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos os tipos</SelectItem>
-                        <SelectItem value="CREATE_AUDIT">Criar Auditoria</SelectItem>
-                        <SelectItem value="CREATE_FINDING">Criar Achado</SelectItem>
-                        <SelectItem value="UPDATE_FINDING">Atualizar Achado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Data Inicial</label>
-                    <Input
-                      type="date"
-                      value={filters.startDate}
-                      onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Data Final</label>
-                    <Input
-                      type="date"
-                      value={filters.endDate}
-                      onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setFilters({ search: "", actionType: "all", startDate: "", endDate: "" })}
-                    >
-                      Limpar Filtros
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Timeline de Atividades</CardTitle>
+                <CardTitle>Log de Atividades do Sistema</CardTitle>
                 <CardDescription>
-                  Registro cronológico de todas as ações importantes
+                  Registro automático de todas as ações realizadas na plataforma
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {logsLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex items-start gap-4">
-                        <div className="h-8 w-8 bg-muted rounded-full animate-pulse" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-muted rounded animate-pulse" />
-                          <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : activityLogs?.data?.length === 0 ? (
+                {loadingLogs ? (
                   <div className="text-center py-8">
-                    <Activity className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium">Nenhuma atividade encontrada</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      As atividades aparecerão aqui conforme você usar o sistema.
+                    <div className="text-muted-foreground">Carregando log de atividades...</div>
+                  </div>
+                ) : activityLogs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Activity className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium">Nenhuma atividade registrada</h3>
+                    <p className="text-muted-foreground">
+                      As atividades do sistema aparecerão aqui automaticamente
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {activityLogs?.data?.map((log: ActivityLog) => (
-                      <div key={log.id} className="flex items-start gap-4 pb-4 border-b last:border-b-0">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                          {getActionTypeIcon(log.action_type)}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm">
-                            <span className="font-medium">{log.profiles?.full_name || 'Usuário'}</span>{' '}
-                            {log.description}
-                          </p>
+                  <div className="space-y-3">
+                    {activityLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                        <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-medium">{log.action}</p>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(log.timestamp)}
+                            </span>
+                          </div>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(log.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            Usuário: {log.user} • Módulo: {log.module}
                           </p>
-                          {log.details_json && (
-                            <details className="text-xs text-muted-foreground">
-                              <summary className="cursor-pointer">Ver detalhes</summary>
-                              <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                                {JSON.stringify(log.details_json, null, 2)}
-                              </pre>
-                            </details>
+                          {log.details && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {log.details}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -326,24 +295,24 @@ export default function Auditoria() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
 
-      <AuditModal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
-        onSuccess={() => {
-          refetchAudits();
-          setIsAuditModalOpen(false);
-        }}
-      />
-
-      {selectedAudit && (
-        <AuditDetailsModal
-          audit={selectedAudit}
-          isOpen={!!selectedAudit}
-          onClose={() => setSelectedAudit(null)}
+        <AuditModal
+          isOpen={isAuditModalOpen}
+          onClose={() => setIsAuditModalOpen(false)}
+          onSuccess={() => {
+            refetchAudits();
+            setIsAuditModalOpen(false);
+          }}
         />
-      )}
-    </div>
+
+        {selectedAudit && (
+          <AuditDetailsModal
+            audit={selectedAudit}
+            isOpen={!!selectedAudit}
+            onClose={() => setSelectedAudit(null)}
+          />
+        )}
+      </div>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MainLayout } from "@/components/MainLayout";
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem";
 import { PredictiveDashboard } from "@/components/PredictiveDashboard";
 import { ContextualInsightsPanel } from "@/components/ContextualInsightsPanel";

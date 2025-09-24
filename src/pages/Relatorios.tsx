@@ -136,23 +136,22 @@ const Relatorios = () => {
   const canDownload = (status: string) => status === "Concluído";
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        {/* Header with System Status */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <FileBarChart className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold">Central de Relatórios Inteligentes</h1>
-              <p className="text-muted-foreground flex items-center gap-2">
-                Sistema de última geração com IA integrada
-                <Badge variant={isOptimized ? 'default' : 'secondary'} className="text-xs">
-                  <Zap className="h-3 w-3 mr-1" />
-                  {metrics.system_health.toUpperCase()}
-                </Badge>
-              </p>
-            </div>
+    <div className="space-y-6">
+      {/* Header with System Status */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <FileBarChart className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Central de Relatórios Inteligentes</h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              Sistema de última geração com IA integrada
+              <Badge variant={isOptimized ? 'default' : 'secondary'} className="text-xs">
+                <Zap className="h-3 w-3 mr-1" />
+                {metrics.system_health.toUpperCase()}
+              </Badge>
+            </p>
           </div>
+        </div>
           <div className="flex gap-2">
             <Button className="gap-2" onClick={() => setIsCreateGRIModalOpen(true)}>
               <Leaf className="h-4 w-4" />
@@ -428,7 +427,7 @@ const Relatorios = () => {
           />
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

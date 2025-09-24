@@ -1,4 +1,3 @@
-import { MainLayout } from "@/components/MainLayout"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useState } from "react"
@@ -45,43 +44,41 @@ const FornecedoresResiduos = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Fornecedores de Resíduos</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie transportadores e destinadores com controle de licenças
-            </p>
-          </div>
-          <Button onClick={handleCreateNew} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Fornecedor
-          </Button>
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Fornecedores de Resíduos</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie transportadores e destinadores com controle de licenças
+          </p>
         </div>
-
-        {/* Suppliers Table */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">Carregando fornecedores...</div>
-          </div>
-        ) : (
-          <SupplierComplianceTable 
-            suppliers={suppliers}
-            onSupplierSelect={handleSupplierSelect}
-          />
-        )}
-
-        {/* Modal */}
-        <WasteSupplierModal
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          supplier={selectedSupplier}
-          onSuccess={handleSuccess}
-        />
+        <Button onClick={handleCreateNew} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Novo Fornecedor
+        </Button>
       </div>
-    </MainLayout>
+
+      {/* Suppliers Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-muted-foreground">Carregando fornecedores...</div>
+        </div>
+      ) : (
+        <SupplierComplianceTable 
+          suppliers={suppliers}
+          onSupplierSelect={handleSupplierSelect}
+        />
+      )}
+
+      {/* Modal */}
+      <WasteSupplierModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        supplier={selectedSupplier}
+        onSuccess={handleSuccess}
+      />
+    </div>
   )
 }
 
