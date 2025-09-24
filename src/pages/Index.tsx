@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import SGQDashboardWidget from "@/components/SGQDashboardWidget"
 import { 
   Flag, 
   AlertTriangle, 
@@ -212,12 +213,15 @@ const Index = () => {
         </div>
 
         {/* Terceira Linha - Conteúdo Dinâmico */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* AI Processing Status Widget */}
           <AIProcessingStatusWidget />
+          
+          {/* SGQ Dashboard Widget */}
+          <SGQDashboardWidget />
 
           {/* Card Próximas Tarefas */}
-          <Card className="shadow-card lg:col-span-2">
+          <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="text-sm font-medium">Próximas Tarefas</CardTitle>
             </CardHeader>

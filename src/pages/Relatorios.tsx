@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileBarChart, Plus, FileText, FileSpreadsheet, MoreHorizontal, Edit, Copy, Trash2, Loader2, Leaf } from "lucide-react";
+import { FileBarChart, Plus, FileText, FileSpreadsheet, MoreHorizontal, Edit, Copy, Trash2, Loader2, Leaf, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CreateGRIReportModal } from "@/components/CreateGRIReportModal";
 import { GRIReportBuilderModal } from "@/components/GRIReportBuilderModal";
+import SGQReportsModal from "@/components/SGQReportsModal";
 import { getGRIReports, type GRIReport } from "@/services/griReports";
 import { toast } from "sonner";
 
@@ -143,6 +144,12 @@ const Relatorios = () => {
               <Leaf className="h-4 w-4" />
               Novo Relatório GRI
             </Button>
+            <SGQReportsModal>
+              <Button variant="outline" className="gap-2">
+                <Activity className="h-4 w-4" />
+                Relatórios SGQ
+              </Button>
+            </SGQReportsModal>
             <Button variant="outline" className="gap-2">
               <Plus className="h-4 w-4" />
               Outros Relatórios
@@ -160,6 +167,7 @@ const Relatorios = () => {
               <TabsList>
                 <TabsTrigger value="todos">Todos</TabsTrigger>
                 <TabsTrigger value="gri">Relatórios GRI</TabsTrigger>
+                <TabsTrigger value="sgq">Sistema de Qualidade</TabsTrigger>
                 <TabsTrigger value="rascunhos">Rascunhos</TabsTrigger>
                 <TabsTrigger value="concluidos">Concluídos</TabsTrigger>
               </TabsList>
@@ -263,6 +271,23 @@ const Relatorios = () => {
                     </TableBody>
                   </Table>
                 )}
+              </TabsContent>
+
+              <TabsContent value="sgq" className="mt-6">
+                {/* SGQ Reports Section */}
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Relatórios de Sistema de Gestão da Qualidade</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Gere relatórios especializados do SGQ com análises de qualidade, não conformidades e riscos
+                  </p>
+                  <SGQReportsModal>
+                    <Button className="gap-2">
+                      <Activity className="h-4 w-4" />
+                      Gerar Relatório SGQ
+                    </Button>
+                  </SGQReportsModal>
+                </div>
               </TabsContent>
 
               <TabsContent value={activeTab} className="mt-6">

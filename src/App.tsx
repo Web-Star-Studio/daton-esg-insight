@@ -326,19 +326,19 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            <Route path="/gestao-fornecedores" element={
-              <ProtectedRoute>
-                <GestaoFornecedores />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/quality-dashboard" element={
-              <ProtectedRoute>
-                <QualityDashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Public form route - no authentication required */}
+          <Route path="/gestao-fornecedores" element={
+            <ProtectedRoute>
+              <GestaoFornecedores />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/quality-dashboard" element={
+            <ProtectedRoute>
+              <QualityDashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* Public form route - no authentication required */}
             <Route path="/form/:formId" element={<PublicForm />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

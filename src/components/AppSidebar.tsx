@@ -27,7 +27,14 @@ import {
   Building2,
   Heart,
   Shield,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Activity,
+  Workflow,
+  AlertTriangle,
+  ClipboardCheck,
+  BookMarked,
+  Handshake,
+  Brain
 } from "lucide-react"
 import { 
   Sidebar,
@@ -125,6 +132,19 @@ const menuSections: MenuSection[] = [
       { id: "social-esg", title: "Social ESG", icon: Heart, path: "/social-esg" },
       { id: "governanca-esg", title: "Governança ESG", icon: Shield, path: "/governanca-esg" },
       { id: "relatorios-integrados", title: "Relatórios Integrados", icon: FileSpreadsheet, path: "/relatorios-integrados" },
+    ]
+  },
+  {
+    title: "SISTEMA DE GESTÃO DA QUALIDADE",
+    items: [
+      { id: "quality-dashboard", title: "Dashboard SGQ", icon: Brain, path: "/quality-dashboard" },
+      { id: "planejamento-estrategico", title: "Planejamento Estratégico", icon: Target, path: "/planejamento-estrategico" },
+      { id: "mapeamento-processos", title: "Mapeamento de Processos", icon: Workflow, path: "/mapeamento-processos" },
+      { id: "gestao-riscos", title: "Gestão de Riscos", icon: Shield, path: "/gestao-riscos" },
+      { id: "nao-conformidades", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades" },
+      { id: "plano-acao-5w2h", title: "Planos de Ação 5W2H", icon: ClipboardCheck, path: "/plano-acao-5w2h" },
+      { id: "base-conhecimento", title: "Base de Conhecimento", icon: BookMarked, path: "/base-conhecimento" },
+      { id: "gestao-fornecedores", title: "Gestão de Fornecedores", icon: Handshake, path: "/gestao-fornecedores" },
     ]
   },
   {
