@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StakeholderModal } from "@/components/StakeholderModal";
+import StakeholderEngagementMatrix from "@/components/StakeholderEngagementMatrix";
+import StakeholderAnalyticsDashboard from "@/components/StakeholderAnalyticsDashboard";
+import StakeholderCommunicationHub from "@/components/StakeholderCommunicationHub";
 import { 
   Users, 
   Plus, 
@@ -444,16 +447,6 @@ export default function GestaoStakeholders() {
         </Tabs>
 
         {/* Modal */}
-        <StakeholderModal
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          stakeholder={selectedStakeholder}
-          onSave={handleSave}
-        />
-      </div>
-    </MainLayout>
-  );
-}
         <StakeholderModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
