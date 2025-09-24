@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import SWOTMatrix from "@/components/SWOTMatrix";
 import OKRManagement from "@/components/OKRManagement";
 import StrategicDashboard from "@/components/StrategicDashboard";
+import EnhancedBSC from "@/components/EnhancedBSC";
+import StrategicInitiatives from "@/components/StrategicInitiatives";
 
 interface StrategicMap {
   id: string;
@@ -131,11 +133,12 @@ export default function PlanejamentoEstrategico() {
       </div>
 
       <Tabs defaultValue="maps" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="maps">Mapas Estratégicos</TabsTrigger>
-          <TabsTrigger value="bsc">Balanced Scorecard</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="maps">Mapas</TabsTrigger>
+          <TabsTrigger value="bsc">BSC</TabsTrigger>
           <TabsTrigger value="okrs">OKRs</TabsTrigger>
           <TabsTrigger value="swot">SWOT</TabsTrigger>
+          <TabsTrigger value="initiatives">Iniciativas</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         </TabsList>
 
@@ -180,63 +183,15 @@ export default function PlanejamentoEstrategico() {
         </TabsContent>
 
         <TabsContent value="bsc" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                  Financeira
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">objetivos definidos</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  Cliente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">objetivos definidos</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-orange-600" />
-                  Processos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">objetivos definidos</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Target className="h-4 w-4 text-purple-600" />
-                  Aprendizado
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">objetivos definidos</p>
-              </CardContent>
-            </Card>
-          </div>
+          <EnhancedBSC />
         </TabsContent>
 
         <TabsContent value="swot" className="space-y-4">
           <SWOTMatrix />
+        </TabsContent>
+
+        <TabsContent value="initiatives" className="space-y-4">
+          <StrategicInitiatives />
         </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-4">

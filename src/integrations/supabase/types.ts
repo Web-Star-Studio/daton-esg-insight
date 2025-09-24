@@ -593,10 +593,14 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          owner_user_id: string | null
           perspective_id: string
+          progress_percentage: number | null
+          status: string | null
           target_value: number | null
           unit: string | null
           updated_at: string
+          weight: number | null
         }
         Insert: {
           created_at?: string
@@ -604,10 +608,14 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          owner_user_id?: string | null
           perspective_id: string
+          progress_percentage?: number | null
+          status?: string | null
           target_value?: number | null
           unit?: string | null
           updated_at?: string
+          weight?: number | null
         }
         Update: {
           created_at?: string
@@ -615,10 +623,14 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          owner_user_id?: string | null
           perspective_id?: string
+          progress_percentage?: number | null
+          status?: string | null
           target_value?: number | null
           unit?: string | null
           updated_at?: string
+          weight?: number | null
         }
         Relationships: []
       }
@@ -4927,6 +4939,99 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_associations: {
+        Row: {
+          associated_id: string
+          associated_type: string
+          bsc_objective_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          relationship_type: string | null
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          associated_id: string
+          associated_type: string
+          bsc_objective_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          relationship_type?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          associated_id?: string
+          associated_type?: string
+          bsc_objective_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          relationship_type?: string | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      strategic_initiatives: {
+        Row: {
+          budget: number | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          end_date: string | null
+          id: string
+          priority: string | null
+          progress_percentage: number | null
+          responsible_user_id: string | null
+          start_date: string | null
+          status: string | null
+          strategic_map_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          priority?: string | null
+          progress_percentage?: number | null
+          responsible_user_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          strategic_map_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          priority?: string | null
+          progress_percentage?: number | null
+          responsible_user_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          strategic_map_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       strategic_maps: {
         Row: {
           company_id: string
@@ -5552,6 +5657,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_bsc_objective_progress: {
+        Args: { p_objective_id: string }
+        Returns: number
+      }
       calculate_conservation_stats: {
         Args: { p_company_id: string }
         Returns: Json
