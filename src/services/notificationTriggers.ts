@@ -359,6 +359,7 @@ class NotificationTriggersService {
 
       if (licenses) {
         const now = new Date();
+        let notificationsTriggered = 0;
         
         for (const license of licenses) {
           const expirationDate = new Date(license.expiration_date);
@@ -367,11 +368,30 @@ class NotificationTriggersService {
           // Check if license is expiring within 90 days
           if (daysToExpiry <= 90 && daysToExpiry > 0) {
             await this.onLicenseExpiring(license.id, license.name, daysToExpiry);
+            notificationsTriggered++;
           }
         }
+        
+        return { 
+          checked: licenses.length, 
+          expiring: notificationsTriggered,
+          timestamp: new Date().toISOString()
+        };
       }
+      
+      return { 
+        checked: 0, 
+        expiring: 0,
+        timestamp: new Date().toISOString()
+      };
     } catch (error) {
       console.error('Error checking license expirations:', error);
+      return { 
+        checked: 0, 
+        expiring: 0, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
     }
   }
 
@@ -386,16 +406,36 @@ class NotificationTriggersService {
 
       if (tasks) {
         const now = new Date();
+        let notificationsTriggered = 0;
         
         for (const task of tasks) {
           const dueDate = new Date(task.due_date);
           const daysPastDue = Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
           
           await this.onComplianceTaskOverdue(task.id, task.title, daysPastDue);
+          notificationsTriggered++;
         }
+        
+        return { 
+          checked: tasks.length, 
+          overdue: notificationsTriggered,
+          timestamp: new Date().toISOString()
+        };
       }
+      
+      return { 
+        checked: 0, 
+        overdue: 0,
+        timestamp: new Date().toISOString()
+      };
     } catch (error) {
       console.error('Error checking overdue tasks:', error);
+      return { 
+        checked: 0, 
+        overdue: 0, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
     }
   }
 }
