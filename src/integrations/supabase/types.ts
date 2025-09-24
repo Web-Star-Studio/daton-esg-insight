@@ -371,6 +371,33 @@ export type Database = {
         }
         Relationships: []
       }
+      article_bookmarks: {
+        Row: {
+          article_id: string
+          company_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       article_comments: {
         Row: {
           article_id: string
