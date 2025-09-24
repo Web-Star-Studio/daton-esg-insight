@@ -4319,41 +4319,210 @@ export type Database = {
         }
         Relationships: []
       }
+      process_connections: {
+        Row: {
+          condition_text: string | null
+          created_at: string
+          from_step_id: string
+          id: string
+          label: string | null
+          process_map_id: string
+          to_step_id: string
+        }
+        Insert: {
+          condition_text?: string | null
+          created_at?: string
+          from_step_id: string
+          id?: string
+          label?: string | null
+          process_map_id: string
+          to_step_id: string
+        }
+        Update: {
+          condition_text?: string | null
+          created_at?: string
+          from_step_id?: string
+          id?: string
+          label?: string | null
+          process_map_id?: string
+          to_step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_connections_from_step_id_fkey"
+            columns: ["from_step_id"]
+            isOneToOne: false
+            referencedRelation: "process_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_connections_process_map_id_fkey"
+            columns: ["process_map_id"]
+            isOneToOne: false
+            referencedRelation: "process_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_connections_to_step_id_fkey"
+            columns: ["to_step_id"]
+            isOneToOne: false
+            referencedRelation: "process_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       process_maps: {
         Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          canvas_data: Json | null
           company_id: string
           created_at: string
           description: string | null
           id: string
+          is_current_version: boolean | null
           name: string
           owner_user_id: string | null
+          parent_version_id: string | null
           process_type: string | null
           status: string | null
           updated_at: string
+          version: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          canvas_data?: Json | null
           company_id: string
           created_at?: string
           description?: string | null
           id?: string
+          is_current_version?: boolean | null
           name: string
           owner_user_id?: string | null
+          parent_version_id?: string | null
           process_type?: string | null
           status?: string | null
           updated_at?: string
+          version?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          canvas_data?: Json | null
           company_id?: string
           created_at?: string
           description?: string | null
           id?: string
+          is_current_version?: boolean | null
           name?: string
           owner_user_id?: string | null
+          parent_version_id?: string | null
           process_type?: string | null
           status?: string | null
           updated_at?: string
+          version?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "process_maps_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "process_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_stakeholders: {
+        Row: {
+          created_at: string
+          id: string
+          process_map_id: string
+          responsibilities: string | null
+          role: string
+          stakeholder_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          process_map_id: string
+          responsibilities?: string | null
+          role: string
+          stakeholder_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          process_map_id?: string
+          responsibilities?: string | null
+          role?: string
+          stakeholder_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_stakeholders_process_map_id_fkey"
+            columns: ["process_map_id"]
+            isOneToOne: false
+            referencedRelation: "process_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_steps: {
+        Row: {
+          created_at: string
+          description: string | null
+          height: number | null
+          id: string
+          name: string
+          order_index: number | null
+          position_x: number | null
+          position_y: number | null
+          process_map_id: string
+          properties: Json | null
+          step_type: string
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          height?: number | null
+          id?: string
+          name: string
+          order_index?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          process_map_id: string
+          properties?: Json | null
+          step_type?: string
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          height?: number | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          process_map_id?: string
+          properties?: Json | null
+          step_type?: string
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_steps_process_map_id_fkey"
+            columns: ["process_map_id"]
+            isOneToOne: false
+            referencedRelation: "process_maps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -4691,6 +4860,56 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sipoc_elements: {
+        Row: {
+          created_at: string
+          description: string | null
+          element_type: string
+          id: string
+          name: string
+          order_index: number | null
+          process_map_id: string
+          requirements: string | null
+          specifications: string | null
+          stakeholder_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          element_type: string
+          id?: string
+          name: string
+          order_index?: number | null
+          process_map_id: string
+          requirements?: string | null
+          specifications?: string | null
+          stakeholder_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          element_type?: string
+          id?: string
+          name?: string
+          order_index?: number | null
+          process_map_id?: string
+          requirements?: string | null
+          specifications?: string | null
+          stakeholder_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sipoc_elements_process_map_id_fkey"
+            columns: ["process_map_id"]
+            isOneToOne: false
+            referencedRelation: "process_maps"
             referencedColumns: ["id"]
           },
         ]
@@ -5354,6 +5573,63 @@ export type Database = {
           weight_tonnes?: number | null
         }
         Relationships: []
+      }
+      turtle_diagrams: {
+        Row: {
+          created_at: string
+          id: string
+          inputs: Json | null
+          measurements: Json | null
+          methods: Json | null
+          outputs: Json | null
+          process_map_id: string
+          process_step_id: string | null
+          resources: Json | null
+          risks: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inputs?: Json | null
+          measurements?: Json | null
+          methods?: Json | null
+          outputs?: Json | null
+          process_map_id: string
+          process_step_id?: string | null
+          resources?: Json | null
+          risks?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inputs?: Json | null
+          measurements?: Json | null
+          methods?: Json | null
+          outputs?: Json | null
+          process_map_id?: string
+          process_step_id?: string | null
+          resources?: Json | null
+          risks?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turtle_diagrams_process_map_id_fkey"
+            columns: ["process_map_id"]
+            isOneToOne: false
+            referencedRelation: "process_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turtle_diagrams_process_step_id_fkey"
+            columns: ["process_step_id"]
+            isOneToOne: false
+            referencedRelation: "process_steps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       variable_factors: {
         Row: {
