@@ -156,7 +156,7 @@ export default function BaseConhecimento() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Base de Conhecimento</h1>
@@ -376,6 +376,6 @@ export default function BaseConhecimento() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </>
   );
 }

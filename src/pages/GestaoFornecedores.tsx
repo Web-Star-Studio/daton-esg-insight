@@ -195,7 +195,7 @@ export default function GestaoFornecedores() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestão de Fornecedores</h1>
@@ -642,6 +642,6 @@ export default function GestaoFornecedores() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }

@@ -176,7 +176,7 @@ export default function PlanoAcao5W2H() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Planos de Ação 5W2H</h1>
@@ -428,8 +428,8 @@ export default function PlanoAcao5W2H() {
               </Button>
             </CardContent>
           </Card>
-        )}
-      </div>
-    </div>
+         )}
+       </div>
+    </>
   );
 }

@@ -146,7 +146,7 @@ export default function NaoConformidades() {
   const closedNCs = nonConformities?.filter(nc => nc.status === "Fechada").length || 0;
 
   return (
-    <div className="container mx-auto p-6">
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Não Conformidades</h1>
@@ -386,7 +386,7 @@ export default function NaoConformidades() {
             </div>
           )}
         </CardContent>
-      </Card>
-    </div>
+       </Card>
+    </>
   );
 }

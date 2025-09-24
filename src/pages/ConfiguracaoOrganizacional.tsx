@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { MainLayout } from "@/components/MainLayout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea"; 
@@ -181,27 +180,24 @@ export default function ConfiguracaoOrganizacional() {
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Carregando configuração organizacional...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Carregando configuração organizacional...</p>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Configuração Organizacional</h1>
-            <p className="text-muted-foreground">
-              Gerencie as informações e estrutura da sua organização
-            </p>
-          </div>
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Configuração Organizacional</h1>
+          <p className="text-muted-foreground">
+            Gerencie as informações e estrutura da sua organização
+          </p>
+        </div>
         </div>
 
         <Tabs defaultValue="basico" className="space-y-6">
@@ -539,9 +535,8 @@ export default function ConfiguracaoOrganizacional() {
                 Salvar Alterações
               </>
             )}
-          </Button>
+           </Button>
         </div>
-      </div>
-    </MainLayout>
+    </>
   );
 }

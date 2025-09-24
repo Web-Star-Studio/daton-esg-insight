@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { MainLayout } from "@/components/MainLayout";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -233,16 +232,15 @@ export default function GestaoStakeholders() {
   }
 
   return (
-    <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Gestão de Stakeholders</h1>
-            <p className="text-muted-foreground">
-              Gerencie e engaje com todas as partes interessadas da organização
-            </p>
-          </div>
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Gestão de Stakeholders</h1>
+          <p className="text-muted-foreground">
+            Gerencie e engaje com todas as partes interessadas da organização
+          </p>
+        </div>
           <Button onClick={() => {
             setSelectedStakeholder(null);
             setIsModalOpen(true);
@@ -453,7 +451,6 @@ export default function GestaoStakeholders() {
           stakeholder={selectedStakeholder}
           onSave={handleSave}
         />
-      </div>
-    </MainLayout>
-  );
-}
+      </>
+    );
+  }

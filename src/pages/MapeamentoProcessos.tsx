@@ -89,7 +89,7 @@ export default function MapeamentoProcessos() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Mapeamento de Processos</h1>
@@ -269,6 +269,6 @@ export default function MapeamentoProcessos() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </>
   );
 }
