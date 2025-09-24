@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { MainLayout } from "@/components/MainLayout";
 import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
 import Contato from "./pages/Contato";
@@ -104,30 +105,40 @@ const App = () => (
             {/* Dashboard principal - protegido */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <Index />
+                <MainLayout>
+                  <Index />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             {/* Rotas protegidas */}
             <Route path="/inventario-gee" element={
               <ProtectedRoute>
-                <InventarioGEE />
+                <MainLayout>
+                  <InventarioGEE />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/dashboard-ghg" element={
               <ProtectedRoute>
-                <DashboardGHG />
+                <MainLayout>
+                  <DashboardGHG />
+                </MainLayout>
               </ProtectedRoute>
             } />
             {/* Licenciamento Routes - Organizadas */}
             <Route path="/licenciamento" element={
               <ProtectedRoute>
-                <Licenciamento />
+                <MainLayout>
+                  <Licenciamento />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/processar" element={
               <ProtectedRoute>
-                <ProcessarLicenca />
+                <MainLayout>
+                  <ProcessarLicenca />
+                </MainLayout>
               </ProtectedRoute>
             } />
             {/* Legacy redirects for backward compatibility */}
@@ -136,226 +147,308 @@ const App = () => (
             <Route path="/licenciamento/:id/analise" element={<Navigate to="/licenciamento/processar" replace />} />
             <Route path="/licenciamento/novo" element={
               <ProtectedRoute requiredRole="Editor">
-                <LicenseForm />
+                <MainLayout>
+                  <LicenseForm />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/:id" element={
               <ProtectedRoute>
-                <LicenseDetails />
+                <MainLayout>
+                  <LicenseDetails />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/licenciamento/:id/editar" element={
               <ProtectedRoute requiredRole="Editor">
-                <LicenseForm />
+                <MainLayout>
+                  <LicenseForm />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/residuos" element={
               <ProtectedRoute>
-                <Residuos />
+                <MainLayout>
+                  <Residuos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/fornecedores-residuos" element={
               <ProtectedRoute requiredRole="Editor">
-                <FornecedoresResiduos />
+                <MainLayout>
+                  <FornecedoresResiduos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/metas" element={
               <ProtectedRoute>
-                <Metas />
+                <MainLayout>
+                  <Metas />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/metas/nova" element={
               <ProtectedRoute requiredRole="Editor">
-                <CriarMeta />
+                <MainLayout>
+                  <CriarMeta />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/relatorios" element={
               <ProtectedRoute>
-                <Relatorios />
+                <MainLayout>
+                  <Relatorios />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/relatorios-sustentabilidade" element={
               <ProtectedRoute>
-                <RelatoriosSustentabilidade />
+                <MainLayout>
+                  <RelatoriosSustentabilidade />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/biblioteca-fatores" element={
               <ProtectedRoute>
-                <BibliotecaFatores />
+                <MainLayout>
+                  <BibliotecaFatores />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/projetos-carbono" element={
               <ProtectedRoute>
-                <ProjetosCarbono />
+                <MainLayout>
+                  <ProjetosCarbono />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/projetos-carbono/registrar-atividade" element={
               <ProtectedRoute requiredRole="Editor">
-                <RegistrarAtividadeConservacao />
+                <MainLayout>
+                  <RegistrarAtividadeConservacao />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/gestao-esg" element={
               <ProtectedRoute>
-                <GestaoESG />
+                <MainLayout>
+                  <GestaoESG />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/ativos" element={
               <ProtectedRoute>
-                <Ativos />
+                <MainLayout>
+                  <Ativos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/desempenho" element={
               <ProtectedRoute>
-                <Desempenho />
+                <MainLayout>
+                  <Desempenho />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/configuracao" element={
               <ProtectedRoute requiredRole="Admin">
-                <Configuracao />
+                <MainLayout>
+                  <Configuracao />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/ia-insights" element={
               <ProtectedRoute>
-                <IAInsights />
+                <MainLayout>
+                  <IAInsights />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/marketplace" element={
               <ProtectedRoute>
-                <Marketplace />
+                <MainLayout>
+                  <Marketplace />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/coleta-dados" element={
               <ProtectedRoute>
-                <ColetaDados />
+                <MainLayout>
+                  <ColetaDados />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/formularios-customizados" element={
               <ProtectedRoute>
-                <FormulariosCustomizados />
+                <MainLayout>
+                  <FormulariosCustomizados />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/documentos" element={
               <ProtectedRoute>
-                <Documentos />
+                <MainLayout>
+                  <Documentos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/reconciliacao-documentos" element={
               <ProtectedRoute>
-                <ReconciliacaoDocumentos />
+                <MainLayout>
+                  <ReconciliacaoDocumentos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/auditoria" element={
               <ProtectedRoute>
-                <Auditoria />
+                <MainLayout>
+                  <Auditoria />
+                </MainLayout>
               </ProtectedRoute>
             } />
             <Route path="/compliance" element={
               <ProtectedRoute>
-                <Compliance />
+                <MainLayout>
+                  <Compliance />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/gestao-stakeholders" element={
               <ProtectedRoute>
-                <GestaoStakeholders />
+                <MainLayout>
+                  <GestaoStakeholders />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/smart-notifications" element={
               <ProtectedRoute>
-                <SmartNotificationSystem />
+                <MainLayout>
+                  <SmartNotificationSystem />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/intelligent-alerts" element={
               <ProtectedRoute>
-                <IntelligentAlertsSystem />
+                <MainLayout>
+                  <IntelligentAlertsSystem />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/advanced-reports" element={
               <ProtectedRoute>
-                <AdvancedReportingSystem />
+                <MainLayout>
+                  <AdvancedReportingSystem />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/analise-materialidade" element={
               <ProtectedRoute>
-                <AnaliseMaterialidade />
+                <MainLayout>
+                  <AnaliseMaterialidade />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/configuracao-organizacional" element={
               <ProtectedRoute>
-                <ConfiguracaoOrganizacional />
+                <MainLayout>
+                  <ConfiguracaoOrganizacional />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/social-esg" element={
               <ProtectedRoute>
-                <SocialESG />
+                <MainLayout>
+                  <SocialESG />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/governanca-esg" element={
               <ProtectedRoute>
-                <GovernancaESG />
+                <MainLayout>
+                  <GovernancaESG />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/relatorios-integrados" element={
               <ProtectedRoute>
-                <RelatoriosIntegrados />
+                <MainLayout>
+                  <RelatoriosIntegrados />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             {/* SGQ (Sistema de Gestão da Qualidade) Routes */}
             <Route path="/planejamento-estrategico" element={
               <ProtectedRoute>
-                <PlanejamentoEstrategico />
+                <MainLayout>
+                  <PlanejamentoEstrategico />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/mapeamento-processos" element={
               <ProtectedRoute>
-                <MapeamentoProcessos />
+                <MainLayout>
+                  <MapeamentoProcessos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/gestao-riscos" element={
               <ProtectedRoute>
-                <GestaoRiscos />
+                <MainLayout>
+                  <GestaoRiscos />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/nao-conformidades" element={
               <ProtectedRoute>
-                <NaoConformidades />
+                <MainLayout>
+                  <NaoConformidades />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/plano-acao-5w2h" element={
               <ProtectedRoute>
-                <PlanoAcao5W2H />
+                <MainLayout>
+                  <PlanoAcao5W2H />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
             <Route path="/base-conhecimento" element={
               <ProtectedRoute>
-                <BaseConhecimento />
+                <MainLayout>
+                  <BaseConhecimento />
+                </MainLayout>
               </ProtectedRoute>
             } />
             
           <Route path="/gestao-fornecedores" element={
             <ProtectedRoute>
-              <GestaoFornecedores />
+              <MainLayout>
+                <GestaoFornecedores />
+              </MainLayout>
             </ProtectedRoute>
           } />
           
           <Route path="/quality-dashboard" element={
             <ProtectedRoute>
-              <QualityDashboard />
+              <MainLayout>
+                <QualityDashboard />
+              </MainLayout>
             </ProtectedRoute>
           } />
           
