@@ -74,6 +74,7 @@ import BaseConhecimento from "./pages/BaseConhecimento";
 import GestaoFornecedores from "./pages/GestaoFornecedores";
 import QualityDashboard from "./pages/QualityDashboard";
 import { GerenciamentoProjetos } from "./pages/GerenciamentoProjetos";
+import EstruturaOrganizacional from "./pages/EstruturaOrganizacional";
 
 const queryClient = new QueryClient();
 
