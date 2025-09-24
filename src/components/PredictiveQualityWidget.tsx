@@ -101,89 +101,97 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           Insights baseados em IA para seu Sistema de Qualidade
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Risk Level */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Nível de Risco</span>
-          <Badge 
-            variant={predictions.riskLevel === 'high' ? 'destructive' : 
-                    predictions.riskLevel === 'medium' ? 'default' : 'secondary'}
-            className={getRiskColor(predictions.riskLevel)}
-          >
-            {predictions.riskLevel === 'high' ? 'Alto' : 
-             predictions.riskLevel === 'medium' ? 'Médio' : 'Baixo'}
-          </Badge>
-        </div>
-
-        {/* Next Month Prediction */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span>NCs Previstas (próximo mês)</span>
-            <span className="font-medium">{predictions.nextMonthNCs}</span>
-          </div>
-          <Progress 
-            value={Math.min((predictions.nextMonthNCs / 10) * 100, 100)} 
-            className="h-2"
-          />
-          <p className="text-xs text-muted-foreground">
-            Baseado em padrões históricos e tendências atuais
-          </p>
-        </div>
-
-        {/* Quality Score Trend */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span>Tendência de Qualidade</span>
-            <div className="flex items-center space-x-1">
-              {trendDirection === 'up' ? (
-                <TrendingUp className="h-4 w-4 text-success" />
-              ) : trendDirection === 'down' ? (
-                <TrendingDown className="h-4 w-4 text-destructive" />
-              ) : (
-                <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
-              )}
-              <span className="text-xs font-medium">
-                {metrics.qualityScore}%
-              </span>
+      <CardContent>
+        {/* Top Section - Landscape Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {/* Risk Level */}
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-background">
+            <div className="flex items-center space-x-2">
+              {getRiskIcon(predictions.riskLevel)}
+              <span className="text-sm font-medium">Nível de Risco</span>
             </div>
+            <Badge 
+              variant={predictions.riskLevel === 'high' ? 'destructive' : 
+                      predictions.riskLevel === 'medium' ? 'default' : 'secondary'}
+              className={getRiskColor(predictions.riskLevel)}
+            >
+              {predictions.riskLevel === 'high' ? 'Alto' : 
+               predictions.riskLevel === 'medium' ? 'Médio' : 'Baixo'}
+            </Badge>
           </div>
-          <Progress value={metrics.qualityScore} className="h-2" />
-        </div>
 
-        {/* Top Pattern */}
-        {predictions.patterns.length > 0 && (
-          <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-l-primary">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium">Padrão Detectado</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {predictions.patterns[0].description}
-                </p>
+          {/* Next Month Prediction */}
+          <div className="p-3 rounded-lg border bg-background space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium">NCs Previstas</span>
+              <span className="font-bold text-lg">{predictions.nextMonthNCs}</span>
+            </div>
+            <Progress 
+              value={Math.min((predictions.nextMonthNCs / 10) * 100, 100)} 
+              className="h-2"
+            />
+            <p className="text-xs text-muted-foreground">Próximo mês</p>
+          </div>
+
+          {/* Quality Score Trend */}
+          <div className="p-3 rounded-lg border bg-background space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium">Qualidade</span>
+              <div className="flex items-center space-x-1">
+                {trendDirection === 'up' ? (
+                  <TrendingUp className="h-4 w-4 text-success" />
+                ) : trendDirection === 'down' ? (
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                ) : (
+                  <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
+                )}
+                <span className="font-bold text-lg">
+                  {metrics.qualityScore}%
+                </span>
               </div>
-              <Badge variant="outline" className="text-xs">
-                {predictions.patterns[0].confidence}% confiança
-              </Badge>
             </div>
+            <Progress value={metrics.qualityScore} className="h-2" />
+            <p className="text-xs text-muted-foreground">Tendência atual</p>
           </div>
-        )}
+        </div>
 
-        {/* Top Recommendation */}
-        {predictions.recommendations.length > 0 && (
-          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <p className="text-sm font-medium text-primary">Recomendação IA</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {predictions.recommendations[0].description}
-            </p>
-            <div className="flex items-center justify-between mt-2">
-              <Badge variant="outline" className="text-xs">
-                Impacto: {predictions.recommendations[0].impact}
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Prioridade: {predictions.recommendations[0].priority}
-              </Badge>
+        {/* Bottom Section - Insights */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Top Pattern */}
+          {predictions.patterns.length > 0 && (
+            <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-l-primary">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Padrão Detectado</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {predictions.patterns[0].description}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {predictions.patterns[0].confidence}% confiança
+                </Badge>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Top Recommendation */}
+          {predictions.recommendations.length > 0 && (
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-sm font-medium text-primary">Recomendação IA</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {predictions.recommendations[0].description}
+              </p>
+              <div className="flex items-center justify-between mt-2">
+                <Badge variant="outline" className="text-xs">
+                  Impacto: {predictions.recommendations[0].impact}
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  Prioridade: {predictions.recommendations[0].priority}
+                </Badge>
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
