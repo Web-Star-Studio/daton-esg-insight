@@ -503,6 +503,130 @@ class QualityManagementService {
     return data;
   }
 
+  async updateKnowledgeArticle(id: string, articleData: {
+    title: string;
+    content: string;
+    category: string;
+    tags?: string[];
+    changes_summary?: string;
+  }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.company_id) throw new Error("Company ID não encontrado");
+
+    // Get current article for version tracking
+    const { data: currentArticle, error: fetchError } = await supabase
+      .from('knowledge_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Create version record
+    await supabase
+      .from('article_versions')
+      .insert({
+        article_id: id,
+        version_number: currentArticle.version,
+        title: currentArticle.title,
+        content: currentArticle.content,
+        category: currentArticle.category,
+        tags: currentArticle.tags || [],
+        changes_summary: articleData.changes_summary || 'Atualização do artigo',
+        edited_by_user_id: user.id,
+        company_id: profile.company_id
+      });
+
+    // Update article with new version
+    const { data, error } = await supabase
+      .from('knowledge_articles')
+      .update({
+        ...articleData,
+        version: currentArticle.version + 1,
+        last_edited_by_user_id: user.id,
+        last_edited_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getArticleVersions(articleId: string) {
+    const { data, error } = await supabase
+      .from('article_versions')
+      .select('*')
+      .eq('article_id', articleId)
+      .order('version_number', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getArticleComments(articleId: string) {
+    const { data, error } = await supabase
+      .from('article_comments')
+      .select('*')
+      .eq('article_id', articleId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async createArticleComment(commentData: {
+    article_id: string;
+    comment_text: string;
+    comment_type?: string;
+    parent_comment_id?: string;
+  }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.company_id) throw new Error("Company ID não encontrado");
+
+    const { data, error } = await supabase
+      .from('article_comments')
+      .insert({
+        ...commentData,
+        author_user_id: user.id,
+        company_id: profile.company_id
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async resolveComment(commentId: string) {
+    const { data, error } = await supabase
+      .from('article_comments')
+      .update({ is_resolved: true })
+      .eq('id', commentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   // Suppliers methods
   async getSuppliers() {
     const { data, error } = await supabase

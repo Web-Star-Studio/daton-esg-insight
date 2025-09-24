@@ -335,6 +335,123 @@ export type Database = {
         }
         Relationships: []
       }
+      article_approvals: {
+        Row: {
+          approval_notes: string | null
+          approval_status: string
+          approver_user_id: string
+          article_id: string
+          company_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          approval_notes?: string | null
+          approval_status?: string
+          approver_user_id: string
+          article_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          version_number: number
+        }
+        Update: {
+          approval_notes?: string | null
+          approval_status?: string
+          approver_user_id?: string
+          article_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
+      article_comments: {
+        Row: {
+          article_id: string
+          author_user_id: string
+          comment_text: string
+          comment_type: string
+          company_id: string
+          created_at: string
+          id: string
+          is_resolved: boolean | null
+          parent_comment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          article_id: string
+          author_user_id: string
+          comment_text: string
+          comment_type?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          parent_comment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          article_id?: string
+          author_user_id?: string
+          comment_text?: string
+          comment_type?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          parent_comment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      article_versions: {
+        Row: {
+          article_id: string
+          category: string
+          changes_summary: string | null
+          company_id: string
+          content: string
+          created_at: string
+          edited_by_user_id: string
+          id: string
+          tags: string[] | null
+          title: string
+          version_number: number
+        }
+        Insert: {
+          article_id: string
+          category: string
+          changes_summary?: string | null
+          company_id: string
+          content: string
+          created_at?: string
+          edited_by_user_id: string
+          id?: string
+          tags?: string[] | null
+          title: string
+          version_number: number
+        }
+        Update: {
+          article_id?: string
+          category?: string
+          changes_summary?: string | null
+          company_id?: string
+          content?: string
+          created_at?: string
+          edited_by_user_id?: string
+          id?: string
+          tags?: string[] | null
+          title?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_type: string
@@ -3248,6 +3365,7 @@ export type Database = {
       }
       knowledge_articles: {
         Row: {
+          approval_status: string | null
           author_user_id: string
           category: string | null
           company_id: string
@@ -3255,6 +3373,9 @@ export type Database = {
           created_at: string
           id: string
           is_published: boolean | null
+          last_edited_at: string | null
+          last_edited_by_user_id: string | null
+          requires_approval: boolean | null
           status: string | null
           tags: string[] | null
           title: string
@@ -3263,6 +3384,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          approval_status?: string | null
           author_user_id: string
           category?: string | null
           company_id: string
@@ -3270,6 +3392,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_published?: boolean | null
+          last_edited_at?: string | null
+          last_edited_by_user_id?: string | null
+          requires_approval?: boolean | null
           status?: string | null
           tags?: string[] | null
           title: string
@@ -3278,6 +3403,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          approval_status?: string | null
           author_user_id?: string
           category?: string | null
           company_id?: string
@@ -3285,6 +3411,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_published?: boolean | null
+          last_edited_at?: string | null
+          last_edited_by_user_id?: string | null
+          requires_approval?: boolean | null
           status?: string | null
           tags?: string[] | null
           title?: string

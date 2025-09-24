@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArticleViewModal } from "@/components/ArticleViewModal";
+import { ArticleEditModal } from "@/components/ArticleEditModal";
 
 interface KnowledgeArticle {
   id: string;
@@ -48,6 +49,7 @@ export default function BaseConhecimento() {
   const [isCreateArticleOpen, setIsCreateArticleOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<KnowledgeArticle | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [newArticleData, setNewArticleData] = useState({
@@ -129,12 +131,17 @@ export default function BaseConhecimento() {
   };
 
   const handleEditArticle = (article: KnowledgeArticle) => {
-    // TODO: Implement edit functionality in next phase
-    toast.info("Funcionalidade de edição será implementada na próxima fase");
+    setSelectedArticle(article);
+    setIsEditModalOpen(true);
   };
 
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
+    setSelectedArticle(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
     setSelectedArticle(null);
   };
 
@@ -411,6 +418,13 @@ export default function BaseConhecimento() {
         isOpen={isViewModalOpen}
         onClose={handleCloseViewModal}
         onEdit={handleEditArticle}
+      />
+
+      {/* Article Edit Modal */}
+      <ArticleEditModal
+        article={selectedArticle}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
       />
     </>
   );
