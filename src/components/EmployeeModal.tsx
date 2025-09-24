@@ -1,127 +1,119 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { createEmployee, updateEmployee, type Employee } from "@/services/employees";
-import { toast } from "@/hooks/use-toast";
-import { CalendarIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { toast } from 'sonner';
+import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
+import { getDepartments, getPositions, type Department, type Position } from '@/services/organizationalStructure';
 
 interface EmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   employee?: Employee | null;
-  onUpdate?: () => void;
 }
 
-export function EmployeeModal({ isOpen, onClose, employee, onUpdate }: EmployeeModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: EmployeeModalProps) {
   const [formData, setFormData] = useState({
-    employee_code: "",
-    full_name: "",
-    email: "",
-    phone: "",
-    department: "",
-    position: "",
-    hire_date: "",
-    birth_date: "",
-    gender: "",
-    ethnicity: "",
-    education_level: "",
-    employment_type: "CLT",
-    status: "Ativo",
-    salary: "",
-    location: "",
-    manager_id: ""
+    employee_code: '',
+    full_name: '',
+    email: '',
+    phone: '',
+    department: '',
+    position: '',
+    hire_date: '',
+    birth_date: '',
+    gender: '',
+    employment_type: 'CLT',
+    status: 'Ativo',
+    location: '',
   });
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (employee) {
-      setFormData({
-        employee_code: employee.employee_code || "",
-        full_name: employee.full_name || "",
-        email: employee.email || "",
-        phone: employee.phone || "",
-        department: employee.department || "",
-        position: employee.position || "",
-        hire_date: employee.hire_date || "",
-        birth_date: employee.birth_date || "",
-        gender: employee.gender || "",
-        ethnicity: employee.ethnicity || "",
-        education_level: employee.education_level || "",
-        employment_type: employee.employment_type || "CLT",
-        status: employee.status || "Ativo",
-        salary: employee.salary?.toString() || "",
-        location: employee.location || "",
-        manager_id: employee.manager_id || ""
-      });
-    } else {
-      setFormData({
-        employee_code: "",
-        full_name: "",
-        email: "",
-        phone: "",
-        department: "",
-        position: "",
-        hire_date: "",
-        birth_date: "",
-        gender: "",
-        ethnicity: "",
-        education_level: "",
-        employment_type: "CLT",
-        status: "Ativo",
-        salary: "",
-        location: "",
-        manager_id: ""
-      });
+    if (isOpen) {
+      loadDepartmentsAndPositions();
+      if (employee) {
+        setFormData({
+          employee_code: employee.employee_code || '',
+          full_name: employee.full_name || '',
+          email: employee.email || '',
+          phone: employee.phone || '',
+          department: employee.department || '',
+          position: employee.position || '',
+          hire_date: employee.hire_date || '',
+          birth_date: employee.birth_date || '',
+          gender: employee.gender || '',
+          employment_type: employee.employment_type || 'CLT',
+          status: employee.status || 'Ativo',
+          location: employee.location || '',
+        });
+      } else {
+        setFormData({
+          employee_code: '',
+          full_name: '',
+          email: '',
+          phone: '',
+          department: '',
+          position: '',
+          hire_date: '',
+          birth_date: '',
+          gender: '',
+          employment_type: 'CLT',
+          status: 'Ativo',
+          location: '',
+        });
+      }
     }
-  }, [employee]);
+  }, [isOpen, employee]);
+
+  const loadDepartmentsAndPositions = async () => {
+    try {
+      const [deptData, posData] = await Promise.all([
+        getDepartments(),
+        getPositions()
+      ]);
+      setDepartments(deptData);
+      setPositions(posData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Erro ao carregar departamentos e cargos');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (!formData.full_name.trim() || !formData.employee_code.trim()) {
+      toast.error('Nome completo e código do funcionário são obrigatórios');
+      return;
+    }
 
+    setLoading(true);
     try {
-      const employeeData = {
-        ...formData,
-        salary: formData.salary ? parseFloat(formData.salary) : null,
-        hire_date: formData.hire_date,
-        birth_date: formData.birth_date || null,
-        company_id: "", // This will be set by the backend based on user context
-        manager_id: formData.manager_id || null
-      };
-
-      if (employee?.id) {
-        await updateEmployee(employee.id, employeeData);
-        toast({
-          title: "Funcionário atualizado",
-          description: "Os dados do funcionário foram atualizados com sucesso."
-        });
+      if (employee) {
+        await updateEmployee(employee.id, formData);
+        toast.success('Funcionário atualizado com sucesso!');
       } else {
+        // Add required fields and let RLS handle company_id
+        const employeeData = { 
+          ...formData, 
+          hire_date: formData.hire_date || new Date().toISOString().split('T')[0],
+          company_id: '' // This will be overridden by RLS policy
+        };
         await createEmployee(employeeData);
-        toast({
-          title: "Funcionário criado",
-          description: "Novo funcionário foi adicionado com sucesso."
-        });
+        toast.success('Funcionário criado com sucesso!');
       }
-
-      onUpdate?.();
+      onSuccess();
       onClose();
     } catch (error) {
-      console.error('Erro ao salvar funcionário:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar dados do funcionário.",
-        variant: "destructive"
-      });
+      console.error('Error saving employee:', error);
+      toast.error('Erro ao salvar funcionário');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -130,168 +122,178 @@ export function EmployeeModal({ isOpen, onClose, employee, onUpdate }: EmployeeM
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {employee ? "Editar Funcionário" : "Novo Funcionário"}
+            {employee ? 'Editar Funcionário' : 'Novo Funcionário'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informações Básicas */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="employee_code">Código do Funcionário</Label>
+            <div>
+              <Label htmlFor="employee_code">Código do Funcionário*</Label>
               <Input
                 id="employee_code"
                 value={formData.employee_code}
-                onChange={(e) => setFormData({ ...formData, employee_code: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
+                placeholder="Ex: EMP001"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Nome Completo</Label>
+
+            <div>
+              <Label htmlFor="full_name">Nome Completo*</Label>
               <Input
                 id="full_name"
                 value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                placeholder="Nome completo do funcionário"
                 required
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div>
+              <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="email@empresa.com"
               />
             </div>
-            <div className="space-y-2">
+
+            <div>
               <Label htmlFor="phone">Telefone</Label>
               <Input
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="(11) 99999-9999"
               />
             </div>
           </div>
 
-          {/* Informações Profissionais */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="department">Departamento</Label>
-              <Input
-                id="department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              />
+              <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2">
+
+            <div>
               <Label htmlFor="position">Cargo</Label>
-              <Input
-                id="position"
-                value={formData.position}
-                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-              />
+              <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar cargo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {positions.map(pos => (
+                    <SelectItem key={pos.id} value={pos.title}>
+                      {pos.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="hire_date">Data de Admissão</Label>
+            <div>
+              <Label htmlFor="hire_date">Data de Contratação</Label>
               <Input
                 id="hire_date"
                 type="date"
                 value={formData.hire_date}
-                onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-                required
+                onChange={(e) => setFormData(prev => ({ ...prev, hire_date: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
+
+            <div>
               <Label htmlFor="birth_date">Data de Nascimento</Label>
               <Input
                 id="birth_date"
                 type="date"
                 value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, birth_date: e.target.value }))}
               />
             </div>
           </div>
 
-          {/* Informações Pessoais */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Gênero</Label>
-              <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+            <div>
+              <Label htmlFor="gender">Gênero</Label>
+              <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar" />
+                  <SelectValue placeholder="Selecionar gênero" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Masculino">Masculino</SelectItem>
                   <SelectItem value="Feminino">Feminino</SelectItem>
-                  <SelectItem value="Não-binário">Não-binário</SelectItem>
+                  <SelectItem value="Não binário">Não binário</SelectItem>
                   <SelectItem value="Prefiro não informar">Prefiro não informar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Tipo de Emprego</Label>
-              <Select value={formData.employment_type} onValueChange={(value) => setFormData({ ...formData, employment_type: value })}>
+
+            <div>
+              <Label htmlFor="employment_type">Tipo de Contrato</Label>
+              <Select value={formData.employment_type} onValueChange={(value) => setFormData(prev => ({ ...prev, employment_type: value }))}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Tipo de contrato" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="CLT">CLT</SelectItem>
                   <SelectItem value="PJ">PJ</SelectItem>
                   <SelectItem value="Estagiário">Estagiário</SelectItem>
                   <SelectItem value="Terceirizado">Terceirizado</SelectItem>
+                  <SelectItem value="Temporário">Temporário</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Status do funcionário" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Ativo">Ativo</SelectItem>
                   <SelectItem value="Inativo">Inativo</SelectItem>
-                  <SelectItem value="Afastado">Afastado</SelectItem>
-                  <SelectItem value="Demitido">Demitido</SelectItem>
+                  <SelectItem value="Férias">Férias</SelectItem>
+                  <SelectItem value="Licença">Licença</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="salary">Salário</Label>
-              <Input
-                id="salary"
-                type="number"
-                step="0.01"
-                value={formData.salary}
-                onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Localização</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
+          <div>
+            <Label htmlFor="location">Localização</Label>
+            <Input
+              id="location"
+              value={formData.location}
+              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+              placeholder="Ex: Sede SP, Filial RJ"
+            />
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : employee ? "Atualizar" : "Criar"}
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Criar')}
             </Button>
           </div>
         </form>

@@ -291,7 +291,7 @@ export default function GovernancaESG() {
               setSelectedEmployee(null);
             }}
             employee={selectedEmployee}
-            onUpdate={refetchData}
+            onSuccess={refetchData}
           />
 
           <GovernanceReportsModal
