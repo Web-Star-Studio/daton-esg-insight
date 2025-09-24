@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import SWOTMatrix from "@/components/SWOTMatrix";
+import OKRManagement from "@/components/OKRManagement";
+import StrategicDashboard from "@/components/StrategicDashboard";
 
 interface StrategicMap {
   id: string;
@@ -128,10 +131,12 @@ export default function PlanejamentoEstrategico() {
       </div>
 
       <Tabs defaultValue="maps" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="maps">Mapas Estratégicos</TabsTrigger>
           <TabsTrigger value="bsc">Balanced Scorecard</TabsTrigger>
           <TabsTrigger value="okrs">OKRs</TabsTrigger>
+          <TabsTrigger value="swot">SWOT</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="maps" className="space-y-4">
@@ -230,16 +235,16 @@ export default function PlanejamentoEstrategico() {
           </div>
         </TabsContent>
 
+        <TabsContent value="swot" className="space-y-4">
+          <SWOTMatrix />
+        </TabsContent>
+
+        <TabsContent value="dashboard" className="space-y-4">
+          <StrategicDashboard />
+        </TabsContent>
+
         <TabsContent value="okrs" className="space-y-4">
-          <Card>
-            <CardContent className="text-center py-8">
-              <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">OKRs em desenvolvimento</h3>
-              <p className="text-muted-foreground">
-                O módulo de OKRs estará disponível em breve
-              </p>
-            </CardContent>
-          </Card>
+          <OKRManagement />
         </TabsContent>
       </Tabs>
     </>

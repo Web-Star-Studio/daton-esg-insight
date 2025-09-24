@@ -3110,6 +3110,65 @@ export type Database = {
         }
         Relationships: []
       }
+      key_results: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          description: string | null
+          due_date: string | null
+          id: string
+          okr_id: string
+          order_index: number | null
+          owner_user_id: string | null
+          progress_percentage: number | null
+          status: string | null
+          target_value: number
+          title: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          okr_id: string
+          order_index?: number | null
+          owner_user_id?: string | null
+          progress_percentage?: number | null
+          status?: string | null
+          target_value: number
+          title: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          okr_id?: string
+          order_index?: number | null
+          owner_user_id?: string | null
+          progress_percentage?: number | null
+          status?: string | null
+          target_value?: number
+          title?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_results_okr_id_fkey"
+            columns: ["okr_id"]
+            isOneToOne: false
+            referencedRelation: "okrs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_articles: {
         Row: {
           author_user_id: string
@@ -3868,6 +3927,54 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      okrs: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          owner_user_id: string | null
+          progress_percentage: number | null
+          quarter: string
+          status: string | null
+          strategic_map_id: string | null
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          owner_user_id?: string | null
+          progress_percentage?: number | null
+          quarter: string
+          status?: string | null
+          strategic_map_id?: string | null
+          title: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          owner_user_id?: string | null
+          progress_percentage?: number | null
+          quarter?: string
+          status?: string | null
+          strategic_map_id?: string | null
+          title?: string
+          updated_at?: string
+          year?: number
         }
         Relationships: []
       }
@@ -4981,6 +5088,80 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: []
+      }
+      swot_analysis: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          strategic_map_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          strategic_map_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          strategic_map_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      swot_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          impact_level: string | null
+          item_text: string
+          order_index: number | null
+          swot_analysis_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_level?: string | null
+          item_text: string
+          order_index?: number | null
+          swot_analysis_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_level?: string | null
+          item_text?: string
+          order_index?: number | null
+          swot_analysis_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "swot_items_swot_analysis_id_fkey"
+            columns: ["swot_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "swot_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_programs: {
         Row: {
