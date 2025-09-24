@@ -34,7 +34,7 @@ export default function Auditoria() {
   });
 
   const filteredAudits = audits.filter(audit => {
-    if (filters.type !== 'all' && audit.type !== filters.type) return false;
+    if (filters.type !== 'all' && audit.audit_type !== filters.type) return false;
     if (filters.status !== 'all' && audit.status !== filters.status) return false;
     if (filters.search && !audit.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
     return true;
@@ -216,10 +216,10 @@ export default function Auditoria() {
                               <div className="flex items-center gap-2 mb-2">
                                 <h3 className="font-medium">{audit.title}</h3>
                                 {getStatusBadge(audit.status)}
-                                <Badge variant="outline">{audit.type}</Badge>
+                                <Badge variant="outline">{audit.audit_type}</Badge>
                               </div>
                               <p className="text-sm text-muted-foreground mb-2">
-                                {audit.description}
+                                {audit.scope || "Escopo não definido"}
                               </p>
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">
@@ -273,17 +273,17 @@ export default function Auditoria() {
                         <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm font-medium">{log.action}</p>
+                            <p className="text-sm font-medium">{log.action_type}</p>
                             <span className="text-xs text-muted-foreground">
-                              {formatDate(log.timestamp)}
+                              {formatDate(log.created_at)}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Usuário: {log.user} • Módulo: {log.module}
+                            {log.description}
                           </p>
-                          {log.details && (
+                          {log.details_json && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              {log.details}
+                              {typeof log.details_json === 'string' ? log.details_json : JSON.stringify(log.details_json)}
                             </p>
                           )}
                         </div>

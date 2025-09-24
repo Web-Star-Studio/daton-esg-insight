@@ -152,6 +152,17 @@ class AuditService {
     return data;
   }
 
+  async getActivityLogs(): Promise<ActivityLog[]> {
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    return data || [];
+  }
+
   async logActivity(actionType: string, description: string, detailsJson?: any) {
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase
