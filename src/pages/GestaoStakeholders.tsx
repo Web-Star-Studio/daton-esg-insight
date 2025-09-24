@@ -335,92 +335,125 @@ export default function GestaoStakeholders() {
           </CardContent>
         </Card>
 
-        {/* Tabela de Stakeholders */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Stakeholders</CardTitle>
-            <CardDescription>
-              {filteredStakeholders.length} stakeholder(s) encontrado(s)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Cargo/Posição</TableHead>
-                  <TableHead>Influência</TableHead>
-                  <TableHead>Interesse</TableHead>
-                  <TableHead>Frequência</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStakeholders.map((stakeholder) => (
-                  <TableRow key={stakeholder.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Users className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{stakeholder.name}</div>
-                          {stakeholder.organization && (
-                            <div className="text-sm text-muted-foreground">{stakeholder.organization}</div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {getCategoryLabel(stakeholder.category)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{stakeholder.position}</TableCell>
-                    <TableCell>
-                      <Badge variant={getInfluenceBadgeVariant(stakeholder.influence_level)}>
-                        {stakeholder.influence_level === 'high' ? 'Alta' : 
-                         stakeholder.influence_level === 'medium' ? 'Média' : 'Baixa'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getInfluenceBadgeVariant(stakeholder.interest_level)}>
-                        {stakeholder.interest_level === 'high' ? 'Alto' : 
-                         stakeholder.interest_level === 'medium' ? 'Médio' : 'Baixo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {stakeholder.engagement_frequency === 'monthly' ? 'Mensal' :
-                       stakeholder.engagement_frequency === 'quarterly' ? 'Trimestral' :
-                       stakeholder.engagement_frequency === 'biannual' ? 'Semestral' : 'Anual'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(stakeholder)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(stakeholder)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        {/* Enhanced Stakeholder Management */}
+        <Tabs defaultValue="list" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="list">Lista</TabsTrigger>
+            <TabsTrigger value="matrix">Matriz Engajamento</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="communication">Comunicação</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Stakeholders</CardTitle>
+                <CardDescription>
+                  {filteredStakeholders.length} stakeholder(s) encontrado(s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Cargo/Posição</TableHead>
+                      <TableHead>Influência</TableHead>
+                      <TableHead>Interesse</TableHead>
+                      <TableHead>Frequência</TableHead>
+                      <TableHead>Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStakeholders.map((stakeholder) => (
+                      <TableRow key={stakeholder.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Users className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-medium">{stakeholder.name}</div>
+                              {stakeholder.organization && (
+                                <div className="text-sm text-muted-foreground">{stakeholder.organization}</div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {getCategoryLabel(stakeholder.category)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{stakeholder.position}</TableCell>
+                        <TableCell>
+                          <Badge variant={getInfluenceBadgeVariant(stakeholder.influence_level)}>
+                            {stakeholder.influence_level === 'high' ? 'Alta' : 
+                             stakeholder.influence_level === 'medium' ? 'Média' : 'Baixa'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getInfluenceBadgeVariant(stakeholder.interest_level)}>
+                            {stakeholder.interest_level === 'high' ? 'Alto' : 
+                             stakeholder.interest_level === 'medium' ? 'Médio' : 'Baixo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {stakeholder.engagement_frequency === 'monthly' ? 'Mensal' :
+                           stakeholder.engagement_frequency === 'quarterly' ? 'Trimestral' :
+                           stakeholder.engagement_frequency === 'biannual' ? 'Semestral' : 'Anual'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(stakeholder)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(stakeholder)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="matrix">
+            <StakeholderEngagementMatrix />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <StakeholderAnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="communication">
+            <StakeholderCommunicationHub />
+          </TabsContent>
+        </Tabs>
 
         {/* Modal */}
+        <StakeholderModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          stakeholder={selectedStakeholder}
+          onSave={handleSave}
+        />
+      </div>
+    </MainLayout>
+  );
+}
         <StakeholderModal
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
