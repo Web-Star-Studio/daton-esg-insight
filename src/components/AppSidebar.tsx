@@ -152,6 +152,7 @@ const menuSections: MenuSection[] = [
       { id: "estrutura-organizacional", title: "Estrutura Organizacional", icon: Users, path: "/estrutura-organizacional" },
       { id: "gestao-funcionarios", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios" },
       { id: "gestao-treinamentos", title: "Gestão de Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos" },
+      { id: "gestao-desempenho", title: "Gestão de Desempenho", icon: TrendingUp, path: "/gestao-desempenho" },
     ]
   },
   {
