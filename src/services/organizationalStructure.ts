@@ -1,0 +1,317 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export interface Department {
+  id: string;
+  company_id: string;
+  name: string;
+  description?: string;
+  parent_department_id?: string;
+  manager_employee_id?: string;
+  budget?: number;
+  cost_center?: string;
+  created_at: string;
+  updated_at: string;
+  manager?: {
+    id: string;
+    full_name: string;
+  };
+  parent_department?: {
+    id: string;
+    name: string;
+  };
+  sub_departments?: Department[];
+  employee_count?: number;
+}
+
+export interface Position {
+  id: string;
+  company_id: string;
+  department_id?: string;
+  title: string;
+  description?: string;
+  level?: string;
+  salary_range_min?: number;
+  salary_range_max?: number;
+  requirements?: string[];
+  responsibilities?: string[];
+  reports_to_position_id?: string;
+  created_at: string;
+  updated_at: string;
+  department?: {
+    id: string;
+    name: string;
+  };
+  reports_to_position?: {
+    id: string;
+    title: string;
+  };
+}
+
+export interface OrganizationalChartNode {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  position_id?: string;
+  department_id?: string;
+  reports_to_employee_id?: string;
+  hierarchy_level: number;
+  is_active: boolean;
+  start_date: string;
+  end_date?: string;
+  employee: {
+    id: string;
+    full_name: string;
+    email?: string;
+    position?: string;
+  };
+  position?: {
+    id: string;
+    title: string;
+  };
+  department?: {
+    id: string;
+    name: string;
+  };
+  subordinates?: OrganizationalChartNode[];
+}
+
+// Department operations
+export const getDepartments = async (): Promise<Department[]> => {
+  const { data, error } = await supabase
+    .from('departments')
+    .select(`
+      *,
+      manager:employees!departments_manager_employee_id_fkey(id, full_name),
+      parent_department:departments!departments_parent_department_id_fkey(id, name)
+    `)
+    .order('name');
+
+  if (error) throw error;
+  return (data as any) || [];
+};
+
+export const createDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department> => {
+  const { data, error } = await supabase
+    .from('departments')
+    .insert([department])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateDepartment = async (id: string, updates: Partial<Department>): Promise<Department> => {
+  const { data, error } = await supabase
+    .from('departments')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteDepartment = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('departments')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+// Position operations
+export const getPositions = async (): Promise<Position[]> => {
+  const { data, error } = await supabase
+    .from('positions')
+    .select(`
+      *,
+      department:departments(id, name),
+      reports_to_position:positions!positions_reports_to_position_id_fkey(id, title)
+    `)
+    .order('title');
+
+  if (error) throw error;
+  return (data as any) || [];
+};
+
+export const createPosition = async (position: Omit<Position, 'id' | 'created_at' | 'updated_at'>): Promise<Position> => {
+  const { data, error } = await supabase
+    .from('positions')
+    .insert([position])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updatePosition = async (id: string, updates: Partial<Position>): Promise<Position> => {
+  const { data, error } = await supabase
+    .from('positions')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deletePosition = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('positions')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+// Organizational chart operations
+export const getOrganizationalChart = async (): Promise<OrganizationalChartNode[]> => {
+  const { data, error } = await supabase
+    .from('organizational_chart')
+    .select(`
+      *,
+      employee:employees(id, full_name, email, position),
+      position:positions(id, title),
+      department:departments(id, name)
+    `)
+    .eq('is_active', true)
+    .order('hierarchy_level');
+
+  if (error) throw error;
+  return (data as any) || [];
+};
+
+export const createOrganizationalChartNode = async (node: Omit<OrganizationalChartNode, 'id' | 'created_at' | 'updated_at' | 'employee' | 'position' | 'department'>): Promise<OrganizationalChartNode> => {
+  const { data, error } = await supabase
+    .from('organizational_chart')
+    .insert([node])
+    .select(`
+      *,
+      employee:employees(id, full_name, email, position),
+      position:positions(id, title),
+      department:departments(id, name)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data as any;
+};
+
+export const updateOrganizationalChartNode = async (id: string, updates: Partial<OrganizationalChartNode>): Promise<OrganizationalChartNode> => {
+  const { data, error } = await supabase
+    .from('organizational_chart')
+    .update(updates)
+    .eq('id', id)
+    .select(`
+      *,
+      employee:employees(id, full_name, email, position),
+      position:positions(id, title),
+      department:departments(id, name)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data as any;
+};
+
+export const deleteOrganizationalChartNode = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('organizational_chart')
+    .update({ is_active: false, end_date: new Date().toISOString().split('T')[0] })
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+// Build hierarchical structure
+export const buildOrganizationalHierarchy = (nodes: OrganizationalChartNode[]): OrganizationalChartNode[] => {
+  const nodeMap = new Map<string, OrganizationalChartNode>();
+  const rootNodes: OrganizationalChartNode[] = [];
+
+  // Create a map of all nodes
+  nodes.forEach(node => {
+    nodeMap.set(node.employee_id, { ...node, subordinates: [] });
+  });
+
+  // Build the hierarchy
+  nodes.forEach(node => {
+    const currentNode = nodeMap.get(node.employee_id);
+    if (!currentNode) return;
+
+    if (node.reports_to_employee_id) {
+      const parentNode = nodeMap.get(node.reports_to_employee_id);
+      if (parentNode) {
+        parentNode.subordinates = parentNode.subordinates || [];
+        parentNode.subordinates.push(currentNode);
+      } else {
+        rootNodes.push(currentNode);
+      }
+    } else {
+      rootNodes.push(currentNode);
+    }
+  });
+
+  return rootNodes;
+};
+
+// Get department hierarchy with employee counts
+export const getDepartmentHierarchy = async (): Promise<Department[]> => {
+  const departments = await getDepartments();
+  
+  // Get employee count for each department - using a simpler approach
+  const { data: employees } = await supabase
+    .from('employees')
+    .select('department')
+    .eq('status', 'Ativo');
+
+  // Count employees by department
+  const employeeCountMap = new Map<string, number>();
+  employees?.forEach(emp => {
+    if (emp.department) {
+      employeeCountMap.set(emp.department, (employeeCountMap.get(emp.department) || 0) + 1);
+    }
+  });
+
+  const departmentMap = new Map<string, Department>();
+  const rootDepartments: Department[] = [];
+
+  // Create department map with employee counts
+  departments.forEach(dept => {
+    const employeeCount = employeeCountMap.get(dept.name) || 0;
+    departmentMap.set(dept.id, { ...dept, employee_count: employeeCount, sub_departments: [] });
+  });
+
+  // Build hierarchy
+  departments.forEach(dept => {
+    const currentDept = departmentMap.get(dept.id);
+    if (!currentDept) return;
+
+    if (dept.parent_department_id) {
+      const parentDept = departmentMap.get(dept.parent_department_id);
+      if (parentDept) {
+        parentDept.sub_departments = parentDept.sub_departments || [];
+        parentDept.sub_departments.push(currentDept);
+      } else {
+        rootDepartments.push(currentDept);
+      }
+    } else {
+      rootDepartments.push(currentDept);
+    }
+  });
+
+  return rootDepartments;
+};
+
+// Calculate and update hierarchy levels
+export const updateHierarchyLevels = async (): Promise<void> => {
+  const { error } = await supabase.rpc('calculate_hierarchy_levels', {
+    p_company_id: (await supabase.auth.getUser()).data.user?.id
+  });
+
+  if (error) throw error;
+};

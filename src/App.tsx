@@ -337,11 +337,16 @@ const App = () => (
                 <QualityDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/gerenciamento-projetos" element={
-              <ProtectedRoute>
-                <GerenciamentoProjetos />
-              </ProtectedRoute>
-            } />
+          <Route path="/gerenciamento-projetos" element={
+            <ProtectedRoute>
+              <GerenciamentoProjetos />
+            </ProtectedRoute>
+          } />
+          <Route path="/estrutura-organizacional" element={
+            <ProtectedRoute>
+              <EstruturaOrganizacional />
+            </ProtectedRoute>
+          } />
             <Route path="/simulador" element={
               <ProtectedRoute>
                 <SimuladorEcoImpacto />

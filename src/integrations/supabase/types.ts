@@ -1352,6 +1352,60 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          budget: number | null
+          company_id: string
+          cost_center: string | null
+          created_at: string
+          description: string | null
+          id: string
+          manager_employee_id: string | null
+          name: string
+          parent_department_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          company_id: string
+          cost_center?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_employee_id?: string | null
+          name: string
+          parent_department_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          company_id?: string
+          cost_center?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_employee_id?: string | null
+          name?: string
+          parent_department_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_manager_employee_id_fkey"
+            columns: ["manager_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departments_parent_department_id_fkey"
+            columns: ["parent_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_extraction_jobs: {
         Row: {
           ai_model_used: string | null
@@ -1726,6 +1780,7 @@ export type Database = {
           manager_id: string | null
           phone: string | null
           position: string | null
+          position_id: string | null
           salary: number | null
           status: string | null
           updated_at: string
@@ -1748,6 +1803,7 @@ export type Database = {
           manager_id?: string | null
           phone?: string | null
           position?: string | null
+          position_id?: string | null
           salary?: number | null
           status?: string | null
           updated_at?: string
@@ -1770,11 +1826,20 @@ export type Database = {
           manager_id?: string | null
           phone?: string | null
           position?: string | null
+          position_id?: string | null
           salary?: number | null
           status?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "employees_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       esg_metrics: {
         Row: {
@@ -4065,6 +4130,80 @@ export type Database = {
         }
         Relationships: []
       }
+      organizational_chart: {
+        Row: {
+          company_id: string
+          created_at: string
+          department_id: string | null
+          employee_id: string | null
+          end_date: string | null
+          hierarchy_level: number | null
+          id: string
+          is_active: boolean | null
+          position_id: string | null
+          reports_to_employee_id: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          department_id?: string | null
+          employee_id?: string | null
+          end_date?: string | null
+          hierarchy_level?: number | null
+          id?: string
+          is_active?: boolean | null
+          position_id?: string | null
+          reports_to_employee_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          department_id?: string | null
+          employee_id?: string | null
+          end_date?: string | null
+          hierarchy_level?: number | null
+          id?: string
+          is_active?: boolean | null
+          position_id?: string | null
+          reports_to_employee_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizational_chart_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizational_chart_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizational_chart_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizational_chart_reports_to_employee_id_fkey"
+            columns: ["reports_to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pgrs_actions: {
         Row: {
           action_description: string
@@ -4354,6 +4493,69 @@ export type Database = {
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "pgrs_waste_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      positions: {
+        Row: {
+          company_id: string
+          created_at: string
+          department_id: string | null
+          description: string | null
+          id: string
+          level: string | null
+          reports_to_position_id: string | null
+          requirements: string[] | null
+          responsibilities: string[] | null
+          salary_range_max: number | null
+          salary_range_min: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          level?: string | null
+          reports_to_position_id?: string | null
+          requirements?: string[] | null
+          responsibilities?: string[] | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          level?: string | null
+          reports_to_position_id?: string | null
+          requirements?: string[] | null
+          responsibilities?: string[] | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "positions_reports_to_position_id_fkey"
+            columns: ["reports_to_position_id"]
+            isOneToOne: false
+            referencedRelation: "positions"
             referencedColumns: ["id"]
           },
         ]
@@ -6433,6 +6635,10 @@ export type Database = {
       calculate_gri_report_completion: {
         Args: { p_report_id: string }
         Returns: number
+      }
+      calculate_hierarchy_levels: {
+        Args: { p_company_id: string }
+        Returns: undefined
       }
       calculate_license_status: {
         Args: {
