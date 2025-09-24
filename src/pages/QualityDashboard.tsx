@@ -57,7 +57,8 @@ const QualityDashboardPage = () => {
           <AIQualityInsights />
         </TabsContent>
         </Tabs>
-      </div>
     </div>
   );
 };
+
+export default QualityDashboardPage;

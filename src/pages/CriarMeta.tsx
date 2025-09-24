@@ -519,8 +519,8 @@ const CriarMeta = () => {
             )}
           </form>
         </Form>
-      </div>
-    </Card>
-  </div>
+    </div>
   );
 }
+
+export default CriarMeta;
