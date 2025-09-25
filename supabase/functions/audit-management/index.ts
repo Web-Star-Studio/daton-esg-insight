@@ -33,23 +33,38 @@ serve(async (req) => {
 
     const company_id = profile.company_id
     const url = new URL(req.url)
-    const path = url.pathname
+    
+    // Handle both GET and POST with action-based routing
+    let body = null
+    if (req.method === 'POST' || req.method === 'PUT') {
+      body = await req.json()
+    }
 
-    if (req.method === 'GET' && path.includes('/audit-trail')) {
-      return await getAuditTrail(supabaseClient, company_id, url.searchParams)
-    } else if (req.method === 'GET' && path.includes('/audits')) {
-      return await getAudits(supabaseClient, company_id)
-    } else if (req.method === 'POST' && path.includes('/audits')) {
-      const body = await req.json()
-      return await createAudit(supabaseClient, company_id, user.id, body)
-    } else if (req.method === 'GET' && path.includes('/findings')) {
-      const auditId = url.searchParams.get('audit_id')
-      if (auditId) {
+    if (req.method === 'GET') {
+      const action = url.searchParams.get('action') || body?.action
+      
+      if (action === 'get-audits' || !action) {
+        return await getAudits(supabaseClient, company_id)
+      } else if (action === 'get-findings') {
+        const auditId = url.searchParams.get('audit_id') || body?.audit_id
         return await getFindings(supabaseClient, company_id, auditId)
+      } else if (action === 'audit-trail') {
+        return await getAuditTrail(supabaseClient, company_id, url.searchParams)
       }
-    } else if (req.method === 'POST' && path.includes('/findings')) {
-      const body = await req.json()
-      return await createFinding(supabaseClient, company_id, user.id, body)
+    } else if (req.method === 'POST') {
+      const action = body?.action
+      
+      if (action === 'create-audit') {
+        return await createAudit(supabaseClient, company_id, user.id, body)
+      } else if (action === 'create-finding') {
+        return await createFinding(supabaseClient, company_id, user.id, body)
+      }
+    } else if (req.method === 'PUT') {
+      const action = body?.action
+      
+      if (action === 'update-finding') {
+        return await updateFinding(supabaseClient, company_id, body.finding_id, body)
+      }
     }
 
     return new Response('Not found', { status: 404, headers: corsHeaders })
@@ -155,11 +170,49 @@ async function createFinding(supabase: any, company_id: string, user_id: string,
   const { data, error } = await supabase
     .from('audit_findings')
     .insert(findingData)
-    .select()
+    .select(`
+      *,
+      profiles!audit_findings_responsible_user_id_fkey(full_name)
+    `)
     .single()
 
   if (error) {
     throw new Error(`Failed to create finding: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function updateFinding(supabase: any, company_id: string, finding_id: string, updateData: any) {
+  // First verify the finding belongs to a company audit
+  const { data: auditCheck } = await supabase
+    .from('audit_findings')
+    .select(`
+      audit_id,
+      audits!inner(company_id)
+    `)
+    .eq('id', finding_id)
+    .single()
+
+  if (!auditCheck || auditCheck.audits.company_id !== company_id) {
+    return new Response('Finding not found or unauthorized', { status: 404, headers: corsHeaders })
+  }
+
+  const { data, error } = await supabase
+    .from('audit_findings')
+    .update(updateData)
+    .eq('id', finding_id)
+    .select(`
+      *,
+      profiles!audit_findings_responsible_user_id_fkey(full_name)
+    `)
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update finding: ${error.message}`)
   }
 
   return new Response(

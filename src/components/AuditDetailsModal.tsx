@@ -27,7 +27,9 @@ export function AuditDetailsModal({ audit, isOpen, onClose }: AuditDetailsModalP
   const { data: findings, isLoading: findingsLoading } = useQuery({
     queryKey: ['audit-findings', audit.id],
     queryFn: () => auditService.getAuditFindings(audit.id),
-    enabled: isOpen
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
   const updateFindingMutation = useMutation({
@@ -59,13 +61,15 @@ export function AuditDetailsModal({ audit, isOpen, onClose }: AuditDetailsModalP
   };
 
   const getSeverityBadge = (severity: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      "Crítica": "destructive",
-      "Maior": "default",
-      "Menor": "secondary",
-      "Oportunidade": "outline"
+    const severityConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", className: string }> = {
+      "Crítica": { variant: "destructive", className: "bg-red-100 text-red-800 border-red-300" },
+      "Maior": { variant: "default", className: "bg-orange-100 text-orange-800 border-orange-300" },
+      "Menor": { variant: "secondary", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+      "Oportunidade": { variant: "outline", className: "bg-blue-100 text-blue-800 border-blue-300" }
     };
-    return <Badge variant={variants[severity] || "outline"}>{severity}</Badge>;
+    
+    const config = severityConfig[severity] || { variant: "outline" as const, className: "" };
+    return <Badge variant={config.variant} className={config.className}>{severity}</Badge>;
   };
 
   const handleStatusChange = (findingId: string, newStatus: string) => {
@@ -211,60 +215,67 @@ export function AuditDetailsModal({ audit, isOpen, onClose }: AuditDetailsModalP
                 ))}
               </div>
             ) : findings?.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-medium">Nenhum achado encontrado</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Comece adicionando o primeiro achado desta auditoria.
+              <Card className="border-dashed">
+                <CardContent className="text-center py-12">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-4">
+                    <AlertTriangle className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="mt-2 text-lg font-medium">Nenhum achado encontrado</h3>
+                  <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+                    Esta auditoria ainda não possui achados registrados. Comece adicionando o primeiro achado.
                   </p>
                   <div className="mt-6">
-                    <Button onClick={() => setIsFindingModalOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo Achado
+                    <Button onClick={() => setIsFindingModalOpen(true)} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Adicionar Primeiro Achado
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {findings?.map((finding) => (
-                  <Card key={finding.id} className="cursor-pointer hover:bg-muted/50">
-                    <CardContent className="p-4">
+                  <Card key={finding.id} className="cursor-pointer hover:bg-muted/30 transition-colors border-l-4 border-l-transparent hover:border-l-primary/50">
+                    <CardContent className="p-6">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
                             {getSeverityBadge(finding.severity)}
                             {getStatusBadge(finding.status)}
                             {finding.due_date && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                                 <Calendar className="h-3 w-3" />
-                                {format(new Date(finding.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                                Prazo: {format(new Date(finding.due_date), "dd/MM/yyyy", { locale: ptBR })}
                               </div>
                             )}
                           </div>
-                          <p className="text-sm font-medium mb-1">{finding.description}</p>
+                          <h4 className="text-sm font-medium mb-2 line-clamp-2">{finding.description}</h4>
                           {finding.profiles?.full_name && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                               <User className="h-3 w-3" />
-                              Responsável: {finding.profiles.full_name}
+                              <span>Responsável: <strong>{finding.profiles.full_name}</strong></span>
                             </div>
                           )}
                           {finding.action_plan && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              <strong>Plano de Ação:</strong> {finding.action_plan}
-                            </p>
+                            <div className="bg-muted/50 p-3 rounded-md mt-3">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Plano de Ação:</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2">{finding.action_plan}</p>
+                            </div>
                           )}
                         </div>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-2 shrink-0">
                           {finding.status !== 'Resolvida' && (
                             <>
                               {finding.status === 'Aberta' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleStatusChange(finding.id, 'Em Tratamento')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(finding.id, 'Em Tratamento');
+                                  }}
                                   disabled={updateFindingMutation.isPending}
+                                  className="text-xs"
                                 >
                                   Iniciar Tratamento
                                 </Button>
@@ -273,16 +284,24 @@ export function AuditDetailsModal({ audit, isOpen, onClose }: AuditDetailsModalP
                                 <Button
                                   size="sm"
                                   variant="default"
-                                  onClick={() => handleStatusChange(finding.id, 'Resolvida')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(finding.id, 'Resolvida');
+                                  }}
                                   disabled={updateFindingMutation.isPending}
+                                  className="text-xs"
                                 >
-                                  Marcar como Resolvida
+                                  Resolver
                                 </Button>
                               )}
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setSelectedFinding(finding)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFinding(finding);
+                                }}
+                                className="text-xs"
                               >
                                 Editar
                               </Button>

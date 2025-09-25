@@ -105,17 +105,18 @@ class AuditService {
   }
 
   async getAudits(): Promise<Audit[]> {
-    const { data, error } = await supabase.functions.invoke('audit-management/audits', {
-      method: 'GET'
+    const { data, error } = await supabase.functions.invoke('audit-management', {
+      method: 'GET',
+      body: { action: 'get-audits' }
     });
 
     if (error) throw error;
-    return data;
+    return data || [];
   }
 
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
-    const { data, error } = await supabase.functions.invoke('audit-management/audits', {
-      body: auditData,
+    const { data, error } = await supabase.functions.invoke('audit-management', {
+      body: { ...auditData, action: 'create-audit' },
       method: 'POST'
     });
 
@@ -124,17 +125,18 @@ class AuditService {
   }
 
   async getAuditFindings(auditId: string): Promise<AuditFinding[]> {
-    const { data, error } = await supabase.functions.invoke(`audit-management/audits/${auditId}/findings`, {
-      method: 'GET'
+    const { data, error } = await supabase.functions.invoke('audit-management', {
+      method: 'GET',
+      body: { action: 'get-findings', audit_id: auditId }
     });
 
     if (error) throw error;
-    return data;
+    return data || [];
   }
 
   async createAuditFinding(auditId: string, findingData: CreateFindingData): Promise<AuditFinding> {
-    const { data, error } = await supabase.functions.invoke(`audit-management/audits/${auditId}/findings`, {
-      body: findingData,
+    const { data, error } = await supabase.functions.invoke('audit-management', {
+      body: { ...findingData, audit_id: auditId, action: 'create-finding' },
       method: 'POST'
     });
 
@@ -143,8 +145,8 @@ class AuditService {
   }
 
   async updateAuditFinding(findingId: string, updateData: UpdateFindingData): Promise<AuditFinding> {
-    const { data, error } = await supabase.functions.invoke(`audit-management/findings/${findingId}`, {
-      body: updateData,
+    const { data, error } = await supabase.functions.invoke('audit-management', {
+      body: { ...updateData, finding_id: findingId, action: 'update-finding' },
       method: 'PUT'
     });
 

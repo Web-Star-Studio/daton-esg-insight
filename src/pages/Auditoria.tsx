@@ -5,10 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, AlertTriangle, Activity, Plus, Calendar, Filter } from "lucide-react";
+import { FileText, Users, AlertTriangle, Activity, Plus, Calendar, Filter, BarChart3 } from "lucide-react";
 import { auditService, type Audit, type ActivityLog } from "@/services/audit";
 import { AuditModal } from "@/components/AuditModal";
 import { AuditDetailsModal } from "@/components/AuditDetailsModal";
+import { AuditReportsModal } from "@/components/AuditReportsModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function Auditoria() {
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
   const [filters, setFilters] = useState({
     type: 'all',
@@ -26,11 +28,15 @@ export default function Auditoria() {
   const { data: audits = [], isLoading: loadingAudits, refetch: refetchAudits } = useQuery({
     queryKey: ['audits'],
     queryFn: auditService.getAudits,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2
   });
 
   const { data: activityLogs = [], isLoading: loadingLogs } = useQuery({
     queryKey: ['activity-logs'],
     queryFn: auditService.getActivityLogs,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2
   });
 
   const filteredAudits = audits.filter(audit => {
@@ -41,18 +47,16 @@ export default function Auditoria() {
   });
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Agendada':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Agendada</Badge>;
-      case 'Em Andamento':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Em Andamento</Badge>;
-      case 'Concluída':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Concluída</Badge>;
-      case 'Cancelada':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Cancelada</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", className: string }> = {
+      'Planejada': { variant: "outline", className: "bg-slate-50 text-slate-700 border-slate-200" },
+      'Agendada': { variant: "outline", className: "bg-blue-50 text-blue-700 border-blue-200" },
+      'Em Andamento': { variant: "default", className: "bg-amber-100 text-amber-800 border-amber-300" },
+      'Concluída': { variant: "secondary", className: "bg-green-100 text-green-800 border-green-300" },
+      'Cancelada': { variant: "destructive", className: "bg-red-100 text-red-800 border-red-300" }
+    };
+    
+    const config = statusConfig[status] || { variant: "outline" as const, className: "" };
+    return <Badge variant={config.variant} className={config.className}>{status}</Badge>;
   };
 
   const handleAuditClick = (audit: Audit) => {
@@ -139,10 +143,16 @@ export default function Auditoria() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Auditorias Formais</CardTitle>
-                  <Button onClick={() => setIsAuditModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Auditoria
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsReportsModalOpen(true)}>
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Relatórios
+                    </Button>
+                    <Button onClick={() => setIsAuditModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Auditoria
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -207,38 +217,50 @@ export default function Auditoria() {
                       </Button>
                     </div>
                   ) : (
-                    filteredAudits.map((audit) => (
-                      <Card key={audit.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => handleAuditClick(audit)}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-medium">{audit.title}</h3>
-                                {getStatusBadge(audit.status)}
-                                <Badge variant="outline">{audit.audit_type}</Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {audit.scope || "Escopo não definido"}
-                              </p>
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>Início: {formatDate(audit.start_date)}</span>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+                      {filteredAudits.map((audit) => (
+                        <Card key={audit.id} className="cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 border-l-4 border-l-primary/20"
+                          onClick={() => handleAuditClick(audit)}>
+                          <CardContent className="p-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                                  <h3 className="font-semibold text-lg">{audit.title}</h3>
+                                  {getStatusBadge(audit.status)}
+                                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                                    {audit.audit_type}
+                                  </Badge>
                                 </div>
-                                {audit.end_date && (
+                                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                  {audit.scope || "Escopo não definido"}
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>Fim: {formatDate(audit.end_date)}</span>
+                                    <Calendar className="h-3 w-3 text-primary" />
+                                    <span>Início: {audit.start_date ? formatDate(audit.start_date) : 'N/A'}</span>
                                   </div>
-                                )}
-                                <span>Auditor: {audit.auditor}</span>
+                                  {audit.end_date && (
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3 text-primary" />
+                                      <span>Fim: {formatDate(audit.end_date)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-3 w-3 text-primary" />
+                                    <span>Auditor: {audit.auditor || 'N/A'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex lg:flex-col gap-2">
+                                <Button size="sm" variant="outline" className="flex-1 lg:flex-none">
+                                  Ver Detalhes
+                                </Button>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -312,6 +334,11 @@ export default function Auditoria() {
             onClose={() => setSelectedAudit(null)}
           />
         )}
+
+        <AuditReportsModal
+          isOpen={isReportsModalOpen}
+          onClose={() => setIsReportsModalOpen(false)}
+        />
       </div>
     </>
   );
