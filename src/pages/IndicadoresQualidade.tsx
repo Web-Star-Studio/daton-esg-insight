@@ -1,7 +1,8 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QualityIndicatorDashboard } from '@/components/QualityIndicatorDashboard';
-import { TrendAnalysisChart } from '@/components/TrendAnalysisChart';
+import { AlertsManagementCenter } from '@/components/AlertsManagementCenter';
+import { StatisticalProcessControl } from '@/components/StatisticalProcessControl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, TrendingUp, AlertTriangle, Activity, Target, Calendar } from 'lucide-react';
 
@@ -70,47 +71,25 @@ const IndicadoresQualidade = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Gestão de Metas</h3>
-                <p className="text-muted-foreground">
-                  Interface de configuração de metas será implementada em breve
-                </p>
-              </div>
+              <QualityIndicatorDashboard />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="alerts">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sistema de Alertas</CardTitle>
-              <CardDescription>
-                Monitore alertas automáticos de desvios nos indicadores
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Sistema de Alertas</h3>
-                <p className="text-muted-foreground">
-                  Central de alertas será implementada em breve
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <AlertsManagementCenter />
         </TabsContent>
 
         <TabsContent value="trends">
           <Card>
             <CardHeader>
-              <CardTitle>Análise de Tendências</CardTitle>
+              <CardTitle>Controle Estatístico do Processo</CardTitle>
               <CardDescription>
-                Visualize tendências históricas e projeções dos indicadores
+                Análise avançada com gráficos de controle e capacidade do processo
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <TrendAnalysisChart data={[]} />
+              <StatisticalProcessControl />
             </CardContent>
           </Card>
         </TabsContent>
