@@ -27,7 +27,7 @@ interface KnowledgeArticle {
   category: string;
   tags: string[];
   author_user_id: string;
-  status: string;
+  status: "draft" | "published" | "archived";
   version: number;
   is_published: boolean;
   view_count: number;
@@ -68,10 +68,6 @@ export default function BaseConhecimento() {
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ["knowledge-articles", searchTerm, selectedCategory],
     queryFn: () => knowledgeBaseService.getKnowledgeArticles(),
-      search: searchTerm || undefined,
-      category: selectedCategory !== "all" ? selectedCategory : undefined,
-      published_only: true
-    }),
   });
 
   const createArticleMutation = useMutation({

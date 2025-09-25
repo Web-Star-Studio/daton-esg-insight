@@ -187,60 +187,7 @@ class QualityManagementService {
     try {
       const { data, error } = await supabase.functions.invoke('quality-management/action-plans/progress');
       if (error) throw error;
-  async getSuppliers() {
-    try {
-      return [
-        {
-          id: '1',
-          name: 'Fornecedor ABC',
-          cnpj: '12.345.678/0001-90',
-          contact_email: 'contato@fornecedorabc.com',
-          contact_phone: '(11) 1234-5678',
-          address: 'Rua das Flores, 123',
-          category: 'Matéria Prima',
-          created_at: '2024-01-15T10:30:00Z',
-          updated_at: '2024-01-15T10:30:00Z'
-        }
-      ];
-    } catch (error) {
-      console.error('Error fetching suppliers:', error);
-      return [];
-    }
-  }
-
-  async createSupplier(data: any) {
-    try {
-      return {
-        id: Math.random().toString(),
-        ...data,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Error creating supplier:', error);
-      throw error;
-    }
-  }
-          cnpj: '12.345.678/0001-90',
-          contact_email: 'contato@fornecedorabc.com',
-          contact_phone: '(11) 1234-5678',
-          address: 'Rua das Flores, 123',
-          category: 'Matéria Prima',
-          created_at: '2024-01-15T10:30:00Z',
-          updated_at: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          name: 'Empresa XYZ',
-          cnpj: '98.765.432/0001-10',
-          contact_email: 'contato@empresaxyz.com',
-          contact_phone: '(11) 8765-4321',
-          address: 'Av. Principal, 456',
-          category: 'Serviços',
-          created_at: '2024-01-20T14:15:00Z',
-          updated_at: '2024-01-20T14:15:00Z'
-        }
-      ];
+      return data || [];
     } catch (error) {
       console.error('Error fetching action plans progress:', error);
       // Return fallback mock data
@@ -648,6 +595,58 @@ class QualityManagementService {
 
     if (error) throw error;
     return data;
+  }
+
+  async getSuppliers() {
+    try {
+      return [
+        {
+          id: '1',
+          name: 'Fornecedor ABC',
+          cnpj: '12.345.678/0001-90',
+          contact_email: 'contato@fornecedorabc.com',
+          contact_phone: '(11) 1234-5678',
+          address: 'Rua das Flores, 123',
+          category: 'Matéria Prima',
+          status: 'Ativo',
+          qualification_status: 'Qualificado',
+          created_at: '2024-01-15T10:30:00Z',
+          updated_at: '2024-01-15T10:30:00Z'
+        },
+        {
+          id: '2',
+          name: 'Empresa XYZ',
+          cnpj: '98.765.432/0001-10',
+          contact_email: 'contato@empresaxyz.com',
+          contact_phone: '(11) 8765-4321',
+          address: 'Av. Principal, 456',
+          category: 'Serviços',
+          status: 'Ativo',
+          qualification_status: 'Em Análise',
+          created_at: '2024-01-20T14:15:00Z',
+          updated_at: '2024-01-20T14:15:00Z'
+        }
+      ];
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      return [];
+    }
+  }
+
+  async createSupplier(data: any) {
+    try {
+      return {
+        id: Math.random().toString(),
+        ...data,
+        status: 'Ativo',
+        qualification_status: 'Em Análise',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      throw error;
+    }
   }
 }
 

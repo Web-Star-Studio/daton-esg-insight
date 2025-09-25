@@ -106,12 +106,15 @@ class KnowledgeBaseService {
     }
   }
 
-  async incrementArticleViewCount(articleId: string): Promise<void> {
+  async incrementArticleViewCount(articleId: string) {
     try {
-      // Mock increment for now
-      console.log(`Incrementing view count for article ${articleId}`);
+      // Mock increment - return updated view count
+      const newViewCount = Math.floor(Math.random() * 100) + 50;
+      console.log(`Incrementing view count for article ${articleId} to ${newViewCount}`);
+      return { view_count: newViewCount };
     } catch (error) {
       console.error('Error incrementing article view count:', error);
+      return { view_count: 0 };
     }
   }
 
