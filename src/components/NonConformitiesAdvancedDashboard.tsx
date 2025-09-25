@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 export function NonConformitiesAdvancedDashboard() {
-  const { data: dashboardData, isLoading } = useQuery({
+  const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ["nc-advanced-dashboard"],
     queryFn: async () => {
       // Fetch non-conformities with all related data
@@ -152,6 +152,8 @@ export function NonConformitiesAdvancedDashboard() {
         recentNCs: nonConformities.slice(0, 5)
       };
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1
   });
 
   const COLORS = {
@@ -172,22 +174,70 @@ export function NonConformitiesAdvancedDashboard() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map(i => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="animate-pulse space-y-2">
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-                <div className="h-8 bg-muted rounded w-1/3"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-2">
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                  <div className="h-8 bg-muted rounded w-1/3"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2].map(i => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 bg-muted rounded w-1/3"></div>
+                  <div className="h-64 bg-muted rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
-  const { metrics, charts } = dashboardData;
+  if (error || !dashboardData) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <AlertTriangle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">Dados Indisponíveis</h3>
+            <p className="text-muted-foreground mb-4">
+              Não foi possível carregar os dados das não conformidades. 
+              Usando dados de demonstração.
+            </p>
+            <Badge variant="outline">Modo Offline</Badge>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { metrics, charts } = dashboardData || { 
+    metrics: {
+      total: 0,
+      currentMonth: 0,
+      trend: 0,
+      resolutionRate: 0,
+      overdue: 0,
+      avgResolutionTime: 0,
+      critical: 0
+    },
+    charts: {
+      severity: [],
+      status: [],
+      source: [],
+      monthly: []
+    }
+  };
 
   return (
     <div className="space-y-6">

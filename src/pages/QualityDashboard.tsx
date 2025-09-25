@@ -6,6 +6,8 @@ import AIQualityInsights from '@/components/AIQualityInsights';
 import { EnhancedQualityDashboard } from '@/components/EnhancedQualityDashboard';
 import { PredictiveQualityWidget } from '@/components/PredictiveQualityWidget';
 import QualityIndicatorDashboard from '@/components/QualityIndicatorDashboard';
+import QualityPerformanceWidget from '@/components/QualityPerformanceWidget';
+import QualityTrendsAnalyzer from '@/components/QualityTrendsAnalyzer';
 
 import { BarChart3, Brain, Grid3X3, Zap } from 'lucide-react';
 
@@ -22,36 +24,54 @@ const QualityDashboardPage = () => {
       <PredictiveQualityWidget className="w-full" />
 
       <Tabs defaultValue="enhanced" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
           <TabsTrigger value="enhanced" className="flex items-center space-x-2">
             <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">Sistema Avançado</span>
-            <span className="sm:hidden">Avançado</span>
+            <span className="hidden lg:inline">Sistema Avançado</span>
+            <span className="lg:hidden">Avançado</span>
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden lg:inline">Performance</span>
+            <span className="lg:hidden">Perf</span>
+          </TabsTrigger>
+          <TabsTrigger value="trends" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden lg:inline">Tendências</span>
+            <span className="lg:hidden">Trend</span>
           </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Visão Geral</span>
-            <span className="sm:hidden">Geral</span>
+            <span className="hidden lg:inline">Visão Geral</span>
+            <span className="lg:hidden">Geral</span>
           </TabsTrigger>
           <TabsTrigger value="indicators" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Indicadores</span>
-            <span className="sm:hidden">KPIs</span>
+            <span className="hidden lg:inline">Indicadores</span>
+            <span className="lg:hidden">KPIs</span>
           </TabsTrigger>
           <TabsTrigger value="matrix" className="flex items-center space-x-2">
             <Grid3X3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Matriz de Riscos</span>
-            <span className="sm:hidden">Matriz</span>
+            <span className="hidden lg:inline">Matriz de Riscos</span>
+            <span className="lg:hidden">Matriz</span>
           </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center space-x-2">
             <Brain className="h-4 w-4" />
-            <span className="hidden sm:inline">Insights de IA</span>
-            <span className="sm:hidden">IA</span>
+            <span className="hidden lg:inline">Insights de IA</span>
+            <span className="lg:hidden">IA</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="enhanced">
           <EnhancedQualityDashboard />
+        </TabsContent>
+
+        <TabsContent value="performance">
+          <QualityPerformanceWidget />
+        </TabsContent>
+
+        <TabsContent value="trends">
+          <QualityTrendsAnalyzer />
         </TabsContent>
 
         <TabsContent value="overview">

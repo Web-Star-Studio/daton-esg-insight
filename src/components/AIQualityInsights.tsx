@@ -31,13 +31,17 @@ const AIQualityInsights = () => {
   const { data: dashboard, isLoading: isDashboardLoading } = useQuery({
     queryKey: ['quality-dashboard'],
     queryFn: () => qualityManagementService.getQualityDashboard(),
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time insights
+    refetchInterval: 60000, // Reduced frequency to improve performance
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 
   const { data: indicators, isLoading: isIndicatorsLoading } = useQuery({
     queryKey: ['quality-indicators'],
     queryFn: () => qualityManagementService.getQualityIndicators(),
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Reduced frequency
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 
   const { data: aiInsights, isLoading: isAILoading } = useQuery({
