@@ -479,6 +479,69 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_ownership_records: {
+        Row: {
+          asset_id: string
+          company_id: string
+          contract_file_path: string | null
+          contract_number: string | null
+          created_at: string
+          id: string
+          insurance_coverage_amount: number | null
+          insurance_policy_number: string | null
+          maintenance_responsibility: string
+          owner_company_name: string | null
+          owner_contact_info: Json | null
+          ownership_end_date: string | null
+          ownership_start_date: string
+          ownership_type: string
+          responsible_user_id: string | null
+          return_conditions: string | null
+          updated_at: string
+          usage_restrictions: string | null
+        }
+        Insert: {
+          asset_id: string
+          company_id: string
+          contract_file_path?: string | null
+          contract_number?: string | null
+          created_at?: string
+          id?: string
+          insurance_coverage_amount?: number | null
+          insurance_policy_number?: string | null
+          maintenance_responsibility?: string
+          owner_company_name?: string | null
+          owner_contact_info?: Json | null
+          ownership_end_date?: string | null
+          ownership_start_date: string
+          ownership_type?: string
+          responsible_user_id?: string | null
+          return_conditions?: string | null
+          updated_at?: string
+          usage_restrictions?: string | null
+        }
+        Update: {
+          asset_id?: string
+          company_id?: string
+          contract_file_path?: string | null
+          contract_number?: string | null
+          created_at?: string
+          id?: string
+          insurance_coverage_amount?: number | null
+          insurance_policy_number?: string | null
+          maintenance_responsibility?: string
+          owner_company_name?: string | null
+          owner_contact_info?: Json | null
+          ownership_end_date?: string | null
+          ownership_start_date?: string
+          ownership_type?: string
+          responsible_user_id?: string | null
+          return_conditions?: string | null
+          updated_at?: string
+          usage_restrictions?: string | null
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           asset_type: string
@@ -852,6 +915,123 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      calibration_records: {
+        Row: {
+          actual_cost: number | null
+          adjustments_made: string | null
+          asset_id: string
+          calibration_date: string
+          calibration_provider: string | null
+          calibration_result: string
+          certificate_file_path: string | null
+          certificate_number: string | null
+          company_id: string
+          created_at: string
+          id: string
+          measurements_after: Json | null
+          measurements_before: Json | null
+          next_calibration_date: string | null
+          notes: string | null
+          performed_by_user_id: string | null
+          schedule_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          adjustments_made?: string | null
+          asset_id: string
+          calibration_date: string
+          calibration_provider?: string | null
+          calibration_result?: string
+          certificate_file_path?: string | null
+          certificate_number?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          measurements_after?: Json | null
+          measurements_before?: Json | null
+          next_calibration_date?: string | null
+          notes?: string | null
+          performed_by_user_id?: string | null
+          schedule_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_cost?: number | null
+          adjustments_made?: string | null
+          asset_id?: string
+          calibration_date?: string
+          calibration_provider?: string | null
+          calibration_result?: string
+          certificate_file_path?: string | null
+          certificate_number?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          measurements_after?: Json | null
+          measurements_before?: Json | null
+          next_calibration_date?: string | null
+          notes?: string | null
+          performed_by_user_id?: string | null
+          schedule_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      calibration_schedules: {
+        Row: {
+          asset_id: string
+          calibration_provider: string | null
+          calibration_standard: string | null
+          certificate_required: boolean
+          company_id: string
+          created_at: string
+          estimated_cost: number | null
+          frequency_months: number
+          id: string
+          is_active: boolean
+          last_calibration_date: string | null
+          next_calibration_date: string
+          responsible_user_id: string | null
+          tolerance_range: Json | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          calibration_provider?: string | null
+          calibration_standard?: string | null
+          certificate_required?: boolean
+          company_id: string
+          created_at?: string
+          estimated_cost?: number | null
+          frequency_months?: number
+          id?: string
+          is_active?: boolean
+          last_calibration_date?: string | null
+          next_calibration_date: string
+          responsible_user_id?: string | null
+          tolerance_range?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          calibration_provider?: string | null
+          calibration_standard?: string | null
+          certificate_required?: boolean
+          company_id?: string
+          created_at?: string
+          estimated_cost?: number | null
+          frequency_months?: number
+          id?: string
+          is_active?: boolean
+          last_calibration_date?: string | null
+          next_calibration_date?: string
+          responsible_user_id?: string | null
+          tolerance_range?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       carbon_projects: {
         Row: {
@@ -2473,6 +2653,60 @@ export type Database = {
           },
         ]
       }
+      equipment_maintenance_schedules: {
+        Row: {
+          asset_id: string
+          company_id: string
+          created_at: string
+          estimated_cost: number | null
+          estimated_duration_hours: number | null
+          frequency_days: number
+          id: string
+          is_active: boolean
+          last_maintenance_date: string | null
+          maintenance_checklist: Json | null
+          maintenance_type: string
+          next_maintenance_date: string
+          priority: string
+          responsible_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          company_id: string
+          created_at?: string
+          estimated_cost?: number | null
+          estimated_duration_hours?: number | null
+          frequency_days: number
+          id?: string
+          is_active?: boolean
+          last_maintenance_date?: string | null
+          maintenance_checklist?: Json | null
+          maintenance_type?: string
+          next_maintenance_date: string
+          priority?: string
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          company_id?: string
+          created_at?: string
+          estimated_cost?: number | null
+          estimated_duration_hours?: number | null
+          frequency_days?: number
+          id?: string
+          is_active?: boolean
+          last_maintenance_date?: string | null
+          maintenance_checklist?: Json | null
+          maintenance_type?: string
+          next_maintenance_date?: string
+          priority?: string
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       esg_metrics: {
         Row: {
           company_id: string
@@ -3894,6 +4128,111 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_client_evaluations: {
+        Row: {
+          communication_score: number | null
+          company_id: string
+          created_at: string
+          evaluated_by_user_id: string
+          evaluation_period_end: string
+          evaluation_period_start: string
+          feedback_text: string | null
+          id: string
+          improvement_suggestions: string | null
+          nps_score: number | null
+          overall_satisfaction_score: number | null
+          problem_resolution_score: number | null
+          relationship_id: string
+          response_time_score: number | null
+          service_quality_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          communication_score?: number | null
+          company_id: string
+          created_at?: string
+          evaluated_by_user_id: string
+          evaluation_period_end: string
+          evaluation_period_start: string
+          feedback_text?: string | null
+          id?: string
+          improvement_suggestions?: string | null
+          nps_score?: number | null
+          overall_satisfaction_score?: number | null
+          problem_resolution_score?: number | null
+          relationship_id: string
+          response_time_score?: number | null
+          service_quality_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          communication_score?: number | null
+          company_id?: string
+          created_at?: string
+          evaluated_by_user_id?: string
+          evaluation_period_end?: string
+          evaluation_period_start?: string
+          feedback_text?: string | null
+          id?: string
+          improvement_suggestions?: string | null
+          nps_score?: number | null
+          overall_satisfaction_score?: number | null
+          problem_resolution_score?: number | null
+          relationship_id?: string
+          response_time_score?: number | null
+          service_quality_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      internal_client_supplier_relationships: {
+        Row: {
+          client_department: string
+          communication_protocol: string | null
+          company_id: string
+          created_at: string
+          escalation_matrix: Json | null
+          id: string
+          is_active: boolean
+          performance_indicators: Json | null
+          relationship_manager_user_id: string | null
+          service_description: string
+          sla_requirements: Json | null
+          supplier_department: string
+          updated_at: string
+        }
+        Insert: {
+          client_department: string
+          communication_protocol?: string | null
+          company_id: string
+          created_at?: string
+          escalation_matrix?: Json | null
+          id?: string
+          is_active?: boolean
+          performance_indicators?: Json | null
+          relationship_manager_user_id?: string | null
+          service_description: string
+          sla_requirements?: Json | null
+          supplier_department: string
+          updated_at?: string
+        }
+        Update: {
+          client_department?: string
+          communication_protocol?: string | null
+          company_id?: string
+          created_at?: string
+          escalation_matrix?: Json | null
+          id?: string
+          is_active?: boolean
+          performance_indicators?: Json | null
+          relationship_manager_user_id?: string | null
+          service_description?: string
+          sla_requirements?: Json | null
+          supplier_department?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       key_results: {
         Row: {
           created_at: string
@@ -4399,6 +4738,126 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      loan_agreements: {
+        Row: {
+          agreement_type: string
+          asset_id: string
+          borrower_company_name: string
+          company_id: string
+          created_at: string
+          id: string
+          insurance_requirements: string | null
+          lender_company_name: string
+          loan_end_date: string | null
+          loan_start_date: string
+          penalty_conditions: string | null
+          renewal_terms: string | null
+          responsible_user_id: string | null
+          return_condition_requirements: string | null
+          status: string
+          updated_at: string
+          usage_limitations: string | null
+        }
+        Insert: {
+          agreement_type?: string
+          asset_id: string
+          borrower_company_name: string
+          company_id: string
+          created_at?: string
+          id?: string
+          insurance_requirements?: string | null
+          lender_company_name: string
+          loan_end_date?: string | null
+          loan_start_date: string
+          penalty_conditions?: string | null
+          renewal_terms?: string | null
+          responsible_user_id?: string | null
+          return_condition_requirements?: string | null
+          status?: string
+          updated_at?: string
+          usage_limitations?: string | null
+        }
+        Update: {
+          agreement_type?: string
+          asset_id?: string
+          borrower_company_name?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          insurance_requirements?: string | null
+          lender_company_name?: string
+          loan_end_date?: string | null
+          loan_start_date?: string
+          penalty_conditions?: string | null
+          renewal_terms?: string | null
+          responsible_user_id?: string | null
+          return_condition_requirements?: string | null
+          status?: string
+          updated_at?: string
+          usage_limitations?: string | null
+        }
+        Relationships: []
+      }
+      maintenance_records: {
+        Row: {
+          actual_cost: number | null
+          actual_duration_hours: number | null
+          asset_id: string
+          company_id: string
+          created_at: string
+          description: string | null
+          evidence_files: Json | null
+          id: string
+          issues_found: string | null
+          maintenance_date: string
+          maintenance_type: string
+          next_recommended_date: string | null
+          parts_replaced: Json | null
+          performed_by_user_id: string | null
+          schedule_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_duration_hours?: number | null
+          asset_id: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          evidence_files?: Json | null
+          id?: string
+          issues_found?: string | null
+          maintenance_date: string
+          maintenance_type: string
+          next_recommended_date?: string | null
+          parts_replaced?: Json | null
+          performed_by_user_id?: string | null
+          schedule_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_duration_hours?: number | null
+          asset_id?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          evidence_files?: Json | null
+          id?: string
+          issues_found?: string | null
+          maintenance_date?: string
+          maintenance_type?: string
+          next_recommended_date?: string | null
+          parts_replaced?: Json | null
+          performed_by_user_id?: string | null
+          schedule_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       marketplace_favorites: {
         Row: {
@@ -7303,6 +7762,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      value_chain_mapping: {
+        Row: {
+          company_id: string
+          created_at: string
+          external_clients: Json | null
+          external_suppliers: Json | null
+          id: string
+          input_description: string | null
+          internal_client: string | null
+          internal_supplier: string | null
+          kpis: Json | null
+          output_description: string | null
+          process_name: string
+          process_owner_user_id: string | null
+          process_type: string
+          requirements: Json | null
+          responsible_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          external_clients?: Json | null
+          external_suppliers?: Json | null
+          id?: string
+          input_description?: string | null
+          internal_client?: string | null
+          internal_supplier?: string | null
+          kpis?: Json | null
+          output_description?: string | null
+          process_name: string
+          process_owner_user_id?: string | null
+          process_type?: string
+          requirements?: Json | null
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          external_clients?: Json | null
+          external_suppliers?: Json | null
+          id?: string
+          input_description?: string | null
+          internal_client?: string | null
+          internal_supplier?: string | null
+          kpis?: Json | null
+          output_description?: string | null
+          process_name?: string
+          process_owner_user_id?: string | null
+          process_type?: string
+          requirements?: Json | null
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       variable_factors: {
         Row: {
