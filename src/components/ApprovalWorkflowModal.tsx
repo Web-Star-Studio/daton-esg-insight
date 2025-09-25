@@ -56,7 +56,7 @@ export function ApprovalWorkflowModal({
           *,
           approval_steps(
             *,
-            profiles:approver_user_id(full_name)
+            profiles!approver_user_id(full_name)
           )
         `)
         .eq("entity_type", entityType)
@@ -78,9 +78,9 @@ export function ApprovalWorkflowModal({
       if (!user) throw new Error("Usuário não autenticado");
 
       // Find current step for this user
-      const currentStep = approvalData?.approval_steps?.find(
+      const currentStep = Array.isArray(approvalData?.approval_steps) ? approvalData.approval_steps.find(
         (step: ApprovalStep) => step.approver_user_id === user.id && step.status === 'pending'
-      );
+      ) : null;
 
       if (!currentStep) {
         toast.error("Você não tem permissão para aprovar este item");
@@ -100,7 +100,7 @@ export function ApprovalWorkflowModal({
       if (stepError) throw stepError;
 
       // Check if this was the final step
-      const allSteps = approvalData?.approval_steps || [];
+      const allSteps = Array.isArray(approvalData?.approval_steps) ? approvalData.approval_steps : [];
       const updatedSteps = allSteps.map((step: ApprovalStep) => 
         step.id === currentStep.id 
           ? { ...step, status: action === "approve" ? "approved" : "rejected" }
@@ -221,7 +221,7 @@ export function ApprovalWorkflowModal({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {approvalData.approval_steps?.map((step: ApprovalStep) => (
+                    {Array.isArray(approvalData.approval_steps) && approvalData.approval_steps.map((step: ApprovalStep) => (
                       <div 
                         key={step.id}
                         className="flex items-start justify-between p-3 border rounded-lg"
@@ -262,10 +262,12 @@ export function ApprovalWorkflowModal({
               </Card>
 
               {/* Current user can approve/reject */}
-              {approvalData.approval_steps?.some((step: ApprovalStep) => {
-                const { data: { user } } = supabase.auth.getUser();
-                return step.approver_user_id === user?.then(u => u.user?.id) && step.status === 'pending';
-              }) && (
+              {(async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                return Array.isArray(approvalData?.approval_steps) && approvalData.approval_steps.some((step: ApprovalStep) => 
+                  step.approver_user_id === user?.id && step.status === 'pending'
+                );
+              })() && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Sua Ação</CardTitle>

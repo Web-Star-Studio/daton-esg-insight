@@ -49,8 +49,6 @@ export function NonConformityDetailsModal({
         .from("non_conformities")
         .select(`
           *,
-          responsible:responsible_user_id(full_name),
-          approved_by:approved_by_user_id(full_name),
           corrective_actions(*)
         `)
         .eq("id", nonConformityId)
@@ -252,10 +250,12 @@ export function NonConformityDetailsModal({
                           {format(new Date(nonConformity.detected_date), "dd/MM/yyyy", { locale: ptBR })}
                         </p>
                       </div>
-                      {nonConformity.responsible && (
+                      {nonConformity.responsible_user_id && (
                         <div>
                           <Label>Responsável</Label>
-                          <p className="text-sm text-muted-foreground">{nonConformity.responsible.full_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {nonConformity.responsible_user_id || 'Não informado'}
+                          </p>
                         </div>
                       )}
                     </CardContent>
