@@ -90,10 +90,10 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
     trends[trends.length - 1].qualityScore > trends[0].qualityScore ? 'up' : 'down' : 'stable';
 
   return (
-    <Card className={className}>
+    <Card className={`${className} hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/20`}>
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <Brain className="h-5 w-5 text-primary" />
+          <Brain className="h-5 w-5 text-primary animate-pulse" />
           <span>Análise Preditiva</span>
           {getRiskIcon(predictions.riskLevel)}
         </CardTitle>
@@ -105,15 +105,17 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
         {/* Top Section - Landscape Layout */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {/* Risk Level */}
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-background">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-background hover:shadow-md transition-all duration-200 group">
             <div className="flex items-center space-x-2">
-              {getRiskIcon(predictions.riskLevel)}
+              <div className="group-hover:scale-110 transition-transform">
+                {getRiskIcon(predictions.riskLevel)}
+              </div>
               <span className="text-sm font-medium">Nível de Risco</span>
             </div>
             <Badge 
               variant={predictions.riskLevel === 'high' ? 'destructive' : 
                       predictions.riskLevel === 'medium' ? 'default' : 'secondary'}
-              className={getRiskColor(predictions.riskLevel)}
+              className={`${getRiskColor(predictions.riskLevel)} animate-in slide-in-from-right duration-500`}
             >
               {predictions.riskLevel === 'high' ? 'Alto' : 
                predictions.riskLevel === 'medium' ? 'Médio' : 'Baixo'}
@@ -121,36 +123,43 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           </div>
 
           {/* Next Month Prediction */}
-          <div className="p-3 rounded-lg border bg-muted/50 space-y-2">
+          <div className="p-3 rounded-lg border bg-muted/50 space-y-2 hover:shadow-md transition-all duration-200 group">
             <div className="flex justify-between items-center text-sm">
               <span className="font-medium text-foreground">NCs Previstas</span>
-              <span className="font-bold text-lg text-foreground">{predictions.nextMonthNCs}</span>
+              <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-700">
+                {predictions.nextMonthNCs}
+              </span>
             </div>
             <Progress 
               value={Math.min((predictions.nextMonthNCs / 10) * 100, 100)} 
-              className="h-2"
+              className="h-2 transition-all duration-1000"
             />
             <p className="text-xs text-muted-foreground">Próximo mês</p>
           </div>
 
           {/* Quality Score Trend */}
-          <div className="p-3 rounded-lg border bg-muted/50 space-y-2">
+          <div className="p-3 rounded-lg border bg-muted/50 space-y-2 hover:shadow-md transition-all duration-200 group">
             <div className="flex justify-between items-center text-sm">
               <span className="font-medium text-foreground">Qualidade</span>
               <div className="flex items-center space-x-1">
-                {trendDirection === 'up' ? (
-                  <TrendingUp className="h-4 w-4 text-success" />
-                ) : trendDirection === 'down' ? (
-                  <TrendingDown className="h-4 w-4 text-destructive" />
-                ) : (
-                  <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
-                )}
-                <span className="font-bold text-lg text-foreground">
+                <div className="group-hover:scale-110 transition-transform">
+                  {trendDirection === 'up' ? (
+                    <TrendingUp className="h-4 w-4 text-success animate-bounce" />
+                  ) : trendDirection === 'down' ? (
+                    <TrendingDown className="h-4 w-4 text-destructive animate-pulse" />
+                  ) : (
+                    <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
+                  )}
+                </div>
+                <span className="font-bold text-lg text-foreground group-hover:scale-105 transition-transform animate-in slide-in-from-right duration-900">
                   {metrics.qualityScore}%
                 </span>
               </div>
             </div>
-            <Progress value={metrics.qualityScore} className="h-2" />
+            <Progress 
+              value={metrics.qualityScore} 
+              className="h-2 transition-all duration-1000"
+            />
             <p className="text-xs text-muted-foreground">Tendência atual</p>
           </div>
         </div>
@@ -159,15 +168,15 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Top Pattern */}
           {predictions.patterns.length > 0 && (
-            <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-l-primary">
+            <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-l-primary hover:bg-muted/40 transition-all duration-200 group">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Padrão Detectado</p>
+                  <p className="text-sm font-medium group-hover:text-primary transition-colors">Padrão Detectado</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {predictions.patterns[0].description}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs animate-in slide-in-from-top duration-500">
                   {predictions.patterns[0].confidence}% confiança
                 </Badge>
               </div>
@@ -176,16 +185,18 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
 
           {/* Top Recommendation */}
           {predictions.recommendations.length > 0 && (
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="text-sm font-medium text-primary">Recomendação IA</p>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all duration-200 group cursor-pointer">
+              <p className="text-sm font-medium text-primary group-hover:text-primary/80 transition-colors">
+                Recomendação IA
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {predictions.recommendations[0].description}
               </p>
               <div className="flex items-center justify-between mt-2">
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs animate-in slide-in-from-left duration-500">
                   Impacto: {predictions.recommendations[0].impact}
                 </Badge>
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs animate-in slide-in-from-right duration-700">
                   Prioridade: {predictions.recommendations[0].priority}
                 </Badge>
               </div>

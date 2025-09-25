@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown, Activity, Users, FileText, Target } from 'lucide-react';
 import { qualityManagementService } from '@/services/qualityManagement';
+import QualityTooltip from '@/components/QualityTooltip';
 
 const QualityDashboard = () => {
   // Real data from quality dashboard with enhanced loading and error handling
@@ -136,57 +137,89 @@ const QualityDashboard = () => {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Não Conformidades</CardTitle>
+            <QualityTooltip 
+              title="Não Conformidades"
+              description="Total de não conformidades registradas no sistema. Inclui todas as NCs abertas, em andamento e fechadas."
+            >
+              <CardTitle className="text-sm font-medium">Não Conformidades</CardTitle>
+            </QualityTooltip>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{metrics.totalNonConformities}</div>
+            <div className="text-2xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-500">
+              {metrics.totalNonConformities}
+            </div>
             <p className="text-xs text-muted-foreground">
               {metrics.openNonConformities > 0 ? `${metrics.openNonConformities} em aberto` : 'Nenhuma em aberto'}
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Riscos Críticos</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <QualityTooltip 
+              title="Riscos Críticos"
+              description="Riscos classificados como críticos ou altos que requerem atenção imediata da gestão."
+            >
+              <CardTitle className="text-sm font-medium">Riscos Críticos</CardTitle>
+            </QualityTooltip>
+            <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{metrics.criticalRisks}</div>
+            <div className="text-2xl font-bold text-destructive animate-in slide-in-from-bottom-2 duration-700">
+              {metrics.criticalRisks}
+            </div>
             <p className="text-xs text-muted-foreground">
               de {metrics.totalRisks} riscos totais
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Planos de Ação</CardTitle>
+            <QualityTooltip 
+              title="Planos de Ação"
+              description="Planos de ação ativos para tratamento de não conformidades e implementação de melhorias."
+              variant="help"
+            >
+              <CardTitle className="text-sm font-medium">Planos de Ação</CardTitle>
+            </QualityTooltip>
             <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{metrics.activeActionPlans}</div>
+            <div className="text-2xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-900">
+              {metrics.activeActionPlans}
+            </div>
             <p className="text-xs text-muted-foreground">
               {metrics.overdueActions > 0 ? `${metrics.overdueActions} em atraso` : 'Todos em dia'}
             </p>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pontuação da Qualidade</CardTitle>
+            <QualityTooltip 
+              title="Pontuação da Qualidade"
+              description="Índice geral de qualidade baseado na performance de NCs, planos de ação e indicadores do SGQ."
+            >
+              <CardTitle className="text-sm font-medium">Pontuação da Qualidade</CardTitle>
+            </QualityTooltip>
             {metrics.qualityScore >= 80 ? (
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-success animate-bounce" />
             ) : (
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <TrendingDown className="h-4 w-4 text-destructive animate-pulse" />
             )}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{metrics.qualityScore}%</div>
-            <Progress value={metrics.qualityScore} className="mt-2" />
+            <div className="text-2xl font-bold text-foreground animate-in slide-in-from-bottom-2 duration-1000">
+              {metrics.qualityScore}%
+            </div>
+            <Progress 
+              value={metrics.qualityScore} 
+              className="mt-2 transition-all duration-1000" 
+            />
             <p className="text-xs text-muted-foreground mt-1">
               {metrics.qualityScore >= 90 ? 'Excelente' : 
                metrics.qualityScore >= 80 ? 'Muito Bom' :
