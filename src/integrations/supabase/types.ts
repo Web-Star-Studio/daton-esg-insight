@@ -1394,6 +1394,93 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_complaints: {
+        Row: {
+          assigned_to_user_id: string | null
+          attachments: Json | null
+          category: string
+          communication_log: Json | null
+          company_id: string
+          complaint_number: string
+          complaint_type: string
+          created_at: string
+          customer_document: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          customer_satisfaction_feedback: string | null
+          customer_satisfaction_rating: number | null
+          description: string
+          escalated: boolean | null
+          escalation_reason: string | null
+          id: string
+          priority: string | null
+          resolution_date: string | null
+          resolution_description: string | null
+          resolution_target_date: string | null
+          sla_met: boolean | null
+          status: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          attachments?: Json | null
+          category: string
+          communication_log?: Json | null
+          company_id: string
+          complaint_number: string
+          complaint_type: string
+          created_at?: string
+          customer_document?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          customer_satisfaction_feedback?: string | null
+          customer_satisfaction_rating?: number | null
+          description: string
+          escalated?: boolean | null
+          escalation_reason?: string | null
+          id?: string
+          priority?: string | null
+          resolution_date?: string | null
+          resolution_description?: string | null
+          resolution_target_date?: string | null
+          sla_met?: boolean | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          attachments?: Json | null
+          category?: string
+          communication_log?: Json | null
+          company_id?: string
+          complaint_number?: string
+          complaint_type?: string
+          created_at?: string
+          customer_document?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          customer_satisfaction_feedback?: string | null
+          customer_satisfaction_rating?: number | null
+          description?: string
+          escalated?: boolean | null
+          escalation_reason?: string | null
+          id?: string
+          priority?: string | null
+          resolution_date?: string | null
+          resolution_description?: string | null
+          resolution_target_date?: string | null
+          sla_met?: boolean | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_collection_tasks: {
         Row: {
           assigned_to_user_id: string | null
@@ -3729,6 +3816,81 @@ export type Database = {
           social_score?: number | null
           status?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      internal_agreements: {
+        Row: {
+          agreement_number: string
+          agreement_type: string
+          approval_workflow: Json | null
+          client_company_id: string | null
+          company_id: string
+          created_at: string
+          deliverables: Json | null
+          description: string | null
+          end_date: string | null
+          file_path: string | null
+          id: string
+          milestones: Json | null
+          parent_agreement_id: string | null
+          responsible_user_id: string | null
+          scope: string | null
+          signatures: Json | null
+          start_date: string
+          status: string | null
+          supplier_company_id: string | null
+          title: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          agreement_number: string
+          agreement_type?: string
+          approval_workflow?: Json | null
+          client_company_id?: string | null
+          company_id: string
+          created_at?: string
+          deliverables?: Json | null
+          description?: string | null
+          end_date?: string | null
+          file_path?: string | null
+          id?: string
+          milestones?: Json | null
+          parent_agreement_id?: string | null
+          responsible_user_id?: string | null
+          scope?: string | null
+          signatures?: Json | null
+          start_date: string
+          status?: string | null
+          supplier_company_id?: string | null
+          title: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          agreement_number?: string
+          agreement_type?: string
+          approval_workflow?: Json | null
+          client_company_id?: string | null
+          company_id?: string
+          created_at?: string
+          deliverables?: Json | null
+          description?: string | null
+          end_date?: string | null
+          file_path?: string | null
+          id?: string
+          milestones?: Json | null
+          parent_agreement_id?: string | null
+          responsible_user_id?: string | null
+          scope?: string | null
+          signatures?: Json | null
+          start_date?: string
+          status?: string | null
+          supplier_company_id?: string | null
+          title?: string
+          updated_at?: string
+          version?: string | null
         }
         Relationships: []
       }
@@ -6139,6 +6301,60 @@ export type Database = {
         }
         Relationships: []
       }
+      satisfaction_surveys: {
+        Row: {
+          anonymous: boolean | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          end_date: string | null
+          id: string
+          questions: Json
+          settings: Json | null
+          start_date: string | null
+          status: string | null
+          survey_type: string
+          target_audience: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          anonymous?: boolean | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          questions?: Json
+          settings?: Json | null
+          start_date?: string | null
+          status?: string | null
+          survey_type?: string
+          target_audience: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          anonymous?: boolean | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          questions?: Json
+          settings?: Json | null
+          start_date?: string | null
+          status?: string | null
+          survey_type?: string
+          target_audience?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sdg_alignment: {
         Row: {
           actions_taken: string | null
@@ -6600,6 +6816,78 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_contracts: {
+        Row: {
+          auto_renewal: boolean | null
+          company_id: string
+          contract_number: string
+          contract_type: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          end_date: string
+          file_path: string | null
+          id: string
+          payment_terms: string | null
+          renewal_notice_days: number | null
+          responsible_user_id: string | null
+          sla_requirements: Json | null
+          start_date: string
+          status: string | null
+          supplier_id: string
+          terms_conditions: string | null
+          title: string
+          updated_at: string
+          value: number | null
+        }
+        Insert: {
+          auto_renewal?: boolean | null
+          company_id: string
+          contract_number: string
+          contract_type?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          end_date: string
+          file_path?: string | null
+          id?: string
+          payment_terms?: string | null
+          renewal_notice_days?: number | null
+          responsible_user_id?: string | null
+          sla_requirements?: Json | null
+          start_date: string
+          status?: string | null
+          supplier_id: string
+          terms_conditions?: string | null
+          title: string
+          updated_at?: string
+          value?: number | null
+        }
+        Update: {
+          auto_renewal?: boolean | null
+          company_id?: string
+          contract_number?: string
+          contract_type?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          end_date?: string
+          file_path?: string | null
+          id?: string
+          payment_terms?: string | null
+          renewal_notice_days?: number | null
+          responsible_user_id?: string | null
+          sla_requirements?: Json | null
+          start_date?: string
+          status?: string | null
+          supplier_id?: string
+          terms_conditions?: string | null
+          title?: string
+          updated_at?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
       supplier_evaluations: {
         Row: {
           comments: string | null
@@ -6636,6 +6924,69 @@ export type Database = {
           quality_score?: number | null
           service_score?: number | null
           supplier_id?: string
+        }
+        Relationships: []
+      }
+      supplier_performance_metrics: {
+        Row: {
+          company_id: string
+          complaints_count: number | null
+          contracts_active: number | null
+          contracts_total: number | null
+          cost_performance_score: number | null
+          created_at: string
+          delivery_score: number | null
+          id: string
+          incidents_count: number | null
+          metrics_data: Json | null
+          overall_score: number | null
+          period_end: string
+          period_start: string
+          quality_score: number | null
+          service_level_score: number | null
+          sla_compliance_percentage: number | null
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          complaints_count?: number | null
+          contracts_active?: number | null
+          contracts_total?: number | null
+          cost_performance_score?: number | null
+          created_at?: string
+          delivery_score?: number | null
+          id?: string
+          incidents_count?: number | null
+          metrics_data?: Json | null
+          overall_score?: number | null
+          period_end: string
+          period_start: string
+          quality_score?: number | null
+          service_level_score?: number | null
+          sla_compliance_percentage?: number | null
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          complaints_count?: number | null
+          contracts_active?: number | null
+          contracts_total?: number | null
+          cost_performance_score?: number | null
+          created_at?: string
+          delivery_score?: number | null
+          id?: string
+          incidents_count?: number | null
+          metrics_data?: Json | null
+          overall_score?: number | null
+          period_end?: string
+          period_start?: string
+          quality_score?: number | null
+          service_level_score?: number | null
+          sla_compliance_percentage?: number | null
+          supplier_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
