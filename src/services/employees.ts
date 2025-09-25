@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface Employee {
   id: string;
@@ -100,4 +101,68 @@ export const getEmployeesStats = async () => {
     genderDistribution,
     avgSalary: employees.filter(e => e.salary).reduce((sum, e) => sum + (e.salary || 0), 0) / employees.filter(e => e.salary).length || 0
   };
+};
+
+// React Query hooks
+export const useEmployees = () => {
+  return useQuery({
+    queryKey: ['employees'],
+    queryFn: getEmployees,
+  });
+};
+
+export const useEmployee = (id: string) => {
+  return useQuery({
+    queryKey: ['employee', id],
+    queryFn: () => getEmployee(id),
+    enabled: !!id,
+  });
+};
+
+export const useCreateEmployee = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createEmployee,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+};
+
+export const useUpdateEmployee = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Employee> }) =>
+      updateEmployee(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+};
+
+export const useDeleteEmployee = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteEmployee,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+};
+
+// Helper function to get employees as options
+export const getEmployeesAsOptions = async (): Promise<Array<{value: string; label: string}>> => {
+  const employees = await getEmployees();
+  return employees.map(employee => ({
+    value: employee.id,
+    label: employee.full_name
+  }));
+};
+
+// React Query hook for employee options
+export const useEmployeesAsOptions = () => {
+  return useQuery({
+    queryKey: ['employees-options'],
+    queryFn: getEmployeesAsOptions,
+  });
 };

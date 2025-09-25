@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateValueChainProcess } from "@/services/valueChainMapping";
-import { useEmployees } from "@/services/employees";
+import { useEmployeesAsOptions } from "@/services/employees";
 import { useToast } from "@/hooks/use-toast";
 import { Network, ArrowRight, Users, Building } from "lucide-react";
 
@@ -36,7 +36,7 @@ export function ValueChainMapperModal({ open, onClose }: ValueChainMapperModalPr
   const [newRequirement, setNewRequirement] = useState("");
   const [newKpi, setNewKpi] = useState("");
 
-  const { data: employees } = useEmployees();
+  const { data: employees } = useEmployeesAsOptions();
   const { mutate: createProcess, isPending } = useCreateValueChainProcess();
   const { toast } = useToast();
 

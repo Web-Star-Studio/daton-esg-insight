@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useCreateCalibrationSchedule } from "@/services/calibrationManagement";
-import { getAssetsAsOptions } from "@/services/assets";
-import { useEmployees } from "@/services/employees";
+import { useAssetsAsOptions } from "@/services/assets";
+import { useEmployeesAsOptions } from "@/services/employees";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, Calendar, DollarSign, FileCheck } from "lucide-react";
 
@@ -33,8 +33,8 @@ export function CalibrationSchedulerModal({ open, onClose }: CalibrationSchedule
     estimated_cost: ""
   });
 
-  const { data: assets } = getAssetsAsOptions();
-  const { data: employees } = useEmployees();
+  const { data: assets } = useAssetsAsOptions();
+  const { data: employees } = useEmployeesAsOptions();
   const { mutate: createSchedule, isPending } = useCreateCalibrationSchedule();
   const { toast } = useToast();
 

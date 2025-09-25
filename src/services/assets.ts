@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export interface Asset {
   id: string;
@@ -254,3 +255,11 @@ export async function getAssetsAsOptions(): Promise<Array<{value: string; label:
     label: `${asset.name} (${asset.asset_type})`
   }));
 }
+
+// React Query hook for asset options
+export const useAssetsAsOptions = () => {
+  return useQuery({
+    queryKey: ['assets-options'],
+    queryFn: getAssetsAsOptions,
+  });
+};

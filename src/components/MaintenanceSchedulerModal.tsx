@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateMaintenanceSchedule } from "@/services/equipmentMaintenance";
-import { getAssetsAsOptions } from "@/services/assets";
-import { useEmployees } from "@/services/employees";
+import { useAssetsAsOptions } from "@/services/assets";
+import { useEmployeesAsOptions } from "@/services/employees";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, DollarSign, Wrench, AlertTriangle } from "lucide-react";
 
@@ -31,8 +31,8 @@ export function MaintenanceSchedulerModal({ open, onClose }: MaintenanceSchedule
 
   const [newChecklistItem, setNewChecklistItem] = useState("");
 
-  const { data: assets } = getAssetsAsOptions();
-  const { data: employees } = useEmployees();
+  const { data: assets } = useAssetsAsOptions();
+  const { data: employees } = useEmployeesAsOptions();
   const { mutate: createSchedule, isPending } = useCreateMaintenanceSchedule();
   const { toast } = useToast();
 
