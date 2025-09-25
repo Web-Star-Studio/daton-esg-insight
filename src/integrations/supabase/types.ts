@@ -335,6 +335,111 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_step: number | null
+          entity_id: string
+          entity_type: string
+          id: string
+          requested_by_user_id: string
+          status: string | null
+          updated_at: string
+          workflow_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          current_step?: number | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          requested_by_user_id: string
+          status?: string | null
+          updated_at?: string
+          workflow_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_step?: number | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          requested_by_user_id?: string
+          status?: string | null
+          updated_at?: string
+          workflow_id?: string
+        }
+        Relationships: []
+      }
+      approval_steps: {
+        Row: {
+          approval_request_id: string
+          approved_at: string | null
+          approver_user_id: string
+          comments: string | null
+          created_at: string
+          id: string
+          status: string | null
+          step_number: number
+        }
+        Insert: {
+          approval_request_id: string
+          approved_at?: string | null
+          approver_user_id: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          step_number: number
+        }
+        Update: {
+          approval_request_id?: string
+          approved_at?: string | null
+          approver_user_id?: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          step_number?: number
+        }
+        Relationships: []
+      }
+      approval_workflows: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          steps: Json
+          updated_at: string
+          workflow_name: string
+          workflow_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          steps?: Json
+          updated_at?: string
+          workflow_name: string
+          workflow_type?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          steps?: Json
+          updated_at?: string
+          workflow_name?: string
+          workflow_type?: string
+        }
+        Relationships: []
+      }
       article_approvals: {
         Row: {
           approval_notes: string | null
@@ -5492,55 +5597,136 @@ export type Database = {
       }
       non_conformities: {
         Row: {
+          approval_date: string | null
+          approval_notes: string | null
+          approved_by_user_id: string | null
+          attachments: Json | null
           category: string | null
           company_id: string
+          completion_date: string | null
+          corrective_actions: string | null
           created_at: string
+          damage_level: string | null
           description: string
           detected_by_user_id: string | null
           detected_date: string
+          due_date: string | null
+          effectiveness_date: string | null
+          effectiveness_evaluation: string | null
           id: string
+          impact_analysis: string | null
           nc_number: string
+          preventive_actions: string | null
+          recurrence_count: number | null
           responsible_user_id: string | null
           root_cause_analysis: string | null
           severity: string
+          similar_nc_ids: Json | null
           source: string | null
           status: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          approval_date?: string | null
+          approval_notes?: string | null
+          approved_by_user_id?: string | null
+          attachments?: Json | null
           category?: string | null
           company_id: string
+          completion_date?: string | null
+          corrective_actions?: string | null
           created_at?: string
+          damage_level?: string | null
           description: string
           detected_by_user_id?: string | null
           detected_date: string
+          due_date?: string | null
+          effectiveness_date?: string | null
+          effectiveness_evaluation?: string | null
           id?: string
+          impact_analysis?: string | null
           nc_number: string
+          preventive_actions?: string | null
+          recurrence_count?: number | null
           responsible_user_id?: string | null
           root_cause_analysis?: string | null
           severity: string
+          similar_nc_ids?: Json | null
           source?: string | null
           status?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          approval_date?: string | null
+          approval_notes?: string | null
+          approved_by_user_id?: string | null
+          attachments?: Json | null
           category?: string | null
           company_id?: string
+          completion_date?: string | null
+          corrective_actions?: string | null
           created_at?: string
+          damage_level?: string | null
           description?: string
           detected_by_user_id?: string | null
           detected_date?: string
+          due_date?: string | null
+          effectiveness_date?: string | null
+          effectiveness_evaluation?: string | null
           id?: string
+          impact_analysis?: string | null
           nc_number?: string
+          preventive_actions?: string | null
+          recurrence_count?: number | null
           responsible_user_id?: string | null
           root_cause_analysis?: string | null
           severity?: string
+          similar_nc_ids?: Json | null
           source?: string | null
           status?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      non_conformity_timeline: {
+        Row: {
+          action_description: string
+          action_type: string
+          attachments: Json | null
+          company_id: string
+          created_at: string
+          id: string
+          new_values: Json | null
+          non_conformity_id: string
+          old_values: Json | null
+          user_id: string
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          attachments?: Json | null
+          company_id: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          non_conformity_id: string
+          old_values?: Json | null
+          user_id: string
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          attachments?: Json | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          non_conformity_id?: string
+          old_values?: Json | null
+          user_id?: string
         }
         Relationships: []
       }

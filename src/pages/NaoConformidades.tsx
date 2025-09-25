@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NonConformityDetailsModal } from "@/components/NonConformityDetailsModal";
+import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAdvancedDashboard";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,17 +29,35 @@ interface NonConformity {
   detected_date: string;
   status: string;
   created_at: string;
+  damage_level?: string;
+  impact_analysis?: string;
+  root_cause_analysis?: string;
+  corrective_actions?: string;
+  preventive_actions?: string;
+  effectiveness_evaluation?: string;
+  effectiveness_date?: string;
+  responsible_user_id?: string;
+  approved_by_user_id?: string;
+  approval_date?: string;
+  approval_notes?: string;
+  attachments?: any[];
+  due_date?: string;
+  completion_date?: string;
+  recurrence_count?: number;
 }
 
 export default function NaoConformidades() {
   const [isCreateNCOpen, setIsCreateNCOpen] = useState(false);
+  const [selectedNCId, setSelectedNCId] = useState<string | null>(null);
   const [newNCData, setNewNCData] = useState({
     title: "",
     description: "",
     category: "",
     severity: "Baixa",
     source: "Processo",
-    detected_date: new Date().toISOString().split('T')[0]
+    detected_date: new Date().toISOString().split('T')[0],
+    damage_level: "Baixo",
+    responsible_user_id: ""
   });
 
   const { data: nonConformities, isLoading } = useQuery({
@@ -44,7 +65,11 @@ export default function NaoConformidades() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("non_conformities")
-        .select("*")
+        .select(`
+          *,
+          responsible:responsible_user_id(full_name),
+          approved_by:approved_by_user_id(full_name)
+        `)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -93,7 +118,9 @@ export default function NaoConformidades() {
         category: "",
         severity: "Baixa",
         source: "Processo",
-        detected_date: new Date().toISOString().split('T')[0]
+        detected_date: new Date().toISOString().split('T')[0],
+        damage_level: "Baixo",
+        responsible_user_id: ""
       });
     } catch (error) {
       toast.error("Erro ao registrar não conformidade");
@@ -151,7 +178,7 @@ export default function NaoConformidades() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Não Conformidades</h1>
           <p className="text-muted-foreground mt-2">
-            Gerencie não conformidades e ações corretivas
+            Sistema completo de gestão de não conformidades
           </p>
         </div>
         
@@ -253,8 +280,25 @@ export default function NaoConformidades() {
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Lista
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="mt-6">
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de NCs</CardTitle>
@@ -305,11 +349,85 @@ export default function NaoConformidades() {
               resolvidas com sucesso
             </p>
           </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
-      {/* NCs Table */}
-      <Card>
+        {/* Basic Overview Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Resumo Rápido</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa de Resolução</span>
+                  <span className="font-semibold">
+                    {totalNCs > 0 ? ((closedNCs / totalNCs) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tempo Médio</span>
+                  <span className="font-semibold">12 dias</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Recorrências</span>
+                  <span className="font-semibold text-orange-600">3</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Ações Necessárias</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-red-50">
+                  <span className="text-sm">Aprovações Pendentes</span>
+                  <Badge variant="destructive">{nonConformities?.filter(nc => !nc.approved_by_user_id).length || 0}</Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-yellow-50">
+                  <span className="text-sm">Análises Pendentes</span>
+                  <Badge variant="secondary">{nonConformities?.filter(nc => nc.status === "Em Análise").length || 0}</Badge>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50">
+                  <span className="text-sm">Em Correção</span>
+                  <Badge>{nonConformities?.filter(nc => nc.status === "Em Correção").length || 0}</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Distribuição por Fonte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {["Auditoria Interna", "Cliente", "Fornecedor", "Processo"].map(source => {
+                  const count = nonConformities?.filter(nc => nc.source === source).length || 0;
+                  return (
+                    <div key={source} className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{source}</span>
+                      <Badge variant="outline">{count}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="analytics" className="mt-6">
+        <NonConformitiesAdvancedDashboard />
+      </TabsContent>
+
+      <TabsContent value="list" className="mt-6">
+        {/* NCs Table */}
+        <Card>
         <CardHeader>
           <CardTitle>Lista de Não Conformidades</CardTitle>
           <CardDescription>
@@ -360,10 +478,18 @@ export default function NaoConformidades() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedNCId(nc.id)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedNCId(nc.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -387,6 +513,14 @@ export default function NaoConformidades() {
           )}
         </CardContent>
        </Card>
+      </TabsContent>
+    </Tabs>
+
+    <NonConformityDetailsModal
+      open={!!selectedNCId}
+      onOpenChange={(open) => !open && setSelectedNCId(null)}
+      nonConformityId={selectedNCId || ""}
+    />
     </>
   );
 }
