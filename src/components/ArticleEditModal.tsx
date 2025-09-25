@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Save, X, Tag, Eye, History, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 import { ArticleVersionHistory } from "./ArticleVersionHistory";
 import { ArticleComments } from "./ArticleComments";
 
@@ -63,7 +63,7 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
   const queryClient = useQueryClient();
 
   const updateArticleMutation = useMutation({
-    mutationFn: (data: any) => qualityManagementService.updateKnowledgeArticle(article!.id, data),
+    mutationFn: (data: any) => knowledgeBaseService.updateKnowledgeArticle(article!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-articles"] });
       toast({

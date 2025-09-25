@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck } from "lucide-react";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 import { toast } from "sonner";
 
 interface ArticleBookmarkButtonProps {
@@ -20,14 +20,14 @@ export function ArticleBookmarkButton({
 
   const { data: isBookmarked = false } = useQuery({
     queryKey: ["article-bookmark", articleId],
-    queryFn: () => qualityManagementService.isArticleBookmarked(articleId),
+    queryFn: () => knowledgeBaseService.isArticleBookmarked(articleId),
   });
 
   const toggleBookmarkMutation = useMutation({
     mutationFn: (bookmarked: boolean) => 
       bookmarked 
-        ? qualityManagementService.removeArticleBookmark(articleId)
-        : qualityManagementService.addArticleBookmark(articleId),
+        ? knowledgeBaseService.removeArticleBookmark(articleId)
+        : knowledgeBaseService.addArticleBookmark(articleId),
     onSuccess: (_, bookmarked) => {
       queryClient.invalidateQueries({ queryKey: ["article-bookmark", articleId] });
       queryClient.invalidateQueries({ queryKey: ["article-bookmarks"] });

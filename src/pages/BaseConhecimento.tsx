@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Book, FileText, Eye, Edit, Trash2, Tag, User, Calendar } from "lucide-react";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -67,7 +67,7 @@ export default function BaseConhecimento() {
 
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ["knowledge-articles", searchTerm, selectedCategory],
-    queryFn: () => qualityManagementService.getKnowledgeArticles({
+    queryFn: () => knowledgeBaseService.getKnowledgeArticles(),
       search: searchTerm || undefined,
       category: selectedCategory !== "all" ? selectedCategory : undefined,
       published_only: true
@@ -75,7 +75,7 @@ export default function BaseConhecimento() {
   });
 
   const createArticleMutation = useMutation({
-    mutationFn: qualityManagementService.createKnowledgeArticle,
+    mutationFn: (data: any) => knowledgeBaseService.createKnowledgeArticle(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-articles"] });
       toast.success("Artigo criado com sucesso!");

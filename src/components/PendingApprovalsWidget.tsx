@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, User, Calendar, FileText, CheckCircle } from "lucide-react";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 import { useState } from "react";
 import ArticleApprovalModal from "./ArticleApprovalModal";
 
@@ -14,7 +14,7 @@ export function PendingApprovalsWidget() {
 
   const { data: pendingApprovals = [], isLoading } = useQuery({
     queryKey: ["pending-approvals"],
-    queryFn: qualityManagementService.getPendingApprovals,
+    queryFn: () => knowledgeBaseService.getPendingApprovals(),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 

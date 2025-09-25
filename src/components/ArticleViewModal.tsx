@@ -9,7 +9,7 @@ import { Eye, Edit, Calendar, User, ArrowLeft, ChevronRight } from "lucide-react
 import ReactMarkdown from "react-markdown";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 
 interface KnowledgeArticle {
   id: string;
@@ -54,7 +54,7 @@ export function ArticleViewModal({ article, isOpen, onClose, onEdit }: ArticleVi
   const queryClient = useQueryClient();
 
   const incrementViewMutation = useMutation({
-    mutationFn: qualityManagementService.incrementArticleViewCount,
+    mutationFn: (articleId: string) => knowledgeBaseService.incrementArticleViewCount(articleId),
     onSuccess: (data) => {
       if (data?.view_count) {
         setLocalViewCount(data.view_count);

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Eye, Edit, Plus } from "lucide-react";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -44,7 +44,7 @@ const getActivityColor = (actionType: string) => {
 export function RecentActivityWidget() {
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ["recent-activities"],
-    queryFn: qualityManagementService.getRecentActivities,
+    queryFn: () => knowledgeBaseService.getRecentActivities(),
   });
 
   if (isLoading) {

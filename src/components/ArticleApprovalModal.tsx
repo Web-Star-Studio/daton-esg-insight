@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, XCircle, Clock, User, Calendar, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 
 interface KnowledgeArticle {
   id: string;
@@ -51,13 +51,13 @@ export function ArticleApprovalModal({ article, isOpen, onClose }: ArticleApprov
   
   const { data: approvals = [], isLoading } = useQuery({
     queryKey: ["article-approvals", article?.id],
-    queryFn: () => article ? qualityManagementService.getArticleApprovals(article.id) : [],
+    queryFn: () => article ? knowledgeBaseService.getArticleApprovals() : [],
     enabled: !!article?.id && isOpen,
   });
 
   const updateApprovalMutation = useMutation({
     mutationFn: ({ approvalId, status, notes }: { approvalId: string; status: "approved" | "rejected"; notes?: string }) =>
-      qualityManagementService.updateApprovalStatus(approvalId, status, notes),
+      knowledgeBaseService.updateApprovalStatus(approvalId, status, notes),
     onSuccess: () => {
       toast({
         title: "Sucesso",

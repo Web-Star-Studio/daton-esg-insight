@@ -11,7 +11,7 @@ import { MessageSquare, Send, User, Clock, CheckCircle, AlertCircle, Lightbulb }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 
 interface ArticleComment {
   id: string;
@@ -41,11 +41,12 @@ export function ArticleComments({ articleId }: ArticleCommentsProps) {
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["article-comments", articleId],
-    queryFn: () => qualityManagementService.getArticleComments(articleId),
+    queryFn: () => knowledgeBaseService.getArticleComments(articleId),
   });
 
   const createCommentMutation = useMutation({
-    mutationFn: qualityManagementService.createArticleComment,
+    mutationFn: (data: { article_id: string; comment_text: string; comment_type: string }) => 
+      knowledgeBaseService.createArticleComment(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["article-comments", articleId] });
       setNewComment("");
@@ -65,7 +66,7 @@ export function ArticleComments({ articleId }: ArticleCommentsProps) {
   });
 
   const resolveCommentMutation = useMutation({
-    mutationFn: qualityManagementService.resolveComment,
+    mutationFn: (commentId: string) => knowledgeBaseService.resolveComment(commentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["article-comments", articleId] });
       toast({

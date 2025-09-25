@@ -10,7 +10,7 @@ import { History, Eye, User, Clock, FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 
 interface ArticleVersion {
   id: string;
@@ -34,7 +34,7 @@ export function ArticleVersionHistory({ articleId }: ArticleVersionHistoryProps)
 
   const { data: versions = [], isLoading } = useQuery({
     queryKey: ["article-versions", articleId],
-    queryFn: () => qualityManagementService.getArticleVersions(articleId),
+    queryFn: () => knowledgeBaseService.getArticleVersions(articleId),
   });
 
   const handleViewVersion = (version: ArticleVersion) => {

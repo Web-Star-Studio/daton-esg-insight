@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Bookmark, Eye, Edit, Calendar, User } from "lucide-react";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { knowledgeBaseService } from "@/services/knowledgeBase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArticleBookmarkButton } from "./ArticleBookmarkButton";
@@ -38,7 +38,7 @@ export function BookmarkedArticlesModal({
 }: BookmarkedArticlesModalProps) {
   const { data: bookmarkedArticles = [], isLoading } = useQuery({
     queryKey: ["article-bookmarks"],
-    queryFn: qualityManagementService.getBookmarkedArticles,
+    queryFn: () => knowledgeBaseService.getBookmarkedArticles(),
     enabled: isOpen,
   });
 
