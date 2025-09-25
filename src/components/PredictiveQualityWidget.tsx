@@ -121,22 +121,22 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
           </div>
 
           {/* Next Month Prediction */}
-          <div className="p-3 rounded-lg border bg-background space-y-2">
+          <div className="p-3 rounded-lg border bg-muted/50 space-y-2">
             <div className="flex justify-between items-center text-sm">
-              <span className="font-medium text-white">NCs Previstas</span>
-              <span className="font-bold text-lg text-white">{predictions.nextMonthNCs}</span>
+              <span className="font-medium text-foreground">NCs Previstas</span>
+              <span className="font-bold text-lg text-foreground">{predictions.nextMonthNCs}</span>
             </div>
             <Progress 
               value={Math.min((predictions.nextMonthNCs / 10) * 100, 100)} 
               className="h-2"
             />
-            <p className="text-xs text-white">Próximo mês</p>
+            <p className="text-xs text-muted-foreground">Próximo mês</p>
           </div>
 
           {/* Quality Score Trend */}
-          <div className="p-3 rounded-lg border bg-background space-y-2">
+          <div className="p-3 rounded-lg border bg-muted/50 space-y-2">
             <div className="flex justify-between items-center text-sm">
-              <span className="font-medium text-white">Qualidade</span>
+              <span className="font-medium text-foreground">Qualidade</span>
               <div className="flex items-center space-x-1">
                 {trendDirection === 'up' ? (
                   <TrendingUp className="h-4 w-4 text-success" />
@@ -145,13 +145,13 @@ export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = (
                 ) : (
                   <div className="h-4 w-4 rounded-full bg-muted-foreground/50" />
                 )}
-                <span className="font-bold text-lg text-white">
+                <span className="font-bold text-lg text-foreground">
                   {metrics.qualityScore}%
                 </span>
               </div>
             </div>
             <Progress value={metrics.qualityScore} className="h-2" />
-            <p className="text-xs text-white">Tendência atual</p>
+            <p className="text-xs text-muted-foreground">Tendência atual</p>
           </div>
         </div>
 

@@ -2,11 +2,12 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown, Activity, Users, FileText } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown, Activity, Users, FileText, Target } from 'lucide-react';
 import { qualityManagementService } from '@/services/qualityManagement';
 
 const QualityDashboard = () => {
@@ -81,19 +82,23 @@ const QualityDashboard = () => {
     );
   }
 
-  // Error handling
-  if (dashboardError || ncStatsError) {
+  if ((dashboardError || ncStatsError) && !dashboard && !ncStats) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">
-            <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Erro ao carregar dados do dashboard. Tente novamente em alguns minutos.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <Alert className="mb-6">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Modo Offline:</strong> Exibindo dados de demonstração. 
+          Algumas funcionalidades podem estar limitadas. 
+          <Button 
+            variant="link" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+            className="ml-2 p-0 h-auto"
+          >
+            Tentar reconectar
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -204,7 +209,7 @@ const QualityDashboard = () => {
 
       {/* Charts and Analytics */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="trends">Tendências</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -217,7 +222,7 @@ const QualityDashboard = () => {
               <CardDescription>Distribuição das não conformidades</CardDescription>
             </CardHeader>
             <CardContent>
-              {pieData.some(item => item.value > 0) ? (
+              {pieData && pieData.some(item => item.value > 0) ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -241,7 +246,8 @@ const QualityDashboard = () => {
                 <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                   <div className="text-center">
                     <CheckCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p>Nenhuma não conformidade registrada</p>
+                    <p className="font-medium">Excelente!</p>
+                    <p className="text-sm">Nenhuma não conformidade registrada</p>
                   </div>
                 </div>
               )}
@@ -265,12 +271,16 @@ const QualityDashboard = () => {
                         </Badge>
                       </div>
                       <Progress value={plan.avgProgress || 0} />
+                      <div className="text-xs text-muted-foreground">
+                        Status: {plan.status}
+                      </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center text-muted-foreground py-8">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhum plano de ação em andamento</p>
+                    <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium">Nenhum plano ativo</p>
+                    <p className="text-sm">Crie planos de ação para melhorar a qualidade</p>
                   </div>
                 )}
               </div>
