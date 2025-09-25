@@ -53,7 +53,7 @@ serve(async (req) => {
 
     // Route handling
     switch (true) {
-      case path === '/dashboard' && method === 'GET':
+      case (path === '/dashboard' || path === '') && method === 'GET':
         return await getQualityDashboard(supabase, profile.company_id);
       
       case path === '/non-conformities/stats' && method === 'GET':
