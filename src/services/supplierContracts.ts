@@ -82,9 +82,20 @@ export const getSupplierContractById = async (id: string): Promise<SupplierContr
 
 export const createSupplierContract = async (contractData: CreateSupplierContractData): Promise<SupplierContract> => {
   try {
+    // Get user's company_id
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('supplier_contracts')
-      .insert([contractData])
+      .insert({
+        ...contractData,
+        company_id: profile?.company_id
+      })
       .select()
       .single();
 

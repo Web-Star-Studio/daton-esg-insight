@@ -32,15 +32,16 @@ export interface SurveyQuestion {
 export interface SurveyResponse {
   id: string;
   survey_id: string;
-  respondent_email?: string;
-  respondent_name?: string;
-  respondent_type?: string;
-  responses: Record<string, any>;
+  company_id: string;
+  stakeholder_id?: string;
+  stakeholder_category?: string;
+  response_data: any;
   completion_percentage: number;
-  completed: boolean;
-  started_at: string;
   completed_at?: string;
   created_at: string;
+  updated_at: string;
+  ip_address?: unknown;
+  user_agent?: unknown;
 }
 
 export interface CreateSurveyData {
@@ -88,9 +89,21 @@ export const getSatisfactionSurveyById = async (id: string): Promise<Satisfactio
 
 export const createSatisfactionSurvey = async (surveyData: CreateSurveyData): Promise<SatisfactionSurvey> => {
   try {
+    // Get user's company_id and user_id
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('satisfaction_surveys')
-      .insert(surveyData)
+      .insert({
+        ...surveyData,
+        company_id: profile?.company_id,
+        created_by_user_id: user?.id
+      })
       .select()
       .single();
 
@@ -171,17 +184,24 @@ export const submitSurveyResponse = async (
   surveyId: string,
   responses: Record<string, any>,
   respondentInfo?: {
-    email?: string;
-    name?: string;
-    type?: string;
+    stakeholder_id?: string;
+    stakeholder_category?: string;
   }
 ): Promise<SurveyResponse> => {
   try {
+    // Get user's company_id
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user?.id)
+      .single();
+
     const responseData = {
       survey_id: surveyId,
-      responses,
+      company_id: profile?.company_id,
+      response_data: responses,
       completion_percentage: 100,
-      completed: true,
       completed_at: new Date().toISOString(),
       ...respondentInfo
     };
@@ -209,7 +229,7 @@ export const getSurveyAnalytics = async (surveyId: string) => {
 
     const analytics = {
       totalResponses: responses.length,
-      completedResponses: responses.filter(r => r.completed).length,
+      completedResponses: responses.filter(r => r.completed_at).length,
       averageCompletion: responses.length > 0 
         ? responses.reduce((sum, r) => sum + r.completion_percentage, 0) / responses.length 
         : 0,
@@ -219,8 +239,8 @@ export const getSurveyAnalytics = async (surveyId: string) => {
     // Analyze each question
     survey.questions.forEach(question => {
       const questionResponses = responses
-        .filter(r => r.responses[question.id] !== undefined)
-        .map(r => r.responses[question.id]);
+        .filter(r => r.response_data && r.response_data[question.id] !== undefined)
+        .map(r => r.response_data[question.id]);
 
       analytics.questionAnalytics[question.id] = analyzeQuestionResponses(question, questionResponses);
     });

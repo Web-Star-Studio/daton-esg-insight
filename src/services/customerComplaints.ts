@@ -96,11 +96,20 @@ export const createCustomerComplaint = async (complaintData: CreateCustomerCompl
     const count = await getComplaintsCount() + 1;
     const complaint_number = `RCL-${new Date().getFullYear()}-${count.toString().padStart(4, '0')}`;
 
+    // Get user's company_id
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('customer_complaints')
       .insert({
         ...complaintData,
         complaint_number,
+        company_id: profile?.company_id,
         communication_log: [{
           date: new Date().toISOString(),
           type: 'creation',

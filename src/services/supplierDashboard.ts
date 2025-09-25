@@ -88,15 +88,15 @@ export const getSupplierDashboardData = async (supplierId: string): Promise<Supp
         expiring: expiringContracts.length
       },
       performance: {
-        overallScore: performanceMetrics?.overall_score || evaluations?.overall_score || 0,
-        qualityScore: performanceMetrics?.quality_score || evaluations?.quality_score || 0,
-        deliveryScore: performanceMetrics?.delivery_score || evaluations?.delivery_score || 0,
-        serviceScore: performanceMetrics?.service_level_score || evaluations?.service_score || 0,
-        lastEvaluation: performanceMetrics?.period_end || evaluations?.last_evaluation_date
+        overallScore: performanceMetrics?.overall_score || 0,
+        qualityScore: performanceMetrics?.quality_score || 0,
+        deliveryScore: performanceMetrics?.delivery_score || 0,
+        serviceScore: performanceMetrics?.service_level_score || 0,
+        lastEvaluation: performanceMetrics?.period_end
       },
       compliance: {
-        licenseStatus: getLicenseStatus(supplier.license_expiry_date),
-        licenseExpiry: supplier.license_expiry_date,
+        licenseStatus: getLicenseStatus(supplier.license_expiry),
+        licenseExpiry: supplier.license_expiry,
         certificationsValid: 0, // To be calculated from documents
         certificationsTotal: 0   // To be calculated from documents
       },
@@ -139,10 +139,19 @@ export const updateSupplierPerformanceMetrics = async (
       service: metrics.serviceLevelScore || 0
     });
 
+    // Get user's company_id
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('supplier_performance_metrics')
-      .insert([{
+      .insert({
         supplier_id: supplierId,
+        company_id: profile?.company_id,
         period_start: metrics.periodStart,
         period_end: metrics.periodEnd,
         quality_score: metrics.qualityScore,
@@ -151,7 +160,7 @@ export const updateSupplierPerformanceMetrics = async (
         service_level_score: metrics.serviceLevelScore,
         overall_score: overallScore,
         metrics_data: metrics.metricsData || {}
-      }])
+      })
       .select()
       .single();
 
@@ -183,7 +192,7 @@ export const getSuppliersOverview = async () => {
         type: supplier.supplier_type || 'Não especificado',
         status: supplier.status || 'Ativo',
         overallScore: latestMetric?.overall_score || 0,
-        licenseStatus: getLicenseStatus(supplier.license_expiry_date),
+        licenseStatus: getLicenseStatus(supplier.license_expiry),
         lastEvaluation: latestMetric?.period_end
       };
     });

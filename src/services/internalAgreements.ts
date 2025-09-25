@@ -74,10 +74,19 @@ export const getInternalAgreementById = async (id: string): Promise<InternalAgre
 
 export const createInternalAgreement = async (agreementData: CreateInternalAgreementData): Promise<InternalAgreement> => {
   try {
+    // Get user's company_id
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('internal_agreements')
       .insert({
         ...agreementData,
+        company_id: profile?.company_id,
         version: '1.0'
       })
       .select()
