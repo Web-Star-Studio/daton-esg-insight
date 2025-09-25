@@ -3987,6 +3987,333 @@ export type Database = {
         }
         Relationships: []
       }
+      indicator_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by_user_id: string | null
+          alert_level: string
+          alert_message: string
+          alert_type: string
+          created_at: string
+          id: string
+          indicator_id: string
+          is_acknowledged: boolean
+          is_resolved: boolean
+          measurement_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by_user_id?: string | null
+          alert_level: string
+          alert_message: string
+          alert_type: string
+          created_at?: string
+          id?: string
+          indicator_id: string
+          is_acknowledged?: boolean
+          is_resolved?: boolean
+          measurement_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by_user_id?: string | null
+          alert_level?: string
+          alert_message?: string
+          alert_type?: string
+          created_at?: string
+          id?: string
+          indicator_id?: string
+          is_acknowledged?: boolean
+          is_resolved?: boolean
+          measurement_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_alerts_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_alerts_measurement_id_fkey"
+            columns: ["measurement_id"]
+            isOneToOne: false
+            referencedRelation: "indicator_measurements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicator_analysis: {
+        Row: {
+          analysis_conclusion: string | null
+          analysis_date: string
+          analysis_type: string
+          analyzed_by_user_id: string
+          approval_date: string | null
+          approval_notes: string | null
+          approval_status: string
+          approved_by_user_id: string | null
+          corrective_actions: Json | null
+          created_at: string
+          deviation_description: string | null
+          effectiveness_verification_date: string | null
+          effectiveness_verified: boolean | null
+          id: string
+          indicator_id: string
+          preventive_actions: Json | null
+          root_cause_analysis: Json | null
+          trigger_measurement_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_conclusion?: string | null
+          analysis_date: string
+          analysis_type: string
+          analyzed_by_user_id: string
+          approval_date?: string | null
+          approval_notes?: string | null
+          approval_status?: string
+          approved_by_user_id?: string | null
+          corrective_actions?: Json | null
+          created_at?: string
+          deviation_description?: string | null
+          effectiveness_verification_date?: string | null
+          effectiveness_verified?: boolean | null
+          id?: string
+          indicator_id: string
+          preventive_actions?: Json | null
+          root_cause_analysis?: Json | null
+          trigger_measurement_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_conclusion?: string | null
+          analysis_date?: string
+          analysis_type?: string
+          analyzed_by_user_id?: string
+          approval_date?: string | null
+          approval_notes?: string | null
+          approval_status?: string
+          approved_by_user_id?: string | null
+          corrective_actions?: Json | null
+          created_at?: string
+          deviation_description?: string | null
+          effectiveness_verification_date?: string | null
+          effectiveness_verified?: boolean | null
+          id?: string
+          indicator_id?: string
+          preventive_actions?: Json | null
+          root_cause_analysis?: Json | null
+          trigger_measurement_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_analysis_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_analysis_trigger_measurement_id_fkey"
+            columns: ["trigger_measurement_id"]
+            isOneToOne: false
+            referencedRelation: "indicator_measurements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicator_measurements: {
+        Row: {
+          collected_by_user_id: string | null
+          created_at: string
+          data_source_reference: string | null
+          deviation_level: string | null
+          id: string
+          indicator_id: string
+          measured_value: number
+          measurement_date: string
+          measurement_period_end: string | null
+          measurement_period_start: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          collected_by_user_id?: string | null
+          created_at?: string
+          data_source_reference?: string | null
+          deviation_level?: string | null
+          id?: string
+          indicator_id: string
+          measured_value: number
+          measurement_date: string
+          measurement_period_end?: string | null
+          measurement_period_start?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          collected_by_user_id?: string | null
+          created_at?: string
+          data_source_reference?: string | null
+          deviation_level?: string | null
+          id?: string
+          indicator_id?: string
+          measured_value?: number
+          measurement_date?: string
+          measurement_period_end?: string | null
+          measurement_period_start?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_measurements_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicator_occurrences: {
+        Row: {
+          attachments: Json | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string
+          id: string
+          immediate_actions: string | null
+          impact_description: string | null
+          indicator_id: string | null
+          lessons_learned: string | null
+          occurrence_date: string
+          occurrence_type: string
+          resolution_date: string | null
+          resolution_description: string | null
+          responsible_user_id: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          description: string
+          id?: string
+          immediate_actions?: string | null
+          impact_description?: string | null
+          indicator_id?: string | null
+          lessons_learned?: string | null
+          occurrence_date: string
+          occurrence_type: string
+          resolution_date?: string | null
+          resolution_description?: string | null
+          responsible_user_id?: string | null
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string
+          id?: string
+          immediate_actions?: string | null
+          impact_description?: string | null
+          indicator_id?: string | null
+          lessons_learned?: string | null
+          occurrence_date?: string
+          occurrence_type?: string
+          resolution_date?: string | null
+          resolution_description?: string | null
+          responsible_user_id?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_occurrences_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicator_targets: {
+        Row: {
+          created_at: string
+          critical_lower_limit: number | null
+          critical_upper_limit: number | null
+          id: string
+          indicator_id: string
+          is_active: boolean
+          lower_limit: number | null
+          target_value: number
+          upper_limit: number | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          critical_lower_limit?: number | null
+          critical_upper_limit?: number | null
+          id?: string
+          indicator_id: string
+          is_active?: boolean
+          lower_limit?: number | null
+          target_value: number
+          upper_limit?: number | null
+          valid_from: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          critical_lower_limit?: number | null
+          critical_upper_limit?: number | null
+          id?: string
+          indicator_id?: string
+          is_active?: boolean
+          lower_limit?: number | null
+          target_value?: number
+          upper_limit?: number | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_targets_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrated_reports: {
         Row: {
           approved_by_user_id: string | null
@@ -6439,6 +6766,63 @@ export type Database = {
           },
         ]
       }
+      quality_indicators: {
+        Row: {
+          calculation_formula: string | null
+          category: string
+          collection_method: string | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          data_source: string | null
+          description: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          measurement_type: string
+          measurement_unit: string
+          name: string
+          responsible_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          calculation_formula?: string | null
+          category: string
+          collection_method?: string | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          data_source?: string | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          measurement_type?: string
+          measurement_unit: string
+          name: string
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          calculation_formula?: string | null
+          category?: string
+          collection_method?: string | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          data_source?: string | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          measurement_type?: string
+          measurement_unit?: string
+          name?: string
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       refrigerant_factors: {
         Row: {
           category: string
@@ -8137,6 +8521,25 @@ export type Database = {
       calculate_hierarchy_levels: {
         Args: { p_company_id: string }
         Returns: undefined
+      }
+      calculate_indicator_deviation: {
+        Args: {
+          p_critical_lower_limit: number
+          p_critical_upper_limit: number
+          p_lower_limit: number
+          p_measured_value: number
+          p_target_value: number
+          p_upper_limit: number
+        }
+        Returns: string
+      }
+      calculate_indicator_statistics: {
+        Args: {
+          p_end_date?: string
+          p_indicator_id: string
+          p_start_date?: string
+        }
+        Returns: Json
       }
       calculate_license_status: {
         Args: {
