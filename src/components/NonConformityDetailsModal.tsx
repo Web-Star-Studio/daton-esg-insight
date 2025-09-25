@@ -45,7 +45,7 @@ export function NonConformityDetailsModal({
   const { data: nonConformity, isLoading } = useQuery({
     queryKey: ["non-conformity", nonConformityId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: nc, error } = await supabase
         .from("non_conformities")
         .select(`
           *,
@@ -55,7 +55,27 @@ export function NonConformityDetailsModal({
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Get user profiles for responsible and approved_by users
+      const userIds = [nc.responsible_user_id, nc.approved_by_user_id].filter(Boolean);
+      let profiles = [];
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        profiles = profilesData || [];
+      }
+      
+      // Enrich with user data
+      const enrichedNC = {
+        ...nc,
+        responsible: profiles.find(p => p.id === nc.responsible_user_id),
+        approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+      };
+      
+      return enrichedNC;
     },
     enabled: open && !!nonConformityId,
   });
@@ -254,7 +274,7 @@ export function NonConformityDetailsModal({
                         <div>
                           <Label>Responsável</Label>
                           <p className="text-sm text-muted-foreground">
-                            {nonConformity.responsible_user_id || 'Não informado'}
+                            {nonConformity.responsible?.full_name || 'Não informado'}
                           </p>
                         </div>
                       )}

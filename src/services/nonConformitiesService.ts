@@ -63,33 +63,72 @@ export interface UpdateNonConformityData {
 
 class NonConformitiesService {
   async getNonConformities(): Promise<NonConformity[]> {
-    const { data, error } = await supabase
+    // First get the non-conformities
+    const { data: ncs, error } = await supabase
       .from("non_conformities")
-      .select(`
-        *,
-        responsible:responsible_user_id(full_name),
-        approved_by:approved_by_user_id(full_name)
-      `)
+      .select("*")
       .order("created_at", { ascending: false });
     
     if (error) throw error;
-    return data as any[];
+    
+    // Then get user profiles for responsible and approved_by users
+    const userIds = [...new Set([
+      ...ncs.map(nc => nc.responsible_user_id).filter(Boolean),
+      ...ncs.map(nc => nc.approved_by_user_id).filter(Boolean)
+    ])];
+    
+    let profiles = [];
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      profiles = profilesData || [];
+    }
+    
+    // Map user data to NCs
+    const enrichedNCs = ncs.map(nc => ({
+      ...nc,
+      responsible: profiles.find(p => p.id === nc.responsible_user_id),
+      approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+    }));
+    
+    return enrichedNCs as any[];
   }
 
   async getNonConformity(id: string): Promise<NonConformity> {
-    const { data, error } = await supabase
+    // First get the non-conformity
+    const { data: nc, error } = await supabase
       .from("non_conformities")
       .select(`
         *,
-        responsible:responsible_user_id(full_name),
-        approved_by:approved_by_user_id(full_name),
         corrective_actions(*)
       `)
       .eq("id", id)
       .single();
     
     if (error) throw error;
-    return data as any;
+    
+    // Get user profiles for responsible and approved_by users
+    const userIds = [nc.responsible_user_id, nc.approved_by_user_id].filter(Boolean);
+    let profiles = [];
+    
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      profiles = profilesData || [];
+    }
+    
+    // Enrich with user data
+    const enrichedNC = {
+      ...nc,
+      responsible: profiles.find(p => p.id === nc.responsible_user_id),
+      approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+    };
+    
+    return enrichedNC as any;
   }
 
   async createNonConformity(ncData: CreateNonConformityData): Promise<NonConformity> {

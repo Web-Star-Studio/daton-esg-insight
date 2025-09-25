@@ -65,17 +65,37 @@ export default function NaoConformidades() {
   const { data: nonConformities, isLoading } = useQuery({
     queryKey: ["non-conformities"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the non-conformities
+      const { data: ncs, error } = await supabase
         .from("non_conformities")
-        .select(`
-          *,
-          responsible:responsible_user_id(full_name),
-          approved_by:approved_by_user_id(full_name)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data as NonConformity[];
+      
+      // Then get user profiles for responsible and approved_by users
+      const userIds = [...new Set([
+        ...ncs.map(nc => nc.responsible_user_id).filter(Boolean),
+        ...ncs.map(nc => nc.approved_by_user_id).filter(Boolean)
+      ])];
+      
+      let profiles = [];
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        profiles = profilesData || [];
+      }
+      
+      // Map user data to NCs
+      const enrichedNCs = ncs.map(nc => ({
+        ...nc,
+        responsible: profiles.find(p => p.id === nc.responsible_user_id),
+        approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
+      }));
+      
+      return enrichedNCs as NonConformity[];
     },
   });
 
@@ -183,6 +203,7 @@ export default function NaoConformidades() {
             Sistema completo de gestão de não conformidades
           </p>
         </div>
+        <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsWorkflowManagerOpen(true)}>
             <Settings className="h-4 w-4 mr-2" />
             Workflows
@@ -283,6 +304,7 @@ export default function NaoConformidades() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
