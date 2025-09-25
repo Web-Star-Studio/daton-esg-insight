@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QualityIndicatorDashboard } from '@/components/QualityIndicatorDashboard';
+import QualityIndicatorDashboard from '@/components/QualityIndicatorDashboard';
 import { AlertsManagementCenter } from '@/components/AlertsManagementCenter';
 import { StatisticalProcessControl } from '@/components/StatisticalProcessControl';
 import { TargetManagementDashboard } from '@/components/TargetManagementDashboard';

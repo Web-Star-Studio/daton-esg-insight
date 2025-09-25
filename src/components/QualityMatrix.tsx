@@ -20,16 +20,24 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   const { toast } = useToast();
   const { triggerQualityIssueDetected } = useNotificationTriggers();
   
-  const { data: matrices } = useQuery({
+  const { data: matrices, error: matricesError } = useQuery({
     queryKey: ['risk-matrices'],
     queryFn: () => qualityManagementService.getRiskMatrices(),
+    retry: 1,
   });
 
-  const { data: riskMatrix, isLoading } = useQuery({
+  const { data: riskMatrix, isLoading, error: matrixError } = useQuery({
     queryKey: ['risk-matrix', selectedMatrixId],
     queryFn: () => qualityManagementService.getRiskMatrix(selectedMatrixId),
     enabled: !!selectedMatrixId,
+    retry: 1,
   });
+
+  React.useEffect(() => {
+    if (!selectedMatrixId && matrices && matrices.length > 0) {
+      setSelectedMatrixId(matrices[0].id);
+    }
+  }, [matrices, selectedMatrixId]);
 
   const probabilityLevels = ['Muito Baixa', 'Baixa', 'Média', 'Alta', 'Muito Alta'];
   const impactLevels = ['Muito Baixo', 'Baixo', 'Médio', 'Alto', 'Muito Alto'];
@@ -115,25 +123,32 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   return (
     <div className="space-y-6">
       {/* Matrix Selection */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">Matriz de Riscos</h3>
           <p className="text-sm text-muted-foreground">
             Visualize e analise os riscos por probabilidade e impacto
           </p>
         </div>
-        <Select value={selectedMatrixId} onValueChange={setSelectedMatrixId}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Selecione uma matriz" />
-          </SelectTrigger>
-          <SelectContent>
-            {matrices?.map((matrix) => (
-              <SelectItem key={matrix.id} value={matrix.id}>
-                {matrix.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {(matricesError || matrixError) && (
+            <Badge variant="outline" className="text-xs">
+              Modo Demonstração
+            </Badge>
+          )}
+          <Select value={selectedMatrixId} onValueChange={setSelectedMatrixId}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Selecione uma matriz" />
+            </SelectTrigger>
+            <SelectContent>
+              {matrices?.map((matrix) => (
+                <SelectItem key={matrix.id} value={matrix.id}>
+                  {matrix.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {riskMatrix && (

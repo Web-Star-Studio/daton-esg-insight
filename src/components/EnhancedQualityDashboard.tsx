@@ -108,6 +108,15 @@ export const EnhancedQualityDashboard: React.FC = () => {
   ];
 
   const handleCreateNC = () => {
+    if (!newNC.title || !newNC.description) {
+      toast({
+        title: "Erro de Validação",
+        description: "Título e descrição são obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // In real app, this would call an API
     toast({
       title: "Não Conformidade Criada",
@@ -118,6 +127,15 @@ export const EnhancedQualityDashboard: React.FC = () => {
   };
 
   const handleCreateActionPlan = () => {
+    if (!newActionPlan.title || !newActionPlan.description || !newActionPlan.dueDate) {
+      toast({
+        title: "Erro de Validação", 
+        description: "Todos os campos são obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // In real app, this would call an API
     toast({
       title: "Plano de Ação Criado",
@@ -315,51 +333,92 @@ export const EnhancedQualityDashboard: React.FC = () => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">NCs Abertas</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12</div>
-                <p className="text-xs text-muted-foreground">+2 desde ontem</p>
+                <div className="text-2xl font-bold text-destructive">{nonConformities.filter(nc => nc.status === 'open').length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {nonConformities.filter(nc => nc.status === 'in_progress').length} em andamento
+                </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Planos Ativos</CardTitle>
                 <Target className="h-4 w-4 text-warning" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">8</div>
-                <p className="text-xs text-muted-foreground">3 com prazo próximo</p>
+                <div className="text-2xl font-bold text-warning">{actionPlans.filter(p => p.status !== 'completed').length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {actionPlans.filter(p => p.status === 'completed').length} concluídos
+                </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Taxa Resolução</CardTitle>
                 <TrendingUp className="h-4 w-4 text-success" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">85%</div>
-                <p className="text-xs text-muted-foreground">+5% este mês</p>
+                <div className="text-2xl font-bold text-success">
+                  {Math.round((nonConformities.filter(nc => nc.status === 'resolved').length / nonConformities.length) * 100) || 0}%
+                </div>
+                <p className="text-xs text-muted-foreground">Meta: 80%</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Eficácia</CardTitle>
                 <CheckCircle className="h-4 w-4 text-success" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">92%</div>
-                <p className="text-xs text-muted-foreground">Ações eficazes</p>
+                <div className="text-2xl font-bold text-success">
+                  {Math.round((actionPlans.reduce((acc, p) => acc + p.progress, 0) / actionPlans.length) || 0)}%
+                </div>
+                <p className="text-xs text-muted-foreground">Progresso médio</p>
               </CardContent>
             </Card>
           </div>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Ações Rápidas
+              </CardTitle>
+              <CardDescription>
+                Acesso rápido às funcionalidades mais utilizadas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <FileText className="h-6 w-6" />
+                  <span className="text-xs">Ver Relatórios</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Users className="h-6 w-6" />
+                  <span className="text-xs">Equipe</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <Brain className="h-6 w-6" />
+                  <span className="text-xs">IA Insights</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col gap-2">
+                  <TrendingUp className="h-6 w-6" />
+                  <span className="text-xs">Métricas</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Non-Conformities Tab */}
