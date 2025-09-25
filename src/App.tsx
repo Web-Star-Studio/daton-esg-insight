@@ -83,6 +83,7 @@ import Recrutamento from "./pages/Recrutamento";
 import SeguracaTrabalho from "./pages/SeguracaTrabalho";
 import PontoFrequencia from "./pages/PontoFrequencia";
 import DesenvolvimentoCarreira from "./pages/DesenvolvimentoCarreira";
+import OuvidoriaClientes from "./pages/OuvidoriaClientes";
 
 const queryClient = new QueryClient();
 
@@ -339,6 +340,11 @@ const App = () => (
             <Route path="/gestao-fornecedores" element={
               <ProtectedRoute>
                 <GestaoFornecedores />
+              </ProtectedRoute>
+            } />
+            <Route path="/ouvidoria-clientes" element={
+              <ProtectedRoute>
+                <OuvidoriaClientes />
               </ProtectedRoute>
             } />
             <Route path="/quality-dashboard" element={
