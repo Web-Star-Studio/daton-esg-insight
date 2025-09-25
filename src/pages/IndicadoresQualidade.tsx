@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QualityIndicatorDashboard } from '@/components/QualityIndicatorDashboard';
 import { AlertsManagementCenter } from '@/components/AlertsManagementCenter';
 import { StatisticalProcessControl } from '@/components/StatisticalProcessControl';
+import { TargetManagementDashboard } from '@/components/TargetManagementDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, TrendingUp, AlertTriangle, Activity, Target, Calendar } from 'lucide-react';
 
@@ -63,17 +64,7 @@ const IndicadoresQualidade = () => {
         </TabsContent>
 
         <TabsContent value="targets">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gestão de Metas</CardTitle>
-              <CardDescription>
-                Configure metas e limites de controle para os indicadores
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <QualityIndicatorDashboard />
-            </CardContent>
-          </Card>
+          <TargetManagementDashboard />
         </TabsContent>
 
         <TabsContent value="alerts">

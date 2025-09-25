@@ -9,6 +9,8 @@ import { useQualityDashboard, useIndicatorAlerts } from '@/services/qualityIndic
 import { Skeleton } from '@/components/ui/skeleton';
 import { IndicatorCreationModal } from './IndicatorCreationModal';
 import { IndicatorMeasurementModal } from './IndicatorMeasurementModal';
+import { IndicatorTargetModal } from './IndicatorTargetModal';
+import { RootCauseAnalysisModal } from './RootCauseAnalysisModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface QualityIndicatorDashboardProps {
@@ -18,6 +20,8 @@ interface QualityIndicatorDashboardProps {
 export const QualityIndicatorDashboard: React.FC<QualityIndicatorDashboardProps> = ({ className }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMeasurementModalOpen, setIsMeasurementModalOpen] = useState(false);
+  const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [isRootCauseModalOpen, setIsRootCauseModalOpen] = useState(false);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>('');
 
   const { data: dashboardData, isLoading } = useQualityDashboard();
@@ -26,6 +30,16 @@ export const QualityIndicatorDashboard: React.FC<QualityIndicatorDashboardProps>
   const handleAddMeasurement = (indicatorId: string) => {
     setSelectedIndicatorId(indicatorId);
     setIsMeasurementModalOpen(true);
+  };
+
+  const handleManageTargets = (indicatorId: string) => {
+    setSelectedIndicatorId(indicatorId);
+    setIsTargetModalOpen(true);
+  };
+
+  const handleRootCauseAnalysis = (indicatorId: string) => {
+    setSelectedIndicatorId(indicatorId);
+    setIsRootCauseModalOpen(true);
   };
 
   const getDeviationColor = (level?: string) => {
@@ -185,6 +199,20 @@ export const QualityIndicatorDashboard: React.FC<QualityIndicatorDashboardProps>
                       >
                         Registrar Medição
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleManageTargets(indicator.id)}
+                      >
+                        Metas
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleRootCauseAnalysis(indicator.id)}
+                      >
+                        Análise
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -323,6 +351,18 @@ export const QualityIndicatorDashboard: React.FC<QualityIndicatorDashboardProps>
       <IndicatorMeasurementModal 
         isOpen={isMeasurementModalOpen}
         onClose={() => setIsMeasurementModalOpen(false)}
+        indicatorId={selectedIndicatorId}
+      />
+      
+      <IndicatorTargetModal 
+        isOpen={isTargetModalOpen}
+        onClose={() => setIsTargetModalOpen(false)}
+        indicatorId={selectedIndicatorId}
+      />
+      
+      <RootCauseAnalysisModal 
+        isOpen={isRootCauseModalOpen}
+        onClose={() => setIsRootCauseModalOpen(false)}
         indicatorId={selectedIndicatorId}
       />
     </div>
