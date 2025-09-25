@@ -124,7 +124,7 @@ class QualityIndicatorsService {
     return data;
   }
 
-  async createIndicator(indicator: Omit<QualityIndicator, 'id' | 'company_id' | 'created_at' | 'updated_at'>) {
+  async createIndicator(indicator: Omit<QualityIndicator, 'id' | 'company_id' | 'created_at' | 'updated_at' | 'created_by_user_id'>) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 

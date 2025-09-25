@@ -30,6 +30,9 @@ const indicatorSchema = z.object({
   critical_lower_limit: z.number().optional(),
 });
 
+// Type for the indicator data without target fields
+type IndicatorDataOnly = Omit<IndicatorFormData, 'target_value' | 'upper_limit' | 'lower_limit' | 'critical_upper_limit' | 'critical_lower_limit'>;
+
 type IndicatorFormData = z.infer<typeof indicatorSchema>;
 
 interface IndicatorCreationModalProps {
@@ -89,11 +92,24 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
       // Separar dados do indicador e da meta
       const { target_value, upper_limit, lower_limit, critical_upper_limit, critical_lower_limit, ...indicatorData } = data;
       
+      // Validar campos obrigatórios
+      if (!indicatorData.name || !indicatorData.category || !indicatorData.measurement_unit) {
+        return;
+      }
+      
       // Criar o indicador primeiro
       const indicator = await createIndicator.mutateAsync({
-        ...indicatorData,
-        is_active: true,
-        created_by_user_id: '' // será preenchido pelo serviço
+        name: indicatorData.name,
+        description: indicatorData.description,
+        category: indicatorData.category,
+        measurement_unit: indicatorData.measurement_unit,
+        measurement_type: indicatorData.measurement_type,
+        calculation_formula: indicatorData.calculation_formula,
+        frequency: indicatorData.frequency,
+        responsible_user_id: indicatorData.responsible_user_id,
+        data_source: indicatorData.data_source,
+        collection_method: indicatorData.collection_method,
+        is_active: true
       });
       
       // TODO: Criar a meta do indicador
