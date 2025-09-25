@@ -123,6 +123,20 @@ class NonConformitiesService {
       .single();
 
     if (error) throw error;
+
+    // Auto-create approval request if workflow exists
+    try {
+      await this.createApprovalRequest(
+        "non_conformity",
+        data.id,
+        profile.company_id,
+        user.id
+      );
+    } catch (approvalError) {
+      // Don't fail NC creation if approval request fails
+      console.warn("Could not create approval request:", approvalError);
+    }
+
     return data as NonConformity;
   }
 
@@ -237,6 +251,67 @@ class NonConformitiesService {
         source: Object.entries(bySource).map(([key, value]) => ({ name: key, value }))
       }
     };
+  }
+
+  // Auto-create approval request for new items
+  async createApprovalRequest(
+    entityType: string,
+    entityId: string,
+    companyId: string,
+    requestedByUserId: string
+  ) {
+    try {
+      // Find active workflow for the entity type
+      const { data: workflow, error: workflowError } = await supabase
+        .from("approval_workflows")
+        .select("*")
+        .eq("workflow_type", entityType)
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .single();
+
+      if (workflowError || !workflow) {
+        console.log("No active workflow found for", entityType);
+        return null;
+      }
+
+      // Create approval request
+      const { data: approvalRequest, error: requestError } = await supabase
+        .from("approval_requests")
+        .insert({
+          entity_type: entityType,
+          entity_id: entityId,
+          company_id: companyId,
+          requested_by_user_id: requestedByUserId,
+          workflow_id: workflow.id,
+          status: "pending",
+          current_step: 1
+        })
+        .select()
+        .single();
+
+      if (requestError) throw requestError;
+
+      // Create approval steps
+      const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
+      const approvalSteps = steps.map((step: any) => ({
+        approval_request_id: approvalRequest.id,
+        approver_user_id: step.approver_user_id,
+        step_number: step.step_number,
+        status: "pending"
+      }));
+
+      const { error: stepsError } = await supabase
+        .from("approval_steps")
+        .insert(approvalSteps);
+
+      if (stepsError) throw stepsError;
+
+      return approvalRequest;
+    } catch (error) {
+      console.error("Error creating approval request:", error);
+      throw error;
+    }
   }
 
   async createApprovalWorkflow(nonConformityId: string, approvers: string[]) {

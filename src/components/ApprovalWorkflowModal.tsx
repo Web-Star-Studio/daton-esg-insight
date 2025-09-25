@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -45,7 +45,16 @@ export function ApprovalWorkflowModal({
 }: ApprovalWorkflowModalProps) {
   const [comments, setComments] = useState("");
   const [approvalAction, setApprovalAction] = useState<"approve" | "reject" | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    getCurrentUser();
+  }, []);
 
   const { data: approvalData, isLoading } = useQuery({
     queryKey: ["approval-workflow", entityType, entityId],
@@ -262,12 +271,9 @@ export function ApprovalWorkflowModal({
               </Card>
 
               {/* Current user can approve/reject */}
-              {(async () => {
-                const { data: { user } } = await supabase.auth.getUser();
-                return Array.isArray(approvalData?.approval_steps) && approvalData.approval_steps.some((step: ApprovalStep) => 
-                  step.approver_user_id === user?.id && step.status === 'pending'
-                );
-              })() && (
+              {currentUser && Array.isArray(approvalData?.approval_steps) && approvalData.approval_steps.some((step: ApprovalStep) => 
+                step.approver_user_id === currentUser?.id && step.status === 'pending'
+              ) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Sua Ação</CardTitle>

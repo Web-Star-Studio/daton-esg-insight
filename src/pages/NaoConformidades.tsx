@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NonConformityDetailsModal } from "@/components/NonConformityDetailsModal";
 import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAdvancedDashboard";
+import { ApprovalWorkflowManager } from "@/components/ApprovalWorkflowManager";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,6 +50,7 @@ interface NonConformity {
 export default function NaoConformidades() {
   const [isCreateNCOpen, setIsCreateNCOpen] = useState(false);
   const [selectedNCId, setSelectedNCId] = useState<string | null>(null);
+  const [isWorkflowManagerOpen, setIsWorkflowManagerOpen] = useState(false);
   const [newNCData, setNewNCData] = useState({
     title: "",
     description: "",
@@ -181,15 +183,18 @@ export default function NaoConformidades() {
             Sistema completo de gestão de não conformidades
           </p>
         </div>
-        
-        <Dialog open={isCreateNCOpen} onOpenChange={setIsCreateNCOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Registrar NC
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <Button variant="outline" onClick={() => setIsWorkflowManagerOpen(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            Workflows
+          </Button>
+          <Dialog open={isCreateNCOpen} onOpenChange={setIsCreateNCOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Registrar NC
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Registrar Não Conformidade</DialogTitle>
             </DialogHeader>
@@ -520,6 +525,11 @@ export default function NaoConformidades() {
       open={!!selectedNCId}
       onOpenChange={(open) => !open && setSelectedNCId(null)}
       nonConformityId={selectedNCId || ""}
+    />
+
+    <ApprovalWorkflowManager
+      open={isWorkflowManagerOpen}
+      onOpenChange={setIsWorkflowManagerOpen}
     />
     </>
   );
