@@ -67,6 +67,21 @@ const StakeholderCommunicationHub = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [newMessage, setNewMessage] = useState<{
+    type: 'email' | 'meeting' | 'phone' | 'survey' | 'document';
+    priority: 'low' | 'medium' | 'high';
+    stakeholder_id: string;
+    template_id: string;
+    subject: string;
+    content: string;
+  }>({
+    type: 'email',
+    priority: 'medium',
+    stakeholder_id: '',
+    template_id: '',
+    subject: '',
+    content: ''
+  });
 
   const queryClient = useQueryClient();
 
@@ -158,6 +173,7 @@ const StakeholderCommunicationHub = () => {
     onSuccess: () => {
       toast.success('Comunicação enviada com sucesso!');
       setIsNewMessageOpen(false);
+      resetNewMessage();
       queryClient.invalidateQueries({ queryKey: ['communications'] });
     },
     onError: () => {
@@ -204,8 +220,43 @@ const StakeholderCommunicationHub = () => {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const handleSendCommunication = (data: any) => {
-    sendCommunicationMutation.mutate(data);
+  const handleSendCommunication = () => {
+    if (!newMessage.subject || !newMessage.content || !newMessage.stakeholder_id) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    const communicationData = {
+      ...newMessage,
+      direction: 'outbound' as const,
+      status: 'sent' as const,
+      created_at: new Date().toISOString(),
+      created_by: 'Felipe Antunes'
+    };
+
+    sendCommunicationMutation.mutate(communicationData);
+  };
+
+  const resetNewMessage = () => {
+    setNewMessage({
+      type: 'email',
+      priority: 'medium',
+      stakeholder_id: '',
+      template_id: '',
+      subject: '',
+      content: ''
+    });
+  };
+
+  const applyTemplate = (templateId: string) => {
+    const template = templates?.find(t => t.id === templateId);
+    if (template) {
+      setNewMessage(prev => ({
+        ...prev,
+        subject: template.subject,
+        content: template.content
+      }));
+    }
   };
 
   if (isLoading) {
@@ -244,7 +295,7 @@ const StakeholderCommunicationHub = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Tipo de Comunicação</Label>
-                <Select>
+                <Select value={newMessage.type} onValueChange={(value) => setNewMessage(prev => ({...prev, type: value as 'email' | 'meeting' | 'phone' | 'survey' | 'document'}))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -259,7 +310,7 @@ const StakeholderCommunicationHub = () => {
 
               <div>
                 <Label>Prioridade</Label>
-                <Select>
+                <Select value={newMessage.priority} onValueChange={(value) => setNewMessage(prev => ({...prev, priority: value as 'low' | 'medium' | 'high'}))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a prioridade" />
                   </SelectTrigger>
@@ -274,7 +325,7 @@ const StakeholderCommunicationHub = () => {
 
             <div>
               <Label>Destinatário(s)</Label>
-              <Select>
+              <Select value={newMessage.stakeholder_id} onValueChange={(value) => setNewMessage(prev => ({...prev, stakeholder_id: value}))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione os stakeholders" />
                 </SelectTrigger>
@@ -290,7 +341,10 @@ const StakeholderCommunicationHub = () => {
 
             <div>
               <Label>Modelo (Opcional)</Label>
-              <Select>
+              <Select value={newMessage.template_id} onValueChange={(value) => {
+                setNewMessage(prev => ({...prev, template_id: value}));
+                if (value) applyTemplate(value);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Usar modelo existente" />
                 </SelectTrigger>
@@ -306,7 +360,11 @@ const StakeholderCommunicationHub = () => {
 
             <div>
               <Label>Assunto</Label>
-              <Input placeholder="Digite o assunto da comunicação" />
+              <Input 
+                placeholder="Digite o assunto da comunicação" 
+                value={newMessage.subject}
+                onChange={(e) => setNewMessage(prev => ({...prev, subject: e.target.value}))}
+              />
             </div>
 
             <div>
@@ -314,16 +372,21 @@ const StakeholderCommunicationHub = () => {
               <Textarea 
                 placeholder="Digite o conteúdo da comunicação..."
                 className="min-h-[120px]"
+                value={newMessage.content}
+                onChange={(e) => setNewMessage(prev => ({...prev, content: e.target.value}))}
               />
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsNewMessageOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsNewMessageOpen(false);
+                resetNewMessage();
+              }}>
                 Cancelar
               </Button>
-              <Button onClick={() => handleSendCommunication({})}>
+              <Button onClick={handleSendCommunication} disabled={sendCommunicationMutation.isPending}>
                 <Send className="h-4 w-4 mr-2" />
-                Enviar
+                {sendCommunicationMutation.isPending ? 'Enviando...' : 'Enviar'}
               </Button>
             </div>
           </DialogContent>

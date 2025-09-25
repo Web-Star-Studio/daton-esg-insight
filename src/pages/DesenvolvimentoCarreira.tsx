@@ -21,10 +21,14 @@ import {
   Plus,
   CheckCircle,
   Clock,
-  UserPlus
+  UserPlus,
+  Eye,
+  Edit
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 // Mock functions - replace with actual API calls
 const getCareerStats = async () => {
@@ -167,6 +171,10 @@ export default function DesenvolvimentoCarreira() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [isCompetencyModalOpen, setIsCompetencyModalOpen] = useState(false);
+  const [isNewPDIModalOpen, setIsNewPDIModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const { data: careerStats, isLoading: statsLoading } = useQuery({
     queryKey: ["careerStats"],
@@ -187,6 +195,29 @@ export default function DesenvolvimentoCarreira() {
     queryKey: ["internalJobs"],
     queryFn: getInternalJobs,
   });
+
+  const handleViewDetails = (plan: any) => {
+    setSelectedPlan(plan);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleScheduleMeeting = (plan: any) => {
+    toast.success(`Reunião 1:1 agendada com ${plan.mentor} para discutir o PDI de ${plan.employeeName}`);
+  };
+
+  const handleEditPDI = (plan: any) => {
+    toast.info(`Abrindo editor do PDI de ${plan.employeeName}`);
+  };
+
+  const handleCreateNewPDI = () => {
+    toast.success("Modal de criação de novo PDI seria aberto aqui");
+    setIsNewPDIModalOpen(false);
+  };
+
+  const handleOpenCompetencyMatrix = () => {
+    toast.info("Matriz de Competências seria aberta em uma nova aba ou modal");
+    setIsCompetencyModalOpen(false);
+  };
 
   const filteredPlans = careerPlans?.filter(plan => {
     const matchesSearch = plan.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -253,11 +284,11 @@ export default function DesenvolvimentoCarreira() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsCompetencyModalOpen(true)}>
             <BookOpen className="w-4 h-4 mr-2" />
             Matriz de Competências
           </Button>
-          <Button>
+          <Button onClick={() => setIsNewPDIModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Novo PDI
           </Button>
@@ -606,6 +637,91 @@ export default function DesenvolvimentoCarreira() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <Dialog open={isCompetencyModalOpen} onOpenChange={setIsCompetencyModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Matriz de Competências</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-muted-foreground mb-4">
+              A Matriz de Competências permite visualizar e gerenciar as competências necessárias para cada cargo.
+            </p>
+            <div className="flex justify-end">
+              <Button onClick={handleOpenCompetencyMatrix}>
+                Abrir Matriz Completa
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isNewPDIModalOpen} onOpenChange={setIsNewPDIModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Criar Novo PDI</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-muted-foreground mb-4">
+              Criar um novo Plano de Desenvolvimento Individual para um funcionário.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsNewPDIModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleCreateNewPDI}>
+                Criar PDI
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes do PDI</DialogTitle>
+          </DialogHeader>
+          {selectedPlan && (
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold">Funcionário</h4>
+                  <p>{selectedPlan.employeeName} ({selectedPlan.employeeCode})</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Departamento</h4>
+                  <p>{selectedPlan.department}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold">Posição Atual</h4>
+                  <p>{selectedPlan.currentPosition}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Posição Alvo</h4>
+                  <p>{selectedPlan.targetPosition}</p>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold">Progresso</h4>
+                <Progress value={selectedPlan.progress} className="mt-2" />
+                <p className="text-sm text-muted-foreground mt-1">{selectedPlan.progress}% concluído</p>
+              </div>
+              <div>
+                <h4 className="font-semibold">Competências em Desenvolvimento</h4>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedPlan.skills?.map((skill: string, index: number) => (
+                    <Badge key={index} variant="outline">{skill}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
