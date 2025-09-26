@@ -122,6 +122,8 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
 
   const onSubmit = async (values: z.infer<typeof employeeTrainingSchema>) => {
     try {
+      console.log('EmployeeTrainingModal: Submitting form with values:', values);
+      
       const submissionData = {
         employee_id: values.employee_id!,
         training_program_id: values.training_program_id!,
@@ -130,16 +132,18 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
         status: values.status!,
         trainer: values.trainer,
         notes: values.notes,
-        company_id: "", // Will be set by RLS
+        company_id: "", // Will be set by database triggers
       };
 
       if (isEditing && training?.id) {
+        console.log('EmployeeTrainingModal: Updating training:', training.id, submissionData);
         await updateEmployeeTraining(training.id, submissionData);
         toast({
           title: "Sucesso",
           description: "Treinamento do funcionário atualizado com sucesso!",
         });
       } else {
+        console.log('EmployeeTrainingModal: Creating new training:', submissionData);
         await createEmployeeTraining(submissionData);
         toast({
           title: "Sucesso",
@@ -150,10 +154,12 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
       queryClient.invalidateQueries({ queryKey: ["employee-trainings"] });
       queryClient.invalidateQueries({ queryKey: ["training-metrics"] });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('EmployeeTrainingModal: Error saving training:', error);
+      
       toast({
         title: "Erro",
-        description: "Erro ao salvar treinamento. Tente novamente.",
+        description: `Erro ao salvar treinamento: ${error.message || 'Tente novamente.'}`,
         variant: "destructive",
       });
     }

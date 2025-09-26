@@ -9890,6 +9890,10 @@ export type Database = {
         }
         Returns: Json
       }
+      debug_auth_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       exec_sql: {
         Args: { query: string }
         Returns: Json
