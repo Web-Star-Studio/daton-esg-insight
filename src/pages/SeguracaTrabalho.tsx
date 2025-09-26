@@ -340,8 +340,12 @@ export default function SeguracaTrabalho() {
                             {incident.severity}
                           </Badge>
                         </td>
-                        <td className="p-4">{typeof incident.employee === 'object' && incident.employee?.full_name || 'N/A'}</td>
-                        <td className="p-4">{typeof incident.employee === 'object' && incident.employee?.department || incident.location || 'N/A'}</td>
+                         <td className="p-4">
+                          {incident.employee_id ? `Funcionário ID: ${incident.employee_id}` : 'N/A'}
+                         </td>
+                         <td className="p-4">
+                          {incident.location || 'N/A'}
+                         </td>
                         <td className="p-4">{new Date(incident.incident_date).toLocaleDateString('pt-BR')}</td>
                         <td className="p-4">
                           <Badge className={getStatusColor(incident.status)}>

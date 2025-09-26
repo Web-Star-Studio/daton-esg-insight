@@ -25,10 +25,7 @@ export interface SafetyIncident {
 export const getSafetyIncidents = async () => {
   const { data, error } = await supabase
     .from('safety_incidents')
-    .select(`
-      *,
-      employee:employees(full_name, employee_code)
-    `)
+    .select('*')
     .order('incident_date', { ascending: false });
 
   if (error) throw error;
@@ -38,10 +35,7 @@ export const getSafetyIncidents = async () => {
 export const getSafetyIncident = async (id: string) => {
   const { data, error } = await supabase
     .from('safety_incidents')
-    .select(`
-      *,
-      employee:employees(full_name, employee_code, department)
-    `)
+    .select('*')
     .eq('id', id)
     .single();
 
