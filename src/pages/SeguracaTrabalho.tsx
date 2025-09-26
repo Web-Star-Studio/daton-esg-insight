@@ -8,96 +8,69 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Shield, Heart, FileText, Calendar, TrendingUp, Users, Clock, Target, Plus, Search, Filter, Download, Eye } from "lucide-react";
+import { AlertTriangle, Shield, Heart, FileText, Calendar, TrendingUp, Users, Clock, Target, Plus, Search, Filter, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { useSafetyIncidents, useSafetyMetrics, useDeleteSafetyIncident } from "@/hooks/useSafetyIncidents";
+import { auditService } from "@/services/audit";
+import { useQuery } from "@tanstack/react-query";
+import SafetyIncidentModal from "@/components/SafetyIncidentModal";
+import { AuditModal } from "@/components/AuditModal";
+import { SafetyIncident } from "@/services/safetyIncidents";
 import { toast } from "sonner";
 
 export default function SeguracaTrabalho() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
+  const [editingIncident, setEditingIncident] = useState<SafetyIncident | null>(null);
   const [newAuditOpen, setNewAuditOpen] = useState(false);
 
-  // Mock data for safety metrics
+  // Real data from API
+  const { data: incidents = [], isLoading: incidentsLoading } = useSafetyIncidents();
+  const { data: safetyMetrics, isLoading: metricsLoading } = useSafetyMetrics();
+  const { data: audits = [], isLoading: auditsLoading } = useQuery({
+    queryKey: ['audits'],
+    queryFn: auditService.getAudits,
+  });
+  
+  const deleteMutation = useDeleteSafetyIncident();
+
+  // Calculate real-time stats
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  const thisMonthIncidents = incidents.filter(incident => {
+    const incidentDate = new Date(incident.incident_date);
+    return incidentDate.getMonth() === currentMonth && incidentDate.getFullYear() === currentYear;
+  }).length;
+
+  const lastMonthIncidents = incidents.filter(incident => {
+    const incidentDate = new Date(incident.incident_date);
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    return incidentDate.getMonth() === lastMonth && incidentDate.getFullYear() === lastMonthYear;
+  }).length;
+
+  const resolvedIncidents = incidents.filter(incident => incident.status === 'Resolvido').length;
+  
+  // Calculate days without incidents
+  const sortedIncidents = incidents
+    .filter(incident => incident.status !== 'Resolvido')
+    .sort((a, b) => new Date(b.incident_date).getTime() - new Date(a.incident_date).getTime());
+  
+  const daysSinceLastIncident = sortedIncidents.length > 0 
+    ? Math.floor((currentDate.getTime() - new Date(sortedIncidents[0].incident_date).getTime()) / (1000 * 60 * 60 * 24))
+    : 365; // Default if no incidents
+
   const safetyStats = {
-    incidentsThisMonth: 3,
-    incidentsLastMonth: 5,
-    daysWithoutIncidents: 127,
-    safetyTrainingCompliance: 92,
-    activeAudits: 8,
-    resolvedIncidents: 45,
-    avgResolutionTime: 5.2,
-    safetyScore: 87
+    incidentsThisMonth: thisMonthIncidents,
+    incidentsLastMonth: lastMonthIncidents,
+    daysWithoutIncidents: daysSinceLastIncident,
+    safetyTrainingCompliance: 92, // This could come from training system
+    activeAudits: audits.filter(audit => audit.status === 'Em Andamento' || audit.status === 'Agendada').length,
+    resolvedIncidents,
+    avgResolutionTime: 5.2, // Could be calculated from incident resolution times
+    safetyScore: safetyMetrics?.ltifr ? Math.max(0, 100 - safetyMetrics.ltifr * 10) : 87
   };
-
-  // Mock data for incidents
-  const incidents = [
-    {
-      id: "INC-001",
-      type: "Acidente de Trabalho",
-      severity: "Média",
-      description: "Corte na mão durante operação de máquina",
-      employee: "João Silva",
-      department: "Produção",
-      date: "2024-01-15",
-      status: "Em Investigação",
-      investigator: "Maria Santos"
-    },
-    {
-      id: "INC-002",
-      type: "Quase Acidente",
-      severity: "Baixa",
-      description: "Escorregão próximo à área de produção",
-      employee: "Ana Costa",
-      department: "Qualidade",
-      date: "2024-01-14",
-      status: "Resolvido",
-      investigator: "Carlos Lima"
-    },
-    {
-      id: "INC-003",
-      type: "Condição Insegura",
-      severity: "Alta",
-      description: "Vazamento de produto químico no setor B",
-      employee: "Pedro Oliveira",
-      department: "Manutenção",
-      date: "2024-01-13",
-      status: "Aberto",
-      investigator: "-"
-    }
-  ];
-
-  // Mock data for safety audits
-  const audits = [
-    {
-      id: "AUD-001",
-      title: "Auditoria de EPIs - Setor Produção",
-      type: "EPI",
-      auditor: "Maria Santos",
-      scheduled: "2024-01-20",
-      status: "Agendada",
-      score: null,
-      findings: 0
-    },
-    {
-      id: "AUD-002",
-      title: "Inspeção de Segurança - Laboratório",
-      type: "Segurança",
-      auditor: "Carlos Lima",
-      scheduled: "2024-01-18",
-      status: "Concluída",
-      score: 8.5,
-      findings: 3
-    },
-    {
-      id: "AUD-003",
-      title: "Avaliação de Riscos - Almoxarifado",
-      type: "Riscos",
-      auditor: "Ana Costa",
-      scheduled: "2024-01-22",
-      status: "Em Andamento",
-      score: null,
-      findings: 2
-    }
-  ];
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -120,13 +93,21 @@ export default function SeguracaTrabalho() {
     }
   };
 
-  const handleCreateIncident = () => {
-    toast.success("Incidente registrado com sucesso!");
-    setNewIncidentOpen(false);
+  const handleDeleteIncident = (incident: SafetyIncident) => {
+    if (confirm('Tem certeza que deseja excluir este incidente?')) {
+      deleteMutation.mutate(incident.id);
+    }
+  };
+
+  const handleEditIncident = (incident: SafetyIncident) => {
+    setEditingIncident(incident);
+  };
+
+  const handleAuditSuccess = () => {
+    setNewAuditOpen(false);
   };
 
   const handleCreateAudit = () => {
-    toast.success("Auditoria agendada com sucesso!");
     setNewAuditOpen(false);
   };
 
@@ -166,9 +147,13 @@ export default function SeguracaTrabalho() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{safetyStats.incidentsThisMonth}</div>
+            <div className="text-2xl font-bold">
+              {incidentsLoading ? "..." : safetyStats.incidentsThisMonth}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {safetyStats.incidentsThisMonth < safetyStats.incidentsLastMonth ? "-40%" : "+20%"} em relação ao mês anterior
+              {safetyStats.incidentsThisMonth < safetyStats.incidentsLastMonth 
+                ? `${Math.round(((safetyStats.incidentsLastMonth - safetyStats.incidentsThisMonth) / safetyStats.incidentsLastMonth) * 100)}% menos que o mês anterior`
+                : `${Math.round(((safetyStats.incidentsThisMonth - safetyStats.incidentsLastMonth) / Math.max(safetyStats.incidentsLastMonth, 1)) * 100)}% mais que o mês anterior`}
             </p>
           </CardContent>
         </Card>
@@ -179,7 +164,9 @@ export default function SeguracaTrabalho() {
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{safetyStats.daysWithoutIncidents}</div>
+            <div className="text-2xl font-bold">
+              {incidentsLoading ? "..." : safetyStats.daysWithoutIncidents}
+            </div>
             <p className="text-xs text-muted-foreground">
               Record atual da empresa
             </p>
@@ -205,7 +192,9 @@ export default function SeguracaTrabalho() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{safetyStats.safetyScore}</div>
+            <div className="text-2xl font-bold">
+              {metricsLoading ? "..." : Math.round(safetyStats.safetyScore)}
+            </div>
             <p className="text-xs text-muted-foreground">
               +5 pontos este mês
             </p>
@@ -232,33 +221,34 @@ export default function SeguracaTrabalho() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>Acidentes de Trabalho</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-8 h-2 bg-destructive rounded-full"></div>
+                  {safetyMetrics?.severityDistribution && Object.entries(safetyMetrics.severityDistribution).map(([severity, count]) => {
+                    const total = Object.values(safetyMetrics.severityDistribution).reduce((sum, val) => sum + val, 0);
+                    const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                    const widthPercentage = Math.round((count / Math.max(total, 1)) * 16);
+                    
+                    return (
+                      <div key={severity} className="flex justify-between items-center">
+                        <span>{severity}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-muted rounded-full">
+                            <div 
+                              className={`h-2 rounded-full ${
+                                severity === 'Alta' ? 'bg-destructive' :
+                                severity === 'Média' ? 'bg-warning' : 'bg-secondary'
+                              }`}
+                              style={{ width: `${widthPercentage * 4}px` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm">{percentage}%</span>
+                        </div>
                       </div>
-                      <span className="text-sm">45%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Quase Acidentes</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-10 h-2 bg-warning rounded-full"></div>
-                      </div>
-                      <span className="text-sm">35%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Condições Inseguras</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-6 h-2 bg-secondary rounded-full"></div>
-                      </div>
-                      <span className="text-sm">20%</span>
-                    </div>
-                  </div>
+                    );
+                  })}
+                  {(!safetyMetrics?.severityDistribution || Object.keys(safetyMetrics.severityDistribution).length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhum incidente registrado ainda
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -270,12 +260,18 @@ export default function SeguracaTrabalho() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {auditsLoading && <p className="text-center py-4">Carregando auditorias...</p>}
+                  {!auditsLoading && audits.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma auditoria encontrada
+                    </p>
+                  )}
                   {audits.slice(0, 3).map((audit) => (
                     <div key={audit.id} className="flex justify-between items-center p-3 border rounded-lg">
                       <div>
                         <div className="font-medium">{audit.title}</div>
                         <div className="text-sm text-muted-foreground">
-                          {audit.auditor} • {audit.scheduled}
+                          {audit.auditor} • {new Date(audit.start_date || '').toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                       <Badge className={getStatusColor(audit.status)}>
@@ -312,97 +308,10 @@ export default function SeguracaTrabalho() {
                 Filtros
               </Button>
             </div>
-            <Dialog open={newIncidentOpen} onOpenChange={setNewIncidentOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Registrar Incidente
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Registrar Novo Incidente</DialogTitle>
-                  <DialogDescription>
-                    Registre um novo incidente de segurança do trabalho
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tipo de Incidente</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="accident">Acidente de Trabalho</SelectItem>
-                        <SelectItem value="near-miss">Quase Acidente</SelectItem>
-                        <SelectItem value="unsafe">Condição Insegura</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Severidade</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a severidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Funcionário Envolvido</Label>
-                    <Input placeholder="Nome do funcionário" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Departamento</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o departamento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="production">Produção</SelectItem>
-                        <SelectItem value="quality">Qualidade</SelectItem>
-                        <SelectItem value="maintenance">Manutenção</SelectItem>
-                        <SelectItem value="logistics">Logística</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="col-span-2 space-y-2">
-                    <Label>Descrição do Incidente</Label>
-                    <Textarea placeholder="Descreva detalhadamente o que aconteceu..." rows={4} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data do Incidente</Label>
-                    <Input type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Investigador Responsável</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o investigador" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="maria">Maria Santos</SelectItem>
-                        <SelectItem value="carlos">Carlos Lima</SelectItem>
-                        <SelectItem value="ana">Ana Costa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setNewIncidentOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateIncident}>
-                    Registrar Incidente
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setNewIncidentOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Registrar Incidente
+            </Button>
           </div>
 
           <Card>
@@ -425,15 +334,15 @@ export default function SeguracaTrabalho() {
                     {incidents.map((incident) => (
                       <tr key={incident.id} className="border-b">
                         <td className="p-4 font-mono text-sm">{incident.id}</td>
-                        <td className="p-4">{incident.type}</td>
+                         <td className="p-4">{incident.incident_type}</td>
                         <td className="p-4">
                           <Badge className={getSeverityColor(incident.severity)}>
                             {incident.severity}
                           </Badge>
                         </td>
-                        <td className="p-4">{incident.employee}</td>
-                        <td className="p-4">{incident.department}</td>
-                        <td className="p-4">{new Date(incident.date).toLocaleDateString('pt-BR')}</td>
+                        <td className="p-4">{typeof incident.employee === 'object' && incident.employee?.full_name || 'N/A'}</td>
+                        <td className="p-4">{typeof incident.employee === 'object' && incident.employee?.department || incident.location || 'N/A'}</td>
+                        <td className="p-4">{new Date(incident.incident_date).toLocaleDateString('pt-BR')}</td>
                         <td className="p-4">
                           <Badge className={getStatusColor(incident.status)}>
                             {incident.status}
@@ -556,17 +465,15 @@ export default function SeguracaTrabalho() {
                       <tr key={audit.id} className="border-b">
                         <td className="p-4 font-mono text-sm">{audit.id}</td>
                         <td className="p-4">{audit.title}</td>
-                        <td className="p-4">{audit.type}</td>
+                        <td className="p-4">{audit.audit_type}</td>
                         <td className="p-4">{audit.auditor}</td>
-                        <td className="p-4">{new Date(audit.scheduled).toLocaleDateString('pt-BR')}</td>
+                        <td className="p-4">{new Date(audit.start_date || '').toLocaleDateString('pt-BR')}</td>
                         <td className="p-4">
                           <Badge className={getStatusColor(audit.status)}>
                             {audit.status}
                           </Badge>
                         </td>
-                        <td className="p-4">
-                          {audit.score ? `${audit.score}/10` : "-"}
-                        </td>
+                        <td className="p-4">-</td>
                         <td className="p-4">
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
@@ -679,6 +586,22 @@ export default function SeguracaTrabalho() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <SafetyIncidentModal
+        isOpen={newIncidentOpen || editingIncident !== null}
+        onClose={() => {
+          setNewIncidentOpen(false);
+          setEditingIncident(null);
+        }}
+        incident={editingIncident || undefined}
+      />
+
+      <AuditModal
+        isOpen={newAuditOpen}
+        onClose={() => setNewAuditOpen(false)}
+        onSuccess={handleAuditSuccess}
+      />
     </div>
   );
 }
