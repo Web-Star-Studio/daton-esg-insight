@@ -43,22 +43,24 @@ const benefitSchema = z.object({
 
 type BenefitFormData = z.infer<typeof benefitSchema>;
 
-interface Benefit {
+interface BenefitModalProps {
   id?: string;
   name: string;
   type: string;
   description?: string;
-  monthlyCost: number;
-  eligibilityRules?: string;
-  isActive: boolean;
+  monthly_cost: number;
+  eligibility_rules?: string;
+  is_active: boolean;
   provider?: string;
-  contractNumber?: string;
+  contract_number?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface BenefitManagementModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  benefit?: Benefit;
+  benefit?: BenefitModalProps | null;
   onSuccess: () => void;
 }
 
@@ -91,11 +93,11 @@ export function BenefitManagementModal({
         name: benefit.name,
         type: benefit.type,
         description: benefit.description || "",
-        monthlyCost: benefit.monthlyCost.toString(),
-        eligibilityRules: benefit.eligibilityRules || "",
-        isActive: benefit.isActive,
+        monthlyCost: benefit.monthly_cost?.toString() || "",
+        eligibilityRules: benefit.eligibility_rules || "",
+        isActive: benefit.is_active,
         provider: benefit.provider || "",
-        contractNumber: benefit.contractNumber || "",
+        contractNumber: benefit.contract_number || "",
       });
     } else {
       form.reset({
@@ -114,16 +116,32 @@ export function BenefitManagementModal({
   const onSubmit = async (data: BenefitFormData) => {
     setIsLoading(true);
     try {
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { createBenefit, updateBenefit } = await import("@/services/benefits");
       
-      const action = isEditing ? "atualizado" : "criado";
-      toast.success(`Benefício ${action} com sucesso!`);
+      const benefitData = {
+        name: data.name,
+        type: data.type,
+        description: data.description,
+        monthly_cost: parseFloat(data.monthlyCost),
+        eligibility_rules: data.eligibilityRules,
+        is_active: data.isActive,
+        provider: data.provider,
+        contract_number: data.contractNumber,
+      };
+
+      if (isEditing && benefit?.id) {
+        await updateBenefit(benefit.id, benefitData);
+        toast.success("Benefício atualizado com sucesso!");
+      } else {
+        await createBenefit(benefitData);
+        toast.success("Benefício criado com sucesso!");
+      }
       
       onSuccess();
       onOpenChange(false);
       form.reset();
     } catch (error) {
+      console.error('Error saving benefit:', error);
       toast.error("Erro ao salvar benefício");
     } finally {
       setIsLoading(false);

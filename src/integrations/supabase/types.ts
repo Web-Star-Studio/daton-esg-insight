@@ -900,6 +900,47 @@ export type Database = {
         }
         Relationships: []
       }
+      benefit_enrollments: {
+        Row: {
+          benefit_id: string
+          company_id: string
+          created_at: string
+          employee_id: string
+          enrollment_date: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          benefit_id: string
+          company_id: string
+          created_at?: string
+          employee_id: string
+          enrollment_date?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          benefit_id?: string
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          enrollment_date?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benefit_enrollments_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "employee_benefits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       board_members: {
         Row: {
           age: number | null
@@ -2816,6 +2857,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      employee_benefits: {
+        Row: {
+          company_id: string
+          contract_number: string | null
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          eligibility_rules: string | null
+          id: string
+          is_active: boolean
+          monthly_cost: number
+          name: string
+          provider: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contract_number?: string | null
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          eligibility_rules?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_cost?: number
+          name: string
+          provider?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contract_number?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          eligibility_rules?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_cost?: number
+          name?: string
+          provider?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       employee_competency_assessments: {
         Row: {

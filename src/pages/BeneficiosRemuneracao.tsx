@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,9 +30,11 @@ import {
   Settings,
 } from "lucide-react";
 import { getEmployeesStats, useEmployees } from "@/services/employees";
+import { useBenefits, getBenefitStats, deleteBenefit, type Benefit } from "@/services/benefits";
 import { BenefitManagementModal } from "@/components/BenefitManagementModal";
 import { SalaryManagementModal } from "@/components/SalaryManagementModal";
 import { BenefitsReportModal } from "@/components/BenefitsReportModal";
+import { BenefitConfigurationModal } from "@/components/BenefitConfigurationModal";
 import { toast } from "sonner";
 
 export default function BeneficiosRemuneracao() {
@@ -41,7 +43,11 @@ export default function BeneficiosRemuneracao() {
   const [benefitModalOpen, setBenefitModalOpen] = useState(false);
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
-  const [selectedBenefit, setSelectedBenefit] = useState(null);
+  const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
+  const [configurationModalOpen, setConfigurationModalOpen] = useState(false);
+  const [selectedBenefitForConfig, setSelectedBenefitForConfig] = useState<{id: string, name: string, type: string} | null>(null);
+
+  const queryClient = useQueryClient();
 
   const { data: employeeStats, isLoading } = useQuery({
     queryKey: ['employee-stats'],
@@ -50,63 +56,58 @@ export default function BeneficiosRemuneracao() {
 
   const { data: employees = [] } = useEmployees();
 
-  // Mock data for benefits and compensation
+  const { data: benefits = [], isLoading: benefitsLoading, refetch: refetchBenefits } = useQuery(useBenefits());
+
+  const { data: benefitStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['benefit-stats'],
+    queryFn: getBenefitStats,
+  });
+
+  // Real data for benefits and compensation
   const benefitsOverview = {
-    totalBenefitsCost: 125000,
+    totalBenefitsCost: benefitStats?.totalBenefitsCost || 0,
     averageSalary: employeeStats?.avgSalary || 0,
-    benefitParticipation: 85,
-    satisfactionScore: 4.2
+    benefitParticipation: benefitStats?.benefitParticipation || 0,
+    satisfactionScore: 4.2 // This could come from surveys
   };
 
-  const benefitsPrograms = [
-    {
-      id: 1,
-      name: "Plano de Saúde",
-      type: "Saúde",
-      participants: 45,
-      totalEmployees: employeeStats?.totalEmployees || 50,
-      monthlyCost: 15000,
-      status: "Ativo",
-      provider: "Unimed",
-      contractNumber: "CT-2024-001"
-    },
-    {
-      id: 2,
-      name: "Vale Alimentação",
-      type: "Alimentação",
-      participants: 48,
-      totalEmployees: employeeStats?.totalEmployees || 50,
-      monthlyCost: 8000,
-      status: "Ativo",
-      provider: "Sodexo",
-      contractNumber: "VA-2024-002"
-    },
-    {
-      id: 3,
-      name: "Vale Transporte",
-      type: "Transporte",
-      participants: 35,
-      totalEmployees: employeeStats?.totalEmployees || 50,
-      monthlyCost: 5500,
-      status: "Ativo",
-      provider: "VR Benefícios",
-      contractNumber: "VT-2024-003"
-    },
-    {
-      id: 4,
-      name: "Seguro de Vida",
-      type: "Seguro",
-      participants: 50,
-      totalEmployees: employeeStats?.totalEmployees || 50,
-      monthlyCost: 2500,
-      status: "Ativo",
-      provider: "Porto Seguro",
-      contractNumber: "SV-2024-004"
+  const benefitsPrograms = benefits
+    .filter(benefit => 
+      benefit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      benefit.type.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .map(benefit => ({
+      id: benefit.id,
+      name: benefit.name,
+      type: benefit.type,
+      participants: benefit.participants || 0,
+      totalEmployees: benefit.total_employees || employeeStats?.totalEmployees || 0,
+      monthlyCost: benefit.monthly_cost || 0,
+      status: benefit.is_active ? "Ativo" : "Inativo",
+      provider: benefit.provider || "",
+      contractNumber: benefit.contract_number || "",
+      description: benefit.description || "",
+      eligibilityRules: benefit.eligibility_rules || "",
+      isActive: benefit.is_active
+    }));
+
+  const handleDeleteBenefit = async (benefitId: string) => {
+    try {
+      await deleteBenefit(benefitId);
+      toast.success("Benefício removido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ['benefits'] });
+      queryClient.invalidateQueries({ queryKey: ['benefit-stats'] });
+    } catch (error) {
+      console.error('Error deleting benefit:', error);
+      toast.error("Erro ao remover benefício");
     }
-  ].filter(benefit => 
-    benefit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    benefit.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  };
+
+  const handleBenefitSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['benefits'] });
+    queryClient.invalidateQueries({ queryKey: ['benefit-stats'] });
+    toast.success("Lista de benefícios atualizada!");
+  };
 
   const salaryRanges = [
     { range: "R$ 2.000 - R$ 4.000", count: 15, percentage: 30 },
@@ -147,7 +148,7 @@ export default function BeneficiosRemuneracao() {
     }
   ];
 
-  if (isLoading) {
+  if (isLoading || benefitsLoading || statsLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="animate-pulse space-y-4">
@@ -253,7 +254,7 @@ export default function BeneficiosRemuneracao() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedBenefit(benefit);
+                                setSelectedBenefit(benefit as unknown as Benefit);
                                 setBenefitModalOpen(true);
                               }}
                             >
@@ -261,9 +262,7 @@ export default function BeneficiosRemuneracao() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => {
-                                toast.success("Benefício removido com sucesso!");
-                              }}
+                              onClick={() => handleDeleteBenefit(benefit.id)}
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -343,21 +342,28 @@ export default function BeneficiosRemuneracao() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
-                              setSelectedBenefit(benefit);
+                              setSelectedBenefit(benefit as unknown as Benefit);
                               setBenefitModalOpen(true);
                             }}
                           >
                             <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedBenefitForConfig({
+                                id: benefit.id,
+                                name: benefit.name,
+                                type: benefit.type
+                              });
+                              setConfigurationModalOpen(true);
+                            }}
+                          >
                             <Settings className="h-4 w-4 mr-2" />
                             Configurar
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              toast.success("Benefício removido com sucesso!");
-                            }}
+                            onClick={() => handleDeleteBenefit(benefit.id)}
                             className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -728,10 +734,7 @@ export default function BeneficiosRemuneracao() {
           if (!open) setSelectedBenefit(null);
         }}
         benefit={selectedBenefit}
-        onSuccess={() => {
-          // Here you would refetch benefits data
-          toast.success("Lista de benefícios atualizada!");
-        }}
+        onSuccess={handleBenefitSuccess}
       />
 
       <SalaryManagementModal
@@ -746,6 +749,12 @@ export default function BeneficiosRemuneracao() {
       <BenefitsReportModal
         open={reportsModalOpen}
         onOpenChange={setReportsModalOpen}
+      />
+
+      <BenefitConfigurationModal
+        open={configurationModalOpen}
+        onOpenChange={setConfigurationModalOpen}
+        benefit={selectedBenefitForConfig}
       />
     </div>
   );
