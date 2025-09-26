@@ -100,10 +100,18 @@ class AuditService {
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
     console.log('Creating audit:', auditData);
     
+    // Add company_id from current user's profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
     const { data, error } = await supabase
       .from('audits')
       .insert([{
         ...auditData,
+        company_id: profile?.company_id,
         status: auditData.status || 'Planejada'
       }])
       .select()
@@ -125,7 +133,7 @@ class AuditService {
       .from('audit_findings')
       .select(`
         *,
-        profiles!audit_findings_responsible_user_id_fkey (
+        profiles:responsible_user_id (
           full_name
         )
       `)
@@ -153,7 +161,7 @@ class AuditService {
       }])
       .select(`
         *,
-        profiles!audit_findings_responsible_user_id_fkey (
+        profiles:responsible_user_id (
           full_name
         )
       `)
@@ -177,7 +185,7 @@ class AuditService {
       .eq('id', findingId)
       .select(`
         *,
-        profiles!audit_findings_responsible_user_id_fkey (
+        profiles:responsible_user_id (
           full_name
         )
       `)
@@ -199,7 +207,7 @@ class AuditService {
       .from('activity_logs')
       .select(`
         *,
-        profiles!activity_logs_user_id_fkey (
+        profiles:user_id (
           full_name
         )
       `)
@@ -250,7 +258,7 @@ class AuditService {
       .from('activity_logs')
       .select(`
         *,
-        profiles!activity_logs_user_id_fkey (
+        profiles:user_id (
           full_name
         )
       `)
