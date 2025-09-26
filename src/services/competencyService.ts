@@ -53,7 +53,10 @@ export const createCompetency = async (competency: {
 }) => {
   const { data, error } = await supabase
     .from("competency_matrix")
-    .insert([competency])
+    .insert([{
+      ...competency,
+      company_id: null // Will be set by RLS trigger
+    }])
     .select()
     .single();
 
@@ -112,7 +115,10 @@ export const createCompetencyAssessment = async (assessment: {
 }) => {
   const { data, error } = await supabase
     .from("employee_competency_assessments")
-    .insert([assessment])
+    .insert([{
+      ...assessment,
+      company_id: null // Will be set by RLS trigger
+    }])
     .select()
     .single();
 

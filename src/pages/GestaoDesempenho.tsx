@@ -29,6 +29,10 @@ export default function GestaoDesempenho() {
   const [isCycleModalOpen, setIsCycleModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+  const [isCompetencyModalOpen, setIsCompetencyModalOpen] = useState(false);
+  const [isCompetencyAssessmentModalOpen, setIsCompetencyAssessmentModalOpen] = useState(false);
+  const [selectedCompetency, setSelectedCompetency] = useState<any>(null);
+  const { toast } = useToast();
 
   // Initialize default criteria on component load
   useEffect(() => {
@@ -49,6 +53,22 @@ export default function GestaoDesempenho() {
   const { data: goalsList = [] } = useQuery({
     queryKey: ['employee-goals'],
     queryFn: getEmployeeGoals
+  });
+
+  // Fetch competency data
+  const { data: competencies = [] } = useQuery({
+    queryKey: ['competency-matrix'],
+    queryFn: getCompetencyMatrix
+  });
+
+  const { data: assessments = [] } = useQuery({
+    queryKey: ['competency-assessments'],
+    queryFn: getEmployeeCompetencyAssessments
+  });
+
+  const { data: gaps = [] } = useQuery({
+    queryKey: ['competency-gaps'],
+    queryFn: getCompetencyGapAnalysis
   });
 
   // Performance stats for display
@@ -113,6 +133,64 @@ export default function GestaoDesempenho() {
     if (!goal.progress_updates || goal.progress_updates.length === 0) return 0;
     const latest = goal.progress_updates[goal.progress_updates.length - 1];
     return latest.progress_percentage || 0;
+  };
+
+  const handleExportReport = async (type: 'performance' | 'competencies' | 'goals') => {
+    try {
+      let data, filename;
+      
+      switch (type) {
+        case 'performance':
+          data = await generatePerformanceReport();
+          filename = 'relatorio_avaliacoes';
+          break;
+        case 'competencies':
+          data = await generateCompetencyGapReport();
+          filename = 'analise_competencias';
+          break;
+        case 'goals':
+          data = await generateGoalsReport();
+          filename = 'acompanhamento_metas';
+          break;
+      }
+      
+      exportToCSV(data, filename);
+      toast({
+        title: "Sucesso",
+        description: "Relatório exportado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar relatório. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateReports = async () => {
+    try {
+      const [performance, competencies, goals] = await Promise.all([
+        generatePerformanceReport(),
+        generateCompetencyGapReport(),
+        generateGoalsReport()
+      ]);
+      
+      exportToCSV(performance, 'relatorio_completo_avaliacoes');
+      exportToCSV(competencies, 'relatorio_completo_competencias');
+      exportToCSV(goals, 'relatorio_completo_metas');
+      
+      toast({
+        title: "Sucesso",
+        description: "Todos os relatórios foram exportados!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar relatórios. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -480,6 +558,17 @@ export default function GestaoDesempenho() {
         open={isGoalModalOpen}
         onOpenChange={setIsGoalModalOpen}
         goalId={selectedGoalId}
+      />
+
+      <CompetencyModal
+        open={isCompetencyModalOpen}
+        onOpenChange={setIsCompetencyModalOpen}
+        competency={selectedCompetency}
+      />
+
+      <CompetencyAssessmentModal
+        open={isCompetencyAssessmentModalOpen}
+        onOpenChange={setIsCompetencyAssessmentModalOpen}
       />
     </div>
   );

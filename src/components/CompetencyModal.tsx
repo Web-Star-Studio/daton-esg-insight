@@ -106,7 +106,9 @@ export function CompetencyModal({ open, onOpenChange, competency }: CompetencyMo
   const onSubmit = async (values: z.infer<typeof competencySchema>) => {
     try {
       const competencyData = {
-        ...values,
+        competency_name: values.competency_name!,
+        competency_category: values.competency_category!,
+        description: values.description,
         levels: levels.map(level => ({
           ...level,
           behaviors: level.behaviors.filter(b => b.trim() !== "")

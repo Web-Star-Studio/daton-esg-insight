@@ -66,11 +66,17 @@ export function CompetencyAssessmentModal({ open, onOpenChange }: CompetencyAsse
 
   const onSubmit = async (values: z.infer<typeof assessmentSchema>) => {
     try {
-      await createCompetencyAssessment({
-        ...values,
+      const assessmentData = {
+        employee_id: values.employee_id!,
+        competency_id: values.competency_id!,
+        current_level: values.current_level!,
+        target_level: values.target_level!,
         assessor_user_id: "current_user", // This would come from auth context
         assessment_date: new Date().toISOString().split('T')[0],
-      });
+        development_plan: values.development_plan,
+      };
+      
+      await createCompetencyAssessment(assessmentData);
 
       toast({
         title: "Sucesso",
