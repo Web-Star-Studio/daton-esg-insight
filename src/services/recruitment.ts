@@ -60,6 +60,13 @@ export interface Interview {
   created_by_user_id: string;
   created_at: string;
   updated_at: string;
+  // Joined data from Supabase query
+  job_application?: {
+    candidate_name: string;
+    job_posting?: {
+      title: string;
+    };
+  };
 }
 
 // Job Postings Service
