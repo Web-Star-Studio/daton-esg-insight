@@ -131,12 +131,7 @@ class AuditService {
     
     const { data, error } = await supabase
       .from('audit_findings')
-      .select(`
-        *,
-        profiles:responsible_user_id (
-          full_name
-        )
-      `)
+      .select('*')
       .eq('audit_id', auditId)
       .order('created_at', { ascending: false });
 
@@ -159,12 +154,7 @@ class AuditService {
         audit_id: auditId,
         status: 'Aberta'
       }])
-      .select(`
-        *,
-        profiles:responsible_user_id (
-          full_name
-        )
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -183,12 +173,7 @@ class AuditService {
       .from('audit_findings')
       .update(updateData)
       .eq('id', findingId)
-      .select(`
-        *,
-        profiles:responsible_user_id (
-          full_name
-        )
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -205,12 +190,7 @@ class AuditService {
     
     const { data, error } = await supabase
       .from('activity_logs')
-      .select(`
-        *,
-        profiles:user_id (
-          full_name
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -256,12 +236,7 @@ class AuditService {
     
     let query = supabase
       .from('activity_logs')
-      .select(`
-        *,
-        profiles:user_id (
-          full_name
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (filters.user_id) {
