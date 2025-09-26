@@ -1248,6 +1248,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "career_development_plans_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "career_development_plans_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_cdp_employee"
             columns: ["employee_id"]
             isOneToOne: false
@@ -2785,6 +2799,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "employee_competency_assessments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_eca_competency"
             columns: ["competency_id"]
@@ -4942,6 +4963,13 @@ export type Database = {
             referencedRelation: "internal_job_postings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "job_applications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       key_results: {
@@ -5883,6 +5911,20 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_mr_mentor"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentoring_relationships_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentoring_relationships_mentor_id_fkey"
             columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -8239,6 +8281,13 @@ export type Database = {
             referencedRelation: "succession_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "succession_candidates_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       succession_plans: {
@@ -8281,6 +8330,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_sp_current_holder"
+            columns: ["current_holder_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "succession_plans_current_holder_id_fkey"
             columns: ["current_holder_id"]
             isOneToOne: false
             referencedRelation: "employees"

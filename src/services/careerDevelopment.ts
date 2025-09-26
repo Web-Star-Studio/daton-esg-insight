@@ -13,9 +13,9 @@ export interface CareerDevelopmentPlan {
   status: string;
   progress_percentage: number;
   mentor_id?: string;
-  goals: any[];
-  skills_to_develop: any[];
-  development_activities: any[];
+  goals: any[] | any;
+  skills_to_develop: any[] | any;
+  development_activities: any[] | any;
   notes?: string;
   created_by_user_id: string;
   created_at: string;
@@ -121,8 +121,8 @@ export const getCareerDevelopmentPlans = async () => {
     .from('career_development_plans')
     .select(`
       *,
-      employee:employees!career_development_plans_employee_id_fkey(id, full_name, employee_code, department),
-      mentor:employees!career_development_plans_mentor_id_fkey(id, full_name)
+      employee:employees!employee_id(id, full_name, employee_code, department),
+      mentor:employees!mentor_id(id, full_name)
     `)
     .order('created_at', { ascending: false });
 
@@ -159,10 +159,10 @@ export const getSuccessionPlans = async () => {
     .from('succession_plans')
     .select(`
       *,
-      current_holder:employees(id, full_name),
+      current_holder:employees!current_holder_id(id, full_name),
       candidates:succession_candidates(
         *,
-        employee:employees(id, full_name)
+        employee:employees!employee_id(id, full_name)
       )
     `)
     .order('created_at', { ascending: false });
@@ -188,8 +188,8 @@ export const getMentoringRelationships = async () => {
     .from('mentoring_relationships')
     .select(`
       *,
-      mentor:employees!mentoring_relationships_mentor_id_fkey(id, full_name),
-      mentee:employees!mentoring_relationships_mentee_id_fkey(id, full_name)
+      mentor:employees!mentor_id(id, full_name),
+      mentee:employees!mentee_id(id, full_name)
     `)
     .order('created_at', { ascending: false });
 
