@@ -52,17 +52,26 @@ export const getTrainingProgram = async (id: string) => {
 };
 
 export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' | 'created_at' | 'updated_at'>) => {
+  console.log('Creating training program:', program);
+  
   const { data, error } = await supabase
     .from('training_programs')
-    .insert(program)
+    .insert([program])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error creating training program:', error);
+    throw new Error(`Erro ao criar programa de treinamento: ${error.message}`);
+  }
+
+  console.log('Training program created successfully:', data);
   return data;
 };
 
 export const updateTrainingProgram = async (id: string, updates: Partial<TrainingProgram>) => {
+  console.log('Updating training program:', id, updates);
+  
   const { data, error } = await supabase
     .from('training_programs')
     .update(updates)
@@ -70,7 +79,12 @@ export const updateTrainingProgram = async (id: string, updates: Partial<Trainin
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error updating training program:', error);
+    throw new Error(`Erro ao atualizar programa de treinamento: ${error.message}`);
+  }
+
+  console.log('Training program updated successfully:', data);
   return data;
 };
 
@@ -132,13 +146,20 @@ export const getEmployeeTrainings = async () => {
 };
 
 export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'id' | 'created_at' | 'updated_at'>) => {
+  console.log('Creating employee training:', training);
+  
   const { data, error } = await supabase
     .from('employee_trainings')
-    .insert(training)
+    .insert([training])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error creating employee training:', error);
+    throw new Error(`Erro ao criar treinamento do funcionário: ${error.message}`);
+  }
+
+  console.log('Employee training created successfully:', data);
   return data;
 };
 

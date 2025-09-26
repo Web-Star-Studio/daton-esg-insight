@@ -87,6 +87,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   const onSubmit = async (values: z.infer<typeof trainingProgramSchema>) => {
     try {
+      console.log('TrainingProgramModal: Submitting form with values:', values);
+      
       if (isEditing && program?.id) {
         await updateTrainingProgram(program.id, values);
         toast({
@@ -94,17 +96,22 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
           description: "Programa de treinamento atualizado com sucesso!",
         });
       } else {
-        await createTrainingProgram({
-          name: values.name!,
-          description: values.description,
-          category: values.category!,
-          duration_hours: values.duration_hours!,
-          is_mandatory: values.is_mandatory!,
-          valid_for_months: values.valid_for_months,
-          status: values.status!,
-          company_id: "", // Will be set by RLS
-          created_by_user_id: "", // Will be set by RLS
-        });
+        const programData = {
+          name: values.name,
+          description: values.description || null,
+          category: values.category,
+          duration_hours: values.duration_hours,
+          is_mandatory: values.is_mandatory,
+          valid_for_months: values.valid_for_months || null,
+          status: values.status,
+          // These will be set by database triggers
+          company_id: "",
+          created_by_user_id: "",
+        };
+        
+        console.log('TrainingProgramModal: Creating training program:', programData);
+        await createTrainingProgram(programData);
+        
         toast({
           title: "Sucesso",
           description: "Programa de treinamento criado com sucesso!",
@@ -114,10 +121,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       queryClient.invalidateQueries({ queryKey: ["training-programs"] });
       queryClient.invalidateQueries({ queryKey: ["training-metrics"] });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('TrainingProgramModal: Error saving training program:', error);
+      
       toast({
         title: "Erro",
-        description: "Erro ao salvar programa de treinamento. Tente novamente.",
+        description: `Erro ao salvar programa de treinamento: ${error.message || 'Tente novamente.'}`,
         variant: "destructive",
       });
     }
