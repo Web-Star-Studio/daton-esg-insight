@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,17 +21,61 @@ import {
   XCircle,
   User,
   Mail,
-  Phone
+  Phone,
+  Edit,
+  Trash2
 } from "lucide-react";
-import { getEmployeesStats } from "@/services/employees";
+import { 
+  useJobPostings, 
+  useJobApplications, 
+  useInterviews, 
+  useRecruitmentStats,
+  useDeleteJobPosting,
+  useDeleteJobApplication,
+  useDeleteInterview
+} from "@/hooks/useRecruitment";
+import JobPostingModal from "@/components/JobPostingModal";
+import JobApplicationModal from "@/components/JobApplicationModal";
+import InterviewModal from "@/components/InterviewModal";
+import { JobPosting, JobApplication, Interview } from "@/services/recruitment";
 
 export default function Recrutamento() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
+  const [jobPostingModalOpen, setJobPostingModalOpen] = useState(false);
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
+  const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<JobPosting | null>(null);
+  const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
+  const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
+  const [selectedJobForApplications, setSelectedJobForApplications] = useState<string | null>(null);
 
-  const { data: employeeStats, isLoading } = useQuery({
-    queryKey: ['employee-stats'],
-    queryFn: getEmployeesStats,
-  });
+  // Real data queries
+  const { data: jobPostings = [], isLoading: jobsLoading } = useJobPostings();
+  const { data: jobApplications = [], isLoading: applicationsLoading } = useJobApplications();
+  const { data: interviewsData = [], isLoading: interviewsLoading } = useInterviews();
+  const { data: stats, isLoading: statsLoading } = useRecruitmentStats();
+  
+  const deleteJobMutation = useDeleteJobPosting();
+  const deleteApplicationMutation = useDeleteJobApplication();
+  const deleteInterviewMutation = useDeleteInterview();
+
+  const handleDeleteJob = (job: JobPosting) => {
+    if (confirm('Tem certeza que deseja excluir esta vaga?')) {
+      deleteJobMutation.mutate(job.id);
+    }
+  };
+
+  const handleDeleteApplication = (application: JobApplication) => {
+    if (confirm('Tem certeza que deseja excluir esta candidatura?')) {
+      deleteApplicationMutation.mutate(application.id);
+    }
+  };
+
+  const handleDeleteInterview = (interview: Interview) => {
+    if (confirm('Tem certeza que deseja cancelar esta entrevista?')) {
+      deleteInterviewMutation.mutate(interview.id);
+    }
+  };
 
   // Mock data for recruitment
   const recruitmentStats = {
@@ -181,28 +224,28 @@ export default function Recrutamento() {
   const statsCards = [
     {
       title: "Vagas Abertas",
-      value: recruitmentStats.openPositions,
+      value: stats?.openPositions || 0,
       description: "Posições ativas",
       icon: Briefcase,
       trend: "+2 esta semana"
     },
     {
       title: "Candidaturas",
-      value: recruitmentStats.totalApplications,
+      value: stats?.totalApplications || 0,
       description: "Total recebidas",
       icon: Users,
-      trend: "+12 hoje"
+      trend: `+${stats?.thisMonthApplications || 0} este mês`
     },
     {
       title: "Entrevistas",
-      value: recruitmentStats.interviewsScheduled,
+      value: stats?.upcomingInterviews || 0,
       description: "Agendadas",
       icon: Calendar,
-      trend: "5 esta semana"
+      trend: "Próximas semanas"
     },
     {
       title: "Tempo Médio",
-      value: `${recruitmentStats.averageTimeToHire} dias`,
+      value: `${stats?.averageTimeToHire || 28} dias`,
       description: "Para contratação",
       icon: Clock,
       trend: "-3 dias vs mês anterior"
@@ -238,7 +281,7 @@ export default function Recrutamento() {
     }
   };
 
-  if (isLoading) {
+  if (jobsLoading || applicationsLoading || interviewsLoading || statsLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="animate-pulse space-y-4">
@@ -267,10 +310,10 @@ export default function Recrutamento() {
             <FileText className="h-4 w-4 mr-2" />
             Relatórios
           </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Vaga
-          </Button>
+            <Button onClick={() => setJobPostingModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Vaga
+            </Button>
         </div>
       </div>
 
@@ -341,15 +384,17 @@ export default function Recrutamento() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {interviews.map((interview) => (
+                  {interviewsData.slice(0, 3).map((interview) => (
                     <div key={interview.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <p className="font-medium">{interview.candidate}</p>
+                        <p className="font-medium">
+                          {typeof interview.job_application === 'object' && interview.job_application?.candidate_name || 'Candidato'}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          {interview.position} • {interview.type}
+                          {typeof interview.job_application === 'object' && interview.job_application?.job_posting?.title || 'Vaga'} • {interview.interview_type}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {interview.date} às {interview.time} - {interview.interviewer}
+                          {new Date(interview.scheduled_date).toLocaleDateString('pt-BR')} às {interview.scheduled_time}
                         </p>
                       </div>
                       <Badge variant={interview.status === "Confirmada" ? "default" : "secondary"}>
@@ -385,7 +430,7 @@ export default function Recrutamento() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {jobOpenings.map((job) => (
+                {jobPostings.map((job) => (
                   <div key={job.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -399,7 +444,7 @@ export default function Recrutamento() {
                             <MapPin className="h-4 w-4 mr-1" />
                             {job.location}
                           </span>
-                          <span>{job.type} • {job.level}</span>
+                          <span>{job.employment_type} • {job.level}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -414,11 +459,11 @@ export default function Recrutamento() {
                     
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="flex items-center">
-                          <Users className="h-4 w-4 mr-1" />
-                          {job.applications} candidaturas
-                        </span>
-                        <span>Publicada em {new Date(job.postedDate).toLocaleDateString()}</span>
+                          <span className="flex items-center">
+                            <Users className="h-4 w-4 mr-1" />
+                            {jobApplications.filter(app => app.job_posting_id === job.id).length} candidaturas
+                          </span>
+                          <span>Publicada em {new Date(job.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">
@@ -554,6 +599,34 @@ export default function Recrutamento() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Modals */}
+      <JobPostingModal
+        isOpen={jobPostingModalOpen || editingJob !== null}
+        onClose={() => {
+          setJobPostingModalOpen(false);
+          setEditingJob(null);
+        }}
+        jobPosting={editingJob || undefined}
+      />
+
+      <JobApplicationModal
+        isOpen={applicationModalOpen || editingApplication !== null}
+        onClose={() => {
+          setApplicationModalOpen(false);
+          setEditingApplication(null);
+        }}
+        jobApplication={editingApplication || undefined}
+        preselectedJobId={selectedJobForApplications || undefined}
+      />
+
+      <InterviewModal
+        isOpen={interviewModalOpen || editingInterview !== null}
+        onClose={() => {
+          setInterviewModalOpen(false);
+          setEditingInterview(null);
+        }}
+        interview={editingInterview || undefined}
+      />
     </div>
   );
 }

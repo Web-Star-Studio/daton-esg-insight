@@ -4974,6 +4974,7 @@ export type Database = {
           id: string
           level: string
           location: string | null
+          priority: string | null
           requirements: Json | null
           salary_range_max: number | null
           salary_range_min: number | null
@@ -4993,6 +4994,7 @@ export type Database = {
           id?: string
           level: string
           location?: string | null
+          priority?: string | null
           requirements?: Json | null
           salary_range_max?: number | null
           salary_range_min?: number | null
@@ -5012,6 +5014,7 @@ export type Database = {
           id?: string
           level?: string
           location?: string | null
+          priority?: string | null
           requirements?: Json | null
           salary_range_max?: number | null
           salary_range_min?: number | null
@@ -5021,37 +5024,129 @@ export type Database = {
         }
         Relationships: []
       }
+      interviews: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          duration_minutes: number | null
+          feedback: string | null
+          id: string
+          interview_type: string
+          interviewer_user_id: string | null
+          job_application_id: string
+          location_type: string
+          meeting_link: string | null
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string
+          score: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          duration_minutes?: number | null
+          feedback?: string | null
+          id?: string
+          interview_type?: string
+          interviewer_user_id?: string | null
+          job_application_id: string
+          location_type?: string
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time: string
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          duration_minutes?: number | null
+          feedback?: string | null
+          id?: string
+          interview_type?: string
+          interviewer_user_id?: string | null
+          job_application_id?: string
+          location_type?: string
+          meeting_link?: string | null
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string
+          score?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interviews_job_application_id_fkey"
+            columns: ["job_application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           additional_info: Json | null
           application_date: string
+          candidate_email: string | null
+          candidate_location: string | null
+          candidate_name: string | null
+          candidate_phone: string | null
           cover_letter: string | null
           created_at: string
+          current_stage: string | null
           employee_id: string
+          experience_years: number | null
           id: string
           job_posting_id: string
+          notes: string | null
+          score: number | null
           status: string
           updated_at: string
         }
         Insert: {
           additional_info?: Json | null
           application_date?: string
+          candidate_email?: string | null
+          candidate_location?: string | null
+          candidate_name?: string | null
+          candidate_phone?: string | null
           cover_letter?: string | null
           created_at?: string
+          current_stage?: string | null
           employee_id: string
+          experience_years?: number | null
           id?: string
           job_posting_id: string
+          notes?: string | null
+          score?: number | null
           status?: string
           updated_at?: string
         }
         Update: {
           additional_info?: Json | null
           application_date?: string
+          candidate_email?: string | null
+          candidate_location?: string | null
+          candidate_name?: string | null
+          candidate_phone?: string | null
           cover_letter?: string | null
           created_at?: string
+          current_stage?: string | null
           employee_id?: string
+          experience_years?: number | null
           id?: string
           job_posting_id?: string
+          notes?: string | null
+          score?: number | null
           status?: string
           updated_at?: string
         }
