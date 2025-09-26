@@ -438,8 +438,8 @@ export default function PontoFrequencia() {
                   <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
                       <div>
-                        <p className="font-medium">{request.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{request.type} • {request.days} dias</p>
+                        <p className="font-medium">{request.employee?.full_name}</p>
+                        <p className="text-sm text-muted-foreground">{request.type} • {request.days_count} dias</p>
                         <p className="text-xs text-muted-foreground mt-1">{request.reason}</p>
                       </div>
                     </div>
@@ -447,7 +447,7 @@ export default function PontoFrequencia() {
                       <div className="text-center">
                         <p className="text-sm font-medium">Período</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(request.startDate), "dd/MM", { locale: ptBR })} - {format(new Date(request.endDate), "dd/MM", { locale: ptBR })}
+                          {format(new Date(request.start_date), "dd/MM", { locale: ptBR })} - {format(new Date(request.end_date), "dd/MM", { locale: ptBR })}
                         </p>
                       </div>
                       <Badge variant={getStatusColor(request.status)}>

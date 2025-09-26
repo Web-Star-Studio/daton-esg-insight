@@ -96,7 +96,7 @@ class AttendanceService {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
     const { data: monthlyRecords, error: monthlyError } = await supabase
       .from('attendance_records')
-      .select('overtime_hours')
+      .select('overtime_hours, total_hours')
       .eq('company_id', companyId)
       .gte('date', startOfMonth);
 
@@ -172,11 +172,21 @@ class AttendanceService {
   }
 
   async createAttendanceRecord(companyId: string, record: Partial<AttendanceRecord>): Promise<AttendanceRecord> {
+    const { employee, ...recordData } = record;
     const { data, error } = await supabase
       .from('attendance_records')
       .insert({
         company_id: companyId,
-        ...record
+        employee_id: recordData.employee_id!,
+        date: recordData.date!,
+        check_in: recordData.check_in,
+        check_out: recordData.check_out,
+        break_start: recordData.break_start,
+        break_end: recordData.break_end,
+        total_hours: recordData.total_hours,
+        overtime_hours: recordData.overtime_hours,
+        status: recordData.status || 'present',
+        notes: recordData.notes
       })
       .select(`
         *,
@@ -236,11 +246,20 @@ class AttendanceService {
   }
 
   async createLeaveRequest(companyId: string, request: Partial<LeaveRequest>): Promise<LeaveRequest> {
+    const { employee, ...requestData } = request;
     const { data, error } = await supabase
       .from('leave_requests')
       .insert({
         company_id: companyId,
-        ...request
+        employee_id: requestData.employee_id!,
+        type: requestData.type!,
+        start_date: requestData.start_date!,
+        end_date: requestData.end_date!,
+        days_count: requestData.days_count!,
+        reason: requestData.reason,
+        status: requestData.status || 'pending',
+        requested_by_user_id: requestData.requested_by_user_id!,
+        notes: requestData.notes
       })
       .select(`
         *,
@@ -303,7 +322,13 @@ class AttendanceService {
       .from('work_schedules')
       .insert({
         company_id: companyId,
-        ...schedule
+        name: schedule.name!,
+        description: schedule.description,
+        start_time: schedule.start_time!,
+        end_time: schedule.end_time!,
+        break_duration: schedule.break_duration || 60,
+        work_days: schedule.work_days || [1, 2, 3, 4, 5],
+        is_active: schedule.is_active !== false
       })
       .select()
       .single();
