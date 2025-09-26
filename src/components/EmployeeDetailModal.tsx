@@ -120,24 +120,26 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                    {getInitials(employee.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-xl font-bold">{employee.full_name}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">{employee.employee_code}</span>
-                    <Badge className={getStatusColor(employee.status)}>
-                      {employee.status}
-                    </Badge>
+              <div>
+                <DialogTitle className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                      {getInitials(employee.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-xl font-bold">{employee.full_name}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-muted-foreground">{employee.employee_code}</span>
+                      <Badge className={getStatusColor(employee.status)}>
+                        {employee.status}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              </DialogTitle>
+                </DialogTitle>
+              </div>
               <Button onClick={onEdit}>
                 <Edit className="h-4 w-4 mr-2" />
                 Editar

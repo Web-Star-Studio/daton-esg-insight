@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -124,6 +124,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           <DialogTitle>
             {employee ? 'Editar Funcionário' : 'Novo Funcionário'}
           </DialogTitle>
+          <DialogDescription>
+            {employee 
+              ? 'Atualize as informações do funcionário' 
+              : 'Preencha os dados para cadastrar um novo funcionário'
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

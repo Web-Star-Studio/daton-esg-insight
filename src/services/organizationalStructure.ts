@@ -77,17 +77,25 @@ export interface OrganizationalChartNode {
 
 // Department operations
 export const getDepartments = async (): Promise<Department[]> => {
-  const { data, error } = await supabase
-    .from('departments')
-    .select(`
-      *,
-      manager:employees!departments_manager_employee_id_fkey(id, full_name),
-      parent_department:departments!departments_parent_department_id_fkey(id, name)
-    `)
-    .order('name');
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name');
 
-  if (error) throw error;
-  return (data as any) || [];
+    if (error) throw error;
+    return (data as any) || [];
+  } catch (error) {
+    console.warn('Error fetching departments with relations, falling back to simple query:', error);
+    // Fallback to simple query without relations
+    const { data, error: simpleError } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name');
+
+    if (simpleError) throw simpleError;
+    return (data as any) || [];
+  }
 };
 
 export const createDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department> => {
@@ -124,17 +132,25 @@ export const deleteDepartment = async (id: string): Promise<void> => {
 
 // Position operations
 export const getPositions = async (): Promise<Position[]> => {
-  const { data, error } = await supabase
-    .from('positions')
-    .select(`
-      *,
-      department:departments(id, name),
-      reports_to_position:positions!positions_reports_to_position_id_fkey(id, title)
-    `)
-    .order('title');
+  try {
+    const { data, error } = await supabase
+      .from('positions')
+      .select('*')
+      .order('title');
 
-  if (error) throw error;
-  return (data as any) || [];
+    if (error) throw error;
+    return (data as any) || [];
+  } catch (error) {
+    console.warn('Error fetching positions with relations, falling back to simple query:', error);
+    // Fallback to simple query without relations
+    const { data, error: simpleError } = await supabase
+      .from('positions')
+      .select('*')
+      .order('title');
+
+    if (simpleError) throw simpleError;
+    return (data as any) || [];
+  }
 };
 
 export const createPosition = async (position: Omit<Position, 'id' | 'created_at' | 'updated_at'>): Promise<Position> => {

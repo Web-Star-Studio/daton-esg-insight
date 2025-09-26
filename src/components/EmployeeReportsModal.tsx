@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -299,6 +299,9 @@ export function EmployeeReportsModal({ isOpen, onClose }: EmployeeReportsModalPr
             <FileText className="h-5 w-5" />
             Gerar Relatórios de RH
           </DialogTitle>
+          <DialogDescription>
+            Configure filtros e gere relatórios detalhados sobre funcionários, benefícios e estatísticas de RH
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

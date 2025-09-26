@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -132,9 +132,9 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
             <Gift className="h-5 w-5" />
             Benefícios - {employee.full_name}
           </DialogTitle>
-          <div className="text-sm text-muted-foreground">
-            {employee.employee_code} • {employee.department} • {employee.position}
-          </div>
+          <DialogDescription>
+            Gerencie os benefícios do funcionário {employee.employee_code} • {employee.department} • {employee.position}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
