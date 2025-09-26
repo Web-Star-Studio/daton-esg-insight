@@ -722,18 +722,272 @@ export default function Recrutamento() {
         <TabsContent value="pipeline" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Pipeline de Recrutamento</CardTitle>
-              <CardDescription>Acompanhe o progresso dos candidatos no funil de seleção</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Pipeline de Recrutamento</CardTitle>
+                  <CardDescription>Acompanhe o progresso dos candidatos no funil de seleção</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={selectedJobForApplications || "all"} onValueChange={setSelectedJobForApplications}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filtrar por vaga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as vagas</SelectItem>
+                      {jobPostings.map(job => (
+                        <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={() => setApplicationModalOpen(true)} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Candidatura
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Pipeline Visual</h3>
-                <p className="text-muted-foreground mb-4">
-                  Visualize o progresso dos candidatos através das etapas do processo seletivo.
-                </p>
-                <Button>Configurar Pipeline</Button>
-              </div>
+              {jobApplications.length === 0 ? (
+                <div className="text-center py-12">
+                  <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Nenhuma candidatura no pipeline</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Comece adicionando candidatos ao processo seletivo para visualizar o pipeline.
+                  </p>
+                  <Button onClick={() => setApplicationModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Primeira Candidatura
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Pipeline Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    {[
+                      { stage: "Análise inicial", icon: Eye, color: "bg-blue-500" },
+                      { stage: "Triagem", icon: Filter, color: "bg-yellow-500" },
+                      { stage: "Entrevista RH", icon: User, color: "bg-purple-500" },
+                      { stage: "Entrevista técnica", icon: FileText, color: "bg-orange-500" },
+                      { stage: "Entrevista final", icon: Users, color: "bg-indigo-500" },
+                      { stage: "Proposta", icon: CheckCircle, color: "bg-green-500" },
+                      { stage: "Rejeitado", icon: XCircle, color: "bg-red-500" }
+                    ].map((stage) => {
+                      const stageApplications = jobApplications.filter(app => 
+                        app.current_stage === stage.stage && 
+                        (selectedJobForApplications === "all" || selectedJobForApplications === null || app.job_posting_id === selectedJobForApplications)
+                      );
+                      return (
+                        <div key={stage.stage} className="text-center">
+                          <div className={`${stage.color} w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2`}>
+                            <stage.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <p className="text-sm font-medium">{stage.stage}</p>
+                          <p className="text-2xl font-bold">{stageApplications.length}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pipeline Kanban */}
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-4 min-w-max pb-4">
+                      {[
+                        { stage: "Análise inicial", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+                        { stage: "Triagem", bgColor: "bg-yellow-50", borderColor: "border-yellow-200" },
+                        { stage: "Entrevista RH", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+                        { stage: "Entrevista técnica", bgColor: "bg-orange-50", borderColor: "border-orange-200" },
+                        { stage: "Entrevista final", bgColor: "bg-indigo-50", borderColor: "border-indigo-200" },
+                        { stage: "Proposta", bgColor: "bg-green-50", borderColor: "border-green-200" },
+                        { stage: "Rejeitado", bgColor: "bg-red-50", borderColor: "border-red-200" }
+                      ].map((stage) => {
+                        const stageApplications = jobApplications.filter(app => 
+                          app.current_stage === stage.stage && 
+                          (selectedJobForApplications === "all" || selectedJobForApplications === null || app.job_posting_id === selectedJobForApplications)
+                        );
+                        
+                        return (
+                          <div key={stage.stage} className={`w-80 ${stage.bgColor} ${stage.borderColor} border-2 border-dashed rounded-lg p-4`}>
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="font-semibold text-sm">{stage.stage}</h3>
+                              <Badge variant="secondary" className="text-xs">
+                                {stageApplications.length}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                              {stageApplications.map((application) => {
+                                const job = jobPostings.find(j => j.id === application.job_posting_id);
+                                const hasInterview = interviewsData.some(interview => 
+                                  interview.job_application_id === application.id
+                                );
+                                
+                                return (
+                                  <div key={application.id} className="bg-white border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <Avatar className="h-8 w-8">
+                                            <AvatarFallback className="text-xs">
+                                              {application.candidate_name?.split(' ').map(n => n[0]).join('') || 'C'}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div>
+                                            <p className="font-medium text-sm leading-tight">
+                                              {application.candidate_name || 'Nome não informado'}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {job?.title || 'Vaga não encontrada'}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="space-y-1">
+                                          <div className="flex items-center text-xs text-muted-foreground">
+                                            <Mail className="h-3 w-3 mr-1" />
+                                            <span className="truncate">{application.candidate_email || 'Email não informado'}</span>
+                                          </div>
+                                          
+                                          {application.experience_years && (
+                                            <div className="flex items-center text-xs text-muted-foreground">
+                                              <Briefcase className="h-3 w-3 mr-1" />
+                                              <span>{application.experience_years} anos de experiência</span>
+                                            </div>
+                                          )}
+                                          
+                                          <div className="flex items-center justify-between mt-2">
+                                            <Badge variant={getStatusVariant(application.status)} className="text-xs">
+                                              {application.status}
+                                            </Badge>
+                                            {hasInterview && (
+                                              <Badge variant="outline" className="text-xs">
+                                                <Calendar className="h-3 w-3 mr-1" />
+                                                Entrevista
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          
+                                          {application.score && (
+                                            <div className="mt-2">
+                                              <div className="flex items-center justify-between text-xs mb-1">
+                                                <span>Score</span>
+                                                <span>{application.score}%</span>
+                                              </div>
+                                              <Progress value={application.score} className="h-1" />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                            <MoreHorizontal className="h-3 w-3" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => setEditingApplication(application)}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Editar
+                                          </DropdownMenuItem>
+                                          {!hasInterview && (
+                                            <DropdownMenuItem onClick={() => {
+                                              setEditingInterview({
+                                                id: '',
+                                                company_id: '',
+                                                job_application_id: application.id,
+                                                interviewer_user_id: '',
+                                                interview_type: 'RH',
+                                                scheduled_date: '',
+                                                scheduled_time: '',
+                                                duration_minutes: 60,
+                                                location_type: 'Presencial',
+                                                meeting_link: '',
+                                                notes: '',
+                                                feedback: '',
+                                                score: null,
+                                                status: 'Agendada',
+                                                created_by_user_id: '',
+                                                created_at: '',
+                                                updated_at: ''
+                                              });
+                                              setInterviewModalOpen(true);
+                                            }}>
+                                              <Calendar className="h-4 w-4 mr-2" />
+                                              Agendar Entrevista
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuItem onClick={() => handleDeleteApplication(application)}>
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Excluir
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              
+                              {stageApplications.length === 0 && (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <p className="text-sm">Nenhum candidato nesta etapa</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pipeline Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Taxa de Conversão</p>
+                            <p className="text-2xl font-bold">
+                              {jobApplications.length > 0 
+                                ? Math.round((jobApplications.filter(app => app.status === 'Aprovado').length / jobApplications.length) * 100)
+                                : 0
+                              }%
+                            </p>
+                          </div>
+                          <TrendingUp className="h-8 w-8 text-green-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Tempo Médio no Pipeline</p>
+                            <p className="text-2xl font-bold">14 dias</p>
+                          </div>
+                          <Clock className="h-8 w-8 text-blue-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Candidatos Ativos</p>
+                            <p className="text-2xl font-bold">
+                              {jobApplications.filter(app => 
+                                !['Rejeitado', 'Aprovado', 'Cancelado'].includes(app.status)
+                              ).length}
+                            </p>
+                          </div>
+                          <Users className="h-8 w-8 text-purple-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
