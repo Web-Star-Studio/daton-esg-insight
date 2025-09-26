@@ -11,8 +11,8 @@ export interface TrainingCourse {
   estimated_duration_hours: number;
   thumbnail_url?: string;
   is_mandatory: boolean;
-  prerequisites: any[];
-  learning_objectives: any[];
+  prerequisites: any;
+  learning_objectives: any;
   status: string;
   created_by_user_id: string;
   created_at: string;
@@ -66,7 +66,7 @@ export interface AssessmentQuestion {
   order_index: number;
   explanation?: string;
   media_url?: string;
-  options: string[];
+  options: any;
   correct_answer: any;
   created_at: string;
 }
@@ -80,7 +80,7 @@ export interface CourseEnrollment {
   start_date?: string;
   completion_date?: string;
   progress_percentage: number;
-  status: 'enrolled' | 'in_progress' | 'completed' | 'failed' | 'dropped';
+  status: string;
   assigned_by_user_id?: string;
   due_date?: string;
   created_at: string;
@@ -96,7 +96,7 @@ export interface ModuleProgress {
   id: string;
   enrollment_id: string;
   module_id: string;
-  status: 'not_started' | 'in_progress' | 'completed';
+  status: string;
   start_date?: string;
   completion_date?: string;
   time_spent_minutes: number;
@@ -115,9 +115,9 @@ export interface AssessmentAttempt {
   score?: number;
   max_score?: number;
   percentage?: number;
-  status: 'in_progress' | 'completed' | 'abandoned';
+  status: string;
   time_taken_minutes?: number;
-  answers: Record<string, any>;
+  answers: any;
   created_at: string;
 }
 
@@ -126,7 +126,7 @@ export interface LearningPath {
   company_id: string;
   title: string;
   description?: string;
-  courses: string[];
+  courses: any;
   created_by_user_id: string;
   created_at: string;
   updated_at: string;
@@ -182,7 +182,16 @@ class LMSService {
       const { data, error } = await supabase
         .from('training_courses')
         .insert([{
-          ...courseData,
+          title: courseData.title || 'Novo Curso',
+          description: courseData.description,
+          category: courseData.category,
+          difficulty_level: courseData.difficulty_level || 'Iniciante',
+          estimated_duration_hours: courseData.estimated_duration_hours || 1,
+          thumbnail_url: courseData.thumbnail_url,
+          is_mandatory: courseData.is_mandatory || false,
+          prerequisites: courseData.prerequisites || [],
+          learning_objectives: courseData.learning_objectives || [],
+          status: courseData.status || 'Rascunho',
           company_id: profile.company_id,
           created_by_user_id: userResponse.user.id
         }])
@@ -246,7 +255,19 @@ class LMSService {
   async createModule(moduleData: Partial<CourseModule>): Promise<CourseModule> {
     const { data, error } = await supabase
       .from('course_modules')
-      .insert([moduleData])
+      .insert([{
+        course_id: moduleData.course_id!,
+        title: moduleData.title || 'Novo Módulo',
+        description: moduleData.description,
+        order_index: moduleData.order_index || 0,
+        module_type: moduleData.module_type || 'lecture',
+        content_type: moduleData.content_type,
+        content_url: moduleData.content_url,
+        content_text: moduleData.content_text,
+        duration_minutes: moduleData.duration_minutes || 0,
+        is_required: moduleData.is_required || false,
+        passing_score: moduleData.passing_score
+      }])
       .select()
       .single();
 
@@ -309,7 +330,19 @@ class LMSService {
   async createAssessment(assessmentData: Partial<Assessment>): Promise<Assessment> {
     const { data, error } = await supabase
       .from('assessments')
-      .insert([assessmentData])
+      .insert([{
+        title: assessmentData.title || 'Nova Avaliação',
+        description: assessmentData.description,
+        assessment_type: assessmentData.assessment_type || 'quiz',
+        course_id: assessmentData.course_id,
+        module_id: assessmentData.module_id,
+        time_limit_minutes: assessmentData.time_limit_minutes,
+        max_attempts: assessmentData.max_attempts || 1,
+        passing_score: assessmentData.passing_score || 70,
+        randomize_questions: assessmentData.randomize_questions || false,
+        show_correct_answers: assessmentData.show_correct_answers || true,
+        allow_review: assessmentData.allow_review || true
+      }])
       .select()
       .single();
 
@@ -323,7 +356,17 @@ class LMSService {
   async createAssessmentQuestion(questionData: Partial<AssessmentQuestion>): Promise<AssessmentQuestion> {
     const { data, error } = await supabase
       .from('assessment_questions')
-      .insert([questionData])
+      .insert([{
+        assessment_id: questionData.assessment_id!,
+        question_text: questionData.question_text || '',
+        question_type: questionData.question_type || 'multiple_choice',
+        points: questionData.points || 1,
+        order_index: questionData.order_index || 0,
+        explanation: questionData.explanation,
+        media_url: questionData.media_url,
+        options: questionData.options || [],
+        correct_answer: questionData.correct_answer
+      }])
       .select()
       .single();
 
@@ -430,7 +473,15 @@ class LMSService {
   async updateModuleProgress(progressData: Partial<ModuleProgress>): Promise<ModuleProgress> {
     const { data, error } = await supabase
       .from('module_progress')
-      .upsert([progressData])
+      .upsert([{
+        enrollment_id: progressData.enrollment_id!,
+        module_id: progressData.module_id!,
+        status: progressData.status || 'not_started',
+        start_date: progressData.start_date,
+        completion_date: progressData.completion_date,
+        time_spent_minutes: progressData.time_spent_minutes || 0,
+        score: progressData.score
+      }])
       .select()
       .single();
 
@@ -522,7 +573,9 @@ class LMSService {
       const { data, error } = await supabase
         .from('learning_paths')
         .insert([{
-          ...pathData,
+          title: pathData.title || 'Nova Trilha de Aprendizagem',
+          description: pathData.description,
+          courses: pathData.courses || [],
           company_id: profile?.company_id,
           created_by_user_id: userResponse.user.id
         }])
