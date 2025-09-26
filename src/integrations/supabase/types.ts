@@ -1188,6 +1188,81 @@ export type Database = {
           },
         ]
       }
+      career_development_plans: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          current_position: string
+          development_activities: Json
+          employee_id: string
+          goals: Json
+          id: string
+          mentor_id: string | null
+          notes: string | null
+          progress_percentage: number
+          skills_to_develop: Json
+          start_date: string
+          status: string
+          target_date: string
+          target_position: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          current_position: string
+          development_activities?: Json
+          employee_id: string
+          goals?: Json
+          id?: string
+          mentor_id?: string | null
+          notes?: string | null
+          progress_percentage?: number
+          skills_to_develop?: Json
+          start_date: string
+          status?: string
+          target_date: string
+          target_position: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          current_position?: string
+          development_activities?: Json
+          employee_id?: string
+          goals?: Json
+          id?: string
+          mentor_id?: string | null
+          notes?: string | null
+          progress_percentage?: number
+          skills_to_develop?: Json
+          start_date?: string
+          status?: string
+          target_date?: string
+          target_position?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_cdp_employee"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cdp_mentor"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           annual_revenue: number | null
@@ -1254,6 +1329,42 @@ export type Database = {
           stock_symbol?: string | null
           subsidiaries_excluded?: Json | null
           subsidiaries_included?: Json | null
+        }
+        Relationships: []
+      }
+      competency_matrix: {
+        Row: {
+          company_id: string
+          competency_category: string
+          competency_name: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          levels: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          competency_category: string
+          competency_name: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          levels?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          competency_category?: string
+          competency_name?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          levels?: Json
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2629,6 +2740,63 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_competency_assessments: {
+        Row: {
+          assessment_date: string
+          assessor_user_id: string | null
+          company_id: string
+          competency_id: string
+          created_at: string
+          current_level: number
+          development_plan: string | null
+          employee_id: string
+          id: string
+          target_level: number
+          updated_at: string
+        }
+        Insert: {
+          assessment_date: string
+          assessor_user_id?: string | null
+          company_id: string
+          competency_id: string
+          created_at?: string
+          current_level?: number
+          development_plan?: string | null
+          employee_id: string
+          id?: string
+          target_level?: number
+          updated_at?: string
+        }
+        Update: {
+          assessment_date?: string
+          assessor_user_id?: string | null
+          company_id?: string
+          competency_id?: string
+          created_at?: string
+          current_level?: number
+          development_plan?: string | null
+          employee_id?: string
+          id?: string
+          target_level?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_eca_competency"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "competency_matrix"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_eca_employee"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -4665,6 +4833,117 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_job_postings: {
+        Row: {
+          application_deadline: string
+          benefits: Json | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          department: string
+          description: string | null
+          employment_type: string
+          id: string
+          level: string
+          location: string | null
+          requirements: Json | null
+          salary_range_max: number | null
+          salary_range_min: number | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          application_deadline: string
+          benefits?: Json | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          department: string
+          description?: string | null
+          employment_type?: string
+          id?: string
+          level: string
+          location?: string | null
+          requirements?: Json | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          application_deadline?: string
+          benefits?: Json | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          department?: string
+          description?: string | null
+          employment_type?: string
+          id?: string
+          level?: string
+          location?: string | null
+          requirements?: Json | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      job_applications: {
+        Row: {
+          additional_info: Json | null
+          application_date: string
+          cover_letter: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          job_posting_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          additional_info?: Json | null
+          application_date?: string
+          cover_letter?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          job_posting_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          additional_info?: Json | null
+          application_date?: string
+          cover_letter?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          job_posting_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_ja_employee"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_ja_job_posting"
+            columns: ["job_posting_id"]
+            isOneToOne: false
+            referencedRelation: "internal_job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       key_results: {
         Row: {
           created_at: string
@@ -5541,6 +5820,72 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentoring_relationships: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          end_date: string | null
+          id: string
+          meeting_frequency: string | null
+          mentee_id: string
+          mentor_id: string
+          objectives: Json | null
+          program_name: string
+          progress_notes: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          end_date?: string | null
+          id?: string
+          meeting_frequency?: string | null
+          mentee_id: string
+          mentor_id: string
+          objectives?: Json | null
+          program_name: string
+          progress_notes?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          end_date?: string | null
+          id?: string
+          meeting_frequency?: string | null
+          mentee_id?: string
+          mentor_id?: string
+          objectives?: Json | null
+          program_name?: string
+          progress_notes?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_mr_mentee"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_mr_mentor"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -7844,6 +8189,104 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      succession_candidates: {
+        Row: {
+          created_at: string
+          development_needs: Json | null
+          employee_id: string
+          id: string
+          notes: string | null
+          readiness_level: string
+          readiness_score: number
+          succession_plan_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          development_needs?: Json | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          readiness_level?: string
+          readiness_score?: number
+          succession_plan_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          development_needs?: Json | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          readiness_level?: string
+          readiness_score?: number
+          succession_plan_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_sc_employee"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_sc_succession_plan"
+            columns: ["succession_plan_id"]
+            isOneToOne: false
+            referencedRelation: "succession_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      succession_plans: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          critical_level: string
+          current_holder_id: string | null
+          department: string
+          expected_retirement_date: string | null
+          id: string
+          position_title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          critical_level?: string
+          current_holder_id?: string | null
+          department: string
+          expected_retirement_date?: string | null
+          id?: string
+          position_title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          critical_level?: string
+          current_holder_id?: string | null
+          department?: string
+          expected_retirement_date?: string | null
+          id?: string
+          position_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_sp_current_holder"
+            columns: ["current_holder_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplier_contracts: {
         Row: {
