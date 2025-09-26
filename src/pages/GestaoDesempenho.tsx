@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, TrendingUp, Target, Award, Calendar, Users, FileText } from "lucide-react";
+import { Plus, Target, Award, Calendar, Users, FileText, Download, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,11 +12,16 @@ import {
   getEmployeeGoals,
   initializeDefaultCriteria 
 } from "@/services/employeePerformance";
+import { getCompetencyMatrix, getEmployeeCompetencyAssessments, getCompetencyGapAnalysis } from "@/services/competencyService";
+import { generatePerformanceReport, generateCompetencyGapReport, generateGoalsReport, exportToCSV } from "@/services/reportService";
 import { PerformanceEvaluationModal } from "@/components/PerformanceEvaluationModal";
 import { EvaluationCycleModal } from "@/components/EvaluationCycleModal";
 import { EditGoalModal } from "@/components/EditGoalModal";
+import { CompetencyModal } from "@/components/CompetencyModal";
+import { CompetencyAssessmentModal } from "@/components/CompetencyAssessmentModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 export default function GestaoDesempenho() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
@@ -342,36 +347,72 @@ export default function GestaoDesempenho() {
         <TabsContent value="competencies" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Gestão de Competências</h2>
-            <Button>
-              <Award className="h-4 w-4 mr-2" />
-              Definir Competências
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsCompetencyAssessmentModalOpen(true)}>
+                <Target className="h-4 w-4 mr-2" />
+                Avaliar Competência
+              </Button>
+              <Button onClick={() => setIsCompetencyModalOpen(true)}>
+                <Award className="h-4 w-4 mr-2" />
+                Nova Competência
+              </Button>
+            </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Matriz de Competências</CardTitle>
-              <CardDescription>
-                Em desenvolvimento - Funcionalidade será implementada em breve
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Award className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Matriz de competências e planos de desenvolvimento em construção
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Matriz de Competências</CardTitle>
+                <CardDescription>
+                  Competências definidas para a organização
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{competencies.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Competências cadastradas
                 </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Avaliações Realizadas</CardTitle>
+                <CardDescription>
+                  Total de avaliações de competência
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{assessments.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Avaliações concluídas
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Lacunas Críticas</CardTitle>
+                <CardDescription>
+                  Gaps de competência identificados
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{gaps.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Requerem atenção
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Relatórios de Desempenho</h2>
-            <Button>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Gerar Relatório
+            <Button onClick={handleGenerateReports}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar Relatórios
             </Button>
           </div>
 
@@ -384,7 +425,8 @@ export default function GestaoDesempenho() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => handleExportReport('performance')}>
+                  <Download className="h-4 w-4 mr-2" />
                   Gerar Relatório
                 </Button>
               </CardContent>
@@ -392,27 +434,29 @@ export default function GestaoDesempenho() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Análise de Metas</CardTitle>
+                <CardTitle className="text-lg">Análise de Competências</CardTitle>
+                <CardDescription>
+                  Gaps e necessidades de desenvolvimento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full" onClick={() => handleExportReport('competencies')}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Gerar Relatório
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Acompanhamento de Metas</CardTitle>
                 <CardDescription>
                   Progresso e conclusão das metas
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Gerar Relatório
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Ranking de Performance</CardTitle>
-                <CardDescription>
-                  Top performers por departamento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => handleExportReport('goals')}>
+                  <Download className="h-4 w-4 mr-2" />
                   Gerar Relatório
                 </Button>
               </CardContent>
