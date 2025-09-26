@@ -80,108 +80,211 @@ export interface AuditTrailFilters {
 }
 
 class AuditService {
-  private getAuthHeaders() {
-    const token = supabase.auth.getSession().then(({ data: { session } }) => session?.access_token);
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-  }
-
-  async getAuditTrail(filters: AuditTrailFilters = {}) {
-    const params = new URLSearchParams();
-    if (filters.user_id) params.append('user_id', filters.user_id);
-    if (filters.action_type) params.append('action_type', filters.action_type);
-    if (filters.start_date) params.append('start_date', filters.start_date);
-    if (filters.end_date) params.append('end_date', filters.end_date);
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
-
-    const { data, error } = await supabase.functions.invoke('audit-management', {
-      body: null,
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (error) throw error;
-    return data;
-  }
-
   async getAudits(): Promise<Audit[]> {
-    const { data, error } = await supabase.functions.invoke('audit-management', {
-      method: 'GET',
-      body: { action: 'get-audits' }
-    });
+    console.log('Fetching audits...');
+    
+    const { data, error } = await supabase
+      .from('audits')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching audits:', error);
+      throw new Error(`Erro ao buscar auditorias: ${error.message}`);
+    }
+
+    console.log('Audits fetched successfully:', data?.length || 0);
     return data || [];
   }
 
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
-    const { data, error } = await supabase.functions.invoke('audit-management', {
-      body: { ...auditData, action: 'create-audit' },
-      method: 'POST'
-    });
+    console.log('Creating audit:', auditData);
+    
+    const { data, error } = await supabase
+      .from('audits')
+      .insert([{
+        ...auditData,
+        status: auditData.status || 'Planejada'
+      }])
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating audit:', error);
+      throw new Error(`Erro ao criar auditoria: ${error.message}`);
+    }
+
+    console.log('Audit created successfully:', data);
     return data;
   }
 
   async getAuditFindings(auditId: string): Promise<AuditFinding[]> {
-    const { data, error } = await supabase.functions.invoke('audit-management', {
-      method: 'GET',
-      body: { action: 'get-findings', audit_id: auditId }
-    });
+    console.log('Fetching audit findings for audit:', auditId);
+    
+    const { data, error } = await supabase
+      .from('audit_findings')
+      .select(`
+        *,
+        profiles!audit_findings_responsible_user_id_fkey (
+          full_name
+        )
+      `)
+      .eq('audit_id', auditId)
+      .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching audit findings:', error);
+      throw new Error(`Erro ao buscar achados da auditoria: ${error.message}`);
+    }
+
+    console.log('Audit findings fetched successfully:', data?.length || 0);
     return data || [];
   }
 
   async createAuditFinding(auditId: string, findingData: CreateFindingData): Promise<AuditFinding> {
-    const { data, error } = await supabase.functions.invoke('audit-management', {
-      body: { ...findingData, audit_id: auditId, action: 'create-finding' },
-      method: 'POST'
-    });
+    console.log('Creating audit finding:', auditId, findingData);
+    
+    const { data, error } = await supabase
+      .from('audit_findings')
+      .insert([{
+        ...findingData,
+        audit_id: auditId,
+        status: 'Aberta'
+      }])
+      .select(`
+        *,
+        profiles!audit_findings_responsible_user_id_fkey (
+          full_name
+        )
+      `)
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating audit finding:', error);
+      throw new Error(`Erro ao criar achado da auditoria: ${error.message}`);
+    }
+
+    console.log('Audit finding created successfully:', data);
     return data;
   }
 
   async updateAuditFinding(findingId: string, updateData: UpdateFindingData): Promise<AuditFinding> {
-    const { data, error } = await supabase.functions.invoke('audit-management', {
-      body: { ...updateData, finding_id: findingId, action: 'update-finding' },
-      method: 'PUT'
-    });
+    console.log('Updating audit finding:', findingId, updateData);
+    
+    const { data, error } = await supabase
+      .from('audit_findings')
+      .update(updateData)
+      .eq('id', findingId)
+      .select(`
+        *,
+        profiles!audit_findings_responsible_user_id_fkey (
+          full_name
+        )
+      `)
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating audit finding:', error);
+      throw new Error(`Erro ao atualizar achado da auditoria: ${error.message}`);
+    }
+
+    console.log('Audit finding updated successfully:', data);
     return data;
   }
 
   async getActivityLogs(): Promise<ActivityLog[]> {
+    console.log('Fetching activity logs...');
+    
     const { data, error } = await supabase
       .from('activity_logs')
-      .select('*')
+      .select(`
+        *,
+        profiles!activity_logs_user_id_fkey (
+          full_name
+        )
+      `)
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching activity logs:', error);
+      throw new Error(`Erro ao buscar logs de atividade: ${error.message}`);
+    }
+
+    console.log('Activity logs fetched successfully:', data?.length || 0);
     return data || [];
   }
 
   async logActivity(actionType: string, description: string, detailsJson?: any) {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user?.id)
-      .single();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (!user || !profile) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
 
-    return supabase.rpc('log_activity', {
-      p_company_id: profile.company_id,
-      p_user_id: user.id,
-      p_action_type: actionType,
-      p_description: description,
-      p_details_json: detailsJson
-    });
+      if (!profile?.company_id) return;
+
+      const result = await supabase.rpc('log_activity', {
+        p_company_id: profile.company_id,
+        p_user_id: user.id,
+        p_action_type: actionType,
+        p_description: description,
+        p_details_json: detailsJson
+      });
+
+      console.log('Activity logged successfully:', actionType);
+      return result;
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+  }
+
+  async getAuditTrail(filters: AuditTrailFilters = {}) {
+    console.log('Fetching audit trail with filters:', filters);
+    
+    let query = supabase
+      .from('activity_logs')
+      .select(`
+        *,
+        profiles!activity_logs_user_id_fkey (
+          full_name
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (filters.user_id) {
+      query = query.eq('user_id', filters.user_id);
+    }
+
+    if (filters.action_type) {
+      query = query.eq('action_type', filters.action_type);
+    }
+
+    if (filters.start_date) {
+      query = query.gte('created_at', filters.start_date);
+    }
+
+    if (filters.end_date) {
+      query = query.lte('created_at', filters.end_date);
+    }
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching audit trail:', error);
+      throw new Error(`Erro ao buscar trilha de auditoria: ${error.message}`);
+    }
+
+    console.log('Audit trail fetched successfully:', data?.length || 0);
+    return data || [];
   }
 }
 

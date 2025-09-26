@@ -38,6 +38,7 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       resetForm();
     },
     onError: (error: any) => {
+      console.error('Error creating audit:', error);
       toast({
         title: "Erro ao criar auditoria",
         description: error.message || "Ocorreu um erro inesperado.",
