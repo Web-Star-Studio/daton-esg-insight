@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Auditoria() {
+  const { toast } = useToast();
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
@@ -322,8 +323,13 @@ export default function Auditoria() {
           isOpen={isAuditModalOpen}
           onClose={() => setIsAuditModalOpen(false)}
           onSuccess={() => {
-            refetchAudits();
+            console.log('Audit creation success callback triggered');
             setIsAuditModalOpen(false);
+            refetchAudits(); // Refresh the audit list
+            toast({
+              title: "Lista atualizada",
+              description: "A lista de auditorias foi atualizada com sucesso."
+            });
           }}
         />
 

@@ -29,16 +29,17 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAuditData) => auditService.createAudit(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Audit created successfully in component:', data);
       toast({
         title: "Auditoria criada com sucesso",
-        description: "A nova auditoria foi adicionada ao sistema."
+        description: `A auditoria "${data.title}" foi adicionada ao sistema.`
       });
       onSuccess();
       resetForm();
     },
     onError: (error: any) => {
-      console.error('Error creating audit:', error);
+      console.error('Error creating audit in component:', error);
       toast({
         title: "Erro ao criar auditoria",
         description: error.message || "Ocorreu um erro inesperado.",
@@ -61,7 +62,11 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('Form submitted with data:', formData);
+    
     if (!formData.title || !formData.audit_type) {
+      console.log('Validation failed - missing required fields');
       toast({
         title: "Campos obrigatórios",
         description: "Preencha o título e tipo da auditoria.",
@@ -69,6 +74,8 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       });
       return;
     }
+    
+    console.log('Submitting audit data:', formData);
     createMutation.mutate(formData);
   };
 

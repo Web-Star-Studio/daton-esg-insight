@@ -100,30 +100,59 @@ class AuditService {
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
     console.log('Creating audit:', auditData);
     
-    // Add company_id from current user's profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', (await supabase.auth.getUser()).data.user?.id)
-      .single();
+    try {
+      // Add company_id from current user's profile
+      const { data: userResponse } = await supabase.auth.getUser();
+      console.log('Current user:', userResponse.user?.id);
+      
+      if (!userResponse.user) {
+        throw new Error('Usuário não autenticado');
+      }
 
-    const { data, error } = await supabase
-      .from('audits')
-      .insert([{
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', userResponse.user.id)
+        .single();
+
+      console.log('Profile data:', profile, 'Profile error:', profileError);
+
+      if (profileError || !profile?.company_id) {
+        throw new Error('Perfil do usuário não encontrado ou sem empresa associada');
+      }
+
+      const auditToInsert = {
         ...auditData,
-        company_id: profile?.company_id,
+        company_id: profile.company_id,
         status: auditData.status || 'Planejada'
-      }])
-      .select()
-      .single();
+      };
 
-    if (error) {
-      console.error('Error creating audit:', error);
-      throw new Error(`Erro ao criar auditoria: ${error.message}`);
+      console.log('Inserting audit data:', auditToInsert);
+
+      const { data, error } = await supabase
+        .from('audits')
+        .insert([auditToInsert])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating audit:', error);
+        throw new Error(`Erro ao criar auditoria: ${error.message}`);
+      }
+
+      console.log('Audit created successfully:', data);
+      
+      // Log the activity
+      await this.logActivity('audit_created', `Auditoria criada: ${data.title}`, {
+        audit_id: data.id,
+        audit_type: data.audit_type
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Detailed audit creation error:', error);
+      throw error;
     }
-
-    console.log('Audit created successfully:', data);
-    return data;
   }
 
   async getAuditFindings(auditId: string): Promise<AuditFinding[]> {
@@ -147,23 +176,40 @@ class AuditService {
   async createAuditFinding(auditId: string, findingData: CreateFindingData): Promise<AuditFinding> {
     console.log('Creating audit finding:', auditId, findingData);
     
-    const { data, error } = await supabase
-      .from('audit_findings')
-      .insert([{
+    try {
+      const findingToInsert = {
         ...findingData,
         audit_id: auditId,
         status: 'Aberta'
-      }])
-      .select('*')
-      .single();
+      };
 
-    if (error) {
-      console.error('Error creating audit finding:', error);
-      throw new Error(`Erro ao criar achado da auditoria: ${error.message}`);
+      console.log('Inserting finding data:', findingToInsert);
+
+      const { data, error } = await supabase
+        .from('audit_findings')
+        .insert([findingToInsert])
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error creating audit finding:', error);
+        throw new Error(`Erro ao criar achado da auditoria: ${error.message}`);
+      }
+
+      console.log('Audit finding created successfully:', data);
+      
+      // Log the activity
+      await this.logActivity('audit_finding_created', `Achado criado para auditoria: ${findingData.description}`, {
+        audit_id: auditId,
+        finding_id: data.id,
+        severity: findingData.severity
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Detailed finding creation error:', error);
+      throw error;
     }
-
-    console.log('Audit finding created successfully:', data);
-    return data;
   }
 
   async updateAuditFinding(findingId: string, updateData: UpdateFindingData): Promise<AuditFinding> {
