@@ -19,6 +19,10 @@ import { EvaluationCycleModal } from "@/components/EvaluationCycleModal";
 import { EditGoalModal } from "@/components/EditGoalModal";
 import { CompetencyModal } from "@/components/CompetencyModal";
 import { CompetencyAssessmentModal } from "@/components/CompetencyAssessmentModal";
+import { CompetencyTable } from "@/components/CompetencyTable";
+import { CompetencyGapChart } from "@/components/CompetencyGapChart";
+import { PerformanceTrendChart } from "@/components/PerformanceTrendChart";
+import { ReportsSection } from "@/components/ReportsSection";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -68,7 +72,7 @@ export default function GestaoDesempenho() {
 
   const { data: gaps = [] } = useQuery({
     queryKey: ['competency-gaps'],
-    queryFn: getCompetencyGapAnalysis
+    queryFn: generateCompetencyGapReport
   });
 
   // Performance stats for display
@@ -483,6 +487,62 @@ export default function GestaoDesempenho() {
               </CardContent>
             </Card>
           </div>
+
+          <Tabs defaultValue="matrix" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="matrix">Matriz de Competências</TabsTrigger>
+              <TabsTrigger value="assessments">Avaliações</TabsTrigger>
+              <TabsTrigger value="gaps">Análise de Gaps</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="matrix" className="space-y-4">
+              <CompetencyTable 
+                competencies={competencies}
+                onEdit={(competency) => {
+                  setSelectedCompetency(competency);
+                  setIsCompetencyModalOpen(true);
+                }}
+              />
+            </TabsContent>
+            
+            <TabsContent value="assessments" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Avaliações</CardTitle>
+                  <CardDescription>
+                    Todas as avaliações de competência realizadas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {assessments.map((assessment: any) => (
+                      <div key={assessment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <p className="font-medium">{assessment.competency?.competency_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Funcionário ID: {assessment.employee_id}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <p className="text-sm font-medium">Atual: {assessment.current_level}</p>
+                            <p className="text-sm text-muted-foreground">Meta: {assessment.target_level}</p>
+                          </div>
+                          <Badge variant={assessment.target_level - assessment.current_level >= 2 ? "destructive" : "secondary"}>
+                            Gap: {assessment.target_level - assessment.current_level}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="gaps" className="space-y-4">
+              <CompetencyGapChart data={gaps} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
