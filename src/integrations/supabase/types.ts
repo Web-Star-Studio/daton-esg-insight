@@ -3492,6 +3492,87 @@ export type Database = {
           },
         ]
       }
+      evaluation_criteria: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_score: number
+          name: string
+          weight: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_score?: number
+          name: string
+          weight?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_score?: number
+          name?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      evaluation_scores: {
+        Row: {
+          comments: string | null
+          created_at: string
+          criteria_id: string
+          evaluation_id: string
+          final_score: number | null
+          id: string
+          manager_score: number | null
+          self_score: number | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          criteria_id: string
+          evaluation_id: string
+          final_score?: number | null
+          id?: string
+          manager_score?: number | null
+          self_score?: number | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          criteria_id?: string
+          evaluation_id?: string
+          final_score?: number | null
+          id?: string
+          manager_score?: number | null
+          self_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_scores_criteria_id_fkey"
+            columns: ["criteria_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_criteria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_scores_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "performance_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       extracted_data_preview: {
         Row: {
           approved_at: string | null
@@ -6741,6 +6822,116 @@ export type Database = {
             columns: ["reports_to_employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_evaluation_cycles: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          end_date: string
+          evaluation_type: string
+          id: string
+          name: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          end_date: string
+          evaluation_type?: string
+          id?: string
+          name: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          evaluation_type?: string
+          id?: string
+          name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      performance_evaluations: {
+        Row: {
+          areas_for_improvement: string | null
+          comments: string | null
+          company_id: string
+          created_at: string
+          cycle_id: string | null
+          development_plan: string | null
+          employee_id: string
+          evaluator_id: string
+          final_review_completed: boolean | null
+          id: string
+          manager_evaluation_completed: boolean | null
+          overall_score: number | null
+          period_end: string
+          period_start: string
+          self_evaluation_completed: boolean | null
+          status: string
+          strengths: string | null
+          updated_at: string
+        }
+        Insert: {
+          areas_for_improvement?: string | null
+          comments?: string | null
+          company_id: string
+          created_at?: string
+          cycle_id?: string | null
+          development_plan?: string | null
+          employee_id: string
+          evaluator_id: string
+          final_review_completed?: boolean | null
+          id?: string
+          manager_evaluation_completed?: boolean | null
+          overall_score?: number | null
+          period_end: string
+          period_start: string
+          self_evaluation_completed?: boolean | null
+          status?: string
+          strengths?: string | null
+          updated_at?: string
+        }
+        Update: {
+          areas_for_improvement?: string | null
+          comments?: string | null
+          company_id?: string
+          created_at?: string
+          cycle_id?: string | null
+          development_plan?: string | null
+          employee_id?: string
+          evaluator_id?: string
+          final_review_completed?: boolean | null
+          id?: string
+          manager_evaluation_completed?: boolean | null
+          overall_score?: number | null
+          period_end?: string
+          period_start?: string
+          self_evaluation_completed?: boolean | null
+          status?: string
+          strengths?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_evaluations_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "performance_evaluation_cycles"
             referencedColumns: ["id"]
           },
         ]

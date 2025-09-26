@@ -1,112 +1,90 @@
-import { useState } from "react";
-import { Plus, TrendingUp, Target, Award, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, TrendingUp, Target, Award, Calendar, Users, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
+import { 
+  getPerformanceStats, 
+  getPerformanceEvaluations, 
+  getEmployeeGoals,
+  initializeDefaultCriteria 
+} from "@/services/employeePerformance";
+import { PerformanceEvaluationModal } from "@/components/PerformanceEvaluationModal";
+import { EvaluationCycleModal } from "@/components/EvaluationCycleModal";
+import { EditGoalModal } from "@/components/EditGoalModal";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function GestaoDesempenho() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
+  const [isEvaluationModalOpen, setIsEvaluationModalOpen] = useState(false);
+  const [isCycleModalOpen, setIsCycleModalOpen] = useState(false);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
 
-  // Mock data for performance stats
-  const performanceStats = [
+  // Initialize default criteria on component load
+  useEffect(() => {
+    initializeDefaultCriteria().catch(console.error);
+  }, []);
+
+  // Fetch real data
+  const { data: performanceStats } = useQuery({
+    queryKey: ['performance-stats'],
+    queryFn: getPerformanceStats
+  });
+
+  const { data: evaluationsList = [] } = useQuery({
+    queryKey: ['performance-evaluations'],
+    queryFn: getPerformanceEvaluations
+  });
+
+  const { data: goalsList = [] } = useQuery({
+    queryKey: ['employee-goals'],
+    queryFn: getEmployeeGoals
+  });
+
+  // Performance stats for display
+  const statsCards = [
     {
       title: "Avaliações Pendentes",
-      value: "12",
+      value: performanceStats?.pending_evaluations?.toString() || "0",
       description: "Avaliações aguardando preenchimento",
       icon: Calendar,
       color: "text-amber-600"
     },
     {
       title: "Meta de Conclusão",
-      value: "85%",
+      value: `${performanceStats?.completion_percentage || 0}%`,
       description: "Das avaliações foram concluídas",
       icon: Target,
       color: "text-blue-600"
     },
     {
       title: "Média Geral",
-      value: "4.2",
+      value: performanceStats?.average_score?.toString() || "0.0",
       description: "Nota média das avaliações",
       icon: TrendingUp,
       color: "text-green-600"
     },
     {
       title: "Top Performers",
-      value: "18",
+      value: performanceStats?.top_performers?.toString() || "0",
       description: "Funcionários com nota ≥ 4.5",
       icon: Award,
       color: "text-purple-600"
     }
   ];
 
-  // Mock data for evaluations
-  const evaluations = [
-    {
-      id: 1,
-      employee: "Ana Silva",
-      position: "Analista de Marketing",
-      period: "2024 - 1º Semestre",
-      status: "Concluída",
-      score: 4.5,
-      evaluator: "João Santos"
-    },
-    {
-      id: 2,
-      employee: "Carlos Oliveira",
-      position: "Desenvolvedor Senior",
-      period: "2024 - 1º Semestre",
-      status: "Pendente",
-      score: null,
-      evaluator: "Maria Costa"
-    },
-    {
-      id: 3,
-      employee: "Fernanda Lima",
-      position: "Gerente de Vendas",
-      period: "2024 - 1º Semestre",
-      status: "Em Andamento",
-      score: null,
-      evaluator: "Ricardo Alves"
-    }
-  ];
-
-  // Mock data for goals
-  const goals = [
-    {
-      id: 1,
-      employee: "Ana Silva",
-      goal: "Aumentar conversão de leads em 15%",
-      progress: 80,
-      deadline: "31/12/2024",
-      status: "Em Progresso"
-    },
-    {
-      id: 2,
-      employee: "Carlos Oliveira",
-      goal: "Reduzir bugs em produção em 30%",
-      progress: 60,
-      deadline: "30/11/2024",
-      status: "Em Progresso"
-    },
-    {
-      id: 3,
-      employee: "Fernanda Lima",
-      goal: "Atingir R$ 500k em vendas",
-      progress: 95,
-      deadline: "31/12/2024",
-      status: "Quase Concluída"
-    }
-  ];
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Concluída":
+      case "completed":
         return "bg-green-100 text-green-800";
-      case "Em Andamento":
+      case "in_progress":
         return "bg-blue-100 text-blue-800";
-      case "Pendente":
+      case "pending":
         return "bg-amber-100 text-amber-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -117,15 +95,19 @@ export default function GestaoDesempenho() {
     switch (status) {
       case "Concluída":
         return "bg-green-100 text-green-800";
-      case "Em Progresso":
+      case "No Caminho Certo":
         return "bg-blue-100 text-blue-800";
-      case "Quase Concluída":
-        return "bg-purple-100 text-purple-800";
-      case "Atrasada":
+      case "Atenção Necessária":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const calculateProgress = (goal: any) => {
+    if (!goal.progress_updates || goal.progress_updates.length === 0) return 0;
+    const latest = goal.progress_updates[goal.progress_updates.length - 1];
+    return latest.progress_percentage || 0;
   };
 
   return (
@@ -138,11 +120,11 @@ export default function GestaoDesempenho() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsCycleModalOpen(true)}>
             <Calendar className="h-4 w-4 mr-2" />
             Ciclo de Avaliação
           </Button>
-          <Button>
+          <Button onClick={() => setIsEvaluationModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Avaliação
           </Button>
@@ -160,7 +142,7 @@ export default function GestaoDesempenho() {
 
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {performanceStats.map((stat, index) => {
+            {statsCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <Card key={index}>
@@ -253,7 +235,7 @@ export default function GestaoDesempenho() {
         <TabsContent value="evaluations" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Avaliações de Desempenho</h2>
-            <Button>
+            <Button onClick={() => setIsEvaluationModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Avaliação
             </Button>
@@ -268,24 +250,24 @@ export default function GestaoDesempenho() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {evaluations.map((evaluation) => (
+                {evaluationsList.map((evaluation: any) => (
                   <div key={evaluation.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-4">
                         <div>
-                          <p className="font-medium">{evaluation.employee}</p>
-                          <p className="text-sm text-muted-foreground">{evaluation.position}</p>
+                          <p className="font-medium">{evaluation.employee?.full_name || 'N/A'}</p>
+                          <p className="text-sm text-muted-foreground">{evaluation.employee?.position || 'N/A'}</p>
                         </div>
                         <div>
-                          <p className="text-sm">{evaluation.period}</p>
-                          <p className="text-sm text-muted-foreground">Avaliador: {evaluation.evaluator}</p>
+                          <p className="text-sm">{format(new Date(evaluation.period_start), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(evaluation.period_end), "dd/MM/yyyy", { locale: ptBR })}</p>
+                          <p className="text-sm text-muted-foreground">Avaliador: {evaluation.evaluator?.full_name || 'N/A'}</p>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {evaluation.score && (
+                      {evaluation.overall_score && (
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-blue-600">{evaluation.score}</p>
+                          <p className="text-2xl font-bold text-blue-600">{evaluation.overall_score}</p>
                           <p className="text-xs text-muted-foreground">Nota</p>
                         </div>
                       )}
@@ -306,7 +288,10 @@ export default function GestaoDesempenho() {
         <TabsContent value="goals" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Metas e Objetivos</h2>
-            <Button>
+            <Button onClick={() => {
+              setSelectedGoalId(null);
+              setIsGoalModalOpen(true);
+            }}>
               <Target className="h-4 w-4 mr-2" />
               Nova Meta
             </Button>
@@ -321,31 +306,34 @@ export default function GestaoDesempenho() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {goals.map((goal) => (
-                  <div key={goal.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <p className="font-medium">{goal.employee}</p>
-                        <p className="text-sm text-muted-foreground">{goal.goal}</p>
-                      </div>
-                      <Badge className={getGoalStatusColor(goal.status)}>
-                        {goal.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm">Progresso</span>
-                          <span className="text-sm font-medium">{goal.progress}%</span>
+                {goalsList.map((goal: any) => {
+                  const progress = calculateProgress(goal);
+                  return (
+                    <div key={goal.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{goal.name}</p>
+                          <p className="text-sm text-muted-foreground">{goal.description}</p>
                         </div>
-                        <Progress value={goal.progress} />
+                        <Badge className={getGoalStatusColor(goal.status)}>
+                          {goal.status}
+                        </Badge>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Prazo: {goal.deadline}
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm">Progresso</span>
+                            <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                          </div>
+                          <Progress value={progress} />
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Prazo: {format(new Date(goal.deadline_date), "dd/MM/yyyy", { locale: ptBR })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -432,6 +420,23 @@ export default function GestaoDesempenho() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <PerformanceEvaluationModal
+        open={isEvaluationModalOpen}
+        onOpenChange={setIsEvaluationModalOpen}
+      />
+
+      <EvaluationCycleModal
+        open={isCycleModalOpen}
+        onOpenChange={setIsCycleModalOpen}
+      />
+
+      <EditGoalModal
+        open={isGoalModalOpen}
+        onOpenChange={setIsGoalModalOpen}
+        goalId={selectedGoalId}
+      />
     </div>
   );
 }
