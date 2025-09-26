@@ -88,8 +88,8 @@ export const getEmployeeTrainings = async () => {
     .from('employee_trainings')
     .select(`
       *,
-      employee:employee_id(full_name, employee_code, department),
-      training_program:training_program_id(name, category, is_mandatory, duration_hours)
+      employee:employees!employee_trainings_employee_id_fkey(full_name, employee_code, department),
+      training_program:training_programs!employee_trainings_training_program_id_fkey(name, category, is_mandatory, duration_hours)
     `)
     .order('created_at', { ascending: false });
 
