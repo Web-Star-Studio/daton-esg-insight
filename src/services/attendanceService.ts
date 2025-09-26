@@ -458,4 +458,16 @@ export function useCreateLeaveRequest() {
   });
 }
 
+export function useCreateWorkSchedule() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ companyId, schedule }: { companyId: string; schedule: Partial<WorkSchedule> }) => 
+      attendanceService.createWorkSchedule(companyId, schedule),
+    onSuccess: (_, { companyId }) => {
+      queryClient.invalidateQueries({ queryKey: ['workSchedules', companyId] });
+    },
+  });
+}
+
 export default attendanceService;

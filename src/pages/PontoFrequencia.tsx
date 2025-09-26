@@ -26,8 +26,21 @@ import WorkScheduleModal from "@/components/WorkScheduleModal";
 import { toast } from "sonner";
 
 
+const translateStatus = (status: string) => {
+  const statusMap: { [key: string]: string } = {
+    'present': 'Presente',
+    'late': 'Atraso',
+    'absent': 'Ausente',
+    'pending': 'Pendente',
+    'approved': 'Aprovado',
+    'rejected': 'Rejeitado'
+  };
+  return statusMap[status] || status;
+};
+
 const getStatusColor = (status: string) => {
-  switch (status) {
+  const translatedStatus = translateStatus(status);
+  switch (translatedStatus) {
     case "Presente":
       return "default";
     case "Atraso":
@@ -56,6 +69,7 @@ export default function PontoFrequencia() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
 
   // API queries
   const { data: attendanceStats, isLoading: statsLoading } = useAttendanceStats(companyId);
@@ -373,7 +387,9 @@ export default function PontoFrequencia() {
                       <TableHead>Saída</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Extras</TableHead>
-                      <TableHead>Status</TableHead>
+                       <TableHead>Status</TableHead>
+                       <TableHead>Ações</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -428,9 +444,15 @@ export default function PontoFrequencia() {
 
         <TabsContent value="solicitacoes" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Solicitações de Ausência</CardTitle>
-              <CardDescription>Gerenciar pedidos de férias, licenças e faltas</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Solicitações de Ausência</CardTitle>
+                <CardDescription>Gerenciar pedidos de férias, licenças e faltas</CardDescription>
+              </div>
+              <Button onClick={() => setShowLeaveModal(true)} className="gap-2">
+                <Plus className="w-4 h-4" />
+                Nova Solicitação
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -451,15 +473,25 @@ export default function PontoFrequencia() {
                         </p>
                       </div>
                       <Badge variant={getStatusColor(request.status)}>
-                        {request.status}
+                        {translateStatus(request.status)}
                       </Badge>
-                      {request.status === "Pendente" && (
+                      {(request.status === "pending" || request.status === "Pendente") && (
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleApproveLeave(request.id)}
+                            disabled={updateLeaveRequestStatus.isPending}
+                          >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Aprovar
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleRejectLeave(request.id)}
+                            disabled={updateLeaveRequestStatus.isPending}
+                          >
                             <XCircle className="w-4 h-4 mr-1" />
                             Rejeitar
                           </Button>
@@ -511,7 +543,11 @@ export default function PontoFrequencia() {
       {/* Modals */}
       <AttendanceRecordModal 
         isOpen={showAttendanceModal} 
-        onClose={() => setShowAttendanceModal(false)}
+        onClose={() => {
+          setShowAttendanceModal(false);
+          setEditingRecord(null);
+        }}
+        editingRecord={editingRecord}
       />
       
       <LeaveRequestModal 

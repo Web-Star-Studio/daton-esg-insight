@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Save, X } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCreateWorkSchedule } from "@/services/attendanceService";
 
 interface WorkScheduleModalProps {
   isOpen: boolean;
@@ -26,16 +28,40 @@ const weekDays = [
 ];
 
 export default function WorkScheduleModal({ isOpen, onClose, schedule }: WorkScheduleModalProps) {
+  const { user } = useAuth();
+  const companyId = user?.company?.id;
+  const createWorkSchedule = useCreateWorkSchedule();
+  
   const [formData, setFormData] = useState({
-    name: schedule?.name || "",
-    description: schedule?.description || "",
-    start_time: schedule?.start_time || "08:00",
-    end_time: schedule?.end_time || "17:00",
-    break_duration: schedule?.break_duration || 60,
-    work_days: schedule?.work_days || [1, 2, 3, 4, 5], // Monday to Friday by default
+    name: "",
+    description: "",
+    start_time: "08:00",
+    end_time: "17:00",
+    break_duration: 60,
+    work_days: [1, 2, 3, 4, 5], // Monday to Friday by default
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    if (schedule) {
+      setFormData({
+        name: schedule.name || "",
+        description: schedule.description || "",
+        start_time: schedule.start_time || "08:00",
+        end_time: schedule.end_time || "17:00",
+        break_duration: schedule.break_duration || 60,
+        work_days: schedule.work_days || [1, 2, 3, 4, 5],
+      });
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        start_time: "08:00",
+        end_time: "17:00",
+        break_duration: 60,
+        work_days: [1, 2, 3, 4, 5],
+      });
+    }
+  }, [schedule]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,19 +76,22 @@ export default function WorkScheduleModal({ isOpen, onClose, schedule }: WorkSch
       return;
     }
 
-    setIsSubmitting(true);
+    if (!companyId) {
+      toast.error("Erro: empresa não identificada");
+      return;
+    }
     
     try {
-      // Here you would call your API to create/update the schedule
-      console.log('Schedule data:', formData);
+      await createWorkSchedule.mutateAsync({
+        companyId,
+        schedule: formData
+      });
       
       toast.success(schedule ? "Escala atualizada com sucesso!" : "Escala criada com sucesso!");
       onClose();
     } catch (error) {
       console.error('Error saving schedule:', error);
       toast.error("Erro ao salvar escala");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -209,11 +238,11 @@ export default function WorkScheduleModal({ isOpen, onClose, schedule }: WorkSch
             </Button>
             <Button 
               type="submit" 
-              disabled={isSubmitting}
+              disabled={createWorkSchedule.isPending}
               className="flex-1"
             >
               <Save className="w-4 h-4 mr-2" />
-              {isSubmitting ? "Salvando..." : "Salvar"}
+              {createWorkSchedule.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </form>

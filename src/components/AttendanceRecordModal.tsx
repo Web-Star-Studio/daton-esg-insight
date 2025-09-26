@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,10 @@ interface AttendanceRecordModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate?: Date;
+  editingRecord?: any;
 }
 
-export default function AttendanceRecordModal({ isOpen, onClose, selectedDate }: AttendanceRecordModalProps) {
+export default function AttendanceRecordModal({ isOpen, onClose, selectedDate, editingRecord }: AttendanceRecordModalProps) {
   const { user } = useAuth();
   const companyId = user?.company?.id;
   
@@ -34,6 +35,72 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate }:
 
   const { data: employees = [], isLoading: employeesLoading } = useEmployees(companyId);
   const createAttendanceRecord = useCreateAttendanceRecord();
+
+  // Preenche o formulário quando está editando
+  useEffect(() => {
+    if (editingRecord) {
+      const formatTime = (timeString: string | null) => {
+        if (!timeString) return "";
+        return new Date(timeString).toTimeString().slice(0, 5);
+      };
+
+      setFormData({
+        employee_id: editingRecord.employee_id || "",
+        date: editingRecord.date || new Date().toISOString().split('T')[0],
+        check_in: formatTime(editingRecord.check_in),
+        check_out: formatTime(editingRecord.check_out),
+        break_start: formatTime(editingRecord.break_start),
+        break_end: formatTime(editingRecord.break_end),
+        status: editingRecord.status || "present",
+        notes: editingRecord.notes || ""
+      });
+    } else {
+      // Reset para novo registro
+      setFormData({
+        employee_id: "",
+        date: selectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        check_in: "",
+        check_out: "",
+        break_start: "",
+        break_end: "",
+        status: "present" as const,
+        notes: ""
+      });
+    }
+  }, [editingRecord, selectedDate]);
+
+  // Preenche o formulário quando está editando
+  useEffect(() => {
+    if (editingRecord) {
+      const formatTime = (timeString: string | null) => {
+        if (!timeString) return "";
+        return new Date(timeString).toTimeString().slice(0, 5);
+      };
+
+      setFormData({
+        employee_id: editingRecord.employee_id || "",
+        date: editingRecord.date || new Date().toISOString().split('T')[0],
+        check_in: formatTime(editingRecord.check_in),
+        check_out: formatTime(editingRecord.check_out),
+        break_start: formatTime(editingRecord.break_start),
+        break_end: formatTime(editingRecord.break_end),
+        status: editingRecord.status || "present",
+        notes: editingRecord.notes || ""
+      });
+    } else {
+      // Reset para novo registro
+      setFormData({
+        employee_id: "",
+        date: selectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        check_in: "",
+        check_out: "",
+        break_start: "",
+        break_end: "",
+        status: "present" as const,
+        notes: ""
+      });
+    }
+  }, [editingRecord, selectedDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +185,7 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5" />
-            Novo Registro de Ponto
+            {editingRecord ? "Editar Registro de Ponto" : "Novo Registro de Ponto"}
           </DialogTitle>
           <DialogDescription>
             Registrar entrada e saída de funcionário
@@ -250,7 +317,7 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate }:
               className="flex-1"
             >
               <Save className="w-4 h-4 mr-2" />
-              {createAttendanceRecord.isPending ? "Salvando..." : "Salvar"}
+              {createAttendanceRecord.isPending ? "Salvando..." : editingRecord ? "Atualizar" : "Salvar"}
             </Button>
           </div>
         </form>
