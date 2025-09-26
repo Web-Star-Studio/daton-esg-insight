@@ -725,6 +725,65 @@ export type Database = {
           },
         ]
       }
+      attendance_records: {
+        Row: {
+          break_end: string | null
+          break_start: string | null
+          check_in: string | null
+          check_out: string | null
+          company_id: string
+          created_at: string | null
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          overtime_hours: number | null
+          status: string
+          total_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          break_end?: string | null
+          break_start?: string | null
+          check_in?: string | null
+          check_out?: string | null
+          company_id: string
+          created_at?: string | null
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string
+          total_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          break_end?: string | null
+          break_start?: string | null
+          check_in?: string | null
+          check_out?: string | null
+          company_id?: string
+          created_at?: string | null
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number | null
+          status?: string
+          total_hours?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_findings: {
         Row: {
           action_plan: string | null
@@ -2818,6 +2877,54 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_schedules: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          employee_id: string
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          schedule_id: string
+          start_date: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          schedule_id: string
+          start_date: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          schedule_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_schedules_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_schedules_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "work_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -5142,6 +5249,104 @@ export type Database = {
           previous_use?: string
           updated_at?: string
           vegetation_type?: string | null
+        }
+        Relationships: []
+      }
+      leave_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          company_id: string
+          created_at: string | null
+          days_count: number
+          employee_id: string
+          end_date: string
+          id: string
+          notes: string | null
+          reason: string | null
+          requested_by_user_id: string
+          start_date: string
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          company_id: string
+          created_at?: string | null
+          days_count: number
+          employee_id: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          requested_by_user_id: string
+          start_date: string
+          status?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          days_count?: number
+          employee_id?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          requested_by_user_id?: string
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          advance_notice_days: number | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_days_per_year: number | null
+          name: string
+          requires_approval: boolean | null
+        }
+        Insert: {
+          advance_notice_days?: number | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_days_per_year?: number | null
+          name: string
+          requires_approval?: boolean | null
+        }
+        Update: {
+          advance_notice_days?: number | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_days_per_year?: number | null
+          name?: string
+          requires_approval?: boolean | null
         }
         Relationships: []
       }
@@ -9183,6 +9388,48 @@ export type Database = {
           resolution_summary?: string | null
           status?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      work_schedules: {
+        Row: {
+          break_duration: number | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          end_time: string
+          id: string
+          is_active: boolean | null
+          name: string
+          start_time: string
+          updated_at: string | null
+          work_days: number[] | null
+        }
+        Insert: {
+          break_duration?: number | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_time: string
+          updated_at?: string | null
+          work_days?: number[] | null
+        }
+        Update: {
+          break_duration?: number | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_time?: string
+          updated_at?: string | null
+          work_days?: number[] | null
         }
         Relationships: []
       }

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,89 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CalendarIcon, Clock, Users, TrendingUp, CheckCircle, XCircle, AlertTriangle, Calendar, Timer, UserCheck } from "lucide-react";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CalendarIcon, Clock, Users, TrendingUp, CheckCircle, XCircle, AlertTriangle, Calendar, Timer, UserCheck, Plus, Filter, Download, Settings, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
+import { useAuth } from "@/contexts/AuthContext";
+import { 
+  useAttendanceStats, 
+  useAttendanceRecords, 
+  useLeaveRequests, 
+  useWorkSchedules,
+  useUpdateLeaveRequestStatus 
+} from "@/services/attendanceService";
+import AttendanceRecordModal from "@/components/AttendanceRecordModal";
+import LeaveRequestModal from "@/components/LeaveRequestModal";
+import WorkScheduleModal from "@/components/WorkScheduleModal";
+import { toast } from "sonner";
 
-// Mock functions - replace with actual API calls
-const getAttendanceStats = async () => {
-  return {
-    totalEmployees: 247,
-    presentToday: 231,
-    absentToday: 8,
-    lateToday: 8,
-    averageHoursWorked: 8.2,
-    overtimeHours: 124,
-    leaveRequests: 12,
-    pendingApprovals: 5
-  };
-};
-
-const getAttendanceRecords = async () => {
-  return [
-    {
-      id: "1",
-      employeeName: "Ana Silva",
-      employeeCode: "EMP001",
-      department: "Recursos Humanos",
-      checkIn: "08:00",
-      checkOut: "17:30",
-      totalHours: "9h 30m",
-      status: "Presente",
-      overtime: "1h 30m",
-      date: "2024-01-15"
-    },
-    {
-      id: "2",
-      employeeName: "Carlos Santos",
-      employeeCode: "EMP002",
-      department: "TI",
-      checkIn: "08:15",
-      checkOut: "17:45",
-      totalHours: "9h 30m",
-      status: "Atraso",
-      overtime: "1h 45m",
-      date: "2024-01-15"
-    },
-    {
-      id: "3",
-      employeeName: "Mariana Costa",
-      employeeCode: "EMP003",
-      department: "Vendas",
-      checkIn: "-",
-      checkOut: "-",
-      totalHours: "0h",
-      status: "Ausente",
-      overtime: "0h",
-      date: "2024-01-15"
-    }
-  ];
-};
-
-const getLeaveRequests = async () => {
-  return [
-    {
-      id: "1",
-      employeeName: "João Oliveira",
-      type: "Férias",
-      startDate: "2024-01-20",
-      endDate: "2024-01-30",
-      days: 10,
-      status: "Pendente",
-      reason: "Férias anuais"
-    },
-    {
-      id: "2",
-      employeeName: "Maria Santos",
-      type: "Licença Médica",
-      startDate: "2024-01-16",
-      endDate: "2024-01-18",
-      days: 3,
-      status: "Aprovado",
-      reason: "Atestado médico"
-    }
-  ];
-};
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -111,34 +46,62 @@ const getStatusColor = (status: string) => {
 };
 
 export default function PontoFrequencia() {
+  const { user } = useAuth();
+  const companyId = user?.company?.id;
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedPeriod, setSelectedPeriod] = useState("today");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
-  const { data: attendanceStats, isLoading: statsLoading } = useQuery({
-    queryKey: ["attendanceStats"],
-    queryFn: getAttendanceStats,
+  // API queries
+  const { data: attendanceStats, isLoading: statsLoading } = useAttendanceStats(companyId);
+  const { data: attendanceRecords, isLoading: recordsLoading } = useAttendanceRecords(companyId, {
+    startDate: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+    endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+    status: filterStatus !== 'all' ? filterStatus : undefined,
   });
-
-  const { data: attendanceRecords, isLoading: recordsLoading } = useQuery({
-    queryKey: ["attendanceRecords"],
-    queryFn: getAttendanceRecords,
-  });
-
-  const { data: leaveRequests, isLoading: leavesLoading } = useQuery({
-    queryKey: ["leaveRequests"],
-    queryFn: getLeaveRequests,
-  });
+  const { data: leaveRequests, isLoading: leavesLoading } = useLeaveRequests(companyId);
+  const { data: workSchedules } = useWorkSchedules(companyId);
+  const updateLeaveRequestStatus = useUpdateLeaveRequestStatus();
 
   const filteredRecords = attendanceRecords?.filter(record => {
-    const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record.employeeCode.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = filterDepartment === "all" || record.department === filterDepartment;
-    const matchesStatus = filterStatus === "all" || record.status === filterStatus;
+    const employee = record.employee;
+    const matchesSearch = employee?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee?.employee_code?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = filterDepartment === "all" || employee?.department === filterDepartment;
     
-    return matchesSearch && matchesDepartment && matchesStatus;
+    return matchesSearch && matchesDepartment;
   });
+
+  const handleApproveLeave = async (id: string) => {
+    try {
+      await updateLeaveRequestStatus.mutateAsync({
+        id,
+        status: 'approved',
+        approverUserId: user?.id
+      });
+      toast.success("Solicitação aprovada com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao aprovar solicitação");
+    }
+  };
+
+  const handleRejectLeave = async (id: string) => {
+    try {
+      await updateLeaveRequestStatus.mutateAsync({
+        id,
+        status: 'rejected',
+        approverUserId: user?.id
+      });
+      toast.success("Solicitação rejeitada");
+    } catch (error) {
+      toast.error("Erro ao rejeitar solicitação");
+    }
+  };
 
   if (statsLoading) {
     return (
@@ -196,12 +159,12 @@ export default function PontoFrequencia() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Relatório Mensal
+          <Button variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+            <Download className="w-4 h-4 mr-2" />
+            Exportar Dados
           </Button>
-          <Button>
-            <Clock className="w-4 h-4 mr-2" />
+          <Button onClick={() => setShowAttendanceModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
             Registrar Ponto
           </Button>
         </div>
@@ -334,13 +297,22 @@ export default function PontoFrequencia() {
 
         <TabsContent value="registros" className="space-y-6">
           {/* Filters */}
-          <div className="flex gap-4 flex-wrap">
-            <Input
-              placeholder="Buscar por funcionário ou código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+          <div className="flex gap-4 flex-wrap items-end">
+            <div className="flex-1 min-w-60">
+              <Input
+                placeholder="Buscar por funcionário ou código..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
+            <DatePickerWithRange
+              className="w-auto"
+              date={dateRange}
+              onDateChange={setDateRange}
             />
+            
             <Select value={filterDepartment} onValueChange={setFilterDepartment}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filtrar por departamento" />
@@ -353,59 +325,103 @@ export default function PontoFrequencia() {
                 <SelectItem value="Financeiro">Financeiro</SelectItem>
               </SelectContent>
             </Select>
+            
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="Presente">Presente</SelectItem>
-                <SelectItem value="Atraso">Atraso</SelectItem>
-                <SelectItem value="Ausente">Ausente</SelectItem>
+                <SelectItem value="present">Presente</SelectItem>
+                <SelectItem value="late">Atraso</SelectItem>
+                <SelectItem value="absent">Ausente</SelectItem>
+                <SelectItem value="partial">Meio Período</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Button onClick={() => setShowAttendanceModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Registro
+            </Button>
           </div>
 
           {/* Records Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Registros de Ponto - {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</CardTitle>
-              <CardDescription>Registros de entrada e saída dos funcionários</CardDescription>
+              <CardTitle>Registros de Ponto</CardTitle>
+              <CardDescription>
+                {dateRange?.from && dateRange?.to 
+                  ? `Período: ${format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} - ${format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}`
+                  : "Todos os registros"
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {filteredRecords?.map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="font-medium">{record.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{record.employeeCode} • {record.department}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <p className="text-sm font-medium">Entrada</p>
-                        <p className="text-sm text-muted-foreground">{record.checkIn}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">Saída</p>
-                        <p className="text-sm text-muted-foreground">{record.checkOut}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">Total</p>
-                        <p className="text-sm text-muted-foreground">{record.totalHours}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">Extra</p>
-                        <p className="text-sm text-muted-foreground">{record.overtime}</p>
-                      </div>
-                      <Badge variant={getStatusColor(record.status)}>
-                        {record.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {recordsLoading ? (
+                <div className="animate-pulse space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-muted rounded-lg"></div>
+                  ))}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Funcionário</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Entrada</TableHead>
+                      <TableHead>Saída</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Extras</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRecords?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                          Nenhum registro encontrado
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRecords?.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{record.employee?.full_name || 'N/A'}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {record.employee?.employee_code} • {record.employee?.department}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                          <TableCell>
+                            {record.check_in 
+                              ? format(new Date(record.check_in), "HH:mm", { locale: ptBR }) 
+                              : "-"
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {record.check_out 
+                              ? format(new Date(record.check_out), "HH:mm", { locale: ptBR }) 
+                              : "-"
+                            }
+                          </TableCell>
+                          <TableCell>{record.total_hours?.toFixed(1) || "0"}h</TableCell>
+                          <TableCell>{record.overtime_hours?.toFixed(1) || "0"}h</TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusColor(record.status)}>
+                              {record.status === 'present' ? 'Presente' :
+                               record.status === 'absent' ? 'Ausente' :
+                               record.status === 'late' ? 'Atraso' : 'Parcial'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -491,6 +507,22 @@ export default function PontoFrequencia() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <AttendanceRecordModal 
+        isOpen={showAttendanceModal} 
+        onClose={() => setShowAttendanceModal(false)}
+      />
+      
+      <LeaveRequestModal 
+        isOpen={showLeaveModal} 
+        onClose={() => setShowLeaveModal(false)}
+      />
+      
+      <WorkScheduleModal 
+        isOpen={showScheduleModal} 
+        onClose={() => setShowScheduleModal(false)}
+      />
     </div>
   );
 }
