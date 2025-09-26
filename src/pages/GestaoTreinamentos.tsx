@@ -32,6 +32,8 @@ import { TrainingProgramModal } from '@/components/TrainingProgramModal';
 import { EmployeeTrainingModal } from '@/components/EmployeeTrainingModal';
 import { TrainingCalendar } from '@/components/TrainingCalendar';
 import { TrainingCertificationModal } from '@/components/TrainingCertificationModal';
+import { TrainingReportsModal } from '@/components/TrainingReportsModal';
+import { TrainingScheduleModal } from '@/components/TrainingScheduleModal';
 import { BenefitManagementModal } from '@/components/BenefitManagementModal';
 import { BenefitConfigurationModal } from '@/components/BenefitConfigurationModal';
 
@@ -57,6 +59,8 @@ export default function GestaoTreinamentos() {
   const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
   const [isBenefitConfigModalOpen, setIsBenefitConfigModalOpen] = useState(false);
   const [isCertificationModalOpen, setIsCertificationModalOpen] = useState(false);
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   
   // Selected items
   const [selectedProgram, setSelectedProgram] = useState<TrainingProgram | null>(null);
@@ -262,10 +266,20 @@ export default function GestaoTreinamentos() {
             Gerencie programas de treinamento, desenvolvimento e certificações
           </p>
         </div>
-        <Button onClick={handleNewProgram}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Programa
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsReportsModalOpen(true)} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Relatórios
+          </Button>
+          <Button onClick={() => setIsScheduleModalOpen(true)} variant="outline">
+            <Calendar className="w-4 h-4 mr-2" />
+            Agendar
+          </Button>
+          <Button onClick={handleNewProgram}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Programa
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
@@ -611,7 +625,7 @@ export default function GestaoTreinamentos() {
           <TrainingCalendar 
             events={calendarEvents}
             onEventClick={(event) => console.log('Event clicked:', event)}
-            onNewEventClick={() => console.log('New event')}
+            onNewEventClick={() => setIsScheduleModalOpen(true)}
           />
         </TabsContent>
 
@@ -829,6 +843,17 @@ export default function GestaoTreinamentos() {
         open={isBenefitConfigModalOpen}
         onOpenChange={setIsBenefitConfigModalOpen}
         benefit={selectedBenefit}
+      />
+
+      <TrainingReportsModal
+        open={isReportsModalOpen}
+        onOpenChange={setIsReportsModalOpen}
+      />
+
+      <TrainingScheduleModal
+        open={isScheduleModalOpen}
+        onOpenChange={setIsScheduleModalOpen}
+        schedule={null}
       />
     </div>
   );

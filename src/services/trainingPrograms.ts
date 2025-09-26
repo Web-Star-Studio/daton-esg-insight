@@ -107,12 +107,28 @@ export const getEmployeeTrainings = async () => {
 
   if (programError) throw programError;
 
-  // Manually join the data
-  return trainings.map(training => ({
-    ...training,
-    employee: employees?.find(emp => emp.id === training.employee_id) || null,
-    training_program: programs?.find(prog => prog.id === training.training_program_id) || null
-  }));
+  // Manually join the data and ensure safe property access
+  return trainings.map(training => {
+    const employee = employees?.find(emp => emp.id === training.employee_id);
+    const program = programs?.find(prog => prog.id === training.training_program_id);
+    
+    return {
+      ...training,
+      employee: employee ? {
+        id: employee.id,
+        full_name: employee.full_name,
+        employee_code: employee.employee_code,
+        department: employee.department
+      } : null,
+      training_program: program ? {
+        id: program.id,
+        name: program.name,
+        category: program.category,
+        is_mandatory: program.is_mandatory,
+        duration_hours: program.duration_hours
+      } : null
+    };
+  });
 };
 
 export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'id' | 'created_at' | 'updated_at'>) => {
