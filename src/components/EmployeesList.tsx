@@ -24,9 +24,10 @@ import { getEmployees, getEmployeesStats } from "@/services/employees";
 interface EmployeesListProps {
   onEditEmployee: (employee: any) => void;
   onCreateEmployee: () => void;
+  onViewEmployee: (employee: any) => void;
 }
 
-export function EmployeesList({ onEditEmployee, onCreateEmployee }: EmployeesListProps) {
+export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee }: EmployeesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDepartment, setFilterDepartment] = useState("all");
@@ -285,6 +286,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee }: EmployeesLis
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => onViewEmployee(employee)}
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     Visualizar

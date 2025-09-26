@@ -2,15 +2,22 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar } from 'lucide-react';
+import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar, FileText, Gift, BarChart3 } from 'lucide-react';
 import { EmployeesList } from '@/components/EmployeesList';
 import { EmployeeModal } from '@/components/EmployeeModal';
+import { EmployeeDetailModal } from '@/components/EmployeeDetailModal';
+import { EmployeeReportsModal } from '@/components/EmployeeReportsModal';
+import { BenefitManagementModal } from '@/components/BenefitManagementModal';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getEmployeesStats, type Employee } from '@/services/employees';
 
 export default function GestaoFuncionarios() {
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [isEmployeeDetailModalOpen, setIsEmployeeDetailModalOpen] = useState(false);
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+  const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const queryClient = useQueryClient();
 
   const handleEditEmployee = (employee: Employee) => {
@@ -28,9 +35,25 @@ export default function GestaoFuncionarios() {
     queryClient.invalidateQueries({ queryKey: ['employees-stats'] });
   };
 
+  const handleViewEmployee = (employee: Employee) => {
+    setViewingEmployee(employee);
+    setIsEmployeeDetailModalOpen(true);
+  };
+
+  const handleEditFromDetail = () => {
+    setEditingEmployee(viewingEmployee);
+    setIsEmployeeDetailModalOpen(false);
+    setIsEmployeeModalOpen(true);
+  };
+
   const handleModalClose = () => {
     setIsEmployeeModalOpen(false);
     setEditingEmployee(null);
+  };
+
+  const handleDetailModalClose = () => {
+    setIsEmployeeDetailModalOpen(false);
+    setViewingEmployee(null);
   };
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
@@ -150,6 +173,7 @@ export default function GestaoFuncionarios() {
           <EmployeesList 
             onEditEmployee={handleEditEmployee}
             onCreateEmployee={handleCreateEmployee}
+            onViewEmployee={handleViewEmployee}
           />
         </TabsContent>
 
@@ -191,12 +215,22 @@ export default function GestaoFuncionarios() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Distribuição por Departamento</h3>
-                  <div className="text-center p-8 border-2 border-dashed rounded-lg">
-                    <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Implementação em desenvolvimento
-                    </p>
+                  <h3 className="text-lg font-semibold mb-4">Gestão de Benefícios</h3>
+                  <div className="space-y-4">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setIsBenefitModalOpen(true)}
+                    >
+                      <Gift className="w-4 h-4 mr-2" />
+                      Gerenciar Benefícios
+                    </Button>
+                    <div className="text-center p-6 border rounded-lg bg-muted/10">
+                      <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        Configure e gerencie os benefícios dos funcionários
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -214,13 +248,17 @@ export default function GestaoFuncionarios() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
-                  <Users className="w-6 h-6" />
-                  <span>Relatório de Funcionários</span>
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center space-y-2"
+                  onClick={() => setIsReportsModalOpen(true)}
+                >
+                  <FileText className="w-6 h-6" />
+                  <span>Gerar Relatórios</span>
                 </Button>
                 <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
                   <TrendingUp className="w-6 h-6" />
-                  <span>Indicadores de Performance</span>
+                  <span>Análise de Performance</span>
                 </Button>
                 <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
                   <Building2 className="w-6 h-6" />
@@ -228,7 +266,7 @@ export default function GestaoFuncionarios() {
                 </Button>
                 <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
                   <Calendar className="w-6 h-6" />
-                  <span>Relatório de Presença</span>
+                  <span>Controle de Ponto</span>
                 </Button>
                 <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
                   <Briefcase className="w-6 h-6" />
@@ -236,7 +274,7 @@ export default function GestaoFuncionarios() {
                 </Button>
                 <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
                   <UserPlus className="w-6 h-6" />
-                  <span>Turnover Report</span>
+                  <span>Turnover Analysis</span>
                 </Button>
               </div>
             </CardContent>
@@ -249,6 +287,27 @@ export default function GestaoFuncionarios() {
         onClose={handleModalClose}
         onSuccess={handleModalSuccess}
         employee={editingEmployee}
+      />
+
+      <EmployeeDetailModal
+        isOpen={isEmployeeDetailModalOpen}
+        onClose={handleDetailModalClose}
+        onEdit={handleEditFromDetail}
+        employee={viewingEmployee}
+      />
+
+      <EmployeeReportsModal
+        isOpen={isReportsModalOpen}
+        onClose={() => setIsReportsModalOpen(false)}
+      />
+
+      <BenefitManagementModal
+        open={isBenefitModalOpen}
+        onOpenChange={(open) => setIsBenefitModalOpen(open)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['benefits'] });
+          setIsBenefitModalOpen(false);
+        }}
       />
     </div>
   );

@@ -212,6 +212,7 @@ export default function GovernancaESG() {
                   setModalMode('create');
                   setIsEmployeeModalOpen(true);
                 }}
+                onViewEmployee={() => {}} // Placeholder for view functionality
               />
             </TabsContent>
 
