@@ -67,6 +67,12 @@ export default function GestaoTreinamentos() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Force fresh data on component mount
+  React.useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
+    queryClient.invalidateQueries({ queryKey: ['training-metrics'] });
+  }, [queryClient]);
+
   // Fetch training programs
   const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
     queryKey: ['training-programs'],
@@ -74,10 +80,17 @@ export default function GestaoTreinamentos() {
   });
 
   // Fetch employee trainings
-  const { data: employeeTrainings = [] } = useQuery({
+  const { data: employeeTrainings = [], refetch: refetchTrainings } = useQuery({
     queryKey: ['employee-trainings'],
     queryFn: getEmployeeTrainings,
+    retry: 3,
+    staleTime: 0, // Force fresh data
   });
+
+  // Force refresh on mount to clear any cached errors
+  React.useEffect(() => {
+    refetchTrainings();
+  }, [refetchTrainings]);
 
   // Fetch training metrics
   const { data: trainingMetrics } = useQuery({

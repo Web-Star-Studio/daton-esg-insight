@@ -84,17 +84,35 @@ export const deleteTrainingProgram = async (id: string) => {
 };
 
 export const getEmployeeTrainings = async () => {
-  const { data, error } = await supabase
+  // Get employee trainings first
+  const { data: trainings, error: trainingError } = await supabase
     .from('employee_trainings')
-    .select(`
-      *,
-      employee:employees!employee_trainings_employee_id_fkey(full_name, employee_code, department),
-      training_program:training_programs!employee_trainings_training_program_id_fkey(name, category, is_mandatory, duration_hours)
-    `)
+    .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (trainingError) throw trainingError;
+  if (!trainings) return [];
+
+  // Get employees data
+  const { data: employees, error: employeeError } = await supabase
+    .from('employees')
+    .select('id, full_name, employee_code, department');
+
+  if (employeeError) throw employeeError;
+
+  // Get training programs data
+  const { data: programs, error: programError } = await supabase
+    .from('training_programs')
+    .select('id, name, category, is_mandatory, duration_hours');
+
+  if (programError) throw programError;
+
+  // Manually join the data
+  return trainings.map(training => ({
+    ...training,
+    employee: employees?.find(emp => emp.id === training.employee_id) || null,
+    training_program: programs?.find(prog => prog.id === training.training_program_id) || null
+  }));
 };
 
 export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'id' | 'created_at' | 'updated_at'>) => {
