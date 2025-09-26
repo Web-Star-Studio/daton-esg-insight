@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Briefcase, 
   Users, 
@@ -23,8 +25,15 @@ import {
   Mail,
   Phone,
   Edit,
-  Trash2
+  Trash2,
+  MoreHorizontal
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   useJobPostings, 
   useJobApplications, 
@@ -38,9 +47,10 @@ import JobPostingModal from "@/components/JobPostingModal";
 import JobApplicationModal from "@/components/JobApplicationModal";
 import InterviewModal from "@/components/InterviewModal";
 import { JobPosting, JobApplication, Interview } from "@/services/recruitment";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Recrutamento() {
-  const [selectedPeriod, setSelectedPeriod] = useState("2024");
+  const { toast } = useToast();
   const [jobPostingModalOpen, setJobPostingModalOpen] = useState(false);
   const [applicationModalOpen, setApplicationModalOpen] = useState(false);
   const [interviewModalOpen, setInterviewModalOpen] = useState(false);
@@ -48,6 +58,8 @@ export default function Recrutamento() {
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
   const [selectedJobForApplications, setSelectedJobForApplications] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Real data queries
   const { data: jobPostings = [], isLoading: jobsLoading } = useJobPostings();
@@ -61,165 +73,82 @@ export default function Recrutamento() {
 
   const handleDeleteJob = (job: JobPosting) => {
     if (confirm('Tem certeza que deseja excluir esta vaga?')) {
-      deleteJobMutation.mutate(job.id);
+      deleteJobMutation.mutate(job.id, {
+        onSuccess: () => {
+          toast({
+            title: "Vaga excluída",
+            description: "A vaga foi removida com sucesso.",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Erro ao excluir",
+            description: "Não foi possível excluir a vaga.",
+            variant: "destructive",
+          });
+        }
+      });
     }
   };
 
   const handleDeleteApplication = (application: JobApplication) => {
     if (confirm('Tem certeza que deseja excluir esta candidatura?')) {
-      deleteApplicationMutation.mutate(application.id);
+      deleteApplicationMutation.mutate(application.id, {
+        onSuccess: () => {
+          toast({
+            title: "Candidatura excluída",
+            description: "A candidatura foi removida com sucesso.",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Erro ao excluir",
+            description: "Não foi possível excluir a candidatura.",
+            variant: "destructive",
+          });
+        }
+      });
     }
   };
 
   const handleDeleteInterview = (interview: Interview) => {
     if (confirm('Tem certeza que deseja cancelar esta entrevista?')) {
-      deleteInterviewMutation.mutate(interview.id);
+      deleteInterviewMutation.mutate(interview.id, {
+        onSuccess: () => {
+          toast({
+            title: "Entrevista cancelada",
+            description: "A entrevista foi cancelada com sucesso.",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Erro ao cancelar",
+            description: "Não foi possível cancelar a entrevista.",
+            variant: "destructive",
+          });
+        }
+      });
     }
   };
 
-  // Mock data for recruitment
-  const recruitmentStats = {
-    openPositions: 8,
-    totalApplications: 145,
-    interviewsScheduled: 23,
-    hiredThisMonth: 5,
-    averageTimeToHire: 28
-  };
+  // Filter functions
+  const filteredJobPostings = jobPostings.filter(job => 
+    (statusFilter === "all" || job.status.toLowerCase() === statusFilter) &&
+    (searchTerm === "" || 
+     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     job.department.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
-  const jobOpenings = [
-    {
-      id: 1,
-      title: "Desenvolvedor Full Stack",
-      department: "Tecnologia",
-      location: "São Paulo, SP",
-      type: "CLT",
-      level: "Pleno",
-      applications: 34,
-      status: "Ativa",
-      postedDate: "2024-01-15",
-      priority: "Alta"
-    },
-    {
-      id: 2,
-      title: "Analista de Marketing",
-      department: "Marketing",
-      location: "Remote",
-      type: "CLT",
-      level: "Júnior",
-      applications: 28,
-      status: "Ativa",
-      postedDate: "2024-01-20",
-      priority: "Média"
-    },
-    {
-      id: 3,
-      title: "Gerente de Vendas",
-      department: "Comercial",
-      location: "Rio de Janeiro, RJ",
-      type: "CLT",
-      level: "Sênior",
-      applications: 15,
-      status: "Pausada",
-      postedDate: "2024-01-10",
-      priority: "Alta"
-    },
-    {
-      id: 4,
-      title: "Designer UX/UI",
-      department: "Design",
-      location: "São Paulo, SP",
-      type: "PJ",
-      level: "Pleno",
-      applications: 42,
-      status: "Ativa",
-      postedDate: "2024-01-25",
-      priority: "Média"
-    }
-  ];
+  const filteredApplications = jobApplications.filter(app => 
+    searchTerm === "" || 
+    app.candidate_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    app.candidate_email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const candidates = [
-    {
-      id: 1,
-      name: "Ana Silva",
-      email: "ana.silva@email.com",
-      phone: "(11) 99999-1234",
-      position: "Desenvolvedor Full Stack",
-      stage: "Entrevista Técnica",
-      score: 85,
-      experience: "3 anos",
-      location: "São Paulo, SP",
-      status: "Em Processo"
-    },
-    {
-      id: 2,
-      name: "Carlos Santos",
-      email: "carlos.santos@email.com",
-      phone: "(11) 99999-5678",
-      position: "Analista de Marketing",
-      stage: "Análise Curricular",
-      score: 78,
-      experience: "2 anos",
-      location: "Remote",
-      status: "Em Análise"
-    },
-    {
-      id: 3,
-      name: "Mariana Costa",
-      email: "mariana.costa@email.com",
-      phone: "(21) 99999-9012",
-      position: "Designer UX/UI",
-      stage: "Entrevista RH",
-      score: 92,
-      experience: "4 anos",
-      location: "Rio de Janeiro, RJ",
-      status: "Aprovado"
-    },
-    {
-      id: 4,
-      name: "Pedro Oliveira",
-      email: "pedro.oliveira@email.com",
-      phone: "(11) 99999-3456",
-      position: "Gerente de Vendas",
-      stage: "Proposta Enviada",
-      score: 88,
-      experience: "6 anos",
-      location: "São Paulo, SP",
-      status: "Finalista"
-    }
-  ];
-
-  const interviews = [
-    {
-      id: 1,
-      candidate: "Ana Silva",
-      position: "Desenvolvedor Full Stack",
-      interviewer: "João Mendes",
-      type: "Técnica",
-      date: "2024-02-01",
-      time: "14:00",
-      status: "Agendada"
-    },
-    {
-      id: 2,
-      candidate: "Carlos Santos",
-      position: "Analista de Marketing",
-      interviewer: "Maria Ferreira",
-      type: "RH",
-      date: "2024-02-01",
-      time: "10:00",
-      status: "Confirmada"
-    },
-    {
-      id: 3,
-      candidate: "Mariana Costa",
-      position: "Designer UX/UI",
-      interviewer: "Roberto Lima",
-      type: "Portfolio",
-      date: "2024-02-02",
-      time: "16:00",
-      status: "Pendente"
-    }
-  ];
+  const filteredInterviews = interviewsData.filter(interview => 
+    searchTerm === "" || 
+    interview.job_application?.candidate_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const statsCards = [
     {
@@ -252,32 +181,30 @@ export default function Recrutamento() {
     }
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativa": return "bg-green-100 text-green-800";
-      case "Pausada": return "bg-yellow-100 text-yellow-800";
-      case "Encerrada": return "bg-gray-100 text-gray-800";
-      default: return "bg-blue-100 text-blue-800";
+  const getStatusVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "ativa": 
+      case "active": 
+      case "aprovado": 
+      case "agendada":
+      case "confirmada": return "default";
+      case "pausada": 
+      case "em análise": 
+      case "em processo": 
+      case "pendente": return "secondary";
+      case "encerrada": 
+      case "rejeitado": return "destructive";
+      case "finalista": return "outline";
+      default: return "secondary";
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "Alta": return "bg-red-100 text-red-800";
-      case "Média": return "bg-yellow-100 text-yellow-800";
-      case "Baixa": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getCandidateStatusColor = (status: string) => {
-    switch (status) {
-      case "Aprovado": return "bg-green-100 text-green-800";
-      case "Rejeitado": return "bg-red-100 text-red-800";
-      case "Em Processo": return "bg-blue-100 text-blue-800";
-      case "Em Análise": return "bg-yellow-100 text-yellow-800";
-      case "Finalista": return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
+  const getPriorityVariant = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case "alta": return "destructive";
+      case "média": return "secondary";
+      case "baixa": return "outline";
+      default: return "secondary";
     }
   };
 
@@ -355,24 +282,29 @@ export default function Recrutamento() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {jobOpenings.slice(0, 3).map((job) => (
+                  {jobPostings.filter(job => job.status === 'Ativa').slice(0, 3).map((job) => (
                     <div key={job.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{job.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {job.department} • {job.applications} candidaturas
+                          {job.department} • {jobApplications.filter(app => app.job_posting_id === job.id).length} candidaturas
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={getPriorityColor(job.priority)}>
+                        <Badge variant={getPriorityVariant(job.priority || "média")}>
                           {job.priority}
                         </Badge>
-                        <Badge className={getStatusColor(job.status)}>
+                        <Badge variant={getStatusVariant(job.status)}>
                           {job.status}
                         </Badge>
                       </div>
                     </div>
                   ))}
+                  {jobPostings.filter(job => job.status === 'Ativa').length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">
+                      Nenhuma vaga ativa encontrada
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -397,9 +329,9 @@ export default function Recrutamento() {
                           {new Date(interview.scheduled_date).toLocaleDateString('pt-BR')} às {interview.scheduled_time}
                         </p>
                       </div>
-                      <Badge variant={interview.status === "Confirmada" ? "default" : "secondary"}>
-                        {interview.status}
-                      </Badge>
+                        <Badge variant={getStatusVariant(interview.status)}>
+                          {interview.status}
+                        </Badge>
                     </div>
                   ))}
                 </div>
@@ -417,11 +349,26 @@ export default function Recrutamento() {
                   <CardDescription>Gerencie suas vagas abertas e processo seletivo</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filtrar
-                  </Button>
-                  <Button size="sm">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Buscar vagas..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-64"
+                    />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="ativa">Ativa</SelectItem>
+                        <SelectItem value="pausada">Pausada</SelectItem>
+                        <SelectItem value="encerrada">Encerrada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={() => setJobPostingModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Vaga
                   </Button>
@@ -430,7 +377,7 @@ export default function Recrutamento() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {jobPostings.map((job) => (
+                {filteredJobPostings.map((job) => (
                   <div key={job.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -442,18 +389,40 @@ export default function Recrutamento() {
                           </span>
                           <span className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {job.location}
+                            {job.location || "Não informado"}
                           </span>
                           <span>{job.employment_type} • {job.level}</span>
                         </div>
+                        {job.description && (
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            {job.description}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={getPriorityColor(job.priority)}>
+                        <Badge variant={getPriorityVariant(job.priority || "média")}>
                           {job.priority}
                         </Badge>
-                        <Badge className={getStatusColor(job.status)}>
+                        <Badge variant={getStatusVariant(job.status)}>
                           {job.status}
                         </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingJob(job)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteJob(job)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     
@@ -466,17 +435,46 @@ export default function Recrutamento() {
                           <span>Publicada em {new Date(job.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Detalhes
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedJobForApplications(job.id);
+                            setApplicationModalOpen(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Nova Candidatura
                         </Button>
-                        <Button size="sm">
-                          Ver Candidatos
+                        <Button 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedJobForApplications(job.id);
+                            // Here you could navigate to a candidates view filtered by this job
+                          }}
+                        >
+                          Ver Candidatos ({jobApplications.filter(app => app.job_posting_id === job.id).length})
                         </Button>
                       </div>
                     </div>
                   </div>
                 ))}
+                {filteredJobPostings.length === 0 && (
+                  <div className="text-center py-12">
+                    <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma vaga encontrada</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {jobPostings.length === 0 
+                        ? "Crie sua primeira vaga para começar o processo de recrutamento."
+                        : "Tente ajustar os filtros para encontrar outras vagas."
+                      }
+                    </p>
+                    <Button onClick={() => setJobPostingModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Vaga
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -491,71 +489,131 @@ export default function Recrutamento() {
                   <CardDescription>Gerencie candidatos e acompanhe o processo seletivo</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Search className="h-4 w-4 mr-2" />
-                    Buscar
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filtrar
+                  <Input
+                    placeholder="Buscar candidatos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
+                  <Button onClick={() => setApplicationModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Candidatura
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {candidates.map((candidate) => (
-                  <div key={candidate.id} className="border rounded-lg p-4">
+                {filteredApplications.map((application) => (
+                  <div key={application.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex items-start space-x-4">
                         <Avatar>
                           <AvatarFallback>
-                            {candidate.name.split(' ').map(n => n[0]).join('')}
+                            {application.candidate_name?.split(' ').map(n => n[0]).join('') || 'C'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="font-semibold">{candidate.name}</h3>
+                          <h3 className="font-semibold">{application.candidate_name || 'Nome não informado'}</h3>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Candidato para {candidate.position}
+                            Vaga: {jobPostings.find(job => job.id === application.job_posting_id)?.title || 'Vaga não encontrada'}
                           </p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center">
                               <Mail className="h-4 w-4 mr-1" />
-                              {candidate.email}
+                              {application.candidate_email || 'Email não informado'}
                             </span>
                             <span className="flex items-center">
                               <Phone className="h-4 w-4 mr-1" />
-                              {candidate.phone}
+                              {application.candidate_phone || 'Telefone não informado'}
                             </span>
                             <span className="flex items-center">
                               <MapPin className="h-4 w-4 mr-1" />
-                              {candidate.location}
+                              {application.candidate_location || 'Localização não informada'}
                             </span>
                           </div>
                           <div className="mt-2">
                             <p className="text-sm">
-                              <span className="font-medium">Experiência:</span> {candidate.experience} • 
-                              <span className="font-medium ml-2">Etapa:</span> {candidate.stage}
+                              <span className="font-medium">Experiência:</span> {application.experience_years ? `${application.experience_years} anos` : 'Não informado'} • 
+                              <span className="font-medium ml-2">Etapa:</span> {application.current_stage || 'Análise inicial'}
                             </p>
-                            <div className="flex items-center mt-1">
-                              <span className="text-sm font-medium mr-2">Score:</span>
-                              <Progress value={candidate.score} className="w-20 h-2" />
-                              <span className="text-sm ml-2">{candidate.score}%</span>
-                            </div>
+                            {application.score && (
+                              <div className="flex items-center mt-1">
+                                <span className="text-sm font-medium mr-2">Score:</span>
+                                <Progress value={application.score} className="w-20 h-2" />
+                                <span className="text-sm ml-2">{application.score}%</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={getCandidateStatusColor(candidate.status)}>
-                          {candidate.status}
+                        <Badge variant={getStatusVariant(application.status)}>
+                          {application.status}
                         </Badge>
-                        <Button variant="outline" size="sm">
-                          Ver Perfil
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingApplication(application)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              // Create interview for this application
+                              setEditingInterview({
+                                id: '',
+                                company_id: '',
+                                job_application_id: application.id,
+                                interviewer_user_id: '',
+                                interview_type: 'RH',
+                                scheduled_date: '',
+                                scheduled_time: '',
+                                duration_minutes: 60,
+                                location_type: 'Presencial',
+                                meeting_link: '',
+                                notes: '',
+                                feedback: '',
+                                score: null,
+                                status: 'Agendada',
+                                created_by_user_id: '',
+                                created_at: '',
+                                updated_at: ''
+                              });
+                              setInterviewModalOpen(true);
+                            }}>
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Agendar Entrevista
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteApplication(application)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>
                 ))}
+                {filteredApplications.length === 0 && (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma candidatura encontrada</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {jobApplications.length === 0 
+                        ? "Ainda não há candidaturas. Elas aparecerão aqui conforme forem recebidas."
+                        : "Tente ajustar o termo de busca para encontrar outras candidaturas."
+                      }
+                    </p>
+                    <Button onClick={() => setApplicationModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Candidatura
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -564,17 +622,98 @@ export default function Recrutamento() {
         <TabsContent value="interviews" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Agenda de Entrevistas</CardTitle>
-              <CardDescription>Gerencie e acompanhe suas entrevistas</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Agenda de Entrevistas</CardTitle>
+                  <CardDescription>Gerencie e acompanhe suas entrevistas</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Buscar entrevistas..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
+                  <Button onClick={() => setInterviewModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agendar Entrevista
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Agenda de Entrevistas</h3>
-                <p className="text-muted-foreground mb-4">
-                  Visualize e gerencie todas as entrevistas agendadas.
-                </p>
-                <Button>Agendar Entrevista</Button>
+              <div className="space-y-4">
+                {filteredInterviews.map((interview) => (
+                  <div key={interview.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold">
+                          {interview.job_application?.candidate_name || 'Candidato não informado'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {interview.job_application?.job_posting?.title || 'Vaga não informada'} • {interview.interview_type}
+                        </p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {new Date(interview.scheduled_date).toLocaleDateString('pt-BR')}
+                          </span>
+                          <span className="flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {interview.scheduled_time} ({interview.duration_minutes}min)
+                          </span>
+                          <span className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {interview.location_type}
+                          </span>
+                        </div>
+                        {interview.notes && (
+                          <p className="text-sm mt-2 text-muted-foreground">
+                            <strong>Observações:</strong> {interview.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getStatusVariant(interview.status)}>
+                          {interview.status}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingInterview(interview)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteInterview(interview)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Cancelar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {filteredInterviews.length === 0 && (
+                  <div className="text-center py-12">
+                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma entrevista encontrada</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {interviewsData.length === 0 
+                        ? "Ainda não há entrevistas agendadas. Comece agendando uma entrevista."
+                        : "Tente ajustar o termo de busca para encontrar outras entrevistas."
+                      }
+                    </p>
+                    <Button onClick={() => setInterviewModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agendar Entrevista
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
