@@ -1571,6 +1571,77 @@ export type Database = {
           },
         ]
       }
+      circular_economy_assessments: {
+        Row: {
+          assessment_methodology: string | null
+          assessment_name: string
+          assessment_year: number
+          business_model_innovation: Json | null
+          circular_indicators: Json | null
+          circular_strategies: Json | null
+          circularity_rate: number | null
+          company_id: string
+          created_at: string
+          id: string
+          material_circular_input: number | null
+          material_flows: Json | null
+          material_input_total: number | null
+          status: string | null
+          updated_at: string
+          value_retention_strategies: string[] | null
+          waste_circular_output: number | null
+          waste_generation_total: number | null
+        }
+        Insert: {
+          assessment_methodology?: string | null
+          assessment_name: string
+          assessment_year: number
+          business_model_innovation?: Json | null
+          circular_indicators?: Json | null
+          circular_strategies?: Json | null
+          circularity_rate?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          material_circular_input?: number | null
+          material_flows?: Json | null
+          material_input_total?: number | null
+          status?: string | null
+          updated_at?: string
+          value_retention_strategies?: string[] | null
+          waste_circular_output?: number | null
+          waste_generation_total?: number | null
+        }
+        Update: {
+          assessment_methodology?: string | null
+          assessment_name?: string
+          assessment_year?: number
+          business_model_innovation?: Json | null
+          circular_indicators?: Json | null
+          circular_strategies?: Json | null
+          circularity_rate?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          material_circular_input?: number | null
+          material_flows?: Json | null
+          material_input_total?: number | null
+          status?: string | null
+          updated_at?: string
+          value_retention_strategies?: string[] | null
+          waste_circular_output?: number | null
+          waste_generation_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circular_economy_assessments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           annual_revenue: number | null
@@ -3830,6 +3901,80 @@ export type Database = {
           },
         ]
       }
+      esrs_disclosures: {
+        Row: {
+          assurance_level: string | null
+          company_id: string
+          created_at: string
+          data_sources: string[] | null
+          disclosure_content: string | null
+          disclosure_requirement: string
+          disclosure_title: string
+          double_materiality_assessment: boolean | null
+          esrs_standard: string
+          id: string
+          materiality_assessment: Json | null
+          policies_actions: Json | null
+          quantitative_data: Json | null
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          status: string | null
+          sustainability_matter: string
+          targets_measures: Json | null
+          updated_at: string
+        }
+        Insert: {
+          assurance_level?: string | null
+          company_id: string
+          created_at?: string
+          data_sources?: string[] | null
+          disclosure_content?: string | null
+          disclosure_requirement: string
+          disclosure_title: string
+          double_materiality_assessment?: boolean | null
+          esrs_standard: string
+          id?: string
+          materiality_assessment?: Json | null
+          policies_actions?: Json | null
+          quantitative_data?: Json | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          status?: string | null
+          sustainability_matter: string
+          targets_measures?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          assurance_level?: string | null
+          company_id?: string
+          created_at?: string
+          data_sources?: string[] | null
+          disclosure_content?: string | null
+          disclosure_requirement?: string
+          disclosure_title?: string
+          double_materiality_assessment?: boolean | null
+          esrs_standard?: string
+          id?: string
+          materiality_assessment?: Json | null
+          policies_actions?: Json | null
+          quantitative_data?: Json | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          status?: string | null
+          sustainability_matter?: string
+          targets_measures?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esrs_disclosures_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluation_criteria: {
         Row: {
           company_id: string
@@ -4117,6 +4262,87 @@ export type Database = {
         }
         Relationships: []
       }
+      financed_emissions: {
+        Row: {
+          asset_class: string
+          attribution_factor: number | null
+          company_id: string
+          counterparty_geography: string | null
+          counterparty_name: string | null
+          counterparty_sector: string | null
+          created_at: string
+          data_quality_score: number | null
+          data_sources: string[] | null
+          emissions_scope1: number | null
+          emissions_scope2: number | null
+          emissions_scope3: number | null
+          financed_emissions: number | null
+          id: string
+          methodology_used: string | null
+          outstanding_amount: number
+          pcaf_assessment_id: string | null
+          total_emissions: number | null
+          updated_at: string
+        }
+        Insert: {
+          asset_class: string
+          attribution_factor?: number | null
+          company_id: string
+          counterparty_geography?: string | null
+          counterparty_name?: string | null
+          counterparty_sector?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          data_sources?: string[] | null
+          emissions_scope1?: number | null
+          emissions_scope2?: number | null
+          emissions_scope3?: number | null
+          financed_emissions?: number | null
+          id?: string
+          methodology_used?: string | null
+          outstanding_amount: number
+          pcaf_assessment_id?: string | null
+          total_emissions?: number | null
+          updated_at?: string
+        }
+        Update: {
+          asset_class?: string
+          attribution_factor?: number | null
+          company_id?: string
+          counterparty_geography?: string | null
+          counterparty_name?: string | null
+          counterparty_sector?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          data_sources?: string[] | null
+          emissions_scope1?: number | null
+          emissions_scope2?: number | null
+          emissions_scope3?: number | null
+          financed_emissions?: number | null
+          id?: string
+          methodology_used?: string | null
+          outstanding_amount?: number
+          pcaf_assessment_id?: string | null
+          total_emissions?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financed_emissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financed_emissions_pcaf_assessment_id_fkey"
+            columns: ["pcaf_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "pcaf_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_submissions: {
         Row: {
           company_id: string
@@ -4148,6 +4374,91 @@ export type Database = {
             columns: ["form_id"]
             isOneToOne: false
             referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      framework_controls: {
+        Row: {
+          company_id: string
+          control_category: string | null
+          control_description: string | null
+          control_id: string
+          control_name: string
+          control_type: string | null
+          created_at: string
+          effectiveness_rating: string | null
+          evidence_files: string[] | null
+          framework_id: string | null
+          id: string
+          implementation_status: string | null
+          last_tested_date: string | null
+          management_standard_id: string | null
+          next_test_date: string | null
+          notes: string | null
+          responsible_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          control_category?: string | null
+          control_description?: string | null
+          control_id: string
+          control_name: string
+          control_type?: string | null
+          created_at?: string
+          effectiveness_rating?: string | null
+          evidence_files?: string[] | null
+          framework_id?: string | null
+          id?: string
+          implementation_status?: string | null
+          last_tested_date?: string | null
+          management_standard_id?: string | null
+          next_test_date?: string | null
+          notes?: string | null
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          control_category?: string | null
+          control_description?: string | null
+          control_id?: string
+          control_name?: string
+          control_type?: string | null
+          created_at?: string
+          effectiveness_rating?: string | null
+          evidence_files?: string[] | null
+          framework_id?: string | null
+          id?: string
+          implementation_status?: string | null
+          last_tested_date?: string | null
+          management_standard_id?: string | null
+          next_test_date?: string | null
+          notes?: string | null
+          responsible_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_controls_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "framework_controls_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "security_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "framework_controls_management_standard_id_fkey"
+            columns: ["management_standard_id"]
+            isOneToOne: false
+            referencedRelation: "management_standards"
             referencedColumns: ["id"]
           },
         ]
@@ -4895,6 +5206,83 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      ifrs_disclosures: {
+        Row: {
+          assurance_level: string | null
+          category: string
+          company_id: string
+          completeness_score: number | null
+          created_at: string
+          data_sources: string[] | null
+          disclosure_content: string | null
+          disclosure_id: string
+          disclosure_name: string
+          id: string
+          last_reviewed_at: string | null
+          qualitative_description: string | null
+          quality_score: number | null
+          quantitative_data: Json | null
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          requirement_type: string
+          reviewed_by_user_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          assurance_level?: string | null
+          category: string
+          company_id: string
+          completeness_score?: number | null
+          created_at?: string
+          data_sources?: string[] | null
+          disclosure_content?: string | null
+          disclosure_id: string
+          disclosure_name: string
+          id?: string
+          last_reviewed_at?: string | null
+          qualitative_description?: string | null
+          quality_score?: number | null
+          quantitative_data?: Json | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          requirement_type: string
+          reviewed_by_user_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assurance_level?: string | null
+          category?: string
+          company_id?: string
+          completeness_score?: number | null
+          created_at?: string
+          data_sources?: string[] | null
+          disclosure_content?: string | null
+          disclosure_id?: string
+          disclosure_name?: string
+          id?: string
+          last_reviewed_at?: string | null
+          qualitative_description?: string | null
+          quality_score?: number | null
+          quantitative_data?: Json | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          requirement_type?: string
+          reviewed_by_user_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ifrs_disclosures_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       indicator_alerts: {
         Row: {
@@ -6447,6 +6835,86 @@ export type Database = {
         }
         Relationships: []
       }
+      management_standards: {
+        Row: {
+          audit_findings_count: number | null
+          certificate_expiry_date: string | null
+          certificate_number: string | null
+          certification_body: string | null
+          certification_date: string | null
+          certification_status: string | null
+          company_id: string
+          created_at: string
+          id: string
+          implementation_date: string | null
+          implementation_status: string | null
+          improvement_opportunities_count: number | null
+          last_audit_date: string | null
+          maturity_level: string | null
+          next_audit_date: string | null
+          non_conformities_count: number | null
+          responsible_user_id: string | null
+          scope_description: string | null
+          standard_name: string
+          standard_version: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_findings_count?: number | null
+          certificate_expiry_date?: string | null
+          certificate_number?: string | null
+          certification_body?: string | null
+          certification_date?: string | null
+          certification_status?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          implementation_date?: string | null
+          implementation_status?: string | null
+          improvement_opportunities_count?: number | null
+          last_audit_date?: string | null
+          maturity_level?: string | null
+          next_audit_date?: string | null
+          non_conformities_count?: number | null
+          responsible_user_id?: string | null
+          scope_description?: string | null
+          standard_name: string
+          standard_version?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_findings_count?: number | null
+          certificate_expiry_date?: string | null
+          certificate_number?: string | null
+          certification_body?: string | null
+          certification_date?: string | null
+          certification_status?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          implementation_date?: string | null
+          implementation_status?: string | null
+          improvement_opportunities_count?: number | null
+          last_audit_date?: string | null
+          maturity_level?: string | null
+          next_audit_date?: string | null
+          non_conformities_count?: number | null
+          responsible_user_id?: string | null
+          scope_description?: string | null
+          standard_name?: string
+          standard_version?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "management_standards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_favorites: {
         Row: {
           company_id: string
@@ -6542,6 +7010,72 @@ export type Database = {
             columns: ["solution_id"]
             isOneToOne: false
             referencedRelation: "esg_solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_flows: {
+        Row: {
+          assessment_id: string | null
+          circular_strategy: string | null
+          circularity_potential: number | null
+          company_id: string
+          created_at: string
+          economic_value: number | null
+          environmental_impact: Json | null
+          flow_type: string
+          id: string
+          material_category: string
+          quantity: number
+          source_destination: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          circular_strategy?: string | null
+          circularity_potential?: number | null
+          company_id: string
+          created_at?: string
+          economic_value?: number | null
+          environmental_impact?: Json | null
+          flow_type: string
+          id?: string
+          material_category: string
+          quantity: number
+          source_destination?: string | null
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string | null
+          circular_strategy?: string | null
+          circularity_potential?: number | null
+          company_id?: string
+          created_at?: string
+          economic_value?: number | null
+          environmental_impact?: Json | null
+          flow_type?: string
+          id?: string
+          material_category?: string
+          quantity?: number
+          source_destination?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_flows_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "circular_economy_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_flows_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -7255,6 +7789,77 @@ export type Database = {
             columns: ["reports_to_employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pcaf_assessments: {
+        Row: {
+          assessment_name: string
+          asset_class_breakdown: Json | null
+          carbon_intensity: number | null
+          company_id: string
+          coverage_percentage: number | null
+          created_at: string
+          data_quality_score: number | null
+          geography_breakdown: Json | null
+          id: string
+          methodology_version: string | null
+          portfolio_type: string
+          quality_flags: Json | null
+          reporting_year: number
+          sector_breakdown: Json | null
+          total_financed_emissions: number | null
+          total_outstanding_amount: number | null
+          updated_at: string
+          verification_status: string | null
+        }
+        Insert: {
+          assessment_name: string
+          asset_class_breakdown?: Json | null
+          carbon_intensity?: number | null
+          company_id: string
+          coverage_percentage?: number | null
+          created_at?: string
+          data_quality_score?: number | null
+          geography_breakdown?: Json | null
+          id?: string
+          methodology_version?: string | null
+          portfolio_type: string
+          quality_flags?: Json | null
+          reporting_year: number
+          sector_breakdown?: Json | null
+          total_financed_emissions?: number | null
+          total_outstanding_amount?: number | null
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Update: {
+          assessment_name?: string
+          asset_class_breakdown?: Json | null
+          carbon_intensity?: number | null
+          company_id?: string
+          coverage_percentage?: number | null
+          created_at?: string
+          data_quality_score?: number | null
+          geography_breakdown?: Json | null
+          id?: string
+          methodology_version?: string | null
+          portfolio_type?: string
+          quality_flags?: Json | null
+          reporting_year?: number
+          sector_breakdown?: Json | null
+          total_financed_emissions?: number | null
+          total_outstanding_amount?: number | null
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcaf_assessments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -8738,6 +9343,80 @@ export type Database = {
         }
         Relationships: []
       }
+      sasb_metrics: {
+        Row: {
+          accounting_metric: string
+          company_id: string
+          created_at: string
+          data_source: string | null
+          disclosure_topic: string
+          id: string
+          industry_code: string
+          methodology: string | null
+          metric_code: string
+          metric_name: string
+          qualitative_description: string | null
+          quantitative_value: number | null
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          status: string | null
+          sustainability_dimension: string
+          unit_of_measure: string | null
+          updated_at: string
+          verification_status: string | null
+        }
+        Insert: {
+          accounting_metric: string
+          company_id: string
+          created_at?: string
+          data_source?: string | null
+          disclosure_topic: string
+          id?: string
+          industry_code: string
+          methodology?: string | null
+          metric_code: string
+          metric_name: string
+          qualitative_description?: string | null
+          quantitative_value?: number | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          status?: string | null
+          sustainability_dimension: string
+          unit_of_measure?: string | null
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Update: {
+          accounting_metric?: string
+          company_id?: string
+          created_at?: string
+          data_source?: string | null
+          disclosure_topic?: string
+          id?: string
+          industry_code?: string
+          methodology?: string | null
+          metric_code?: string
+          metric_name?: string
+          qualitative_description?: string | null
+          quantitative_value?: number | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          status?: string | null
+          sustainability_dimension?: string
+          unit_of_measure?: string | null
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sasb_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       satisfaction_surveys: {
         Row: {
           anonymous: boolean | null
@@ -8792,6 +9471,146 @@ export type Database = {
         }
         Relationships: []
       }
+      sbt_progress: {
+        Row: {
+          actual_emissions_scope1: number | null
+          actual_emissions_scope2: number | null
+          actual_emissions_scope3: number | null
+          company_id: string
+          created_at: string
+          explanatory_notes: string | null
+          id: string
+          on_track: boolean | null
+          progress_percentage: number | null
+          reporting_year: number
+          target_id: string
+          verification_status: string | null
+        }
+        Insert: {
+          actual_emissions_scope1?: number | null
+          actual_emissions_scope2?: number | null
+          actual_emissions_scope3?: number | null
+          company_id: string
+          created_at?: string
+          explanatory_notes?: string | null
+          id?: string
+          on_track?: boolean | null
+          progress_percentage?: number | null
+          reporting_year: number
+          target_id: string
+          verification_status?: string | null
+        }
+        Update: {
+          actual_emissions_scope1?: number | null
+          actual_emissions_scope2?: number | null
+          actual_emissions_scope3?: number | null
+          company_id?: string
+          created_at?: string
+          explanatory_notes?: string | null
+          id?: string
+          on_track?: boolean | null
+          progress_percentage?: number | null
+          reporting_year?: number
+          target_id?: string
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbt_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbt_progress_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "science_based_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      science_based_targets: {
+        Row: {
+          annual_reduction_rate: number | null
+          baseline_emissions: number
+          baseline_year: number
+          boundary_description: string | null
+          company_id: string
+          created_at: string
+          current_emissions: number | null
+          id: string
+          methodology: string | null
+          progress_percentage: number | null
+          sbti_commitment_date: string | null
+          sbti_validation_date: string | null
+          scope: string
+          target_description: string
+          target_emissions: number | null
+          target_reduction_percentage: number
+          target_type: string
+          target_year: number
+          temperature_alignment: number | null
+          updated_at: string
+          validation_status: string | null
+        }
+        Insert: {
+          annual_reduction_rate?: number | null
+          baseline_emissions: number
+          baseline_year: number
+          boundary_description?: string | null
+          company_id: string
+          created_at?: string
+          current_emissions?: number | null
+          id?: string
+          methodology?: string | null
+          progress_percentage?: number | null
+          sbti_commitment_date?: string | null
+          sbti_validation_date?: string | null
+          scope: string
+          target_description: string
+          target_emissions?: number | null
+          target_reduction_percentage: number
+          target_type: string
+          target_year: number
+          temperature_alignment?: number | null
+          updated_at?: string
+          validation_status?: string | null
+        }
+        Update: {
+          annual_reduction_rate?: number | null
+          baseline_emissions?: number
+          baseline_year?: number
+          boundary_description?: string | null
+          company_id?: string
+          created_at?: string
+          current_emissions?: number | null
+          id?: string
+          methodology?: string | null
+          progress_percentage?: number | null
+          sbti_commitment_date?: string | null
+          sbti_validation_date?: string | null
+          scope?: string
+          target_description?: string
+          target_emissions?: number | null
+          target_reduction_percentage?: number
+          target_type?: string
+          target_year?: number
+          temperature_alignment?: number | null
+          updated_at?: string
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "science_based_targets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sdg_alignment: {
         Row: {
           actions_taken: string | null
@@ -8835,6 +9654,71 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_frameworks: {
+        Row: {
+          certificate_expiry_date: string | null
+          certification_status: string | null
+          company_id: string
+          compliance_percentage: number | null
+          control_effectiveness: number | null
+          created_at: string
+          framework_name: string
+          framework_version: string | null
+          id: string
+          implementation_status: string | null
+          incident_count: number | null
+          last_assessment_date: string | null
+          next_assessment_date: string | null
+          responsible_user_id: string | null
+          risk_rating: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificate_expiry_date?: string | null
+          certification_status?: string | null
+          company_id: string
+          compliance_percentage?: number | null
+          control_effectiveness?: number | null
+          created_at?: string
+          framework_name: string
+          framework_version?: string | null
+          id?: string
+          implementation_status?: string | null
+          incident_count?: number | null
+          last_assessment_date?: string | null
+          next_assessment_date?: string | null
+          responsible_user_id?: string | null
+          risk_rating?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificate_expiry_date?: string | null
+          certification_status?: string | null
+          company_id?: string
+          compliance_percentage?: number | null
+          control_effectiveness?: number | null
+          created_at?: string
+          framework_name?: string
+          framework_version?: string | null
+          id?: string
+          implementation_status?: string | null
+          incident_count?: number | null
+          last_assessment_date?: string | null
+          next_assessment_date?: string | null
+          responsible_user_id?: string | null
+          risk_rating?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_frameworks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -9705,6 +10589,151 @@ export type Database = {
             columns: ["swot_analysis_id"]
             isOneToOne: false
             referencedRelation: "swot_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tcfd_disclosures: {
+        Row: {
+          company_id: string
+          created_at: string
+          disclosure_content: string | null
+          id: string
+          implementation_status: string | null
+          maturity_level: string | null
+          pillar: string
+          quantitative_metrics: Json | null
+          recommendation_id: string
+          recommendation_title: string
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          scenario_analysis: Json | null
+          status: string | null
+          supporting_evidence: string[] | null
+          time_horizon: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          disclosure_content?: string | null
+          id?: string
+          implementation_status?: string | null
+          maturity_level?: string | null
+          pillar: string
+          quantitative_metrics?: Json | null
+          recommendation_id: string
+          recommendation_title: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          scenario_analysis?: Json | null
+          status?: string | null
+          supporting_evidence?: string[] | null
+          time_horizon?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          disclosure_content?: string | null
+          id?: string
+          implementation_status?: string | null
+          maturity_level?: string | null
+          pillar?: string
+          quantitative_metrics?: Json | null
+          recommendation_id?: string
+          recommendation_title?: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          scenario_analysis?: Json | null
+          status?: string | null
+          supporting_evidence?: string[] | null
+          time_horizon?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tcfd_disclosures_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tnfd_disclosures: {
+        Row: {
+          biomes_ecosystems: string[] | null
+          company_id: string
+          created_at: string
+          disclosure_content: string | null
+          disclosure_id: string
+          disclosure_title: string
+          id: string
+          leap_approach: Json | null
+          nature_dependencies: Json | null
+          nature_impacts: Json | null
+          nature_opportunities: Json | null
+          nature_related_topic: string
+          nature_risks: Json | null
+          pillar: string
+          quantitative_metrics: Json | null
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          scenario_analysis: Json | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          biomes_ecosystems?: string[] | null
+          company_id: string
+          created_at?: string
+          disclosure_content?: string | null
+          disclosure_id: string
+          disclosure_title: string
+          id?: string
+          leap_approach?: Json | null
+          nature_dependencies?: Json | null
+          nature_impacts?: Json | null
+          nature_opportunities?: Json | null
+          nature_related_topic: string
+          nature_risks?: Json | null
+          pillar: string
+          quantitative_metrics?: Json | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          scenario_analysis?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          biomes_ecosystems?: string[] | null
+          company_id?: string
+          created_at?: string
+          disclosure_content?: string | null
+          disclosure_id?: string
+          disclosure_title?: string
+          id?: string
+          leap_approach?: Json | null
+          nature_dependencies?: Json | null
+          nature_impacts?: Json | null
+          nature_opportunities?: Json | null
+          nature_related_topic?: string
+          nature_risks?: Json | null
+          pillar?: string
+          quantitative_metrics?: Json | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          scenario_analysis?: Json | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tnfd_disclosures_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]

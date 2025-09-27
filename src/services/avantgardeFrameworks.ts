@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 // Camada 4: Frameworks de Vanguarda e Inteligência
 export interface AvantgardeFramework {
   id: string;
@@ -253,7 +255,66 @@ export interface BusinessModelInnovation {
 class AvantgardeFrameworksService {
   // SBTi Services
   async getScienceBasedTargets(): Promise<ScienceBasedTargets> {
-    return this.getDefaultSBTi();
+    const { data, error } = await supabase
+      .from('science_based_targets')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching SBT data:', error);
+      return this.getDefaultSBTi();
+    }
+
+    if (!data) {
+      return this.getDefaultSBTi();
+    }
+
+    // Get progress tracking
+    const { data: progressData } = await supabase
+      .from('sbt_progress')
+      .select('*')
+      .eq('target_id', data.id)
+      .order('reporting_year', { ascending: false });
+
+    return {
+      commitment_date: data.sbti_commitment_date || undefined,
+      targets_set_date: data.created_at.split('T')[0],
+      target_validation_status: data.validation_status as any,
+      near_term_targets: [{
+        id: data.id,
+        target_type: data.target_type as 'absolute' | 'intensity',
+        scope: data.scope as any,
+        target_description: data.target_description,
+        base_year_emissions: data.baseline_emissions,
+        target_year: data.target_year,
+        reduction_percentage: data.target_reduction_percentage,
+        target_emissions: data.target_emissions || 0,
+        methodology: data.methodology || '',
+        status: data.validation_status as any
+      }],
+      net_zero_targets: [],
+      flag_ship_targets: [],
+      sector_specific_guidance: data.boundary_description || '',
+      temperature_alignment: data.temperature_alignment === 1.5 ? '1.5°C' : 
+                            data.temperature_alignment === 2 ? '2°C' : 'Higher than 2°C',
+      base_year: data.baseline_year,
+      target_year_near_term: data.target_year,
+      target_year_net_zero: 2050,
+      scope1_reduction_target: data.target_reduction_percentage,
+      scope2_reduction_target: data.target_reduction_percentage,
+      scope3_reduction_target: data.target_reduction_percentage,
+      progress_tracking: progressData?.map(p => ({
+        reporting_year: p.reporting_year,
+        actual_emissions_scope1: p.actual_emissions_scope1,
+        actual_emissions_scope2: p.actual_emissions_scope2,
+        actual_emissions_scope3: p.actual_emissions_scope3,
+        progress_percentage: p.progress_percentage,
+        on_track: p.on_track,
+        explanatory_notes: p.explanatory_notes
+      })) || []
+    };
   }
 
   async validateSBTTargets(targets: SBTTarget[]): Promise<any> {
@@ -283,28 +344,61 @@ class AvantgardeFrameworksService {
     
     const progress = this.calculateSBTProgress(currentEmissions, targets, year);
     
-    // Mock implementation - would save to database when tables exist
-    console.log('SBT Progress tracked:', progress);
+    // Get the first target ID for linking
+    const targetId = targets.near_term_targets[0]?.id;
+    
+    if (targetId) {
+      // Save to database
+      const { error } = await supabase
+        .from('sbt_progress')
+        .insert({
+          target_id: targetId,
+          reporting_year: year,
+          actual_emissions_scope1: progress.actual_emissions_scope1,
+          actual_emissions_scope2: progress.actual_emissions_scope2,
+          actual_emissions_scope3: progress.actual_emissions_scope3,
+          progress_percentage: progress.progress_percentage,
+          on_track: progress.on_track,
+          explanatory_notes: progress.explanatory_notes
+        });
+
+      if (error) {
+        console.error('Error tracking SBT progress:', error);
+      }
+    }
+
     return progress;
   }
 
   // TNFD Services
   async getTNFDDisclosures(): Promise<TNFDDisclosure[]> {
-    return [
-      {
-        pillar: 'governance',
-        disclosure_recommendation: 'Board oversight of nature-related dependencies',
-        implementation_status: 'not_started',
-        disclosure_content: 'Not yet implemented',
-        nature_related_risks: [],
-        nature_related_opportunities: [],
-        dependencies_assessment: [],
-        impacts_assessment: [],
-        location_analysis: [],
-        scenario_analysis: [],
-        metrics_targets: []
-      }
-    ];
+    const { data, error } = await supabase
+      .from('tnfd_disclosures')
+      .select('*')
+      .order('pillar', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching TNFD disclosures:', error);
+      return [];
+    }
+
+    return data?.map(item => ({
+      pillar: item.pillar as 'governance' | 'strategy' | 'risk_management' | 'metrics_targets',
+      disclosure_recommendation: item.disclosure_title,
+      implementation_status: item.status === 'draft' ? 'not_started' : 'in_progress',
+      disclosure_content: item.disclosure_content || 'Not yet implemented',
+      nature_related_risks: item.nature_risks ? Object.values(item.nature_risks) as NatureRisk[] : [],
+      nature_related_opportunities: item.nature_opportunities ? Object.values(item.nature_opportunities) as NatureOpportunity[] : [],
+      dependencies_assessment: item.nature_dependencies ? Object.values(item.nature_dependencies) as NatureDependency[] : [],
+      impacts_assessment: item.nature_impacts ? Object.values(item.nature_impacts) as NatureImpact[] : [],
+      location_analysis: [],
+      scenario_analysis: item.scenario_analysis ? Object.values(item.scenario_analysis) as NatureScenario[] : [],
+      metrics_targets: item.quantitative_metrics ? Object.entries(item.quantitative_metrics).map(([metric, target]) => ({
+        metric,
+        target: target.toString(),
+        timeline: 'Annual'
+      })) : []
+    })) || [];
   }
 
   async conductLEAPAssessment(): Promise<any> {
@@ -344,7 +438,53 @@ class AvantgardeFrameworksService {
 
   // PCAF Services
   async getPCAFAssessment(): Promise<PCAFAssessment> {
-    return this.getDefaultPCAF();
+    const { data, error } = await supabase
+      .from('pcaf_assessments')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching PCAF assessment:', error);
+      return this.getDefaultPCAF();
+    }
+
+    if (!data) {
+      return this.getDefaultPCAF();
+    }
+
+    // Get financed emissions
+    const { data: emissionsData } = await supabase
+      .from('financed_emissions')
+      .select('*')
+      .eq('pcaf_assessment_id', data.id);
+
+    return {
+      portfolio_type: data.portfolio_type as any,
+      asset_class: 'Mixed',
+      financed_emissions: emissionsData?.map(e => ({
+        id: e.id,
+        counterparty_name: e.counterparty_name || 'Unknown',
+        sector: e.counterparty_sector || 'Unknown',
+        asset_class: e.asset_class,
+        outstanding_amount: e.outstanding_amount,
+        emission_factor: 0, // Calculated field
+        emissions_scope1: e.emissions_scope1,
+        emissions_scope2: e.emissions_scope2,
+        emissions_scope3: e.emissions_scope3,
+        total_financed_emissions: e.financed_emissions || 0,
+        attribution_factor: e.attribution_factor || 0,
+        data_quality_score: e.data_quality_score || 5,
+        reporting_year: new Date().getFullYear()
+      })) || [],
+      data_quality_scores: [],
+      attribution_methodology: data.methodology_version || 'PCAF Standard',
+      reporting_boundaries: '',
+      baseline_year: data.reporting_year,
+      target_setting: [],
+      engagement_strategy: { approach: '', priorities: [], timeline: '' }
+    };
   }
 
   async calculateFinancedEmissions(portfolioData: any[]): Promise<FinancedEmissions[]> {
@@ -370,8 +510,28 @@ class AvantgardeFrameworksService {
       };
     });
 
-    // Mock save to database - would use real database when tables exist
-    console.log('Financed emissions calculated:', financedEmissions);
+    // Save to database (user's company_id will be automatically set by RLS/triggers)
+    const insertData = financedEmissions.map(fe => ({
+      counterparty_name: fe.counterparty_name,
+      counterparty_sector: fe.sector,
+      asset_class: fe.asset_class,
+      outstanding_amount: fe.outstanding_amount,
+      emissions_scope1: fe.emissions_scope1,
+      emissions_scope2: fe.emissions_scope2,
+      emissions_scope3: fe.emissions_scope3,
+      financed_emissions: fe.total_financed_emissions,
+      attribution_factor: fe.attribution_factor,
+      data_quality_score: fe.data_quality_score
+    }));
+
+    const { error } = await supabase
+      .from('financed_emissions')
+      .insert(insertData);
+
+    if (error) {
+      console.error('Error saving financed emissions:', error);
+    }
+
     return financedEmissions;
   }
 
@@ -393,17 +553,84 @@ class AvantgardeFrameworksService {
 
   // Circular Economy Services
   async getCircularEconomyAssessment(): Promise<CircularEconomyAssessment> {
-    return this.getDefaultCircularEconomy();
+    const { data, error } = await supabase
+      .from('circular_economy_assessments')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching circular economy assessment:', error);
+      return this.getDefaultCircularEconomy();
+    }
+
+    if (!data) {
+      return this.getDefaultCircularEconomy();
+    }
+
+    // Get material flows
+    const { data: flowsData } = await supabase
+      .from('material_flows')
+      .select('*')
+      .eq('assessment_id', data.id);
+
+    return {
+      circular_design_principles: [],
+      material_flows: flowsData?.map(flow => ({
+        id: flow.id,
+        material_type: flow.material_category,
+        input_virgin: 0, // Would need to calculate from flow data
+        input_recycled: flow.flow_type === 'recycled' ? flow.quantity : 0,
+        input_renewable: 0,
+        output_product: flow.flow_type === 'output' ? flow.quantity : 0,
+        output_waste: flow.flow_type === 'waste' ? flow.quantity : 0,
+        output_recycled: flow.flow_type === 'recycled' ? flow.quantity : 0,
+        circularity_rate: flow.circularity_potential,
+        unit: flow.unit,
+        reporting_period: new Date().getFullYear().toString()
+      })) || [],
+      circular_indicators: data.circular_indicators ? Object.entries(data.circular_indicators).map(([name, value]) => ({
+        indicator_name: name,
+        indicator_type: 'circularity_rate' as const,
+        current_value: typeof value === 'number' ? value : 0,
+        target_value: 0,
+        unit: '%',
+        trend: 'stable' as const,
+        benchmark_comparison: 'average' as const
+      })) : [],
+      business_model_innovation: data.business_model_innovation ? Object.entries(data.business_model_innovation).map(([type, desc]) => ({
+        innovation_type: type as any,
+        description: desc.toString(),
+        implementation_status: 'concept' as const,
+        value_creation_mechanism: 'To be defined',
+        sustainability_benefits: [],
+        financial_impact: 0
+      })) : [],
+      circular_strategies: data.circular_strategies ? Object.entries(data.circular_strategies).map(([strategy, impl]) => ({
+        strategy,
+        implementation: impl.toString()
+      })) : [],
+      impact_measurement: [],
+      stakeholder_engagement: []
+    };
   }
 
   async assessCircularityRate(): Promise<number> {
-    const materialFlows = await this.getMaterialFlows();
-    
-    const totalInput = materialFlows.reduce((sum, flow) => 
-      sum + flow.input_virgin + flow.input_recycled + flow.input_renewable, 0);
-    
-    const circularInput = materialFlows.reduce((sum, flow) => 
-      sum + flow.input_recycled + flow.input_renewable, 0);
+    const { data: materialFlows, error } = await supabase
+      .from('material_flows')
+      .select('*')
+      .eq('flow_type', 'input');
+
+    if (error || !materialFlows) {
+      console.error('Error fetching material flows:', error);
+      return 0;
+    }
+
+    const totalInput = materialFlows.reduce((sum, flow) => sum + flow.quantity, 0);
+    const circularInput = materialFlows
+      .filter(flow => flow.circular_strategy && flow.circular_strategy !== 'refuse')
+      .reduce((sum, flow) => sum + flow.quantity, 0);
     
     return totalInput > 0 ? (circularInput / totalInput) * 100 : 0;
   }
