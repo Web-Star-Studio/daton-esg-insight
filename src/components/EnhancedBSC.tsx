@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Target, TrendingUp, Users, DollarSign, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formErrorHandler } from "@/utils/formErrorHandler";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,23 +57,40 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
 
   const queryClient = useQueryClient();
 
+  // Fetch available strategic maps if no strategicMapId is provided
+  const { data: strategicMaps } = useQuery({
+    queryKey: ["strategic-maps"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("strategic_maps")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !strategicMapId // Only fetch if no strategicMapId is provided
+  });
+
+  // Use the first available strategic map if none is provided
+  const activeStrategicMapId = strategicMapId || strategicMaps?.[0]?.id;
+
   // Fetch perspectives
   const { data: perspectives } = useQuery({
-    queryKey: ["bsc-perspectives", strategicMapId],
+    queryKey: ["bsc-perspectives", activeStrategicMapId],
     queryFn: async () => {
-      let query = supabase
+      if (!activeStrategicMapId) return [];
+      
+      const { data, error } = await supabase
         .from("bsc_perspectives")
         .select("*")
+        .eq("strategic_map_id", activeStrategicMapId)
         .order("order_index");
 
-      if (strategicMapId) {
-        query = query.eq("strategic_map_id", strategicMapId);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       return data as BSCPerspective[];
     },
+    enabled: !!activeStrategicMapId
   });
 
   // Fetch objectives
@@ -91,38 +109,39 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
 
   const createPerspectiveMutation = useMutation({
     mutationFn: async (perspectiveData: typeof newPerspective) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!activeStrategicMapId) {
+        throw new Error("Nenhum mapa estratégico disponível. Crie um mapa estratégico primeiro.");
+      }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
+      return formErrorHandler.createRecord(async () => {
+        // Get next order index
+        const maxOrder = perspectives?.reduce((max, p) => Math.max(max, p.order_index), 0) || 0;
 
-      if (!profile?.company_id) throw new Error("Company ID não encontrado");
+        const { data, error } = await supabase
+          .from("bsc_perspectives")
+          .insert([{
+            ...perspectiveData,
+            strategic_map_id: activeStrategicMapId,
+            order_index: maxOrder + 1
+          }])
+          .select()
+          .single();
 
-      // Get next order index
-      const maxOrder = perspectives?.reduce((max, p) => Math.max(max, p.order_index), 0) || 0;
-
-      const { error } = await supabase
-        .from("bsc_perspectives")
-        .insert([{
-          ...perspectiveData,
-          strategic_map_id: strategicMapId,
-          order_index: maxOrder + 1
-        }]);
-
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      }, { 
+        formType: 'Perspectiva BSC',
+        successMessage: 'Perspectiva criada com sucesso!'
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bsc-perspectives"] });
-      toast.success("Perspectiva criada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["strategic-maps"] });
       setIsCreatePerspectiveOpen(false);
       setNewPerspective({ name: "", description: "" });
     },
-    onError: () => {
-      toast.error("Erro ao criar perspectiva");
+    onError: (error: any) => {
+      formErrorHandler.handleError(error, { formType: 'Perspectiva BSC', operation: 'create' });
     },
   });
 
@@ -130,42 +149,53 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
     mutationFn: async (objectiveData: typeof newObjective) => {
       if (!selectedPerspective) throw new Error("Nenhuma perspectiva selecionada");
 
-      const { error } = await supabase
-        .from("bsc_objectives")
-        .insert([{
-          ...objectiveData,
-          perspective_id: selectedPerspective
-        }]);
+      return formErrorHandler.createRecord(async () => {
+        const { data, error } = await supabase
+          .from("bsc_objectives")
+          .insert([{
+            ...objectiveData,
+            perspective_id: selectedPerspective,
+            current_value: 0,
+            progress_percentage: 0,
+            status: 'active'
+          }])
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        return data;
+      }, { 
+        formType: 'Objetivo BSC',
+        successMessage: 'Objetivo criado com sucesso!'
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bsc-objectives"] });
-      toast.success("Objetivo criado com sucesso!");
       setIsCreateObjectiveOpen(false);
       setNewObjective({ name: "", description: "", target_value: 0, unit: "", weight: 1.0 });
       setSelectedPerspective('');
     },
-    onError: () => {
-      toast.error("Erro ao criar objetivo");
+    onError: (error: any) => {
+      formErrorHandler.handleError(error, { formType: 'Objetivo BSC', operation: 'create' });
     },
   });
 
   const deleteObjectiveMutation = useMutation({
     mutationFn: async (objectiveId: string) => {
-      const { error } = await supabase
-        .from("bsc_objectives")
-        .delete()
-        .eq("id", objectiveId);
+      return formErrorHandler.handleFormSubmission(async () => {
+        const { error } = await supabase
+          .from("bsc_objectives")
+          .delete()
+          .eq("id", objectiveId);
 
-      if (error) throw error;
+        if (error) throw error;
+      }, { formType: 'Objetivo BSC', operation: 'delete' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bsc-objectives"] });
-      toast.success("Objetivo removido com sucesso!");
     },
-    onError: () => {
-      toast.error("Erro ao remover objetivo");
+    onError: (error: any) => {
+      formErrorHandler.handleError(error, { formType: 'Objetivo BSC', operation: 'delete' });
     },
   });
 
@@ -235,18 +265,38 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
 
   return (
     <div className="space-y-6">
+      {/* Show message if no strategic maps available */}
+      {!activeStrategicMapId && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="flex items-center gap-3 p-4">
+            <Target className="h-5 w-5 text-amber-600" />
+            <div>
+              <p className="font-medium text-amber-800">Nenhum Mapa Estratégico Disponível</p>
+              <p className="text-sm text-amber-700">
+                Para criar perspectivas BSC, você precisa primeiro criar um Mapa Estratégico na aba "Mapas".
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Balanced Scorecard</h3>
           <p className="text-sm text-muted-foreground">
             Gerencie perspectivas e objetivos estratégicos
+            {activeStrategicMapId && strategicMaps?.[0] && (
+              <span className="block mt-1">
+                Mapa atual: <span className="font-medium">{strategicMaps.find(m => m.id === activeStrategicMapId)?.name || "Mapa Padrão"}</span>
+              </span>
+            )}
           </p>
         </div>
         
         <div className="flex gap-2">
           <Dialog open={isCreatePerspectiveOpen} onOpenChange={setIsCreatePerspectiveOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" disabled={!activeStrategicMapId}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Perspectiva
               </Button>
@@ -287,7 +337,7 @@ export default function EnhancedBSC({ strategicMapId }: EnhancedBSCProps) {
 
           <Dialog open={isCreateObjectiveOpen} onOpenChange={setIsCreateObjectiveOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={!activeStrategicMapId || !perspectives?.length}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Objetivo
               </Button>

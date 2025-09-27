@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Target, TrendingUp, Users, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formErrorHandler } from "@/utils/formErrorHandler";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,31 +50,27 @@ export default function PlanejamentoEstrategico() {
   });
 
   const handleCreateMap = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+    return formErrorHandler.createRecord(async () => {
+      const { profile } = await formErrorHandler.checkAuth();
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error("Company ID não encontrado");
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("strategic_maps")
-        .insert([{ ...newMapData, company_id: profile.company_id }]);
+        .insert([{ 
+          ...newMapData, 
+          company_id: profile.company_id 
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success("Mapa estratégico criado com sucesso!");
       setIsCreateMapOpen(false);
       setNewMapData({ name: "", description: "" });
-    } catch (error) {
-      toast.error("Erro ao criar mapa estratégico");
-      console.error(error);
-    }
+      return data;
+    }, { 
+      formType: 'Mapa Estratégico',
+      successMessage: 'Mapa estratégico criado com sucesso!'
+    });
   };
 
   if (isLoading) {
@@ -183,7 +180,7 @@ export default function PlanejamentoEstrategico() {
         </TabsContent>
 
         <TabsContent value="bsc" className="space-y-4">
-          <EnhancedBSC />
+          <EnhancedBSC strategicMapId={strategicMaps?.[0]?.id} />
         </TabsContent>
 
         <TabsContent value="swot" className="space-y-4">
