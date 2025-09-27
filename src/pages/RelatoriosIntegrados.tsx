@@ -15,14 +15,20 @@ import {
   Edit,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  Settings
 } from "lucide-react";
 import { getIntegratedReports } from "@/services/integratedReports";
 import { getESGDashboard } from "@/services/esg";
+import { ComplianceFrameworkSelector } from "@/components/ComplianceFrameworkSelector";
+import { NormsComplianceTracker } from "@/components/NormsComplianceTracker";
+import { FrameworkReportingTemplates } from "@/components/FrameworkReportingTemplates";
 
 
 export default function RelatoriosIntegrados() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>([]);
 
   const { data: reports } = useQuery({
     queryKey: ['integrated-reports'],
@@ -71,9 +77,11 @@ export default function RelatoriosIntegrados() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard">Dashboard ESG</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="compliance">Conformidade</TabsTrigger>
+          <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -346,25 +354,19 @@ export default function RelatoriosIntegrados() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="compliance" className="space-y-6">
+          <NormsComplianceTracker selectedFrameworks={selectedFrameworks} />
+        </TabsContent>
+
+        <TabsContent value="frameworks" className="space-y-6">
+          <ComplianceFrameworkSelector 
+            onFrameworksSelect={setSelectedFrameworks}
+            selectedFrameworks={selectedFrameworks}
+          />
+        </TabsContent>
+
         <TabsContent value="templates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Templates de Relatórios</CardTitle>
-              <CardDescription>Modelos padronizados para relatórios ESG</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Templates</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para templates de relatórios
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá templates GRI, SASB, TCFD e Relatório Integrado
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <FrameworkReportingTemplates selectedFrameworks={selectedFrameworks} />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
