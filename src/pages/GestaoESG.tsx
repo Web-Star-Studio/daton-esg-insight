@@ -55,9 +55,9 @@ const CircularProgress = ({ value, size = 200 }: { value: number; size?: number 
           strokeLinecap="round"
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-foreground">{value}</span>
-        <span className="text-sm text-muted-foreground">Score ESG</span>
+      <div className="absolute text-center">
+        <div className="text-3xl font-bold">{value}</div>
+        <div className="text-sm text-muted-foreground">ESG Score</div>
       </div>
     </div>
   );
@@ -77,14 +77,28 @@ const KPICard = ({ kpi, pillar, navigate }: { kpi: any; pillar: string; navigate
   };
 
   const getNavigationPath = (key: string) => {
-    switch (key) {
-      case 'total_emissions':
-        return '/dashboard-ghg';
-      case 'recycling_rate':
-        return '/residuos';
-      case 'license_compliance':
-        return '/licenciamento';
-      case 'goals_on_track':
+    const routeMap: { [key: string]: string } = {
+      'total_emissions': '/inventario-gee',
+      'recycling_rate': '/residuos',
+      'license_compliance': '/licenciamento',
+      'goals_on_track': '/metas',
+      'policy_compliance': '/compliance',
+      'board_diversity': '/configuracao',
+      'employee_satisfaction': '/configuracao',
+      'training_hours': '/configuracao',
+      'diversity_index': '/configuracao',
+      'compliance_rate': '/compliance',
+      'audit_score': '/auditoria',
+      'transparency_index': '/relatorios',
+      'energy_efficiency': '/inventario-gee'
+    };
+
+    switch(pillar) {
+      case 'environmental':
+        return '/inventario-gee';
+      case 'social':
+        return '/configuracao';
+      case 'governance':
         return '/metas';
       default:
         return '#';
@@ -104,14 +118,20 @@ const KPICard = ({ kpi, pillar, navigate }: { kpi: any; pillar: string; navigate
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm text-muted-foreground">{kpi.label}</p>
-            <p className="text-2xl font-semibold">
-              {kpi.value}{kpi.unit && kpi.unit !== 'índice' && ` ${kpi.unit}`}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-2xl font-bold">{kpi.value}</span>
+              <span className="text-sm text-muted-foreground">{kpi.unit}</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center text-xs">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {getTrendIcon(kpi.trend)}
-              <span className="ml-1">{getTrendText(kpi.trend)}</span>
+              <span className={cn(
+                "text-sm font-medium",
+                kpi.trend > 0 ? "text-green-600" : kpi.trend < 0 ? "text-red-600" : "text-muted-foreground"
+              )}>
+                {getTrendText(kpi.trend)}
+              </span>
             </div>
             {hasNavigation && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
           </div>
@@ -251,14 +271,20 @@ export default function GestaoESG() {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">{kpi.label}</p>
-              <p className="text-2xl font-semibold">
-                {kpi.value}{kpi.unit && kpi.unit !== 'índice' && ` ${kpi.unit}`}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-2xl font-bold">{kpi.value}</span>
+                <span className="text-sm text-muted-foreground">{kpi.unit}</span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center text-xs">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {getTrendIcon(kpi.trend)}
-                <span className="ml-1">{getTrendText(kpi.trend)}</span>
+                <span className={cn(
+                  "text-sm font-medium",
+                  kpi.trend > 0 ? "text-green-600" : kpi.trend < 0 ? "text-red-600" : "text-muted-foreground"
+                )}>
+                  {getTrendText(kpi.trend)}
+                </span>
               </div>
               {hasNavigation && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
             </div>
@@ -290,7 +316,7 @@ export default function GestaoESG() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => refetch()} 
+                onClick={() => refetch()}
                 className="ml-2"
               >
                 Tentar novamente
@@ -299,261 +325,58 @@ export default function GestaoESG() {
           </Alert>
         )}
 
-        {/* Enhanced AI Systems */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        {/* Overall ESG Score */}
+        <Card className="col-span-full">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Score ESG Geral</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <CircularProgress value={displayData.overall_esg_score} />
+          </CardContent>
+        </Card>
+
+        {/* Pillar Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <PillarCard 
+            title="🌱 Ambiental" 
+            data={displayData.environmental} 
+            color="green" 
+            pillar="environmental"
+            navigate={navigate}
+          />
+          <PillarCard 
+            title="👥 Social" 
+            data={displayData.social} 
+            color="blue" 
+            pillar="social"
+            navigate={navigate}
+          />
+          <PillarCard 
+            title="⚖️ Governança" 
+            data={displayData.governance} 
+            color="purple" 
+            pillar="governance"
+            navigate={navigate}
+          />
+        </div>
+
+        {/* Smart Components */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <IntelligentAlertsSystem />
+          <PredictiveDashboard />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ContextualInsightsPanel />
           <PredictiveAlertsWidget />
-          <SmartRecommendationsEngine />
         </div>
 
-        {/* Intelligent Alerts */}
-        <IntelligentAlertsSystem />
+        <SmartRecommendationsEngine />
 
-        {/* Predictive Insights */}
-        <PredictiveDashboard />
-
-        {/* Central ESG Score */}
-        <div className="flex justify-center">
-          <Card className="w-full max-w-md">
-            <CardContent className="p-8 text-center">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-muted-foreground">Score ESG Geral</h3>
-                  <div className="flex justify-center my-6">
-                    <CircularProgress value={displayData.overall_esg_score} size={180} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Baseado em métricas ambientais, sociais e de governança
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ESG Pillars Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="relative overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-green-600">Ambiental</h3>
-                  <p className="text-3xl font-bold mt-2">(E)</p>
-                </div>
-                <div className="text-right">
-                  <Badge className="bg-green-500 text-white text-lg px-3 py-1">
-                    {displayData.environmental.score}/100
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-blue-600">Social</h3>
-                  <p className="text-3xl font-bold mt-2">(S)</p>
-                </div>
-                <div className="text-right">
-                  <Badge className="bg-blue-500 text-white text-lg px-3 py-1">
-                    {displayData.social.score}/100
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="relative overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-purple-600">Governança</h3>
-                  <p className="text-3xl font-bold mt-2">(G)</p>
-                </div>
-                <div className="text-right">
-                  <Badge className="bg-green-500 text-white text-lg px-3 py-1">
-                    87/100
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Detailed Metrics by Pillar */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Environmental Metrics */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-green-600 border-b border-green-200 pb-2">
-              Métricas Ambientais
-            </h3>
-            <div className="space-y-3">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Emissões</p>
-                      <p className="text-2xl font-bold">5.218</p>
-                      <p className="text-xs text-muted-foreground">tCO₂e</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center text-xs text-red-600">
-                        <TrendingDown className="h-3 w-3 mr-1" />
-                        12%
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Taxa de Reciclagem</p>
-                      <p className="text-2xl font-bold">0%</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Social Metrics */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-blue-600 border-b border-blue-200 pb-2">
-              Métricas Sociais
-            </h3>
-            <div className="space-y-3">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Taxa de Rotatividade</p>
-                      <p className="text-2xl font-bold">12%</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Horas de Treinamento</p>
-                      <p className="text-2xl font-bold">24h</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center text-xs text-green-600">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        +3%
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Governance Metrics */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold text-purple-600 border-b border-purple-200 pb-2">
-              Métricas de Governança
-            </h3>
-            <div className="space-y-3">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-muted-foreground">% Metas no Prazo</p>
-                      <p className="text-2xl font-bold">100%</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center text-xs text-green-600">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        +5%
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Conformidade com Políticas</p>
-                      <p className="text-2xl font-bold">95%</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Sem alteração</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-
-        {/* Insights and Recommendations */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-600">
-                <TrendingUp className="h-5 w-5" />
-                Pontos Fortes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
-                  Governança com score de 87/100, acima da média do setor
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
-                  100% das metas estão dentro do prazo estabelecido
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></span>
-                  Redução de 12% nas emissões em relação ao período anterior
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-600">
-                <AlertCircle className="h-5 w-5" />
-                Oportunidades de Melhoria
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0"></span>
-                  Implementar programa de reciclagem para aumentar taxa de 0%
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0"></span>
-                  Expandir horas de treinamento para superar média do setor
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-2 flex-shrink-0"></span>
-                  Diversificar matriz energética com fontes renováveis
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Methodology Information */}
-        <Card className="bg-muted/30">
+        {/* ESG Methodology Card */}
+        <Card>
           <CardHeader>
-            <CardTitle>Metodologia de Cálculo ESG</CardTitle>
+            <CardTitle>Metodologia ESG</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -564,9 +387,9 @@ export default function GestaoESG() {
                 </div>
                 <ul className="text-sm text-muted-foreground ml-6 space-y-1">
                   <li>• Gestão de Emissões GEE</li>
-                  <li>• Eficiência no Uso de Recursos</li>
-                  <li>• Conformidade Ambiental</li>
+                  <li>• Eficiência Energética</li>
                   <li>• Gestão de Resíduos</li>
+                  <li>• Licenciamento Ambiental</li>
                 </ul>
               </div>
               <div className="space-y-2">
