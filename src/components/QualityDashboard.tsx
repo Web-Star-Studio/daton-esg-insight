@@ -126,7 +126,7 @@ const QualityDashboard = () => {
   const metrics = {
     totalNonConformities: dashboard?.metrics?.totalNCs || 0,
     openNonConformities: dashboard?.metrics?.openNCs || 0,
-    criticalRisks: dashboard?.metrics?.highRisks || 0,
+    criticalRisks: dashboard?.metrics?.criticalRisks || 0,
     totalRisks: dashboard?.metrics?.totalRisks || 0,
     activeActionPlans: dashboard?.metrics?.actionPlans || 0,
     overdueActions: dashboard?.metrics?.overdueActions || 0,

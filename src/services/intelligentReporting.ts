@@ -46,13 +46,13 @@ class IntelligentReportingService {
       
       // Generate quality-related insights
       if (reportType === 'quality' || reportType === 'esg') {
-        if (qualityMetrics.criticalIssues > 0) {
+        if (qualityMetrics.criticalRisks > 0) {
           insights.push({
             id: `quality-critical-${Date.now()}`,
             type: 'warning',
             priority: 'high',
             title: 'Questões Críticas de Qualidade Identificadas',
-            description: `${qualityMetrics.criticalIssues} questões críticas requerem atenção imediata no relatório`,
+            description: `${qualityMetrics.criticalRisks} questões críticas requerem atenção imediata no relatório`,
             data_source: 'quality_system',
             confidence: 95,
             actionable: true,

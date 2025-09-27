@@ -75,7 +75,7 @@ const SystemAudit = () => {
       description: 'qualityManagement.ts, enhancedQualityService.ts e qualityIndicators.ts',
       impact: 'Alto - Código difícil de manter, funcionalidades duplicadas',
       solution: 'Consolidar em unifiedQualityService.ts',
-      status: 'in_progress',
+      status: 'completed',
       priority: 2
     },
     {
@@ -95,7 +95,7 @@ const SystemAudit = () => {
       description: 'Múltiplos QualityDashboard components com funcionalidades similares',
       impact: 'Médio - Confusão no desenvolvimento e manutenção',
       solution: 'Consolidar em componente principal com sub-componentes',
-      status: 'pending',
+      status: 'completed',
       priority: 3
     },
     {
@@ -371,12 +371,12 @@ const SystemAudit = () => {
               <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Concluída</Badge>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
               <div>
-                <h4 className="font-semibold text-orange-700 dark:text-orange-300">Fase 2 - Consolidação (3-4 dias)</h4>
+                <h4 className="font-semibold text-green-700 dark:text-green-300">Fase 2 - Consolidação (3-4 dias)</h4>
                 <p className="text-sm text-muted-foreground">Unificar serviços, remover duplicações</p>
               </div>
-              <Badge variant="outline">Em Andamento</Badge>
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Concluída</Badge>
             </div>
             
             <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">

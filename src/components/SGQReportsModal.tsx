@@ -116,7 +116,7 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>Total de NCs: <strong>{dashboard?.metrics.totalNCs || 0}</strong></div>
               <div>NCs Abertas: <strong>{dashboard?.metrics.openNCs || 0}</strong></div>
-              <div>Riscos Críticos: <strong>{dashboard?.metrics.highRisks || 0}</strong></div>
+              <div>Riscos Críticos: <strong>{dashboard?.metrics.criticalRisks || 0}</strong></div>
               <div>Ações em Atraso: <strong>{dashboard?.metrics.overdueActions || 0}</strong></div>
             </div>
           </div>
