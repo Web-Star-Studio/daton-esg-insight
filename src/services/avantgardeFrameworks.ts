@@ -360,7 +360,7 @@ class AvantgardeFrameworksService {
           progress_percentage: progress.progress_percentage,
           on_track: progress.on_track,
           explanatory_notes: progress.explanatory_notes
-        });
+        } as any);
 
       if (error) {
         console.error('Error tracking SBT progress:', error);
@@ -526,7 +526,7 @@ class AvantgardeFrameworksService {
 
     const { error } = await supabase
       .from('financed_emissions')
-      .insert(insertData);
+      .insert(insertData as any);
 
     if (error) {
       console.error('Error saving financed emissions:', error);
