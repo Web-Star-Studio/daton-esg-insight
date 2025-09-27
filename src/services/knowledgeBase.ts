@@ -236,21 +236,34 @@ class KnowledgeBaseService {
   }
 
   // Bookmarks methods
-  async getBookmarkedArticles() {
+  async getBookmarkedArticles(): Promise<KnowledgeArticle[]> {
     try {
-      // Mock bookmarked articles
-      return [
-        {
-          id: '1',
-          title: 'Manual de Qualidade ISO 9001',
-          content: 'Conteúdo do manual de qualidade...',
-          category: 'Qualidade',
-          tags: ['ISO', 'Qualidade', 'Manual'],
-          view_count: 342,
-          created_at: '2024-01-15T10:30:00Z',
-          author_user_id: 'user1'
-        }
-      ];
+      // Get current user's bookmarked articles
+      const { profile } = await formErrorHandler.checkAuth();
+      
+      const { data, error } = await supabase
+        .from('article_bookmarks')
+        .select('article_id')
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      // Get the actual articles
+      const articleIds = data.map(bookmark => bookmark.article_id);
+      
+      const { data: articles, error: articlesError } = await supabase
+        .from('knowledge_articles')
+        .select('*')
+        .in('id', articleIds);
+
+      if (articlesError) throw articlesError;
+
+      return articles || [];
     } catch (error) {
       console.error('Error fetching bookmarked articles:', error);
       return [];
@@ -259,27 +272,58 @@ class KnowledgeBaseService {
 
   async isArticleBookmarked(articleId: string): Promise<boolean> {
     try {
-      // Mock check bookmark status
-      return Math.random() > 0.5; // Random for demo
+      const { profile } = await formErrorHandler.checkAuth();
+      
+      const { data, error } = await supabase
+        .from('article_bookmarks')
+        .select('id')
+        .eq('article_id', articleId)
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw error;
+      }
+      
+      return !!data;
     } catch (error) {
+      console.error('Error checking bookmark status:', error);
       return false;
     }
   }
 
   async addArticleBookmark(articleId: string) {
-    try {
-      // Mock add bookmark
-      console.log(`Adding bookmark for article ${articleId}`);
-    } catch (error) {
-      console.error('Error adding article bookmark:', error);
-      throw error;
-    }
+    return formErrorHandler.createRecord(async () => {
+      const { profile } = await formErrorHandler.checkAuth();
+      
+      const { error } = await supabase
+        .from('article_bookmarks')
+        .insert({
+          article_id: articleId,
+          user_id: profile.id,
+          company_id: profile.company_id
+        });
+
+      if (error) throw error;
+    }, { 
+      formType: 'Favorito',
+      successMessage: 'Artigo adicionado aos favoritos!'
+    });
   }
 
   async removeArticleBookmark(articleId: string) {
     try {
-      // Mock remove bookmark
-      console.log(`Removing bookmark for article ${articleId}`);
+      const { profile } = await formErrorHandler.checkAuth();
+      
+      const { error } = await supabase
+        .from('article_bookmarks')
+        .delete()
+        .eq('article_id', articleId)
+        .eq('user_id', profile.id)
+        .eq('company_id', profile.company_id);
+
+      if (error) throw error;
     } catch (error) {
       console.error('Error removing article bookmark:', error);
       throw error;

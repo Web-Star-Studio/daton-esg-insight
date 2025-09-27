@@ -7,27 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Bookmark, Eye, Edit, Calendar, User } from "lucide-react";
-import { knowledgeBaseService } from "@/services/knowledgeBase";
+import { knowledgeBaseService, type KnowledgeArticle } from "@/services/knowledgeBase";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArticleBookmarkButton } from "./ArticleBookmarkButton";
 
-interface BookmarkedArticle {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  view_count: number;
-  created_at: string;
-  author_user_id: string;
-}
-
 interface BookmarkedArticlesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onViewArticle: (article: BookmarkedArticle) => void;
-  onEditArticle?: (article: BookmarkedArticle) => void;
+  onViewArticle: (article: KnowledgeArticle) => void;
+  onEditArticle?: (article: KnowledgeArticle) => void;
 }
 
 export function BookmarkedArticlesModal({ 
@@ -94,7 +83,7 @@ export function BookmarkedArticlesModal({
             </div>
           ) : (
             <div className="space-y-4">
-              {bookmarkedArticles.map((article: BookmarkedArticle) => (
+              {bookmarkedArticles.map((article: KnowledgeArticle) => (
                 <Card key={article.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex justify-between items-start">
