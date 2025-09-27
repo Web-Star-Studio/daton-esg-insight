@@ -69,11 +69,11 @@ export const AIProcessingStatusWidget: React.FC = () => {
   }
 
   return (
-    <Card className="shadow-card">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-medium">Análise IA de Documentos</CardTitle>
-        <Wand2 className="h-5 w-5 text-primary" />
-      </CardHeader>
+    <Card className="p-8 h-full">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-semibold">Análise IA de Documentos</h3>
+        <Wand2 className="h-6 w-6 text-primary" />
+      </div>
       <CardContent className="space-y-4">
         {isLoading ? (
           <div className="space-y-3">

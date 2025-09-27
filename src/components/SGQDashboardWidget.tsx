@@ -81,30 +81,28 @@ const SGQDashboardWidget = () => {
   const overdueActions = data?.metrics?.overdueActions || 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-        <CardTitle className="flex items-center space-x-2">
-          <Activity className="h-5 w-5 text-primary" />
-          <span>Sistema de Gestão da Qualidade</span>
-          {hasError && (
-            <Badge variant="outline" className="text-xs ml-2">
-              Modo Offline
-            </Badge>
-          )}
-        </CardTitle>
-            <CardDescription>Visão geral do SGQ da organização</CardDescription>
-          </div>
-          <Link to="/quality-dashboard">
-            <Button variant="outline" size="sm">
-              Ver Detalhes
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-          </Link>
+    <Card className="p-8 h-full">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-semibold flex items-center gap-3">
+            <Activity className="h-6 w-6 text-primary" />
+            Sistema de Gestão da Qualidade
+            {hasError && (
+              <Badge variant="outline" className="text-xs">
+                Modo Offline
+              </Badge>
+            )}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-2">Visão geral do SGQ da organização</p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        <Link to="/quality-dashboard">
+          <Button variant="outline" size="sm">
+            Ver Detalhes
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </Link>
+      </div>
+      <div className="space-y-4">
         {/* Quality Score */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -183,7 +181,7 @@ const SGQDashboardWidget = () => {
             </Button>
           </Link>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };

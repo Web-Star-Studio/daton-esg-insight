@@ -31,7 +31,9 @@ import {
   AlertCircle,
   Zap,
   Settings,
-  Bell
+  Bell,
+  Factory,
+  Recycle
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { getESGDashboard } from "@/services/esg"
@@ -75,16 +77,19 @@ const Index = () => {
   const isLoading = esgLoading || emissionsLoading || goalsLoading || licensesLoading || wasteLoading
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-10">
         {/* Cabeçalho da página */}
+        <div className="mb-12 text-center">
+          <h1 className="text-5xl font-bold text-foreground mb-4">Centro de Comando ESG</h1>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Dashboard inteligente com insights em tempo real e alertas preditivos para monitoramento ESG
+          </p>
+        </div>
+
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Centro de Comando ESG</h1>
-              <p className="text-muted-foreground">
-                Dashboard inteligente com insights em tempo real e alertas preditivos
-              </p>
-            </div>
+          <div className="flex items-center justify-between mb-8">
+            <div></div>
             <div className="flex items-center space-x-2">
               <Badge variant={isOptimized ? 'default' : 'secondary'} className="text-xs">
                 <Zap className="h-3 w-3 mr-1" />
@@ -99,8 +104,8 @@ const Index = () => {
         </div>
 
         {/* Tabs para diferentes visões do dashboard */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="overview" className="space-y-10">
+          <TabsList className="grid w-full grid-cols-5 mb-10">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -124,168 +129,176 @@ const Index = () => {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-10">
 
         {/* Primeira Linha - Cards de Resumo Rápido */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {/* Card Próximas Metas */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Metas Ativas</CardTitle>
-              <Flag className="h-5 w-5 text-accent" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {isLoading ? (
-                <Skeleton className="h-4 w-3/4" />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {goalStats?.activeGoals || 0} metas ativas em andamento
-                </p>
-              )}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Progresso Médio</span>
+          <Card className="p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Metas Ativas</p>
+                <p className="text-3xl font-bold text-foreground">
                   {isLoading ? (
-                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-8 w-16" />
                   ) : (
-                    <span className="text-foreground font-medium">{goalStats?.averageProgress || 0}%</span>
+                    goalStats?.activeGoals || 0
                   )}
-                </div>
-                <Progress value={goalStats?.averageProgress || 0} className="h-2" />
+                </p>
               </div>
-            </CardContent>
+              <Flag className="h-10 w-10 text-primary" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Progresso Médio</span>
+                {isLoading ? (
+                  <Skeleton className="h-4 w-12" />
+                ) : (
+                  <span className="text-foreground font-medium">{goalStats?.averageProgress || 0}%</span>
+                )}
+              </div>
+              <Progress value={goalStats?.averageProgress || 0} className="h-3" />
+            </div>
           </Card>
 
           {/* Card Alertas Ativos */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Licenças Próximas ao Vencimento</CardTitle>
-              <AlertTriangle className="h-5 w-5 text-warning" />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-4 w-3/4" />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {licenseStats?.upcoming || 0} licenças vencendo em 90 dias
+          <Card className="p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Licenças Vencendo</p>
+                <p className="text-3xl font-bold text-warning">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    licenseStats?.upcoming || 0
+                  )}
                 </p>
-              )}
-            </CardContent>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Próximos 90 dias
+                </p>
+              </div>
+              <AlertTriangle className="h-10 w-10 text-warning" />
+            </div>
           </Card>
 
           {/* Card Status ESG */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Score ESG</CardTitle>
-              <Sparkles className="h-5 w-5 text-accent" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  {esgData?.overall_esg_score || 0}
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Pontuação geral ESG da empresa
-              </p>
-            </CardContent>
+          <Card className="p-8 md:col-span-2 xl:col-span-1 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Score ESG</p>
+                <p className="text-4xl font-bold text-success">
+                  {isLoading ? (
+                    <Skeleton className="h-12 w-20" />
+                  ) : (
+                    `${esgData?.overall_esg_score || 0}/100`
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Pontuação geral
+                </p>
+              </div>
+              <Sparkles className="h-10 w-10 text-success" />
+            </div>
           </Card>
         </div>
 
         {/* Segunda Linha - KPIs Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
           {/* Emissões Totais */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Emissões Totais</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  {emissionStats?.total.toFixed(1) || 0} tCO₂e
-                </div>
-              )}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <TrendingUp className="h-3 w-3" />
-                Dados atualizados
+          <Card className="p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Emissões Totais</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    `${emissionStats?.total.toFixed(1) || 0} tCO₂e`
+                  )}
+                </p>
               </div>
-            </CardContent>
+              <Zap className="h-10 w-10 text-destructive" />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <TrendingUp className="h-4 w-4" />
+              Dados atualizados
+            </div>
           </Card>
 
           {/* Escopo 1 */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Emissões Escopo 1</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  {emissionStats?.escopo1.toFixed(1) || 0} tCO₂e
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                Emissões diretas
+          <Card className="p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Emissões Escopo 1</p>
+                <p className="text-3xl font-bold text-warning">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    `${emissionStats?.escopo1.toFixed(1) || 0} tCO₂e`
+                  )}
+                </p>
               </div>
-            </CardContent>
+              <Factory className="h-10 w-10 text-warning" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Emissões diretas
+            </p>
           </Card>
 
           {/* Escopo 2 */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Emissões Escopo 2</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  {emissionStats?.escopo2.toFixed(1) || 0} tCO₂e
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                Energia adquirida
+          <Card className="p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Emissões Escopo 2</p>
+                <p className="text-3xl font-bold text-warning">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    `${emissionStats?.escopo2.toFixed(1) || 0} tCO₂e`
+                  )}
+                </p>
               </div>
-            </CardContent>
+              <Zap className="h-10 w-10 text-warning" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Energia adquirida
+            </p>
           </Card>
 
           {/* Taxa de Reciclagem */}
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taxa de Reciclagem</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold text-foreground">
-                  {wasteStats?.recycling_rate_percent !== undefined 
-                    ? `${wasteStats.recycling_rate_percent}%` 
-                    : '0%'}
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                Resíduos reciclados
+          <Card className="p-8 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Taxa de Reciclagem</p>
+                <p className="text-3xl font-bold text-success">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    `${wasteStats?.recycling_rate_percent !== undefined 
+                      ? wasteStats.recycling_rate_percent 
+                      : 0}%`
+                  )}
+                </p>
               </div>
-            </CardContent>
+              <Recycle className="h-10 w-10 text-success" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Resíduos reciclados
+            </p>
           </Card>
         </div>
 
         {/* Terceira Linha - Conteúdo Dinâmico */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {/* AI Processing Status Widget */}
-          <AIProcessingStatusWidget />
-          
-          {/* SGQ Dashboard Widget */}
-          <SGQDashboardWidget />
-
-          {/* Unified Dashboard Widget */}
-          <UnifiedDashboardWidget />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="min-h-[500px]">
+            <AIProcessingStatusWidget />
+          </div>
+          <div className="min-h-[500px]">
+            <SGQDashboardWidget />
+          </div>
+          <div className="min-h-[500px]">
+            <UnifiedDashboardWidget />
+          </div>
         </div>
           </TabsContent>
 
@@ -419,6 +432,7 @@ const Index = () => {
         {/* Settings Modal */}
         <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
+    </div>
   );
 };
 
