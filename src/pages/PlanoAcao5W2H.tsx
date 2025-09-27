@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Target, Calendar, User, MapPin, DollarSign, Settings, Eye } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Target, Calendar, User, MapPin, DollarSign, Settings, Eye, BarChart3, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,38 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { actionPlansService, type ActionPlan } from "@/services/actionPlans";
+import { ActionPlanDetailsModal } from "@/components/ActionPlanDetailsModal";
 
-interface ActionPlan {
-  id: string;
-  title: string;
-  description: string;
-  objective: string;
-  plan_type: string;
-  status: string;
-  created_at: string;
-}
-
-interface ActionPlanItem {
-  id: string;
-  what_action: string;
-  why_reason: string;
-  where_location: string;
-  when_deadline: string;
-  how_method: string;
-  how_much_cost: number;
-  status: string;
-  progress_percentage: number;
-}
+// Remove interfaces - using from service
 
 export default function PlanoAcao5W2H() {
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [isCreateItemOpen, setIsCreateItemOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string>("");
+  const [selectedPlan, setSelectedPlan] = useState<ActionPlan | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [newPlanData, setNewPlanData] = useState({
     title: "",
     description: "",
@@ -54,20 +37,20 @@ export default function PlanoAcao5W2H() {
     where_location: "",
     when_deadline: "",
     how_method: "",
-    how_much_cost: 0
+    how_much_cost: 0,
+    who_responsible_user_id: ""
   });
+
+  const queryClient = useQueryClient();
 
   const { data: actionPlans, isLoading } = useQuery({
     queryKey: ["action-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("action_plans")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      return data as ActionPlan[];
-    },
+    queryFn: () => actionPlansService.getActionPlans(),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["action-plans-stats"],
+    queryFn: () => actionPlansService.getActionPlanStats(),
   });
 
   const { data: employees } = useQuery({
@@ -83,30 +66,12 @@ export default function PlanoAcao5W2H() {
     },
   });
 
-  const handleCreatePlan = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error("Company ID não encontrado");
-
-      const { error } = await supabase
-        .from("action_plans")
-        .insert([{ 
-          ...newPlanData, 
-          company_id: profile.company_id,
-          created_by_user_id: user.id 
-        }]);
-
-      if (error) throw error;
-
+  const createPlanMutation = useMutation({
+    mutationFn: (planData: any) => actionPlansService.createActionPlan(planData),
+    onSuccess: () => {
       toast.success("Plano de ação criado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["action-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["action-plans-stats"] });
       setIsCreatePlanOpen(false);
       setNewPlanData({
         title: "",
@@ -114,24 +79,19 @@ export default function PlanoAcao5W2H() {
         objective: "",
         plan_type: "Melhoria"
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast.error("Erro ao criar plano de ação");
-      console.error(error);
-    }
-  };
+    },
+  });
 
-  const handleCreateItem = async () => {
-    try {
-      const { error } = await supabase
-        .from("action_plan_items")
-        .insert([{
-          ...newItemData,
-          action_plan_id: selectedPlan
-        }]);
-
-      if (error) throw error;
-
+  const createItemMutation = useMutation({
+    mutationFn: ({ planId, itemData }: { planId: string; itemData: any }) => 
+      actionPlansService.createActionPlanItem(planId, itemData),
+    onSuccess: () => {
       toast.success("Item do plano adicionado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["action-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["action-plans-stats"] });
       setIsCreateItemOpen(false);
       setNewItemData({
         what_action: "",
@@ -139,12 +99,43 @@ export default function PlanoAcao5W2H() {
         where_location: "",
         when_deadline: "",
         how_method: "",
-        how_much_cost: 0
+        how_much_cost: 0,
+        who_responsible_user_id: ""
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast.error("Erro ao adicionar item do plano");
-      console.error(error);
+    },
+  });
+
+  const handleCreatePlan = () => {
+    if (!newPlanData.title || !newPlanData.objective) {
+      toast.error("Preencha os campos obrigatórios");
+      return;
     }
+    createPlanMutation.mutate(newPlanData);
+  };
+
+  const handleCreateItem = () => {
+    if (!newItemData.what_action || !newItemData.when_deadline || !selectedPlanId) {
+      toast.error("Preencha os campos obrigatórios");
+      return;
+    }
+    createItemMutation.mutate({ 
+      planId: selectedPlanId, 
+      itemData: newItemData 
+    });
+  };
+
+  const handleViewPlan = (plan: ActionPlan) => {
+    setSelectedPlan(plan);
+    setIsDetailsOpen(true);
+  };
+
+  const calculatePlanProgress = (plan: ActionPlan) => {
+    if (!plan.items?.length) return 0;
+    const totalProgress = plan.items.reduce((sum, item) => sum + (item.progress_percentage || 0), 0);
+    return Math.round(totalProgress / plan.items.length);
   };
 
   const getStatusColor = (status: string) => {
@@ -198,24 +189,46 @@ export default function PlanoAcao5W2H() {
                 <DialogTitle>Adicionar Ação (5W2H)</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="plan-select">Plano de Ação</Label>
-                  <Select
-                    value={selectedPlan}
-                    onValueChange={setSelectedPlan}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {actionPlans?.map((plan) => (
-                        <SelectItem key={plan.id} value={plan.id}>
-                          {plan.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <Label htmlFor="plan-select">Plano de Ação</Label>
+                    <Select
+                      value={selectedPlanId}
+                      onValueChange={setSelectedPlanId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um plano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {actionPlans?.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="responsible" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Quem? (Who)
+                    </Label>
+                    <Select
+                      value={newItemData.who_responsible_user_id}
+                      onValueChange={(value) => setNewItemData({...newItemData, who_responsible_user_id: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees?.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -301,7 +314,7 @@ export default function PlanoAcao5W2H() {
                   </div>
                 </div>
 
-                <Button onClick={handleCreateItem} className="w-full" disabled={!selectedPlan}>
+                <Button onClick={handleCreateItem} className="w-full" disabled={!selectedPlanId}>
                   Adicionar Ação
                 </Button>
               </div>
@@ -373,6 +386,64 @@ export default function PlanoAcao5W2H() {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Planos</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalPlans}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Planos Ativos</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats.activePlans}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Ações</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalActions}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.completedActions} concluídas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Ações em Atraso</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.overdueActions}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Progresso Médio</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.avgProgress}%</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Plans Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
         {actionPlans?.map((plan) => (
@@ -396,18 +467,37 @@ export default function PlanoAcao5W2H() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Progresso</span>
-                  <span>0%</span>
+                  <span>{calculatePlanProgress(plan)}%</span>
                 </div>
-                <Progress value={0} className="h-2" />
+                <Progress value={calculatePlanProgress(plan)} className="h-2" />
               </div>
+              
+              <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-muted-foreground">
+                <div>Total: {plan.items?.length || 0} ações</div>
+                <div>Concluídas: {plan.items?.filter(item => item.status === 'Concluído').length || 0}</div>
+              </div>
+
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleViewPlan(plan)}
+                >
                   <Eye className="h-4 w-4 mr-1" />
-                  Ver
+                  Ver Detalhes
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedPlanId(plan.id);
+                    setIsCreateItemOpen(true);
+                  }}
+                >
                   <Plus className="h-4 w-4 mr-1" />
-                  Ação
+                  Nova Ação
                 </Button>
               </div>
             </CardContent>
@@ -428,8 +518,20 @@ export default function PlanoAcao5W2H() {
               </Button>
             </CardContent>
           </Card>
-         )}
-       </div>
+          )}
+        </div>
+
+        {/* Action Plan Details Modal */}
+        {selectedPlan && (
+          <ActionPlanDetailsModal
+            planId={selectedPlan.id}
+            isOpen={isDetailsOpen}
+            onClose={() => {
+              setIsDetailsOpen(false);
+              setSelectedPlan(null);
+            }}
+          />
+        )}
     </>
   );
 }
