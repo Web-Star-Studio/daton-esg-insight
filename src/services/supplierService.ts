@@ -80,24 +80,45 @@ export const getSuppliers = async (): Promise<Supplier[]> => {
   const { data, error } = await supabase
     .from('suppliers')
     .select(`
-      *,
-      supplier_evaluations (
-        id,
-        evaluation_date,
-        quality_score,
-        delivery_score,
-        service_score,
-        overall_score,
-        comments,
-        evaluator_user_id,
-        created_at
-      )
+      id,
+      company_id,
+      name,
+      cnpj,
+      contact_email,
+      contact_phone,
+      address,
+      category,
+      status,
+      qualification_status,
+      rating,
+      notes,
+      created_at,
+      updated_at
     `)
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(`Erro ao buscar fornecedores: ${error.message}`);
-  return data || [];
+  
+  // Get evaluations separately to avoid complex joins
+  const suppliers = data || [];
+  const suppliersWithEvaluations = await Promise.all(
+    suppliers.map(async (supplier) => {
+      const { data: evaluations } = await supabase
+        .from('supplier_evaluations')
+        .select('*')
+        .eq('supplier_id', supplier.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      return {
+        ...supplier,
+        supplier_evaluations: evaluations || []
+      };
+    })
+  );
+
+  return suppliersWithEvaluations;
 };
 
 // Get single supplier by ID
@@ -105,24 +126,37 @@ export const getSupplierById = async (id: string): Promise<Supplier | null> => {
   const { data, error } = await supabase
     .from('suppliers')
     .select(`
-      *,
-      supplier_evaluations (
-        id,
-        evaluation_date,
-        quality_score,
-        delivery_score,
-        service_score,
-        overall_score,
-        comments,
-        evaluator_user_id,
-        created_at
-      )
+      id,
+      company_id,
+      name,
+      cnpj,
+      contact_email,
+      contact_phone,
+      address,
+      category,
+      status,
+      qualification_status,
+      rating,
+      notes,
+      created_at,
+      updated_at
     `)
     .eq('id', id)
     .single();
 
   if (error) throw new Error(`Erro ao buscar fornecedor: ${error.message}`);
-  return data;
+  
+  // Get evaluations separately
+  const { data: evaluations } = await supabase
+    .from('supplier_evaluations')
+    .select('*')
+    .eq('supplier_id', id)
+    .order('created_at', { ascending: false });
+
+  return {
+    ...data,
+    supplier_evaluations: evaluations || []
+  };
 };
 
 // Create new supplier
@@ -207,7 +241,7 @@ const updateSupplierRating = async (supplierId: string): Promise<void> => {
   if (error) return;
 
   if (evaluations && evaluations.length > 0) {
-    const avgRating = evaluations.reduce((sum, eval) => sum + eval.overall_score, 0) / evaluations.length;
+    const avgRating = evaluations.reduce((sum, evaluation) => sum + evaluation.overall_score, 0) / evaluations.length;
     
     await supabase
       .from('suppliers')
@@ -291,14 +325,14 @@ export const getSuppliersByCategory = async (category: string): Promise<Supplier
   
   const { data, error } = await supabase
     .from('suppliers')
-    .select('*')
+    .select('id, company_id, name, cnpj, contact_email, contact_phone, address, category, status, qualification_status, rating, notes, created_at, updated_at')
     .eq('company_id', companyId)
     .eq('category', category)
     .eq('status', 'Ativo')
     .order('name');
 
   if (error) throw new Error(`Erro ao buscar fornecedores por categoria: ${error.message}`);
-  return data || [];
+  return (data || []).map(supplier => ({ ...supplier, supplier_evaluations: [] }));
 };
 
 // Get qualified suppliers
@@ -307,12 +341,12 @@ export const getQualifiedSuppliers = async (): Promise<Supplier[]> => {
   
   const { data, error } = await supabase
     .from('suppliers')
-    .select('*')
+    .select('id, company_id, name, cnpj, contact_email, contact_phone, address, category, status, qualification_status, rating, notes, created_at, updated_at')
     .eq('company_id', companyId)
     .eq('qualification_status', 'Qualificado')
     .eq('status', 'Ativo')
     .order('rating', { ascending: false });
 
   if (error) throw new Error(`Erro ao buscar fornecedores qualificados: ${error.message}`);
-  return data || [];
+  return (data || []).map(supplier => ({ ...supplier, supplier_evaluations: [] }));
 };

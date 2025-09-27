@@ -4,10 +4,7 @@ import { Plus, Building2, Phone, Mail, MapPin, Star, TrendingUp, AlertCircle, Ey
 import { 
   getSuppliers, 
   createSupplier, 
-  createSupplierEvaluation, 
-  Supplier, 
-  CreateSupplierData,
-  CreateSupplierEvaluationData 
+  Supplier as SupplierType
 } from "@/services/supplierService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,34 +20,10 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-interface Supplier {
-  id: string;
-  name: string;
-  cnpj?: string;
-  contact_email?: string;
-  contact_phone?: string;
-  address?: string;
-  category?: string;
-  status: string;
-  qualification_status: string;
-  created_at: string;
-  updated_at: string;
-  supplier_evaluations?: SupplierEvaluation[];
-}
-
-interface SupplierEvaluation {
-  id: string;
-  supplier_id: string;
-  evaluation_date: string;
-  quality_score: number;
-  delivery_score: number;
-  service_score: number;
-  overall_score: number;
-  comments?: string;
-  evaluator_user_id?: string;
-  created_at: string;
-}
+import { SupplierDetailsModal } from "@/components/SupplierDetailsModal";
+import { SupplierEvaluationModal } from "@/components/SupplierEvaluationModal";
+import { SupplierQualificationModal } from "@/components/SupplierQualificationModal";
+import { SupplierContractsTab } from "@/components/SupplierContractsTab";
 
 const SUPPLIER_CATEGORIES = [
   "Materiais",
@@ -74,7 +47,9 @@ const QUALIFICATION_STATUS = [
 export default function GestaoFornecedores() {
   const [isCreateSupplierOpen, setIsCreateSupplierOpen] = useState(false);
   const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState<string>("");
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isQualificationOpen, setIsQualificationOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -87,22 +62,16 @@ export default function GestaoFornecedores() {
     category: ""
   });
 
-  const [evaluationData, setEvaluationData] = useState({
-    quality_score: 0,
-    delivery_score: 0,
-    service_score: 0,
-    comments: ""
-  });
 
   const queryClient = useQueryClient();
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["suppliers"],
-    queryFn: qualityManagementService.getSuppliers,
+    queryFn: getSuppliers,
   });
 
   const createSupplierMutation = useMutation({
-    mutationFn: qualityManagementService.createSupplier,
+    mutationFn: createSupplier,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast.success("Fornecedor cadastrado com sucesso!");
@@ -125,14 +94,6 @@ export default function GestaoFornecedores() {
     });
   };
 
-  const resetEvaluationForm = () => {
-    setEvaluationData({
-      quality_score: 0,
-      delivery_score: 0,
-      service_score: 0,
-      comments: ""
-    });
-  };
 
   const handleCreateSupplier = () => {
     if (!newSupplierData.name) {
@@ -170,7 +131,7 @@ export default function GestaoFornecedores() {
     return "text-red-600";
   };
 
-  const filteredSuppliers = suppliers.filter((supplier: any) => {
+  const filteredSuppliers = suppliers.filter((supplier: SupplierType) => {
     const matchesSearch = !searchTerm || 
       supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.cnpj?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,15 +144,25 @@ export default function GestaoFornecedores() {
 
   // Calculate stats
   const totalSuppliers = suppliers.length;
-  const activeSuppliers = suppliers.filter((s: any) => s.status === "Ativo").length;
-  const qualifiedSuppliers = suppliers.filter((s: any) => s.qualification_status === "Qualificado").length;
-  const suppliersWithEvaluations = suppliers.filter((s: any) => s.supplier_evaluations && Array.isArray(s.supplier_evaluations) && s.supplier_evaluations.length > 0);
-  const avgScore = suppliersWithEvaluations.length > 0 
-    ? suppliersWithEvaluations.reduce((sum: number, supplier: any) => {
-        const latestEval = supplier.supplier_evaluations?.[0];
-        return sum + (latestEval?.overall_score || 0);
-      }, 0) / suppliersWithEvaluations.length
+  const activeSuppliers = suppliers.filter((s: SupplierType) => s.status === "Ativo").length;
+  const qualifiedSuppliers = suppliers.filter((s: SupplierType) => s.qualification_status === "Qualificado").length;
+  const avgScore = suppliers.length > 0 
+    ? suppliers.reduce((sum: number, supplier: SupplierType) => sum + (supplier.rating || 0), 0) / suppliers.length
     : 0;
+
+  const handleSupplierView = (supplier: SupplierType) => {
+    setSelectedSupplier(supplier);
+    setIsDetailsOpen(true);
+  };
+
+  const handleSupplierQualify = (supplier: SupplierType) => {
+    setSelectedSupplier(supplier);
+    setIsQualificationOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+  };
 
   if (isLoading) {
     return (
@@ -212,104 +183,14 @@ export default function GestaoFornecedores() {
         </div>
         
         <div className="flex gap-2">
-          <Dialog open={isEvaluationOpen} onOpenChange={setIsEvaluationOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" disabled={!suppliers.length}>
-                <Star className="h-4 w-4 mr-2" />
-                Avaliar
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Avaliar Fornecedor</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="supplier-select">Fornecedor</Label>
-                  <Select
-                    value={selectedSupplier}
-                    onValueChange={setSelectedSupplier}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um fornecedor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map((supplier: Supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="quality">Qualidade (0-5)</Label>
-                    <Input
-                      id="quality"
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={evaluationData.quality_score}
-                      onChange={(e) => setEvaluationData({
-                        ...evaluationData, 
-                        quality_score: parseFloat(e.target.value) || 0
-                      })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="delivery">Entrega (0-5)</Label>
-                    <Input
-                      id="delivery"
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={evaluationData.delivery_score}
-                      onChange={(e) => setEvaluationData({
-                        ...evaluationData, 
-                        delivery_score: parseFloat(e.target.value) || 0
-                      })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="service">Atendimento (0-5)</Label>
-                    <Input
-                      id="service"
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      value={evaluationData.service_score}
-                      onChange={(e) => setEvaluationData({
-                        ...evaluationData, 
-                        service_score: parseFloat(e.target.value) || 0
-                      })}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="comments">Comentários</Label>
-                  <Textarea
-                    id="comments"
-                    value={evaluationData.comments}
-                    onChange={(e) => setEvaluationData({
-                      ...evaluationData, 
-                      comments: e.target.value
-                    })}
-                    placeholder="Observações sobre a avaliação"
-                  />
-                </div>
-
-                <Button className="w-full" disabled={!selectedSupplier}>
-                  Registrar Avaliação
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            variant="outline" 
+            disabled={!suppliers.length}
+            onClick={() => setIsEvaluationOpen(true)}
+          >
+            <Star className="h-4 w-4 mr-2" />
+            Avaliar
+          </Button>
 
           <Dialog open={isCreateSupplierOpen} onOpenChange={setIsCreateSupplierOpen}>
             <DialogTrigger asChild>
@@ -517,7 +398,7 @@ export default function GestaoFornecedores() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredSuppliers.map((supplier: any) => {
+                    {filteredSuppliers.map((supplier: SupplierType) => {
                       const latestEval = Array.isArray(supplier.supplier_evaluations) && supplier.supplier_evaluations.length > 0 
                         ? supplier.supplier_evaluations[0] 
                         : null;
@@ -623,32 +504,114 @@ export default function GestaoFornecedores() {
                 Acompanhe o desempenho dos fornecedores ao longo do tempo
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center py-8">
-              <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Histórico de avaliações estará disponível em breve
-              </p>
+            <CardContent>
+              {suppliers.length > 0 && suppliers.some(s => s.supplier_evaluations && s.supplier_evaluations.length > 0) ? (
+                <div className="space-y-4">
+                  {suppliers
+                    .filter(s => s.supplier_evaluations && s.supplier_evaluations.length > 0)
+                    .map((supplier) => (
+                      <Card key={supplier.id}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">{supplier.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Data</TableHead>
+                                <TableHead>Qualidade</TableHead>
+                                <TableHead>Entrega</TableHead>
+                                <TableHead>Atendimento</TableHead>
+                                <TableHead>Score Geral</TableHead>
+                                <TableHead>Comentários</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {supplier.supplier_evaluations?.map((evaluation) => (
+                                <TableRow key={evaluation.id}>
+                                  <TableCell>
+                                    {format(new Date(evaluation.evaluation_date), "dd/MM/yyyy", { locale: ptBR })}
+                                  </TableCell>
+                                  <TableCell>{evaluation.quality_score.toFixed(1)}</TableCell>
+                                  <TableCell>{evaluation.delivery_score.toFixed(1)}</TableCell>
+                                  <TableCell>{evaluation.service_score.toFixed(1)}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`font-medium ${getScoreColor(evaluation.overall_score)}`}>
+                                        {evaluation.overall_score.toFixed(1)}
+                                      </span>
+                                      <div className="flex">
+                                        {Array.from({ length: 5 }, (_, i) => (
+                                          <Star
+                                            key={i}
+                                            className={`h-3 w-3 ${
+                                              i < Math.floor(evaluation.overall_score) 
+                                                ? "fill-yellow-400 text-yellow-400" 
+                                                : "text-gray-300"
+                                            }`}
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="max-w-xs truncate">
+                                    {evaluation.comments || "-"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Nenhuma avaliação registrada ainda
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => setIsEvaluationOpen(true)}
+                    disabled={!suppliers.length}
+                  >
+                    <Star className="h-4 w-4 mr-2" />
+                    Registrar Primeira Avaliação
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="contracts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gestão de Contratos</CardTitle>
-              <CardDescription>
-                Controle contratos, renovações e alertas de vencimento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Módulo de contratos estará disponível em breve
-              </p>
-            </CardContent>
-          </Card>
+          <SupplierContractsTab />
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <SupplierEvaluationModal
+        suppliers={suppliers}
+        isOpen={isEvaluationOpen}
+        onClose={() => setIsEvaluationOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
+
+      <SupplierDetailsModal
+        supplier={selectedSupplier}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        onSupplierUpdate={handleModalSuccess}
+      />
+
+      <SupplierQualificationModal
+        supplier={selectedSupplier}
+        isOpen={isQualificationOpen}
+        onClose={() => setIsQualificationOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
     </>
   );
 }

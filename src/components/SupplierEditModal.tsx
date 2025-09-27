@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +55,7 @@ export function SupplierEditModal({ supplier, isOpen, onClose, onSuccess }: Supp
   });
 
   // Update form data when supplier changes
-  useState(() => {
+  React.useEffect(() => {
     if (supplier) {
       setFormData({
         name: supplier.name || "",
