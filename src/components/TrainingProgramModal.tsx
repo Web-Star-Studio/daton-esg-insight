@@ -87,7 +87,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   const onSubmit = async (values: z.infer<typeof trainingProgramSchema>) => {
     try {
-      console.log('TrainingProgramModal: Submitting form with values:', values);
+      // Remove sensitive logging
       
       if (isEditing && program?.id) {
         await updateTrainingProgram(program.id, values);
@@ -109,7 +109,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
           created_by_user_id: "",
         };
         
-        console.log('TrainingProgramModal: Creating training program:', programData);
+        // Remove sensitive logging
         await createTrainingProgram(programData);
         
         toast({

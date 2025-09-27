@@ -31,13 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Buscar dados completos do usuário
           setTimeout(async () => {
             try {
-              console.log('AuthContext: Session found, fetching user data');
+              // Remove sensitive logging
               const userData = await authService.getCurrentUser();
               if (userData) {
-                console.log('AuthContext: User data found:', userData.full_name);
                 setUser(userData);
               } else {
-                console.log('AuthContext: No user data found for session');
                 setUser(null);
               }
             } catch (error) {
@@ -162,13 +160,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      console.log('Tentando buscar dados do usuário...');
       const userData = await authService.getCurrentUser();
-      console.log('Dados do usuário obtidos:', userData);
       setUser(userData);
       
       if (!userData) {
-        console.log('Nenhum usuário encontrado ou profile não existe');
         toast({
           title: "Atenção",
           description: "Profile de usuário não encontrado. Entre em contato com o suporte.",

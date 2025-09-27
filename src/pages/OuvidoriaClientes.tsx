@@ -19,29 +19,8 @@ import {
 export default function OuvidoriaClientes() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data - será substituído pelos dados reais
-  const mockComplaints = [
-    {
-      id: '1',
-      complaint_number: 'RCL-2024-0001',
-      customer_name: 'João Silva',
-      subject: 'Produto com defeito',
-      status: 'Aberta',
-      priority: 'Alta',
-      created_at: '2024-03-15T10:30:00Z',
-      category: 'Qualidade'
-    },
-    {
-      id: '2',
-      complaint_number: 'RCL-2024-0002',
-      customer_name: 'Maria Santos',
-      subject: 'Atraso na entrega',
-      status: 'Em Análise',
-      priority: 'Média',
-      created_at: '2024-03-14T14:20:00Z',
-      category: 'Logística'
-    }
-  ];
+  // Real complaints data will come from API - no mock data
+  const mockComplaints: any[] = [];
 
   const mockStats = {
     total: 45,

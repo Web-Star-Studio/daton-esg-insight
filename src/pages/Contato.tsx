@@ -33,7 +33,7 @@ export default function Contato() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
+    // Remove sensitive logging
     // Aqui você pode adicionar a lógica para enviar o formulário
   }
 

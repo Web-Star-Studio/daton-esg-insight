@@ -32,57 +32,8 @@ const QualityIndicatorDashboard = () => {
     frequency: 'monthly'
   });
 
-  // Mock data for demonstration
-  const indicators = [
-    {
-      id: '1',
-      name: 'Taxa de Conformidade',
-      category: 'Qualidade',
-      currentValue: 94.5,
-      targetValue: 95,
-      unit: '%',
-      trend: 'up',
-      lastMeasurement: '2024-01-15',
-      status: 'good',
-      history: [
-        { period: 'Jan', value: 92.1 },
-        { period: 'Fev', value: 93.2 },
-        { period: 'Mar', value: 94.5 }
-      ]
-    },
-    {
-      id: '2', 
-      name: 'Tempo Médio de Resolução',
-      category: 'Eficiência',
-      currentValue: 3.2,
-      targetValue: 3.0,
-      unit: 'dias',
-      trend: 'down',
-      lastMeasurement: '2024-01-15',
-      status: 'warning',
-      history: [
-        { period: 'Jan', value: 3.8 },
-        { period: 'Fev', value: 3.5 },
-        { period: 'Mar', value: 3.2 }
-      ]
-    },
-    {
-      id: '3',
-      name: 'Satisfação do Cliente',
-      category: 'Cliente',
-      currentValue: 4.8,
-      targetValue: 4.5,
-      unit: 'pontos',
-      trend: 'up',
-      lastMeasurement: '2024-01-12',
-      status: 'excellent',
-      history: [
-        { period: 'Jan', value: 4.6 },
-        { period: 'Fev', value: 4.7 },
-        { period: 'Mar', value: 4.8 }
-      ]
-    }
-  ];
+  // Real data will come from API - no mock data in production
+  const indicators: any[] = [];
 
   const getStatusColor = (status: string) => {
     switch (status) {

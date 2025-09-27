@@ -89,20 +89,9 @@ const InventarioGEE = () => {
   // High emission threshold (configurable)
   const HIGH_EMISSION_THRESHOLD = 100; // tCO2e
 
-  // Mock data for charts (in real app, this would come from API)
+  // Real chart data will come from API calculations
   const trendData = useMemo(() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = subMonths(new Date(), i);
-      months.push({
-        month: format(date, 'MMM yyyy', { locale: ptBR }),
-        total: Math.random() * 1000 + 500,
-        escopo1: Math.random() * 300 + 100,
-        escopo2: Math.random() * 400 + 200,
-        escopo3: Math.random() * 300 + 200,
-      });
-    }
-    return months;
+    return [];
   }, []);
 
   const pieData = useMemo(() => [

@@ -166,9 +166,8 @@ const StakeholderCommunicationHub = () => {
 
   const sendCommunicationMutation = useMutation({
     mutationFn: async (communication: Partial<Communication>) => {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return { id: Date.now().toString(), ...communication };
+      // Real API call will be implemented
+      throw new Error('Comunicação com stakeholders não configurada ainda');
     },
     onSuccess: () => {
       toast.success('Comunicação enviada com sucesso!');

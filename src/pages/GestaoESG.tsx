@@ -165,36 +165,24 @@ export default function GestaoESG() {
     retryDelay: 1000,
   });
 
-  // Mock data as fallback
-  const mockESGData = {
-    overall_esg_score: 75,
+  // Real ESG data will come from API - no mock fallback
+  const emptyESGData = {
+    overall_esg_score: 0,
     environmental: {
-      score: 70,
-      kpis: [
-        { key: "total_emissions", label: "Emissões Totais", value: "1,250", trend: -2.5, unit: "tCO₂e" },
-        { key: "recycling_rate", label: "Taxa de Reciclagem", value: "68", trend: 3.2, unit: "%" },
-        { key: "energy_efficiency", label: "Eficiência Energética", value: "82", trend: 1.8, unit: "%" }
-      ]
+      score: 0,
+      kpis: []
     },
     social: {
-      score: 80,
-      kpis: [
-        { key: "employee_satisfaction", label: "Satisfação dos Funcionários", value: "8.2", trend: 0.5, unit: "/10" },
-        { key: "training_hours", label: "Horas de Treinamento", value: "45", trend: 12.3, unit: "h/pessoa" },
-        { key: "diversity_index", label: "Índice de Diversidade", value: "7.5", trend: 2.1, unit: "/10" }
-      ]
+      score: 0,
+      kpis: []
     },
     governance: {
-      score: 75,
-      kpis: [
-        { key: "goals_on_track", label: "% Metas no Prazo", value: "100", trend: 5, unit: "%" },
-        { key: "compliance_rate", label: "Taxa de Conformidade", value: "96", trend: 1.5, unit: "%" },
-        { key: "audit_score", label: "Score de Auditoria", value: "8.8", trend: 0.8, unit: "/10" }
-      ]
+      score: 0,
+      kpis: []
     }
   };
 
-  const displayData = esgData || mockESGData;
+  const displayData = esgData || emptyESGData;
 
   useEffect(() => {
     if (error) {

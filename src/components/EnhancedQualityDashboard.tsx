@@ -62,50 +62,10 @@ export const EnhancedQualityDashboard: React.FC = () => {
     responsible: ''
   });
 
-  // Mock data - in real app this would come from API
-  const nonConformities: NonConformity[] = [
-    {
-      id: '1',
-      title: 'Falha no processo de calibração',
-      description: 'Equipamento de medição não calibrado conforme cronograma',
-      severity: 'high',
-      status: 'open',
-      detectedDate: new Date('2024-01-15'),
-      responsibleUser: 'João Silva',
-      category: 'Equipamentos'
-    },
-    {
-      id: '2',
-      title: 'Documentação incompleta',
-      description: 'Procedimento operacional não atualizado',
-      severity: 'medium',
-      status: 'in_progress',
-      detectedDate: new Date('2024-01-10'),
-      responsibleUser: 'Maria Santos',
-      category: 'Documentação'
-    }
-  ];
+  // Real data will come from API - no mock data in production
+  const nonConformities: NonConformity[] = [];
 
-  const actionPlans: ActionPlan[] = [
-    {
-      id: '1',
-      title: 'Implementar novo sistema de calibração',
-      description: 'Criar cronograma automatizado para calibração de equipamentos',
-      dueDate: new Date('2024-02-15'),
-      status: 'in_progress',
-      progress: 65,
-      responsible: 'João Silva'
-    },
-    {
-      id: '2',
-      title: 'Atualização de procedimentos',
-      description: 'Revisar e atualizar todos os POPs do setor',
-      dueDate: new Date('2024-02-28'),
-      status: 'planned',
-      progress: 0,
-      responsible: 'Maria Santos'
-    }
-  ];
+  const actionPlans: ActionPlan[] = [];
 
   const handleCreateNC = () => {
     if (!newNC.title || !newNC.description) {

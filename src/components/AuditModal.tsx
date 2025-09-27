@@ -63,7 +63,7 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted with data:', formData);
+    // Remove sensitive form data logging
     
     if (!formData.title || !formData.audit_type) {
       console.log('Validation failed - missing required fields');
@@ -75,7 +75,7 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       return;
     }
     
-    console.log('Submitting audit data:', formData);
+    // Remove sensitive form data logging
     createMutation.mutate(formData);
   };
 

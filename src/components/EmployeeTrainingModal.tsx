@@ -122,7 +122,7 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
 
   const onSubmit = async (values: z.infer<typeof employeeTrainingSchema>) => {
     try {
-      console.log('EmployeeTrainingModal: Submitting form with values:', values);
+      // Remove sensitive logging
       
       const submissionData = {
         employee_id: values.employee_id!,
@@ -136,14 +136,14 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
       };
 
       if (isEditing && training?.id) {
-        console.log('EmployeeTrainingModal: Updating training:', training.id, submissionData);
+        // Remove sensitive logging
         await updateEmployeeTraining(training.id, submissionData);
         toast({
           title: "Sucesso",
           description: "Treinamento do funcionário atualizado com sucesso!",
         });
       } else {
-        console.log('EmployeeTrainingModal: Creating new training:', submissionData);
+        // Remove sensitive logging
         await createEmployeeTraining(submissionData);
         toast({
           title: "Sucesso",
