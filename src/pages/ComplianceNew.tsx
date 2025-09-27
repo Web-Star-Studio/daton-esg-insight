@@ -10,6 +10,10 @@ import { RequirementsLibrary } from '@/components/RequirementsLibrary';
 import ComplianceStrategyDashboard from '@/components/ComplianceStrategyDashboard';
 import { ComplianceTaskModal } from '@/components/ComplianceTaskModal';
 import { RegulatoryRequirementModal } from '@/components/RegulatoryRequirementModal';
+import { TaskTemplates } from '@/components/compliance/TaskTemplates';
+import { TaskBulkActions } from '@/components/compliance/TaskBulkActions';
+import { AdvancedFilters } from '@/components/compliance/AdvancedFilters';
+import { ComplianceAuditTrail } from '@/components/compliance/ComplianceAuditTrail';
 import { useCompliance } from '@/contexts/ComplianceContext';
 
 function ComplianceContent() {
@@ -47,7 +51,7 @@ function ComplianceContent() {
   return (
     <div className="space-y-6 p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-fit">
+        <TabsList className="grid w-full grid-cols-7 lg:w-fit">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Dashboard
@@ -58,6 +62,14 @@ function ComplianceContent() {
             Tarefas
             {getTabBadge('tasks')}
           </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            Templates
+          </TabsTrigger>
+          <TabsTrigger value="bulk" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Ações em Lote
+          </TabsTrigger>
           <TabsTrigger value="calendar" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Calendário
@@ -66,9 +78,9 @@ function ComplianceContent() {
             <Globe className="h-4 w-4" />
             Matriz Regulatória
           </TabsTrigger>
-          <TabsTrigger value="strategy" className="flex items-center gap-2">
-            <Star className="h-4 w-4" />
-            Estratégia
+          <TabsTrigger value="audit" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Auditoria
           </TabsTrigger>
         </TabsList>
 
@@ -77,7 +89,18 @@ function ComplianceContent() {
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-6">
-          <TaskManagement />
+          <div className="grid gap-6">
+            <AdvancedFilters />
+            <TaskManagement />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6">
+          <TaskTemplates />
+        </TabsContent>
+
+        <TabsContent value="bulk" className="space-y-6">
+          <TaskBulkActions />
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -104,8 +127,16 @@ function ComplianceContent() {
           <RequirementsLibrary />
         </TabsContent>
 
-        <TabsContent value="strategy" className="space-y-4">
-          <ComplianceStrategyDashboard />
+        <TabsContent value="audit" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Trilha de Auditoria</h2>
+              <p className="text-sm text-muted-foreground">
+                Histórico completo de todas as ações realizadas no sistema
+              </p>
+            </div>
+          </div>
+          <ComplianceAuditTrail />
         </TabsContent>
       </Tabs>
 

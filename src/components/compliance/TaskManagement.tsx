@@ -41,12 +41,6 @@ export function TaskManagement() {
   const {
     filteredTasks,
     tasksLoading,
-    searchTerm,
-    setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-    priorityFilter,
-    setPriorityFilter,
     setShowTaskModal,
     selectedTask,
     setSelectedTask
@@ -128,7 +122,7 @@ export function TaskManagement() {
         <div>
           <h2 className="text-2xl font-semibold">Gestão de Tarefas</h2>
           <p className="text-sm text-muted-foreground">
-            Monitore e gerencie todas as tarefas de compliance com análise de prioridade
+            Monitore e gerencie todas as tarefas de compliance
           </p>
         </div>
         <Button onClick={() => setShowTaskModal(true)}>
@@ -136,57 +130,6 @@ export function TaskManagement() {
           Nova Tarefa
         </Button>
       </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros e Busca
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[300px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por título, descrição, responsável ou requisito..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                <SelectItem value="Concluído">Concluído</SelectItem>
-                <SelectItem value="Em Atraso">Em Atraso</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Prioridades</SelectItem>
-                <SelectItem value="critical">Crítica</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="low">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tasks Table */}
       <Card>
@@ -196,17 +139,12 @@ export function TaskManagement() {
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-lg font-medium">Nenhuma tarefa encontrada</p>
               <p className="text-sm text-muted-foreground mb-4">
-                {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
-                  ? "Tente ajustar os filtros de busca."
-                  : "Comece criando sua primeira tarefa de compliance."
-                }
+                Comece criando sua primeira tarefa de compliance.
               </p>
-              {(!searchTerm && statusFilter === 'all' && priorityFilter === 'all') && (
-                <Button onClick={() => setShowTaskModal(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Criar Primeira Tarefa
-                </Button>
-              )}
+              <Button onClick={() => setShowTaskModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Primeira Tarefa
+              </Button>
             </div>
           ) : (
             <Table>

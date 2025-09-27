@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { complianceService, type ComplianceTask, type RegulatoryRequirement, type ComplianceStats } from '@/services/compliance';
+import { complianceService, type ComplianceTask, type RegulatoryRequirement, type ComplianceStats, type CreateComplianceTaskData } from '@/services/compliance';
 
 interface ComplianceContextType {
   // Data
@@ -32,7 +32,7 @@ interface ComplianceContextType {
   setSelectedTask: (task: ComplianceTask | null) => void;
   
   // Actions
-  createTask: (data: any) => Promise<void>;
+  createTask: (data: CreateComplianceTaskData) => Promise<void>;
   updateTask: (id: string, data: any) => Promise<void>;
   createRequirement: (data: any) => Promise<void>;
   
