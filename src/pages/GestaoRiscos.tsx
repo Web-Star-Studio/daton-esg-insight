@@ -1,23 +1,39 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, AlertTriangle, Shield, TrendingUp, Eye, Target } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { ESGRisksMatrix } from "@/components/ESGRisksMatrix";
-import SWOTMatrix from "@/components/SWOTMatrix";
+import { 
+  AlertTriangle, 
+  Shield, 
+  Target, 
+  Eye, 
+  Plus, 
+  TrendingUp,
+  Activity,
+  Users,
+  FileText,
+  Grid3x3
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { RiskManagementDashboard } from "@/components/RiskManagementDashboard";
+import { ESGRisksMatrix } from "@/components/ESGRisksMatrix";
+import { RiskOccurrencesList } from "@/components/RiskOccurrencesList";  
 import { OpportunityMapWidget } from "@/components/OpportunityMapWidget";
-import { RiskOccurrencesList } from "@/components/RiskOccurrencesList";
+import SWOTMatrix from "@/components/SWOTMatrix";
+import { ESGRiskModal } from "@/components/ESGRiskModal";
+import { RiskDetailsModal } from "@/components/RiskDetailsModal";
+import { RiskMatrixModal } from "@/components/RiskMatrixModal";
+import { ESGRisk } from "@/services/esgRisks";
 
+// Interfaces
 interface RiskMatrix {
   id: string;
   name: string;
@@ -38,78 +54,152 @@ interface RiskAssessment {
 }
 
 export default function GestaoRiscos() {
+  const { toast } = useToast();
+  
+  // Estado dos modais e formulários
   const [isCreateMatrixOpen, setIsCreateMatrixOpen] = useState(false);
   const [isCreateRiskOpen, setIsCreateRiskOpen] = useState(false);
+  const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
+  const [isRiskDetailsOpen, setIsRiskDetailsOpen] = useState(false);
+  const [isMatrixModalOpen, setIsMatrixModalOpen] = useState(false);
+  const [selectedRisk, setSelectedRisk] = useState<ESGRisk | null>(null);
+  const [selectedMatrix, setSelectedMatrix] = useState<any>(null);
+  const [riskModalMode, setRiskModalMode] = useState<'create' | 'edit' | 'view'>('create');
+  
   const [newMatrixData, setNewMatrixData] = useState({
-    name: "",
-    description: "",
-    matrix_type: "Operacional"
+    name: '',
+    description: '',
+    type: 'probability_impact'
   });
   const [newRiskData, setNewRiskData] = useState({
-    risk_title: "",
-    risk_description: "",
-    category: "",
-    probability: "Baixa",
-    impact: "Baixo"
+    title: '',
+    description: '',
+    category: '',
+    probability: '',
+    impact: '',
+    level: '',
+    status: 'Identificado'
   });
 
-  const { data: riskMatrices, isLoading: matricesLoading } = useQuery({
-    queryKey: ["risk-matrices"],
+  // Query para matrizes de risco
+  const { data: riskMatrices, isLoading: matricesLoading, refetch } = useQuery({
+    queryKey: ['risk-matrices'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("risk_matrices")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from('risk_matrices')
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as RiskMatrix[];
     },
   });
 
+  // Handlers dos modais
   const handleCreateMatrix = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.company_id) throw new Error("Company ID não encontrado");
+      if (!user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { error } = await supabase
-        .from("risk_matrices")
-        .insert([{ ...newMatrixData, company_id: profile.company_id }]);
+        .from('risk_matrices')
+        .insert({
+          name: newMatrixData.name,
+          description: newMatrixData.description,
+          matrix_type: newMatrixData.type
+        });
 
       if (error) throw error;
 
-      toast.success("Matriz de risco criada com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Matriz de risco criada com sucesso",
+      });
+
       setIsCreateMatrixOpen(false);
-      setNewMatrixData({ name: "", description: "", matrix_type: "Operacional" });
+      setNewMatrixData({
+        name: '',
+        description: '',
+        type: 'probability_impact'
+      });
+      refetch();
     } catch (error) {
-      toast.error("Erro ao criar matriz de risco");
-      console.error(error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar matriz de risco",
+        variant: "destructive",
+      });
     }
   };
 
+  // Handlers para ESG Risk Modal
+  const handleCreateRisk = () => {
+    setSelectedRisk(null);
+    setRiskModalMode('create');
+    setIsRiskModalOpen(true);
+  };
+
+  const handleEditRisk = (risk: ESGRisk) => {
+    setSelectedRisk(risk);
+    setRiskModalMode('edit');
+    setIsRiskModalOpen(true);
+  };
+
+  const handleViewRisk = (risk: ESGRisk) => {
+    setSelectedRisk(risk);
+    setIsRiskDetailsOpen(true);
+  };
+
+  const handleViewMatrix = (matrix: any) => {
+    setSelectedMatrix(matrix);
+    setIsMatrixModalOpen(true);
+  };
+
+  const handleCloseRiskModal = () => {
+    setIsRiskModalOpen(false);
+    setSelectedRisk(null);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setIsRiskDetailsOpen(false);
+    setSelectedRisk(null);
+  };
+
+  const handleCloseMatrixModal = () => {
+    setIsMatrixModalOpen(false);
+    setSelectedMatrix(null);
+  };
+
+  const handleEditFromDetails = () => {
+    setIsRiskDetailsOpen(false);
+    setRiskModalMode('edit');
+    setIsRiskModalOpen(true);
+  };
+
+  // Funções utilitárias
   const getRiskLevelColor = (level: string) => {
     switch (level?.toLowerCase()) {
-      case "crítico": return "bg-red-100 text-red-800 border-red-200";
-      case "alto": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "médio": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "baixo": return "bg-green-100 text-green-800 border-green-200";
-      case "muito baixo": return "bg-blue-100 text-blue-800 border-blue-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case 'crítico': return 'bg-red-100 text-red-800 border-red-200';
+      case 'alto': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'médio': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'baixo': return 'bg-green-100 text-green-800 border-green-200';
+      case 'muito baixo': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getMatrixTypeIcon = (type: string) => {
     switch (type) {
-      case "Estratégico": return <TrendingUp className="h-4 w-4" />;
-      case "Operacional": return <Shield className="h-4 w-4" />;
-      case "Financeiro": return <AlertTriangle className="h-4 w-4" />;
+      case 'Estratégico': return <TrendingUp className="h-4 w-4" />;
+      case 'Operacional': return <Shield className="h-4 w-4" />;
+      case 'Financeiro': return <AlertTriangle className="h-4 w-4" />;
       default: return <Shield className="h-4 w-4" />;
     }
   };
@@ -157,8 +247,8 @@ export default function GestaoRiscos() {
                 <div>
                   <Label htmlFor="matrix-type">Tipo da Matriz</Label>
                   <Select
-                    value={newMatrixData.matrix_type}
-                    onValueChange={(value) => setNewMatrixData({...newMatrixData, matrix_type: value})}
+                    value={newMatrixData.type}
+                    onValueChange={(value) => setNewMatrixData({...newMatrixData, type: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -187,85 +277,10 @@ export default function GestaoRiscos() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isCreateRiskOpen} onOpenChange={setIsCreateRiskOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Risco
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Identificar Novo Risco</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="risk-title">Título do Risco</Label>
-                  <Input
-                    id="risk-title"
-                    value={newRiskData.risk_title}
-                    onChange={(e) => setNewRiskData({...newRiskData, risk_title: e.target.value})}
-                    placeholder="Ex: Falha no sistema de produção"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="risk-category">Categoria</Label>
-                  <Input
-                    id="risk-category"
-                    value={newRiskData.category}
-                    onChange={(e) => setNewRiskData({...newRiskData, category: e.target.value})}
-                    placeholder="Ex: Tecnológico"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="probability">Probabilidade</Label>
-                    <Select
-                      value={newRiskData.probability}
-                      onValueChange={(value) => setNewRiskData({...newRiskData, probability: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Baixa">Baixa</SelectItem>
-                        <SelectItem value="Média">Média</SelectItem>
-                        <SelectItem value="Alta">Alta</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="impact">Impacto</Label>
-                    <Select
-                      value={newRiskData.impact}
-                      onValueChange={(value) => setNewRiskData({...newRiskData, impact: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Baixo">Baixo</SelectItem>
-                        <SelectItem value="Médio">Médio</SelectItem>
-                        <SelectItem value="Alto">Alto</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="risk-description">Descrição</Label>
-                  <Textarea
-                    id="risk-description"
-                    value={newRiskData.risk_description}
-                    onChange={(e) => setNewRiskData({...newRiskData, risk_description: e.target.value})}
-                    placeholder="Descrição detalhada do risco"
-                  />
-                </div>
-                <Button className="w-full">
-                  Identificar Risco
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleCreateRisk}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Risco
+          </Button>
         </div>
       </div>
 
@@ -304,8 +319,12 @@ export default function GestaoRiscos() {
                     </Badge>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-1" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewMatrix(matrix)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
                       Visualizar
                     </Button>
                     <Button variant="outline" size="sm" className="flex-1">
@@ -337,8 +356,9 @@ export default function GestaoRiscos() {
 
         <TabsContent value="risks" className="space-y-4">
           <ESGRisksMatrix 
-            onEditRisk={(risk) => console.log('Edit risk:', risk)}
-            onCreateRisk={() => setIsCreateRiskOpen(true)}
+            onEditRisk={handleEditRisk}
+            onCreateRisk={handleCreateRisk}
+            onViewRisk={handleViewRisk}
           />
         </TabsContent>
 
@@ -354,6 +374,54 @@ export default function GestaoRiscos() {
           <SWOTMatrix />
         </TabsContent>
       </Tabs>
+
+      {/* ESG Risk Modal */}
+      <ESGRiskModal
+        isOpen={isRiskModalOpen}
+        onClose={handleCloseRiskModal}
+        risk={selectedRisk}
+        mode={riskModalMode}
+      />
+
+      {/* Risk Details Modal */}
+      <RiskDetailsModal
+        isOpen={isRiskDetailsOpen}
+        onClose={handleCloseDetailsModal}
+        risk={selectedRisk}
+        onEdit={handleEditFromDetails}
+      />
+
+      {/* Risk Matrix Modal */}
+      <RiskMatrixModal
+        isOpen={isMatrixModalOpen}
+        onClose={handleCloseMatrixModal}
+        matrixId={selectedMatrix?.id}
+        matrixName={selectedMatrix?.name}
+        onViewRisk={handleViewRisk}
+      />
+
+      {/* Modal para Identificar Novo Risco - Mantido para compatibilidade */}
+      <Dialog open={isCreateRiskOpen} onOpenChange={setIsCreateRiskOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Identificar Novo Risco</DialogTitle>
+            <DialogDescription>
+              Use o modal completo para criar riscos ESG detalhados
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <p className="text-muted-foreground mb-4">
+              Para criar riscos ESG com todos os detalhes necessários, use o novo modal completo.
+            </p>
+            <Button onClick={() => {
+              setIsCreateRiskOpen(false);
+              handleCreateRisk();
+            }}>
+              Abrir Modal Completo
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -21,9 +21,10 @@ import { getESGRisks, getRiskMetrics, getRiskMatrix } from "@/services/esgRisks"
 interface ESGRisksMatrixProps {
   onEditRisk: (risk: any) => void;
   onCreateRisk: () => void;
+  onViewRisk?: (risk: any) => void;
 }
 
-export function ESGRisksMatrix({ onEditRisk, onCreateRisk }: ESGRisksMatrixProps) {
+export function ESGRisksMatrix({ onEditRisk, onCreateRisk, onViewRisk }: ESGRisksMatrixProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
@@ -347,6 +348,7 @@ export function ESGRisksMatrix({ onEditRisk, onCreateRisk }: ESGRisksMatrixProps
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => onViewRisk?.(risk)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Visualizar

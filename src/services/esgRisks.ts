@@ -14,10 +14,19 @@ export interface ESGRisk {
   control_measures?: string;
   residual_risk_level?: string;
   owner_user_id?: string;
+  risk_owner?: string;
   review_frequency?: string;
   last_review_date?: string;
   next_review_date?: string;
   status: string;
+  risk_appetite?: string;
+  risk_tolerance?: string;
+  business_impact?: string;
+  regulatory_impact?: string;
+  reputation_impact?: string;
+  treatment_plan?: string;
+  residual_probability?: string;
+  residual_impact?: string;
   created_at: string;
   updated_at: string;
 }
@@ -150,4 +159,15 @@ const calculateRiskTrend = (risks: any[]) => {
   }).reverse();
 
   return last6Months;
+};
+
+// Service object for easy import
+export const esgRisksService = {
+  getESGRisks,
+  getESGRisk,
+  createESGRisk,
+  updateESGRisk,
+  deleteESGRisk,
+  getRiskMatrix,
+  getRiskMetrics
 };
