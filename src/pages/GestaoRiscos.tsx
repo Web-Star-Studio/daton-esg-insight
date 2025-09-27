@@ -108,13 +108,30 @@ export default function GestaoRiscos() {
         return;
       }
 
+      // Get company_id from user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) {
+        toast({
+          title: "Erro",
+          description: "Company ID não encontrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('risk_matrices')
-        .insert({
+        .insert([{
           name: newMatrixData.name,
           description: newMatrixData.description,
-          matrix_type: newMatrixData.type
-        });
+          matrix_type: newMatrixData.type,
+          company_id: profile.company_id
+        }]);
 
       if (error) throw error;
 
@@ -136,6 +153,7 @@ export default function GestaoRiscos() {
         description: "Erro ao criar matriz de risco",
         variant: "destructive",
       });
+      console.error('Error creating matrix:', error);
     }
   };
 
