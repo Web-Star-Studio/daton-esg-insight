@@ -23,6 +23,8 @@ import {
 import AttendanceRecordModal from "@/components/AttendanceRecordModal";
 import LeaveRequestModal from "@/components/LeaveRequestModal";
 import WorkScheduleModal from "@/components/WorkScheduleModal";
+import { ScheduleManagementModal } from "@/components/ScheduleManagementModal";
+import { AttendanceReportsModal } from "@/components/AttendanceReportsModal";
 import { toast } from "sonner";
 
 
@@ -69,6 +71,8 @@ export default function PontoFrequencia() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showScheduleManagementModal, setShowScheduleManagementModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
   // API queries
@@ -506,34 +510,201 @@ export default function PontoFrequencia() {
         </TabsContent>
 
         <TabsContent value="escalas" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Escalas de Trabalho
+                </CardTitle>
+                <CardDescription>Configure horários e turnos dos funcionários</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center py-6">
+                  <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Gerencie escalas, horários flexíveis e turnos de trabalho
+                  </p>
+                  <Button onClick={() => setShowScheduleManagementModal(true)} className="w-full">
+                    Gerenciar Escalas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Escalas Ativas
+                </CardTitle>
+                <CardDescription>Resumo das escalas em uso</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {workSchedules?.filter(s => s.is_active).slice(0, 3).map((schedule) => (
+                  <div key={schedule.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium">{schedule.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {schedule.start_time} - {schedule.end_time}
+                      </p>
+                    </div>
+                    <Badge variant="outline">{schedule.work_days.length} dias</Badge>
+                  </div>
+                )) || (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p>Nenhuma escala ativa encontrada</p>
+                  </div>
+                )}
+                {workSchedules?.filter(s => s.is_active).length === 0 && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setShowScheduleManagementModal(true)}
+                  >
+                    Criar Primeira Escala
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Gerenciamento de Escalas</CardTitle>
-              <CardDescription>Configurar horários de trabalho e turnos</CardDescription>
+              <CardTitle>Atribuição de Escalas por Funcionário</CardTitle>
+              <CardDescription>Visualize e gerencie as escalas dos funcionários</CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Escalas de Trabalho</h3>
-                <p className="text-muted-foreground mb-4">Configure horários e turnos dos funcionários</p>
-                <Button>Gerenciar Escalas</Button>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground text-center py-8">
+                  Funcionalidade de atribuição de escalas será implementada em breve
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="relatorios" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Relatório de Frequência
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-3">
+                  <TrendingUp className="w-8 h-8 text-blue-600 mx-auto" />
+                  <p className="text-sm text-muted-foreground">Análise detalhada de presença</p>
+                  <Button 
+                    onClick={() => setShowReportsModal(true)}
+                    className="w-full"
+                  >
+                    Gerar Relatório
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Relatório de Horas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-3">
+                  <Timer className="w-8 h-8 text-green-600 mx-auto" />
+                  <p className="text-sm text-muted-foreground">Controle de horas trabalhadas</p>
+                  <Button 
+                    onClick={() => setShowReportsModal(true)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Visualizar Horas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  Relatório de Atrasos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-3">
+                  <Users className="w-8 h-8 text-orange-600 mx-auto" />
+                  <p className="text-sm text-muted-foreground">Análise de pontualidade</p>
+                  <Button 
+                    onClick={() => setShowReportsModal(true)}
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    Analisar Atrasos
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Relatórios de Ponto</CardTitle>
-              <CardDescription>Gerar relatórios detalhados de frequência</CardDescription>
+              <CardTitle>Relatórios Personalizados</CardTitle>
+              <CardDescription>Configure relatórios específicos para suas necessidades</CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Relatórios Avançados</h3>
-                <p className="text-muted-foreground mb-4">Análises detalhadas de frequência e produtividade</p>
-                <Button>Gerar Relatório</Button>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Relatórios Disponíveis</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm">Espelho de Ponto</span>
+                      <Button size="sm" variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                        Gerar
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm">Folha de Frequência</span>
+                      <Button size="sm" variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                        Gerar
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm">Banco de Horas</span>
+                      <Button size="sm" variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                        Gerar
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm">Relatório de Absenteísmo</span>
+                      <Button size="sm" variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                        Gerar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Exportações Rápidas</h4>
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar para Excel
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar para PDF
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Enviar por Email
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -558,6 +729,16 @@ export default function PontoFrequencia() {
       <WorkScheduleModal 
         isOpen={showScheduleModal} 
         onClose={() => setShowScheduleModal(false)}
+      />
+
+      <ScheduleManagementModal
+        isOpen={showScheduleManagementModal}
+        onClose={() => setShowScheduleManagementModal(false)}
+      />
+
+      <AttendanceReportsModal
+        isOpen={showReportsModal}
+        onClose={() => setShowReportsModal(false)}
       />
     </div>
   );

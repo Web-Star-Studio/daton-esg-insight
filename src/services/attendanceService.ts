@@ -361,6 +361,153 @@ class AttendanceService {
     if (error) throw error;
     return data || [];
   }
+
+  // Employee Schedule Management
+  async getEmployeeSchedules(companyId: string, employeeId?: string): Promise<any[]> {
+    let query = supabase
+      .from('employee_schedules')
+      .select(`
+        *,
+        employee:employees!employee_id (
+          full_name,
+          employee_code,
+          department
+        ),
+        schedule:work_schedules!schedule_id (*)
+      `)
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .order('effective_date', { ascending: false });
+
+    if (employeeId) {
+      query = query.eq('employee_id', employeeId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async assignEmployeeToSchedule(companyId: string, assignment: {
+    employee_id: string;
+    schedule_id: string;
+    effective_date: string;
+  }): Promise<any> {
+    // Desativar escala atual do funcionário
+    await supabase
+      .from('employee_schedules')
+      .update({ is_active: false, end_date: assignment.effective_date })
+      .eq('company_id', companyId)
+      .eq('employee_id', assignment.employee_id)
+      .eq('is_active', true);
+
+    // Criar nova atribuição
+    const { data, error } = await supabase
+      .from('employee_schedules')
+      .insert({
+        company_id: companyId,
+        employee_id: assignment.employee_id,
+        schedule_id: assignment.schedule_id,
+        effective_date: assignment.effective_date,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Advanced Reports
+  async getAttendanceReport(companyId: string, filters: {
+    startDate?: string;
+    endDate?: string;
+    department?: string;
+    employeeId?: string;
+    reportType: 'summary' | 'detailed' | 'overtime' | 'absences';
+  }): Promise<any> {
+    let query = supabase
+      .from('attendance_records')
+      .select(`
+        *,
+        employee:employees!employee_id (
+          full_name,
+          employee_code,
+          department,
+          position
+        )
+      `)
+      .eq('company_id', companyId);
+
+    if (filters.startDate) query = query.gte('date', filters.startDate);
+    if (filters.endDate) query = query.lte('date', filters.endDate);
+    if (filters.employeeId) query = query.eq('employee_id', filters.employeeId);
+
+    const { data, error } = await query.order('date', { ascending: false });
+    if (error) throw error;
+
+    const records = data || [];
+    
+    // Filter by department if specified
+    const filteredRecords = filters.department && filters.department !== 'all'
+      ? records.filter(r => r.employee?.department === filters.department)
+      : records;
+
+    // Process based on report type
+    switch (filters.reportType) {
+      case 'summary':
+        return this.processSummaryReport(filteredRecords);
+      case 'detailed':
+        return filteredRecords;
+      case 'overtime':
+        return this.processOvertimeReport(filteredRecords);
+      case 'absences':
+        return this.processAbsencesReport(filteredRecords);
+      default:
+        return filteredRecords;
+    }
+  }
+
+  private processSummaryReport(records: any[]) {
+    const summary = records.reduce((acc: any, record) => {
+      const employeeId = record.employee_id;
+      if (!acc[employeeId]) {
+        acc[employeeId] = {
+          employee: record.employee,
+          totalDays: 0,
+          presentDays: 0,
+          lateDays: 0,
+          absentDays: 0,
+          totalHours: 0,
+          overtimeHours: 0
+        };
+      }
+      
+      acc[employeeId].totalDays++;
+      if (record.status === 'present') acc[employeeId].presentDays++;
+      if (record.status === 'late') acc[employeeId].lateDays++;
+      if (record.status === 'absent') acc[employeeId].absentDays++;
+      acc[employeeId].totalHours += record.total_hours || 0;
+      acc[employeeId].overtimeHours += record.overtime_hours || 0;
+      
+      return acc;
+    }, {});
+
+    return Object.values(summary);
+  }
+
+  private processOvertimeReport(records: any[]) {
+    return records
+      .filter(r => (r.overtime_hours || 0) > 0)
+      .map(r => ({
+        ...r,
+        overtime_amount: r.overtime_hours * 1.5 // Assuming 1.5x rate
+      }));
+  }
+
+  private processAbsencesReport(records: any[]) {
+    return records.filter(r => r.status === 'absent' || r.status === 'late');
+  }
 }
 
 const attendanceService = new AttendanceService();
@@ -467,6 +614,39 @@ export function useCreateWorkSchedule() {
     onSuccess: (_, { companyId }) => {
       queryClient.invalidateQueries({ queryKey: ['workSchedules', companyId] });
     },
+  });
+}
+
+// Employee Schedule Management
+export function useEmployeeSchedules(companyId: string, employeeId?: string) {
+  return useQuery({
+    queryKey: ['employeeSchedules', companyId, employeeId],
+    queryFn: () => attendanceService.getEmployeeSchedules(companyId, employeeId),
+    enabled: !!companyId,
+  });
+}
+
+export function useAssignEmployeeSchedule() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ companyId, assignment }: { 
+      companyId: string; 
+      assignment: { employee_id: string; schedule_id: string; effective_date: string; }
+    }) => attendanceService.assignEmployeeToSchedule(companyId, assignment),
+    onSuccess: (_, { companyId }) => {
+      queryClient.invalidateQueries({ queryKey: ['employeeSchedules', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['workSchedules', companyId] });
+    },
+  });
+}
+
+// Advanced Reports
+export function useAttendanceReport(companyId: string, filters: any) {
+  return useQuery({
+    queryKey: ['attendanceReport', companyId, filters],
+    queryFn: () => attendanceService.getAttendanceReport(companyId, filters),
+    enabled: !!companyId && !!filters.reportType,
   });
 }
 
