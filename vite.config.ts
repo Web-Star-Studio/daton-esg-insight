@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
-    exclude: ["react-quill"],
+    exclude: ["react-quill", "quill"],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/react-quill/, /node_modules/]
+    }
   },
 }));
