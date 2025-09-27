@@ -79,11 +79,7 @@ serve(async (req) => {
 
       let query = supabase
         .from('compliance_tasks')
-        .select(`
-          *,
-          requirement:regulatory_requirements(title, reference_code),
-          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
-        `)
+        .select('*')
         .eq('company_id', profile.company_id)
         .order('due_date', { ascending: true });
 
@@ -127,8 +123,8 @@ serve(async (req) => {
         description: requestBody.description,
         frequency: requestBody.frequency,
         due_date: requestBody.due_date,
-        requirement_id: requestBody.requirement_id,
-        responsible_user_id: requestBody.responsible_user_id,
+        requirement_id: requestBody.requirement_id || null,
+        responsible_user_id: requestBody.responsible_user_id || null,
         notes: requestBody.notes,
         status: 'Pendente',
         company_id: profile.company_id
@@ -137,11 +133,7 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('compliance_tasks')
         .insert(taskData)
-        .select(`
-          *,
-          requirement:regulatory_requirements(title, reference_code),
-          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -191,11 +183,7 @@ serve(async (req) => {
         .update(updateData)
         .eq('id', taskId)
         .eq('company_id', profile.company_id)
-        .select(`
-          *,
-          requirement:regulatory_requirements(title, reference_code),
-          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
-        `)
+        .select('*')
         .single();
 
       if (error) {
