@@ -1,15 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
+import { formErrorHandler } from "@/utils/formErrorHandler";
 
 export interface KnowledgeArticle {
   id: string;
+  company_id: string;
   title: string;
   content: string;
-  category: string;
-  tags: string[];
-  status: 'draft' | 'published' | 'archived';
+  category?: string;
+  tags?: string[];
+  author_user_id: string;
+  status?: string;
+  version?: number;
+  is_published?: boolean;
+  view_count?: number;
   created_at: string;
   updated_at: string;
-  view_count: number;
+  requires_approval?: boolean;
+  approval_status?: string;
+  last_edited_by_user_id?: string;
+  last_edited_at?: string;
 }
 
 export interface ArticleAnalytics {
@@ -31,8 +40,13 @@ class KnowledgeBaseService {
   // Article methods
   async getKnowledgeArticles(): Promise<KnowledgeArticle[]> {
     try {
-      // This service is now prepared for production - implement actual database queries
-      return [];
+      const { data, error } = await supabase
+        .from('knowledge_articles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error fetching knowledge articles:', error);
       return [];
@@ -45,31 +59,84 @@ class KnowledgeBaseService {
     category: string;
     tags: string[];
   }): Promise<KnowledgeArticle> {
-    try {
-      // Production implementation needed - integrate with database
-      throw new Error('Knowledge base not configured for production use');
-    } catch (error) {
-      console.error('Error creating knowledge article:', error);
-      throw error;
-    }
+    return formErrorHandler.createRecord(async () => {
+      // Get authenticated user and company_id
+      const { profile } = await formErrorHandler.checkAuth();
+      
+      const articlePayload = {
+        title: articleData.title,
+        content: articleData.content,
+        category: articleData.category || null,
+        tags: articleData.tags || [],
+        company_id: profile.company_id,
+        author_user_id: profile.id,
+        status: 'Rascunho',
+        version: 1,
+        is_published: false,
+        view_count: 0,
+        requires_approval: false,
+        approval_status: 'pending'
+      };
+
+      const { data, error } = await supabase
+        .from('knowledge_articles')
+        .insert(articlePayload)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }, { 
+      formType: 'Artigo da Base de Conhecimento',
+      successMessage: 'Artigo criado com sucesso!'
+    });
   }
 
   async updateKnowledgeArticle(id: string, updates: Partial<KnowledgeArticle>): Promise<KnowledgeArticle> {
-    try {
-      // Production implementation needed - integrate with database
-      throw new Error('Knowledge base not configured for production use');
-    } catch (error) {
-      console.error('Error updating knowledge article:', error);
-      throw error;
-    }
+    return formErrorHandler.updateRecord(async () => {
+      const { data, error } = await supabase
+        .from('knowledge_articles')
+        .update({
+          ...updates,
+          last_edited_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }, { 
+      formType: 'Artigo da Base de Conhecimento',
+      successMessage: 'Artigo atualizado com sucesso!'
+    });
   }
 
   async incrementArticleViewCount(articleId: string) {
     try {
-      // Mock increment - return updated view count
-      const newViewCount = Math.floor(Math.random() * 100) + 50;
-      console.log(`Incrementing view count for article ${articleId} to ${newViewCount}`);
-      return { view_count: newViewCount };
+      // First get current view count
+      const { data: currentData, error: fetchError } = await supabase
+        .from('knowledge_articles')
+        .select('view_count')
+        .eq('id', articleId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newViewCount = (currentData?.view_count || 0) + 1;
+
+      const { data, error } = await supabase
+        .from('knowledge_articles')
+        .update({ 
+          view_count: newViewCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', articleId)
+        .select('view_count')
+        .single();
+
+      if (error) throw error;
+      return { view_count: data?.view_count || 0 };
     } catch (error) {
       console.error('Error incrementing article view count:', error);
       return { view_count: 0 };
@@ -79,21 +146,33 @@ class KnowledgeBaseService {
   // Analytics methods
   async getArticleAnalytics(): Promise<ArticleAnalytics> {
     try {
+      const { data: articles, error } = await supabase
+        .from('knowledge_articles')
+        .select('id, title, view_count, category');
+
+      if (error) throw error;
+
+      const totalArticles = articles?.length || 0;
+      const totalViews = articles?.reduce((sum, article) => sum + (article.view_count || 0), 0) || 0;
+      const categoriesSet = new Set(articles?.map(a => a.category).filter(Boolean));
+      const categories = Array.from(categoriesSet);
+      
+      const mostViewed = articles
+        ?.sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+        .slice(0, 3)
+        .map(a => ({ id: a.id, title: a.title, views: a.view_count || 0 })) || [];
+
+      const categoryDistribution = categories.map(category => ({
+        category,
+        count: articles?.filter(a => a.category === category).length || 0
+      }));
+
       return {
-        total_articles: 24,
-        total_views: 1847,
-        categories_count: 8,
-        most_viewed_articles: [
-          { id: '1', title: 'Manual de Qualidade ISO 9001', views: 342 },
-          { id: '2', title: 'Procedimentos de Auditoria', views: 276 },
-          { id: '3', title: 'Gestão de Não Conformidades', views: 198 }
-        ],
-        category_distribution: [
-          { category: 'Qualidade', count: 8 },
-          { category: 'Auditoria', count: 6 },
-          { category: 'Processos', count: 4 },
-          { category: 'Treinamento', count: 6 }
-        ]
+        total_articles: totalArticles,
+        total_views: totalViews,
+        categories_count: categories.length,
+        most_viewed_articles: mostViewed,
+        category_distribution: categoryDistribution
       };
     } catch (error) {
       console.error('Error fetching article analytics:', error);

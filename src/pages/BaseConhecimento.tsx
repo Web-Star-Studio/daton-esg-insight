@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Book, FileText, Eye, Edit, Trash2, Tag, User, Calendar } from "lucide-react";
-import { knowledgeBaseService } from "@/services/knowledgeBase";
+import { knowledgeBaseService, type KnowledgeArticle } from "@/services/knowledgeBase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,21 +19,6 @@ import { ArticleEditModal } from "@/components/ArticleEditModal";
 import { PendingApprovalsWidget } from "@/components/PendingApprovalsWidget";
 import { ArticleAnalyticsWidget } from "@/components/ArticleAnalyticsWidget";
 import { RecentActivityWidget } from "@/components/RecentActivityWidget";
-
-interface KnowledgeArticle {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  author_user_id: string;
-  status: "draft" | "published" | "archived";
-  version: number;
-  is_published: boolean;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-}
 
 const KNOWLEDGE_CATEGORIES = [
   "Processos",

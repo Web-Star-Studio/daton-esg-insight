@@ -10,24 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Save, X, Tag, Eye, History, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { knowledgeBaseService } from "@/services/knowledgeBase";
+import { knowledgeBaseService, type KnowledgeArticle } from "@/services/knowledgeBase";
 import { ArticleVersionHistory } from "./ArticleVersionHistory";
 import { ArticleComments } from "./ArticleComments";
-
-interface KnowledgeArticle {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  tags: string[];
-  author_user_id: string;
-  status: string;
-  version: number;
-  is_published: boolean;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-}
 
 interface ArticleEditModalProps {
   article: KnowledgeArticle | null;
