@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { formErrorHandler } from "@/utils/formErrorHandler";
 
 export interface Department {
   id: string;
@@ -99,49 +100,35 @@ export const getDepartments = async (): Promise<Department[]> => {
 };
 
 export const createDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department> => {
-  try {
-    // Ensure user is authenticated and get company_id
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('Usuário não autenticado. Faça login novamente.');
-    }
+  return formErrorHandler.createRecord<Department>(
+    async () => {
+      // Get authentication and company info
+      const { user, profile } = await formErrorHandler.checkAuth();
+      
+      // Add company_id to department data
+      const departmentData = {
+        ...department,
+        company_id: profile.company_id
+      };
 
-    // Get user's company_id from profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single();
+      const { data, error } = await supabase
+        .from('departments')
+        .insert([departmentData])
+        .select()
+        .single();
 
-    if (profileError || !profile?.company_id) {
-      throw new Error('Perfil de usuário não encontrado. Entre em contato com o suporte.');
-    }
-
-    // Add company_id to department data
-    const departmentData = {
-      ...department,
-      company_id: profile.company_id
-    };
-
-    const { data, error } = await supabase
-      .from('departments')
-      .insert([departmentData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating department:', error);
-      if (error.code === 'PGRST116') {
-        throw new Error('Você não tem permissão para criar departamentos.');
+      if (error) {
+        console.error('Error creating department:', error);
+        throw error;
       }
-      throw error;
+      
+      return data;
+    },
+    {
+      formType: 'Departamento',
+      successMessage: 'Departamento criado com sucesso!'
     }
-    
-    return data;
-  } catch (error: any) {
-    console.error('Create department error:', error);
-    throw error;
-  }
+  );
 };
 
 export const updateDepartment = async (id: string, updates: Partial<Department>): Promise<Department> => {
@@ -189,49 +176,35 @@ export const getPositions = async (): Promise<Position[]> => {
 };
 
 export const createPosition = async (position: Omit<Position, 'id' | 'created_at' | 'updated_at'>): Promise<Position> => {
-  try {
-    // Ensure user is authenticated and get company_id
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('Usuário não autenticado. Faça login novamente.');
-    }
+  return formErrorHandler.createRecord<Position>(
+    async () => {
+      // Get authentication and company info
+      const { user, profile } = await formErrorHandler.checkAuth();
+      
+      // Add company_id to position data
+      const positionData = {
+        ...position,
+        company_id: profile.company_id
+      };
 
-    // Get user's company_id from profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('company_id')
-      .eq('id', user.id)
-      .single();
+      const { data, error } = await supabase
+        .from('positions')
+        .insert([positionData])
+        .select()
+        .single();
 
-    if (profileError || !profile?.company_id) {
-      throw new Error('Perfil de usuário não encontrado. Entre em contato com o suporte.');
-    }
-
-    // Add company_id to position data
-    const positionData = {
-      ...position,
-      company_id: profile.company_id
-    };
-
-    const { data, error } = await supabase
-      .from('positions')
-      .insert([positionData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating position:', error);
-      if (error.code === 'PGRST116') {
-        throw new Error('Você não tem permissão para criar cargos.');
+      if (error) {
+        console.error('Error creating position:', error);
+        throw error;
       }
-      throw error;
+      
+      return data;
+    },
+    {
+      formType: 'Cargo',
+      successMessage: 'Cargo criado com sucesso!'
     }
-    
-    return data;
-  } catch (error: any) {
-    console.error('Create position error:', error);
-    throw error;
-  }
+  );
 };
 
 export const updatePosition = async (id: string, updates: Partial<Position>): Promise<Position> => {

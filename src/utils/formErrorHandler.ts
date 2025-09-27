@@ -237,39 +237,14 @@ export const formErrorHandler = {
 
   // Wrapper for creating records with proper error handling
   async createRecord<T>(
-    tableName: string,
-    data: any,
+    operation: () => Promise<T>,
     options: {
       formType: string;
       successMessage?: string;
-      includeRelations?: string;
     }
   ): Promise<T> {
     return this.handleFormSubmission(
-      async () => {
-        const { user, profile } = await this.checkAuth();
-        
-        // Add company_id and user tracking
-        const recordData = {
-          ...data,
-          company_id: profile.company_id,
-          created_by_user_id: user.id
-        };
-
-        let query = supabase
-          .from(tableName)
-          .insert([recordData])
-          .select(options.includeRelations || '*');
-
-        const { data: result, error } = await query.single();
-
-        if (error) {
-          console.error(`Error creating ${tableName}:`, error);
-          throw error;
-        }
-
-        return result;
-      },
+      operation,
       {
         formType: options.formType,
         operation: 'create'
@@ -282,34 +257,14 @@ export const formErrorHandler = {
 
   // Wrapper for updating records with proper error handling
   async updateRecord<T>(
-    tableName: string,
-    id: string,
-    updates: any,
+    operation: () => Promise<T>,
     options: {
       formType: string;
       successMessage?: string;
-      includeRelations?: string;
     }
   ): Promise<T> {
     return this.handleFormSubmission(
-      async () => {
-        await this.checkAuth();
-        
-        let query = supabase
-          .from(tableName)
-          .update(updates)
-          .eq('id', id)
-          .select(options.includeRelations || '*');
-
-        const { data: result, error } = await query.single();
-
-        if (error) {
-          console.error(`Error updating ${tableName}:`, error);
-          throw error;
-        }
-
-        return result;
-      },
+      operation,
       {
         formType: options.formType,
         operation: 'update'
