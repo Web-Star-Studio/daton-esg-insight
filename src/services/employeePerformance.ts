@@ -89,7 +89,15 @@ export async function createEvaluationCycle(cycleData: {
 }) {
   const { data, error } = await supabase
     .from('performance_evaluation_cycles')
-    .insert([cycleData])
+    .insert({
+      name: cycleData.name,
+      description: cycleData.description,
+      start_date: cycleData.start_date,
+      end_date: cycleData.end_date,
+      evaluation_type: cycleData.evaluation_type,
+      status: cycleData.status,
+      company_id: '00000000-0000-0000-0000-000000000000' // Default company
+    })
     .select()
     .single();
 
@@ -151,11 +159,19 @@ export async function createPerformanceEvaluation(evaluationData: {
 }) {
   const { data, error } = await supabase
     .from('performance_evaluations')
-    .insert([{
-      ...evaluationData,
+    .insert({
+      employee_id: evaluationData.employee_id,
+      evaluator_id: evaluationData.evaluator_id,
+      period_start: evaluationData.period_start,
+      period_end: evaluationData.period_end,
+      status: evaluationData.status || 'pending',
+      self_evaluation_completed: false,
+      manager_evaluation_completed: false,
+      final_review_completed: false,
       cycle_id: evaluationData.cycle_id || null,
-      comments: evaluationData.comments || null
-    }])
+      comments: evaluationData.comments || null,
+      company_id: '00000000-0000-0000-0000-000000000000' // Default company
+    })
     .select()
     .single();
 
@@ -208,10 +224,14 @@ export async function createEvaluationCriteria(criteriaData: {
 }) {
   const { data, error } = await supabase
     .from('evaluation_criteria')
-    .insert([{
-      ...criteriaData,
-      description: criteriaData.description || null
-    }])
+    .insert({
+      name: criteriaData.name,
+      description: criteriaData.description || null,
+      weight: criteriaData.weight,
+      max_score: criteriaData.max_score,
+      is_active: criteriaData.is_active,
+      company_id: '00000000-0000-0000-0000-000000000000' // Default company
+    })
     .select()
     .single();
 

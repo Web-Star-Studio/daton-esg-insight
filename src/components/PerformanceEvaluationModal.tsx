@@ -185,7 +185,9 @@ export function PerformanceEvaluationModal({
             </div>
 
             <div className="space-y-2">
-              <Label>{renderLabel('employee_id', true)("Funcionário Avaliado")}</Label>
+            <Label className={renderLabel('employee_id', true).className}>
+              {renderLabel('employee_id', true).label("Funcionário Avaliado")}
+            </Label>
               <div className="flex gap-2">
                 <Select
                   value={formData.employee_id}
@@ -219,7 +221,9 @@ export function PerformanceEvaluationModal({
           </div>
 
           <div className="space-y-2">
-            <Label>{renderLabel('evaluator_id', true)("Avaliador")}</Label>
+          <Label className={renderLabel('evaluator_id', true).className}>
+            {renderLabel('evaluator_id', true).label("Avaliador")}
+          </Label>
             <Select
               value={formData.evaluator_id}
               onValueChange={(value) => setFormData(prev => ({ ...prev, evaluator_id: value }))}

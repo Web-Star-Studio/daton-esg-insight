@@ -41,17 +41,20 @@ export function EmployeeQuickCreateModal({
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { data: employee, error } = await supabase
-        .from('employees')
-        .insert([{
-          ...data,
-          status: 'Ativo',
-          email: data.email || null,
-          employee_code: `EMP-${Date.now()}`,
-          hire_date: new Date().toISOString().split('T')[0]
-        }])
-        .select()
-        .single();
+        const { data: employee, error } = await supabase
+          .from('employees')
+          .insert({
+            full_name: formData.full_name,
+            position: formData.position,
+            department: formData.department,
+            status: 'Ativo',
+            email: formData.email || null,
+            employee_code: `EMP-${Date.now()}`,
+            hire_date: new Date().toISOString().split('T')[0],
+            company_id: '00000000-0000-0000-0000-000000000000' // Default company
+          })
+          .select()
+          .single();
 
       if (error) throw error;
       return employee;

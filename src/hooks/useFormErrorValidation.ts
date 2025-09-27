@@ -58,12 +58,12 @@ export function useFormErrorValidation<T>(schema: z.ZodSchema<T>) {
     'aria-invalid': hasFieldError(fieldName),
   });
 
-  const renderLabel = (fieldName: string, isRequired: boolean = false) => (label: string) => (
-    <span className={`text-sm font-medium ${hasFieldError(fieldName) ? 'text-red-600' : ''}`}>
-      {label}
-      {isRequired && <span className="text-red-500 ml-1">*</span>}
-    </span>
-  );
+  const renderLabel = (fieldName: string, isRequired: boolean = false) => ({
+    label: (text: string) => text + (isRequired ? ' *' : ''),
+    className: hasFieldError(fieldName) ? 'text-red-600' : 'text-sm font-medium',
+    isRequired,
+    hasError: hasFieldError(fieldName)
+  });
 
   return {
     validate,

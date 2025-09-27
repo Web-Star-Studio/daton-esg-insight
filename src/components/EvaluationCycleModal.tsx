@@ -154,7 +154,9 @@ export function EvaluationCycleModal({
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label>{renderLabel('name', true)("Nome do Ciclo")}</Label>
+            <Label className={renderLabel('name', true).className}>
+              {renderLabel('name', true).label("Nome do Ciclo")}
+            </Label>
             <Input
               id="name"
               placeholder="Ex: Avaliação Anual 2024"
@@ -180,7 +182,9 @@ export function EvaluationCycleModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{renderLabel('evaluation_type', true)("Tipo de Avaliação")}</Label>
+              <Label className={renderLabel('evaluation_type', true).className}>
+                {renderLabel('evaluation_type', true).label("Tipo de Avaliação")}
+              </Label>
               <Select
                 value={formData.evaluation_type}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, evaluation_type: value }))}
@@ -202,7 +206,9 @@ export function EvaluationCycleModal({
             </div>
 
             <div className="space-y-2">
-              <Label>{renderLabel('status', true)("Status")}</Label>
+              <Label className={renderLabel('status', true).className}>
+                {renderLabel('status', true).label("Status")}
+              </Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
