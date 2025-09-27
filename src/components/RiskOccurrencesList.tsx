@@ -175,7 +175,7 @@ export function RiskOccurrencesList() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os status</SelectItem>
+                  <SelectItem value="all">Todos os status</SelectItem>
                   {statuses.map((status) => (
                     <SelectItem key={status} value={status}>
                       {status}
@@ -190,7 +190,7 @@ export function RiskOccurrencesList() {
                   <SelectValue placeholder="Impacto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os impactos</SelectItem>
+                  <SelectItem value="all">Todos os impactos</SelectItem>
                   {impacts.map((impact) => (
                     <SelectItem key={impact} value={impact}>
                       {impact}

@@ -113,7 +113,7 @@ export default function LeaveRequestModal({ isOpen, onClose }: LeaveRequestModal
               </SelectTrigger>
               <SelectContent>
                 {employeesLoading ? (
-                  <SelectItem value="" disabled>Carregando...</SelectItem>
+                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
                   employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
@@ -136,7 +136,7 @@ export default function LeaveRequestModal({ isOpen, onClose }: LeaveRequestModal
               </SelectTrigger>
               <SelectContent>
                 {leaveTypesLoading ? (
-                  <SelectItem value="" disabled>Carregando...</SelectItem>
+                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
                   leaveTypes.map((type) => (
                     <SelectItem key={type.id} value={type.name}>

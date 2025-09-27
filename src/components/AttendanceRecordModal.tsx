@@ -204,7 +204,7 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate, e
               </SelectTrigger>
               <SelectContent>
                 {employeesLoading ? (
-                  <SelectItem value="" disabled>Carregando...</SelectItem>
+                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
                   employees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>

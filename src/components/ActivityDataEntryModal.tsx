@@ -246,7 +246,7 @@ export function ActivityDataEntryModal({ open, onOpenChange, task, onComplete }:
                 <SelectValue placeholder="Selecione o fator de emissão (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Deixar em branco</SelectItem>
+                <SelectItem value="none">Deixar em branco</SelectItem>
                 {emissionFactors.map((factor) => (
                   <SelectItem key={factor.id} value={factor.id}>
                     {factor.name} - {factor.category} ({factor.activity_unit})

@@ -52,7 +52,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 <SelectItem value="waste_management">Gestão de Resíduos</SelectItem>
                 <SelectItem value="energy_efficiency">Eficiência Energética</SelectItem>
                 <SelectItem value="carbon_credits">Créditos de Carbono</SelectItem>
@@ -72,7 +72,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
                 <SelectValue placeholder="Qualquer preço" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Qualquer preço</SelectItem>
+                <SelectItem value="any">Qualquer preço</SelectItem>
                 {Object.entries(PRICE_RANGES).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
@@ -91,7 +91,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
                 <SelectValue placeholder="Qualquer prazo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Qualquer prazo</SelectItem>
+                <SelectItem value="any">Qualquer prazo</SelectItem>
                 {Object.entries(IMPLEMENTATION_TIMES).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
@@ -110,7 +110,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
                 <SelectValue placeholder="Qualquer ROI" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Qualquer ROI</SelectItem>
+                <SelectItem value="any">Qualquer ROI</SelectItem>
                 {Object.entries(ROI_ESTIMATES).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
