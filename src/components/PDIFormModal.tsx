@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Target, Award } from "lucide-react";
 import { useEmployeesAsOptions } from "@/services/employees";
 import { useCreateCareerPlan, type CareerDevelopmentPlan } from "@/services/careerDevelopment";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface PDIFormModalProps {
@@ -58,20 +59,31 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
 
   const { data: employeeOptions } = useEmployeesAsOptions();
   const createCareerPlan = useCreateCareerPlan();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user?.company?.id) {
+      toast.error("Erro: informações da empresa não encontradas.");
+      return;
+    }
+    
+    if (!formData.employee_id) {
+      toast.error("Por favor, selecione um funcionário.");
+      return;
+    }
+    
     try {
       await createCareerPlan.mutateAsync({
         ...formData,
-        company_id: "", // Will be set by RLS
+        company_id: user.company.id,
         status: "Em Andamento",
         progress_percentage: 0,
         goals,
         skills_to_develop: skills,
         development_activities: activities,
-        created_by_user_id: "", // Will be set by auth
+        created_by_user_id: user.id,
       } as Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>);
       
       toast.success("PDI criado com sucesso!");
@@ -79,8 +91,8 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       onClose();
       resetForm();
     } catch (error) {
-      toast.error("Erro ao criar PDI. Tente novamente.");
-      console.error(error);
+      console.error("Erro ao criar PDI:", error);
+      toast.error("Erro ao criar PDI. Verifique os dados e tente novamente.");
     }
   };
 
