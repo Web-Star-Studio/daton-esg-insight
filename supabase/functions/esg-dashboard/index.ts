@@ -1,6 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 interface KPI {
   key: string
@@ -237,7 +241,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
     // Get waste data for recycling rate
     const { data: wasteData, error: wasteError } = await supabase
       .from('waste_logs')
-      .select('quantity, destination_type')
+      .select('quantity, destination_name')
       .eq('company_id', company_id)
 
     console.log('Waste data:', { wasteData, wasteError })
@@ -246,7 +250,7 @@ async function calculateEnvironmentalScore(supabase: any, company_id: string): P
     if (wasteData && wasteData.length > 0) {
       const totalWaste = wasteData.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
       const recycledWaste = wasteData
-        .filter((item: any) => item.destination_type?.toLowerCase().includes('recicl'))
+        .filter((item: any) => item.destination_name?.toLowerCase().includes('recicl'))
         .reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
       
       if (totalWaste > 0) {

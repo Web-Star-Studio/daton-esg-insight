@@ -8626,7 +8626,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_risk_occurrences_esg_risks"
+            columns: ["risk_id"]
+            isOneToOne: false
+            referencedRelation: "esg_risks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       risk_treatments: {
         Row: {
@@ -10381,6 +10389,10 @@ export type Database = {
       get_conversion_factor: {
         Args: { p_category?: string; p_from_unit: string; p_to_unit: string }
         Returns: number
+      }
+      get_dashboard_analytics: {
+        Args: { p_company_id: string }
+        Returns: Json
       }
       get_indicator_suggested_value: {
         Args: { p_company_id: string; p_indicator_code: string }
