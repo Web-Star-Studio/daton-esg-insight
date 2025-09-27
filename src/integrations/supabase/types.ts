@@ -11449,6 +11449,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      user_has_company_access: {
+        Args: { p_company_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       approval_status_enum:
