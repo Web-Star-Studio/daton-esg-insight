@@ -514,9 +514,9 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
 
         {/* Main Content - Hidden when minimized */}
         {!isMinimized && (
-          <div className="flex flex-col h-[calc(700px-80px)]">
+          <CardContent className="p-0 flex flex-col" style={{ height: '620px' }}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <div className="px-4 pt-2">
+              <div className="px-4 pt-2 flex-shrink-0">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="chat" className="text-xs">
                     <MessageCircle className="w-3 h-3 mr-1" />
@@ -534,9 +534,10 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
               </div>
 
               {/* Chat Tab */}
-              <TabsContent value="chat" className="flex-1 flex flex-col mt-2">
-                <ScrollArea className="flex-1 px-4">
-                  <div className="space-y-4 pb-4">
+              <TabsContent value="chat" className="flex-1 flex flex-col mt-2 min-h-0">
+                <div className="flex-1 flex flex-col min-h-0">
+                  <ScrollArea className="flex-1 px-4 min-h-0">
+                    <div className="space-y-4 pb-4">
                     {messages.length === 0 && (
                       <div className="text-center py-8 space-y-4">
                         <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center mx-auto">
@@ -722,7 +723,7 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
                 </ScrollArea>
 
                 {/* Enhanced Input */}
-                <div className="p-4 border-t bg-muted/20">
+                <div className="p-4 border-t bg-muted/20 flex-shrink-0">
                   <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="space-y-3">
                     <div className="flex gap-2">
                       <Input
@@ -762,10 +763,11 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
                     </div>
                   </form>
                 </div>
+                </div>
               </TabsContent>
 
               {/* Capabilities Tab */}
-              <TabsContent value="capabilities" className="flex-1 p-4">
+              <TabsContent value="capabilities" className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold mb-2">Recursos da IA</h3>
@@ -802,7 +804,7 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
               </TabsContent>
 
               {/* Insights Tab */}
-              <TabsContent value="insights" className="flex-1 p-4">
+              <TabsContent value="insights" className="flex-1 p-4 overflow-y-auto">
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-semibold mb-2">Insights Inteligentes</h3>
@@ -851,7 +853,7 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
+          </CardContent>
         )}
       </Card>
     </div>
