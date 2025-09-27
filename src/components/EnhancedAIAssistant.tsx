@@ -450,12 +450,13 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
   // Enhanced AI Assistant Interface
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <Card 
-        className={cn(
-          "w-[480px] bg-background border shadow-2xl transition-all duration-300",
-          isMinimized ? "h-20" : "h-[700px]"
-        )}
-      >
+        <Card 
+          className={cn(
+            "w-[480px] max-w-[calc(100vw-24px)] bg-background border shadow-2xl transition-all duration-300 overflow-hidden flex flex-col",
+            isMinimized ? "h-20" : ""
+          )}
+          style={!isMinimized ? { maxHeight: 'calc(100vh - 3rem)' } : undefined}
+        >
         {/* Enhanced Header */}
         <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
           <div className="flex items-center gap-3">
@@ -514,8 +515,8 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
 
         {/* Main Content - Hidden when minimized */}
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col" style={{ height: '620px' }}>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
               <div className="px-4 pt-2 flex-shrink-0">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="chat" className="text-xs">
