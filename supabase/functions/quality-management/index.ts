@@ -91,19 +91,19 @@ async function getQualityDashboard(supabase: any, company_id: string) {
   try {
     // Get general quality metrics
     const [
-      { data: totalNCs },
-      { data: openNCs },
-      { data: totalRisks },
-      { data: highRisks },
-      { data: actionPlans },
-      { data: overdueActions }
+      { count: totalNCsCount },
+      { count: openNCsCount },
+      { count: totalRisksCount },
+      { count: highRisksCount },
+      { count: actionPlansCount },
+      { count: overdueActionsCount }
     ] = await Promise.all([
-      supabase.from('non_conformities').select('id', { count: 'exact' }).eq('company_id', company_id),
-      supabase.from('non_conformities').select('id', { count: 'exact' }).eq('company_id', company_id).eq('status', 'Aberta'),
-      supabase.from('esg_risks').select('id', { count: 'exact' }).eq('company_id', company_id).eq('inherent_risk_level', 'Alto'),
-      supabase.from('esg_risks').select('id', { count: 'exact' }).eq('company_id', company_id).in('inherent_risk_level', ['Alto', 'Crítico']),
-      supabase.from('action_plans').select('id', { count: 'exact' }).eq('company_id', company_id),
-      supabase.from('action_plan_items').select('id', { count: 'exact' }).lt('when_deadline', new Date().toISOString().split('T')[0]).eq('status', 'Pendente')
+      supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+      supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'Aberta'),
+      supabase.from('esg_risks').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+      supabase.from('esg_risks').select('*', { count: 'exact', head: true }).eq('company_id', company_id).in('inherent_risk_level', ['Alto', 'Crítico']),
+      supabase.from('action_plans').select('*', { count: 'exact', head: true }).eq('company_id', company_id),
+      supabase.from('action_plan_items').select('*', { count: 'exact', head: true }).lt('when_deadline', new Date().toISOString().split('T')[0]).eq('status', 'Pendente')
     ]);
 
     // Recent non-conformities
@@ -126,12 +126,12 @@ async function getQualityDashboard(supabase: any, company_id: string) {
 
     const dashboard = {
       metrics: {
-        totalNCs: totalNCs?.length || 0,
-        openNCs: openNCs?.length || 0,
-        totalRisks: totalRisks?.length || 0,
-        highRisks: highRisks?.length || 0,
-        actionPlans: actionPlans?.length || 0,
-        overdueActions: overdueActions?.length || 0
+        totalNCs: totalNCsCount || 0,
+        openNCs: openNCsCount || 0,
+        totalRisks: totalRisksCount || 0,
+        highRisks: highRisksCount || 0,
+        actionPlans: actionPlansCount || 0,
+        overdueActions: overdueActionsCount || 0
       },
       recentNCs: recentNCs || [],
       plansProgress: plansProgress?.map((plan: any) => ({
@@ -307,31 +307,32 @@ async function getQualityIndicators(supabase: any, company_id: string) {
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().substring(0, 7);
 
   const [
-    { data: thisMonthNCs },
-    { data: lastMonthNCs },
-    { data: resolvedNCs },
-    { data: overdueActions }
+    { count: thisMonthCount },
+    { count: lastMonthCount },
+    { count: resolvedCount },
+    { count: overdueActionsCount }
   ] = await Promise.all([
-    supabase.from('non_conformities').select('id', { count: 'exact' }).eq('company_id', company_id).gte('created_at', `${thisMonth}-01`),
-    supabase.from('non_conformities').select('id', { count: 'exact' }).eq('company_id', company_id).gte('created_at', `${lastMonth}-01`).lt('created_at', `${thisMonth}-01`),
-    supabase.from('non_conformities').select('id', { count: 'exact' }).eq('company_id', company_id).eq('status', 'Fechada'),
-    supabase.from('action_plan_items').select('id', { count: 'exact' }).lt('when_deadline', now.toISOString().split('T')[0]).eq('status', 'Pendente')
+    supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id).gte('created_at', `${thisMonth}-01`),
+    supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id).gte('created_at', `${lastMonth}-01`).lt('created_at', `${thisMonth}-01`),
+    supabase.from('non_conformities').select('*', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'Fechada'),
+    supabase.from('action_plan_items').select('*', { count: 'exact', head: true }).lt('when_deadline', now.toISOString().split('T')[0]).eq('status', 'Pendente')
   ]);
 
   const indicators = {
     ncTrend: {
-      current: thisMonthNCs?.length || 0,
-      previous: lastMonthNCs?.length || 0,
-      change: ((thisMonthNCs?.length || 0) - (lastMonthNCs?.length || 0))
+      current: thisMonthCount || 0,
+      previous: lastMonthCount || 0,
+      change: (thisMonthCount || 0) - (lastMonthCount || 0)
     },
     resolutionRate: {
-      resolved: resolvedNCs?.length || 0,
-      total: (resolvedNCs?.length || 0) + (thisMonthNCs?.length || 0),
-      percentage: (resolvedNCs?.length || 0) > 0 ? 
-        Math.round(((resolvedNCs?.length || 0) / ((resolvedNCs?.length || 0) + (thisMonthNCs?.length || 0))) * 100) : 0
+      resolved: resolvedCount || 0,
+      total: (resolvedCount || 0) + (thisMonthCount || 0),
+      percentage: (resolvedCount || 0) > 0 
+        ? Math.round(((resolvedCount || 0) / ((resolvedCount || 0) + (thisMonthCount || 0))) * 100) 
+        : 0
     },
-    overdueActions: overdueActions?.length || 0,
-    qualityScore: Math.max(0, 100 - ((thisMonthNCs?.length || 0) * 5) - ((overdueActions?.length || 0) * 3))
+    overdueActions: overdueActionsCount || 0,
+    qualityScore: Math.max(0, 100 - ((thisMonthCount || 0) * 5) - ((overdueActionsCount || 0) * 3))
   };
 
   return new Response(JSON.stringify(indicators), {

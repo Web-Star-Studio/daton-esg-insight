@@ -429,7 +429,7 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
   // Floating AI button
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed z-50 bottom-4 right-4 sm:bottom-6 sm:right-6 left-4 sm:left-auto">
         <Button
           onClick={() => setIsOpen(true)}
           size="lg"
@@ -449,7 +449,7 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
 
   // Enhanced AI Assistant Interface
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed z-50 bottom-4 right-4 sm:bottom-6 sm:right-6 left-4 sm:left-auto">
         <Card 
           className={cn(
             "w-[480px] max-w-[calc(100vw-24px)] bg-background border shadow-2xl transition-all duration-300 overflow-hidden flex flex-col",
