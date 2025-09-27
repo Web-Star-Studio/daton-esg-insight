@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext"
 import { AppSidebar } from "@/components/AppSidebar"
 import { AppHeader } from "@/components/AppHeader"
-import { ChatAssistant } from "@/components/ChatAssistant"
+import { EnhancedAIAssistant } from "@/components/EnhancedAIAssistant"
 import { SidebarProvider } from "@/components/ui/sidebar"
 
 interface MainLayoutProps {
@@ -22,7 +22,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </main>
         </div>
         
-        <ChatAssistant />
+        <EnhancedAIAssistant />
       </div>
     </SidebarProvider>
   )

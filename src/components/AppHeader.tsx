@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
+import { GlobalIntelligentSearch } from "@/components/GlobalIntelligentSearch"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +22,7 @@ export function AppHeader() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="hover:bg-muted/50" />
         
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar..."
-            className="pl-10 pr-4 bg-muted/20 border-border/40 focus:bg-background"
-          />
-        </div>
+        <GlobalIntelligentSearch />
       </div>
 
       <div className="flex items-center gap-3">
