@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Building2, Phone, Mail, MapPin, Star, TrendingUp, AlertCircle, Eye, Edit } from "lucide-react";
-import { qualityManagementService } from "@/services/qualityManagement";
+import { 
+  getSuppliers, 
+  createSupplier, 
+  createSupplierEvaluation, 
+  Supplier, 
+  CreateSupplierData,
+  CreateSupplierEvaluationData 
+} from "@/services/supplierService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
