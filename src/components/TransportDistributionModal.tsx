@@ -163,13 +163,14 @@ export function TransportDistributionModal({ isOpen, onClose, onSuccess }: Trans
             <div>
               <Label htmlFor="fuel_type">Tipo de Combustível</Label>
               <Select
-                value={formData.fuel_type || ""}
+                value={formData.fuel_type || "none"}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, fuel_type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o combustível" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Selecionar combustível</SelectItem>
                   {fuelTypes.map(fuel => (
                     <SelectItem key={fuel} value={fuel}>
                       {fuel}

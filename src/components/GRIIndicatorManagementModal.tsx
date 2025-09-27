@@ -87,7 +87,7 @@ export function GRIIndicatorManagementModal({
                       <div className="space-y-2">
                         <Label>Indicador GRI</Label>
                         <select className="w-full p-2 border rounded-md">
-                          <option value="">Selecione um indicador...</option>
+                          <option value="none">Selecione um indicador...</option>
                           {indicators.map((indicator) => (
                             <option key={indicator.id} value={indicator.id}>
                               {indicator.code} - {indicator.title || indicator.name}
@@ -99,7 +99,7 @@ export function GRIIndicatorManagementModal({
                       <div className="space-y-2">
                         <Label>Tabela de Origem</Label>
                         <select className="w-full p-2 border rounded-md">
-                          <option value="">Selecione uma tabela...</option>
+                          <option value="none">Selecione uma tabela...</option>
                           {sourceTables.map((table) => (
                             <option key={table.value} value={table.value}>
                               {table.label}
@@ -216,7 +216,7 @@ export function GRIIndicatorManagementModal({
                       <div className="space-y-2">
                         <Label>Indicador</Label>
                         <select className="w-full p-2 border rounded-md">
-                          <option value="">Selecione um indicador...</option>
+                          <option value="none">Selecione um indicador...</option>
                           {indicators.map((indicator) => (
                             <option key={indicator.id} value={indicator.id}>
                               {indicator.code} - {indicator.title || indicator.name}

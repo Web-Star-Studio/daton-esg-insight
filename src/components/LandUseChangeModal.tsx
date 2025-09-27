@@ -158,13 +158,14 @@ export function LandUseChangeModal({ isOpen, onClose, onSuccess }: LandUseChange
             <div>
               <Label htmlFor="vegetation_type">Tipo de Vegetação</Label>
               <Select
-                value={formData.vegetation_type || ""}
+                value={formData.vegetation_type || "none"}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, vegetation_type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Opcional" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Selecionar tipo</SelectItem>
                   <SelectItem value="primaria">Vegetação Primária</SelectItem>
                   <SelectItem value="secundaria">Vegetação Secundária</SelectItem>
                 </SelectContent>

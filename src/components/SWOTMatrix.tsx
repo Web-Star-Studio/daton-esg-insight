@@ -266,7 +266,7 @@ export default function SWOTMatrix({ strategicMapId }: SWOTMatrixProps) {
 
       {/* Seletor de Análise */}
       {analyses && analyses.length > 0 && (
-        <Select value={selectedAnalysis || ""} onValueChange={setSelectedAnalysis}>
+        <Select value={selectedAnalysis || "none"} onValueChange={setSelectedAnalysis}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione uma análise SWOT" />
           </SelectTrigger>

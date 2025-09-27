@@ -168,13 +168,14 @@ export function WastewaterTreatmentModal({ isOpen, onClose, onSuccess }: Wastewa
             <div className="md:col-span-2">
               <Label htmlFor="discharge_pathway">Destino Final do Efluente</Label>
               <Select
-                value={formData.discharge_pathway || ""}
+                value={formData.discharge_pathway || "none"}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, discharge_pathway: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o destino" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Selecionar destino</SelectItem>
                   {dischargePathways.map(pathway => (
                     <SelectItem key={pathway} value={pathway}>
                       {pathway}

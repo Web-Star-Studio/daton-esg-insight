@@ -45,7 +45,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
           <div className="space-y-2">
             <label className="text-sm font-medium">Categoria</label>
             <Select 
-              value={filters.category || ""} 
+              value={filters.category || "all"} 
               onValueChange={(value) => updateFilter('category', value || undefined)}
             >
               <SelectTrigger>
@@ -65,7 +65,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
           <div className="space-y-2">
             <label className="text-sm font-medium">Faixa de Preço</label>
             <Select 
-              value={filters.price_range || ""} 
+              value={filters.price_range || "any"} 
               onValueChange={(value) => updateFilter('price_range', value || undefined)}
             >
               <SelectTrigger>
@@ -84,7 +84,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
           <div className="space-y-2">
             <label className="text-sm font-medium">Tempo de Implementação</label>
             <Select 
-              value={filters.implementation_time || ""} 
+              value={filters.implementation_time || "any"} 
               onValueChange={(value) => updateFilter('implementation_time', value || undefined)}
             >
               <SelectTrigger>
@@ -103,7 +103,7 @@ export function MarketplaceFilters({ filters, onFiltersChange }: MarketplaceFilt
           <div className="space-y-2">
             <label className="text-sm font-medium">Estimativa de ROI</label>
             <Select 
-              value={filters.roi_estimate || ""} 
+              value={filters.roi_estimate || "any"} 
               onValueChange={(value) => updateFilter('roi_estimate', value || undefined)}
             >
               <SelectTrigger>

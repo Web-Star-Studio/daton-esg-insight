@@ -167,7 +167,7 @@ export function ApprovalWorkflowManager({ open, onOpenChange }: ApprovalWorkflow
 
   const addApprover = () => {
     setWorkflowSteps([...workflowSteps, {
-      approver_user_id: "",
+      approver_user_id: "none",
       step_number: workflowSteps.length + 1
     }]);
   };
@@ -362,13 +362,14 @@ export function ApprovalWorkflowManager({ open, onOpenChange }: ApprovalWorkflow
 
                             <div className="flex-1">
                               <Select
-                                value={step.approver_user_id}
+                                value={step.approver_user_id || "none"}
                                 onValueChange={(value) => updateApprover(index, value)}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Selecionar aprovador" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="none">Selecionar aprovador</SelectItem>
                                   {users?.map((user) => (
                                     <SelectItem key={user.id} value={user.id}>
                                       <div className="flex items-center gap-2">
