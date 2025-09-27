@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formErrorHandler } from "@/utils/formErrorHandler";
 
 export interface Employee {
   id: string;
@@ -10,6 +11,7 @@ export interface Employee {
   phone?: string;
   department?: string;
   position?: string;
+  position_id?: string; // Add position_id to link with organizational structure
   hire_date: string;
   birth_date?: string;
   gender?: string;
@@ -45,31 +47,47 @@ export const getEmployee = async (id: string) => {
   return data;
 };
 
-export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at' | 'updated_at'>) => {
-  const { data, error } = await supabase
-    .from('employees')
-    .insert({
+export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+  return formErrorHandler.createRecord(async () => {
+    // Get authenticated user and company_id
+    const { profile } = await formErrorHandler.checkAuth();
+    
+    // Prepare employee data with company_id and fallback hire_date
+    const employeeData = {
       ...employee,
-      // Ensure company_id is set for RLS compliance
-      company_id: employee.company_id
-    })
-    .select()
-    .single();
+      company_id: profile.company_id,
+      hire_date: employee.hire_date || new Date().toISOString().split('T')[0]
+    };
 
-  if (error) throw error;
-  return data;
+    const { data, error } = await supabase
+      .from('employees')
+      .insert(employeeData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, { 
+    formType: 'Funcionário',
+    successMessage: 'Funcionário criado com sucesso!'
+  });
 };
 
 export const updateEmployee = async (id: string, updates: Partial<Employee>) => {
-  const { data, error } = await supabase
-    .from('employees')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+  return formErrorHandler.updateRecord(async () => {
+    const { data, error } = await supabase
+      .from('employees')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
+  }, { 
+    formType: 'Funcionário',
+    successMessage: 'Funcionário atualizado com sucesso!'
+  });
 };
 
 export const deleteEmployee = async (id: string) => {

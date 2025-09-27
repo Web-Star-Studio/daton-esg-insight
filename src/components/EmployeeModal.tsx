@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
 import { getDepartments, getPositions, createDepartment, createPosition, type Department, type Position } from '@/services/organizationalStructure';
+import { formErrorHandler } from '@/utils/formErrorHandler';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -16,6 +18,13 @@ interface EmployeeModalProps {
   onSuccess: () => void;
   employee?: Employee | null;
 }
+
+// Validation schema
+const employeeSchema = z.object({
+  employee_code: z.string().trim().min(1, 'Código do funcionário é obrigatório').max(50, 'Código muito longo'),
+  full_name: z.string().trim().min(1, 'Nome completo é obrigatório').max(255, 'Nome muito longo'),
+  email: z.string().trim().email('E-mail inválido').optional().or(z.literal('')),
+});
 
 export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: EmployeeModalProps) {
   const [formData, setFormData] = useState({
@@ -25,6 +34,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     phone: '',
     department: '',
     position: '',
+    position_id: '', // Add position_id to maintain link with organizational structure
     hire_date: '',
     birth_date: '',
     gender: '',
@@ -55,6 +65,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           phone: employee.phone || '',
           department: employee.department || '',
           position: employee.position || '',
+          position_id: employee.position_id || '', // Include position_id
           hire_date: employee.hire_date || '',
           birth_date: employee.birth_date || '',
           gender: employee.gender || '',
@@ -70,6 +81,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           phone: '',
           department: '',
           position: '',
+          position_id: '', // Include position_id
           hire_date: '',
           birth_date: '',
           gender: '',
@@ -101,6 +113,19 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       return;
     }
 
+    // Check for duplicates (case-insensitive)
+    const existingDept = departments.find(d => 
+      d.name.toLowerCase() === newDepartmentName.trim().toLowerCase()
+    );
+    
+    if (existingDept) {
+      setFormData(prev => ({ ...prev, department: existingDept.name }));
+      setNewDepartmentName('');
+      setShowNewDepartment(false);
+      toast.info('Departamento já existe - selecionado automaticamente');
+      return;
+    }
+
     setCreatingDepartment(true);
     try {
       const newDept = await createDepartment({
@@ -116,7 +141,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       toast.success('Departamento criado com sucesso!');
     } catch (error) {
       console.error('Error creating department:', error);
-      toast.error('Erro ao criar departamento');
+      formErrorHandler.handleError(error, { formType: 'Departamento', operation: 'create' });
     } finally {
       setCreatingDepartment(false);
     }
@@ -125,6 +150,19 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const handleCreatePosition = async () => {
     if (!newPositionTitle.trim()) {
       toast.error('Título do cargo é obrigatório');
+      return;
+    }
+
+    // Check for duplicates (case-insensitive)
+    const existingPos = positions.find(p => 
+      p.title.toLowerCase() === newPositionTitle.trim().toLowerCase()
+    );
+    
+    if (existingPos) {
+      setFormData(prev => ({ ...prev, position: existingPos.title, position_id: existingPos.id }));
+      setNewPositionTitle('');
+      setShowNewPosition(false);
+      toast.info('Cargo já existe - selecionado automaticamente');
       return;
     }
 
@@ -137,13 +175,13 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       });
       
       setPositions(prev => [...prev, newPos]);
-      setFormData(prev => ({ ...prev, position: newPos.title }));
+      setFormData(prev => ({ ...prev, position: newPos.title, position_id: newPos.id }));
       setNewPositionTitle('');
       setShowNewPosition(false);
       toast.success('Cargo criado com sucesso!');
     } catch (error) {
       console.error('Error creating position:', error);
-      toast.error('Erro ao criar cargo');
+      formErrorHandler.handleError(error, { formType: 'Cargo', operation: 'create' });
     } finally {
       setCreatingPosition(false);
     }
@@ -151,31 +189,34 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.full_name.trim() || !formData.employee_code.trim()) {
-      toast.error('Nome completo e código do funcionário são obrigatórios');
-      return;
+    
+    // Validate form data
+    try {
+      employeeSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+        return;
+      }
     }
 
     setLoading(true);
     try {
       if (employee) {
         await updateEmployee(employee.id, formData);
-        toast.success('Funcionário atualizado com sucesso!');
       } else {
-        // Add required fields and let RLS handle company_id
-        const employeeData = { 
-          ...formData, 
-          hire_date: formData.hire_date || new Date().toISOString().split('T')[0],
-          company_id: '' // This will be overridden by RLS policy
-        };
+        // Remove company_id from formData - let the service handle it
+        const { position_id, ...employeeData } = formData; // Also remove position_id from employee creation for now
         await createEmployee(employeeData);
-        toast.success('Funcionário criado com sucesso!');
       }
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Error saving employee:', error);
-      toast.error('Erro ao salvar funcionário');
+      formErrorHandler.handleError(error, { 
+        formType: 'Funcionário', 
+        operation: employee ? 'update' : 'create' 
+      });
     } finally {
       setLoading(false);
     }
@@ -321,7 +362,17 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             <div>
               <Label htmlFor="position">Cargo</Label>
               <div className="flex gap-2">
-                <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
+                <Select 
+                  value={formData.position} 
+                  onValueChange={(value) => {
+                    const selectedPosition = positions.find(p => p.title === value);
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      position: value,
+                      position_id: selectedPosition?.id || ''
+                    }));
+                  }}
+                >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Selecionar cargo" />
                   </SelectTrigger>
