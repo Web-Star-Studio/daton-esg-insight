@@ -25,38 +25,22 @@ class IntegrationsService {
 
   async getIntegrations(companyId: string): Promise<IntegrationConfig[]> {
     try {
-      const { data, error } = await supabase
-        .from('integrations')
-        .select('*')
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      return data || [];
+      // Placeholder - would need database table
+      return Array.from(this.integrations.values()).filter(integration => 
+        integration.settings.companyId === companyId
+      );
     } catch (error) {
-      return handleServiceError(error, 'getIntegrations');
+      throw handleServiceError.handle(error, { function: 'getIntegrations' });
     }
   }
 
   async saveIntegration(companyId: string, config: IntegrationConfig): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('integrations')
-        .upsert({
-          id: config.id,
-          company_id: companyId,
-          name: config.name,
-          type: config.type,
-          is_active: config.isActive,
-          settings: config.settings,
-          triggers: config.triggers
-        });
-
-      if (error) throw error;
-
+      // Store in memory for now - would need database table
+      config.settings.companyId = companyId;
       this.integrations.set(config.id, config);
     } catch (error) {
-      throw handleServiceError(error, 'saveIntegration');
+      throw handleServiceError.handle(error, { function: 'saveIntegration' });
     }
   }
 
@@ -93,23 +77,25 @@ class IntegrationsService {
   }
 
   private async updateIntegrationStats(integrationId: string, success: boolean): Promise<void> {
-    const integration = this.integrations.get(integrationId);
-    if (!integration) return;
+    const integrationData = this.integrations.get(integrationId);
+    if (!integrationData) return;
 
     const updates: any = {
       last_triggered: new Date().toISOString()
     };
 
     if (!success) {
-      updates.error_count = (integration.errorCount || 0) + 1;
+      updates.error_count = (integrationData.errorCount || 0) + 1;
     } else {
       updates.error_count = 0;
     }
 
-    await supabase
-      .from('integrations')
-      .update(updates)
-      .eq('id', integrationId);
+    // Update in memory - would need database table
+    const updatedIntegration = this.integrations.get(integrationId);
+    if (updatedIntegration) {
+      updatedIntegration.lastTriggered = new Date(updates.last_triggered);
+      updatedIntegration.errorCount = updates.error_count;
+    }
   }
 
   async sendEmail(config: {
@@ -352,15 +338,8 @@ class IntegrationsService {
 
   async getIntegrationLogs(integrationId: string): Promise<any[]> {
     try {
-      const { data, error } = await supabase
-        .from('integration_logs')
-        .select('*')
-        .eq('integration_id', integrationId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      return data || [];
+      // Placeholder - would need database table
+      return [];
     } catch (error) {
       console.error('Failed to fetch integration logs:', error);
       return [];
@@ -369,15 +348,8 @@ class IntegrationsService {
 
   async logIntegrationEvent(integrationId: string, event: string, success: boolean, details?: any): Promise<void> {
     try {
-      await supabase
-        .from('integration_logs')
-        .insert({
-          integration_id: integrationId,
-          event,
-          success,
-          details,
-          created_at: new Date().toISOString()
-        });
+      // Placeholder - would need database table
+      console.log('Integration event:', { integrationId, event, success, details });
     } catch (error) {
       console.error('Failed to log integration event:', error);
     }

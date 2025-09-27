@@ -81,7 +81,7 @@ class AnalyticsService {
         insights
       };
     } catch (error) {
-      return handleServiceError(error, 'getEmissionsAnalytics');
+      throw handleServiceError.handle(error, { function: 'getEmissionsAnalytics' });
     }
   }
 
@@ -126,7 +126,7 @@ class AnalyticsService {
         insights
       };
     } catch (error) {
-      return handleServiceError(error, 'getQualityAnalytics');
+      throw handleServiceError.handle(error, { function: 'getQualityAnalytics' });
     }
   }
 
@@ -186,7 +186,7 @@ class AnalyticsService {
         insights
       };
     } catch (error) {
-      return handleServiceError(error, 'getComplianceAnalytics');
+      throw handleServiceError.handle(error, { function: 'getComplianceAnalytics' });
     }
   }
 
@@ -333,9 +333,11 @@ class AnalyticsService {
       .sort((a: any, b: any) => a.date.localeCompare(b.date));
 
     return sortedData.map((item: any, index) => {
-      const value = aggregation === 'count' ? item.count : item.value;
-      const previousValue = index > 0 ? 
-        (aggregation === 'count' ? sortedData[index - 1].count : sortedData[index - 1].value) : 0;
+      const itemData = item as { count?: number; value?: number; date: string };
+      const value = aggregation === 'count' ? (itemData.count || 0) : (itemData.value || 0);
+      const previousData = index > 0 ? sortedData[index - 1] as { count?: number; value?: number } : null;
+      const previousValue = previousData ? 
+        (aggregation === 'count' ? (previousData.count || 0) : (previousData.value || 0)) : 0;
       
       const change = previousValue > 0 ? ((value - previousValue) / previousValue) * 100 : 0;
       
