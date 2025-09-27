@@ -108,13 +108,24 @@ export function CompetencyModal({ open, onOpenChange, competency }: CompetencyMo
       const competencyData = {
         competency_name: values.competency_name!,
         competency_category: values.competency_category!,
-        description: values.description,
+        description: values.description || null,
         levels: levels.map(level => ({
           ...level,
           behaviors: level.behaviors.filter(b => b.trim() !== "")
         })),
         is_active: true
       };
+
+      // Validar que todos os levels têm nome preenchido
+      const invalidLevels = levels.filter(level => !level.name.trim());
+      if (invalidLevels.length > 0) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Todos os níveis devem ter um nome preenchido.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (competency) {
         await updateCompetency(competency.id, competencyData);
@@ -131,11 +142,20 @@ export function CompetencyModal({ open, onOpenChange, competency }: CompetencyMo
       }
 
       queryClient.invalidateQueries({ queryKey: ["competency-matrix"] });
+      queryClient.invalidateQueries({ queryKey: ["competency-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["competency-gaps"] });
       onOpenChange(false);
-    } catch (error) {
+      form.reset();
+      setLevels([
+        { level: 1, name: "Básico", description: "", behaviors: [""] },
+        { level: 2, name: "Intermediário", description: "", behaviors: [""] },
+        { level: 3, name: "Avançado", description: "", behaviors: [""] }
+      ]);
+    } catch (error: any) {
+      console.error('Erro ao salvar competência:', error);
       toast({
         title: "Erro",
-        description: "Erro ao salvar competência. Tente novamente.",
+        description: error.message || "Erro ao salvar competência. Tente novamente.",
         variant: "destructive",
       });
     }

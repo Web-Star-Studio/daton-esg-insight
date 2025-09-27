@@ -23,6 +23,8 @@ import { CompetencyTable } from "@/components/CompetencyTable";
 import { CompetencyGapChart } from "@/components/CompetencyGapChart";
 import { PerformanceTrendChart } from "@/components/PerformanceTrendChart";
 import { ReportsSection } from "@/components/ReportsSection";
+import { PerformanceStatsCards, PerformanceDistributionCard, GoalsProgressCard } from "@/components/PerformanceStatsCards";
+import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -40,39 +42,59 @@ export default function GestaoDesempenho() {
 
   // Initialize default criteria on component load
   useEffect(() => {
-    initializeDefaultCriteria().catch(console.error);
-  }, []);
+    const initDefaults = async () => {
+      try {
+        await initializeDefaultCriteria();
+      } catch (error) {
+        console.error('Erro ao inicializar critérios padrão:', error);
+        toast({
+          title: "Aviso",
+          description: "Alguns dados padrão podem não ter sido carregados corretamente.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    initDefaults();
+  }, [toast]);
 
-  // Fetch real data
-  const { data: performanceStats } = useQuery({
+  // Fetch real data with error handling
+  const { data: performanceStats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['performance-stats'],
-    queryFn: getPerformanceStats
+    queryFn: getPerformanceStats,
+    retry: 2,
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
-  const { data: evaluationsList = [] } = useQuery({
+  const { data: evaluationsList = [], isLoading: evaluationsLoading, error: evaluationsError } = useQuery({
     queryKey: ['performance-evaluations'],
-    queryFn: getPerformanceEvaluations
+    queryFn: getPerformanceEvaluations,
+    retry: 2
   });
 
-  const { data: goalsList = [] } = useQuery({
+  const { data: goalsList = [], isLoading: goalsLoading, error: goalsError } = useQuery({
     queryKey: ['employee-goals'],
-    queryFn: getEmployeeGoals
+    queryFn: getEmployeeGoals,
+    retry: 2
   });
 
   // Fetch competency data
-  const { data: competencies = [] } = useQuery({
+  const { data: competencies = [], isLoading: competenciesLoading, error: competenciesError } = useQuery({
     queryKey: ['competency-matrix'],
-    queryFn: getCompetencyMatrix
+    queryFn: getCompetencyMatrix,
+    retry: 2
   });
 
-  const { data: assessments = [] } = useQuery({
+  const { data: assessments = [], isLoading: assessmentsLoading } = useQuery({
     queryKey: ['competency-assessments'],
-    queryFn: getEmployeeCompetencyAssessments
+    queryFn: getEmployeeCompetencyAssessments,
+    retry: 2
   });
 
-  const { data: gaps = [] } = useQuery({
+  const { data: gaps = [], isLoading: gapsLoading } = useQuery({
     queryKey: ['competency-gaps'],
-    queryFn: generateCompetencyGapReport
+    queryFn: getCompetencyGapAnalysis,
+    retry: 2
   });
 
   // Performance stats for display
@@ -82,28 +104,32 @@ export default function GestaoDesempenho() {
       value: performanceStats?.pending_evaluations?.toString() || "0",
       description: "Avaliações aguardando preenchimento",
       icon: Calendar,
-      color: "text-amber-600"
+      color: "text-amber-600",
+      trend: { value: 5, direction: 'down' as const }
     },
     {
       title: "Meta de Conclusão",
       value: `${performanceStats?.completion_percentage || 0}%`,
       description: "Das avaliações foram concluídas",
       icon: Target,
-      color: "text-blue-600"
+      color: "text-blue-600",
+      trend: { value: 12, direction: 'up' as const }
     },
     {
       title: "Média Geral",
-      value: performanceStats?.average_score?.toString() || "0.0",
+      value: performanceStats?.average_score?.toFixed(1) || "0.0",
       description: "Nota média das avaliações",
       icon: TrendingUp,
-      color: "text-green-600"
+      color: "text-green-600",
+      trend: { value: 3, direction: 'up' as const }
     },
     {
       title: "Top Performers",
       value: performanceStats?.top_performers?.toString() || "0",
       description: "Funcionários com nota ≥ 4.5",
       icon: Award,
-      color: "text-purple-600"
+      color: "text-purple-600",
+      trend: { value: 8, direction: 'up' as const }
     }
   ];
 
@@ -228,94 +254,35 @@ export default function GestaoDesempenho() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {statsCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={index}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {stat.title}
-                    </CardTitle>
-                    <Icon className={`h-4 w-4 ${stat.color}`} />
+          {statsLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader className="pb-2">
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.description}
-                    </p>
+                    <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-full"></div>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : statsError ? (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600 text-center">
+                  Erro ao carregar estatísticas de desempenho. Tente recarregar a página.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <PerformanceStatsCards stats={statsCards} />
+          )}
 
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição de Notas</CardTitle>
-                <CardDescription>
-                  Distribuição das avaliações por faixa de nota
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">5.0 - 4.5</div>
-                    <Progress value={30} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">30%</div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">4.4 - 4.0</div>
-                    <Progress value={45} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">45%</div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">3.9 - 3.5</div>
-                    <Progress value={20} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">20%</div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">&lt; 3.5</div>
-                    <Progress value={5} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">5%</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Progresso das Metas</CardTitle>
-                <CardDescription>
-                  Acompanhamento das metas por departamento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">Vendas</div>
-                    <Progress value={85} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">85%</div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">Marketing</div>
-                    <Progress value={72} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">72%</div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">TI</div>
-                    <Progress value={68} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">68%</div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-24 text-sm">RH</div>
-                    <Progress value={90} className="mx-4" />
-                    <div className="w-12 text-sm text-muted-foreground">90%</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <PerformanceDistributionCard />
+            <GoalsProgressCard />
           </div>
         </TabsContent>
 
@@ -328,48 +295,88 @@ export default function GestaoDesempenho() {
             </Button>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Lista de Avaliações</CardTitle>
-              <CardDescription>
-                Acompanhe o status das avaliações de desempenho
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {evaluationsList.map((evaluation: any) => (
-                  <div key={evaluation.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="font-medium">{evaluation.employee?.full_name || 'N/A'}</p>
-                          <p className="text-sm text-muted-foreground">{evaluation.employee?.position || 'N/A'}</p>
+          {evaluationsLoading ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Avaliações</CardTitle>
+                <CardDescription>Carregando avaliações...</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="animate-pulse p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded w-32"></div>
+                          <div className="h-3 bg-muted rounded w-24"></div>
                         </div>
-                        <div>
-                          <p className="text-sm">{format(new Date(evaluation.period_start), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(evaluation.period_end), "dd/MM/yyyy", { locale: ptBR })}</p>
-                          <p className="text-sm text-muted-foreground">Avaliador: {evaluation.evaluator?.full_name || 'N/A'}</p>
-                        </div>
+                        <div className="h-8 bg-muted rounded w-20"></div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {evaluation.overall_score && (
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-blue-600">{evaluation.overall_score}</p>
-                          <p className="text-xs text-muted-foreground">Nota</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : evaluationsError ? (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600 text-center">
+                  Erro ao carregar avaliações de desempenho. Tente recarregar a página.
+                </p>
+              </CardContent>
+            </Card>
+          ) : evaluationsList.length === 0 ? (
+            <EmptyState
+              icon={Target}
+              title="Nenhuma avaliação encontrada"
+              description="Comece criando sua primeira avaliação de desempenho para acompanhar o desenvolvimento da equipe."
+              actionLabel="Criar Primeira Avaliação"
+              onAction={() => setIsEvaluationModalOpen(true)}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Avaliações</CardTitle>
+                <CardDescription>
+                  Acompanhe o status das avaliações de desempenho
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {evaluationsList.map((evaluation: any) => (
+                    <div key={evaluation.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <p className="font-medium">{evaluation.employee?.full_name || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">{evaluation.employee?.position || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm">{format(new Date(evaluation.period_start), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(evaluation.period_end), "dd/MM/yyyy", { locale: ptBR })}</p>
+                            <p className="text-sm text-muted-foreground">Avaliador: {evaluation.evaluator?.full_name || 'N/A'}</p>
+                          </div>
                         </div>
-                      )}
-                      <Badge className={getStatusColor(evaluation.status)}>
-                        {evaluation.status}
-                      </Badge>
-                      <Button variant="outline" size="sm">
-                        Ver Detalhes
-                      </Button>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {evaluation.overall_score && (
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-blue-600">{evaluation.overall_score}</p>
+                            <p className="text-xs text-muted-foreground">Nota</p>
+                          </div>
+                        )}
+                        <Badge className={getStatusColor(evaluation.status)}>
+                          {evaluation.status}
+                        </Badge>
+                        <Button variant="outline" size="sm">
+                          Ver Detalhes
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-6">
@@ -384,46 +391,101 @@ export default function GestaoDesempenho() {
             </Button>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Acompanhamento de Metas</CardTitle>
-              <CardDescription>
-                Progresso das metas individuais dos funcionários
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {goalsList.map((goal: any) => {
-                  const progress = calculateProgress(goal);
-                  return (
-                    <div key={goal.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-medium">{goal.name}</p>
-                          <p className="text-sm text-muted-foreground">{goal.description}</p>
-                        </div>
-                        <Badge className={getGoalStatusColor(goal.status)}>
-                          {goal.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm">Progresso</span>
-                            <span className="text-sm font-medium">{Math.round(progress)}%</span>
-                          </div>
-                          <Progress value={progress} />
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Prazo: {format(new Date(goal.deadline_date), "dd/MM/yyyy", { locale: ptBR })}
-                        </div>
+          {goalsLoading ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Acompanhamento de Metas</CardTitle>
+                <CardDescription>Carregando metas...</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="animate-pulse p-4 border rounded-lg">
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded w-48"></div>
+                        <div className="h-3 bg-muted rounded w-32"></div>
+                        <div className="h-2 bg-muted rounded w-full mt-4"></div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : goalsError ? (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600 text-center">
+                  Erro ao carregar metas. Tente recarregar a página.
+                </p>
+              </CardContent>
+            </Card>
+          ) : goalsList.length === 0 ? (
+            <EmptyState
+              icon={Target}
+              title="Nenhuma meta encontrada"
+              description="Comece definindo metas e objetivos para acompanhar o progresso da equipe e da organização."
+              actionLabel="Criar Primeira Meta"
+              onAction={() => {
+                setSelectedGoalId(null);
+                setIsGoalModalOpen(true);
+              }}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Acompanhamento de Metas</CardTitle>
+                <CardDescription>
+                  Progresso das metas individuais dos funcionários
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {goalsList.map((goal: any) => {
+                    const progress = calculateProgress(goal);
+                    return (
+                      <div key={goal.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-medium">{goal.name}</p>
+                            <p className="text-sm text-muted-foreground">{goal.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={getGoalStatusColor(goal.status)}>
+                              {goal.status}
+                            </Badge>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedGoalId(goal.id);
+                                setIsGoalModalOpen(true);
+                              }}
+                            >
+                              Editar
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm">Progresso</span>
+                              <span className="text-sm font-medium">{Math.round(progress)}%</span>
+                            </div>
+                            <Progress value={progress} />
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {goal.deadline_date && (
+                              <span>Prazo: {format(new Date(goal.deadline_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="competencies" className="space-y-6">
@@ -540,7 +602,7 @@ export default function GestaoDesempenho() {
             </TabsContent>
             
             <TabsContent value="gaps" className="space-y-4">
-              <CompetencyGapChart data={gaps} />
+              <CompetencyGapChart data={gaps as any} />
             </TabsContent>
           </Tabs>
         </TabsContent>

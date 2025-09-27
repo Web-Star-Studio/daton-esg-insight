@@ -62,7 +62,7 @@ export function EditGoalModal({ open, onOpenChange, goalId }: EditGoalModalProps
           baseline_period: updateData.baseline_period,
           target_value: updateData.target_value,
           deadline_date: updateData.deadline_date,
-          responsible_user_id: updateData.responsible_user_id,
+          responsible_user_id: updateData.responsible_user_id || null,
           status: updateData.status as any,
         })
         .eq('id', goalId);
@@ -113,6 +113,15 @@ export function EditGoalModal({ open, onOpenChange, goalId }: EditGoalModalProps
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!goalId) {
+      toast({
+        title: "Erro",
+        description: "ID da meta não encontrado.",
         variant: "destructive",
       });
       return;

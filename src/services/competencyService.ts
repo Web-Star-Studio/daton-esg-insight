@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getUserAndCompany } from "@/utils/auth";
 
 export interface CompetencyMatrix {
   id: string;
@@ -52,11 +53,16 @@ export const createCompetency = async (competency: {
   is_active: boolean;
 }) => {
   try {
+    const userWithCompany = await getUserAndCompany();
+    if (!userWithCompany?.company_id) {
+      throw new Error('Usuário não autenticado ou empresa não encontrada');
+    }
+
     const { data, error } = await supabase
       .from("competency_matrix")
       .insert([{
         ...competency,
-        company_id: null // Will be set by RLS trigger
+        company_id: userWithCompany.company_id
       }])
       .select()
       .single();
@@ -122,11 +128,16 @@ export const createCompetencyAssessment = async (assessment: {
   development_plan?: string;
 }) => {
   try {
+    const userWithCompany = await getUserAndCompany();
+    if (!userWithCompany?.company_id) {
+      throw new Error('Usuário não autenticado ou empresa não encontrada');
+    }
+
     const { data, error } = await supabase
       .from("employee_competency_assessments")
       .insert([{
         ...assessment,
-        company_id: null // Will be set by RLS trigger
+        company_id: userWithCompany.company_id
       }])
       .select()
       .single();
