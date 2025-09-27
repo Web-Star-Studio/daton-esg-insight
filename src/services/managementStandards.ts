@@ -423,27 +423,74 @@ export interface TrainingRecord {
 class ManagementStandardsService {
   // Management System Status
   async getManagementSystemsStatus(): Promise<ManagementSystem[]> {
-    const systems = [
-      { standard_code: 'ISO 14001', standard_name: 'Environmental Management', category: 'environmental' as const },
-      { standard_code: 'ISO 45001', standard_name: 'Occupational Health & Safety', category: 'social' as const },
-      { standard_code: 'ISO 50001', standard_name: 'Energy Management', category: 'environmental' as const },
-      { standard_code: 'SA 8000', standard_name: 'Social Accountability', category: 'social' as const },
-      { standard_code: 'ISO 31000', standard_name: 'Risk Management', category: 'governance' as const },
-      { standard_code: 'ISO 37001', standard_name: 'Anti-Bribery Management', category: 'governance' as const },
-      { standard_code: 'ISO 37301', standard_name: 'Compliance Management', category: 'governance' as const }
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const { data: existingStandards, error: fetchError } = await supabase
+      .from('management_standards')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (fetchError) {
+      console.error('Error fetching management standards:', fetchError);
+      return [];
+    }
+
+    // Define all available standards
+    const allStandards = [
+      { standard_name: 'ISO 14001 - Environmental Management', category: 'environmental' as const },
+      { standard_name: 'ISO 45001 - Occupational Health & Safety', category: 'social' as const },
+      { standard_name: 'ISO 50001 - Energy Management', category: 'environmental' as const },
+      { standard_name: 'SA 8000 - Social Accountability', category: 'social' as const },
+      { standard_name: 'ISO 31000 - Risk Management', category: 'governance' as const },
+      { standard_name: 'ISO 37001 - Anti-Bribery Management', category: 'governance' as const },
+      { standard_name: 'ISO 37301 - Compliance Management', category: 'governance' as const }
     ];
 
-    return systems.map(system => ({
-      id: system.standard_code,
-      standard_code: system.standard_code,
-      standard_name: system.standard_name,
-      category: system.category,
-      implementation_status: 'planning' as const,
-      certification_status: 'not_certified' as const,
-      compliance_score: Math.floor(Math.random() * 40) + 30, // Placeholder
-      non_conformities: Math.floor(Math.random() * 10),
-      opportunities_improvement: Math.floor(Math.random() * 15) + 5
-    }));
+    // Create missing standards
+    const existingNames = existingStandards?.map(s => s.standard_name) || [];
+    const missingStandards = allStandards.filter(s => !existingNames.includes(s.standard_name));
+
+    if (missingStandards.length > 0) {
+      const { error: insertError } = await supabase
+        .from('management_standards')
+        .insert(missingStandards.map(standard => ({
+          standard_name: standard.standard_name,
+          implementation_status: 'not_started',
+          certification_status: 'not_certified'
+        } as any)));
+
+      if (insertError) {
+        console.error('Error creating management standards:', insertError);
+      }
+    }
+
+    // Fetch updated data
+    const { data: finalData } = await supabase
+      .from('management_standards')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    return (finalData || []).map(standard => {
+      const standardCode = standard.standard_name.split(' - ')[0] || standard.standard_name;
+      const category = allStandards.find(s => s.standard_name === standard.standard_name)?.category || 'governance';
+      
+      return {
+        id: standard.id,
+        standard_code: standardCode,
+        standard_name: standard.standard_name,
+        category: category,
+        implementation_status: standard.implementation_status as any || 'not_started',
+        certification_status: standard.certification_status as any || 'not_certified',
+        certificate_number: standard.certificate_number,
+        certificate_expiry: standard.certificate_expiry_date,
+        certification_body: standard.certification_body,
+        last_audit_date: standard.last_audit_date,
+        next_audit_date: standard.next_audit_date,
+        compliance_score: Math.round((standard.audit_findings_count || 0) > 0 ? 70 : 85),
+        non_conformities: standard.non_conformities_count || 0,
+        opportunities_improvement: standard.improvement_opportunities_count || 0
+      };
+    });
   }
 
   // ISO 14001 Services

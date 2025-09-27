@@ -75,39 +75,131 @@ export interface CriticalFunction {
 class SecurityComplianceService {
   // Security Standards Status
   async getSecurityStandardsStatus(): Promise<SecurityStandard[]> {
-    const standards = [
-      { standard_code: 'ISO 27001', standard_name: 'Information Security Management', category: 'information_security' as const },
-      { standard_code: 'SOC 2', standard_name: 'Service Organization Control', category: 'information_security' as const },
-      { standard_code: 'ISO 27017', standard_name: 'Cloud Security Controls', category: 'information_security' as const },
-      { standard_code: 'ISO 27018', standard_name: 'Cloud Privacy Protection', category: 'data_privacy' as const },
-      { standard_code: 'ISO 27701', standard_name: 'Privacy Information Management', category: 'data_privacy' as const },
-      { standard_code: 'GDPR', standard_name: 'General Data Protection Regulation', category: 'data_privacy' as const },
-      { standard_code: 'LGPD', standard_name: 'Lei Geral de Proteção de Dados', category: 'data_privacy' as const },
-      { standard_code: 'ISO 9001', standard_name: 'Quality Management System', category: 'quality' as const },
-      { standard_code: 'ISO 22301', standard_name: 'Business Continuity Management', category: 'business_continuity' as const }
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const { data: existingStandards, error: fetchError } = await supabase
+      .from('security_frameworks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (fetchError) {
+      console.error('Error fetching security frameworks:', fetchError);
+      return [];
+    }
+
+    // Define all available standards
+    const allStandards = [
+      { framework_name: 'ISO 27001 - Information Security Management', category: 'information_security' as const },
+      { framework_name: 'SOC 2 - Service Organization Control', category: 'information_security' as const },
+      { framework_name: 'ISO 27017 - Cloud Security Controls', category: 'information_security' as const },
+      { framework_name: 'ISO 27018 - Cloud Privacy Protection', category: 'data_privacy' as const },
+      { framework_name: 'ISO 27701 - Privacy Information Management', category: 'data_privacy' as const },
+      { framework_name: 'GDPR - General Data Protection Regulation', category: 'data_privacy' as const },
+      { framework_name: 'LGPD - Lei Geral de Proteção de Dados', category: 'data_privacy' as const },
+      { framework_name: 'ISO 9001 - Quality Management System', category: 'quality' as const },
+      { framework_name: 'ISO 22301 - Business Continuity Management', category: 'business_continuity' as const }
     ];
 
-    return standards.map(standard => ({
-      id: standard.standard_code,
-      standard_code: standard.standard_code,
-      standard_name: standard.standard_name,
-      category: standard.category,
-      implementation_status: 'implementing' as const,
-      certification_status: 'in_process' as const,
-      compliance_score: Math.floor(Math.random() * 30) + 50, // Placeholder
-      controls_implemented: Math.floor(Math.random() * 80) + 20,
-      controls_total: 100,
-      findings_open: Math.floor(Math.random() * 10)
-    }));
+    // Create missing standards
+    const existingNames = existingStandards?.map(s => s.framework_name) || [];
+    const missingStandards = allStandards.filter(s => !existingNames.includes(s.framework_name));
+
+    if (missingStandards.length > 0) {
+      const { error: insertError } = await supabase
+        .from('security_frameworks')
+        .insert(missingStandards.map(standard => ({
+          framework_name: standard.framework_name,
+          implementation_status: 'not_started',
+          certification_status: 'not_certified',
+          compliance_percentage: 0
+        } as any)));
+
+      if (insertError) {
+        console.error('Error creating security frameworks:', insertError);
+      }
+    }
+
+    // Fetch updated data
+    const { data: finalData } = await supabase
+      .from('security_frameworks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    return (finalData || []).map(framework => {
+      const standardCode = framework.framework_name.split(' - ')[0] || framework.framework_name;
+      const category = allStandards.find(s => s.framework_name === framework.framework_name)?.category || 'information_security';
+      
+      return {
+        id: framework.id,
+        standard_code: standardCode,
+        standard_name: framework.framework_name,
+        category: category,
+        implementation_status: framework.implementation_status as any || 'not_started',
+        certification_status: framework.certification_status as any || 'not_certified',
+        certificate_number: '',
+        certificate_expiry: framework.certificate_expiry_date,
+        certification_body: '',
+        last_audit_date: framework.last_assessment_date,
+        next_audit_date: framework.next_assessment_date,
+        compliance_score: Math.round(framework.compliance_percentage || 0),
+        controls_implemented: Math.round((framework.control_effectiveness || 0) * 100),
+        controls_total: 100,
+        findings_open: framework.incident_count || 0
+      };
+    });
   }
 
   // ISO 27001 Services
   async getSecurityControls(): Promise<SecurityControl[]> {
-    return this.getDefaultSecurityControls();
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const { data: controls, error } = await supabase
+      .from('framework_controls')
+      .select('*')
+      .order('control_id', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching security controls:', error);
+      return this.getDefaultSecurityControls();
+    }
+
+    return (controls || []).map(control => ({
+      id: control.id,
+      control_id: control.control_id,
+      control_name: control.control_name,
+      category: control.control_category || 'General',
+      implementation_status: control.implementation_status as any || 'not_implemented',
+      effectiveness_rating: control.effectiveness_rating as any || 'ineffective',
+      last_review_date: control.last_tested_date || '',
+      next_review_date: control.next_test_date || '',
+      responsible_party: '',
+      evidence: control.evidence_files || [],
+      gaps_identified: [],
+      improvement_actions: []
+    }));
   }
 
   async updateSecurityControl(control: Partial<SecurityControl>): Promise<void> {
-    console.log('Security control updated:', control);
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const { error } = await supabase
+      .from('framework_controls')
+      .update({
+        control_name: control.control_name,
+        control_category: control.category,
+        implementation_status: control.implementation_status,
+        effectiveness_rating: control.effectiveness_rating,
+        last_tested_date: control.last_review_date,
+        next_test_date: control.next_review_date,
+        evidence_files: control.evidence,
+        notes: control.improvement_actions?.join('; ')
+      } as any)
+      .eq('id', control.id);
+
+    if (error) {
+      console.error('Error updating security control:', error);
+      throw error;
+    }
   }
 
   async reportSecurityIncident(incident: Partial<SecurityIncident>): Promise<void> {
