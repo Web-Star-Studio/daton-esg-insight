@@ -41,7 +41,7 @@ export function MentorshipProgramModal({ isOpen, onClose }: MentorshipProgramMod
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user?.company_id) {
+    if (!user?.company?.id) {
       toast.error("Erro de autenticação: empresa não identificada");
       return;
     }
@@ -59,7 +59,7 @@ export function MentorshipProgramModal({ isOpen, onClose }: MentorshipProgramMod
     try {
       await createRelationship.mutateAsync({
         ...formData,
-        company_id: user.company_id,
+        company_id: user.company.id,
         status: "Ativo",
         objectives,
         created_by_user_id: user.id,
