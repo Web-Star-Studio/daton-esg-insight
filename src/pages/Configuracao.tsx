@@ -17,7 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { getUserAndCompany, type UserWithCompany } from "@/utils/auth"
-import { sanitizeFormData, sanitizers } from "@/utils/inputSanitizer"
+import { sanitizeFormData } from "@/utils/inputSanitizer"
 
 const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
