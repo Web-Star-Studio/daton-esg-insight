@@ -16,6 +16,7 @@ import { ComplianceTaskModal } from "@/components/ComplianceTaskModal";
 import { RegulatoryRequirementModal } from "@/components/RegulatoryRequirementModal";
 import { TaskCalendarView } from "@/components/TaskCalendarView";
 import { RequirementsLibrary } from "@/components/RequirementsLibrary";
+import ComplianceStrategyDashboard from "@/components/ComplianceStrategyDashboard";
 
 
 export default function Compliance() {
@@ -279,8 +280,9 @@ export default function Compliance() {
 
         {/* Enhanced Tabs with Dashboard */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="strategy">Plano Estratégico</TabsTrigger>
             <TabsTrigger value="tasks">Gestão de Tarefas</TabsTrigger>
             <TabsTrigger value="calendar">Calendário</TabsTrigger>
             <TabsTrigger value="requirements">Matriz Regulatória</TabsTrigger>
@@ -365,6 +367,10 @@ export default function Compliance() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="strategy" className="space-y-4">
+            <ComplianceStrategyDashboard />
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-4">
