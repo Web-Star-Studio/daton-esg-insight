@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { createSupplierContract, CreateSupplierContractData } from "@/services/supplierContracts";
+import { getSuppliers } from "@/services/supplierService";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface SupplierContractModalProps {
   isOpen: boolean;
@@ -21,8 +23,13 @@ export function SupplierContractModal({
   onSuccess,
   supplierId 
 }: SupplierContractModalProps) {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: getSuppliers,
+  });
+  
   const [formData, setFormData] = useState<CreateSupplierContractData>({
     supplier_id: supplierId || "",
     contract_number: "",
@@ -38,24 +45,33 @@ export function SupplierContractModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.supplier_id) {
+      toast.error("Selecione um fornecedor");
+      return;
+    }
+    
+    if (!formData.contract_number || !formData.title) {
+      toast.error("Preencha os campos obrigatórios");
+      return;
+    }
+    
+    if (!formData.start_date || !formData.end_date) {
+      toast.error("Selecione as datas de início e término");
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
       await createSupplierContract(formData);
-      toast({
-        title: "Contrato criado",
-        description: "O contrato foi criado com sucesso.",
-      });
+      toast.success("Contrato criado com sucesso!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (error) {
       console.error('Error creating contract:', error);
-      toast({
-        title: "Erro ao criar contrato",
-        description: "Ocorreu um erro ao criar o contrato. Tente novamente.",
-        variant: "destructive",
-      });
+      toast.error("Erro ao criar contrato: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +99,7 @@ export function SupplierContractModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo Contrato de Fornecedor</DialogTitle>
           <DialogDescription>
@@ -92,9 +108,28 @@ export function SupplierContractModal({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="supplier">Fornecedor *</Label>
+            <Select
+              value={formData.supplier_id}
+              onValueChange={(value) => setFormData({ ...formData, supplier_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um fornecedor" />
+              </SelectTrigger>
+              <SelectContent>
+                {suppliers.map((supplier) => (
+                  <SelectItem key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="contract_number">Número do Contrato</Label>
+              <Label htmlFor="contract_number">Número do Contrato *</Label>
               <Input
                 id="contract_number"
                 value={formData.contract_number}
@@ -104,7 +139,7 @@ export function SupplierContractModal({
               />
             </div>
             <div>
-              <Label htmlFor="title">Título do Contrato</Label>
+              <Label htmlFor="title">Título do Contrato *</Label>
               <Input
                 id="title"
                 value={formData.title}
@@ -147,7 +182,7 @@ export function SupplierContractModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="start_date">Data de Início</Label>
+              <Label htmlFor="start_date">Data de Início *</Label>
               <Input
                 id="start_date"
                 type="date"
@@ -157,7 +192,7 @@ export function SupplierContractModal({
               />
             </div>
             <div>
-              <Label htmlFor="end_date">Data de Término</Label>
+              <Label htmlFor="end_date">Data de Término *</Label>
               <Input
                 id="end_date"
                 type="date"
@@ -177,7 +212,7 @@ export function SupplierContractModal({
                 step="0.01"
                 min="0"
                 value={formData.value}
-                onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
               />
             </div>
@@ -199,8 +234,19 @@ export function SupplierContractModal({
             </div>
           </div>
 
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="auto_renewal"
+              checked={formData.auto_renewal}
+              onChange={(e) => setFormData({ ...formData, auto_renewal: e.target.checked })}
+              className="rounded"
+            />
+            <Label htmlFor="auto_renewal">Renovação Automática</Label>
+          </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading}>
