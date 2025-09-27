@@ -67,7 +67,46 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
   onPreferencesChange,
   trigger
 }) => {
-  const [localPreferences, setLocalPreferences] = useState<NotificationPreferences>(preferences);
+  // Ensure default values for all properties to prevent undefined errors
+  const defaultPreferences: NotificationPreferences = {
+    enabled: true,
+    soundEnabled: true,
+    priority: 'all',
+    emailEnabled: false,
+    emailAddress: '',
+    emailFrequency: 'daily',
+    pushEnabled: true,
+    categories: {
+      emissions: true,
+      goals: true,
+      compliance: true,
+      audit: true,
+      documents: true,
+      quality: true,
+      gri: true,
+      risk: true,
+      predictive: true,
+    },
+    quietHours: {
+      enabled: false,
+      startTime: '22:00',
+      endTime: '07:00',
+    },
+    maxNotificationsPerHour: 10,
+  };
+
+  const [localPreferences, setLocalPreferences] = useState<NotificationPreferences>({
+    ...defaultPreferences,
+    ...preferences,
+    categories: {
+      ...defaultPreferences.categories,
+      ...preferences.categories,
+    },
+    quietHours: {
+      ...defaultPreferences.quietHours,
+      ...preferences.quietHours,
+    },
+  });
   const [isOpen, setIsOpen] = useState(false);
 
   const updatePreference = <K extends keyof NotificationPreferences>(
@@ -104,7 +143,18 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
   };
 
   const handleCancel = () => {
-    setLocalPreferences(preferences);
+    setLocalPreferences({
+      ...defaultPreferences,
+      ...preferences,
+      categories: {
+        ...defaultPreferences.categories,
+        ...preferences.categories,
+      },
+      quietHours: {
+        ...defaultPreferences.quietHours,
+        ...preferences.quietHours,
+      },
+    });
     setIsOpen(false);
   };
 
