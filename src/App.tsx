@@ -95,16 +95,17 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
-      retry: (failureCount, error: any) => {
+      retry: (failureCount: number, error: Error) => {
         // Não retentar em erros de autenticação
-        if (error?.status === 401 || error?.code === 'PGRST116') return false;
+        const errorObj = error as any;
+        if (errorObj?.status === 401 || errorObj?.code === 'PGRST116') return false;
         return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: false,
-      onError: (error: any) => {
+      onError: (error: Error) => {
         errorHandler.showUserError(error, {
           component: 'QueryClient',
           function: 'mutation'
