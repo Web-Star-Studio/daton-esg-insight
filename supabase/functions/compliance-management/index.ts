@@ -48,16 +48,34 @@ serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const path = url.pathname;
-    const method = req.method;
+    let path = url.pathname;
+    let method = req.method;
+    let requestBody: any = {};
 
-    console.log(`${method} ${path}`);
+    // Parse request body if it exists
+    if (req.method === 'POST' || req.method === 'PUT') {
+      try {
+        requestBody = await req.json();
+      } catch (e) {
+        requestBody = {};
+      }
+    }
+
+    // Check if this is a request with _method and _path in body
+    if (requestBody._method && requestBody._path) {
+      method = requestBody._method;
+      path = `/compliance-management${requestBody._path}`;
+      console.log(`Service request: ${method} ${path}`);
+    } else {
+      console.log(`Direct request: ${method} ${path}`);
+    }
 
     // Routes
     if (path === '/compliance-management/tasks' && method === 'GET') {
-      const status = url.searchParams.get('status');
-      const dueInDays = url.searchParams.get('due_in_days');
-      const responsibleMe = url.searchParams.get('responsible') === 'me';
+      // Extract filters from URL params or request body
+      const status = url.searchParams.get('status') || requestBody.status;
+      const dueInDays = url.searchParams.get('due_in_days') || requestBody.due_in_days;
+      const responsible = url.searchParams.get('responsible') || requestBody.responsible;
 
       let query = supabase
         .from('compliance_tasks')
@@ -80,8 +98,10 @@ serve(async (req) => {
         query = query.lte('due_date', targetDate.toISOString().split('T')[0]);
       }
 
-      if (responsibleMe) {
+      if (responsible === 'me') {
         query = query.eq('responsible_user_id', user.id);
+      } else if (responsible && responsible !== 'me') {
+        query = query.eq('responsible_user_id', responsible);
       }
 
       const { data, error } = await query;
@@ -101,15 +121,27 @@ serve(async (req) => {
     }
 
     if (path === '/compliance-management/tasks' && method === 'POST') {
-      const body = await req.json();
+      // Create new task - extract data from requestBody, excluding internal fields
+      const taskData = {
+        title: requestBody.title,
+        description: requestBody.description,
+        frequency: requestBody.frequency,
+        due_date: requestBody.due_date,
+        requirement_id: requestBody.requirement_id,
+        responsible_user_id: requestBody.responsible_user_id,
+        notes: requestBody.notes,
+        status: 'Pendente',
+        company_id: profile.company_id
+      };
       
       const { data, error } = await supabase
         .from('compliance_tasks')
-        .insert({
-          ...body,
-          company_id: profile.company_id
-        })
-        .select()
+        .insert(taskData)
+        .select(`
+          *,
+          requirement:regulatory_requirements(title, reference_code),
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
+        `)
         .single();
 
       if (error) {
@@ -121,13 +153,18 @@ serve(async (req) => {
       }
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_company_id: profile.company_id,
-        p_user_id: user.id,
-        p_action_type: 'compliance_task_created',
-        p_description: `Tarefa de compliance criada: ${body.title}`,
-        p_details_json: { task_id: data.id }
-      });
+      try {
+        await supabase.rpc('log_activity', {
+          p_company_id: profile.company_id,
+          p_user_id: user.id,
+          p_action_type: 'compliance_task_created',
+          p_description: `Tarefa de compliance criada: ${taskData.title}`,
+          p_details_json: { task_id: data.id }
+        });
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the request if logging fails
+      }
 
       return new Response(
         JSON.stringify(data),
@@ -137,14 +174,28 @@ serve(async (req) => {
 
     if (path.startsWith('/compliance-management/tasks/') && method === 'PUT') {
       const taskId = path.split('/')[3];
-      const body = await req.json();
+      
+      // Update task - extract data from requestBody, excluding internal fields
+      const updateData: any = {};
+      if (requestBody.title !== undefined) updateData.title = requestBody.title;
+      if (requestBody.description !== undefined) updateData.description = requestBody.description;
+      if (requestBody.frequency !== undefined) updateData.frequency = requestBody.frequency;
+      if (requestBody.due_date !== undefined) updateData.due_date = requestBody.due_date;
+      if (requestBody.status !== undefined) updateData.status = requestBody.status;
+      if (requestBody.responsible_user_id !== undefined) updateData.responsible_user_id = requestBody.responsible_user_id;
+      if (requestBody.evidence_document_id !== undefined) updateData.evidence_document_id = requestBody.evidence_document_id;
+      if (requestBody.notes !== undefined) updateData.notes = requestBody.notes;
 
       const { data, error } = await supabase
         .from('compliance_tasks')
-        .update(body)
+        .update(updateData)
         .eq('id', taskId)
         .eq('company_id', profile.company_id)
-        .select()
+        .select(`
+          *,
+          requirement:regulatory_requirements(title, reference_code),
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
+        `)
         .single();
 
       if (error) {
@@ -156,13 +207,18 @@ serve(async (req) => {
       }
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_company_id: profile.company_id,
-        p_user_id: user.id,
-        p_action_type: 'compliance_task_updated',
-        p_description: `Tarefa de compliance atualizada: ${data.title}`,
-        p_details_json: { task_id: taskId, changes: body }
-      });
+      try {
+        await supabase.rpc('log_activity', {
+          p_company_id: profile.company_id,
+          p_user_id: user.id,
+          p_action_type: 'compliance_task_updated',
+          p_description: `Tarefa de compliance atualizada: ${data.title}`,
+          p_details_json: { task_id: taskId, changes: updateData }
+        });
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the request if logging fails
+      }
 
       return new Response(
         JSON.stringify(data),
@@ -192,14 +248,19 @@ serve(async (req) => {
     }
 
     if (path === '/compliance-management/requirements' && method === 'POST') {
-      const body = await req.json();
+      // Create new requirement - extract data from requestBody, excluding internal fields
+      const requirementData = {
+        title: requestBody.title,
+        reference_code: requestBody.reference_code,
+        jurisdiction: requestBody.jurisdiction,
+        summary: requestBody.summary,
+        source_url: requestBody.source_url,
+        company_id: profile.company_id
+      };
       
       const { data, error } = await supabase
         .from('regulatory_requirements')
-        .insert({
-          ...body,
-          company_id: profile.company_id
-        })
+        .insert(requirementData)
         .select()
         .single();
 
@@ -212,13 +273,18 @@ serve(async (req) => {
       }
 
       // Log activity
-      await supabase.rpc('log_activity', {
-        p_company_id: profile.company_id,
-        p_user_id: user.id,
-        p_action_type: 'regulatory_requirement_created',
-        p_description: `Requisito regulatório mapeado: ${body.title}`,
-        p_details_json: { requirement_id: data.id }
-      });
+      try {
+        await supabase.rpc('log_activity', {
+          p_company_id: profile.company_id,
+          p_user_id: user.id,
+          p_action_type: 'regulatory_requirement_created',
+          p_description: `Requisito regulatório mapeado: ${requirementData.title}`,
+          p_details_json: { requirement_id: data.id }
+        });
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the request if logging fails
+      }
 
       return new Response(
         JSON.stringify(data),

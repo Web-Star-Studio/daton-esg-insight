@@ -79,21 +79,14 @@ export interface ComplianceStats {
 }
 
 class ComplianceService {
-  // Helper method for function calls (simplified approach)
-  private async makeRequest(method: string, path: string, body?: any) {
-    const url = `/compliance-management${path}`;
-    
-    const requestBody = body ? {
-      ...body,
-      _method: method,
-      _path: path
-    } : {
-      _method: method,
-      _path: path
-    };
-
+  // Helper method for function calls
+  private async makeRequest(method: 'GET' | 'POST' | 'PUT', path: string, body?: any) {
     const { data, error } = await supabase.functions.invoke('compliance-management', {
-      body: requestBody,
+      body: {
+        _method: method,
+        _path: path,
+        ...body
+      },
     });
 
     if (error) {
