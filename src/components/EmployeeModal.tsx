@@ -4,9 +4,11 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
-import { getDepartments, getPositions, type Department, type Position } from '@/services/organizationalStructure';
+import { getDepartments, getPositions, createDepartment, createPosition, type Department, type Position } from '@/services/organizationalStructure';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -33,6 +35,14 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // New department/position creation states
+  const [showNewDepartment, setShowNewDepartment] = useState(false);
+  const [showNewPosition, setShowNewPosition] = useState(false);
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [newPositionTitle, setNewPositionTitle] = useState('');
+  const [creatingDepartment, setCreatingDepartment] = useState(false);
+  const [creatingPosition, setCreatingPosition] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -82,6 +92,60 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Erro ao carregar departamentos e cargos');
+    }
+  };
+
+  const handleCreateDepartment = async () => {
+    if (!newDepartmentName.trim()) {
+      toast.error('Nome do departamento é obrigatório');
+      return;
+    }
+
+    setCreatingDepartment(true);
+    try {
+      const newDept = await createDepartment({
+        name: newDepartmentName.trim(),
+        description: `Departamento criado durante cadastro de funcionário`,
+        company_id: '' // Will be set by the service
+      });
+      
+      setDepartments(prev => [...prev, newDept]);
+      setFormData(prev => ({ ...prev, department: newDept.name }));
+      setNewDepartmentName('');
+      setShowNewDepartment(false);
+      toast.success('Departamento criado com sucesso!');
+    } catch (error) {
+      console.error('Error creating department:', error);
+      toast.error('Erro ao criar departamento');
+    } finally {
+      setCreatingDepartment(false);
+    }
+  };
+
+  const handleCreatePosition = async () => {
+    if (!newPositionTitle.trim()) {
+      toast.error('Título do cargo é obrigatório');
+      return;
+    }
+
+    setCreatingPosition(true);
+    try {
+      const newPos = await createPosition({
+        title: newPositionTitle.trim(),
+        description: `Cargo criado durante cadastro de funcionário`,
+        company_id: '' // Will be set by the service
+      });
+      
+      setPositions(prev => [...prev, newPos]);
+      setFormData(prev => ({ ...prev, position: newPos.title }));
+      setNewPositionTitle('');
+      setShowNewPosition(false);
+      toast.success('Cargo criado com sucesso!');
+    } catch (error) {
+      console.error('Error creating position:', error);
+      toast.error('Erro ao criar cargo');
+    } finally {
+      setCreatingPosition(false);
     }
   };
 
@@ -183,34 +247,148 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="department">Departamento</Label>
-              <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar departamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecionar departamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.name}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Popover open={showNewDepartment} onOpenChange={setShowNewDepartment}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      className="shrink-0"
+                      title="Criar novo departamento"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Novo Departamento</h4>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-dept-name">Nome do Departamento</Label>
+                        <Input
+                          id="new-dept-name"
+                          value={newDepartmentName}
+                          onChange={(e) => setNewDepartmentName(e.target.value)}
+                          placeholder="Ex: Recursos Humanos"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCreateDepartment();
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setShowNewDepartment(false);
+                            setNewDepartmentName('');
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          onClick={handleCreateDepartment}
+                          disabled={creatingDepartment}
+                        >
+                          {creatingDepartment ? 'Criando...' : 'Criar'}
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             <div>
               <Label htmlFor="position">Cargo</Label>
-              <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar cargo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {positions.map(pos => (
-                    <SelectItem key={pos.id} value={pos.title}>
-                      {pos.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecionar cargo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {positions.map(pos => (
+                      <SelectItem key={pos.id} value={pos.title}>
+                        {pos.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Popover open={showNewPosition} onOpenChange={setShowNewPosition}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      className="shrink-0"
+                      title="Criar novo cargo"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Novo Cargo</h4>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-pos-title">Título do Cargo</Label>
+                        <Input
+                          id="new-pos-title"
+                          value={newPositionTitle}
+                          onChange={(e) => setNewPositionTitle(e.target.value)}
+                          placeholder="Ex: Analista de Sistemas"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCreatePosition();
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setShowNewPosition(false);
+                            setNewPositionTitle('');
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          onClick={handleCreatePosition}
+                          disabled={creatingPosition}
+                        >
+                          {creatingPosition ? 'Criando...' : 'Criar'}
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
 
