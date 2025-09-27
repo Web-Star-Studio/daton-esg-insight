@@ -31,31 +31,8 @@ class KnowledgeBaseService {
   // Article methods
   async getKnowledgeArticles(): Promise<KnowledgeArticle[]> {
     try {
-      // Mock data for now since the database schema might not match
-      return [
-        {
-          id: '1',
-          title: 'Manual de Qualidade ISO 9001',
-          content: 'Conteúdo do manual de qualidade...',
-          category: 'Qualidade',
-          tags: ['ISO', 'Qualidade', 'Manual'],
-          status: 'published',
-          created_at: '2024-01-15T10:30:00Z',
-          updated_at: '2024-01-15T10:30:00Z',
-          view_count: 342
-        },
-        {
-          id: '2',
-          title: 'Procedimentos de Auditoria',
-          content: 'Procedimentos para realizar auditorias...',
-          category: 'Auditoria',
-          tags: ['Auditoria', 'Procedimentos'],
-          status: 'published',
-          created_at: '2024-01-20T14:15:00Z',
-          updated_at: '2024-01-20T14:15:00Z',
-          view_count: 276
-        }
-      ];
+      // This service is now prepared for production - implement actual database queries
+      return [];
     } catch (error) {
       console.error('Error fetching knowledge articles:', error);
       return [];
@@ -69,16 +46,8 @@ class KnowledgeBaseService {
     tags: string[];
   }): Promise<KnowledgeArticle> {
     try {
-      // Mock create for now
-      const newArticle: KnowledgeArticle = {
-        id: Math.random().toString(),
-        ...articleData,
-        status: 'draft',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        view_count: 0
-      };
-      return newArticle;
+      // Production implementation needed - integrate with database
+      throw new Error('Knowledge base not configured for production use');
     } catch (error) {
       console.error('Error creating knowledge article:', error);
       throw error;
@@ -87,19 +56,8 @@ class KnowledgeBaseService {
 
   async updateKnowledgeArticle(id: string, updates: Partial<KnowledgeArticle>): Promise<KnowledgeArticle> {
     try {
-      // Mock update for now
-      const mockArticle: KnowledgeArticle = {
-        id,
-        title: updates.title || 'Article Title',
-        content: updates.content || 'Article content...',
-        category: updates.category || 'General',
-        tags: updates.tags || [],
-        status: updates.status || 'draft',
-        created_at: updates.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        view_count: updates.view_count || 0
-      };
-      return mockArticle;
+      // Production implementation needed - integrate with database
+      throw new Error('Knowledge base not configured for production use');
     } catch (error) {
       console.error('Error updating knowledge article:', error);
       throw error;

@@ -50,48 +50,8 @@ export const AdvancedReportingSystem: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('monthly');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Mock data - in real app this would come from API
-  const reportTemplates: ReportTemplate[] = [
-    {
-      id: '1',
-      name: 'Relatório ESG Executivo',
-      description: 'Resumo executivo com métricas ESG e performance',
-      category: 'esg',
-      frequency: 'monthly',
-      automated: true,
-      lastGenerated: new Date('2024-01-15'),
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Inventário GEE Detalhado',
-      description: 'Relatório completo de emissões por escopo e categoria',
-      category: 'emissions',
-      frequency: 'quarterly',
-      automated: true,
-      lastGenerated: new Date('2024-01-10'),
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Dashboard Compliance',
-      description: 'Status de conformidade regulatória e licenças',
-      category: 'compliance',
-      frequency: 'weekly',
-      automated: false,
-      status: 'active'
-    },
-    {
-      id: '4',
-      name: 'Análise de Qualidade',
-      description: 'Métricas de qualidade, NCs e planos de ação',
-      category: 'quality',
-      frequency: 'monthly',
-      automated: true,
-      lastGenerated: new Date('2024-01-12'),
-      status: 'active'
-    }
-  ];
+  // Production - templates should be loaded from database
+  const reportTemplates: ReportTemplate[] = [];
 
   const scheduledReports: ReportSchedule[] = [
     {

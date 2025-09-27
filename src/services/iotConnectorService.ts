@@ -498,10 +498,8 @@ class IoTConnectorService {
   }
 
   private startDataCollection(): void {
-    // Simulate periodic data collection for demo
-    setInterval(() => {
-      this.simulateDeviceData()
-    }, 30000) // Every 30 seconds
+    // Production data collection - integrate with real IoT devices
+    // Remove this in production when actual devices are connected
   }
 
   private simulateDeviceData(): void {
@@ -534,29 +532,7 @@ class IoTConnectorService {
   }
 
   private generateMockMetrics(deviceId: string): Record<string, number> {
-    if (deviceId.includes('env')) {
-      return {
-        temperature: 20 + Math.random() * 10,
-        humidity: 40 + Math.random() * 30,
-        co2: 400 + Math.random() * 600,
-        noise: 30 + Math.random() * 40,
-        airQuality: 50 + Math.random() * 50
-      }
-    } else if (deviceId.includes('energy')) {
-      return {
-        power: 1000 + Math.random() * 5000,
-        voltage: 220 + Math.random() * 20,
-        current: 5 + Math.random() * 20,
-        frequency: 50 + Math.random() * 2
-      }
-    } else if (deviceId.includes('water')) {
-      return {
-        flow: 10 + Math.random() * 50,
-        pressure: 2 + Math.random() * 3,
-        quality: 70 + Math.random() * 30,
-        temperature: 15 + Math.random() * 10
-      }
-    }
+    // Production: This method should be removed - use real device metrics
     return {}
   }
 

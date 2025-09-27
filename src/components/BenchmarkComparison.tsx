@@ -10,15 +10,15 @@ interface BenchmarkComparisonProps {
 }
 
 export function BenchmarkComparison({ currentValue, sector, metric }: BenchmarkComparisonProps) {
-  // Mock benchmark data - in real app this would come from API
+  // Production - benchmark data should be loaded from external API or database
   const benchmarkData = {
-    sectorAverage: 920,
-    top10Percent: 650,
-    median: 980,
-    top25Percent: 750,
-    worst25Percent: 1200,
-    companiesInSector: 347,
-    yourRanking: 82 // percentile ranking
+    sectorAverage: 0,
+    top10Percent: 0,
+    median: 0,
+    top25Percent: 0,
+    worst25Percent: 0,
+    companiesInSector: 0,
+    yourRanking: 0
   }
 
   const formatMetric = (value: number): string => {

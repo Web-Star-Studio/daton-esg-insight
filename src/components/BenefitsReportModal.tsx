@@ -107,21 +107,16 @@ export function BenefitsReportModal({
     }
   };
 
-  // Mock data for preview
-  const mockData = {
+  // Production - load real payroll and benefits data
+  const [payrollData, setPayrollData] = useState({
     payroll: {
-      totalEmployees: 50,
-      totalSalaries: 245000,
-      totalBenefits: 31000,
-      totalCost: 276000,
+      totalEmployees: 0,
+      totalSalaries: 0,
+      totalBenefits: 0,
+      totalCost: 0,
     },
-    benefits: {
-      healthPlan: { participants: 45, cost: 15000 },
-      mealAllowance: { participants: 48, cost: 8000 },
-      transport: { participants: 35, cost: 5500 },
-      lifeInsurance: { participants: 50, cost: 2500 },
-    },
-  };
+    benefits: {},
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -221,7 +216,7 @@ export function BenefitsReportModal({
                   <CardTitle className="text-sm font-medium">Total de Funcionários</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockData.payroll.totalEmployees}</div>
+                  <div className="text-2xl font-bold">{payrollData.payroll.totalEmployees}</div>
                   <p className="text-xs text-muted-foreground">Ativos na folha</p>
                 </CardContent>
               </Card>
@@ -232,7 +227,7 @@ export function BenefitsReportModal({
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    R$ {mockData.payroll.totalSalaries.toLocaleString()}
+                    R$ {payrollData.payroll.totalSalaries.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground">Custo mensal</p>
                 </CardContent>
@@ -244,7 +239,7 @@ export function BenefitsReportModal({
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    R$ {mockData.payroll.totalBenefits.toLocaleString()}
+                    R$ {payrollData.payroll.totalBenefits.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground">Custo mensal</p>
                 </CardContent>
@@ -256,7 +251,7 @@ export function BenefitsReportModal({
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    R$ {mockData.payroll.totalCost.toLocaleString()}
+                    R$ {payrollData.payroll.totalCost.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground">Salários + Benefícios</p>
                 </CardContent>
@@ -270,7 +265,7 @@ export function BenefitsReportModal({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(mockData.benefits).map(([key, benefit]) => (
+                  {Object.entries(payrollData.benefits).map(([key, benefit]: [string, any]) => (
                     <div key={key} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary"></div>
