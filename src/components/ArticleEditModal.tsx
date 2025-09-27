@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { knowledgeBaseService, type KnowledgeArticle } from "@/services/knowledgeBase";
 import { ArticleVersionHistory } from "./ArticleVersionHistory";
 import { ArticleComments } from "./ArticleComments";
+import { WysiwygEditor } from "./WysiwygEditor";
 
 interface ArticleEditModalProps {
   article: KnowledgeArticle | null;
@@ -137,7 +138,7 @@ export function ArticleEditModal({ article, isOpen, onClose, isCreate = false }:
       return;
     }
 
-    if (!formData.changes_summary) {
+    if (!isCreate && !formData.changes_summary) {
       toast({
         title: "Erro", 
         description: "Descreva as alterações realizadas",
@@ -241,13 +242,11 @@ export function ArticleEditModal({ article, isOpen, onClose, isCreate = false }:
 
               <div>
                 <Label htmlFor="edit-content">Conteúdo *</Label>
-                <Textarea
-                  id="edit-content"
+                <WysiwygEditor
                   value={formData.content}
-                  onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  placeholder="Conteúdo do artigo (suporte a Markdown)"
-                  rows={15}
-                  className="font-mono"
+                  onChange={(value) => setFormData({...formData, content: value})}
+                  placeholder="Digite o conteúdo do artigo..."
+                  className="mt-2"
                 />
               </div>
 
@@ -279,18 +278,21 @@ export function ArticleEditModal({ article, isOpen, onClose, isCreate = false }:
                 </div>
               </div>
 
-              <Separator />
-
-              <div>
-                <Label htmlFor="changes-summary">Resumo das Alterações *</Label>
-                <Textarea
-                  id="changes-summary"
-                  value={formData.changes_summary}
-                  onChange={(e) => setFormData({...formData, changes_summary: e.target.value})}
-                  placeholder="Descreva brevemente as alterações realizadas nesta versão..."
-                  rows={3}
-                />
-              </div>
+              {!isCreate && (
+                <>
+                  <Separator />
+                  <div>
+                    <Label htmlFor="changes-summary">Resumo das Alterações *</Label>
+                    <Textarea
+                      id="changes-summary"
+                      value={formData.changes_summary}
+                      onChange={(e) => setFormData({...formData, changes_summary: e.target.value})}
+                      placeholder="Descreva brevemente as alterações realizadas nesta versão..."
+                      rows={3}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -306,7 +308,7 @@ export function ArticleEditModal({ article, isOpen, onClose, isCreate = false }:
         {/* Footer Actions */}
         <div className="flex justify-between items-center px-6 py-4 border-t bg-muted/30">
           <div className="text-sm text-muted-foreground">
-            {activeTab === 'edit' && "Use Markdown para formatação avançada"}
+            {activeTab === 'edit' && "Use o editor para formatação rica do conteúdo"}
           </div>
           
           <div className="flex gap-2">

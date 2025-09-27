@@ -61,7 +61,7 @@ class KnowledgeBaseService {
   }): Promise<KnowledgeArticle> {
     return formErrorHandler.createRecord(async () => {
       // Get authenticated user and company_id
-      const { profile } = await formErrorHandler.checkAuth();
+      const { user, profile } = await formErrorHandler.checkAuth();
       
       const articlePayload = {
         title: articleData.title,
@@ -69,7 +69,7 @@ class KnowledgeBaseService {
         category: articleData.category || null,
         tags: articleData.tags || [],
         company_id: profile.company_id,
-        author_user_id: profile.id,
+        author_user_id: user.id, // Use user.id instead of profile.id
         status: 'Rascunho',
         version: 1,
         is_published: false,
@@ -238,10 +238,10 @@ class KnowledgeBaseService {
   // Bookmarks methods
   async getBookmarkedArticles(): Promise<KnowledgeArticle[]> {
     try {
-      const { profile } = await formErrorHandler.checkAuth();
+      const { user, profile } = await formErrorHandler.checkAuth();
 
       // Guard against missing user/company context
-      if (!profile?.id || !profile?.company_id) {
+      if (!user?.id || !profile?.company_id) {
         console.warn('getBookmarkedArticles: missing user/company context');
         return [];
       }
@@ -249,7 +249,7 @@ class KnowledgeBaseService {
       const { data, error } = await supabase
         .from('article_bookmarks')
         .select('article_id')
-        .eq('user_id', profile.id)
+        .eq('user_id', user.id)
         .eq('company_id', profile.company_id);
 
       if (error) throw error;
@@ -277,9 +277,9 @@ class KnowledgeBaseService {
 
   async isArticleBookmarked(articleId: string): Promise<boolean> {
     try {
-      const { profile } = await formErrorHandler.checkAuth();
+      const { user, profile } = await formErrorHandler.checkAuth();
 
-      if (!profile?.id || !profile?.company_id || !articleId) {
+      if (!user?.id || !profile?.company_id || !articleId) {
         return false;
       }
       
@@ -287,7 +287,7 @@ class KnowledgeBaseService {
         .from('article_bookmarks')
         .select('id')
         .eq('article_id', articleId)
-        .eq('user_id', profile.id)
+        .eq('user_id', user.id)
         .eq('company_id', profile.company_id)
         .maybeSingle();
 
@@ -302,13 +302,13 @@ class KnowledgeBaseService {
 
   async addArticleBookmark(articleId: string) {
     return formErrorHandler.createRecord(async () => {
-      const { profile } = await formErrorHandler.checkAuth();
+      const { user, profile } = await formErrorHandler.checkAuth();
       
       const { error } = await supabase
         .from('article_bookmarks')
         .insert({
           article_id: articleId,
-          user_id: profile.id,
+          user_id: user.id,
           company_id: profile.company_id
         });
 
@@ -321,13 +321,13 @@ class KnowledgeBaseService {
 
   async removeArticleBookmark(articleId: string) {
     try {
-      const { profile } = await formErrorHandler.checkAuth();
+      const { user, profile } = await formErrorHandler.checkAuth();
       
       const { error } = await supabase
         .from('article_bookmarks')
         .delete()
         .eq('article_id', articleId)
-        .eq('user_id', profile.id)
+        .eq('user_id', user.id)
         .eq('company_id', profile.company_id);
 
       if (error) throw error;
