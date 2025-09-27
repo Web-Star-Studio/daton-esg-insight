@@ -238,8 +238,13 @@ class KnowledgeBaseService {
   // Bookmarks methods
   async getBookmarkedArticles(): Promise<KnowledgeArticle[]> {
     try {
-      // Get current user's bookmarked articles
       const { profile } = await formErrorHandler.checkAuth();
+
+      // Guard against missing user/company context
+      if (!profile?.id || !profile?.company_id) {
+        console.warn('getBookmarkedArticles: missing user/company context');
+        return [];
+      }
       
       const { data, error } = await supabase
         .from('article_bookmarks')
@@ -273,6 +278,10 @@ class KnowledgeBaseService {
   async isArticleBookmarked(articleId: string): Promise<boolean> {
     try {
       const { profile } = await formErrorHandler.checkAuth();
+
+      if (!profile?.id || !profile?.company_id || !articleId) {
+        return false;
+      }
       
       const { data, error } = await supabase
         .from('article_bookmarks')
@@ -280,11 +289,9 @@ class KnowledgeBaseService {
         .eq('article_id', articleId)
         .eq('user_id', profile.id)
         .eq('company_id', profile.company_id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw error;
-      }
+      if (error) throw error;
       
       return !!data;
     } catch (error) {

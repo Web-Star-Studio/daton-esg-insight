@@ -359,6 +359,7 @@ export default function BaseConhecimento() {
       <ArticleEditModal
         article={isCreatingArticle ? null : editingArticle}
         isOpen={isEditModalOpen}
+        isCreate={isCreatingArticle}
         onClose={() => {
           setIsEditModalOpen(false);
           setEditingArticle(null);

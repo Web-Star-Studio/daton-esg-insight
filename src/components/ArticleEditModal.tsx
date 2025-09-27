@@ -18,6 +18,7 @@ interface ArticleEditModalProps {
   article: KnowledgeArticle | null;
   isOpen: boolean;
   onClose: () => void;
+  isCreate?: boolean;
 }
 
 const KNOWLEDGE_CATEGORIES = [
@@ -33,7 +34,7 @@ const KNOWLEDGE_CATEGORIES = [
   "Outros"
 ];
 
-export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalProps) {
+export function ArticleEditModal({ article, isOpen, onClose, isCreate = false }: ArticleEditModalProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'edit' | 'history' | 'comments'>('edit');
   const [formData, setFormData] = useState({
@@ -61,6 +62,26 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
       toast({
         title: "Erro",
         description: "Erro ao atualizar artigo: " + error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createArticleMutation = useMutation({
+    mutationFn: (data: { title: string; content: string; category: string; tags: string[] }) =>
+      knowledgeBaseService.createKnowledgeArticle(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge-articles"] });
+      toast({
+        title: "Sucesso",
+        description: "Artigo criado com sucesso!",
+      });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar artigo: " + error.message,
         variant: "destructive",
       });
     },
@@ -106,6 +127,16 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
       return;
     }
 
+    if (isCreate) {
+      createArticleMutation.mutate({
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        tags: formData.tags,
+      });
+      return;
+    }
+
     if (!formData.changes_summary) {
       toast({
         title: "Erro", 
@@ -129,44 +160,50 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
     onClose();
   };
 
-  if (!article) return null;
+  // Create mode supported when article is null
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] p-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2">
-            Editar Artigo: {article.title}
-            <Badge variant="outline">v{article.version}</Badge>
+            {isCreate ? (
+              <>Novo Artigo</>
+            ) : (
+              <>
+                Editar Artigo: {article?.title}
+                {article?.version && <Badge variant="outline">v{article.version}</Badge>}
+              </>
+            )}
           </DialogTitle>
-          
-          {/* Tabs */}
-          <div className="flex gap-1 mt-4">
-            <Button
-              variant={activeTab === 'edit' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('edit')}
-            >
-              <Save className="h-4 w-4 mr-1" />
-              Editar
-            </Button>
-            <Button
-              variant={activeTab === 'history' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('history')}
-            >
-              <History className="h-4 w-4 mr-1" />
-              Histórico
-            </Button>
-            <Button
-              variant={activeTab === 'comments' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('comments')}
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Comentários
-            </Button>
-          </div>
+          {!isCreate && (
+            <div className="flex gap-1 mt-4">
+              <Button
+                variant={activeTab === 'edit' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('edit')}
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+              <Button
+                variant={activeTab === 'history' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('history')}
+              >
+                <History className="h-4 w-4 mr-1" />
+                Histórico
+              </Button>
+              <Button
+                variant={activeTab === 'comments' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('comments')}
+              >
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Comentários
+              </Button>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
@@ -276,10 +313,12 @@ export function ArticleEditModal({ article, isOpen, onClose }: ArticleEditModalP
             {activeTab === 'edit' && (
               <Button 
                 onClick={handleSave} 
-                disabled={updateArticleMutation.isPending}
+                disabled={isCreate ? createArticleMutation.isPending : updateArticleMutation.isPending}
               >
                 <Save className="h-4 w-4 mr-1" />
-                {updateArticleMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                {isCreate 
+                  ? (createArticleMutation.isPending ? "Criando..." : "Criar Artigo")
+                  : (updateArticleMutation.isPending ? "Salvando..." : "Salvar Alterações")}
               </Button>
             )}
             <Button variant="ghost" onClick={handleClose}>

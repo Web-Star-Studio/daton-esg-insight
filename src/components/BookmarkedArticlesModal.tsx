@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,7 @@ export function BookmarkedArticlesModal({
             <Bookmark className="h-5 w-5" />
             Artigos Favoritos
           </DialogTitle>
+          <DialogDescription>Seus artigos favoritados.</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="h-[70vh]">
