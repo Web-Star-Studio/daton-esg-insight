@@ -379,12 +379,12 @@ const SystemAudit = () => {
               <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Concluída</Badge>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
               <div>
-                <h4 className="font-semibold text-blue-700 dark:text-blue-300">Fase 3 - Melhorias Técnicas (2-3 dias)</h4>
-                <p className="text-sm text-muted-foreground">Types, error handling, performance</p>
+                <h4 className="font-semibold text-green-700 dark:text-green-300">Fase 3 - Otimizações Técnicas (2-3 dias)</h4>
+                <p className="text-sm text-muted-foreground">Performance manager, cache inteligente, hooks consolidados</p>
               </div>
-              <Badge variant="secondary">Pendente</Badge>
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Concluída</Badge>
             </div>
             
             <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
