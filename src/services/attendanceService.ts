@@ -404,13 +404,13 @@ class AttendanceService {
     // Criar nova atribuição
     const { data, error } = await supabase
       .from('employee_schedules')
-      .insert({
+      .insert([{
         company_id: companyId,
         employee_id: assignment.employee_id,
         schedule_id: assignment.schedule_id,
-        effective_date: assignment.effective_date,
+        start_date: assignment.effective_date,
         is_active: true
-      })
+      }])
       .select()
       .single();
 
