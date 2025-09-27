@@ -99,14 +99,49 @@ export const getDepartments = async (): Promise<Department[]> => {
 };
 
 export const createDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department> => {
-  const { data, error } = await supabase
-    .from('departments')
-    .insert([department])
-    .select()
-    .single();
+  try {
+    // Ensure user is authenticated and get company_id
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado. Faça login novamente.');
+    }
 
-  if (error) throw error;
-  return data;
+    // Get user's company_id from profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.company_id) {
+      throw new Error('Perfil de usuário não encontrado. Entre em contato com o suporte.');
+    }
+
+    // Add company_id to department data
+    const departmentData = {
+      ...department,
+      company_id: profile.company_id
+    };
+
+    const { data, error } = await supabase
+      .from('departments')
+      .insert([departmentData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating department:', error);
+      if (error.code === 'PGRST116') {
+        throw new Error('Você não tem permissão para criar departamentos.');
+      }
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Create department error:', error);
+    throw error;
+  }
 };
 
 export const updateDepartment = async (id: string, updates: Partial<Department>): Promise<Department> => {
@@ -154,14 +189,49 @@ export const getPositions = async (): Promise<Position[]> => {
 };
 
 export const createPosition = async (position: Omit<Position, 'id' | 'created_at' | 'updated_at'>): Promise<Position> => {
-  const { data, error } = await supabase
-    .from('positions')
-    .insert([position])
-    .select()
-    .single();
+  try {
+    // Ensure user is authenticated and get company_id
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado. Faça login novamente.');
+    }
 
-  if (error) throw error;
-  return data;
+    // Get user's company_id from profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.company_id) {
+      throw new Error('Perfil de usuário não encontrado. Entre em contato com o suporte.');
+    }
+
+    // Add company_id to position data
+    const positionData = {
+      ...position,
+      company_id: profile.company_id
+    };
+
+    const { data, error } = await supabase
+      .from('positions')
+      .insert([positionData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating position:', error);
+      if (error.code === 'PGRST116') {
+        throw new Error('Você não tem permissão para criar cargos.');
+      }
+      throw error;
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.error('Create position error:', error);
+    throw error;
+  }
 };
 
 export const updatePosition = async (id: string, updates: Partial<Position>): Promise<Position> => {
@@ -203,19 +273,54 @@ export const getOrganizationalChart = async (): Promise<OrganizationalChartNode[
 };
 
 export const createOrganizationalChartNode = async (node: Omit<OrganizationalChartNode, 'id' | 'created_at' | 'updated_at' | 'employee' | 'position' | 'department'>): Promise<OrganizationalChartNode> => {
-  const { data, error } = await supabase
-    .from('organizational_chart')
-    .insert([node])
-    .select(`
-      *,
-      employee:employees(id, full_name, email, position),
-      position:positions(id, title),
-      department:departments(id, name)
-    `)
-    .single();
+  try {
+    // Ensure user is authenticated and get company_id
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado. Faça login novamente.');
+    }
 
-  if (error) throw error;
-  return data as any;
+    // Get user's company_id from profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile?.company_id) {
+      throw new Error('Perfil de usuário não encontrado. Entre em contato com o suporte.');
+    }
+
+    // Add company_id to node data
+    const nodeData = {
+      ...node,
+      company_id: profile.company_id
+    };
+
+    const { data, error } = await supabase
+      .from('organizational_chart')
+      .insert([nodeData])
+      .select(`
+        *,
+        employee:employees(id, full_name, email, position),
+        position:positions(id, title),
+        department:departments(id, name)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating organizational chart node:', error);
+      if (error.code === 'PGRST116') {
+        throw new Error('Você não tem permissão para criar nós no organograma.');
+      }
+      throw error;
+    }
+    
+    return data as any;
+  } catch (error: any) {
+    console.error('Create organizational chart node error:', error);
+    throw error;
+  }
 };
 
 export const updateOrganizationalChartNode = async (id: string, updates: Partial<OrganizationalChartNode>): Promise<OrganizationalChartNode> => {
