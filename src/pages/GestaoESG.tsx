@@ -226,73 +226,7 @@ export default function GestaoESG() {
     );
   }
 
-  const KPICardComponent = ({ kpi, pillar }: { kpi: any; pillar: string }) => {
-    const getTrendIcon = (trend: number) => {
-      if (trend > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
-      if (trend < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
-      return <Minus className="h-4 w-4 text-muted-foreground" />;
-    };
-
-    const getTrendText = (trend: number) => {
-      if (trend === 0) return "Sem alteração";
-      return `${trend > 0 ? '+' : ''}${trend}%`;
-    };
-
-    const getNavigationPath = (key: string) => {
-      const routeMap: { [key: string]: string } = {
-        'total_emissions': '/inventario-gee',
-        'recycling_rate': '/residuos',
-        'license_compliance': '/licenciamento',
-        'goals_on_track': '/metas',
-        'policy_compliance': '/compliance',
-        'board_diversity': '/configuracao',
-        'employee_satisfaction': '/configuracao',
-        'training_hours': '/configuracao',
-        'diversity_index': '/configuracao',
-        'compliance_rate': '/compliance',
-        'audit_score': '/auditoria',
-        'transparency_index': '/relatorios',
-        'energy_efficiency': '/inventario-gee'
-      };
-
-      return routeMap[key] || '#';
-    };
-
-    const path = getNavigationPath(kpi.key);
-    const hasNavigation = path !== '#';
-
-    return (
-      <Card className={cn(
-        "transition-colors", 
-        hasNavigation && "cursor-pointer hover:bg-muted/50"
-      )}
-      onClick={() => hasNavigation && navigate(path)}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{kpi.label}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-2xl font-bold">{kpi.value}</span>
-                <span className="text-sm text-muted-foreground">{kpi.unit}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                {getTrendIcon(kpi.trend)}
-                <span className={cn(
-                  "text-sm font-medium",
-                  kpi.trend > 0 ? "text-green-600" : kpi.trend < 0 ? "text-red-600" : "text-muted-foreground"
-                )}>
-                  {getTrendText(kpi.trend)}
-                </span>
-              </div>
-              {hasNavigation && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
+  // KPICardComponent removed - using KPI cards inside PillarCard only
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
