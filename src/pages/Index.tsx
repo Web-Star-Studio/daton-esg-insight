@@ -1,4 +1,5 @@
 
+import React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -39,9 +40,11 @@ import { getDashboardStats } from "@/services/goals"
 import { getLicenseStats } from "@/services/licenses"
 import { getWasteDashboard } from "@/services/waste"
 import { useSystemOptimization } from "@/hooks/useSystemOptimization"
+import SettingsModal from "@/components/SettingsModal"
 
 const Index = () => {
   const { metrics, isOptimized } = useSystemOptimization();
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
   
   // Fetch real data from various services
   const { data: esgData, isLoading: esgLoading } = useQuery({
@@ -87,7 +90,7 @@ const Index = () => {
                 <Zap className="h-3 w-3 mr-1" />
                 Sistema {metrics.system_health.toUpperCase()}
               </Badge>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
                 <Settings className="h-4 w-4 mr-2" />
                 Configurações
               </Button>
@@ -261,7 +264,9 @@ const Index = () => {
                 <Skeleton className="h-8 w-16" />
               ) : (
                 <div className="text-2xl font-bold text-foreground">
-                  {(wasteStats as any)?.recycling_rate_percent || 0}%
+                  {wasteStats?.recycling_rate_percent !== undefined 
+                    ? `${wasteStats.recycling_rate_percent}%` 
+                    : '0%'}
                 </div>
               )}
               <div className="text-xs text-muted-foreground">
@@ -410,6 +415,9 @@ const Index = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Settings Modal */}
+        <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
   );
 };
