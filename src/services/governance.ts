@@ -76,7 +76,10 @@ export const getBoardMembers = async () => {
 export const createBoardMember = async (member: Omit<BoardMember, 'id' | 'created_at' | 'updated_at'>) => {
   const { data, error } = await supabase
     .from('board_members')
-    .insert(member)
+    .insert({
+      ...member,
+      company_id: member.company_id
+    })
     .select()
     .single();
 
@@ -119,7 +122,10 @@ export const getCorporatePolicies = async () => {
 export const createCorporatePolicy = async (policy: Omit<CorporatePolicy, 'id' | 'created_at' | 'updated_at'>) => {
   const { data, error } = await supabase
     .from('corporate_policies')
-    .insert(policy)
+    .insert({
+      ...policy,
+      company_id: policy.company_id
+    })
     .select()
     .single();
 
@@ -156,7 +162,11 @@ export const createWhistleblowerReport = async (report: Omit<WhistleblowerReport
   
   const { data, error } = await supabase
     .from('whistleblower_reports')
-    .insert({ ...report, report_code: reportCode })
+    .insert({ 
+      ...report, 
+      report_code: reportCode,
+      company_id: report.company_id
+    })
     .select()
     .single();
 

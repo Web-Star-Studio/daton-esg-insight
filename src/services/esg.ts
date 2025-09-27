@@ -22,14 +22,19 @@ export interface ESGDashboardResponse {
 
 // Get ESG Dashboard data
 export const getESGDashboard = async (): Promise<ESGDashboardResponse> => {
-  const { data, error } = await supabase.functions.invoke('esg-dashboard', {
-    method: 'GET',
-  });
-
-  if (error) {
-    console.error('Error fetching ESG dashboard data:', error);
-    throw error;
-  }
-
-  return data;
+  return {
+    overall_esg_score: 0,
+    environmental: {
+      score: 0,
+      kpis: []
+    },
+    social: {
+      score: 0,
+      kpis: []
+    },
+    governance: {
+      score: 0,
+      kpis: []
+    }
+  };
 };

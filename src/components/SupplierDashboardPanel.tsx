@@ -1,30 +1,28 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  TrendingUp, 
   FileText, 
+  DollarSign, 
+  TrendingUp, 
   AlertTriangle, 
-  DollarSign,
-  Calendar,
-  Award,
-  Building2,
-  Phone,
-  Mail
-} from 'lucide-react';
+  X,
+  Activity,
+  Shield
+} from "lucide-react";
+
+interface Supplier {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+}
 
 interface SupplierDashboardPanelProps {
-  supplier: {
-    id: string;
-    name: string;
-    type: string;
-    status: string;
-    contact_phone?: string;
-    contact_email?: string;
-  };
+  supplier: Supplier;
   onClose: () => void;
 }
 
@@ -32,99 +30,41 @@ export const SupplierDashboardPanel: React.FC<SupplierDashboardPanelProps> = ({
   supplier,
   onClose
 }) => {
-  // Mock data - será substituído pelos dados reais dos serviços
-  const mockData = {
-    contracts: {
-      active: 3,
-      total: 5,
-      totalValue: 450000,
-      expiring: 1
-    },
-    performance: {
-      overallScore: 8.5,
-      qualityScore: 9.0,
-      deliveryScore: 8.0,
-      serviceScore: 8.5
-    },
-    compliance: {
-      licenseStatus: 'Válida',
-      licenseExpiry: '2024-12-31',
-      certificationsValid: 4,
-      certificationsTotal: 5
-    },
-    incidents: {
-      open: 1,
-      resolved: 5,
-      total: 6
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'ativo': return 'bg-green-500';
-      case 'inativo': return 'bg-red-500';
-      case 'suspenso': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
-    }
+  // Empty state - supplier data not configured yet
+  const data = {
+    contracts: { active: 0, total: 0, totalValue: 0, renewalsNeeded: 0 },
+    performance: { overallScore: 0, qualityScore: 0, deliveryScore: 0, serviceScore: 0 },
+    incidents: { open: 0, total: 0, resolved: 0 },
+    compliance: { licenseStatus: "Não configurado", licenseExpiry: "-", certificationsValid: 0, certificationsTotal: 0 }
   };
 
   const getLicenseStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'válida': return 'text-green-600';
-      case 'vencendo': return 'text-yellow-600';
-      case 'vencida': return 'text-red-600';
-      default: return 'text-gray-600';
+    switch (status) {
+      case 'Válida':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'Vencida':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'Vencendo':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="p-3 bg-primary/10 rounded-lg">
-            <Building2 className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-semibold text-foreground">{supplier.name}</h2>
-            <p className="text-muted-foreground">{supplier.type}</p>
-          </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">{supplier.name}</h2>
+          <p className="text-muted-foreground">
+            {supplier.type} • Status: <span className="capitalize">{supplier.status}</span>
+          </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Badge className={getStatusColor(supplier.status)}>
-            {supplier.status}
-          </Badge>
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Contact Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Phone className="h-5 w-5" />
-            <span>Informações de Contato</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {supplier.contact_phone && (
-            <div className="flex items-center space-x-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{supplier.contact_phone}</span>
-            </div>
-          )}
-          {supplier.contact_email && (
-            <div className="flex items-center space-x-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span>{supplier.contact_email}</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -132,9 +72,9 @@ export const SupplierDashboardPanel: React.FC<SupplierDashboardPanelProps> = ({
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.contracts.active}</div>
+            <div className="text-2xl font-bold">{data.contracts.active}</div>
             <p className="text-xs text-muted-foreground">
-              de {mockData.contracts.total} totais
+              Dados não configurados
             </p>
           </CardContent>
         </Card>
@@ -146,10 +86,10 @@ export const SupplierDashboardPanel: React.FC<SupplierDashboardPanelProps> = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              R$ {mockData.contracts.totalValue.toLocaleString()}
+              R$ {data.contracts.totalValue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              em contratos ativos
+              Dados não configurados
             </p>
           </CardContent>
         </Card>
@@ -160,9 +100,9 @@ export const SupplierDashboardPanel: React.FC<SupplierDashboardPanelProps> = ({
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.performance.overallScore}/10</div>
+            <div className="text-2xl font-bold">{data.performance.overallScore}/10</div>
             <p className="text-xs text-muted-foreground">
-              avaliação geral
+              Dados não configurados
             </p>
           </CardContent>
         </Card>
@@ -173,87 +113,31 @@ export const SupplierDashboardPanel: React.FC<SupplierDashboardPanelProps> = ({
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.incidents.open}</div>
+            <div className="text-2xl font-bold">{data.incidents.open}</div>
             <p className="text-xs text-muted-foreground">
-              abertos de {mockData.incidents.total} totais
+              Dados não configurados
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Detailed Tabs */}
-      <Tabs defaultValue="performance" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="performance" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="contracts">Contratos</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          <TabsTrigger value="incidents">Incidentes</TabsTrigger>
+          <TabsTrigger value="history">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="performance" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Award className="h-5 w-5" />
-                <span>Indicadores de Performance</span>
-              </CardTitle>
+              <CardTitle>Métricas de Performance</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm">
-                  <span>Qualidade</span>
-                  <span>{mockData.performance.qualityScore}/10</span>
-                </div>
-                <Progress 
-                  value={mockData.performance.qualityScore * 10} 
-                  className="h-2 mt-1" 
-                />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm">
-                  <span>Entrega</span>
-                  <span>{mockData.performance.deliveryScore}/10</span>
-                </div>
-                <Progress 
-                  value={mockData.performance.deliveryScore * 10} 
-                  className="h-2 mt-1" 
-                />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm">
-                  <span>Atendimento</span>
-                  <span>{mockData.performance.serviceScore}/10</span>
-                </div>
-                <Progress 
-                  value={mockData.performance.serviceScore * 10} 
-                  className="h-2 mt-1" 
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="contracts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contratos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Contrato de Serviços - 2024</p>
-                    <p className="text-sm text-muted-foreground">Vigência: 01/01/2024 - 31/12/2024</p>
-                  </div>
-                  <Badge variant="secondary">Ativo</Badge>
-                </div>
-                <div className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Acordo de Nível de Serviço</p>
-                    <p className="text-sm text-muted-foreground">Vigência: 15/03/2024 - 14/03/2025</p>
-                  </div>
-                  <Badge variant="outline" className="text-yellow-600">Vencendo</Badge>
-                </div>
+              <div className="text-center text-muted-foreground py-8">
+                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Dados de Performance Não Configurados</h3>
+                <p className="text-sm">As métricas de performance do fornecedor serão exibidas aqui quando configuradas.</p>
               </div>
             </CardContent>
           </Card>
@@ -265,47 +149,25 @@ export const SupplierDashboardPanel: React.FC<SupplierDashboardPanelProps> = ({
               <CardTitle>Status de Compliance</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span>Licença Principal</span>
-                <Badge className={getLicenseStatusColor(mockData.compliance.licenseStatus)}>
-                  {mockData.compliance.licenseStatus}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Vencimento da Licença</span>
-                <span className="text-sm">{mockData.compliance.licenseExpiry}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Certificações Válidas</span>
-                <span className="text-sm">
-                  {mockData.compliance.certificationsValid}/{mockData.compliance.certificationsTotal}
-                </span>
+              <div className="text-center text-muted-foreground py-8">
+                <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Compliance Não Configurado</h3>
+                <p className="text-sm">As informações de compliance do fornecedor serão exibidas aqui quando configuradas.</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="incidents" className="space-y-4">
+        <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Incidentes</CardTitle>
+              <CardTitle>Histórico de Interações</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Atraso na Entrega</p>
-                    <p className="text-sm text-muted-foreground">15/03/2024</p>
-                  </div>
-                  <Badge variant="destructive">Aberto</Badge>
-                </div>
-                <div className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Produto Fora de Especificação</p>
-                    <p className="text-sm text-muted-foreground">02/03/2024</p>
-                  </div>
-                  <Badge variant="secondary">Resolvido</Badge>
-                </div>
+              <div className="text-center text-muted-foreground py-8">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Histórico Não Disponível</h3>
+                <p className="text-sm">O histórico de interações com o fornecedor será exibido aqui quando configurado.</p>
               </div>
             </CardContent>
           </Card>

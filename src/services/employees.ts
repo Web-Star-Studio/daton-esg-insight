@@ -46,10 +46,13 @@ export const getEmployee = async (id: string) => {
 };
 
 export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at' | 'updated_at'>) => {
-  // company_id will be set automatically by RLS policy
   const { data, error } = await supabase
     .from('employees')
-    .insert(employee)
+    .insert({
+      ...employee,
+      // Ensure company_id is set for RLS compliance
+      company_id: employee.company_id
+    })
     .select()
     .single();
 

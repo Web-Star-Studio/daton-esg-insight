@@ -232,16 +232,16 @@ class AnalyticsService {
   }
 
   async getSystemPerformanceAnalytics(): Promise<SystemPerformanceData> {
-    // Mock data - in production, this would come from monitoring services
+    // Return baseline performance data - monitoring not configured yet
     return {
-      responseTime: Math.random() * 200 + 100, // 100-300ms
-      uptime: 99.5 + Math.random() * 0.5, // 99.5-100%
-      errorRate: Math.random() * 0.5, // 0-0.5%
-      throughput: Math.random() * 1000 + 500, // 500-1500 req/min
+      responseTime: 0,
+      uptime: 0,
+      errorRate: 0,
+      throughput: 0,
       resourceUsage: {
-        cpu: Math.random() * 50 + 20, // 20-70%
-        memory: Math.random() * 40 + 30, // 30-70%
-        storage: Math.random() * 30 + 40 // 40-70%
+        cpu: 0,
+        memory: 0,
+        storage: 0
       }
     };
   }
