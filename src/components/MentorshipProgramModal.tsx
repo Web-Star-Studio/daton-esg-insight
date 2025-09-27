@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Users, Calendar } from "lucide-react";
 import { useEmployeesAsOptions } from "@/services/employees";
 import { useCreateMentoringRelationship, useMentoringRelationships } from "@/services/careerDevelopment";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 interface MentorshipProgramModalProps {
@@ -32,12 +33,23 @@ export function MentorshipProgramModal({ isOpen, onClose }: MentorshipProgramMod
   const [objectives, setObjectives] = useState<string[]>([]);
   const [newObjective, setNewObjective] = useState("");
 
+  const { user } = useAuth();
   const { data: employeeOptions } = useEmployeesAsOptions();
   const { data: existingRelationships } = useMentoringRelationships();
   const createRelationship = useCreateMentoringRelationship();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user?.company_id) {
+      toast.error("Erro de autenticação: empresa não identificada");
+      return;
+    }
+
+    if (!formData.mentor_id || !formData.mentee_id) {
+      toast.error("Por favor, selecione mentor e mentorado");
+      return;
+    }
     
     if (formData.mentor_id === formData.mentee_id) {
       toast.error("Mentor e mentorado não podem ser a mesma pessoa");
@@ -47,10 +59,10 @@ export function MentorshipProgramModal({ isOpen, onClose }: MentorshipProgramMod
     try {
       await createRelationship.mutateAsync({
         ...formData,
-        company_id: "", // Will be set by RLS
+        company_id: user.company_id,
         status: "Ativo",
         objectives,
-        created_by_user_id: "", // Will be set by auth
+        created_by_user_id: user.id,
       });
       
       toast.success("Relacionamento de mentoria criado com sucesso!");
