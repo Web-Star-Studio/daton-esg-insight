@@ -1,20 +1,22 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Plus, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useFormErrorValidation } from "@/hooks/useFormErrorValidation";
 import { z } from "zod";
+import { getUserAndCompany } from "@/utils/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const cycleSchema = z.object({
   name: z.string().min(1, "Nome do ciclo é obrigatório"),
@@ -25,59 +27,67 @@ const cycleSchema = z.object({
 interface CycleQuickCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCycleCreated: (cycle: any) => void;
+  onCycleCreated?: (cycle: any) => void;
 }
 
-export function CycleQuickCreateModal({
-  open,
-  onOpenChange,
-  onCycleCreated
+export function CycleQuickCreateModal({ 
+  open, 
+  onOpenChange, 
+  onCycleCreated 
 }: CycleQuickCreateModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     evaluation_type: 'annual',
     status: 'active'
   });
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   const { validate, hasFieldError, getFieldProps, renderLabel, clearErrors } = useFormErrorValidation(cycleSchema);
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData & { start_date: string; end_date: string }) => {
-        const { data: cycle, error } = await supabase
-          .from('performance_evaluation_cycles')
-          .insert({
-            name: formData.name,
-            evaluation_type: formData.evaluation_type,
-            status: formData.status,
-            start_date: format(startDate!, 'yyyy-MM-dd'),
-            end_date: format(endDate!, 'yyyy-MM-dd'),
-            company_id: '00000000-0000-0000-0000-000000000000' // Default company
-          })
-          .select()
-          .single();
+    mutationFn: async (cycleData: any) => {
+      const userWithCompany = await getUserAndCompany();
+      if (!userWithCompany?.company_id) {
+        throw new Error('Usuário não autenticado ou empresa não encontrada');
+      }
+
+      const { data, error } = await supabase
+        .from('performance_evaluation_cycles')
+        .insert([{
+          ...cycleData,
+          company_id: userWithCompany.company_id
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
-      return cycle;
+      return data;
     },
-    onSuccess: (cycle) => {
+    onSuccess: (newCycle) => {
       queryClient.invalidateQueries({ queryKey: ['evaluation-cycles'] });
       toast.success("Ciclo de avaliação criado com sucesso!");
-      onCycleCreated(cycle);
+      onCycleCreated?.(newCycle);
       onOpenChange(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao criar ciclo:', error);
-      toast.error("Erro ao criar ciclo de avaliação. Tente novamente.");
+      if (error.message?.includes('não autenticado')) {
+        toast.error("Erro de autenticação. Faça login novamente.");
+      } else {
+        toast.error("Erro ao criar ciclo de avaliação. Tente novamente.");
+      }
     }
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
+      description: '',
       evaluation_type: 'annual',
       status: 'active'
     });
@@ -111,22 +121,25 @@ export function CycleQuickCreateModal({
     createMutation.mutate(cycleData);
   };
 
+  const isPending = createMutation.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Criar Ciclo de Avaliação
-          </DialogTitle>
+          <DialogTitle>Novo Ciclo de Avaliação</DialogTitle>
+          <DialogDescription>
+            Preencha os dados para criar um novo ciclo de avaliação
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label className={renderLabel('name', true).className}>
               {renderLabel('name', true).label("Nome do Ciclo")}
             </Label>
             <Input
+              id="name"
               placeholder="Ex: Avaliação Anual 2024"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -137,17 +150,28 @@ export function CycleQuickCreateModal({
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Textarea
+              id="description"
+              placeholder="Descreva o objetivo e escopo deste ciclo de avaliação..."
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className={renderLabel('evaluation_type', true).className}>
-                {renderLabel('evaluation_type', true).label("Tipo")}
+                {renderLabel('evaluation_type', true).label("Tipo de Avaliação")}
               </Label>
               <Select
                 value={formData.evaluation_type}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, evaluation_type: value }))}
               >
                 <SelectTrigger {...getFieldProps('evaluation_type')}>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="annual">Anual</SelectItem>
@@ -157,6 +181,9 @@ export function CycleQuickCreateModal({
                   <SelectItem value="special">Especial</SelectItem>
                 </SelectContent>
               </Select>
+              {hasFieldError('evaluation_type') && (
+                <p className="text-sm text-red-600">Tipo de avaliação é obrigatório</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -168,14 +195,18 @@ export function CycleQuickCreateModal({
                 onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger {...getFieldProps('status')}>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="planned">Planejado</SelectItem>
                   <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
+              {hasFieldError('status') && (
+                <p className="text-sm text-red-600">Status é obrigatório</p>
+              )}
             </div>
           </div>
 
@@ -192,7 +223,7 @@ export function CycleQuickCreateModal({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                    {startDate ? format(startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -219,7 +250,7 @@ export function CycleQuickCreateModal({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                    {endDate ? format(endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -235,7 +266,7 @@ export function CycleQuickCreateModal({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -245,10 +276,10 @@ export function CycleQuickCreateModal({
             </Button>
             <Button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={isPending}
             >
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Criar Ciclo
+              {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isPending ? 'Criando...' : 'Criar Ciclo'}
             </Button>
           </div>
         </form>

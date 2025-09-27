@@ -1,83 +1,98 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useFormErrorValidation } from "@/hooks/useFormErrorValidation";
 import { z } from "zod";
+import { getUserAndCompany } from "@/utils/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const employeeSchema = z.object({
+  employee_code: z.string().min(1, "Código do funcionário é obrigatório"),
   full_name: z.string().min(1, "Nome completo é obrigatório"),
   position: z.string().min(1, "Cargo é obrigatório"),
   department: z.string().min(1, "Departamento é obrigatório"),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.string().email("E-mail inválido").optional().or(z.literal('')),
 });
 
 interface EmployeeQuickCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEmployeeCreated: (employee: any) => void;
+  onEmployeeCreated?: (employee: any) => void;
 }
 
-export function EmployeeQuickCreateModal({
-  open,
-  onOpenChange,
-  onEmployeeCreated
+export function EmployeeQuickCreateModal({ 
+  open, 
+  onOpenChange, 
+  onEmployeeCreated 
 }: EmployeeQuickCreateModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
+    employee_code: '',
     full_name: '',
     position: '',
     department: '',
-    email: ''
+    email: '',
+    employment_type: 'CLT',
+    status: 'Ativo'
   });
 
   const { validate, hasFieldError, getFieldProps, renderLabel, clearErrors } = useFormErrorValidation(employeeSchema);
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-        const { data: employee, error } = await supabase
-          .from('employees')
-          .insert({
-            full_name: formData.full_name,
-            position: formData.position,
-            department: formData.department,
-            status: 'Ativo',
-            email: formData.email || null,
-            employee_code: `EMP-${Date.now()}`,
-            hire_date: new Date().toISOString().split('T')[0],
-            company_id: '00000000-0000-0000-0000-000000000000' // Default company
-          })
-          .select()
-          .single();
+    mutationFn: async (employeeData: any) => {
+      const userWithCompany = await getUserAndCompany();
+      if (!userWithCompany?.company_id) {
+        throw new Error('Usuário não autenticado ou empresa não encontrada');
+      }
+
+      const { data, error } = await supabase
+        .from('employees')
+        .insert([{
+          ...employeeData,
+          company_id: userWithCompany.company_id,
+          hire_date: new Date().toISOString().split('T')[0]
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
-      return employee;
+      return data;
     },
-    onSuccess: (employee) => {
+    onSuccess: (newEmployee) => {
       queryClient.invalidateQueries({ queryKey: ['employees-for-evaluation'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
       toast.success("Funcionário criado com sucesso!");
-      onEmployeeCreated(employee);
+      onEmployeeCreated?.(newEmployee);
       onOpenChange(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao criar funcionário:', error);
-      toast.error("Erro ao criar funcionário. Tente novamente.");
+      if (error.message?.includes('não autenticado')) {
+        toast.error("Erro de autenticação. Faça login novamente.");
+      } else if (error.message?.includes('duplicate key')) {
+        toast.error("Código do funcionário já existe. Use um código diferente.");
+      } else {
+        toast.error("Erro ao criar funcionário. Tente novamente.");
+      }
     }
   });
 
   const resetForm = () => {
     setFormData({
+      employee_code: '',
       full_name: '',
       position: '',
       department: '',
-      email: ''
+      email: '',
+      employment_type: 'CLT',
+      status: 'Ativo'
     });
     clearErrors();
   };
@@ -91,6 +106,8 @@ export function EmployeeQuickCreateModal({
     createMutation.mutate(formData);
   };
 
+  const isPending = createMutation.isPending;
+
   const departments = [
     'Administração', 'Recursos Humanos', 'Financeiro', 'Vendas', 
     'Marketing', 'TI', 'Produção', 'Qualidade', 'Logística'
@@ -98,76 +115,140 @@ export function EmployeeQuickCreateModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Criar Funcionário Rapidamente
-          </DialogTitle>
+          <DialogTitle>Novo Funcionário</DialogTitle>
+          <DialogDescription>
+            Preencha os dados para cadastrar um novo funcionário
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Nome Completo <span className="text-red-500">*</span></Label>
-            <Input
-              placeholder="Digite o nome completo"
-              value={formData.full_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-              {...getFieldProps('full_name')}
-            />
-            {hasFieldError('full_name') && (
-              <p className="text-sm text-red-600">Nome completo é obrigatório</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className={renderLabel('employee_code', true).className}>
+                {renderLabel('employee_code', true).label("Código do Funcionário")}
+              </Label>
+              <Input
+                id="employee_code"
+                placeholder="Ex: EMP001"
+                value={formData.employee_code}
+                onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
+                {...getFieldProps('employee_code')}
+              />
+              {hasFieldError('employee_code') && (
+                <p className="text-sm text-red-600">Código do funcionário é obrigatório</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className={renderLabel('full_name', true).className}>
+                {renderLabel('full_name', true).label("Nome Completo")}
+              </Label>
+              <Input
+                id="full_name"
+                placeholder="Nome completo do funcionário"
+                value={formData.full_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                {...getFieldProps('full_name')}
+              />
+              {hasFieldError('full_name') && (
+                <p className="text-sm text-red-600">Nome completo é obrigatório</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="email@empresa.com"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="employment_type">Tipo de Contrato</Label>
+              <Select 
+                value={formData.employment_type} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, employment_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CLT">CLT</SelectItem>
+                  <SelectItem value="PJ">PJ</SelectItem>
+                  <SelectItem value="Estágio">Estágio</SelectItem>
+                  <SelectItem value="Terceirizado">Terceirizado</SelectItem>
+                  <SelectItem value="Temporário">Temporário</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className={renderLabel('department', true).className}>
+                {renderLabel('department', true).label("Departamento")}
+              </Label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+              >
+                <SelectTrigger {...getFieldProps('department')}>
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasFieldError('department') && (
+                <p className="text-sm text-red-600">Departamento é obrigatório</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className={renderLabel('position', true).className}>
+                {renderLabel('position', true).label("Cargo")}
+              </Label>
+              <Input
+                id="position"
+                placeholder="Ex: Analista de Sistemas"
+                value={formData.position}
+                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                {...getFieldProps('position')}
+              />
+              {hasFieldError('position') && (
+                <p className="text-sm text-red-600">Cargo é obrigatório</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Cargo <span className="text-red-500">*</span></Label>
-            <Input
-              placeholder="Ex: Analista, Gerente, Coordenador"
-              value={formData.position}
-              onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
-              {...getFieldProps('position')}
-            />
-            {hasFieldError('position') && (
-              <p className="text-sm text-red-600">Cargo é obrigatório</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Departamento <span className="text-red-500">*</span></Label>
-            <Select
-              value={formData.department}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+            <Label htmlFor="status">Status</Label>
+            <Select 
+              value={formData.status} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
             >
-              <SelectTrigger {...getFieldProps('department')}>
-                <SelectValue placeholder="Selecione o departamento" />
+              <SelectTrigger>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
+                <SelectItem value="Ativo">Ativo</SelectItem>
+                <SelectItem value="Inativo">Inativo</SelectItem>
+                <SelectItem value="Afastado">Afastado</SelectItem>
+                <SelectItem value="Demitido">Demitido</SelectItem>
               </SelectContent>
             </Select>
-            {hasFieldError('department') && (
-              <p className="text-sm text-red-600">Departamento é obrigatório</p>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Email (Opcional)</Label>
-            <Input
-              type="email"
-              placeholder="email@empresa.com"
-              value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              {...getFieldProps('email')}
-            />
-            {hasFieldError('email') && (
-              <p className="text-sm text-red-600">Email inválido</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 mt-6">
             <Button
               type="button"
               variant="outline"
@@ -177,10 +258,10 @@ export function EmployeeQuickCreateModal({
             </Button>
             <Button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={isPending}
             >
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Criar Funcionário
+              {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isPending ? 'Criando...' : 'Criar Funcionário'}
             </Button>
           </div>
         </form>
