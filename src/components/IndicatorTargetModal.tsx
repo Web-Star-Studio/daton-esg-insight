@@ -17,12 +17,12 @@ import { useCreateTarget, useIndicatorTargets } from '@/services/indicatorTarget
 import { useQualityIndicator } from '@/services/qualityIndicators';
 
 const targetSchema = z.object({
-  target_value: z.number({ required_error: 'Meta é obrigatória' }).min(0, 'Meta deve ser positiva'),
+  target_value: z.number({ message: 'Meta é obrigatória' }).min(0, 'Meta deve ser positiva'),
   upper_limit: z.number().optional(),
   lower_limit: z.number().optional(),
   critical_upper_limit: z.number().optional(),
   critical_lower_limit: z.number().optional(),
-  valid_from: z.date({ required_error: 'Data de início é obrigatória' }),
+  valid_from: z.date({ message: 'Data de início é obrigatória' }),
   valid_until: z.date().optional(),
 });
 

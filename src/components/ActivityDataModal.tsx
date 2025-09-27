@@ -11,6 +11,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmissionSource, ActivityData, addActivityData, updateActivityData, getEmissionFactors } from "@/services/emissions";
 import { useToast } from "@/hooks/use-toast";
+import { errorHandler } from "@/utils/errorHandler";
+import { activityDataFormSchema } from "@/schemas/activityDataSchemas";
+import { useFormValidation } from "@/hooks/useFormValidation";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,6 +65,7 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editi
   const [selectedEmissionFactorId, setSelectedEmissionFactorId] = useState<string>("");
   const [refreshData, setRefreshData] = useState(0);
   const { toast } = useToast();
+  const { validate, getFieldError } = useFormValidation(activityDataFormSchema);
 
   useEffect(() => {
     if (open && source) {
@@ -80,18 +84,24 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editi
   }, [open, source, editingData]);
 
   const loadEmissionFactors = async () => {
-    try {
-      const factors = await getEmissionFactors(source.category);
-      setEmissionFactors(factors);
-      
-      // Auto-select factor and lock unit if only one factor exists
-      if (factors.length === 1) {
-        setSelectedEmissionFactorId(factors[0].id);
-        setUnit(factors[0].activity_unit);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar fatores de emissão:", error);
-    }
+    await errorHandler.withErrorHandling(
+      async () => {
+        const factors = await getEmissionFactors(source.category);
+        setEmissionFactors(factors);
+        
+        // Auto-select factor and lock unit if only one factor exists
+        if (factors.length === 1) {
+          setSelectedEmissionFactorId(factors[0].id);
+          setUnit(factors[0].activity_unit);
+        }
+      },
+      {
+        component: 'ActivityDataModal',
+        function: 'loadEmissionFactors',
+        additionalData: { category: source.category }
+      },
+      false // Don't show toast, it's not critical for user
+    );
   };
 
   // Handle factor selection and unit locking
@@ -106,82 +116,69 @@ export function ActivityDataModal({ open, onOpenChange, source, onSuccess, editi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!periodStartDate || !periodEndDate || !quantity) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Validate form data with Zod schema
+    const formData = {
+      period_start_date: periodStartDate ? format(periodStartDate, "yyyy-MM-dd") : "",
+      period_end_date: periodEndDate ? format(periodEndDate, "yyyy-MM-dd") : "", 
+      quantity,
+      unit,
+      source_document: sourceDocument,
+      emission_factor_id: selectedEmissionFactorId || ""
+    };
 
-    // Verificação crítica: se há múltiplos fatores, o usuário deve selecionar um específico
-    if (emissionFactors.length > 1 && !selectedEmissionFactorId) {
-      toast({
-        title: "Tipo de combustível obrigatório",
-        description: "Selecione o tipo específico de combustível consumido.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Verificação crítica: deve sempre ter um fator selecionado
-    if (!selectedEmissionFactorId) {
-      toast({
-        title: "Fator de emissão obrigatório",
-        description: "Um fator de emissão deve estar selecionado para o cálculo.",
-        variant: "destructive",
-      });
+    const validation = validate(formData);
+    if (!validation.isValid) {
       return;
     }
 
     setIsLoading(true);
 
-    try {
-      const selectedFactor = emissionFactors.find(f => f.id === selectedEmissionFactorId);
-      
-    const payload: any = {
-      emission_source_id: source.id,
-      period_start_date: format(periodStartDate, "yyyy-MM-dd"),
-      period_end_date: format(periodEndDate, "yyyy-MM-dd"),
-      quantity: parseFloat(quantity),
-      unit: selectedFactor?.activity_unit || unit,
-      source_document: sourceDocument || undefined,
-    };
+    await errorHandler.withErrorHandling(
+      async () => {
+        const selectedFactor = emissionFactors.find(f => f.id === selectedEmissionFactorId);
+        const validatedData = validation.data!;
+        
+        const payload: any = {
+          emission_source_id: source.id,
+          period_start_date: validatedData.period_start_date,
+          period_end_date: validatedData.period_end_date,
+          quantity: parseFloat(validatedData.quantity),
+          unit: selectedFactor?.activity_unit || validatedData.unit,
+          source_document: validatedData.source_document || undefined,
+          emission_factor_id: validatedData.emission_factor_id
+        };
+
+        if (editingData) {
+          await updateActivityData(editingData.id, payload);
+          toast({
+            title: "Sucesso",
+            description: "Dados de atividade atualizados com sucesso!",
+          });
+        } else {
+          await addActivityData(payload);
+          toast({
+            title: "Sucesso", 
+            description: "Dados de atividade adicionados com sucesso!",
+          });
+        }
+
+        resetForm();
+        onOpenChange(false);
+        setRefreshData(prev => prev + 1);
+        onSuccess?.();
+      },
+      {
+        component: 'ActivityDataModal',
+        function: 'handleSubmit',
+        additionalData: { 
+          sourceId: source.id, 
+          isEditing: !!editingData,
+          dataId: editingData?.id 
+        }
+      }
+    );
     
-    // Only include emission_factor_id if it's valid
-    if (selectedEmissionFactorId && selectedEmissionFactorId.trim() !== '') {
-      payload.emission_factor_id = selectedEmissionFactorId;
-    }
-
-    if (editingData) {
-      await updateActivityData(editingData.id, payload);
-      toast({
-        title: "Sucesso",
-        description: "Dados de atividade atualizados com sucesso!",
-      });
-    } else {
-      await addActivityData(payload);
-      toast({
-        title: "Sucesso",
-        description: "Dados de atividade adicionados com sucesso!",
-      });
-    }
-
-      resetForm();
-      onOpenChange(false);
-      setRefreshData(prev => prev + 1);
-      onSuccess?.();
-    } catch (error) {
-      console.error("Erro ao adicionar dados de atividade:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao adicionar dados de atividade. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   };
 
   const resetForm = () => {

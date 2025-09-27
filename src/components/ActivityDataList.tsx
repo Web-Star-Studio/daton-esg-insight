@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { errorHandler } from "@/utils/errorHandler";
 import { EmissionSource } from "@/services/emissions";
 
 interface ActivityDataRecord {
@@ -35,26 +36,25 @@ export function ActivityDataList({ source, onDataChange, onEditData }: ActivityD
   }, [source.id]);
 
   const loadActivityData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('activity_data')
-        .select('*')
-        .eq('emission_source_id', source.id)
-        .order('period_start_date', { ascending: false });
+    await errorHandler.withErrorHandling(
+      async () => {
+        const { data, error } = await supabase
+          .from('activity_data')
+          .select('*')
+          .eq('emission_source_id', source.id)
+          .order('period_start_date', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setActivityData(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar dados de atividade:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados de atividade.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+        setActivityData(data || []);
+        setIsLoading(false);
+      },
+      {
+        component: 'ActivityDataList',
+        function: 'loadActivityData',
+        additionalData: { sourceId: source.id }
+      }
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -62,29 +62,29 @@ export function ActivityDataList({ source, onDataChange, onEditData }: ActivityD
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('activity_data')
-        .delete()
-        .eq('id', id);
+    await errorHandler.withErrorHandling(
+      async () => {
+        const { error } = await supabase
+          .from('activity_data')
+          .delete()
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: "Dado de atividade excluído com sucesso!",
-      });
+        toast({
+          title: "Sucesso", 
+          description: "Dado de atividade excluído com sucesso!",
+        });
 
-      loadActivityData();
-      onDataChange?.();
-    } catch (error) {
-      console.error('Erro ao excluir dado de atividade:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir dado de atividade.",
-        variant: "destructive",
-      });
-    }
+        loadActivityData();
+        onDataChange?.();
+      },
+      {
+        component: 'ActivityDataList',
+        function: 'handleDelete',
+        additionalData: { activityDataId: id, sourceId: source.id }
+      }
+    );
   };
 
   if (isLoading) {

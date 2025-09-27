@@ -26,7 +26,7 @@ import { MTROCRModal } from "@/components/MTROCRModal"
 
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
-  dataColeta: z.date({ required_error: "Data da coleta é obrigatória" }),
+  dataColeta: z.date({ message: "Data da coleta é obrigatória" }),
   descricaoResiduo: z.string().min(1, "Descrição do resíduo é obrigatória"),
   classe: z.string().min(1, "Classe é obrigatória"),
   quantidade: z.number().min(0.01, "Quantidade deve ser maior que zero"),

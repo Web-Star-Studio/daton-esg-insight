@@ -17,10 +17,10 @@ import { useCreateMeasurement, useQualityIndicator } from '@/services/qualityInd
 
 const measurementSchema = z.object({
   measurement_date: z.date({
-    required_error: 'Data da medição é obrigatória'
+    message: 'Data da medição é obrigatória'
   }),
   measured_value: z.number({
-    required_error: 'Valor medido é obrigatório'
+    message: 'Valor medido é obrigatório'
   }).min(0, 'Valor deve ser positivo'),
   measurement_period_start: z.date().optional(),
   measurement_period_end: z.date().optional(),

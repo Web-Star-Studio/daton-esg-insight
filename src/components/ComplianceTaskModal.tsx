@@ -47,7 +47,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   frequency: z.enum(["Única", "Anual", "Semestral", "Trimestral", "Mensal", "Sob Demanda"]),
   due_date: z.date({
-    required_error: "Data de vencimento é obrigatória",
+    message: "Data de vencimento é obrigatória"
   }),
   requirement_id: z.string().optional(),
   responsible_user_id: z.string().optional(),

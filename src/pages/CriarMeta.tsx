@@ -29,7 +29,7 @@ const formSchema = z.object({
   valorBase: z.number().min(0, "Valor base deve ser positivo").optional(),
   periodoBase: z.string().optional(),
   valorAlvo: z.number().min(0.01, "Valor alvo deve ser maior que zero"),
-  prazoFinal: z.date({ required_error: "Prazo final é obrigatório" }),
+  prazoFinal: z.date({ message: "Prazo final é obrigatório" }),
   responsavel: z.string().min(1, "Responsável é obrigatório"),
   frequencia: z.string().min(1, "Frequência é obrigatória"),
 }).refine((data) => {
