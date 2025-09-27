@@ -1,9 +1,11 @@
-import { useEffect, useRef, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import 'react-quill/dist/quill.snow.css';
 
-// Lazy load ReactQuill to avoid module issues
-const ReactQuill = lazy(() => import('react-quill'));
-
+// Lazy load ReactQuill and normalize default export for both ESM/CJS builds
+const ReactQuill = lazy(() =>
+  import('react-quill').then((m: any) => ({ default: m.default ?? m }))
+);
+const QuillAny = ReactQuill as unknown as React.ComponentType<any>;
 interface WysiwygEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -19,7 +21,7 @@ export function WysiwygEditor({
   readOnly = false,
   className = ""
 }: WysiwygEditorProps) {
-  const quillRef = useRef<any>(null);
+  
 
   const modules = {
     toolbar: [
@@ -86,8 +88,7 @@ export function WysiwygEditor({
   return (
     <div className={className}>
       <Suspense fallback={<div className="min-h-[300px] border rounded-md p-4 animate-pulse bg-muted/50" />}>
-        <ReactQuill
-          ref={quillRef}
+        <QuillAny
           theme="snow"
           value={value}
           onChange={onChange}
