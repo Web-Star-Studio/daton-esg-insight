@@ -79,7 +79,11 @@ serve(async (req) => {
 
       let query = supabase
         .from('compliance_tasks')
-        .select('*')
+        .select(`
+          *,
+          requirement:regulatory_requirements(title, reference_code, jurisdiction),
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name, email)
+        `)
         .eq('company_id', profile.company_id)
         .order('due_date', { ascending: true });
 
@@ -133,7 +137,11 @@ serve(async (req) => {
       const { data, error } = await supabase
         .from('compliance_tasks')
         .insert(taskData)
-        .select('*')
+        .select(`
+          *,
+          requirement:regulatory_requirements(title, reference_code, jurisdiction),
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name, email)
+        `)
         .single();
 
       if (error) {
@@ -183,7 +191,11 @@ serve(async (req) => {
         .update(updateData)
         .eq('id', taskId)
         .eq('company_id', profile.company_id)
-        .select('*')
+        .select(`
+          *,
+          requirement:regulatory_requirements(title, reference_code, jurisdiction),
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name, email)
+        `)
         .single();
 
       if (error) {
