@@ -1,22 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Plus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  createEvaluationCycle,
-  updateEvaluationCycle,
-  type EvaluationCycle 
-} from "@/services/employeePerformance";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useFormErrorValidation } from "@/hooks/useFormErrorValidation";
 import { z } from "zod";
@@ -27,37 +22,43 @@ const cycleSchema = z.object({
   status: z.string().min(1, "Status é obrigatório"),
 });
 
-interface EvaluationCycleModalProps {
+interface CycleQuickCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  cycleToEdit?: EvaluationCycle | null;
+  onCycleCreated: (cycle: any) => void;
 }
 
-export function EvaluationCycleModal({ 
-  open, 
-  onOpenChange, 
-  cycleToEdit 
-}: EvaluationCycleModalProps) {
+export function CycleQuickCreateModal({
+  open,
+  onOpenChange,
+  onCycleCreated
+}: CycleQuickCreateModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     evaluation_type: 'annual',
     status: 'active'
   });
-
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
 
-  const isEditing = !!cycleToEdit;
   const { validate, hasFieldError, getFieldProps, renderLabel, clearErrors } = useFormErrorValidation(cycleSchema);
 
-  // Create/Update mutation
   const createMutation = useMutation({
-    mutationFn: createEvaluationCycle,
-    onSuccess: () => {
+    mutationFn: async (data: typeof formData & { start_date: string; end_date: string }) => {
+      const { data: cycle, error } = await supabase
+        .from('performance_evaluation_cycles')
+        .insert([data])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return cycle;
+    },
+    onSuccess: (cycle) => {
       queryClient.invalidateQueries({ queryKey: ['evaluation-cycles'] });
       toast.success("Ciclo de avaliação criado com sucesso!");
+      onCycleCreated(cycle);
       onOpenChange(false);
       resetForm();
     },
@@ -67,25 +68,9 @@ export function EvaluationCycleModal({
     }
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<EvaluationCycle> }) => 
-      updateEvaluationCycle(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['evaluation-cycles'] });
-      toast.success("Ciclo de avaliação atualizado com sucesso!");
-      onOpenChange(false);
-      resetForm();
-    },
-    onError: (error) => {
-      console.error('Erro ao atualizar ciclo:', error);
-      toast.error("Erro ao atualizar ciclo de avaliação. Tente novamente.");
-    }
-  });
-
   const resetForm = () => {
     setFormData({
       name: '',
-      description: '',
       evaluation_type: 'annual',
       status: 'active'
     });
@@ -94,27 +79,12 @@ export function EvaluationCycleModal({
     clearErrors();
   };
 
-  useEffect(() => {
-    if (open && cycleToEdit) {
-      setFormData({
-        name: cycleToEdit.name,
-        description: cycleToEdit.description || '',
-        evaluation_type: cycleToEdit.evaluation_type,
-        status: cycleToEdit.status
-      });
-      setStartDate(new Date(cycleToEdit.start_date));
-      setEndDate(new Date(cycleToEdit.end_date));
-    } else if (open && !cycleToEdit) {
-      resetForm();
-    }
-  }, [open, cycleToEdit]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const validation = validate(formData);
     if (!validation.isValid) return;
-    
+
     if (!startDate || !endDate) {
       toast.error("Selecione as datas de início e fim");
       return;
@@ -131,32 +101,23 @@ export function EvaluationCycleModal({
       end_date: format(endDate, 'yyyy-MM-dd')
     };
 
-    if (isEditing && cycleToEdit) {
-      updateMutation.mutate({ 
-        id: cycleToEdit.id, 
-        updates: cycleData 
-      });
-    } else {
-      createMutation.mutate(cycleData);
-    }
+    createMutation.mutate(cycleData);
   };
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Editar Ciclo de Avaliação' : 'Novo Ciclo de Avaliação'}
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Criar Ciclo de Avaliação
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>{renderLabel('name', true)("Nome do Ciclo")}</Label>
             <Input
-              id="name"
               placeholder="Ex: Avaliação Anual 2024"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -167,26 +128,15 @@ export function EvaluationCycleModal({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Descreva o objetivo e escopo deste ciclo de avaliação..."
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{renderLabel('evaluation_type', true)("Tipo de Avaliação")}</Label>
+              <Label>{renderLabel('evaluation_type', true)("Tipo")}</Label>
               <Select
                 value={formData.evaluation_type}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, evaluation_type: value }))}
               >
                 <SelectTrigger {...getFieldProps('evaluation_type')}>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="annual">Anual</SelectItem>
@@ -196,9 +146,6 @@ export function EvaluationCycleModal({
                   <SelectItem value="special">Especial</SelectItem>
                 </SelectContent>
               </Select>
-              {hasFieldError('evaluation_type') && (
-                <p className="text-sm text-red-600">Tipo de avaliação é obrigatório</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -208,18 +155,14 @@ export function EvaluationCycleModal({
                 onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger {...getFieldProps('status')}>
-                  <SelectValue placeholder="Selecione o status" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="planned">Planejado</SelectItem>
                   <SelectItem value="completed">Concluído</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
-              {hasFieldError('status') && (
-                <p className="text-sm text-red-600">Status é obrigatório</p>
-              )}
             </div>
           </div>
 
@@ -236,7 +179,7 @@ export function EvaluationCycleModal({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                    {startDate ? format(startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -263,7 +206,7 @@ export function EvaluationCycleModal({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                    {endDate ? format(endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -279,7 +222,7 @@ export function EvaluationCycleModal({
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -289,10 +232,10 @@ export function EvaluationCycleModal({
             </Button>
             <Button
               type="submit"
-              disabled={isPending}
+              disabled={createMutation.isPending}
             >
-              {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isPending ? 'Salvando...' : (isEditing ? 'Atualizar Ciclo' : 'Criar Ciclo')}
+              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Criar Ciclo
             </Button>
           </div>
         </form>

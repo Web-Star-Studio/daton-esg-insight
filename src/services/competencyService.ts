@@ -51,17 +51,25 @@ export const createCompetency = async (competency: {
   levels: any;
   is_active: boolean;
 }) => {
-  const { data, error } = await supabase
-    .from("competency_matrix")
-    .insert([{
-      ...competency,
-      company_id: null // Will be set by RLS trigger
-    }])
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("competency_matrix")
+      .insert([{
+        ...competency,
+        company_id: null // Will be set by RLS trigger
+      }])
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error('Erro ao criar competência:', error);
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    console.error('Erro inesperado ao criar competência:', error);
+    throw new Error('Erro ao criar competência. Tente novamente.');
+  }
 };
 
 export const updateCompetency = async (id: string, updates: {
@@ -113,17 +121,25 @@ export const createCompetencyAssessment = async (assessment: {
   assessment_date: string;
   development_plan?: string;
 }) => {
-  const { data, error } = await supabase
-    .from("employee_competency_assessments")
-    .insert([{
-      ...assessment,
-      company_id: null // Will be set by RLS trigger
-    }])
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("employee_competency_assessments")
+      .insert([{
+        ...assessment,
+        company_id: null // Will be set by RLS trigger
+      }])
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error('Erro ao criar avaliação de competência:', error);
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    console.error('Erro inesperado ao criar avaliação de competência:', error);
+    throw new Error('Erro ao criar avaliação de competência. Tente novamente.');
+  }
 };
 
 export const getCompetencyGapAnalysis = async () => {

@@ -87,20 +87,18 @@ export async function createEvaluationCycle(cycleData: {
   evaluation_type: string;
   status: string;
 }) {
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      INSERT INTO performance_evaluation_cycles (name, description, start_date, end_date, evaluation_type, status, company_id)
-      VALUES ('${cycleData.name}', '${cycleData.description || ''}', '${cycleData.start_date}', '${cycleData.end_date}', '${cycleData.evaluation_type}', '${cycleData.status}', get_user_company_id())
-      RETURNING *
-    `
-  });
+  const { data, error } = await supabase
+    .from('performance_evaluation_cycles')
+    .insert([cycleData])
+    .select()
+    .single();
 
   if (error) {
     console.error('Erro ao criar ciclo de avaliação:', error);
     throw error;
   }
 
-  return data?.[0];
+  return data;
 }
 
 export async function updateEvaluationCycle(id: string, updates: Partial<EvaluationCycle>) {
@@ -151,33 +149,22 @@ export async function createPerformanceEvaluation(evaluationData: {
   final_review_completed: boolean;
   comments?: string;
 }) {
-  const cycleValue = evaluationData.cycle_id ? `'${evaluationData.cycle_id}'` : 'NULL';
-  const commentsValue = evaluationData.comments ? `'${evaluationData.comments.replace(/'/g, "''")}'` : 'NULL';
-  
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      INSERT INTO performance_evaluations (
-        cycle_id, employee_id, evaluator_id, period_start, period_end, 
-        status, self_evaluation_completed, manager_evaluation_completed, 
-        final_review_completed, comments, company_id
-      )
-      VALUES (
-        ${cycleValue}, '${evaluationData.employee_id}', '${evaluationData.evaluator_id}', 
-        '${evaluationData.period_start}', '${evaluationData.period_end}', 
-        '${evaluationData.status}', ${evaluationData.self_evaluation_completed}, 
-        ${evaluationData.manager_evaluation_completed}, ${evaluationData.final_review_completed}, 
-        ${commentsValue}, get_user_company_id()
-      )
-      RETURNING *
-    `
-  });
+  const { data, error } = await supabase
+    .from('performance_evaluations')
+    .insert([{
+      ...evaluationData,
+      cycle_id: evaluationData.cycle_id || null,
+      comments: evaluationData.comments || null
+    }])
+    .select()
+    .single();
 
   if (error) {
     console.error('Erro ao criar avaliação:', error);
     throw error;
   }
 
-  return data?.[0];
+  return data;
 }
 
 export async function updatePerformanceEvaluation(id: string, updates: Partial<PerformanceEvaluation>) {
@@ -219,22 +206,21 @@ export async function createEvaluationCriteria(criteriaData: {
   max_score: number;
   is_active: boolean;
 }) {
-  const descriptionValue = criteriaData.description ? `'${criteriaData.description.replace(/'/g, "''")}'` : 'NULL';
-  
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      INSERT INTO evaluation_criteria (name, description, weight, max_score, is_active, company_id)
-      VALUES ('${criteriaData.name}', ${descriptionValue}, ${criteriaData.weight}, ${criteriaData.max_score}, ${criteriaData.is_active}, get_user_company_id())
-      RETURNING *
-    `
-  });
+  const { data, error } = await supabase
+    .from('evaluation_criteria')
+    .insert([{
+      ...criteriaData,
+      description: criteriaData.description || null
+    }])
+    .select()
+    .single();
 
   if (error) {
     console.error('Erro ao criar critério de avaliação:', error);
     throw error;
   }
 
-  return data?.[0];
+  return data;
 }
 
 // Initialize default criteria if none exist

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,16 @@ import {
   getEvaluationCycles,
   type PerformanceEvaluation 
 } from "@/services/employeePerformance";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { EmployeeQuickCreateModal } from "./EmployeeQuickCreateModal";
+import { CycleQuickCreateModal } from "./CycleQuickCreateModal";
+import { useFormErrorValidation } from "@/hooks/useFormErrorValidation";
+import { z } from "zod";
+
+const evaluationSchema = z.object({
+  employee_id: z.string().min(1, "Funcionário é obrigatório"),
+  evaluator_id: z.string().min(1, "Avaliador é obrigatório"),
+});
 
 interface PerformanceEvaluationModalProps {
   open: boolean;
@@ -43,6 +52,10 @@ export function PerformanceEvaluationModal({
 
   const [periodStart, setPeriodStart] = useState<Date | undefined>();
   const [periodEnd, setPeriodEnd] = useState<Date | undefined>();
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [isCycleModalOpen, setIsCycleModalOpen] = useState(false);
+
+  const { validate, hasFieldError, getFieldProps, renderLabel, clearErrors } = useFormErrorValidation(evaluationSchema);
 
   // Fetch employees and cycles
   const { data: employees = [] } = useQuery({
@@ -62,20 +75,13 @@ export function PerformanceEvaluationModal({
     mutationFn: createPerformanceEvaluation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['performance-evaluations'] });
-      toast({
-        title: "Sucesso",
-        description: "Avaliação criada com sucesso!"
-      });
+      toast.success("Avaliação criada com sucesso!");
       onOpenChange(false);
       resetForm();
     },
     onError: (error) => {
       console.error('Erro ao criar avaliação:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar avaliação. Tente novamente.",
-        variant: "destructive"
-      });
+      toast.error("Erro ao criar avaliação. Tente novamente.");
     }
   });
 
@@ -90,6 +96,7 @@ export function PerformanceEvaluationModal({
     });
     setPeriodStart(undefined);
     setPeriodEnd(undefined);
+    clearErrors();
   };
 
   useEffect(() => {
@@ -110,12 +117,16 @@ export function PerformanceEvaluationModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.employee_id || !formData.evaluator_id || !periodStart || !periodEnd) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
+    const validation = validate(formData);
+    if (!validation.isValid) return;
+    
+    if (!periodStart || !periodEnd) {
+      toast.error("Selecione as datas de início e fim do período");
+      return;
+    }
+
+    if (periodStart >= periodEnd) {
+      toast.error("A data de início deve ser anterior à data de fim");
       return;
     }
 
@@ -145,52 +156,75 @@ export function PerformanceEvaluationModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cycle_id">Ciclo de Avaliação</Label>
-              <Select
-                value={formData.cycle_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, cycle_id: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um ciclo (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cycles.map((cycle) => (
-                    <SelectItem key={cycle.id} value={cycle.id}>
-                      {cycle.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.cycle_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, cycle_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um ciclo (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cycles.map((cycle) => (
+                      <SelectItem key={cycle.id} value={cycle.id}>
+                        {cycle.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsCycleModalOpen(true)}
+                  title="Criar novo ciclo"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employee_id">Funcionário Avaliado *</Label>
-              <Select
-                value={formData.employee_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o funcionário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.full_name} - {employee.position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>{renderLabel('employee_id', true)("Funcionário Avaliado")}</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.employee_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, employee_id: value }))}
+                >
+                  <SelectTrigger {...getFieldProps('employee_id')}>
+                    <SelectValue placeholder="Selecione o funcionário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.full_name} - {employee.position}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsEmployeeModalOpen(true)}
+                  title="Criar novo funcionário"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {hasFieldError('employee_id') && (
+                <p className="text-sm text-red-600">Funcionário é obrigatório</p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="evaluator_id">Avaliador *</Label>
+            <Label>{renderLabel('evaluator_id', true)("Avaliador")}</Label>
             <Select
               value={formData.evaluator_id}
               onValueChange={(value) => setFormData(prev => ({ ...prev, evaluator_id: value }))}
-              required
             >
-              <SelectTrigger>
+              <SelectTrigger {...getFieldProps('evaluator_id')}>
                 <SelectValue placeholder="Selecione o avaliador" />
               </SelectTrigger>
               <SelectContent>
@@ -201,11 +235,14 @@ export function PerformanceEvaluationModal({
                 ))}
               </SelectContent>
             </Select>
+            {hasFieldError('evaluator_id') && (
+              <p className="text-sm text-red-600">Avaliador é obrigatório</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Início do Período *</Label>
+              <Label>Início do Período <span className="text-red-500">*</span></Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -232,7 +269,7 @@ export function PerformanceEvaluationModal({
             </div>
 
             <div className="space-y-2">
-              <Label>Fim do Período *</Label>
+              <Label>Fim do Período <span className="text-red-500">*</span></Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -282,10 +319,28 @@ export function PerformanceEvaluationModal({
               type="submit"
               disabled={createMutation.isPending}
             >
+              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {createMutation.isPending ? 'Criando...' : 'Criar Avaliação'}
             </Button>
           </div>
         </form>
+
+        {/* Quick Create Modals */}
+        <EmployeeQuickCreateModal
+          open={isEmployeeModalOpen}
+          onOpenChange={setIsEmployeeModalOpen}
+          onEmployeeCreated={(employee) => {
+            setFormData(prev => ({ ...prev, employee_id: employee.id }));
+          }}
+        />
+
+        <CycleQuickCreateModal
+          open={isCycleModalOpen}
+          onOpenChange={setIsCycleModalOpen}
+          onCycleCreated={(cycle) => {
+            setFormData(prev => ({ ...prev, cycle_id: cycle.id }));
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
