@@ -30,7 +30,7 @@ export interface ActionPlanItem {
   updated_at: string;
   profiles?: {
     full_name: string;
-  };
+  } | null;
 }
 
 export interface CreateActionPlanData {
@@ -85,18 +85,16 @@ class ActionPlansService {
   async getActionPlan(id: string): Promise<ActionPlan | null> {
     const { data, error } = await supabase
       .from('action_plans')
-      .select(`
-        *,
-        items:action_plan_items(
-          *,
-          profiles:who_responsible_user_id(full_name)
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data;
+    if (!data) return null;
+
+    // Get items separately
+    const items = await this.getActionPlanItems(data.id);
+    return { ...data, items };
   }
 
   async createActionPlan(planData: CreateActionPlanData): Promise<ActionPlan> {
@@ -163,7 +161,24 @@ class ActionPlansService {
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Get profiles for responsible users
+    const itemsWithProfiles = await Promise.all(
+      (data || []).map(async (item) => {
+        if (item.who_responsible_user_id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', item.who_responsible_user_id)
+            .single();
+          
+          return { ...item, profiles: profile || { full_name: 'Usuário não encontrado' } };
+        }
+        return { ...item, profiles: null };
+      })
+    );
+    
+    return itemsWithProfiles;
   }
 
   async createActionPlanItem(planId: string, itemData: CreateActionPlanItemData): Promise<ActionPlanItem> {
@@ -173,14 +188,24 @@ class ActionPlansService {
         ...itemData,
         action_plan_id: planId
       }])
-      .select(`
-        *,
-        profiles:who_responsible_user_id(full_name)
-      `)
+      .select('*')
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Get profile if responsible user is set
+    let profiles = null;
+    if (data.who_responsible_user_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', data.who_responsible_user_id)
+        .single();
+      
+      profiles = profile || { full_name: 'Usuário não encontrado' };
+    }
+    
+    return { ...data, profiles };
   }
 
   async updateActionPlanItem(itemId: string, itemData: UpdateActionPlanItemData): Promise<ActionPlanItem> {
@@ -188,14 +213,24 @@ class ActionPlansService {
       .from('action_plan_items')
       .update(itemData)
       .eq('id', itemId)
-      .select(`
-        *,
-        profiles:who_responsible_user_id(full_name)
-      `)
+      .select('*')
       .single();
 
     if (error) throw error;
-    return data;
+    
+    // Get profile if responsible user is set
+    let profiles = null;
+    if (data.who_responsible_user_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', data.who_responsible_user_id)
+        .single();
+      
+      profiles = profile || { full_name: 'Usuário não encontrado' };
+    }
+    
+    return { ...data, profiles };
   }
 
   async deleteActionPlanItem(itemId: string): Promise<void> {
@@ -244,18 +279,20 @@ class ActionPlansService {
   async getActionPlanStats() {
     const { data: plans, error } = await supabase
       .from('action_plans')
-      .select(`
-        *,
-        items:action_plan_items(id, status, progress_percentage, when_deadline)
-      `);
+      .select('*');
 
     if (error) throw error;
+
+    // Get all action plan items
+    const { data: allItems } = await supabase
+      .from('action_plan_items')
+      .select('id, status, progress_percentage, when_deadline, action_plan_id');
 
     const stats = {
       totalPlans: plans?.length || 0,
       activePlans: plans?.filter(p => p.status === 'Em Andamento')?.length || 0,
       completedPlans: plans?.filter(p => p.status === 'Concluído')?.length || 0,
-      totalActions: 0,
+      totalActions: allItems?.length || 0,
       completedActions: 0,
       overdueActions: 0,
       avgProgress: 0
@@ -264,21 +301,16 @@ class ActionPlansService {
     let totalProgress = 0;
     const today = new Date().toISOString().split('T')[0];
 
-    plans?.forEach(plan => {
-      const items = plan.items || [];
-      stats.totalActions += items.length;
+    allItems?.forEach(item => {
+      if (item.status === 'Concluído') {
+        stats.completedActions++;
+      }
       
-      items.forEach(item => {
-        if (item.status === 'Concluído') {
-          stats.completedActions++;
-        }
-        
-        if (item.when_deadline && item.when_deadline < today && item.status !== 'Concluído') {
-          stats.overdueActions++;
-        }
-        
-        totalProgress += item.progress_percentage || 0;
-      });
+      if (item.when_deadline && item.when_deadline < today && item.status !== 'Concluído') {
+        stats.overdueActions++;
+      }
+      
+      totalProgress += item.progress_percentage || 0;
     });
 
     if (stats.totalActions > 0) {
