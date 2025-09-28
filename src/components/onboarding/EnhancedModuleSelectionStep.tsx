@@ -183,9 +183,20 @@ export function EnhancedModuleSelectionStep({
 }: EnhancedModuleSelectionStepProps) {
   const [localSelection, setLocalSelection] = useState<string[]>(selectedModules);
 
+  // Sync local selection with parent only when local selection changes
   useEffect(() => {
-    onModulesChange(localSelection);
-  }, [localSelection, onModulesChange]);
+    // Only update if the arrays are actually different
+    if (JSON.stringify(localSelection) !== JSON.stringify(selectedModules)) {
+      onModulesChange(localSelection);
+    }
+  }, [localSelection]); // Remove onModulesChange from dependencies
+
+  // Initialize local selection from props if empty
+  useEffect(() => {
+    if (localSelection.length === 0 && selectedModules.length > 0) {
+      setLocalSelection(selectedModules);
+    }
+  }, [selectedModules]);
 
   const toggleModule = (moduleId: string) => {
     setLocalSelection(prev => 

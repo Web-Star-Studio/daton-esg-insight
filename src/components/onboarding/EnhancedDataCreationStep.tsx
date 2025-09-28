@@ -17,7 +17,9 @@ import {
   TrendingUp,
   ExternalLink,
   Database,
-  Plus
+  Plus,
+  Users,
+  Target
 } from 'lucide-react';
 
 interface EnhancedDataCreationStepProps {
@@ -42,7 +44,7 @@ export function EnhancedDataCreationStep({
   const [isLoading, setIsLoading] = useState(false);
   const [generateExampleData, setGenerateExampleData] = useState<Record<string, boolean>>({});
 
-  // Mapeamento de módulos para rotas e informações de atalho
+  // Mapeamento completo de todos os módulos para rotas e informações de atalho
   const MODULE_SHORTCUTS: Record<string, {
     title: string;
     icon: React.ReactNode;
@@ -82,6 +84,19 @@ export function EnhancedDataCreationStep({
       ],
       exampleDataInfo: 'licenças de operação, instalação e certificados ambientais'
     },
+    metas_sustentabilidade: {
+      title: 'Metas de Sustentabilidade',
+      icon: <TrendingUp className="h-5 w-5" />,
+      color: 'from-emerald-500 to-green-600',
+      route: '/metas',
+      description: 'Defina e acompanhe metas ESG alinhadas aos Objetivos de Desenvolvimento Sustentável.',
+      quickActions: [
+        { label: 'Criar Meta ESG', description: 'Configure objetivos de sustentabilidade', route: '/metas/nova' },
+        { label: 'Dashboard de Metas', description: 'Acompanhe progresso em tempo real' },
+        { label: 'Relatórios ODS', description: 'Gere relatórios alinhados aos ODS' }
+      ],
+      exampleDataInfo: 'metas de redução de emissões, consumo de água e energia'
+    },
     sistema_qualidade: {
       title: 'Sistema de Gestão da Qualidade',
       icon: <Award className="h-5 w-5" />,
@@ -96,6 +111,19 @@ export function EnhancedDataCreationStep({
       ],
       exampleDataInfo: 'não conformidades de processo, auditorias e planos de ação'
     },
+    gestao_riscos: {
+      title: 'Gestão de Riscos',
+      icon: <FileText className="h-5 w-5" />,
+      color: 'from-red-500 to-orange-600',
+      route: '/gestao-riscos',
+      description: 'Identifique, avalie e trate riscos operacionais e estratégicos.',
+      quickActions: [
+        { label: 'Cadastrar Risco', description: 'Registre novos riscos identificados' },
+        { label: 'Matriz de Riscos', description: 'Visualize probabilidade vs impacto' },
+        { label: 'Planos de Mitigação', description: 'Crie estratégias de tratamento' }
+      ],
+      exampleDataInfo: 'riscos operacionais, ambientais e de compliance'
+    },
     gestao_desempenho: {
       title: 'Gestão de Desempenho',
       icon: <TrendingUp className="h-5 w-5" />,
@@ -103,12 +131,77 @@ export function EnhancedDataCreationStep({
       route: '/gestao-desempenho',
       description: 'Monitore KPIs, metas organizacionais e desempenho individual dos colaboradores.',
       quickActions: [
-        { label: 'Definir Metas', description: 'Configure objetivos organizacionais', route: '/metas' },
-        { label: 'Avaliar Funcionários', description: 'Conduza avaliações de desempenho' },
+        { label: 'Definir KPIs', description: 'Configure indicadores de desempenho' },
+        { label: 'Avaliar Funcionários', description: 'Conduza avaliações de desempenho', route: '/gestao-funcionarios' },
         { label: 'Dashboard Executivo', description: 'Visualize indicadores estratégicos' },
         { label: 'Planejamento Estratégico', description: 'Defina diretrizes estratégicas', route: '/planejamento-estrategico' }
       ],
-      exampleDataInfo: 'metas de sustentabilidade, KPIs operacionais e avaliações de desempenho'
+      exampleDataInfo: 'KPIs operacionais, metas de desempenho e avaliações'
+    },
+    gestao_funcionarios: {
+      title: 'Gestão de Funcionários',
+      icon: <Users className="h-5 w-5" />,
+      color: 'from-blue-500 to-indigo-600',
+      route: '/gestao-funcionarios',
+      description: 'Gerencie dados de funcionários, avaliações e desenvolvimento profissional.',
+      quickActions: [
+        { label: 'Cadastrar Funcionário', description: 'Registre novos colaboradores' },
+        { label: 'Avaliações de Desempenho', description: 'Conduza ciclos avaliativos' },
+        { label: 'Planos de Carreira', description: 'Defina trajetórias profissionais', route: '/desenvolvimento-carreira' }
+      ],
+      exampleDataInfo: 'perfis de funcionários, avaliações e planos de desenvolvimento'
+    },
+    gestao_treinamentos: {
+      title: 'Gestão de Treinamentos',
+      icon: <TrendingUp className="h-5 w-5" />,
+      color: 'from-indigo-500 to-purple-600',
+      route: '/gestao-treinamentos',
+      description: 'Organize treinamentos, capacitações e desenvolvimento de competências.',
+      quickActions: [
+        { label: 'Criar Treinamento', description: 'Configure novos programas de capacitação' },
+        { label: 'Matricular Funcionários', description: 'Inscreva colaboradores em cursos' },
+        { label: 'Acompanhar Progresso', description: 'Monitore evolução dos treinamentos' }
+      ],
+      exampleDataInfo: 'programas de treinamento, certificações e competências'
+    },
+    controle_documentos: {
+      title: 'Controle de Documentos',
+      icon: <FileText className="h-5 w-5" />,
+      color: 'from-gray-500 to-slate-600',
+      route: '/documentos',
+      description: 'Gerencie versões, aprovações e distribuição de documentos corporativos.',
+      quickActions: [
+        { label: 'Upload de Documento', description: 'Adicione novos documentos ao sistema' },
+        { label: 'Controle de Versões', description: 'Gerencie revisões e aprovações' },
+        { label: 'Busca Avançada', description: 'Encontre documentos rapidamente' }
+      ],
+      exampleDataInfo: 'procedimentos, políticas e documentos de trabalho'
+    },
+    documentos: {
+      title: 'Gestão Documental',
+      icon: <FileText className="h-5 w-5" />,
+      color: 'from-orange-500 to-amber-600',
+      route: '/documentos',
+      description: 'Organização e controle de documentos com versionamento inteligente.',
+      quickActions: [
+        { label: 'Upload de Documento', description: 'Adicione novos documentos' },
+        { label: 'Versionamento', description: 'Controle versões e aprovações' },
+        { label: 'OCR e Busca', description: 'Pesquisa avançada em documentos' }
+      ],
+      exampleDataInfo: 'políticas, procedimentos e documentos operacionais'
+    },
+    relatorios_esg: {
+      title: 'Relatórios ESG',
+      icon: <TrendingUp className="h-5 w-5" />,
+      color: 'from-cyan-500 to-blue-600',
+      route: '/relatorios-sustentabilidade',
+      description: 'Geração automatizada de relatórios corporativos e de sustentabilidade.',
+      quickActions: [
+        { label: 'Relatório GRI', description: 'Generate relatórios padrão GRI' },
+        { label: 'SASB Standards', description: 'Relatórios SASB automáticos' },
+        { label: 'Customização', description: 'Relatórios personalizados' }
+      ],
+      exampleDataInfo: 'dados para relatórios GRI, SASB e sustentabilidade'
     }
   };
 
@@ -166,16 +259,34 @@ export function EnhancedDataCreationStep({
   };
 
   if (!moduleInfo) {
+    // Debug: Log para identificar o módulo problemático
+    console.log('Módulo não encontrado:', currentModule);
+    console.log('Módulos disponíveis:', Object.keys(MODULE_SHORTCUTS));
+    console.log('Módulos selecionados:', selectedModules);
+    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <h2 className="text-xl font-semibold text-foreground">Módulo não encontrado</h2>
-          <p className="text-muted-foreground">O módulo selecionado não está disponível.</p>
-          <Button onClick={onPrev} variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
+          <p className="text-muted-foreground">
+            O módulo "{currentModule}" não está disponível no mapeamento de atalhos.
+          </p>
+          <div className="text-xs text-muted-foreground bg-muted p-3 rounded">
+            <p><strong>Módulo atual:</strong> {currentModule}</p>
+            <p><strong>Módulos selecionados:</strong> {selectedModules.join(', ')}</p>
+            <p><strong>Índice atual:</strong> {currentModuleIndex}</p>
+          </div>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={onPrev} variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            <Button onClick={goToNextModule} variant="default">
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Pular este módulo
+            </Button>
+          </div>
         </div>
       </div>
     );
