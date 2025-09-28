@@ -68,11 +68,11 @@ function OnboardingContent() {
   const renderCurrentStep = () => {
     switch (state.currentStep) {
       case 0:
-        return <WelcomeStep onNext={nextStep} onSkip={handleSkipOnboarding} />;
+        return <EnhancedWelcomeStep onNext={nextStep} onSkip={handleSkipOnboarding} />;
       
       case 1:
         return (
-          <ModuleSelectionStep
+          <EnhancedModuleSelectionStep
             selectedModules={state.selectedModules}
             onModulesChange={setSelectedModules}
             onNext={nextStep}
@@ -82,7 +82,7 @@ function OnboardingContent() {
       
       case 2:
         return (
-          <GuidedDataCreationStep
+          <EnhancedDataCreationStep
             selectedModules={state.selectedModules}
             moduleConfigurations={state.moduleConfigurations}
             onConfigurationChange={updateModuleConfiguration}
@@ -93,7 +93,7 @@ function OnboardingContent() {
       
       case 3:
         return (
-          <CompletionStep
+          <EnhancedCompletionStep
             selectedModules={state.selectedModules}
             moduleConfigurations={state.moduleConfigurations}
             onStartUsingPlatform={handleStartUsingPlatform}
@@ -102,7 +102,7 @@ function OnboardingContent() {
         );
       
       default:
-        return <WelcomeStep onNext={nextStep} />;
+        return <EnhancedWelcomeStep onNext={nextStep} />;
     }
   };
 

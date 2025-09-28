@@ -458,7 +458,7 @@ export function EnhancedDataCreationStep({
               { level: 3, description: 'Avançado' }
             ],
             is_active: true,
-            company_id: user?.user_metadata?.company_id
+            // company_id will be set by RLS policy
           };
           break;
         case 'metas_sustentabilidade':
@@ -466,7 +466,7 @@ export function EnhancedDataCreationStep({
             ...insertData,
             status: 'active',
             progress_percentage: 0,
-            company_id: user?.user_metadata?.company_id
+            // company_id will be set by RLS policy
           };
           break;
         case 'gestao_riscos':
@@ -474,7 +474,7 @@ export function EnhancedDataCreationStep({
             ...insertData,
             probability: 'medium',
             status: 'identified',
-            company_id: user?.user_metadata?.company_id
+            // company_id will be set by RLS policy
           };
           break;
         case 'relatorios_esg':
@@ -483,7 +483,7 @@ export function EnhancedDataCreationStep({
             current_value: 0,
             unit: 'unit',
             reporting_period: 'monthly',
-            company_id: user?.user_metadata?.company_id
+            // company_id will be set by RLS policy
           };
           break;
       }

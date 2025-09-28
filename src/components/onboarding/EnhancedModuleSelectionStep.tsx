@@ -24,8 +24,8 @@ interface ModuleInfo {
   features: string[];
   difficulty: 'Básico' | 'Intermediário' | 'Avançado';
   estimatedTime: string;
-  recommended?: boolean;
-  popular?: boolean;
+  recommended: boolean;
+  popular: boolean;
 }
 
 const MODULE_CATEGORIES = [
@@ -36,39 +36,42 @@ const MODULE_CATEGORIES = [
     icon: <Leaf className="h-6 w-6" />,
     color: 'text-green-600 bg-green-50 border-green-200',
     modules: [
-      {
-        id: 'inventario_gee',
-        name: 'Inventário GEE',
-        description: 'Gestão completa de emissões de gases de efeito estufa com cálculos automáticos',
-        icon: <BarChart3 className="h-5 w-5" />,
-        color: 'text-green-600',
-        features: ['Cálculo automático de emissões', 'Escopos 1, 2 e 3', 'Relatórios GRI', 'Dashboard executivo'],
-        difficulty: 'Intermediário' as const,
-        estimatedTime: '2-3 min',
-        recommended: true,
-        popular: true
-      },
-      {
-        id: 'gestao_licencas',
-        name: 'Gestão de Licenças',
-        description: 'Controle de licenças ambientais e compliance regulatório automático',
-        icon: <Shield className="h-5 w-5" />,
-        color: 'text-blue-600',
-        features: ['Alertas de vencimento', 'Documentação digital', 'Histórico completo', 'Compliance automático'],
-        difficulty: 'Básico' as const,
-        estimatedTime: '1-2 min',
-        recommended: true
-      },
-      {
-        id: 'metas_sustentabilidade',
-        name: 'Metas de Sustentabilidade',
-        description: 'Definição e acompanhamento de metas ESG alinhadas aos ODS',
-        icon: <Target className="h-5 w-5" />,
-        color: 'text-emerald-600',
-        features: ['ODS alignment', 'KPIs customizados', 'Dashboard executivo', 'Relatórios automáticos'],
-        difficulty: 'Intermediário' as const,
-        estimatedTime: '2-3 min'
-      }
+        {
+          id: 'inventario_gee',
+          name: 'Inventário GEE',
+          description: 'Gestão completa de emissões de gases de efeito estufa com cálculos automáticos',
+          icon: <BarChart3 className="h-5 w-5" />,
+          color: 'text-green-600',
+          features: ['Cálculo automático de emissões', 'Escopos 1, 2 e 3', 'Relatórios GRI', 'Dashboard executivo'],
+          difficulty: 'Intermediário' as const,
+          estimatedTime: '2-3 min',
+          recommended: true,
+          popular: false
+        },
+        {
+          id: 'gestao_licencas',
+          name: 'Gestão de Licenças',
+          description: 'Controle de licenças ambientais e compliance regulatório automático',
+          icon: <Shield className="h-5 w-5" />,
+          color: 'text-blue-600',
+          features: ['Alertas de vencimento', 'Documentação digital', 'Histórico completo', 'Compliance automático'],
+          difficulty: 'Básico' as const,
+          estimatedTime: '1-2 min',
+          recommended: true,
+          popular: false
+        },
+        {
+          id: 'metas_sustentabilidade',
+          name: 'Metas de Sustentabilidade',
+          description: 'Definição e acompanhamento de metas ESG alinhadas aos ODS',
+          icon: <Target className="h-5 w-5" />,
+          color: 'text-emerald-600',
+          features: ['ODS alignment', 'KPIs customizados', 'Dashboard executivo', 'Relatórios automáticos'],
+          difficulty: 'Intermediário' as const,
+          estimatedTime: '2-3 min',
+          recommended: false,
+          popular: false
+        }
     ]
   },
   {
@@ -78,27 +81,30 @@ const MODULE_CATEGORIES = [
     icon: <Award className="h-6 w-6" />,
     color: 'text-blue-600 bg-blue-50 border-blue-200',
     modules: [
-      {
-        id: 'sistema_qualidade',
-        name: 'Sistema de Qualidade',
-        description: 'SGQ completo com ISO 9001 e outras normas de qualidade',
-        icon: <Award className="h-5 w-5" />,
-        color: 'text-blue-600',
-        features: ['Documentação ISO', 'Auditorias', 'Não conformidades', 'Melhoria contínua'],
-        difficulty: 'Intermediário' as const,
-        estimatedTime: '2-3 min',
-        recommended: true
-      },
-      {
-        id: 'gestao_riscos',
-        name: 'Gestão de Riscos',
-        description: 'Identificação e tratamento de riscos operacionais e estratégicos',
-        icon: <Shield className="h-5 w-5" />,
-        color: 'text-red-600',
-        features: ['Matriz de riscos', 'Planos de ação', 'Monitoramento', 'Análise de impacto'],
-        difficulty: 'Avançado' as const,
-        estimatedTime: '3-4 min'
-      }
+        {
+          id: 'sistema_qualidade',
+          name: 'Sistema de Qualidade',
+          description: 'SGQ completo com ISO 9001 e outras normas de qualidade',
+          icon: <Award className="h-5 w-5" />,
+          color: 'text-blue-600',
+          features: ['Documentação ISO', 'Auditorias', 'Não conformidades', 'Melhoria contínua'],
+          difficulty: 'Intermediário' as const,
+          estimatedTime: '2-3 min',
+          recommended: true,
+          popular: false
+        },
+        {
+          id: 'gestao_riscos',
+          name: 'Gestão de Riscos',
+          description: 'Identificação e tratamento de riscos operacionais e estratégicos',
+          icon: <Shield className="h-5 w-5" />,
+          color: 'text-red-600',
+          features: ['Matriz de riscos', 'Planos de ação', 'Monitoramento', 'Análise de impacto'],
+          difficulty: 'Avançado' as const,
+          estimatedTime: '3-4 min',
+          recommended: false,
+          popular: false
+        }
     ]
   },
   {
@@ -108,27 +114,30 @@ const MODULE_CATEGORIES = [
     icon: <Users className="h-6 w-6" />,
     color: 'text-purple-600 bg-purple-50 border-purple-200',
     modules: [
-      {
-        id: 'gestao_desempenho',
-        name: 'Gestão de Desempenho',
-        description: 'Avaliações e desenvolvimento de colaboradores com metodologias modernas',
-        icon: <Users className="h-5 w-5" />,
-        color: 'text-purple-600',
-        features: ['Ciclos de avaliação', 'Competências', 'PDI personalizado', 'Feedback 360°'],
-        difficulty: 'Intermediário' as const,
-        estimatedTime: '2-3 min',
-        popular: true
-      },
-      {
-        id: 'treinamentos',
-        name: 'Treinamentos',
-        description: 'Capacitação e desenvolvimento de equipes com trilhas personalizadas',
-        icon: <GraduationCap className="h-5 w-5" />,
-        color: 'text-indigo-600',
-        features: ['Trilhas de aprendizado', 'Certificações', 'ROI de treinamentos', 'Gamificação'],
-        difficulty: 'Básico' as const,
-        estimatedTime: '1-2 min'
-      }
+        {
+          id: 'gestao_desempenho',
+          name: 'Gestão de Desempenho',
+          description: 'Avaliações e desenvolvimento de colaboradores com metodologias modernas',
+          icon: <Users className="h-5 w-5" />,
+          color: 'text-purple-600',
+          features: ['Ciclos de avaliação', 'Competências', 'PDI personalizado', 'Feedback 360°'],
+          difficulty: 'Intermediário' as const,
+          estimatedTime: '2-3 min',
+          recommended: false,
+          popular: true
+        },
+        {
+          id: 'treinamentos',
+          name: 'Treinamentos',
+          description: 'Capacitação e desenvolvimento de equipes com trilhas personalizadas',
+          icon: <GraduationCap className="h-5 w-5" />,
+          color: 'text-indigo-600',
+          features: ['Trilhas de aprendizado', 'Certificações', 'ROI de treinamentos', 'Gamificação'],
+          difficulty: 'Básico' as const,
+          estimatedTime: '1-2 min',
+          recommended: false,
+          popular: false
+        }
     ]
   },
   {
@@ -138,26 +147,30 @@ const MODULE_CATEGORIES = [
     icon: <BarChart3 className="h-6 w-6" />,
     color: 'text-orange-600 bg-orange-50 border-orange-200',
     modules: [
-      {
-        id: 'documentos',
-        name: 'Gestão Documental',
-        description: 'Organização e controle de documentos com versionamento inteligente',
-        icon: <FolderOpen className="h-5 w-5" />,
-        color: 'text-orange-600',
-        features: ['Versionamento', 'Aprovações', 'Pesquisa avançada', 'OCR integrado'],
-        difficulty: 'Básico' as const,
-        estimatedTime: '1-2 min'
-      },
-      {
-        id: 'relatorios_esg',
-        name: 'Relatórios ESG',
-        description: 'Geração automatizada de relatórios corporativos e de sustentabilidade',
-        icon: <BarChart3 className="h-5 w-5" />,
-        color: 'text-cyan-600',
-        features: ['GRI Standards', 'SASB', 'Relatórios customizados', 'Automação completa'],
-        difficulty: 'Avançado' as const,
-        estimatedTime: '3-4 min'
-      }
+        {
+          id: 'documentos',
+          name: 'Gestão Documental',
+          description: 'Organização e controle de documentos com versionamento inteligente',
+          icon: <FolderOpen className="h-5 w-5" />,
+          color: 'text-orange-600',
+          features: ['Versionamento', 'Aprovações', 'Pesquisa avançada', 'OCR integrado'],
+          difficulty: 'Básico' as const,
+          estimatedTime: '1-2 min',
+          recommended: false,
+          popular: false
+        },
+        {
+          id: 'relatorios_esg',
+          name: 'Relatórios ESG',
+          description: 'Geração automatizada de relatórios corporativos e de sustentabilidade',
+          icon: <BarChart3 className="h-5 w-5" />,
+          color: 'text-cyan-600',
+          features: ['GRI Standards', 'SASB', 'Relatórios customizados', 'Automação completa'],
+          difficulty: 'Avançado' as const,
+          estimatedTime: '3-4 min',
+          recommended: false,
+          popular: false
+        }
     ]
   }
 ];
@@ -194,20 +207,27 @@ export function EnhancedModuleSelectionStep({
   };
 
   const selectRecommended = () => {
-    const recommendedModules = MODULE_CATEGORIES
-      .flatMap(cat => cat.modules)
-      .filter(module => module.recommended)
-      .map(module => module.id);
-    
+    const recommendedModules: string[] = [];
+    MODULE_CATEGORIES.forEach(cat => {
+      cat.modules.forEach((module: any) => {
+        if (module.recommended) {
+          recommendedModules.push(module.id);
+        }
+      });
+    });
     setLocalSelection(recommendedModules);
   };
 
   const getTotalEstimatedTime = () => {
-    const selectedModuleInfos = MODULE_CATEGORIES
-      .flatMap(cat => cat.modules)
-      .filter(module => localSelection.includes(module.id));
-    
-    return selectedModuleInfos.length * 2; // Média de 2 min por módulo
+    let totalTime = 0;
+    MODULE_CATEGORIES.forEach(cat => {
+      cat.modules.forEach((module: any) => {
+        if (localSelection.includes(module.id)) {
+          totalTime += 2; // Média de 2 min por módulo
+        }
+      });
+    });
+    return totalTime;
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -307,7 +327,7 @@ export function EnhancedModuleSelectionStep({
 
                 <CardContent>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {category.modules.map((module) => {
+                    {category.modules.map((module: any) => {
                       const isSelected = localSelection.includes(module.id);
                       
                       return (
@@ -365,7 +385,7 @@ export function EnhancedModuleSelectionStep({
                                 Principais recursos:
                               </p>
                               <div className="grid grid-cols-2 gap-1">
-                                {module.features.slice(0, 4).map((feature, idx) => (
+                                {module.features.slice(0, 4).map((feature: string, idx: number) => (
                                   <div key={idx} className="flex items-center gap-1 text-xs text-muted-foreground">
                                     <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
                                     <span className="truncate">{feature}</span>
