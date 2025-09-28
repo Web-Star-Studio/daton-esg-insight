@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { 
   CheckCircle2, Rocket, ArrowRight, 
   BarChart3, FileText, Users, Target,
-  BookOpen, Calendar, Settings
+  BookOpen, Calendar, Settings, Leaf,
+  Award, Shield, GraduationCap, FolderOpen
 } from "lucide-react";
 
 interface CompletionStepProps {
@@ -25,15 +26,40 @@ const MODULE_INFO = {
     icon: <FileText className="h-4 w-4" />,
     nextSteps: ['Cadastrar licenças existentes', 'Configurar alertas', 'Upload de documentos']
   },
-  gestao_desempenho: {
-    name: 'Gestão de Desempenho',
-    icon: <Users className="h-4 w-4" />,
-    nextSteps: ['Cadastrar colaboradores', 'Definir competências', 'Configurar primeiro ciclo']
+  metas_sustentabilidade: {
+    name: 'Metas de Sustentabilidade',
+    icon: <Leaf className="h-4 w-4" />,
+    nextSteps: ['Definir metas ESG', 'Configurar indicadores ODS', 'Criar dashboard executivo']
   },
   sistema_qualidade: {
     name: 'Sistema de Qualidade',
     icon: <Target className="h-4 w-4" />,
     nextSteps: ['Mapear processos', 'Configurar não conformidades', 'Definir indicadores']
+  },
+  gestao_riscos: {
+    name: 'Gestão de Riscos',
+    icon: <Shield className="h-4 w-4" />,
+    nextSteps: ['Criar matriz de riscos', 'Definir planos de ação', 'Configurar monitoramento']
+  },
+  gestao_desempenho: {
+    name: 'Gestão de Desempenho',
+    icon: <Users className="h-4 w-4" />,
+    nextSteps: ['Cadastrar colaboradores', 'Definir competências', 'Configurar primeiro ciclo']
+  },
+  treinamentos: {
+    name: 'Treinamentos',
+    icon: <GraduationCap className="h-4 w-4" />,
+    nextSteps: ['Criar trilhas de aprendizado', 'Cadastrar cursos', 'Definir certificações']
+  },
+  documentos: {
+    name: 'Gestão Documental',
+    icon: <FolderOpen className="h-4 w-4" />,
+    nextSteps: ['Organizar estrutura de pastas', 'Configurar versionamento', 'Definir aprovações']
+  },
+  relatorios_esg: {
+    name: 'Relatórios ESG',
+    icon: <Award className="h-4 w-4" />,
+    nextSteps: ['Configurar templates GRI', 'Definir métricas SASB', 'Automatizar relatórios']
   }
 };
 
