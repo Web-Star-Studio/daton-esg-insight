@@ -13,6 +13,9 @@ import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
 import UnifiedDashboardWidget from "@/components/UnifiedDashboardWidget"
 import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
 import SystemPerformanceMonitor from "@/components/SystemPerformanceMonitor"
+import { OnboardingDashboardWidget } from "@/components/onboarding/OnboardingDashboardWidget"
+import { FirstStepsSection } from "@/components/dashboard/FirstStepsSection"
+import { useAuth } from "@/contexts/AuthContext"
 import { 
   Flag, 
   AlertTriangle, 
@@ -47,6 +50,7 @@ import SettingsModal from "@/components/SettingsModal"
 const Index = () => {
   const { metrics, isOptimized } = useSystemOptimization();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const { shouldShowOnboarding } = useAuth();
   
   // Fetch real data from various services
   const { data: esgData, isLoading: esgLoading } = useQuery({
@@ -130,6 +134,11 @@ const Index = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-10">
+
+            {/* Onboarding Widget - Always visible at top for quick access */}
+            {shouldShowOnboarding && (
+              <OnboardingDashboardWidget showWidget={true} />
+            )}
 
         {/* Primeira Linha - Cards de Resumo Rápido */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -290,6 +299,11 @@ const Index = () => {
 
         {/* Terceira Linha - Conteúdo Dinâmico */}
         <div className="space-y-8">
+          {/* First Steps Section - Show for users who completed onboarding but need guidance */}
+          {!shouldShowOnboarding && (
+            <FirstStepsSection completedModules={[]} />
+          )}
+          
           <div className="w-full">
             <AIProcessingStatusWidget />
           </div>

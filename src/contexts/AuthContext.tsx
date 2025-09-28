@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { authService, type AuthUser, type RegisterCompanyData } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
+import { useFirstLoginDetection } from '@/hooks/useFirstLoginDetection';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -12,6 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   shouldShowOnboarding: boolean;
+  skipOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,7 +23,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
+  
+  // Use the first login detection hook
+  const { 
+    shouldShowOnboarding, 
+    markOnboardingComplete,
+    refetch: refetchOnboardingStatus
+  } = useFirstLoginDetection();
 
   useEffect(() => {
     // Configurar listener de mudanças de auth PRIMEIRO
@@ -182,6 +190,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const skipOnboarding = async () => {
+    try {
+      await markOnboardingComplete();
+      toast({
+        title: "Onboarding ignorado",
+        description: "Você pode acessar o guia de configuração a qualquer momento pelo menu lateral."
+      });
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível pular o onboarding.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -191,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     refreshUser,
     shouldShowOnboarding,
+    skipOnboarding,
   };
 
   return (

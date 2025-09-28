@@ -162,6 +162,33 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
+        {/* Configuração Inicial */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Configuração Inicial</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <button
+                    onClick={() => {
+                      // Navigate to onboarding or show restart dialog
+                      const shouldRestart = confirm('Deseja reiniciar o guia de configuração inicial?');
+                      if (shouldRestart) {
+                        localStorage.removeItem('daton_onboarding_progress');
+                        window.location.href = '/';
+                      }
+                    }}
+                    className="flex items-center gap-2 w-full text-left"
+                  >
+                    <Settings className="h-4 w-4" />
+                    {!collapsed && <span>Guia de Configuração</span>}
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Favoritos */}
         {favorites.length > 0 && !collapsed && (
           <SidebarGroup className="px-0">

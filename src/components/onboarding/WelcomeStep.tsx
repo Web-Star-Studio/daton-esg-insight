@@ -4,9 +4,10 @@ import { CheckCircle, Rocket, Settings, BarChart } from "lucide-react";
 
 interface WelcomeStepProps {
   onNext: () => void;
+  onSkip?: () => void;
 }
 
-export function WelcomeStep({ onNext }: WelcomeStepProps) {
+export function WelcomeStep({ onNext, onSkip }: WelcomeStepProps) {
   const benefits = [
     {
       icon: <Settings className="h-5 w-5 text-primary" />,
@@ -78,10 +79,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           <div className="flex justify-center gap-4 pt-4">
             <Button 
               variant="outline"
-              onClick={() => {
-                // Skip onboarding - implement later
-                console.log('Skip onboarding');
-              }}
+              onClick={onSkip}
               size="lg"
               className="min-w-32"
             >

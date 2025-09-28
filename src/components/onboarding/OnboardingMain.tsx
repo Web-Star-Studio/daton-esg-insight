@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingFlowProvider, useOnboardingFlow } from '@/contexts/OnboardingFlowContext';
 import { useTutorial } from '@/contexts/TutorialContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { WelcomeStep } from './WelcomeStep';
 import { ModuleSelectionStep } from './ModuleSelectionStep';
 import { GuidedDataCreationStep } from './GuidedDataCreationStep';
@@ -11,6 +12,7 @@ import { OnboardingProgress } from './OnboardingProgress';
 function OnboardingContent() {
   const navigate = useNavigate();
   const { startTour } = useTutorial();
+  const { skipOnboarding } = useAuth();
   
   const {
     state,
@@ -31,6 +33,15 @@ function OnboardingContent() {
   ];
 
   const completedSteps = stepTitles.map((_, index) => isStepCompleted(index));
+
+  const handleSkipOnboarding = async () => {
+    try {
+      await skipOnboarding();
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+    }
+  };
 
   const handleStartUsingPlatform = async () => {
     try {
@@ -57,7 +68,7 @@ function OnboardingContent() {
   const renderCurrentStep = () => {
     switch (state.currentStep) {
       case 0:
-        return <WelcomeStep onNext={nextStep} />;
+        return <WelcomeStep onNext={nextStep} onSkip={handleSkipOnboarding} />;
       
       case 1:
         return (
