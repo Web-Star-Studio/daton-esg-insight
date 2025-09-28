@@ -8,11 +8,13 @@ import { EnhancedModuleSelectionStep } from './EnhancedModuleSelectionStep';
 import { EnhancedDataCreationStep } from './EnhancedDataCreationStep';
 import { EnhancedCompletionStep } from './EnhancedCompletionStep';
 import { OnboardingProgress } from './OnboardingProgress';
+import { OnboardingAnalytics } from './OnboardingAnalytics';
 
 function OnboardingContent() {
   const navigate = useNavigate();
   const { startTour } = useTutorial();
   const { skipOnboarding } = useAuth();
+  const [companyProfile, setCompanyProfile] = useState<any>(null);
   
   const {
     state,
@@ -33,6 +35,13 @@ function OnboardingContent() {
   ];
 
   const completedSteps = stepTitles.map((_, index) => isStepCompleted(index));
+
+  const handleWelcomeNext = (profile?: any) => {
+    if (profile) {
+      setCompanyProfile(profile);
+    }
+    nextStep();
+  };
 
   const handleSkipOnboarding = async () => {
     try {
@@ -68,7 +77,7 @@ function OnboardingContent() {
   const renderCurrentStep = () => {
     switch (state.currentStep) {
       case 0:
-        return <EnhancedWelcomeStep onNext={nextStep} onSkip={handleSkipOnboarding} />;
+        return <EnhancedWelcomeStep onNext={handleWelcomeNext} onSkip={handleSkipOnboarding} />;
       
       case 1:
         return (
@@ -77,6 +86,7 @@ function OnboardingContent() {
             onModulesChange={setSelectedModules}
             onNext={nextStep}
             onPrev={prevStep}
+            companyProfile={companyProfile}
           />
         );
       
@@ -119,6 +129,8 @@ function OnboardingContent() {
               totalSteps={state.totalSteps}
               stepTitles={stepTitles}
               completedSteps={completedSteps}
+              selectedModules={state.selectedModules}
+              smartMode={!!companyProfile}
             />
           </div>
         </div>
@@ -127,6 +139,13 @@ function OnboardingContent() {
       <div className={showProgress ? 'pt-0' : ''}>
         {renderCurrentStep()}
       </div>
+      
+      {/* Analytics Tracking */}
+      <OnboardingAnalytics
+        currentStep={state.currentStep}
+        selectedModules={state.selectedModules}
+        companyProfile={companyProfile}
+      />
       
       {/* Loading overlay */}
       {state.isLoading && (

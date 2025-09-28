@@ -1,15 +1,39 @@
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Rocket, Settings, BarChart, Clock, Users, Shield, Leaf } from "lucide-react";
+import { CheckCircle, Rocket, Settings, BarChart, Clock, Users, Shield, Leaf, ArrowRight } from "lucide-react";
 import { OnboardingWelcomeAnimation } from "./OnboardingWelcomeAnimation";
+import { CompanyProfileWizard } from "./CompanyProfileWizard";
 
 interface EnhancedWelcomeStepProps {
-  onNext: () => void;
+  onNext: (profile?: any) => void;
   onSkip?: () => void;
 }
 
 export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps) {
+  const [showProfileWizard, setShowProfileWizard] = useState(false);
+
+  const handleStartConfiguration = () => {
+    setShowProfileWizard(true);
+  };
+
+  const handleProfileComplete = (profile: any) => {
+    onNext(profile);
+  };
+
+  const handleSkipProfile = () => {
+    onNext();
+  };
+
+  if (showProfileWizard) {
+    return (
+      <CompanyProfileWizard
+        onProfileComplete={handleProfileComplete}
+        onSkip={handleSkipProfile}
+      />
+    );
+  }
   const benefits = [
     {
       icon: <Settings className="h-5 w-5 text-blue-600" />,
@@ -139,12 +163,13 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
             Configurar Depois
           </Button>
           <Button 
-            onClick={onNext}
+            onClick={handleStartConfiguration}
             size="lg" 
             className="min-w-52 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg hover:shadow-xl transition-all duration-300"
           >
             <Rocket className="mr-2 h-4 w-4" />
-            Começar Configuração
+            Começar Configuração Inteligente
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -1,20 +1,36 @@
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
+import { SmartProgressIndicator } from "./SmartProgressIndicator";
 
 interface OnboardingProgressProps {
   currentStep: number;
   totalSteps: number;
   stepTitles: string[];
   completedSteps?: boolean[];
+  selectedModules?: string[];
+  smartMode?: boolean;
 }
 
 export function OnboardingProgress({ 
   currentStep, 
   totalSteps, 
   stepTitles, 
-  completedSteps = [] 
+  completedSteps = [],
+  selectedModules = [],
+  smartMode = false
 }: OnboardingProgressProps) {
+  
+  if (smartMode) {
+    return (
+      <SmartProgressIndicator
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        selectedModules={selectedModules}
+        stepTitles={stepTitles}
+      />
+    );
+  }
   const progressPercentage = (currentStep / (totalSteps - 1)) * 100;
 
   const getStepIcon = (stepIndex: number) => {

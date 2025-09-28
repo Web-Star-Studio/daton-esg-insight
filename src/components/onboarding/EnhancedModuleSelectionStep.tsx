@@ -5,14 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ArrowLeft, ArrowRight, CheckCircle2, Leaf, Award, Users, 
-  BarChart3, Shield, GraduationCap, FolderOpen, Lightbulb, Star, Target
+  BarChart3, Shield, GraduationCap, FolderOpen, Lightbulb, Star, Target, Brain
 } from "lucide-react";
+import { SmartRecommendationEngine } from './SmartRecommendationEngine';
 
 interface EnhancedModuleSelectionStepProps {
   selectedModules: string[];
   onModulesChange: (modules: string[]) => void;
   onNext: () => void;
   onPrev: () => void;
+  companyProfile?: {
+    sector?: string;
+    size?: string;
+    goals?: string[];
+    maturityLevel?: string;
+  };
 }
 
 interface ModuleInfo {
@@ -179,9 +186,12 @@ export function EnhancedModuleSelectionStep({
   selectedModules, 
   onModulesChange, 
   onNext, 
-  onPrev 
+  onPrev,
+  companyProfile 
 }: EnhancedModuleSelectionStepProps) {
   const [localSelection, setLocalSelection] = useState<string[]>(selectedModules);
+  const [smartRecommendations, setSmartRecommendations] = useState<any[]>([]);
+  const [showRecommendations, setShowRecommendations] = useState(!!companyProfile);
 
   // Sync local selection with parent only when local selection changes
   useEffect(() => {
