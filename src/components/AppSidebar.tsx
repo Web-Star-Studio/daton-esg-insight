@@ -221,14 +221,12 @@ export function AppSidebar() {
           </NavigationTooltip>
           
           {!collapsed && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+            <div
+              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
               onClick={(e) => handleFavoriteToggle(item, e)}
             >
-              {isFav ? <Star className="h-2.5 w-2.5 fill-current text-yellow-500" /> : <StarOff className="h-2.5 w-2.5" />}
-            </Button>
+              {isFav ? <Star className="h-2.5 w-2.5 fill-current text-yellow-500" /> : <StarOff className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />}
+            </div>
           )}
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
@@ -263,14 +261,12 @@ export function AppSidebar() {
                 
                 <div className="flex items-center gap-1">
                   {!collapsed && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                    <div
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
                       onClick={(e) => handleFavoriteToggle(item, e)}
                     >
-                      {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3" />}
-                    </Button>
+                      {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
+                    </div>
                   )}
                   {!collapsed && (
                     <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
@@ -306,14 +302,12 @@ export function AppSidebar() {
           </NavigationTooltip>
           
           {!collapsed && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover-scale"
+            <div
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center"
               onClick={(e) => handleFavoriteToggle(item, e)}
             >
-              {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3" />}
-            </Button>
+              {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
+            </div>
           )}
         </SidebarMenuButton>
       </SidebarMenuItem>

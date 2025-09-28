@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LoadingFallback } from "@/components/LoadingFallback";
+import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
 
 // Páginas críticas carregadas sincronamente
@@ -147,10 +149,17 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+        <SmartToastProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter 
+            future={{ 
+              v7_startTransition: true, 
+              v7_relativeSplatPath: true 
+            }}
+          >
+            <PageTransition>
+              <Routes>
             {/* Landing Page - público */}
             <Route path="/" element={<LandingPage />} />
             
@@ -381,8 +390,10 @@ const App = () => (
             
             {/* Catch-all deve ser sempre a última rota */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              </Routes>
+            </PageTransition>
+          </BrowserRouter>
+        </SmartToastProvider>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

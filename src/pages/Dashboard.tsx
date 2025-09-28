@@ -27,6 +27,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 
 interface KPICard {
   id: string;
@@ -221,11 +222,13 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4 animate-fade-in">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Carregando dashboard...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background/50 backdrop-blur-sm">
+        <EnhancedLoading 
+          variant="gradient" 
+          size="lg" 
+          text="Preparando seu dashboard..." 
+          className="animate-fade-in"
+        />
       </div>
     );
   }

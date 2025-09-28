@@ -12,6 +12,8 @@ import { SmartTutorialFloater } from "@/components/tutorial/SmartTutorialFloater
 import { ContextualHints } from "@/components/tutorial/ContextualHints"
 import { OnboardingMain } from "@/components/onboarding/OnboardingMain"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
+import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor"
+import { AccessibilityHelper } from "@/components/accessibility/AccessibilityHelper"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -44,6 +46,8 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
           
           <EnhancedAIAssistant />
+          <PerformanceMonitor />
+          <AccessibilityHelper />
         </div>
         
         {/* Tutorial Components */}
