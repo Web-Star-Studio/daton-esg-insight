@@ -94,6 +94,12 @@ const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
 // Lazy loading para Intelligence Center
 const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 
+// Lazy loading para páginas de compatibilidade/redirect
+const PainelPrincipal = lazy(() => import("./pages/PainelPrincipal"));
+const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
+const PainelSocial = lazy(() => import("./pages/PainelSocial"));
+const PainelGovernanca = lazy(() => import("./pages/PainelGovernanca"));
+
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
 
@@ -348,16 +354,16 @@ const App = () => (
             {/* Simulador */}
             <Route path="/simulador" element={<LazyPageWrapper><SimuladorEcoImpacto /></LazyPageWrapper>} />
 
-            {/* Redirects para compatibilidade com nova estrutura de navegação */}
-            <Route path="/painel-principal" element={<Navigate to="/dashboard" replace />} />
+            {/* Redirects e páginas de compatibilidade com nova estrutura de navegação */}
+            <Route path="/painel-principal" element={<LazyPageWrapper><PainelPrincipal /></LazyPageWrapper>} />
             <Route path="/analise-desempenho" element={<Navigate to="/desempenho" replace />} />
             <Route path="/painel-gestao-esg" element={<Navigate to="/gestao-esg" replace />} />
             <Route path="/metas-sustentabilidade" element={<Navigate to="/metas" replace />} />
-            <Route path="/emissoes-gee" element={<Navigate to="/inventario-gee" replace />} />
-            <Route path="/painel-social" element={<Navigate to="/social-esg" replace />} />
+            <Route path="/emissoes-gee" element={<LazyPageWrapper><EmissoesGEE /></LazyPageWrapper>} />
+            <Route path="/painel-social" element={<LazyPageWrapper><PainelSocial /></LazyPageWrapper>} />
             <Route path="/saude-seguranca-trabalho" element={<Navigate to="/seguranca-trabalho" replace />} />
             <Route path="/treinamentos-desenvolvimento" element={<Navigate to="/gestao-treinamentos" replace />} />
-            <Route path="/painel-governanca" element={<Navigate to="/governanca-esg" replace />} />
+            <Route path="/painel-governanca" element={<LazyPageWrapper><PainelGovernanca /></LazyPageWrapper>} />
             <Route path="/compliance-politicas" element={<Navigate to="/compliance" replace />} />
             <Route path="/auditorias" element={<Navigate to="/auditoria" replace />} />
             <Route path="/dashboard-sgq" element={<Navigate to="/quality-dashboard" replace />} />
