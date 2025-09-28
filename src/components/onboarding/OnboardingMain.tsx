@@ -9,6 +9,10 @@ import { EnhancedDataCreationStep } from './EnhancedDataCreationStep';
 import { EnhancedCompletionStep } from './EnhancedCompletionStep';
 import { OnboardingProgress } from './OnboardingProgress';
 import { OnboardingAnalytics } from './OnboardingAnalytics';
+import { SmartOnboardingOrchestrator } from './SmartOnboardingOrchestrator';
+import { AdaptiveGuidanceSystem } from './AdaptiveGuidanceSystem';
+import { SmartValidationHelper } from './SmartValidationHelper';
+import { SmartNotificationCenter } from './SmartNotificationCenter';
 
 function OnboardingContent() {
   const navigate = useNavigate();
@@ -121,8 +125,25 @@ function OnboardingContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Smart Notification Center */}
+      <div className="fixed top-4 right-4 z-50">
+        <SmartNotificationCenter
+          onboardingData={{
+            currentStep: state.currentStep,
+            selectedModules: state.selectedModules,
+            timeSpent: Date.now() - (parseInt(localStorage.getItem('onboarding_start_time') || '0')),
+            completionPercentage: (state.currentStep / (state.totalSteps - 1)) * 100
+          }}
+          userBehavior={{
+            engagementLevel: 'medium',
+            strugglingAreas: state.currentStep === 1 && state.selectedModules.length === 0 ? ['module_selection'] : [],
+            achievements: state.selectedModules.length > 3 ? ['good_selection'] : []
+          }}
+        />
+      </div>
+
       {showProgress && (
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/50 py-4">
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 py-4">
           <div className="container mx-auto px-4">
             <OnboardingProgress
               currentStep={state.currentStep}
@@ -137,7 +158,50 @@ function OnboardingContent() {
       )}
       
       <div className={showProgress ? 'pt-0' : ''}>
-        {renderCurrentStep()}
+        <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+          {/* Smart Orchestrator and Guidance - only show during active steps */}
+          {state.currentStep > 0 && state.currentStep < 3 && (
+            <>
+              <SmartOnboardingOrchestrator
+                companyData={companyProfile}
+                userBehavior={{
+                  timeSpentPerStep: [60, 120, 90, 30],
+                  clickPatterns: [],
+                  hesitationPoints: state.currentStep === 1 && state.selectedModules.length === 0 ? [1] : [],
+                }}
+              />
+
+              <AdaptiveGuidanceSystem
+                currentStep={state.currentStep}
+                userBehavior={{
+                  hesitationPoints: state.currentStep === 1 && state.selectedModules.length === 0 ? [1] : [],
+                  quickSteps: [],
+                  timeSpentPerStep: [60, 120, 90, 30],
+                  backtrackingPattern: false,
+                  helpSeekingBehavior: 'medium'
+                }}
+                onGuidanceAction={(actionId) => {
+                  console.log('Guidance action:', actionId);
+                }}
+              />
+
+              <SmartValidationHelper
+                currentStep={state.currentStep}
+                data={state}
+                onValidationChange={(isValid, errors) => {
+                  console.log('Validation:', isValid, errors);
+                }}
+                onAutoFix={(fixes) => {
+                  if (fixes.selectedModules) {
+                    setSelectedModules(fixes.selectedModules);
+                  }
+                }}
+              />
+            </>
+          )}
+
+          {renderCurrentStep()}
+        </div>
       </div>
       
       {/* Analytics Tracking */}
