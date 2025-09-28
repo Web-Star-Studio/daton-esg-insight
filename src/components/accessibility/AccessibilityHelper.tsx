@@ -13,7 +13,11 @@ interface AccessibilitySettings {
   textSize: number
 }
 
-export function AccessibilityHelper() {
+interface AccessibilityHelperProps {
+  embedded?: boolean;
+}
+
+export function AccessibilityHelper({ embedded = false }: AccessibilityHelperProps = {}) {
   const [isOpen, setIsOpen] = useState(false)
   const [settings, setSettings] = useState<AccessibilitySettings>({
     highContrast: false,
@@ -82,6 +86,79 @@ export function AccessibilityHelper() {
       focusVisible: false,
       textSize: 100
     })
+  }
+
+  if (embedded) {
+    return (
+      <Card className="w-full shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Configurações de Acessibilidade
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              <span className="text-sm">Alto Contraste</span>
+            </div>
+            <Switch
+              checked={settings.highContrast}
+              onCheckedChange={(checked) => updateSetting('highContrast', checked)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              <span className="text-sm">Tamanho do Texto: {settings.textSize}%</span>
+            </div>
+            <Slider
+              value={[settings.textSize]}
+              onValueChange={(value) => updateSetting('textSize', value[0])}
+              min={75}
+              max={150}
+              step={25}
+              className="w-full"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MousePointer className="h-4 w-4" />
+              <span className="text-sm">Reduzir Animações</span>
+            </div>
+            <Switch
+              checked={settings.reducedMotion}
+              onCheckedChange={(checked) => updateSetting('reducedMotion', checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Keyboard className="h-4 w-4" />
+              <span className="text-sm">Foco Visível</span>
+            </div>
+            <Switch
+              checked={settings.focusVisible}
+              onCheckedChange={(checked) => updateSetting('focusVisible', checked)}
+            />
+          </div>
+
+          <div className="pt-3 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetSettings}
+              className="w-full"
+            >
+              Resetar Configurações
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

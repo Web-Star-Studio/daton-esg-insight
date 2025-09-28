@@ -20,7 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { AccessibilityHelper } from '@/components/accessibility/AccessibilityHelper';
 import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
-import { SmartNotificationCenter } from '@/components/SmartNotificationCenter';
+
 import { UnifiedHelpCenter } from '@/components/tutorial/UnifiedHelpCenter';
 import { ChatIA } from '@/components/tools/ChatIA';
 import { useTutorial } from '@/contexts/TutorialContext';
@@ -65,7 +65,7 @@ export function UnifiedToolHub() {
       description: 'Configurações de acessibilidade',
       icon: Accessibility,
       color: 'from-green-500 to-green-600',
-      component: AccessibilityHelper
+      component: () => <AccessibilityHelper embedded />
     },
     {
       id: 'performance',
@@ -74,15 +74,6 @@ export function UnifiedToolHub() {
       icon: Monitor,
       color: 'from-orange-500 to-orange-600',
       component: PerformanceMonitor
-    },
-    {
-      id: 'notifications',
-      name: 'Notificações',
-      description: 'Central de notificações',
-      icon: Bell,
-      color: 'from-purple-500 to-purple-600',
-      component: SmartNotificationCenter,
-      badge: 3
     },
     {
       id: 'onboarding',
@@ -134,11 +125,6 @@ export function UnifiedToolHub() {
               <span className="text-xs text-primary-foreground font-medium">Hub</span>
             </div>
           </div>
-          
-          {/* Notification badge */}
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold text-destructive-foreground">3</span>
-          </div>
         </Button>
       </div>
     );
@@ -162,7 +148,7 @@ export function UnifiedToolHub() {
               <CardTitle className="text-sm font-semibold">Hub de Ferramentas</CardTitle>
               <div className="flex items-center gap-2 mt-0.5">
                 <Badge variant="secondary" className="text-xs px-2">
-                  6 Ferramentas
+                  {tools.length} Ferramentas
                 </Badge>
                 <Badge variant="outline" className="text-xs px-2">
                   <div className="w-2 h-2 bg-success rounded-full mr-1"></div>
