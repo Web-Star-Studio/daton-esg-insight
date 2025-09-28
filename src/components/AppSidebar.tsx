@@ -1,49 +1,7 @@
+import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { 
-  LayoutDashboard, 
-  FlaskConical, 
-  Sparkles, 
-  Package, 
-  BarChart3, 
-  Flag, 
-  Recycle, 
-  Briefcase, 
-  Gavel, 
-  Trash2, 
-  HardDrive, 
-  TrendingUp, 
-  CloudUpload, 
-  FileText, 
-  Folder, 
-  BookOpen, 
-  FileBarChart, 
-  CheckCircle, 
-  ShieldCheck, 
-  Settings, 
-  Wand2, 
-  ShoppingCart,
-  Users,
-  Target,
-  Building2,
-  Heart,
-  Shield,
-  FileSpreadsheet,
-  Activity,
-  Workflow,
-  AlertTriangle,
-  ClipboardCheck,
-  BookMarked,
-  Handshake,
-  Brain,
-  FolderKanban,
-  UserCheck,
-  GraduationCap,
-  DollarSign,
-  Search,
-  Clock,
-  Zap
-} from "lucide-react"
-import { 
+import { Star, StarOff, ChevronRight } from "lucide-react"
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -53,238 +11,186 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { Button } from "@/components/ui/button"
+import { NavigationTooltip } from "@/components/navigation/NavigationTooltip"
+import { useFavorites } from "@/hooks/useFavorites"
 import datonLogo from "@/assets/daton-logo-header.png"
 
+// Importações de ícones organizadas por categoria
+import {
+  LayoutDashboard, BarChart3, TrendingUp, PieChart, Activity, Monitor,
+  Leaf, CloudRain, Users, Shield, Eye, Heart, Scale,
+  Award, CheckSquare, AlertTriangle, Target, Search, ClipboardCheck,
+  FileText, Upload, Database, Building, FileSpreadsheet, Layers, Folder, HardDrive,
+  Users2, UserCheck, UserCog, GraduationCap, Briefcase, Calendar,
+  FileBarChart, FileCheck, BookOpen, TrendingDown, CheckCircle, ShieldCheck,
+  Settings, Bell, Clock, Building2, MapPin,
+  Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
+  Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
+  FolderKanban, DollarSign
+} from "lucide-react"
+
+// Nova estrutura ESG reorganizada
 interface MenuItem {
   id: string
   title: string
   icon: React.ComponentType<{ className?: string }>
   path: string
-  subItems?: Array<{
-    id: string
-    title: string
-    path: string
-  }>
+  description: string
+  subItems?: MenuItem[]
 }
 
 interface MenuSection {
+  id: string
   title: string
   items: MenuItem[]
+  isCollapsible?: boolean
+  defaultOpen?: boolean
 }
 
 const menuSections: MenuSection[] = [
   {
-    title: "ANÁLISE GERAL",
+    id: "home",
+    title: "INÍCIO",
     items: [
-      { id: "painel", title: "Painel", icon: LayoutDashboard, path: "/dashboard" },
-      { id: "gestao-esg", title: "Gestão ESG", icon: Briefcase, path: "/gestao-esg" },
-      { id: "simulador", title: "Simulador Eco Impacto", icon: FlaskConical, path: "/simulador" },
-      
-      { id: "ia-insights", title: "IA & Insights", icon: Sparkles, path: "/ia-insights" },
-      { id: "marketplace", title: "Marketplace ESG", icon: ShoppingCart, path: "/marketplace" },
-      { id: "desempenho", title: "Desempenho", icon: TrendingUp, path: "/desempenho" },
+      { id: "dashboard", title: "Painel Principal", icon: LayoutDashboard, path: "/dashboard", description: "Visão geral do sistema ESG" },
+      { id: "performance", title: "Análise de Desempenho", icon: TrendingUp, path: "/desempenho", description: "Monitoramento de KPIs" }
     ]
   },
   {
-    title: "EMISSÕES",
+    id: "strategy-esg",
+    title: "ESTRATÉGIA ESG",
     items: [
-      { id: "dashboard-ghg", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg" },
-      { id: "inventario-gee", title: "Inventário GEE", icon: Package, path: "/inventario-gee" },
-      { id: "projetos-carbono", title: "Projetos de Carbono", icon: Recycle, path: "/projetos-carbono" },
-      { id: "metas", title: "Metas", icon: Flag, path: "/metas" },
+      { id: "esg-management", title: "Painel de Gestão ESG", icon: Leaf, path: "/gestao-esg", description: "Central ESG" },
+      { id: "materiality-analysis", title: "Análise de Materialidade", icon: Eye, path: "/analise-materialidade", description: "Temas ESG relevantes" },
+      { id: "stakeholder-management", title: "Gestão de Stakeholders", icon: Users, path: "/gestao-stakeholders", description: "Partes interessadas" },
+      { id: "targets", title: "Metas", icon: Target, path: "/metas", description: "Metas de sustentabilidade" }
     ]
   },
   {
-    title: "AMBIENTAL",
+    id: "environmental",
+    title: "AMBIENTAL (E)",
     items: [
-      { 
-        id: "licenciamento", 
-        title: "Licenciamento", 
-        icon: Gavel, 
-        path: "/licenciamento",
+      {
+        id: "emissions",
+        title: "Emissões de GEE",
+        icon: Zap,
+        path: "/emissoes",
+        description: "Gestão de gases de efeito estufa",
         subItems: [
-          { id: "licenciamento-dashboard", title: "Painel Principal", path: "/licenciamento" },
-          { id: "licenciamento-analise", title: "Análise com IA", path: "/licenciamento/processar" },
-          { id: "licenciamento-nova", title: "Nova Licença", path: "/licenciamento/novo" },
+          { id: "ghg-dashboard", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg", description: "Painel de emissões" },
+          { id: "ghg-inventory", title: "Inventário", icon: FileBarChart, path: "/inventario-gee", description: "Inventário de emissões" },
+          { id: "carbon-projects", title: "Projetos de Carbono", icon: Leaf, path: "/projetos-carbono", description: "Projetos de redução" }
         ]
       },
-      { id: "residuos", title: "Resíduos", icon: Trash2, path: "/residuos" },
-    ]
-  },
-  {
-    title: "DADOS E DOCUMENTOS",
-    items: [
-      { id: "coleta-dados", title: "Coleta de Dados", icon: CloudUpload, path: "/coleta-dados" },
-      { id: "formularios", title: "Formulários Customizados", icon: FileText, path: "/formularios-customizados" },
-      { id: "documentos", title: "Documentos", icon: Folder, path: "/documentos" },
-      { id: "reconciliacao-documentos", title: "Reconciliação IA", icon: Wand2, path: "/reconciliacao-documentos" },
-      { id: "biblioteca-fatores", title: "Biblioteca de Fatores", icon: BookOpen, path: "/biblioteca-fatores" },
-      { id: "ativos", title: "Ativos", icon: HardDrive, path: "/ativos" },
-    ]
-  },
-  {
-    title: "SUSTENTABILIDADE",
-    items: [
-      { id: "configuracao-organizacional", title: "Configuração Organizacional", icon: Building2, path: "/configuracao-organizacional" },
-      { id: "gestao-stakeholders", title: "Gestão de Stakeholders", icon: Users, path: "/gestao-stakeholders" },
-      { id: "analise-materialidade", title: "Análise de Materialidade", icon: Target, path: "/analise-materialidade" },
-      { id: "relatorios-sustentabilidade", title: "Relatórios de Sustentabilidade", icon: FileText, path: "/relatorios-sustentabilidade" },
-    ]
-  },
-  {
-    title: "ESG COMPLETO",
-    items: [
-      { id: "social-esg", title: "Social ESG", icon: Heart, path: "/social-esg" },
-      { id: "governanca-esg", title: "Governança ESG", icon: Shield, path: "/governanca-esg" },
-      { id: "relatorios-integrados", title: "Relatórios Integrados", icon: FileSpreadsheet, path: "/relatorios-integrados" },
-    ]
-  },
-  {
-    title: "SISTEMA DE GESTÃO DA QUALIDADE",
-    items: [
-      { id: "quality-dashboard", title: "Dashboard SGQ", icon: Brain, path: "/quality-dashboard" },
-      { id: "planejamento-estrategico", title: "Planejamento Estratégico", icon: Target, path: "/planejamento-estrategico" },
-      { id: "gerenciamento-projetos", title: "Gerenciamento de Projetos", icon: FolderKanban, path: "/gerenciamento-projetos" },
-      { id: "mapeamento-processos", title: "Mapeamento de Processos", icon: Workflow, path: "/mapeamento-processos" },
-      { id: "gestao-riscos", title: "Gestão de Riscos", icon: Shield, path: "/gestao-riscos" },
-      { id: "nao-conformidades", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades" },
-      { id: "plano-acao-5w2h", title: "Planos de Ação 5W2H", icon: ClipboardCheck, path: "/plano-acao-5w2h" },
-      { id: "base-conhecimento", title: "Base de Conhecimento", icon: BookMarked, path: "/base-conhecimento" },
-      { id: "gestao-fornecedores", title: "Gestão de Fornecedores", icon: Handshake, path: "/gestao-fornecedores" },
-      { id: "estrutura-organizacional", title: "Estrutura Organizacional", icon: Users, path: "/estrutura-organizacional" },
-      { id: "gestao-funcionarios", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios" },
-      { id: "gestao-treinamentos", title: "Gestão de Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos" },
-      { id: "gestao-desempenho", title: "Gestão de Desempenho", icon: TrendingUp, path: "/gestao-desempenho" },
-      { id: "beneficios-remuneracao", title: "Benefícios e Remuneração", icon: DollarSign, path: "/beneficios-remuneracao" },
-      { id: "recrutamento", title: "Recrutamento e Seleção", icon: Search, path: "/recrutamento" },
-      { id: "seguranca-trabalho", title: "Segurança do Trabalho", icon: ShieldCheck, path: "/seguranca-trabalho" },
-      { id: "ponto-frequencia", title: "Ponto e Frequência", icon: Clock, path: "/ponto-frequencia" },
-      { id: "desenvolvimento-carreira", title: "Desenvolvimento de Carreira", icon: Zap, path: "/desenvolvimento-carreira" },
-    ]
-  },
-  {
-    title: "RELATÓRIOS E COMPLIANCE",
-    items: [
-      { id: "relatorios", title: "Relatórios", icon: FileBarChart, path: "/relatorios" },
-      { id: "auditoria", title: "Auditoria", icon: CheckCircle, path: "/auditoria" },
-      { id: "compliance", title: "Compliance", icon: ShieldCheck, path: "/compliance" },
-    ]
-  },
-  {
-    title: "CONFIGURAÇÕES",
-    items: [
-      { id: "configuracao", title: "Configuração", icon: Settings, path: "/configuracao" },
+      { id: "waste-management", title: "Gestão de Resíduos", icon: Trash2, path: "/residuos", description: "Controle de resíduos" },
+      { id: "licensing", title: "Licenciamento", icon: Gavel, path: "/licenciamento", description: "Licenças ambientais" }
     ]
   }
 ]
 
 export function AppSidebar() {
-  const { state } = useSidebar()
-  const isCollapsed = state === "collapsed"
   const navigate = useNavigate()
   const location = useLocation()
+  const { collapsed } = useSidebar()
+  const { favorites, toggleFavorite, isFavorite } = useFavorites()
   
-  // Determinar item ativo baseado na rota atual
-  const getActiveItem = () => {
-    const currentPath = location.pathname
-    for (const section of menuSections) {
-      for (const item of section.items) {
-        if (item.path === currentPath) {
-          return item.id
-        }
-        // Check subitems
-        if (item.subItems) {
-          for (const subItem of item.subItems) {
-            if (currentPath === subItem.path) {
-              return item.id
-            }
-          }
-        }
-      }
-    }
-    return "painel" // default
-  }
-  
-  const activeItem = getActiveItem()
-  const isLicensingActive = location.pathname.startsWith('/licenciamento')
+  const currentPath = location.pathname
+  const isActive = (path: string) => currentPath === path
 
-  const handleItemClick = (item: MenuItem) => {
-    navigate(item.path)
+  const handleFavoriteToggle = (item: MenuItem, e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleFavorite({
+      id: item.id,
+      title: item.title,
+      path: item.path,
+      icon: 'FileText'
+    })
   }
-  
-  const handleSubItemClick = (subItem: { id: string; title: string; path: string }) => {
-    navigate(subItem.path)
+
+  const renderMenuItem = (item: MenuItem) => {
+    const active = isActive(item.path)
+    const isFav = isFavorite(item.id)
+
+    return (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          onClick={() => navigate(item.path)}
+          className={`group ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
+        >
+          <NavigationTooltip
+            title={item.title}
+            description={item.description}
+            disabled={!collapsed}
+          >
+            <div className="flex items-center gap-3 flex-1">
+              <item.icon className="h-4 w-4 flex-shrink-0" />
+              {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
+            </div>
+          </NavigationTooltip>
+          
+          {!collapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+              onClick={(e) => handleFavoriteToggle(item, e)}
+            >
+              {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3" />}
+            </Button>
+          )}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    )
   }
 
   return (
-    <Sidebar className={`${isCollapsed ? "w-16" : "w-64"} border-r border-border/40 bg-background`}>
-      <SidebarHeader className="p-4 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <div className="flex-shrink-0">
-            <img 
-              src={datonLogo} 
-              alt="Daton" 
-              className={`${isCollapsed ? "w-8 h-8" : "w-24 h-8"} object-contain`}
-            />
-          </div>
-        </div>
+    <Sidebar className="border-r bg-sidebar">
+      <SidebarHeader className="p-4 border-b">
+        <img src={datonLogo} alt="Daton" className={collapsed ? "w-8 h-8" : "w-24 h-8"} />
       </SidebarHeader>
 
-      <SidebarContent className="p-3">
-        {menuSections.map((section, sectionIndex) => (
-          <SidebarGroup key={sectionIndex} className="mb-6">
-            {!isCollapsed && (
-              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 py-2 mb-2">
-                {section.title}
-              </SidebarGroupLabel>
-            )}
+      <SidebarContent className="gap-0">
+        {/* Favoritos */}
+        {favorites.length > 0 && !collapsed && (
+          <SidebarGroup className="px-0">
+            <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+              ⭐ FAVORITOS
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
-                {section.items.map((item) => (
-                  <div key={item.id}>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        onClick={() => handleItemClick(item)}
-                        className={`
-                          w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm
-                          ${activeItem === item.id 
-                            ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary' 
-                            : 'text-foreground/80 hover:bg-muted/50 hover:text-foreground'
-                          }
-                          ${isCollapsed ? 'justify-center px-2' : 'justify-start'}
-                        `}
-                      >
-                        <item.icon className={`${isCollapsed ? "w-5 h-5" : "w-4 h-4"} flex-shrink-0`} />
-                        {!isCollapsed && (
-                          <span className="truncate">{item.title}</span>
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    {/* Render subitems if they exist and sidebar is not collapsed and parent is active */}
-                    {item.subItems && !isCollapsed && isLicensingActive && item.id === 'licenciamento' && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {item.subItems.map((subItem) => (
-                          <SidebarMenuItem key={subItem.id} className="text-sm">
-                            <SidebarMenuButton
-                              onClick={() => handleSubItemClick(subItem)}
-                              className={`
-                                w-full justify-start py-1 px-2 transition-colors text-xs
-                                ${location.pathname === subItem.path
-                                  ? "bg-primary/20 text-primary font-medium"
-                                  : "hover:bg-muted/50 text-muted-foreground"
-                                }
-                              `}
-                            >
-                              <span>{subItem.title}</span>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              <SidebarMenu>
+                {favorites.slice(0, 5).map((fav) => (
+                  <SidebarMenuItem key={`fav-${fav.id}`}>
+                    <SidebarMenuButton onClick={() => navigate(fav.path)}>
+                      <Star className="h-4 w-4 fill-current text-yellow-500" />
+                      <span className="text-sm">{fav.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Seções principais */}
+        {menuSections.map((section) => (
+          <SidebarGroup key={section.id} className="px-0">
+            <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+              {section.title}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => renderMenuItem(item))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

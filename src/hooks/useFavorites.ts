@@ -1,65 +1,73 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { addToFavorites, removeFromFavorites, getFavorites, getFavoriteIds } from '@/services/favorites';
+import { useState, useCallback, useEffect } from 'react';
 
-export const useFavorites = () => {
-  const queryClient = useQueryClient();
+export interface FavoriteItem {
+  id: string;
+  title: string;
+  path: string;
+  icon: string;
+  addedAt: Date;
+}
 
-  const { data: favorites = [], isLoading: isLoadingFavorites } = useQuery({
-    queryKey: ['marketplace-favorites'],
-    queryFn: getFavorites,
-  });
+const FAVORITES_STORAGE_KEY = 'daton-favorites';
 
-  const { data: favoriteIds = [], isLoading: isLoadingFavoriteIds } = useQuery({
-    queryKey: ['marketplace-favorite-ids'],
-    queryFn: getFavoriteIds,
-  });
+export function useFavorites() {
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
 
-  const addToFavoritesMutation = useMutation({
-    mutationFn: addToFavorites,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketplace-favorites'] });
-      queryClient.invalidateQueries({ queryKey: ['marketplace-favorite-ids'] });
-      toast.success('Solução adicionada aos favoritos');
-    },
-    onError: (error: any) => {
-      if (error.code === '23505') {
-        toast.error('Esta solução já está nos seus favoritos');
-      } else {
-        toast.error('Erro ao adicionar aos favoritos');
+  // Carregar favoritos do localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const favoritesWithDates = parsed.map((fav: any) => ({
+          ...fav,
+          addedAt: new Date(fav.addedAt)
+        }));
+        setFavorites(favoritesWithDates);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
       }
-    },
-  });
-
-  const removeFromFavoritesMutation = useMutation({
-    mutationFn: removeFromFavorites,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['marketplace-favorites'] });
-      queryClient.invalidateQueries({ queryKey: ['marketplace-favorite-ids'] });
-      toast.success('Solução removida dos favoritos');
-    },
-    onError: () => {
-      toast.error('Erro ao remover dos favoritos');
-    },
-  });
-
-  const toggleFavorite = (solutionId: string) => {
-    if (favoriteIds.includes(solutionId)) {
-      removeFromFavoritesMutation.mutate(solutionId);
-    } else {
-      addToFavoritesMutation.mutate(solutionId);
     }
-  };
+  }, []);
 
-  const isFavorite = (solutionId: string) => favoriteIds.includes(solutionId);
+  // Salvar favoritos no localStorage
+  const saveFavorites = useCallback((newFavorites: FavoriteItem[]) => {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(newFavorites));
+    setFavorites(newFavorites);
+  }, []);
+
+  const addFavorite = useCallback((item: Omit<FavoriteItem, 'addedAt'>) => {
+    const newFavorite: FavoriteItem = {
+      ...item,
+      addedAt: new Date()
+    };
+    
+    const updated = [newFavorite, ...favorites.filter(fav => fav.id !== item.id)];
+    saveFavorites(updated);
+  }, [favorites, saveFavorites]);
+
+  const removeFavorite = useCallback((id: string) => {
+    const updated = favorites.filter(fav => fav.id !== id);
+    saveFavorites(updated);
+  }, [favorites, saveFavorites]);
+
+  const isFavorite = useCallback((id: string) => {
+    return favorites.some(fav => fav.id === id);
+  }, [favorites]);
+
+  const toggleFavorite = useCallback((item: Omit<FavoriteItem, 'addedAt'>) => {
+    if (isFavorite(item.id)) {
+      removeFavorite(item.id);
+    } else {
+      addFavorite(item);
+    }
+  }, [isFavorite, addFavorite, removeFavorite]);
 
   return {
-    favorites,
-    favoriteIds,
-    isLoadingFavorites,
-    isLoadingFavoriteIds,
-    toggleFavorite,
+    favorites: favorites.slice(0, 8), // Limitar a 8 favoritos
+    addFavorite,
+    removeFavorite,
     isFavorite,
-    isUpdating: addToFavoritesMutation.isPending || removeFromFavoritesMutation.isPending,
+    toggleFavorite
   };
-};
+}

@@ -2,7 +2,7 @@ import { User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
-import { GlobalIntelligentSearch } from "@/components/GlobalIntelligentSearch"
+import { EnhancedGlobalSearch } from "@/components/navigation/EnhancedGlobalSearch"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
@@ -73,7 +73,7 @@ export function AppHeader() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="hover:bg-muted/50" />
         
-        <GlobalIntelligentSearch />
+        <EnhancedGlobalSearch />
       </div>
 
       <div className="flex items-center gap-3">
