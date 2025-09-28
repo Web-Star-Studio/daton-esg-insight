@@ -110,7 +110,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     if (!user?.id) return;
 
     try {
-      // Simple localStorage backup for now
+      // Salvar apenas no localStorage por enquanto
       localStorage.setItem('daton_onboarding_progress', JSON.stringify({
         currentStep: state.currentStep,
         selectedModules: state.selectedModules,
