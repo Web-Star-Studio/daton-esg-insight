@@ -10,9 +10,8 @@ import {
   BarChart3, 
   FileText, 
   Settings, 
-  Users, 
   Leaf,
-  AlertTriangle
+  HelpCircle
 } from 'lucide-react';
 
 export default function NotFound() {
@@ -59,133 +58,111 @@ export default function NotFound() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full text-center space-y-8">
-        {/* Main 404 Section */}
-        <div className="space-y-6 animate-fade-in">
-          <div className="relative">
-            <h1 className="text-9xl font-bold text-primary/20 select-none">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="max-w-3xl w-full text-center">
+        
+        {/* Clean 404 Section */}
+        <div className="space-y-12 animate-fade-in">
+          
+          {/* Icon and Number - Separated */}
+          <div className="space-y-8">
+            <div className="flex justify-center mb-6">
+              <HelpCircle className="w-16 h-16 text-primary/60" />
+            </div>
+            
+            <h1 className="text-8xl font-light text-foreground/80 tracking-wider">
               404
             </h1>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <AlertTriangle className="w-24 h-24 text-primary animate-pulse" />
-            </div>
           </div>
           
-          <div className="space-y-4">
-            <h2 className="text-4xl font-bold text-foreground">
+          {/* Clean Typography */}
+          <div className="space-y-6 max-w-xl mx-auto">
+            <h2 className="text-2xl font-medium text-foreground">
               Página não encontrada
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Ops! A página que você está procurando não existe ou foi movida. 
-              Não se preocupe, vamos te ajudar a encontrar o que precisa.
+            <p className="text-base text-muted-foreground leading-relaxed">
+              A página que você está procurando não existe ou foi movida.
             </p>
           </div>
-        </div>
 
-        {/* Search Section */}
-        <Card className="max-w-md mx-auto animate-fade-in">
-          <CardContent className="p-6">
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Search className="w-5 h-5 text-muted-foreground" />
-                <span className="font-medium">Buscar no sistema</span>
-              </div>
-              <div className="flex space-x-2">
+          {/* Minimalist Search */}
+          <div className="max-w-sm mx-auto">
+            <form onSubmit={handleSearch}>
+              <div className="flex items-center border border-border rounded-lg overflow-hidden bg-background hover:border-primary/40 transition-colors">
+                <Search className="w-4 h-4 text-muted-foreground ml-3" />
                 <Input
                   type="text"
-                  placeholder="O que você está procurando?"
+                  placeholder="Buscar..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
+                  className="border-0 bg-transparent focus-visible:ring-0 placeholder:text-muted-foreground/60"
                 />
-                <Button type="submit" size="sm">
-                  Buscar
+                <Button 
+                  type="submit" 
+                  size="sm" 
+                  className="m-1 h-8 rounded-md"
+                  disabled={!searchQuery.trim()}
+                >
+                  Ir
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-4 justify-center animate-fade-in">
-          <Button onClick={() => navigate(-1)} variant="outline" className="hover-scale">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <Button asChild className="hover-scale">
-            <Link to="/dashboard">
-              <Home className="w-4 h-4 mr-2" />
-              Ir ao Dashboard
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="hover-scale">
-            <Link to="/configuracao">
-              <Settings className="w-4 h-4 mr-2" />
-              Configurações
-            </Link>
-          </Button>
-        </div>
-
-        {/* Popular Pages */}
-        <div className="space-y-6 animate-fade-in">
-          <h3 className="text-2xl font-semibold text-foreground">
-            Páginas mais acessadas
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {popularPages.map((page, index) => (
-              <Card 
-                key={page.path} 
-                className="hover:shadow-lg transition-all duration-300 hover-scale cursor-pointer group"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardContent className="p-6 text-center">
-                  <Link to={page.path} className="block space-y-3">
-                    <div className="flex justify-center">
-                      <page.icon className={`w-8 h-8 ${page.color} group-hover:scale-110 transition-transform duration-200`} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {page.title}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        {page.description}
-                      </p>
-                    </div>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
           </div>
-        </div>
 
-        {/* Help Section */}
-        <Card className="max-w-2xl mx-auto animate-fade-in bg-muted/50">
-          <CardContent className="p-6 text-center space-y-4">
-            <h4 className="text-lg font-semibold text-foreground">
-              Ainda não encontrou o que procura?
-            </h4>
-            <p className="text-muted-foreground">
-              Nossa equipe de suporte está sempre pronta para ajudar. 
-              Entre em contato conosco para assistência personalizada.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Button variant="outline" size="sm" className="hover-scale">
-                📧 suporte@empresa.com
-              </Button>
-              <Button variant="outline" size="sm" className="hover-scale">
-                📞 (11) 1234-5678
-              </Button>
+          {/* Clean Navigation */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-4">
+            <Button 
+              onClick={() => navigate(-1)} 
+              variant="ghost" 
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Voltar
+            </Button>
+            
+            <div className="hidden sm:block w-px h-4 bg-border"></div>
+            
+            <Button asChild variant="default" size="sm">
+              <Link to="/dashboard">
+                <Home className="w-4 h-4 mr-1" />
+                Dashboard
+              </Link>
+            </Button>
+            
+            <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Link to="/configuracao">
+                <Settings className="w-4 h-4 mr-1" />
+                Configurações
+              </Link>
+            </Button>
+          </div>
+
+          {/* Simplified Popular Pages */}
+          <div className="pt-12 border-t border-border/40">
+            <h3 className="text-sm font-medium text-muted-foreground mb-6 uppercase tracking-wide">
+              Páginas mais acessadas
+            </h3>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
+              {popularPages.map((page) => (
+                <Link 
+                  key={page.path}
+                  to={page.path}
+                  className="group flex flex-col items-center p-4 rounded-lg hover:bg-muted/30 transition-all duration-200"
+                >
+                  <page.icon className={`w-6 h-6 ${page.color} mb-2 group-hover:scale-105 transition-transform`} />
+                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                    {page.title}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-0.5 text-center">
+                    {page.description}
+                  </span>
+                </Link>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Footer */}
-        <div className="text-sm text-muted-foreground animate-fade-in">
-          <p>
-            © 2024 Sistema ESG. Desenvolvido com ❤️ para sustentabilidade.
-          </p>
         </div>
       </div>
     </div>
