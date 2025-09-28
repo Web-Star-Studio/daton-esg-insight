@@ -183,12 +183,15 @@ export function UnifiedHelpCenter({ trigger }: UnifiedHelpCenterProps) {
         )}
       </DialogTrigger>
       
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden" aria-describedby="help-center-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="w-5 h-5" />
             Central de Ajuda e Tutoriais
           </DialogTitle>
+          <p id="help-center-description" className="text-sm text-muted-foreground">
+            Acesse tutoriais, documentação e suporte para usar a plataforma
+          </p>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">

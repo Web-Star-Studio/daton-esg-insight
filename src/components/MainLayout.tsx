@@ -8,6 +8,7 @@ import { InteractiveTour } from "@/components/tutorial/InteractiveTour"
 import { TutorialAssistant } from "@/components/tutorial/TutorialAssistant"
 import { UnifiedHelpCenter } from "@/components/tutorial/UnifiedHelpCenter"
 import { OnboardingMain } from "@/components/onboarding/OnboardingMain"
+import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -20,7 +21,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   if (shouldShowOnboarding) {
     return (
       <TutorialProvider>
-        <OnboardingMain />
+        <CleanOnboardingMain />
       </TutorialProvider>
     );
   }

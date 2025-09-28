@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { OnboardingMain } from '@/components/onboarding/OnboardingMain';
+import { CleanOnboardingMain } from '@/components/onboarding/CleanOnboardingMain';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function OnboardingRoute() {
@@ -21,5 +21,5 @@ export function OnboardingRoute() {
     return <Navigate to="/" replace />;
   }
 
-  return <OnboardingMain />;
+  return <CleanOnboardingMain />;
 }
