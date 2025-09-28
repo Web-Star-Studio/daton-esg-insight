@@ -1,74 +1,307 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Shield, Recycle, Leaf, Brain, FileText, TrendingUp, Database, Zap } from "lucide-react";
+import { 
+  BarChart3, Shield, Recycle, Leaf, Brain, FileText, TrendingUp, Database, Zap,
+  Users, Target, Award, Building2, CheckCircle2, Calendar, Clock,
+  Search, Upload, Settings, Map, Briefcase, TreePine, Gauge, GraduationCap,
+  UserCheck, BookOpen, Clipboard, AlertTriangle, Activity
+} from "lucide-react";
 import datonLogo from "@/assets/daton-logo-header.png";
 
 const Funcionalidades = () => {
-  const features = [
+  const featureCategories = [
     {
-      icon: BarChart3,
-      title: "Gestão de Emissões GEE",
-      description: "Monitore e controle suas emissões de gases de efeito estufa com precisão científica",
-      items: [
-        "Cálculo automático por escopos 1, 2 e 3",
-        "Monitoramento em tempo real",
-        "Alertas de desvio de metas",
-        "Comparação com benchmarks setoriais"
+      category: "ESG & Sustentabilidade",
+      description: "Módulos essenciais para gestão ESG completa e sustentabilidade corporativa",
+      features: [
+        {
+          icon: BarChart3,
+          title: "Gestão de Emissões GEE",
+          description: "Monitore e controle suas emissões de gases de efeito estufa com precisão científica",
+          items: [
+            "Cálculo automático por escopos 1, 2 e 3",
+            "Fatores de emissão atualizados",
+            "Monitoramento em tempo real",
+            "Relatórios de inventário GEE"
+          ]
+        },
+        {
+          icon: Shield,
+          title: "Licenciamento Ambiental",
+          description: "Mantenha conformidade regulatória com acompanhamento inteligente de licenças",
+          items: [
+            "Controle de prazos e renovações",
+            "Alertas automáticas de vencimento",
+            "Histórico completo de documentos",
+            "Dashboard de conformidade"
+          ]
+        },
+        {
+          icon: Recycle,
+          title: "Gestão de Resíduos",
+          description: "Otimize sua gestão de resíduos com rastreamento completo e economia circular",
+          items: [
+            "Rastreamento por tipo e destino",
+            "Indicadores de circularidade",
+            "Controle de fornecedores",
+            "Relatórios de destinação"
+          ]
+        },
+        {
+          icon: Leaf,
+          title: "Projetos de Carbono",
+          description: "Gerencie projetos de compensação e créditos de carbono com transparência",
+          items: [
+            "Portfólio de projetos",
+            "Validação de créditos",
+            "ROI ambiental",
+            "Certificações internacionais"
+          ]
+        },
+        {
+          icon: Target,
+          title: "Metas de Sustentabilidade",
+          description: "Defina e acompanhe metas ESG alinhadas aos ODS",
+          items: [
+            "Metas SMART definidas",
+            "Acompanhamento de progresso",
+            "Alinhamento com ODS",
+            "Relatórios de performance"
+          ]
+        },
+        {
+          icon: Users,
+          title: "Gestão de Stakeholders",
+          description: "Gerencie relacionamento com partes interessadas",
+          items: [
+            "Mapeamento de stakeholders",
+            "Matriz de materialidade",
+            "Planos de engajamento",
+            "Feedback e consultas"
+          ]
+        }
       ]
     },
     {
-      icon: Shield,
-      title: "Licenciamento Ambiental",
-      description: "Mantenha conformidade regulatória com acompanhamento inteligente de licenças",
-      items: [
-        "Controle de prazos e renovações",
-        "Alertas automáticas de vencimento",
-        "Histórico completo de documentos",
-        "Dashboard de conformidade"
+      category: "Qualidade & Processos",
+      description: "Sistema de gestão da qualidade e melhoria contínua dos processos",
+      features: [
+        {
+          icon: Award,
+          title: "Sistema de Qualidade",
+          description: "SGQ completo com conformidade ISO 9001, 14001, 45001 e outras normas",
+          items: [
+            "Gestão de documentos ISO",
+            "Controle de processos",
+            "Auditorias internas",
+            "Melhoria contínua"
+          ]
+        },
+        {
+          icon: AlertTriangle,
+          title: "Gestão de Riscos",
+          description: "Identifique, avalie e trate riscos operacionais e estratégicos",
+          items: [
+            "Matriz de riscos",
+            "Avaliação quantitativa",
+            "Planos de tratamento",
+            "Monitoramento contínuo"
+          ]
+        },
+        {
+          icon: CheckCircle2,
+          title: "Não Conformidades",
+          description: "Controle completo de não conformidades e ações corretivas",
+          items: [
+            "Registro e classificação",
+            "Workflow de aprovação",
+            "Planos de ação",
+            "Análise de tendências"
+          ]
+        },
+        {
+          icon: Search,
+          title: "Auditorias",
+          description: "Planeje e execute auditorias internas com eficiência",
+          items: [
+            "Cronograma de auditorias",
+            "Checklists personalizados",
+            "Relatórios automáticos",
+            "Follow-up de achados"
+          ]
+        },
+        {
+          icon: Activity,
+          title: "Indicadores de Performance",
+          description: "Monitore KPIs de qualidade e desempenho operacional",
+          items: [
+            "Dashboards em tempo real",
+            "Metas e limites de controle",
+            "Alertas automáticos",
+            "Análise estatística"
+          ]
+        }
       ]
     },
     {
-      icon: Recycle,
-      title: "Gestão de Resíduos",
-      description: "Otimize sua gestão de resíduos com rastreamento completo e insights de economia circular",
-      items: [
-        "Rastreamento por tipo e destino",
-        "Indicadores de circularidade",
-        "Controle de fornecedores",
-        "Relatórios de destinação"
+      category: "Pessoas & RH",
+      description: "Gestão de pessoas e desenvolvimento organizacional completo",
+      features: [
+        {
+          icon: Users,
+          title: "Gestão de Desempenho",
+          description: "Avalie e desenvolva colaboradores com ciclos estruturados",
+          items: [
+            "Ciclos de avaliação 360°",
+            "Matriz de competências",
+            "PDI personalizado",
+            "Feedback contínuo"
+          ]
+        },
+        {
+          icon: GraduationCap,
+          title: "Treinamentos",
+          description: "Capacite sua equipe com trilhas de aprendizado personalizadas",
+          items: [
+            "Trilhas de desenvolvimento",
+            "Controle de certificações",
+            "ROI de treinamentos",
+            "Avaliações de eficácia"
+          ]
+        },
+        {
+          icon: TrendingUp,
+          title: "Planos de Carreira",
+          description: "Estruture o crescimento profissional dos colaboradores",
+          items: [
+            "Mapeamento de carreiras",
+            "Sucessão de cargos",
+            "Gaps de competência",
+            "Planos de desenvolvimento"
+          ]
+        },
+        {
+          icon: UserCheck,
+          title: "Recrutamento & Seleção",
+          description: "Gerencie processos seletivos de forma eficiente",
+          items: [
+            "Banco de talentos",
+            "Entrevistas estruturadas",
+            "Avaliação de fit cultural",
+            "Onboarding automatizado"
+          ]
+        },
+        {
+          icon: Clock,
+          title: "Controle de Ponto",
+          description: "Monitore jornada de trabalho e horas extras",
+          items: [
+            "Registro biométrico/digital",
+            "Controle de absenteísmo",
+            "Relatórios de produtividade",
+            "Integração com folha"
+          ]
+        }
       ]
     },
     {
-      icon: Leaf,
-      title: "Projetos de Carbono",
-      description: "Gerencie projetos de compensação e créditos de carbono com transparência total",
-      items: [
-        "Portfólio de projetos",
-        "Validação de créditos",
-        "ROI ambiental",
-        "Certificações internacionais"
+      category: "Dados & Documentos",
+      description: "Gestão inteligente de informações e documentos corporativos",
+      features: [
+        {
+          icon: FileText,
+          title: "Gestão Documental",
+          description: "Organize e controle documentos com versionamento inteligente",
+          items: [
+            "Controle de versões",
+            "Workflow de aprovações",
+            "Pesquisa avançada",
+            "Backup automático"
+          ]
+        },
+        {
+          icon: Upload,
+          title: "Formulários Dinâmicos",
+          description: "Crie formulários personalizados para coleta de dados",
+          items: [
+            "Designer visual",
+            "Validações automáticas",
+            "Integração com base de dados",
+            "Relatórios customizados"
+          ]
+        },
+        {
+          icon: Brain,
+          title: "IA para Dados",
+          description: "Extraia informações automaticamente de documentos",
+          items: [
+            "OCR inteligente",
+            "Extração de dados",
+            "Classificação automática",
+            "Insights preditivos"
+          ]
+        },
+        {
+          icon: Clipboard,
+          title: "Compliance",
+          description: "Assegure conformidade com regulamentações",
+          items: [
+            "Checklist de conformidade",
+            "Monitoramento regulatório",
+            "Alertas de mudanças",
+            "Relatórios de auditoria"
+          ]
+        }
       ]
     },
     {
-      icon: Brain,
-      title: "Inteligência Artificial",
-      description: "IA avançada para identificar oportunidades de melhoria e otimizar performance ESG",
-      items: [
-        "Insights preditivos",
-        "Recomendações personalizadas",
-        "Análise de cenários",
-        "Detecção de padrões"
-      ]
-    },
-    {
-      icon: FileText,
-      title: "Relatórios Automáticos",
-      description: "Gere relatórios ESG em conformidade com padrões internacionais",
-      items: [
-        "Conformidade GRI, CDP, SASB",
-        "Geração automática",
-        "Templates personalizáveis",
-        "Exportação em múltiplos formatos"
+      category: "Estratégia & Governança",
+      description: "Ferramentas para gestão estratégica e governança corporativa",
+      features: [
+        {
+          icon: Target,
+          title: "Balanced Scorecard",
+          description: "Implemente BSC para alinhamento estratégico organizacional",
+          items: [
+            "4 perspectivas do BSC",
+            "Mapas estratégicos",
+            "Indicadores balanceados",
+            "Cascateamento de metas"
+          ]
+        },
+        {
+          icon: TrendingUp,
+          title: "OKRs",
+          description: "Gerencie objetivos e resultados-chave da organização",
+          items: [
+            "Objetivos SMART",
+            "Key Results mensuráveis",
+            "Check-ins regulares",
+            "Alinhamento estratégico"
+          ]
+        },
+        {
+          icon: Building2,
+          title: "Governança Corporativa",
+          description: "Estruture conselhos e comitês de governança",
+          items: [
+            "Gestão de conselhos",
+            "Atas e deliberações",
+            "Políticas corporativas",
+            "Compliance governance"
+          ]
+        },
+        {
+          icon: Briefcase,
+          title: "Gestão de Projetos",
+          description: "Gerencie projetos estratégicos e iniciativas",
+          items: [
+            "Cronogramas detalhados",
+            "Controle de recursos",
+            "Relatórios de progresso",
+            "Gestão de riscos"
+          ]
+        }
       ]
     }
   ];
@@ -135,53 +368,95 @@ const Funcionalidades = () => {
         </div>
       </section>
 
-      {/* Features Grid */}
+      {/* Features Categories */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {features.map((feature, index) => (
-              <div key={index} className="bg-card rounded-lg p-8 shadow-sm border">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <feature.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                    <p className="text-muted-foreground mb-4">{feature.description}</p>
-                    <ul className="space-y-2">
-                      {feature.items.map((item, itemIndex) => (
-                        <li key={itemIndex} className="flex items-center space-x-2 text-sm">
-                          <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+          {featureCategories.map((category, categoryIndex) => (
+            <div key={categoryIndex} className="mb-20">
+              {/* Category Header */}
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">{category.category}</h2>
+                <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                  {category.description}
+                </p>
               </div>
-            ))}
-          </div>
+
+              {/* Features Grid */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+                {category.features.map((feature, featureIndex) => (
+                  <div key={featureIndex} className="bg-card rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow">
+                    <div className="flex items-start space-x-4">
+                      <div className="bg-primary/10 p-3 rounded-lg flex-shrink-0">
+                        <feature.icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                        <p className="text-muted-foreground text-sm mb-3">{feature.description}</p>
+                        <ul className="space-y-1.5">
+                          {feature.items.map((item, itemIndex) => (
+                            <li key={itemIndex} className="flex items-start space-x-2 text-xs">
+                              <div className="w-1 h-1 bg-primary rounded-full flex-shrink-0 mt-1.5" />
+                              <span className="leading-relaxed">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Separator */}
+              {categoryIndex < featureCategories.length - 1 && (
+                <div className="mt-16 border-t border-border/50" />
+              )}
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Integration Section */}
+      {/* Key Benefits Section */}
       <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Integração Total</h2>
-          <p className="text-muted-foreground mb-12">
-            Conecte-se facilmente com seus sistemas existentes
-          </p>
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Por que escolher o Daton?</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Mais de 30 módulos integrados em uma única plataforma para transformar sua gestão ESG
+            </p>
+          </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {integrations.map((integration, index) => (
-              <div key={index} className="text-center">
-                <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <integration.icon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{integration.title}</h3>
-                <p className="text-sm text-muted-foreground">{integration.description}</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+            <div className="text-center">
+              <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Brain className="h-8 w-8 text-primary" />
               </div>
-            ))}
+              <h3 className="text-lg font-semibold mb-2">IA Integrada</h3>
+              <p className="text-sm text-muted-foreground">Insights automáticos e recomendações personalizadas</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Database className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Dados Centralizados</h3>
+              <p className="text-sm text-muted-foreground">Todas as informações em um só lugar</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Relatórios Automáticos</h3>
+              <p className="text-sm text-muted-foreground">GRI, SASB, CDP e outros padrões</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-primary/10 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Zap className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Integração Fácil</h3>
+              <p className="text-sm text-muted-foreground">APIs e conectores para seus sistemas</p>
+            </div>
           </div>
         </div>
       </section>
