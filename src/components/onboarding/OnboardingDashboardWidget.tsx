@@ -30,7 +30,7 @@ export function OnboardingDashboardWidget({
   const isComplete = completionPercentage === 100;
 
   const handleStartOnboarding = () => {
-    navigate('/');
+    navigate('/onboarding');
   };
 
   const handleSkipOnboarding = async () => {

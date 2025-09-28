@@ -114,7 +114,7 @@ export function ModuleSelectionStep({ selectedModules, onModulesChange, onNext, 
 
   useEffect(() => {
     onModulesChange(localSelection);
-  }, [localSelection, onModulesChange]);
+  }, [localSelection]);
 
   const toggleModule = (moduleId: string) => {
     setLocalSelection(prev => 
