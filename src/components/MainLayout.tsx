@@ -18,7 +18,11 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   // Show onboarding flow for first-time users
   if (shouldShowOnboarding) {
-    return <OnboardingMain />;
+    return (
+      <TutorialProvider>
+        <OnboardingMain />
+      </TutorialProvider>
+    );
   }
 
   return (
