@@ -28,7 +28,7 @@ function OnboardingContent() {
   const stepTitles = [
     'Boas-vindas',
     'Seleção de Módulos',
-    'Criação de Dados',
+    'Atalhos Guiados',
     'Finalização'
   ];
 

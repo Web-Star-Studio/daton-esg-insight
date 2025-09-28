@@ -118,8 +118,8 @@ const ACHIEVEMENTS = [
   },
   {
     icon: <Zap className="h-5 w-5 text-blue-600" />,
-    title: 'Dados Reais Criados',
-    description: 'Registros funcionais em cada módulo'
+    title: 'Atalhos Configurados',
+    description: 'Acesso direto aos módulos selecionados'
   },
   {
     icon: <TrendingUp className="h-5 w-5 text-green-600" />,
@@ -183,8 +183,8 @@ export function EnhancedCompletionStep({
             </CardTitle>
             
             <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Sua plataforma Daton está <strong>100% configurada e operacional</strong>! 
-              Você criou seus primeiros dados reais em cada módulo e já pode começar a extrair insights valiosos.
+              Sua plataforma Daton está <strong>100% configurada e pronta para uso</strong>! 
+              Você tem acesso direto aos módulos selecionados e pode começar a trabalhar imediatamente.
             </p>
 
             {/* Achievement Badges */}
@@ -211,7 +211,7 @@ export function EnhancedCompletionStep({
             </CardTitle>
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground">
-                Módulos configurados com dados reais prontos para uso
+                Módulos selecionados com acesso direto configurado
               </p>
               <Badge className="bg-green-600 hover:bg-green-700 px-4 py-2">
                 <Clock className="w-4 h-4 mr-1" />

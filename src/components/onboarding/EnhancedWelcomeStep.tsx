@@ -18,9 +18,9 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
     },
     {
       icon: <BarChart className="h-5 w-5 text-green-600" />,
-      title: "Dados Reais Desde o Início",
-      description: "Criamos seus primeiros registros reais em cada módulo durante o setup",
-      highlight: "Pronto para usar"
+      title: "Acesso Direto aos Módulos",
+      description: "Navegue diretamente para cada funcionalidade com orientações personalizadas",
+      highlight: "Sem complexidade"
     },
     {
       icon: <CheckCircle className="h-5 w-5 text-purple-600" />,
@@ -57,8 +57,8 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
                 Bem-vindo ao Daton!
               </CardTitle>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Sua plataforma de gestão ESG e sustentabilidade está quase pronta. 
-                Vamos configurar os módulos essenciais e criar seus <strong>primeiros dados reais</strong> em apenas alguns minutos.
+                Sua plataforma de gestão ESG e sustentabilidade está pronta. 
+                Vamos selecionar os módulos essenciais e criar <strong>atalhos personalizados</strong> para você começar rapidamente.
               </p>
             </div>
           </CardHeader>
@@ -118,7 +118,7 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
                 <div className="flex-1">
                   <h4 className="font-medium text-blue-900">Tempo Estimado</h4>
                   <p className="text-sm text-blue-700">
-                    <strong>5-8 minutos</strong> para configuração completa. Seu progresso é salvo automaticamente.
+                    <strong>3-5 minutos</strong> para configuração completa. Seu progresso é salvo automaticamente.
                   </p>
                 </div>
                 <Badge className="bg-blue-600 hover:bg-blue-700">
