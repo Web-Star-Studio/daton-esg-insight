@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { OnboardingFlowProvider, useOnboardingFlow } from '@/contexts/OnboardingFlowContext';
 import { useTutorial } from '@/contexts/TutorialContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { WelcomeStep } from './WelcomeStep';
-import { ModuleSelectionStep } from './ModuleSelectionStep';
-import { GuidedDataCreationStep } from './GuidedDataCreationStep';
-import { CompletionStep } from './CompletionStep';
+import { EnhancedWelcomeStep } from './EnhancedWelcomeStep';
+import { EnhancedModuleSelectionStep } from './EnhancedModuleSelectionStep';
+import { EnhancedDataCreationStep } from './EnhancedDataCreationStep';
+import { EnhancedCompletionStep } from './EnhancedCompletionStep';
 import { OnboardingProgress } from './OnboardingProgress';
 
 function OnboardingContent() {
