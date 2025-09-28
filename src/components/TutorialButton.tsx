@@ -41,7 +41,7 @@ const AVAILABLE_TOURS = [
 ];
 
 export function TutorialButton() {
-  const { startTour, startOnboarding, showHelpCenter } = useTutorial();
+  const { startTour, restartOnboarding, showHelpCenter } = useTutorial();
 
   return (
     <DropdownMenu>
@@ -54,7 +54,7 @@ export function TutorialButton() {
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>Tutoriais e Ajuda</DropdownMenuLabel>
         
-        <DropdownMenuItem onClick={startOnboarding}>
+        <DropdownMenuItem onClick={restartOnboarding}>
           <RefreshCw className="w-4 h-4 mr-2" />
           Refazer Onboarding
         </DropdownMenuItem>

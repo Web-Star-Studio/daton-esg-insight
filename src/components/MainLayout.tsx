@@ -4,9 +4,9 @@ import { AppHeader } from "@/components/AppHeader"
 import { EnhancedAIAssistant } from "@/components/EnhancedAIAssistant"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TutorialProvider } from "@/contexts/TutorialContext"
-import { OnboardingWizard } from "@/components/tutorial/OnboardingWizard"
 import { InteractiveTour } from "@/components/tutorial/InteractiveTour"
 import { TutorialAssistant } from "@/components/tutorial/TutorialAssistant"
+import { UnifiedHelpCenter } from "@/components/tutorial/UnifiedHelpCenter"
 import { OnboardingMain } from "@/components/onboarding/OnboardingMain"
 
 interface MainLayoutProps {
@@ -43,7 +43,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         </div>
         
         {/* Tutorial Components */}
-        <OnboardingWizard />
+        <UnifiedHelpCenter />
         <InteractiveTour />
         <TutorialAssistant />
       </SidebarProvider>

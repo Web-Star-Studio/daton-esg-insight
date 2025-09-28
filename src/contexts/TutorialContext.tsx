@@ -24,8 +24,6 @@ interface TutorialContextType {
   userProfile: 'iniciante' | 'esg' | 'qualidade' | 'rh' | 'analista';
   
   // Actions
-  startOnboarding: () => void;
-  completeOnboarding: () => void;
   startTour: (tourId: string) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -33,26 +31,18 @@ interface TutorialContextType {
   markStepComplete: (moduleId: string, stepId: string) => void;
   setUserProfile: (profile: TutorialContextType['userProfile']) => void;
   showHelpCenter: () => void;
+  restartOnboarding: () => void;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
-  const [isOnboardingActive, setIsOnboardingActive] = useState(false);
   const [currentTour, setCurrentTour] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState<TutorialProgress[]>([]);
   const [userProfile, setUserProfile] = useState<TutorialContextType['userProfile']>('iniciante');
-  const [isFirstAccess, setIsFirstAccess] = useState(false);
 
   useEffect(() => {
-    // Verificar se é primeiro acesso
-    const hasVisited = localStorage.getItem('daton_tutorial_completed');
-    if (!hasVisited) {
-      setIsFirstAccess(true);
-      setIsOnboardingActive(true);
-    }
-
     // Carregar progresso do tutorial do localStorage
     const savedProgress = localStorage.getItem('daton_tutorial_progress');
     if (savedProgress) {
@@ -65,14 +55,14 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const startOnboarding = () => {
-    setIsOnboardingActive(true);
-    setCurrentStep(0);
-  };
-
-  const completeOnboarding = () => {
-    setIsOnboardingActive(false);
-    localStorage.setItem('daton_tutorial_completed', 'true');
+  const restartOnboarding = () => {
+    // Limpar localStorage e reiniciar onboarding via AuthContext
+    localStorage.removeItem('daton_tutorial_completed');
+    localStorage.removeItem('daton_tutorial_progress');
+    localStorage.removeItem('daton_user_profile');
+    
+    console.log('Tutorial reiniciado - redirecionando para onboarding');
+    window.location.reload(); // Força reload para reiniciar o fluxo
   };
 
   const startTour = (tourId: string) => {
@@ -127,20 +117,19 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value: TutorialContextType = {
-    isOnboardingActive,
+    isOnboardingActive: false, // Removido - gerenciado pelo AuthContext
     currentTour,
     currentStep,
     tutorialProgress,
     userProfile,
-    startOnboarding,
-    completeOnboarding,
     startTour,
     nextStep,
     prevStep,
     completeTour,
     markStepComplete,
     setUserProfile: handleSetUserProfile,
-    showHelpCenter
+    showHelpCenter,
+    restartOnboarding
   };
 
   return (
