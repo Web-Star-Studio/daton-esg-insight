@@ -175,7 +175,7 @@ const RECENT_ACTIVITIES: RecentActivity[] = [
   }
 ];
 
-export default Dashboard;
+export default function Dashboard() {
   const { user } = useAuth();
   const [selectedTimeframe, setSelectedTimeframe] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
