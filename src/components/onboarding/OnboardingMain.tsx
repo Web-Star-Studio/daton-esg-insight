@@ -17,6 +17,9 @@ import { SmartGamificationSystem } from './SmartGamificationSystem';
 import { IntelligentAIAssistant } from './IntelligentAIAssistant';
 import { AdvancedPersonalizationEngine } from './AdvancedPersonalizationEngine';
 import { RealTimeFeedbackSystem } from './RealTimeFeedbackSystem';
+import { PredictiveAnalyticsEngine } from './PredictiveAnalyticsEngine';
+import { InteractiveTutorialSystem } from './InteractiveTutorialSystem';
+import { SmartContentGenerator } from './SmartContentGenerator';
 
 function OnboardingContent() {
   const navigate = useNavigate();
@@ -230,6 +233,61 @@ function OnboardingContent() {
                 onSuggestionApplied={(suggestion) => {
                   console.log('Suggestion applied:', suggestion);
                   setUserActions(prev => [...prev, `suggestion_${suggestion.id}`]);
+                }}
+              />
+
+              <PredictiveAnalyticsEngine
+                currentStep={state.currentStep}
+                totalSteps={state.totalSteps}
+                selectedModules={state.selectedModules}
+                companyProfile={companyProfile}
+                userBehavior={{
+                  sessionDuration: Date.now() - onboardingStartTime,
+                  clickPatterns: userActions,
+                  hesitationPoints: state.currentStep === 1 && state.selectedModules.length === 0 ? [1] : [],
+                  backtrackingCount: userActions.filter(action => action.startsWith('prev_step')).length,
+                  helpRequests: userActions.filter(action => action.startsWith('help')).length,
+                  formCompletionRate: state.selectedModules.length > 0 ? 1 : 0.5,
+                  deviceType: 'desktop',
+                  timeOfDay: new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'
+                }}
+                onPredictionAction={(actionId, prediction) => {
+                  console.log('Prediction action:', actionId, prediction);
+                  setUserActions(prev => [...prev, `prediction_${actionId}`]);
+                }}
+              />
+
+              <InteractiveTutorialSystem
+                currentStep={state.currentStep}
+                selectedModules={state.selectedModules}
+                companyProfile={companyProfile}
+                userSkillLevel={companyProfile?.maturityLevel || 'intermediate'}
+                onTutorialComplete={(tutorialId, completionData) => {
+                  console.log('Tutorial completed:', tutorialId, completionData);
+                  setUserActions(prev => [...prev, `tutorial_completed_${tutorialId}`]);
+                }}
+                onStepComplete={(stepId, stepData) => {
+                  console.log('Tutorial step completed:', stepId, stepData);
+                  setUserActions(prev => [...prev, `tutorial_step_${stepId}`]);
+                }}
+              />
+
+              <SmartContentGenerator
+                currentStep={state.currentStep}
+                selectedModules={state.selectedModules}
+                companyProfile={companyProfile}
+                userBehavior={{
+                  preferredTone: 'friendly',
+                  engagementLevel: userActions.length > 10 ? 'high' : userActions.length > 5 ? 'medium' : 'low',
+                  experienceLevel: companyProfile?.maturityLevel || 'intermediate'
+                }}
+                onContentGenerated={(content) => {
+                  console.log('Content generated:', content);
+                  setUserActions(prev => [...prev, `content_generated_${content.type}`]);
+                }}
+                onContentApplied={(contentId) => {
+                  console.log('Content applied:', contentId);
+                  setUserActions(prev => [...prev, `content_applied_${contentId}`]);
                 }}
               />
             </>
