@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { authService, type AuthUser, type RegisterCompanyData } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
-import { useFirstLoginDetection } from '@/hooks/useFirstLoginDetection';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -23,13 +23,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
   
-  // Use the first login detection hook
-  const { 
-    shouldShowOnboarding, 
-    markOnboardingComplete,
-    refetch: refetchOnboardingStatus
-  } = useFirstLoginDetection();
+  // Check if user has completed onboarding
+  const checkOnboardingStatus = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('has_completed_onboarding')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return false;
+      }
+
+      const hasCompletedOnboarding = profile?.has_completed_onboarding ?? false;
+      const shouldShow = !hasCompletedOnboarding;
+      
+      setShouldShowOnboarding(shouldShow);
+      return shouldShow;
+    } catch (error) {
+      console.error('Error in onboarding check:', error);
+      setShouldShowOnboarding(false);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Configurar listener de mudanças de auth PRIMEIRO
@@ -45,6 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const userData = await authService.getCurrentUser();
               if (userData) {
                 setUser(userData);
+                // Check onboarding status after user data is loaded
+                await checkOnboardingStatus(userData.id);
               } else {
                 setUser(null);
               }
@@ -57,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 0);
         } else {
           setUser(null);
+          setShouldShowOnboarding(false);
           setIsLoading(false);
         }
       }
@@ -64,17 +87,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // ENTÃO verificar se já existe uma sessão
     console.log('AuthContext: Checking for existing session');
-    authService.getCurrentUser().then((userData) => {
+    authService.getCurrentUser().then(async (userData) => {
       if (userData) {
         console.log('AuthContext: Initial user data found:', userData.full_name);
+        setUser(userData);
+        // Check onboarding status for initial load
+        await checkOnboardingStatus(userData.id);
       } else {
         console.log('AuthContext: No initial user data found');
+        setUser(userData);
+        setShouldShowOnboarding(false);
       }
-      setUser(userData);
       setIsLoading(false);
     }).catch((error) => {
       console.error('AuthContext: Error checking initial session:', error);
       setUser(null);
+      setShouldShowOnboarding(false);
       setIsLoading(false);
     });
 
@@ -191,8 +219,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const skipOnboarding = async () => {
+    if (!user?.id) return;
+    
     try {
-      await markOnboardingComplete();
+      await supabase
+        .from('profiles')
+        .update({ has_completed_onboarding: true })
+        .eq('id', user.id);
+
+      setShouldShowOnboarding(false);
+      
       toast({
         title: "Onboarding ignorado",
         description: "Você pode acessar o guia de configuração a qualquer momento pelo menu lateral."
