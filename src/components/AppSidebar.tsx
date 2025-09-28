@@ -24,6 +24,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { NavigationTooltip } from "@/components/navigation/NavigationTooltip"
 import { useFavorites } from "@/hooks/useFavorites"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 import datonLogo from "@/assets/daton-logo-header.png"
 
 // Importações de ícones organizadas por categoria
@@ -171,6 +173,8 @@ export function AppSidebar() {
   const location = useLocation()
   const { state } = useSidebar()
   const collapsed = state === "collapsed"
+  const { user, restartOnboarding } = useAuth()
+  const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   
@@ -330,12 +334,10 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <button
-                    onClick={() => {
-                      // Navigate to onboarding or show restart dialog
-                      const shouldRestart = confirm('Deseja reiniciar o guia de configuração inicial?');
+                    onClick={async () => {
+                      const shouldRestart = confirm('Deseja reiniciar o guia de configuração inicial? Isso permitirá que você passe novamente pelo processo de setup.');
                       if (shouldRestart) {
-                        localStorage.removeItem('daton_onboarding_progress');
-                        window.location.href = '/';
+                        await restartOnboarding();
                       }
                     }}
                     className="flex items-center gap-2 w-full text-left"

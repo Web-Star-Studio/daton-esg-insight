@@ -14,6 +14,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   shouldShowOnboarding: boolean;
   skipOnboarding: () => Promise<void>;
+  restartOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,6 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShouldShowOnboarding(false);
       return false;
     }
+  };
+
+  const forceShowOnboarding = () => {
+    setShouldShowOnboarding(true);
   };
 
   useEffect(() => {
@@ -218,6 +223,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const restartOnboarding = async () => {
+    try {
+      // Reset onboarding status in database
+      if (user?.id) {
+        await supabase
+          .from('profiles')
+          .update({ has_completed_onboarding: false })
+          .eq('id', user.id);
+      }
+      
+      // Clear local storage
+      localStorage.removeItem('daton_onboarding_progress');
+      localStorage.removeItem('daton_tutorial_completed');
+      localStorage.removeItem('daton_primeiros_passos_dismissed');
+      
+      // Force show onboarding
+      forceShowOnboarding();
+      
+      toast({
+        title: "Guia reiniciado",
+        description: "O guia de configuração foi reiniciado com sucesso."
+      });
+      
+    } catch (error) {
+      console.error('Error restarting onboarding:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível reiniciar o guia de configuração.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const skipOnboarding = async () => {
     if (!user?.id) return;
     
@@ -253,6 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser,
     shouldShowOnboarding,
     skipOnboarding,
+    restartOnboarding,
   };
 
   return (
