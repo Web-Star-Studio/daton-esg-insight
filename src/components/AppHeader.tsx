@@ -1,9 +1,6 @@
 import { User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
-import { SmartNotificationCenter } from "@/components/SmartNotificationCenter"
-import { EnhancedGlobalSearch } from "@/components/navigation/EnhancedGlobalSearch"
 import { EnhancedSearchBar } from "@/components/EnhancedSearchBar"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
@@ -28,7 +25,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { UnifiedHelpCenter } from "@/components/tutorial/UnifiedHelpCenter"
 
 export function AppHeader() {
   const { user, logout } = useAuth()
@@ -79,8 +75,6 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-3" data-notifications>
-        <UnifiedHelpCenter />
-        <SmartNotificationCenter />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

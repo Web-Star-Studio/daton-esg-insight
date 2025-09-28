@@ -1,19 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext"
 import { AppSidebar } from "@/components/AppSidebar"
 import { AppHeader } from "@/components/AppHeader"
-import { EnhancedAIAssistant } from "@/components/EnhancedAIAssistant"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TutorialProvider } from "@/contexts/TutorialContext"
-import { InteractiveTour } from "@/components/tutorial/InteractiveTour"
-import { TutorialAssistant } from "@/components/tutorial/TutorialAssistant"
-import { UnifiedHelpCenter } from "@/components/tutorial/UnifiedHelpCenter"
-import { IntuitiveTutorialSystem } from "@/components/tutorial/IntuitiveTutorialSystem"
-import { SmartTutorialFloater } from "@/components/tutorial/SmartTutorialFloater"
-import { ContextualHints } from "@/components/tutorial/ContextualHints"
-import { OnboardingMain } from "@/components/onboarding/OnboardingMain"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
-import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor"
-import { AccessibilityHelper } from "@/components/accessibility/AccessibilityHelper"
+import { UnifiedToolHub } from "@/components/tools/UnifiedToolHub"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -44,24 +35,10 @@ export function MainLayout({ children }: MainLayoutProps) {
               {children}
             </main>
           </div>
-          
-          <EnhancedAIAssistant />
-          <PerformanceMonitor />
-          <AccessibilityHelper />
         </div>
         
-        {/* Tutorial Components */}
-        <UnifiedHelpCenter />
-        <InteractiveTour />
-        <TutorialAssistant />
-        <IntuitiveTutorialSystem 
-          isActive={false} 
-          tutorialId="dashboard-intro" 
-          onComplete={() => {}} 
-          onClose={() => {}} 
-        />
-        <SmartTutorialFloater />
-        <ContextualHints />
+        {/* Unified Tool Hub - Single entry point for all tools */}
+        <UnifiedToolHub />
       </SidebarProvider>
     </TutorialProvider>
   )
