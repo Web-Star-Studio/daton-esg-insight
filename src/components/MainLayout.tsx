@@ -7,12 +7,20 @@ import { TutorialProvider } from "@/contexts/TutorialContext"
 import { OnboardingWizard } from "@/components/tutorial/OnboardingWizard"
 import { InteractiveTour } from "@/components/tutorial/InteractiveTour"
 import { TutorialAssistant } from "@/components/tutorial/TutorialAssistant"
+import { OnboardingMain } from "@/components/onboarding/OnboardingMain"
 
 interface MainLayoutProps {
   children: React.ReactNode
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const { shouldShowOnboarding } = useAuth();
+
+  // Show onboarding flow for first-time users
+  if (shouldShowOnboarding) {
+    return <OnboardingMain />;
+  }
+
   return (
     <TutorialProvider>
       <SidebarProvider defaultOpen={true}>

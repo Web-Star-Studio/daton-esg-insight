@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (data: RegisterCompanyData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  shouldShowOnboarding: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
 
   useEffect(() => {
     // Configurar listener de mudanças de auth PRIMEIRO
@@ -188,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     register,
     logout,
     refreshUser,
+    shouldShowOnboarding,
   };
 
   return (

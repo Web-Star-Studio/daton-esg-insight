@@ -7644,6 +7644,56 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_selections: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          id: string
+          is_completed: boolean
+          module_configurations: Json
+          selected_modules: string[]
+          total_steps: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          is_completed?: boolean
+          module_configurations?: Json
+          selected_modules?: string[]
+          total_steps?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          is_completed?: boolean
+          module_configurations?: Json
+          selected_modules?: string[]
+          total_steps?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_selections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opportunities: {
         Row: {
           category: string
@@ -8576,6 +8626,7 @@ export type Database = {
           company_id: string
           created_at: string
           full_name: string
+          has_completed_onboarding: boolean | null
           id: string
           job_title: string | null
           role: Database["public"]["Enums"]["user_role_enum"]
@@ -8584,6 +8635,7 @@ export type Database = {
           company_id: string
           created_at?: string
           full_name: string
+          has_completed_onboarding?: boolean | null
           id: string
           job_title?: string | null
           role?: Database["public"]["Enums"]["user_role_enum"]
@@ -8592,6 +8644,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           full_name?: string
+          has_completed_onboarding?: boolean | null
           id?: string
           job_title?: string | null
           role?: Database["public"]["Enums"]["user_role_enum"]
