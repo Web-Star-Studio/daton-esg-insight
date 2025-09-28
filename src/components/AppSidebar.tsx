@@ -102,7 +102,8 @@ const menuSections: MenuSection[] = [
 export function AppSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { collapsed } = useSidebar()
+  const { state } = useSidebar()
+  const collapsed = state === "collapsed"
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   
   const currentPath = location.pathname

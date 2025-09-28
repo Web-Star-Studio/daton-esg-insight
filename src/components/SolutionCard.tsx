@@ -103,7 +103,12 @@ export function SolutionCard({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite(solution.id);
+                      toggleFavorite({
+                        id: solution.id,
+                        title: solution.title,
+                        path: `/marketplace/${solution.id}`,
+                        icon: 'Heart'
+                      });
                     }}
                     disabled={isUpdating}
                     className="p-2"
