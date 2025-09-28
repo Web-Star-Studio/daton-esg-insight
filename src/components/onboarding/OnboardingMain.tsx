@@ -13,12 +13,18 @@ import { SmartOnboardingOrchestrator } from './SmartOnboardingOrchestrator';
 import { AdaptiveGuidanceSystem } from './AdaptiveGuidanceSystem';
 import { SmartValidationHelper } from './SmartValidationHelper';
 import { SmartNotificationCenter } from './SmartNotificationCenter';
+import { SmartGamificationSystem } from './SmartGamificationSystem';
+import { IntelligentAIAssistant } from './IntelligentAIAssistant';
+import { AdvancedPersonalizationEngine } from './AdvancedPersonalizationEngine';
+import { RealTimeFeedbackSystem } from './RealTimeFeedbackSystem';
 
 function OnboardingContent() {
   const navigate = useNavigate();
   const { startTour } = useTutorial();
   const { skipOnboarding } = useAuth();
   const [companyProfile, setCompanyProfile] = useState<any>(null);
+  const [userActions, setUserActions] = useState<string[]>([]);
+  const [onboardingStartTime] = useState(Date.now());
   
   const {
     state,
@@ -43,7 +49,9 @@ function OnboardingContent() {
   const handleWelcomeNext = (profile?: any) => {
     if (profile) {
       setCompanyProfile(profile);
+      setUserActions(prev => [...prev, 'profile_completed']);
     }
+    setUserActions(prev => [...prev, 'welcome_completed']);
     nextStep();
   };
 
@@ -197,12 +205,68 @@ function OnboardingContent() {
                   }
                 }}
               />
+
+              <SmartGamificationSystem
+                currentStep={state.currentStep}
+                totalSteps={state.totalSteps}
+                selectedModulesCount={state.selectedModules.length}
+                timeSpent={Date.now() - onboardingStartTime}
+                userActions={userActions}
+                onAchievementUnlocked={(achievement) => {
+                  console.log('Achievement unlocked:', achievement);
+                  setUserActions(prev => [...prev, `achievement_${achievement.id}`]);
+                }}
+              />
+
+              <AdvancedPersonalizationEngine
+                companyProfile={companyProfile}
+                currentStep={state.currentStep}
+                selectedModules={state.selectedModules}
+                userBehavior={{
+                  timeSpentPerStep: [60, 120, 90, 30],
+                  clickPatterns: userActions,
+                  hesitationPoints: state.currentStep === 1 && state.selectedModules.length === 0 ? [1] : []
+                }}
+                onSuggestionApplied={(suggestion) => {
+                  console.log('Suggestion applied:', suggestion);
+                  setUserActions(prev => [...prev, `suggestion_${suggestion.id}`]);
+                }}
+              />
             </>
           )}
 
           {renderCurrentStep()}
         </div>
       </div>
+
+      {/* AI Assistant */}
+      <IntelligentAIAssistant
+        currentStep={state.currentStep}
+        selectedModules={state.selectedModules}
+        companyProfile={companyProfile}
+        userBehavior={{
+          hesitationPoints: state.currentStep === 1 && state.selectedModules.length === 0 ? [1] : [],
+          timeSpentPerStep: [60, 120, 90, 30],
+          questionsAsked: userActions.filter(action => action.startsWith('question')).length
+        }}
+        onSuggestionAccepted={(suggestionId) => {
+          setUserActions(prev => [...prev, `ai_suggestion_${suggestionId}`]);
+        }}
+        onNavigateToStep={(step) => {
+          // Implementation for step navigation if needed
+        }}
+      />
+
+      {/* Real-time Feedback */}
+      <RealTimeFeedbackSystem
+        currentStep={state.currentStep}
+        stepTitle={getStepTitle(state.currentStep)}
+        showCompact={state.currentStep > 0}
+        onFeedbackSubmitted={(feedback) => {
+          console.log('Feedback submitted:', feedback);
+          setUserActions(prev => [...prev, 'feedback_submitted']);
+        }}
+      />
       
       {/* Analytics Tracking */}
       <OnboardingAnalytics
