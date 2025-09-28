@@ -88,6 +88,12 @@ const PontoFrequencia = lazy(() => import("./pages/PontoFrequencia"));
 const DesenvolvimentoCarreira = lazy(() => import("./pages/DesenvolvimentoCarreira"));
 const OuvidoriaClientes = lazy(() => import("./pages/OuvidoriaClientes"));
 
+// Lazy loading para páginas de configuração
+const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
+
+// Lazy loading para Intelligence Center
+const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
+
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
 
@@ -333,8 +339,31 @@ const App = () => (
             <Route path="/desenvolvimento-carreira" element={<LazyPageWrapper><DesenvolvimentoCarreira /></LazyPageWrapper>} />
             <Route path="/ouvidoria-clientes" element={<LazyPageWrapper><OuvidoriaClientes /></LazyPageWrapper>} />
 
+            {/* Gestão de Usuários */}
+            <Route path="/gestao-usuarios" element={<LazyPageWrapper><GestaoUsuarios /></LazyPageWrapper>} />
+
+            {/* Intelligence Center */}
+            <Route path="/intelligence-center" element={<LazyPageWrapper><IntelligenceCenter /></LazyPageWrapper>} />
+
             {/* Simulador */}
             <Route path="/simulador" element={<LazyPageWrapper><SimuladorEcoImpacto /></LazyPageWrapper>} />
+
+            {/* Redirects para compatibilidade com nova estrutura de navegação */}
+            <Route path="/painel-principal" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/analise-desempenho" element={<Navigate to="/desempenho" replace />} />
+            <Route path="/painel-gestao-esg" element={<Navigate to="/gestao-esg" replace />} />
+            <Route path="/metas-sustentabilidade" element={<Navigate to="/metas" replace />} />
+            <Route path="/emissoes-gee" element={<Navigate to="/inventario-gee" replace />} />
+            <Route path="/painel-social" element={<Navigate to="/social-esg" replace />} />
+            <Route path="/saude-seguranca-trabalho" element={<Navigate to="/seguranca-trabalho" replace />} />
+            <Route path="/treinamentos-desenvolvimento" element={<Navigate to="/gestao-treinamentos" replace />} />
+            <Route path="/painel-governanca" element={<Navigate to="/governanca-esg" replace />} />
+            <Route path="/compliance-politicas" element={<Navigate to="/compliance" replace />} />
+            <Route path="/auditorias" element={<Navigate to="/auditoria" replace />} />
+            <Route path="/dashboard-sgq" element={<Navigate to="/quality-dashboard" replace />} />
+            <Route path="/gerador-relatorios" element={<Navigate to="/relatorios" replace />} />
+            <Route path="/marketplace-esg" element={<Navigate to="/marketplace" replace />} />
+            <Route path="/reconciliacao-ia" element={<Navigate to="/reconciliacao-documentos" replace />} />
             
             {/* Formulário público */}
             <Route path="/form/:formId" element={
