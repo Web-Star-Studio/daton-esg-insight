@@ -17,6 +17,7 @@ import { OnboardingRoute } from "./routes/onboarding";
 
 // Lazy loading para todas as outras páginas
 const Index = lazy(() => import("./pages/Index"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Contato = lazy(() => import("./pages/Contato"));
 const Funcionalidades = lazy(() => import("./pages/Funcionalidades"));
 const Documentacao = lazy(() => import("./pages/Documentacao"));
@@ -179,7 +180,7 @@ const App = () => (
             {/* Rotas protegidas principais com lazy loading */}
             <Route path="/dashboard" element={
               <LazyPageWrapper>
-                <Index />
+                <Dashboard />
               </LazyPageWrapper>
             } />
             

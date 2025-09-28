@@ -177,6 +177,7 @@ export function AppSidebar() {
   const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+  const [isHovering, setIsHovering] = useState(false)
   
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path
@@ -291,7 +292,7 @@ export function AppSidebar() {
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
           onClick={() => navigate(item.path)}
-          className={`group ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
+          className={`group transition-all duration-200 hover-scale ${active ? "bg-primary/10 text-primary font-medium shadow-sm" : "hover:bg-muted/50 hover:shadow-sm"}`}
         >
           <NavigationTooltip
             title={item.title}
@@ -308,7 +309,7 @@ export function AppSidebar() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover-scale"
               onClick={(e) => handleFavoriteToggle(item, e)}
             >
               {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3" />}
@@ -320,9 +321,17 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-r bg-sidebar">
-      <SidebarHeader className="p-4 border-b">
-        <img src={datonLogo} alt="Daton" className={collapsed ? "w-8 h-8" : "w-24 h-8"} />
+    <Sidebar 
+      className="border-r bg-sidebar transition-all duration-300 hover:shadow-lg" 
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      <SidebarHeader className={`p-4 border-b transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
+        <img 
+          src={datonLogo} 
+          alt="Daton" 
+          className={`transition-all duration-300 ${collapsed ? "w-8 h-8" : "w-24 h-8"} ${isHovering ? 'brightness-110' : ''}`} 
+        />
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
