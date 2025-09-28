@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Rocket, Settings, BarChart, Clock, Users, Shield, Leaf } from "lucide-react";
+import { OnboardingWelcomeAnimation } from "./OnboardingWelcomeAnimation";
 
 interface EnhancedWelcomeStepProps {
   onNext: () => void;
@@ -43,9 +44,7 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
         {/* Header Card */}
         <Card className="shadow-xl border-border/40 bg-card/95 backdrop-blur-sm">
           <CardHeader className="text-center space-y-6 pb-8">
-            <div className="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
-              <Rocket className="h-10 w-10 text-primary-foreground animate-pulse" />
-            </div>
+            <OnboardingWelcomeAnimation />
             
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2 mb-2">

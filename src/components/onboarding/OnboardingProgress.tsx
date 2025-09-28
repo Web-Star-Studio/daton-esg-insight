@@ -150,10 +150,10 @@ export function OnboardingProgress({
         </h3>
         
         <p className="text-sm text-muted-foreground">
-          {currentStep === 0 && "Bem-vindo! Vamos começar configurando sua conta."}
+          {currentStep === 0 && "Bem-vindo! Vamos começar preparando sua plataforma."}
           {currentStep === 1 && "Selecione os módulos que sua empresa irá utilizar."}
-          {currentStep === 2 && "Configure cada módulo selecionado para suas necessidades."}
-          {currentStep === 3 && "Finalização e primeiros passos na plataforma."}
+          {currentStep === 2 && "Acesse diretamente os módulos selecionados com orientações."}
+          {currentStep === 3 && "Configuração finalizada! Sua plataforma está pronta."}
         </p>
       </div>
     </div>

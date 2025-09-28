@@ -56,7 +56,7 @@ const OnboardingFlowContext = createContext<OnboardingFlowContextType | undefine
 const ONBOARDING_STEPS = [
   { id: 'welcome', title: 'Boas-vindas' },
   { id: 'modules', title: 'Seleção de Módulos' },
-  { id: 'configuration', title: 'Configuração' },
+  { id: 'shortcuts', title: 'Atalhos Guiados' },
   { id: 'completion', title: 'Finalização' }
 ];
 
