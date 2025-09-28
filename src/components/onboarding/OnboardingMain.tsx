@@ -4,7 +4,7 @@ import { OnboardingFlowProvider, useOnboardingFlow } from '@/contexts/Onboarding
 import { useTutorial } from '@/contexts/TutorialContext';
 import { WelcomeStep } from './WelcomeStep';
 import { ModuleSelectionStep } from './ModuleSelectionStep';
-import { GuidedConfigurationStep } from './GuidedConfigurationStep';
+import { GuidedDataCreationStep } from './GuidedDataCreationStep';
 import { CompletionStep } from './CompletionStep';
 import { OnboardingProgress } from './OnboardingProgress';
 
@@ -25,8 +25,8 @@ function OnboardingContent() {
 
   const stepTitles = [
     'Boas-vindas',
-    'Módulos',
-    'Configuração',
+    'Seleção de Módulos',
+    'Criação de Dados',
     'Finalização'
   ];
 
@@ -71,7 +71,7 @@ function OnboardingContent() {
       
       case 2:
         return (
-          <GuidedConfigurationStep
+          <GuidedDataCreationStep
             selectedModules={state.selectedModules}
             moduleConfigurations={state.moduleConfigurations}
             onConfigurationChange={updateModuleConfiguration}

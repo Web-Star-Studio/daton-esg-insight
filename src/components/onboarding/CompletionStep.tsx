@@ -101,8 +101,8 @@ export function CompletionStep({
             </CardTitle>
             
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Parabéns! Sua plataforma Daton está configurada e pronta para uso. 
-              Você agora pode começar a gerenciar suas iniciativas ESG de forma eficiente.
+              <strong>Parabéns!</strong> Você criou seus primeiros dados reais em cada módulo. 
+              Sua plataforma Daton está configurada e pronta para uso avançado.
             </p>
           </CardHeader>
         </Card>
@@ -115,13 +115,13 @@ export function CompletionStep({
               Resumo da Configuração
             </CardTitle>
             <p className="text-muted-foreground">
-              Aqui está o que foi configurado para sua empresa
+              Resumo dos dados reais criados durante a configuração
             </p>
           </CardHeader>
           
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
-              <span className="font-medium text-foreground">Módulos Selecionados:</span>
+              <span className="font-medium text-foreground">Dados Criados:</span>
               <Badge variant="secondary" className="px-3 py-1">
                 {selectedModules.length} módulo(s)
               </Badge>
@@ -143,12 +143,12 @@ export function CompletionStep({
                     
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-muted-foreground">
-                        Próximos passos recomendados:
+                        Seus primeiros dados:
                       </p>
                       <ul className="space-y-1">
                         {module.nextSteps.map((step, index) => (
                           <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
+                            <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
                             {step}
                           </li>
                         ))}

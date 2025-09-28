@@ -152,7 +152,7 @@ export function ModuleSelectionStep({ selectedModules, onModulesChange, onNext, 
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Escolha quais funcionalidades sua empresa irá utilizar. Você pode alterar essa seleção a qualquer momento.
+            Selecione as áreas que você deseja utilizar agora. Vamos configurar cada uma criando seus primeiros dados reais.
           </p>
           
           <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">

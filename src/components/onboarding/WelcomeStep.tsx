@@ -38,7 +38,8 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
               Bem-vindo ao Daton!
             </CardTitle>
             <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              Vamos configurar sua plataforma ESG em alguns passos simples para que você possa começar a usar todas as funcionalidades.
+              Vamos ativar e configurar os módulos essenciais para sua jornada de gestão. 
+              <strong>Aprenda fazendo</strong> - você criará seus primeiros dados reais em cada módulo.
             </p>
           </div>
         </CardHeader>
@@ -74,13 +75,24 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
             </p>
           </div>
 
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center gap-4 pt-4">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                // Skip onboarding - implement later
+                console.log('Skip onboarding');
+              }}
+              size="lg"
+              className="min-w-32"
+            >
+              Pular e configurar depois
+            </Button>
             <Button 
               onClick={onNext}
               size="lg" 
               className="min-w-48"
             >
-              Começar Configuração
+              Começar Setup
               <Rocket className="ml-2 h-4 w-4" />
             </Button>
           </div>
