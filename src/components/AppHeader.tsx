@@ -76,13 +76,13 @@ export function AppHeader() {
         <EnhancedGlobalSearch />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-notifications>
         <UnifiedHelpCenter />
         <SmartNotificationSystem />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50">
+            <Button variant="ghost" className="flex items-center gap-2 hover:bg-muted/50" data-profile>
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-primary font-medium">
                   {user ? getInitials(user.full_name || user.email) : "?"}

@@ -7,6 +7,9 @@ import { TutorialProvider } from "@/contexts/TutorialContext"
 import { InteractiveTour } from "@/components/tutorial/InteractiveTour"
 import { TutorialAssistant } from "@/components/tutorial/TutorialAssistant"
 import { UnifiedHelpCenter } from "@/components/tutorial/UnifiedHelpCenter"
+import { IntuitiveTutorialSystem } from "@/components/tutorial/IntuitiveTutorialSystem"
+import { SmartTutorialFloater } from "@/components/tutorial/SmartTutorialFloater"
+import { ContextualHints } from "@/components/tutorial/ContextualHints"
 import { OnboardingMain } from "@/components/onboarding/OnboardingMain"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
 
@@ -29,7 +32,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <TutorialProvider>
       <SidebarProvider defaultOpen={true}>
-        <div className="min-h-screen flex w-full bg-background">
+        <div className="min-h-screen flex w-full bg-background" data-sidebar>
           <AppSidebar />
           
           <div className="flex-1 flex flex-col min-w-0">
@@ -47,6 +50,14 @@ export function MainLayout({ children }: MainLayoutProps) {
         <UnifiedHelpCenter />
         <InteractiveTour />
         <TutorialAssistant />
+        <IntuitiveTutorialSystem 
+          isActive={false} 
+          tutorialId="dashboard-intro" 
+          onComplete={() => {}} 
+          onClose={() => {}} 
+        />
+        <SmartTutorialFloater />
+        <ContextualHints />
       </SidebarProvider>
     </TutorialProvider>
   )
