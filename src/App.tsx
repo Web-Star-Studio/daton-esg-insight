@@ -13,6 +13,7 @@ import { errorHandler } from "@/utils/errorHandler";
 import Auth from "./pages/Auth";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
+import { OnboardingRoute } from "./routes/onboarding";
 
 // Lazy loading para todas as outras páginas
 const Index = lazy(() => import("./pages/Index"));
@@ -142,6 +143,9 @@ const App = () => (
             
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Rota de onboarding - protegida */}
+            <Route path="/onboarding" element={<OnboardingRoute />} />
             
             {/* Páginas públicas com lazy loading */}
             <Route path="/contato" element={
