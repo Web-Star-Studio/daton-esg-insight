@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { TutorialButton } from "@/components/TutorialButton"
 
 export function AppHeader() {
   const { user, logout } = useAuth()
@@ -76,6 +77,7 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-3">
+        <TutorialButton />
         <SmartNotificationSystem />
 
         <DropdownMenu>
