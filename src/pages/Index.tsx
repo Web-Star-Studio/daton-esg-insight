@@ -15,6 +15,7 @@ import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
 import SystemPerformanceMonitor from "@/components/SystemPerformanceMonitor"
 import { OnboardingDashboardWidget } from "@/components/onboarding/OnboardingDashboardWidget"
 import { FirstStepsSection } from "@/components/dashboard/FirstStepsSection"
+import { PrimeirosPassosWidget } from "@/components/dashboard/PrimeirosPassosWidget"
 import { useAuth } from "@/contexts/AuthContext"
 import { 
   Flag, 
@@ -299,6 +300,11 @@ const Index = () => {
 
         {/* Terceira Linha - Conteúdo Dinâmico */}
         <div className="space-y-8">
+          {/* Primeiros Passos Widget - para novos usuários */}
+          {!shouldShowOnboarding && (
+            <PrimeirosPassosWidget />
+          )}
+          
           {/* First Steps Section - Show for users who completed onboarding but need guidance */}
           {!shouldShowOnboarding && (
             <FirstStepsSection completedModules={[]} />

@@ -18,37 +18,61 @@ interface SearchResult {
 }
 
 const searchData: SearchResult[] = [
-  // Painéis e Dashboards
-  { id: 'dashboard', title: 'Painel Principal', path: '/dashboard', description: 'Visão geral do sistema ESG', category: 'Painéis', icon: 'BarChart3', keywords: ['painel', 'dashboard', 'visao geral', 'overview'] },
-  { id: 'esg-dashboard', title: 'Painel ESG', path: '/gestao-esg', description: 'Gestão completa de ESG', category: 'Painéis', icon: 'Leaf', keywords: ['esg', 'sustentabilidade', 'ambiental', 'social', 'governanca'] },
-  { id: 'ghg-dashboard', title: 'Dashboard GHG', path: '/dashboard-ghg', description: 'Monitoramento de emissões de GEE', category: 'Ambiental', icon: 'BarChart3', keywords: ['ghg', 'emissoes', 'carbono', 'gases'] },
-  
-  // Ambiental
-  { id: 'inventory', title: 'Inventário GEE', path: '/inventario-gee', description: 'Controle completo de emissões', category: 'Ambiental', icon: 'FileText', keywords: ['inventario', 'emissoes', 'carbono', 'gee', 'co2'] },
-  { id: 'carbon-projects', title: 'Projetos de Carbono', path: '/projetos-carbono', description: 'Gestão de projetos de redução', category: 'Ambiental', icon: 'Leaf', keywords: ['carbono', 'projetos', 'reducao', 'offset'] },
-  { id: 'licensing', title: 'Licenciamento', path: '/licenciamento', description: 'Controle de licenças ambientais', category: 'Ambiental', icon: 'FileText', keywords: ['licenca', 'ambiental', 'regulatorio'] },
-  { id: 'waste', title: 'Gestão de Resíduos', path: '/residuos', description: 'Controle de resíduos sólidos', category: 'Ambiental', icon: 'Leaf', keywords: ['residuos', 'lixo', 'reciclagem'] },
-  
-  // Social
-  { id: 'social-esg', title: 'Social ESG', path: '/social-esg', description: 'Gestão de aspectos sociais', category: 'Social', icon: 'Users', keywords: ['social', 'funcionarios', 'comunidade', 'diversidade'] },
-  { id: 'training', title: 'Treinamentos', path: '/treinamentos', description: 'Gestão de capacitação', category: 'Social', icon: 'Users', keywords: ['treinamento', 'capacitacao', 'educacao'] },
-  
-  // Governança
-  { id: 'governance', title: 'Governança ESG', path: '/governanca-esg', description: 'Controles de governança', category: 'Governança', icon: 'Shield', keywords: ['governanca', 'controles', 'compliance', 'etica'] },
-  { id: 'audits', title: 'Auditorias', path: '/auditoria', description: 'Gestão de auditorias', category: 'Governança', icon: 'Shield', keywords: ['auditoria', 'verificacao', 'controle'] },
-  { id: 'compliance', title: 'Compliance', path: '/compliance', description: 'Conformidade regulatória', category: 'Governança', icon: 'Shield', keywords: ['compliance', 'regulatorio', 'conformidade'] },
-  
-  // Dados e Documentos
-  { id: 'data-collection', title: 'Coleta de Dados', path: '/coleta-dados', description: 'Importação e gestão de dados', category: 'Dados', icon: 'FileText', keywords: ['dados', 'coleta', 'importacao'] },
-  { id: 'documents', title: 'Documentos', path: '/documentos', description: 'Biblioteca de documentos', category: 'Dados', icon: 'FileText', keywords: ['documentos', 'arquivos', 'biblioteca'] },
-  { id: 'forms', title: 'Formulários', path: '/formularios-customizados', description: 'Criação de formulários', category: 'Dados', icon: 'FileText', keywords: ['formularios', 'customizados', 'forms'] },
-  
-  // Relatórios
-  { id: 'reports', title: 'Relatórios', path: '/relatorios', description: 'Geração de relatórios', category: 'Relatórios', icon: 'FileText', keywords: ['relatorios', 'reports', 'dashboard'] },
-  { id: 'sustainability-reports', title: 'Relatórios de Sustentabilidade', path: '/relatorios-sustentabilidade', description: 'Relatórios ESG completos', category: 'Relatórios', icon: 'FileText', keywords: ['sustentabilidade', 'esg', 'relatorio'] },
-  
-  // Configurações
-  { id: 'settings', title: 'Configurações', path: '/configuracao', description: 'Configurações do sistema', category: 'Configurações', icon: 'Settings', keywords: ['configuracao', 'settings', 'sistema'] }
+  // INÍCIO
+  { id: 'dashboard', title: 'Painel Principal', path: '/dashboard', description: 'Visão geral do sistema ESG', category: 'Início', icon: 'BarChart3', keywords: ['painel', 'dashboard', 'visao geral', 'overview', 'inicio'] },
+  { id: 'performance', title: 'Análise de Desempenho', path: '/desempenho', description: 'Monitoramento de KPIs ESG', category: 'Início', icon: 'BarChart3', keywords: ['desempenho', 'performance', 'kpi', 'metricas', 'analise'] },
+
+  // ESTRATÉGIA ESG
+  { id: 'esg-management', title: 'Painel de Gestão ESG', path: '/gestao-esg', description: 'Central de gestão ESG', category: 'Estratégia ESG', icon: 'Leaf', keywords: ['esg', 'gestao', 'sustentabilidade', 'estrategia'] },
+  { id: 'materiality-analysis', title: 'Análise de Materialidade', path: '/analise-materialidade', description: 'Identificação de temas ESG relevantes', category: 'Estratégia ESG', icon: 'Search', keywords: ['materialidade', 'analise', 'temas', 'relevantes', 'prioridades'] },
+  { id: 'stakeholder-management', title: 'Gestão de Stakeholders', path: '/gestao-stakeholders', description: 'Gestão de partes interessadas', category: 'Estratégia ESG', icon: 'Users', keywords: ['stakeholders', 'partes', 'interessadas', 'relacionamento'] },
+  { id: 'sustainability-targets', title: 'Metas de Sustentabilidade', path: '/metas-sustentabilidade', description: 'Definição e acompanhamento de metas', category: 'Estratégia ESG', icon: 'Target', keywords: ['metas', 'objetivos', 'sustentabilidade', 'targets'] },
+
+  // AMBIENTAL (E)
+  { id: 'ghg-dashboard', title: 'Dashboard GHG', path: '/dashboard-ghg', description: 'Painel de monitoramento de emissões', category: 'Ambiental', icon: 'BarChart3', keywords: ['ghg', 'emissoes', 'carbono', 'gases', 'dashboard'] },
+  { id: 'ghg-inventory', title: 'Inventário de Emissões', path: '/inventario-gee', description: 'Controle completo do inventário GEE', category: 'Ambiental', icon: 'FileText', keywords: ['inventario', 'emissoes', 'carbono', 'gee', 'co2'] },
+  { id: 'carbon-projects', title: 'Projetos de Carbono', path: '/projetos-carbono', description: 'Gestão de projetos de redução', category: 'Ambiental', icon: 'Leaf', keywords: ['carbono', 'projetos', 'reducao', 'offset', 'neutralizacao'] },
+  { id: 'waste-management', title: 'Gestão de Resíduos', path: '/residuos', description: 'Controle e destinação de resíduos', category: 'Ambiental', icon: 'Leaf', keywords: ['residuos', 'lixo', 'reciclagem', 'destinacao'] },
+  { id: 'environmental-licensing', title: 'Licenciamento Ambiental', path: '/licenciamento', description: 'Gestão de licenças ambientais', category: 'Ambiental', icon: 'FileText', keywords: ['licenca', 'ambiental', 'regulatorio', 'permissoes'] },
+
+  // SOCIAL (S)
+  { id: 'social-panel', title: 'Painel Social', path: '/painel-social', description: 'Visão geral dos aspectos sociais', category: 'Social', icon: 'Users', keywords: ['social', 'painel', 'aspectos', 'dashboard'] },
+  { id: 'employee-management', title: 'Gestão de Funcionários', path: '/gestao-funcionarios', description: 'Gestão de recursos humanos', category: 'Social', icon: 'Users', keywords: ['funcionarios', 'rh', 'recursos', 'humanos', 'colaboradores'] },
+  { id: 'health-safety', title: 'Saúde e Segurança do Trabalho', path: '/saude-seguranca', description: 'SST e bem-estar dos colaboradores', category: 'Social', icon: 'Shield', keywords: ['saude', 'seguranca', 'sst', 'trabalho', 'bem-estar'] },
+  { id: 'training-development', title: 'Treinamentos e Desenvolvimento', path: '/treinamentos', description: 'Capacitação e desenvolvimento profissional', category: 'Social', icon: 'Users', keywords: ['treinamento', 'capacitacao', 'educacao', 'desenvolvimento'] },
+
+  // GOVERNANÇA (G)
+  { id: 'governance-panel', title: 'Painel de Governança', path: '/painel-governanca', description: 'Visão geral da governança corporativa', category: 'Governança', icon: 'Shield', keywords: ['governanca', 'painel', 'corporativa', 'dashboard'] },
+  { id: 'risk-management', title: 'Gestão de Riscos', path: '/gestao-riscos', description: 'Identificação e mitigação de riscos', category: 'Governança', icon: 'Shield', keywords: ['riscos', 'gestao', 'mitigacao', 'identificacao'] },
+  { id: 'compliance-policies', title: 'Compliance e Políticas', path: '/compliance', description: 'Conformidade regulatória e políticas', category: 'Governança', icon: 'Shield', keywords: ['compliance', 'politicas', 'regulatorio', 'conformidade'] },
+  { id: 'audits', title: 'Auditorias', path: '/auditorias', description: 'Gestão de auditorias internas e externas', category: 'Governança', icon: 'Shield', keywords: ['auditoria', 'verificacao', 'controle', 'internas', 'externas'] },
+
+  // GESTÃO DA QUALIDADE (SGQ)
+  { id: 'sgq-dashboard', title: 'Dashboard SGQ', path: '/sgq-dashboard', description: 'Painel de gestão da qualidade', category: 'SGQ', icon: 'BarChart3', keywords: ['sgq', 'qualidade', 'dashboard', 'painel'] },
+  { id: 'strategic-planning', title: 'Planejamento Estratégico', path: '/planejamento-estrategico', description: 'Definição de estratégias organizacionais', category: 'SGQ', icon: 'Target', keywords: ['planejamento', 'estrategico', 'estrategias', 'organizacional'] },
+  { id: 'process-mapping', title: 'Mapeamento de Processos', path: '/mapeamento-processos', description: 'Documentação e otimização de processos', category: 'SGQ', icon: 'FileText', keywords: ['mapeamento', 'processos', 'documentacao', 'otimizacao'] },
+  { id: 'non-conformities', title: 'Não Conformidades', path: '/nao-conformidades', description: 'Gestão de não conformidades e ações corretivas', category: 'SGQ', icon: 'FileText', keywords: ['nao conformidades', 'acoes', 'corretivas', 'gestao'] },
+  { id: 'internal-audits', title: 'Auditorias Internas', path: '/auditorias-internas', description: 'Auditorias do sistema de qualidade', category: 'SGQ', icon: 'Search', keywords: ['auditorias', 'internas', 'qualidade', 'sistema'] },
+  { id: 'corrective-actions', title: 'Ações Corretivas', path: '/acoes-corretivas', description: 'Planos de ação e melhorias', category: 'SGQ', icon: 'FileText', keywords: ['acoes', 'corretivas', 'planos', 'melhorias'] },
+  { id: 'document-control', title: 'Controle de Documentos', path: '/controle-documentos', description: 'Versionamento e controle documental', category: 'SGQ', icon: 'FileText', keywords: ['controle', 'documentos', 'versionamento', 'documental'] },
+  { id: 'supplier-evaluation', title: 'Avaliação de Fornecedores', path: '/avaliacao-fornecedores', description: 'Qualificação e monitoramento de fornecedores', category: 'SGQ', icon: 'Users', keywords: ['fornecedores', 'avaliacao', 'qualificacao', 'monitoramento'] },
+
+  // CENTRAL DE DADOS
+  { id: 'data-collection', title: 'Coleta de Dados', path: '/coleta-dados', description: 'Importação e gestão de dados ESG', category: 'Central de Dados', icon: 'FileText', keywords: ['dados', 'coleta', 'importacao', 'gestao'] },
+  { id: 'documents', title: 'Documentos', path: '/documentos', description: 'Biblioteca de documentos e arquivos', category: 'Central de Dados', icon: 'FileText', keywords: ['documentos', 'arquivos', 'biblioteca', 'central'] },
+  { id: 'assets', title: 'Ativos', path: '/ativos', description: 'Gestão de ativos da organização', category: 'Central de Dados', icon: 'FileText', keywords: ['ativos', 'gestao', 'organizacao', 'patrimonio'] },
+  { id: 'ai-reconciliation', title: 'Reconciliação IA', path: '/reconciliacao-ia', description: 'Reconciliação inteligente de dados', category: 'Central de Dados', icon: 'FileText', keywords: ['reconciliacao', 'ia', 'inteligente', 'dados'] },
+
+  // RELATÓRIOS E DIVULGAÇÃO
+  { id: 'report-generator', title: 'Gerador de Relatórios', path: '/gerador-relatorios', description: 'Criação personalizada de relatórios', category: 'Relatórios', icon: 'FileText', keywords: ['gerador', 'relatorios', 'criacao', 'personalizada'] },
+  { id: 'integrated-reports', title: 'Relatórios Integrados', path: '/relatorios-integrados', description: 'Relatórios ESG completos e integrados', category: 'Relatórios', icon: 'FileText', keywords: ['relatorios', 'integrados', 'esg', 'completos'] },
+  { id: 'esg-marketplace', title: 'Marketplace ESG', path: '/marketplace-esg', description: 'Plataforma de soluções ESG', category: 'Relatórios', icon: 'FileText', keywords: ['marketplace', 'esg', 'plataforma', 'solucoes'] },
+
+  // CONFIGURAÇÕES
+  { id: 'organization-config', title: 'Configuração da Organização', path: '/configuracao-organizacao', description: 'Dados e estrutura organizacional', category: 'Configurações', icon: 'Settings', keywords: ['configuracao', 'organizacao', 'estrutura', 'dados'] },
+  { id: 'factor-library', title: 'Biblioteca de Fatores', path: '/biblioteca-fatores', description: 'Fatores de emissão e conversão', category: 'Configurações', icon: 'Settings', keywords: ['biblioteca', 'fatores', 'emissao', 'conversao'] },
+  { id: 'custom-forms', title: 'Formulários Customizados', path: '/formularios-customizados', description: 'Criação de formulários personalizados', category: 'Configurações', icon: 'Settings', keywords: ['formularios', 'customizados', 'personalizados', 'criacao'] },
+  { id: 'user-management', title: 'Gestão de Usuários', path: '/gestao-usuarios', description: 'Controle de usuários e permissões', category: 'Configurações', icon: 'Settings', keywords: ['usuarios', 'gestao', 'permissoes', 'controle'] }
 ];
 
 export function EnhancedGlobalSearch() {
