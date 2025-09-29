@@ -61,13 +61,13 @@ export async function createEmissionSource(sourceData: CreateEmissionSourceData)
     throw new Error('Usuário não autenticado');
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (!profile) {
+  if (profileError || !profile) {
     throw new Error('Perfil do usuário não encontrado');
   }
 
@@ -95,11 +95,15 @@ export async function updateEmissionSource(id: string, updateData: Partial<Creat
     .update(updateData)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro ao atualizar fonte de emissão:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Fonte de emissão não encontrada');
   }
 
   return data;
@@ -148,7 +152,7 @@ export const updateActivityData = async (id: string, activityData: {
         .from('emission_factors')
         .select('activity_unit')
         .eq('id', cleanedId)
-        .single();
+        .maybeSingle();
       
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
@@ -164,11 +168,15 @@ export const updateActivityData = async (id: string, activityData: {
     .update(finalActivityData)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro ao atualizar dados de atividade:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Dados de atividade não encontrados');
   }
 
   // Recalculate emissions automatically
@@ -209,7 +217,7 @@ export const addActivityData = async (activityData: {
         .from('emission_factors')
         .select('activity_unit')
         .eq('id', cleanedId)
-        .single();
+        .maybeSingle();
       
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
@@ -224,11 +232,15 @@ export const addActivityData = async (activityData: {
     .from('activity_data')
     .insert(finalActivityData)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro ao adicionar dados de atividade:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Erro ao criar dados de atividade');
   }
 
   // Calculate emissions automatically
@@ -244,7 +256,7 @@ async function calculateEmissionsForActivityData(activityDataId: string) {
       .from('activity_data')
       .select('emission_factor_id, emission_source_id')
       .eq('id', activityDataId)
-      .single();
+      .maybeSingle();
 
     if (activity?.emission_factor_id) {
       console.info('Calculando com fator específico:', activity.emission_factor_id);
@@ -267,9 +279,9 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
       .from('emission_sources')
       .select('category')
       .eq('id', emissionSourceId)
-      .single();
+      .maybeSingle();
 
-    if (sourceError) {
+    if (sourceError || !source) {
       console.error('Erro ao buscar fonte de emissão:', sourceError);
       return;
     }
@@ -293,9 +305,9 @@ async function tryAutoCalculateEmissions(activityDataId: string, emissionSourceI
       .from('activity_data')
       .select('unit, quantity')
       .eq('id', activityDataId)
-      .single();
+      .maybeSingle();
 
-    if (activityError) {
+    if (activityError || !activityData) {
       console.error('Erro ao buscar dados de atividade:', activityError);
       return;
     }

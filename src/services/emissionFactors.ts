@@ -71,13 +71,13 @@ export async function createCustomEmissionFactor(factorData: CreateEmissionFacto
     throw new Error('Usuário não autenticado');
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (!profile) {
+  if (profileError || !profile) {
     throw new Error('Perfil do usuário não encontrado');
   }
 
@@ -107,11 +107,15 @@ export async function updateCustomEmissionFactor(id: string, updateData: Partial
     .eq('id', id)
     .eq('type', 'custom') // Só permite editar fatores customizados
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro ao atualizar fator de emissão:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Fator de emissão não encontrado ou não é customizado');
   }
 
   return data;

@@ -133,10 +133,10 @@ export async function getAssetById(id: string): Promise<AssetWithLinkedData> {
     .from('assets')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (assetError || !assetData) {
-    throw new Error('Asset not found');
+    throw new Error('Ativo não encontrado');
   }
 
   // Buscar dados vinculados
@@ -180,21 +180,25 @@ export async function createAsset(assetData: CreateAssetData): Promise<Asset> {
     .from('profiles')
     .select('company_id')
     .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile) {
-    throw new Error('Could not get user company information');
+    throw new Error('Não foi possível obter informações da empresa do usuário');
   }
 
   const { data, error } = await supabase
     .from('assets')
     .insert([{ ...assetData, company_id: profile.company_id }])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
-    console.error('Error creating asset:', error);
+    console.error('Erro ao criar ativo:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Erro ao criar ativo');
   }
 
   return data;
@@ -206,11 +210,15 @@ export async function updateAsset(id: string, updates: UpdateAssetData): Promise
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
-    console.error('Error updating asset:', error);
+    console.error('Erro ao atualizar ativo:', error);
     throw error;
+  }
+
+  if (!data) {
+    throw new Error('Ativo não encontrado');
   }
 
   return data;
