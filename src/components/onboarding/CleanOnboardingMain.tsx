@@ -86,6 +86,8 @@ function CleanOnboardingContent() {
     try {
       console.log('⏳ Completing onboarding...');
       await completeOnboarding();
+      // Ensure the layout stops rendering onboarding overlay
+      await skipOnboarding();
       console.log('✅ Onboarding completed, navigating to dashboard... (from)', window.location.pathname);
       navigate('/dashboard', { replace: true });
       console.log('🏁 Navigation requested to /dashboard');
@@ -100,6 +102,7 @@ function CleanOnboardingContent() {
       console.error('❌ Error in handleStartUsingPlatform:', error);
       // Force navigation even if onboarding fails
       console.log('🚨 Forcing navigation despite error...');
+      await skipOnboarding();
       navigate('/dashboard');
     }
   };
@@ -109,17 +112,21 @@ function CleanOnboardingContent() {
     try {
       console.log('⏳ Completing onboarding...');
       await completeOnboarding();
-      console.log('✅ Onboarding completed, navigating to dashboard...');
-      navigate('/dashboard');
+      // Ensure the layout stops rendering onboarding overlay
+      await skipOnboarding();
+      console.log('✅ Onboarding completed, navigating to dashboard... (from)', window.location.pathname);
+      navigate('/dashboard', { replace: true });
+      console.log('🏁 Navigation requested to /dashboard');
+      // Start tour shortly after navigation
       setTimeout(() => {
         console.log('🎪 Starting dashboard tour...');
         startTour('dashboard-intro');
       }, 1000);
-      console.log('🏁 Navigation completed');
     } catch (error) {
       console.error('❌ Error in handleTakeTour:', error);
       // Force navigation even if onboarding fails
       console.log('🚨 Forcing navigation despite error...');
+      await skipOnboarding();
       navigate('/dashboard');
       setTimeout(() => {
         startTour('dashboard-intro');
@@ -170,9 +177,12 @@ function CleanOnboardingContent() {
           .update({ has_completed_onboarding: true })
           .eq('id', user.id);
       }
+
+      // Update layout state to hide onboarding
+      await skipOnboarding();
       
       // Force navigation
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
       
       toast({
         title: 'Onboarding Finalizado!',
@@ -181,6 +191,7 @@ function CleanOnboardingContent() {
     } catch (error) {
       console.error('❌ Emergency complete failed:', error);
       // Still force navigation
+      await skipOnboarding();
       navigate('/dashboard');
     }
   };
