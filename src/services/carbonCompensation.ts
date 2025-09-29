@@ -88,12 +88,13 @@ class CarbonCompensationService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -111,9 +112,9 @@ class CarbonCompensationService {
       .from('conservation_activities')
       .select('*')
       .eq('id', activityId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao buscar atividade: ${error.message}`);
     return data;
   }
 
@@ -121,12 +122,13 @@ class CarbonCompensationService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -139,9 +141,10 @@ class CarbonCompensationService {
         carbon_impact_estimate: activityData.carbon_impact_estimate || 0,
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar atividade: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a atividade');
     return data;
   }
 
@@ -151,9 +154,10 @@ class CarbonCompensationService {
       .update(activityData)
       .eq('id', activityId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar atividade: ${error.message}`);
+    if (!data) throw new Error('Atividade não encontrada');
     return data;
   }
 
@@ -185,12 +189,13 @@ class CarbonCompensationService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -202,9 +207,10 @@ class CarbonCompensationService {
         evidence_files: monitoringData.evidence_files || [],
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar monitoramento: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o monitoramento');
     return data;
   }
 
@@ -224,12 +230,13 @@ class CarbonCompensationService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     // Use the database function to calculate stats

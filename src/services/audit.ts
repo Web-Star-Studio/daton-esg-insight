@@ -113,11 +113,15 @@ class AuditService {
         .from('profiles')
         .select('company_id')
         .eq('id', userResponse.user.id)
-        .single();
+        .maybeSingle();
 
       console.log('Profile data:', profile, 'Profile error:', profileError);
 
-      if (profileError || !profile?.company_id) {
+      if (profileError) {
+        throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      }
+      
+      if (!profile?.company_id) {
         throw new Error('Perfil do usuário não encontrado ou sem empresa associada');
       }
 
@@ -133,11 +137,15 @@ class AuditService {
         .from('audits')
         .insert([auditToInsert])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error creating audit:', error);
         throw new Error(`Erro ao criar auditoria: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('Não foi possível criar a auditoria');
       }
 
       console.log('Audit created successfully:', data);
@@ -189,11 +197,15 @@ class AuditService {
         .from('audit_findings')
         .insert([findingToInsert])
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error creating audit finding:', error);
         throw new Error(`Erro ao criar achado da auditoria: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('Não foi possível criar o achado da auditoria');
       }
 
       console.log('Audit finding created successfully:', data);
@@ -220,11 +232,15 @@ class AuditService {
       .update(updateData)
       .eq('id', findingId)
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error updating audit finding:', error);
       throw new Error(`Erro ao atualizar achado da auditoria: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('Achado da auditoria não encontrado');
     }
 
     console.log('Audit finding updated successfully:', data);
@@ -258,7 +274,7 @@ class AuditService {
         .from('profiles')
         .select('company_id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!profile?.company_id) return;
 

@@ -87,9 +87,9 @@ class ActionPlansService {
       .from('action_plans')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao buscar plano de ação: ${error.message}`);
     if (!data) return null;
 
     // Get items separately
@@ -101,12 +101,13 @@ class ActionPlansService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile?.company_id) throw new Error('Company ID não encontrado');
 
     const { data, error } = await supabase
@@ -117,9 +118,10 @@ class ActionPlansService {
         created_by_user_id: user.id
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar plano de ação: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o plano de ação');
     return data;
   }
 
@@ -129,9 +131,10 @@ class ActionPlansService {
       .update(planData)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar plano de ação: ${error.message}`);
+    if (!data) throw new Error('Plano de ação não encontrado');
     return data;
   }
 
@@ -170,7 +173,7 @@ class ActionPlansService {
             .from('profiles')
             .select('full_name')
             .eq('id', item.who_responsible_user_id)
-            .single();
+            .maybeSingle();
           
           return { ...item, profiles: profile || { full_name: 'Usuário não encontrado' } };
         }
@@ -189,9 +192,10 @@ class ActionPlansService {
         action_plan_id: planId
       }])
       .select('*')
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar item do plano: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o item do plano');
     
     // Get profile if responsible user is set
     let profiles = null;
@@ -200,7 +204,7 @@ class ActionPlansService {
         .from('profiles')
         .select('full_name')
         .eq('id', data.who_responsible_user_id)
-        .single();
+        .maybeSingle();
       
       profiles = profile || { full_name: 'Usuário não encontrado' };
     }
@@ -214,9 +218,10 @@ class ActionPlansService {
       .update(itemData)
       .eq('id', itemId)
       .select('*')
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar item do plano: ${error.message}`);
+    if (!data) throw new Error('Item do plano não encontrado');
     
     // Get profile if responsible user is set
     let profiles = null;
@@ -225,7 +230,7 @@ class ActionPlansService {
         .from('profiles')
         .select('full_name')
         .eq('id', data.who_responsible_user_id)
-        .single();
+        .maybeSingle();
       
       profiles = profile || { full_name: 'Usuário não encontrado' };
     }
@@ -263,7 +268,7 @@ class ActionPlansService {
       .from('action_plan_items')
       .select('action_plan_id')
       .eq('id', itemId)
-      .single();
+      .maybeSingle();
 
     if (item) {
       const planProgress = await this.calculatePlanProgress(item.action_plan_id);

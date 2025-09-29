@@ -78,12 +78,16 @@ export const createBenefit = async (benefitData: CreateBenefitData) => {
   }
 
   // Get user's company_id
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) {
+    throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+  }
+  
   if (!profile?.company_id) {
     throw new Error('Empresa não encontrada para o usuário');
   }
@@ -96,11 +100,15 @@ export const createBenefit = async (benefitData: CreateBenefitData) => {
       created_by_user_id: user.id,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating benefit:', error);
-    throw error;
+    throw new Error(`Erro ao criar benefício: ${error.message}`);
+  }
+  
+  if (!data) {
+    throw new Error('Não foi possível criar o benefício');
   }
 
   return data;
@@ -115,11 +123,15 @@ export const updateBenefit = async (id: string, benefitData: Partial<CreateBenef
     })
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error updating benefit:', error);
-    throw error;
+    throw new Error(`Erro ao atualizar benefício: ${error.message}`);
+  }
+  
+  if (!data) {
+    throw new Error('Benefício não encontrado');
   }
 
   return data;
@@ -176,12 +188,16 @@ export const enrollEmployeeInBenefit = async (benefitId: string, employeeId: str
   }
 
   // Get user's company_id
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) {
+    throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+  }
+  
   if (!profile?.company_id) {
     throw new Error('Empresa não encontrada para o usuário');
   }
@@ -194,11 +210,15 @@ export const enrollEmployeeInBenefit = async (benefitId: string, employeeId: str
       company_id: profile.company_id,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error enrolling employee in benefit:', error);
-    throw error;
+    throw new Error(`Erro ao inscrever funcionário no benefício: ${error.message}`);
+  }
+  
+  if (!data) {
+    throw new Error('Não foi possível inscrever o funcionário no benefício');
   }
 
   return data;

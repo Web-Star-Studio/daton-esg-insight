@@ -74,12 +74,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -97,9 +98,9 @@ class CarbonProjectsService {
       .from('carbon_projects')
       .select('*')
       .eq('id', projectId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao buscar projeto: ${error.message}`);
     return data;
   }
 
@@ -107,12 +108,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -124,9 +126,10 @@ class CarbonProjectsService {
         is_public: projectData.is_public || false
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar projeto: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o projeto');
     return data;
   }
 
@@ -136,9 +139,10 @@ class CarbonProjectsService {
       .update(projectData)
       .eq('id', projectId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar projeto: ${error.message}`);
+    if (!data) throw new Error('Projeto não encontrado');
     return data;
   }
 
@@ -156,12 +160,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -179,9 +184,9 @@ class CarbonProjectsService {
       .from('credit_purchases')
       .select('*')
       .eq('id', purchaseId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao buscar compra: ${error.message}`);
     return data;
   }
 
@@ -189,12 +194,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -204,9 +210,10 @@ class CarbonProjectsService {
         company_id: profile.company_id,
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar compra: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a compra');
     return data;
   }
 
@@ -216,9 +223,10 @@ class CarbonProjectsService {
       .update(purchaseData)
       .eq('id', purchaseId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar compra: ${error.message}`);
+    if (!data) throw new Error('Compra não encontrada');
     return data;
   }
 
@@ -236,12 +244,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
@@ -280,9 +289,10 @@ class CarbonProjectsService {
         company_id: profile.company_id,
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar aposentadoria: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a aposentadoria');
     return data;
   }
 
@@ -291,12 +301,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     // Get credit purchases summary
@@ -336,12 +347,13 @@ class CarbonProjectsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile) throw new Error('Perfil do usuário não encontrado');
 
     const { data, error } = await supabase
