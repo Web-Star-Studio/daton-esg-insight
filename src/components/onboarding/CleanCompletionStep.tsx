@@ -16,6 +16,7 @@ interface CleanCompletionStepProps {
   moduleConfigurations: Record<string, any>;
   onStartUsingPlatform: () => void;
   onTakeTour: () => void;
+  onEmergencyComplete?: () => void;
 }
 
 const MODULE_NAMES: Record<string, string> = {
@@ -33,7 +34,8 @@ export function CleanCompletionStep({
   selectedModules, 
   moduleConfigurations, 
   onStartUsingPlatform, 
-  onTakeTour 
+  onTakeTour, 
+  onEmergencyComplete 
 }: CleanCompletionStepProps) {
 
   const configuredModulesCount = Object.keys(moduleConfigurations).length;
@@ -143,9 +145,13 @@ export function CleanCompletionStep({
         {/* Action Buttons */}
         <div className="space-y-4">
           <Button 
-            onClick={onTakeTour}
+            onClick={() => {
+              console.log('🎯 Tour button clicked');
+              onTakeTour();
+            }}
             size="lg"
             className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg hover:shadow-xl transition-all"
+            disabled={false}
           >
             <Play className="mr-2 h-4 w-4" />
             Fazer Tour Guiado
@@ -154,14 +160,35 @@ export function CleanCompletionStep({
           
           <Button 
             variant="outline"
-            onClick={onStartUsingPlatform}
+            onClick={() => {
+              console.log('🚀 Start using button clicked');
+              onStartUsingPlatform();
+            }}
             size="lg"
             className="w-full"
+            disabled={false}
           >
             <Rocket className="mr-2 h-4 w-4" />
             Começar a Usar
           </Button>
         </div>
+
+        {/* Emergency Complete Button (for debugging) */}
+        {onEmergencyComplete && (
+          <div className="pt-4 border-t border-border/20">
+            <Button 
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                console.log('🚨 Emergency complete button clicked');
+                onEmergencyComplete();
+              }}
+              className="w-full text-xs text-muted-foreground hover:text-foreground"
+            >
+              Forçar Conclusão (Debug)
+            </Button>
+          </div>
+        )}
 
         {/* Thank you message */}
         <div className="text-center text-sm text-muted-foreground">

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { OnboardingFlowProvider, useOnboardingFlow } from '@/contexts/OnboardingFlowContext';
 import { useTutorial } from '@/contexts/TutorialContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { CleanWelcomeStep } from './CleanWelcomeStep';
 import { CleanModuleSelectionStep } from './CleanModuleSelectionStep';
 import { CleanDataCreationStep } from './CleanDataCreationStep';
@@ -13,7 +15,8 @@ import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 function CleanOnboardingContent() {
   const navigate = useNavigate();
   const { startTour } = useTutorial();
-  const { skipOnboarding } = useAuth();
+  const { skipOnboarding, user } = useAuth();
+  const { toast } = useToast();
   const [companyProfile, setCompanyProfile] = useState<any>(null);
   
   const {
@@ -49,23 +52,71 @@ function CleanOnboardingContent() {
   };
 
   const handleStartUsingPlatform = async () => {
+    console.log('🔄 Starting platform - button clicked');
     try {
+      console.log('⏳ Completing onboarding...');
       await completeOnboarding();
-      navigate('/dashboard');
+      console.log('✅ Onboarding completed, navigating to dashboard...');
+      navigate('/');
+      console.log('🏁 Navigation completed');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error in handleStartUsingPlatform:', error);
+      // Force navigation even if onboarding fails
+      console.log('🚨 Forcing navigation despite error...');
+      navigate('/');
     }
   };
 
   const handleTakeTour = async () => {
+    console.log('🎯 Take tour - button clicked');
     try {
+      console.log('⏳ Completing onboarding...');
       await completeOnboarding();
-      navigate('/dashboard');
+      console.log('✅ Onboarding completed, navigating to dashboard...');
+      navigate('/');
+      setTimeout(() => {
+        console.log('🎪 Starting dashboard tour...');
+        startTour('dashboard-intro');
+      }, 1000);
+      console.log('🏁 Navigation completed');
+    } catch (error) {
+      console.error('❌ Error in handleTakeTour:', error);
+      // Force navigation even if onboarding fails
+      console.log('🚨 Forcing navigation despite error...');
+      navigate('/');
       setTimeout(() => {
         startTour('dashboard-intro');
-      }, 500);
+      }, 1000);
+    }
+  };
+
+  const handleEmergencyComplete = async () => {
+    console.log('🚨 Emergency complete - forcing onboarding completion');
+    try {
+      // Clear all localStorage
+      localStorage.removeItem('daton_onboarding_progress');
+      localStorage.removeItem('daton_tutorial_completed');
+      localStorage.removeItem('daton_primeiros_passos_dismissed');
+      
+      // Force update profile
+      if (user?.id) {
+        await supabase
+          .from('profiles')
+          .update({ has_completed_onboarding: true })
+          .eq('id', user.id);
+      }
+      
+      // Force navigation
+      navigate('/');
+      
+      toast({
+        title: 'Onboarding Finalizado!',
+        description: 'Configuração concluída com sucesso.',
+      });
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Emergency complete failed:', error);
+      // Still force navigation
+      navigate('/');
     }
   };
 
@@ -108,6 +159,7 @@ function CleanOnboardingContent() {
             moduleConfigurations={state.moduleConfigurations}
             onStartUsingPlatform={handleStartUsingPlatform}
             onTakeTour={handleTakeTour}
+            onEmergencyComplete={handleEmergencyComplete}
           />
         );
       

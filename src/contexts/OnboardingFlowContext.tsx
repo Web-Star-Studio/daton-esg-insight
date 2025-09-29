@@ -65,25 +65,43 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     if (!user?.id) return;
 
     try {
+      console.log('🔄 Loading onboarding data for user:', user.id);
+      
       const { data, error } = await supabase
         .from('onboarding_selections')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No data found, this is normal for new users
+          console.log('📝 No onboarding data found, user is new');
+          return;
+        }
+        throw error;
+      }
 
       if (data) {
+        console.log('✅ Onboarding data loaded:', data);
         setState(prev => ({
           ...prev,
-          currentStep: data.current_step,
-          selectedModules: data.selected_modules,
+          currentStep: data.current_step || 0,
+          selectedModules: data.selected_modules || [],
           moduleConfigurations: (data.module_configurations as ModuleConfig) || {},
-          isCompleted: data.is_completed
+          isCompleted: data.is_completed || false
         }));
       }
     } catch (error) {
-      console.error('Error loading onboarding data:', error);
+      console.error('❌ Error loading onboarding data:', error);
+      // Don't block the UI, just log the error
+      setState(prev => ({
+        ...prev,
+        currentStep: 0,
+        selectedModules: [],
+        moduleConfigurations: {},
+        isCompleted: false
+      }));
     }
   };
 
@@ -166,30 +184,59 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
   };
 
   const completeOnboarding = async () => {
+    console.log('🚀 Starting onboarding completion...');
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      // Salvar configurações finais no banco
-      await supabase
+      if (!user?.id) {
+        throw new Error('User ID not found');
+      }
+
+      if (!user.company?.id) {
+        throw new Error('Company ID not found');
+      }
+
+      console.log('💾 Saving onboarding selections to database...');
+      
+      // Salvar configurações finais no banco com upsert
+      const { error: upsertError } = await supabase
         .from('onboarding_selections')
         .upsert([{
-          user_id: user!.id,
-          company_id: user!.company?.id!,
+          user_id: user.id,
+          company_id: user.company.id,
           current_step: state.currentStep,
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
           is_completed: true,
           updated_at: new Date().toISOString()
-        }]);
+        }], {
+          onConflict: 'user_id'
+        });
+
+      if (upsertError) {
+        console.error('❌ Database upsert error:', upsertError);
+        throw upsertError;
+      }
+
+      console.log('✅ Onboarding selections saved successfully');
 
       // Mark user as completed onboarding
-      await supabase
+      console.log('👤 Updating user profile...');
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ has_completed_onboarding: true })
-        .eq('id', user!.id);
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('❌ Profile update error:', profileError);
+        throw profileError;
+      }
+
+      console.log('✅ User profile updated successfully');
 
       // Clear onboarding progress from localStorage
       localStorage.removeItem('daton_onboarding_progress');
+      console.log('🧹 localStorage cleared');
 
       setState(prev => ({
         ...prev,
@@ -202,13 +249,15 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
         description: 'Sua configuração inicial foi salva com sucesso. Bem-vindo ao Daton!',
       });
 
+      console.log('🎉 Onboarding completed successfully!');
+
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error completing onboarding:', error);
       setState(prev => ({ ...prev, isLoading: false }));
       
       toast({
         title: 'Erro ao finalizar',
-        description: 'Ocorreu um erro ao finalizar o onboarding. Tente novamente.',
+        description: `Ocorreu um erro ao finalizar o onboarding: ${error.message || 'Erro desconhecido'}`,
         variant: 'destructive'
       });
     }
