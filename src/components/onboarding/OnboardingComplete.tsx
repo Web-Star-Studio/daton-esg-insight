@@ -13,13 +13,17 @@ export function OnboardingComplete() {
     // Auto-complete onboarding after component mounts
     const completeOnboarding = async () => {
       try {
+        console.log('🎉 OnboardingComplete component mounted - completing onboarding');
         await skipOnboarding();
+        console.log('✅ Onboarding marked as completed');
       } catch (error) {
-        console.error('Error completing onboarding:', error);
+        console.error('❌ Error completing onboarding:', error);
       }
     };
 
-    completeOnboarding();
+    // Add a small delay to ensure proper state transition
+    const timer = setTimeout(completeOnboarding, 500);
+    return () => clearTimeout(timer);
   }, [skipOnboarding]);
 
   const handleGoToDashboard = () => {

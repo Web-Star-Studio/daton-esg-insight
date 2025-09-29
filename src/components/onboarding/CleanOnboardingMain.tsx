@@ -14,6 +14,7 @@ import { OnboardingAssistant } from './OnboardingAssistant';
 import { PostOnboardingValidation } from './PostOnboardingValidation';
 import { InitialDataSetup } from './InitialDataSetup';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
+import { OnboardingRedirectHandler } from './OnboardingRedirectHandler';
 
 function CleanOnboardingContent() {
   const navigate = useNavigate();
@@ -172,27 +173,44 @@ function CleanOnboardingContent() {
       
       // Force update profile
       if (user?.id) {
+        console.log('💾 Updating profile to mark onboarding as completed...');
         await supabase
           .from('profiles')
           .update({ has_completed_onboarding: true })
           .eq('id', user.id);
+        console.log('✅ Profile updated successfully');
       }
 
       // Update layout state to hide onboarding
+      console.log('🔄 Calling skipOnboarding...');
       await skipOnboarding();
+      console.log('✅ skipOnboarding completed');
       
       // Force navigation
+      console.log('🚀 Forcing navigation to dashboard...');
       navigate('/dashboard', { replace: true });
       
       toast({
-        title: 'Onboarding Finalizado!',
-        description: 'Configuração concluída com sucesso.',
+        title: 'Onboarding Finalizado! 🎉',
+        description: 'Configuração concluída com sucesso. Redirecionando...',
       });
+      
+      // Force page reload as backup
+      setTimeout(() => {
+        console.log('🔄 Forcing page reload for clean state...');
+        window.location.reload();
+      }, 1500);
+      
     } catch (error) {
       console.error('❌ Emergency complete failed:', error);
       // Still force navigation
-      await skipOnboarding();
-      navigate('/dashboard');
+      try {
+        await skipOnboarding();
+        navigate('/dashboard');
+      } catch (e) {
+        console.error('❌ Fallback also failed, forcing window redirect');
+        window.location.href = '/dashboard';
+      }
     }
   };
 
@@ -292,6 +310,9 @@ function CleanOnboardingContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+      {/* Onboarding Redirect Handler */}
+      <OnboardingRedirectHandler />
+      
       {/* Enhanced Progress Header */}
       {showProgress && (
         <EnhancedOnboardingProgress

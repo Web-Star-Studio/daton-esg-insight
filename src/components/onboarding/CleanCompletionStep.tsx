@@ -214,16 +214,19 @@ export function CleanCompletionStep({
         {onEmergencyComplete && (
           <div className="pt-4 border-t border-border/20">
             <Button 
-              variant="ghost"
+              variant="destructive"
               size="sm"
               onClick={() => {
                 console.log('🚨 Emergency complete button clicked');
                 onEmergencyComplete();
               }}
-              className="w-full text-xs text-muted-foreground hover:text-foreground"
+              className="w-full text-xs"
             >
-              Forçar Conclusão (Debug)
+              🚨 Forçar Conclusão do Onboarding
             </Button>
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Use apenas se o onboarding estiver travado
+            </p>
           </div>
         )}
 

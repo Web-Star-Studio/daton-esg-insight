@@ -29,6 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check if user has completed onboarding
   const checkOnboardingStatus = async (userId: string) => {
     try {
+      console.log('🔍 Checking onboarding status for user:', userId);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('has_completed_onboarding')
@@ -36,17 +38,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Error fetching profile:', error);
+        setShouldShowOnboarding(false);
         return false;
       }
 
       const hasCompletedOnboarding = profile?.has_completed_onboarding ?? false;
       const shouldShow = !hasCompletedOnboarding;
       
+      console.log('📊 Onboarding check result:', {
+        userId,
+        hasCompletedOnboarding,
+        shouldShow
+      });
+      
       setShouldShowOnboarding(shouldShow);
       return shouldShow;
     } catch (error) {
-      console.error('Error in onboarding check:', error);
+      console.error('❌ Error in onboarding check:', error);
       setShouldShowOnboarding(false);
       return false;
     }
