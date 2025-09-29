@@ -41,6 +41,7 @@ interface SmartTourStep {
   autoAdvance?: boolean; // Auto avançar após delay
   delay?: number; // Delay em ms antes de auto avançar
   condition?: () => boolean; // Condição para mostrar o step
+  openHints?: string[]; // Pistas para abrir abas/seções antes de procurar o alvo
 }
 
 // Definições de tours inteligentes baseados no perfil do usuário
@@ -131,7 +132,8 @@ const SMART_TOUR_DEFINITIONS = {
         page: '/gestao-desempenho',
         tip: 'Recomendamos ciclos semestrais para melhor acompanhamento.',
         highlight: true,
-        delay: 3000
+        delay: 3000,
+        openHints: ['ciclo', 'avalia']
       },
 
       // ESG/Sustentabilidade 
@@ -249,6 +251,7 @@ export function SmartInteractiveTour() {
   const prevStepRef = useRef(prevStep);
   const completeTourRef = useRef(completeTour);
   const navigateToPageRef = useRef<(page: string) => void>(() => {});
+  const openedStepsRef = useRef<Record<number, boolean>>({});
 
   useEffect(() => {
     nextStepRef.current = nextStep;
@@ -315,6 +318,24 @@ export function SmartInteractiveTour() {
     }
   }, [navigate, location.pathname]);
 
+  // Tenta abrir abas/seções relevantes antes de procurar o alvo
+  const ensureSectionVisible = useCallback((hints: string[]) => {
+    try {
+      const lc = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const hintLC = hints.map(lc);
+      const candidates = Array.from(document.querySelectorAll('button, [role="tab"], a, [data-tour-open]')) as HTMLElement[];
+      for (const el of candidates) {
+        const text = lc(el.textContent || '');
+        const attrs = `${el.getAttribute('data-tour-open') || ''} ${el.getAttribute('data-tab') || ''} ${el.getAttribute('aria-controls') || ''}`;
+        const attrsLC = lc(attrs);
+        if (hintLC.some(h => text.includes(h) || attrsLC.includes(h))) {
+          el.click();
+          break;
+        }
+      }
+    } catch (_) {}
+  }, []);
+
   // Executar step atual
   useEffect(() => {
     if (currentTour && tourSteps.length > 0 && currentStep < tourSteps.length && !isPaused && !isNavigating) {
@@ -335,6 +356,12 @@ export function SmartInteractiveTour() {
       if (step.condition && !step.condition()) {
         nextStepRef.current();
         return;
+      }
+      
+      // Abrir abas/seções se houver dicas configuradas (executa uma vez por passo)
+      if (step.openHints && !openedStepsRef.current[currentStep]) {
+        ensureSectionVisible(step.openHints);
+        openedStepsRef.current[currentStep] = true;
       }
       
       // Encontrar elemento alvo com polling curto para aguardar carregamento
@@ -420,6 +447,27 @@ useEffect(() => {
   document.addEventListener('keydown', onKeyDown);
   return () => document.removeEventListener('keydown', onKeyDown);
 }, [nextStep, prevStep, completeTour]);
+
+  // Recalcular posição em scroll/resize para manter o spotlight alinhado
+  useEffect(() => {
+    if (!targetElement) return;
+    const update = () => {
+      const rect = targetElement.getBoundingClientRect();
+      setOverlayPosition({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        height: rect.height
+      });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [targetElement, currentStep]);
 
 
   if (!currentTour || tourSteps.length === 0 || currentStep >= tourSteps.length) {
