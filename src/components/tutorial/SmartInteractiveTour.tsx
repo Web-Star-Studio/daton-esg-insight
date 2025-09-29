@@ -242,6 +242,7 @@ export function SmartInteractiveTour() {
   const [showTip, setShowTip] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [currentTourData, setCurrentTourData] = useState<any>(null);
+  const [stepsPatched, setStepsPatched] = useState(false);
 
   // Filtrar steps baseado no perfil do usuário
   const filterStepsByProfile = useCallback((steps: SmartTourStep[]) => {
@@ -283,9 +284,9 @@ export function SmartInteractiveTour() {
       
       const filteredSteps = filterStepsByProfile(tourData.steps);
       setTourSteps(filteredSteps);
-      
-      // Atualizar total de steps
+      // Atualizar total de steps e resetar patch flag
       tourData.totalSteps = filteredSteps.length;
+      setStepsPatched(false);
     }
   }, [currentTour, filterStepsByProfile]);
 
@@ -362,36 +363,32 @@ export function SmartInteractiveTour() {
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname, navigateToPage, nextStep]);
 
-  // Preencher ações de navegação dinamicamente
+  // Preencher ações de navegação dinamicamente (executa uma vez por tour)
   useEffect(() => {
-    if (tourSteps.length > 0) {
-      const updatedSteps = tourSteps.map(step => {
-        if (step.id === 'navigate-performance' && !step.action) {
-          return {
-            ...step,
-            action: () => navigateToPage('/gestao-desempenho')
-          };
-        }
-        if (step.id === 'navigate-esg' && !step.action) {
-          return {
-            ...step,
-            action: () => navigateToPage('/gestao-esg')
-          };
-        }
-        if (step.id === 'navigate-quality' && !step.action) {
-          return {
-            ...step,
-            action: () => navigateToPage('/qualidade')
-          };
-        }
-        return step;
-      });
-      
-      if (updatedSteps !== tourSteps) {
-        setTourSteps(updatedSteps);
+    if (!tourSteps.length || stepsPatched) return;
+
+    let changed = false;
+    const updatedSteps = tourSteps.map(step => {
+      if (step.id === 'navigate-performance' && !step.action) {
+        changed = true;
+        return { ...step, action: () => navigateToPage('/gestao-desempenho') };
       }
+      if (step.id === 'navigate-esg' && !step.action) {
+        changed = true;
+        return { ...step, action: () => navigateToPage('/gestao-esg') };
+      }
+      if (step.id === 'navigate-quality' && !step.action) {
+        changed = true;
+        return { ...step, action: () => navigateToPage('/qualidade') };
+      }
+      return step;
+    });
+
+    if (changed) {
+      setTourSteps(updatedSteps);
     }
-}, [tourSteps, navigateToPage]);
+    setStepsPatched(true);
+  }, [tourSteps, stepsPatched, navigateToPage]);
 
 // Navegação por teclado para o tour
 useEffect(() => {
