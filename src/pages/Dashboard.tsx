@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -113,7 +114,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     description: 'Adicionar novo registro de emissão',
     icon: Plus,
     color: 'bg-green-500 hover:bg-green-600',
-    path: '/inventario-gee/novo'
+    path: '/inventario-gee'
   },
   {
     id: 'new-audit',
@@ -121,7 +122,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     description: 'Iniciar processo de auditoria',
     icon: CheckCircle,
     color: 'bg-blue-500 hover:bg-blue-600',
-    path: '/auditorias/nova'
+    path: '/auditoria'
   },
   {
     id: 'employee-training',
@@ -129,7 +130,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     description: 'Programar capacitação para equipe',
     icon: Calendar,
     color: 'bg-purple-500 hover:bg-purple-600',
-    path: '/treinamentos/novo'
+    path: '/gestao-treinamentos'
   },
   {
     id: 'generate-report',
@@ -137,7 +138,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     description: 'Criar relatório personalizado',
     icon: BarChart3,
     color: 'bg-orange-500 hover:bg-orange-600',
-    path: '/relatorios/novo'
+    path: '/relatorios'
   }
 ];
 
@@ -178,6 +179,7 @@ const RECENT_ACTIVITIES: RecentActivity[] = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedTimeframe, setSelectedTimeframe] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -274,6 +276,7 @@ export default function Dashboard() {
                 key={action.id}
                 variant="outline"
                 size="sm"
+                onClick={() => navigate(action.path)}
                 className={`flex-shrink-0 gap-2 hover-scale transition-all ${action.color} text-white border-0 shadow-md hover:shadow-lg`}
               >
                 <Icon className="w-4 h-4" />

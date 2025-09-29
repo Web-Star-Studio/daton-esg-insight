@@ -10,6 +10,8 @@ import { LoadingFallback } from "@/components/LoadingFallback";
 import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import RouteValidator from "@/components/RouteValidator";
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
@@ -146,20 +148,22 @@ const LazyPublicPageWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <SmartToastProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter 
-            future={{ 
-              v7_startTransition: true, 
-              v7_relativeSplatPath: true 
-            }}
-          >
-            <PageTransition>
-              <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <SmartToastProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter 
+              future={{ 
+                v7_startTransition: true, 
+                v7_relativeSplatPath: true 
+              }}
+            >
+              <RouteValidator>
+                <PageTransition>
+                  <Routes>
             {/* Landing Page - público */}
             <Route path="/" element={<LandingPage />} />
             
@@ -390,13 +394,15 @@ const App = () => (
             
             {/* Catch-all deve ser sempre a última rota */}
             <Route path="*" element={<NotFound />} />
-              </Routes>
-            </PageTransition>
-          </BrowserRouter>
+                  </Routes>
+                </PageTransition>
+              </RouteValidator>
+            </BrowserRouter>
         </SmartToastProvider>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

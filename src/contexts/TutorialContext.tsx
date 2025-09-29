@@ -56,13 +56,18 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restartOnboarding = () => {
-    // Limpar localStorage e reiniciar onboarding via AuthContext
+    // Limpar todos os dados de onboarding e tutorial
     localStorage.removeItem('daton_tutorial_completed');
     localStorage.removeItem('daton_tutorial_progress');
     localStorage.removeItem('daton_user_profile');
+    localStorage.removeItem('daton_onboarding_completed');
+    localStorage.removeItem('daton_onboarding_progress');
+    localStorage.removeItem('daton_onboarding_selections');
     
-    console.log('Tutorial reiniciado - redirecionando para onboarding');
-    window.location.reload(); // Força reload para reiniciar o fluxo
+    console.log('Tutorial e onboarding reiniciados - redirecionando...');
+    
+    // Navegar para onboarding em vez de reload
+    window.location.href = '/onboarding';
   };
 
   const startTour = (tourId: string) => {
