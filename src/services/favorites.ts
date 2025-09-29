@@ -12,12 +12,13 @@ export const addToFavorites = async (solutionId: string): Promise<MarketplaceFav
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   if (!profile) throw new Error('User profile not found');
 
   const { data, error } = await supabase
@@ -28,9 +29,10 @@ export const addToFavorites = async (solutionId: string): Promise<MarketplaceFav
       solution_id: solutionId,
     })
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao adicionar aos favoritos: ${error.message}`);
+  if (!data) throw new Error('Não foi possível adicionar aos favoritos');
   return data;
 };
 
@@ -65,14 +67,13 @@ export const isFavorite = async (solutionId: string): Promise<boolean> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('marketplace_favorites')
     .select('id')
     .eq('user_id', user.id)
     .eq('solution_id', solutionId)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
   return !!data;
 };
 

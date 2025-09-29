@@ -46,9 +46,10 @@ export const getESGRisk = async (id: string) => {
     .from('esg_risks')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao buscar risco: ${error.message}`);
+  if (!data) throw new Error('Risco não encontrado');
   return data;
 };
 
@@ -57,9 +58,10 @@ export const createESGRisk = async (risk: Omit<ESGRisk, 'id' | 'inherent_risk_le
     .from('esg_risks')
     .insert(risk)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar risco: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar o risco');
   return data;
 };
 
@@ -69,9 +71,10 @@ export const updateESGRisk = async (id: string, updates: Partial<ESGRisk>) => {
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar risco: ${error.message}`);
+  if (!data) throw new Error('Risco não encontrado');
   return data;
 };
 

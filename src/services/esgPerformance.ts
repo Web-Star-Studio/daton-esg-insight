@@ -35,9 +35,10 @@ export const getESGPerformanceIndicator = async (id: string) => {
     .from('esg_performance_indicators')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao buscar indicador: ${error.message}`);
+  if (!data) throw new Error('Indicador não encontrado');
   return data;
 };
 
@@ -46,9 +47,10 @@ export const createESGPerformanceIndicator = async (indicator: Omit<ESGPerforman
     .from('esg_performance_indicators')
     .insert(indicator)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar indicador: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar o indicador');
   return data;
 };
 
@@ -58,9 +60,10 @@ export const updateESGPerformanceIndicator = async (id: string, updates: Partial
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar indicador: ${error.message}`);
+  if (!data) throw new Error('Indicador não encontrado');
   return data;
 };
 

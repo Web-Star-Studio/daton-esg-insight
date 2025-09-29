@@ -63,12 +63,17 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    const { data: profile } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('company_id, full_name')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
+    if (profileError) {
+      console.error('Profile fetch error:', profileError)
+      return new Response('Error fetching profile', { status: 500, headers: corsHeaders })
+    }
+    
     if (!profile) {
       return new Response('Profile not found', { status: 404, headers: corsHeaders })
     }
@@ -106,7 +111,7 @@ async function generateInsights(cardType: string, cardData: any, profile: any, s
     .from('companies')
     .select('name, sector')
     .eq('id', profile.company_id)
-    .single()
+    .maybeSingle()
 
   const context = {
     company_name: company?.name || 'Empresa',
@@ -226,8 +231,16 @@ Retorne SEMPRE um JSON válido seguindo exatamente esta estrutura:
     
     console.log('OpenAI Raw Response:', content.substring(0, 200) + '...')
     
+    // Clean markdown code blocks from response
+    let cleanedContent = content.trim()
+    if (cleanedContent.startsWith('```json')) {
+      cleanedContent = cleanedContent.replace(/^```json\n?/, '').replace(/\n?```$/, '')
+    } else if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```\n?/, '').replace(/\n?```$/, '')
+    }
+    
     // Parse JSON response
-    const parsedResponse = JSON.parse(content)
+    const parsedResponse = JSON.parse(cleanedContent)
     return parsedResponse.insights || []
 
   } catch (error) {
