@@ -121,8 +121,8 @@ const SMART_TOUR_DEFINITIONS = {
         page: '/gestao-desempenho',
         tip: 'Impacto Estratégico: Vincule metas individuais aos KPIs ESG corporativos para multiplicar o engajamento. Use analytics de RH para identificar talentos ESG e desenvolver lideranças sustentáveis através de trilhas de aprendizagem personalizadas.',
         highlight: true,
-        autoAdvance: false,
-        delay: 5000
+        autoAdvance: true,
+        delay: 4000
       },
       {
         id: 'evaluation-cycles',
