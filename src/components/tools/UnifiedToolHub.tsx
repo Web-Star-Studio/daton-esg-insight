@@ -56,9 +56,9 @@ export function UnifiedToolHub() {
       description: 'Guia interativo',
       icon: BookOpen,
       action: async () => {
-        toast({ title: "Iniciando tour...", description: "Aguarde um momento" });
+        toast({ title: "Iniciando tour completo...", description: "Navegando pela plataforma" });
         await new Promise(resolve => setTimeout(resolve, 300));
-        startTour('dashboard-intro');
+        startTour('complete-platform-tour');
         setIsOpen(false);
       }
     },

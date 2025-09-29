@@ -185,17 +185,17 @@ const SMART_TOUR_DEFINITIONS = {
       },
 
       // Finalização
-      {
-        id: 'tour-complete',
-        title: '🎉 Tour Concluído!',
-        description: 'Parabéns! Você conheceu as principais funcionalidades da plataforma. Continue explorando e personalizando sua experiência.',
-        target: '[data-tour="dashboard-main"]',
-        placement: 'center' as const,
-        page: '/',
-        tip: 'Use o botão de ajuda (?) sempre que precisar de orientações adicionais.',
-        highlight: false,
-        autoAdvance: false
-      }
+        {
+          id: 'tour-complete',
+          title: '🎉 Tour Concluído!',
+          description: 'Parabéns! Você conheceu as principais funcionalidades da plataforma. Continue explorando e personalizando sua experiência.',
+          target: '[data-tour="dashboard-main"]',
+          placement: 'center' as const,
+          page: '/',
+          tip: 'Use o botão de ajuda (?) sempre que precisar de orientações adicionais.',
+          highlight: false,
+          autoAdvance: false
+        }
     ]
   },
 
@@ -229,7 +229,7 @@ const SMART_TOUR_DEFINITIONS = {
   }
 };
 
-export { SmartInteractiveTour };
+export function SmartInteractiveTour() {
   const { currentTour, currentStep, nextStep, prevStep, completeTour, userProfile } = useTutorial();
   const navigate = useNavigate();
   const location = useLocation();

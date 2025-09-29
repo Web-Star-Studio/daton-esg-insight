@@ -5,6 +5,7 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { TutorialProvider } from "@/contexts/TutorialContext"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
 import { UnifiedToolHub } from "@/components/tools/UnifiedToolHub"
+import { SmartInteractiveTour } from "@/components/tutorial/SmartInteractiveTour"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -39,6 +40,9 @@ export function MainLayout({ children }: MainLayoutProps) {
         
         {/* Unified Tool Hub - Single entry point for all tools */}
         <UnifiedToolHub />
+        
+        {/* Smart Interactive Tour - Intelligent guided tour system */}
+        <SmartInteractiveTour />
       </SidebarProvider>
     </TutorialProvider>
   )
