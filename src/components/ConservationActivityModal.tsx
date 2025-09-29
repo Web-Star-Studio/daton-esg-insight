@@ -139,10 +139,44 @@ export function ConservationActivityModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.activity_type || !formData.start_date) {
+    // Validação e sanitização
+    const trimmedTitle = formData.title.trim();
+    const trimmedDescription = formData.description.trim();
+    const trimmedLocation = formData.location.trim();
+    const trimmedMethodology = formData.methodology.trim();
+    const trimmedMonitoringPlan = formData.monitoring_plan.trim();
+
+    if (!trimmedTitle || !formData.activity_type || !formData.start_date) {
       toast({
         title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios (título, tipo de atividade e data de início).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (trimmedTitle.length > 255) {
+      toast({
+        title: "Título muito longo",
+        description: "O título deve ter no máximo 255 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.area_size < 0) {
+      toast({
+        title: "Área inválida",
+        description: "A área deve ser um valor positivo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.investment_amount < 0) {
+      toast({
+        title: "Investimento inválido",
+        description: "O investimento deve ser um valor positivo.",
         variant: "destructive",
       });
       return;
@@ -151,20 +185,25 @@ export function ConservationActivityModal({
     try {
       setLoading(true);
 
-      const data = {
+      const sanitizedData = {
         ...formData,
+        title: trimmedTitle,
+        description: trimmedDescription,
+        location: trimmedLocation,
+        methodology: trimmedMethodology,
+        monitoring_plan: trimmedMonitoringPlan,
         start_date: formData.start_date.toISOString().split('T')[0],
         end_date: formData.end_date?.toISOString().split('T')[0],
       };
 
       if (activity) {
-        await carbonCompensationService.updateActivity(activity.id, data);
+        await carbonCompensationService.updateActivity(activity.id, sanitizedData);
         toast({
           title: "Sucesso",
           description: "Atividade atualizada com sucesso!",
         });
       } else {
-        await carbonCompensationService.createActivity(data);
+        await carbonCompensationService.createActivity(sanitizedData);
         toast({
           title: "Sucesso",
           description: "Atividade de conservação criada com sucesso!",
@@ -173,11 +212,12 @@ export function ConservationActivityModal({
 
       onActivityCreated();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar atividade:', error);
+      const errorMessage = error?.message || "Erro ao salvar atividade de conservação";
       toast({
         title: "Erro",
-        description: "Erro ao salvar atividade de conservação",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

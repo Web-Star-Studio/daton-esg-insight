@@ -190,9 +190,21 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Sanitizar e validar dados
+    const sanitizedData = {
+      ...formData,
+      employee_code: formData.employee_code.trim(),
+      full_name: formData.full_name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      department: formData.department.trim(),
+      position: formData.position.trim(),
+      location: formData.location.trim()
+    };
+    
     // Validate form data
     try {
-      employeeSchema.parse(formData);
+      employeeSchema.parse(sanitizedData);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.issues[0].message);
@@ -200,13 +212,29 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       }
     }
 
+    // Validações adicionais
+    if (sanitizedData.full_name.length > 255) {
+      toast.error('Nome muito longo (máximo 255 caracteres)');
+      return;
+    }
+
+    if (sanitizedData.employee_code.length > 50) {
+      toast.error('Código do funcionário muito longo (máximo 50 caracteres)');
+      return;
+    }
+
+    if (sanitizedData.email && !sanitizedData.email.includes('@')) {
+      toast.error('E-mail inválido');
+      return;
+    }
+
     setLoading(true);
     try {
       if (employee) {
-        await updateEmployee(employee.id, formData);
+        await updateEmployee(employee.id, sanitizedData);
       } else {
-        // Remove company_id from formData - let the service handle it
-        const { position_id, ...employeeData } = formData; // Also remove position_id from employee creation for now
+        // Remove position_id from employee creation for now
+        const { position_id, ...employeeData } = sanitizedData;
         await createEmployee(employeeData);
       }
       onSuccess();

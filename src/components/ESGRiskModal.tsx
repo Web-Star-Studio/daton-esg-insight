@@ -148,25 +148,48 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.risk_title || !formData.esg_category || !formData.probability || !formData.impact) {
+    // Validação e sanitização
+    const trimmedTitle = formData.risk_title.trim();
+    const trimmedDescription = formData.risk_description.trim();
+    const trimmedOwner = formData.risk_owner.trim();
+    
+    if (!trimmedTitle || !formData.esg_category || !formData.probability || !formData.impact) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios (título, categoria ESG, probabilidade e impacto).",
         variant: "destructive",
       });
       return;
     }
 
-    const submitData = {
+    if (trimmedTitle.length > 255) {
+      toast({
+        title: "Título muito longo",
+        description: "O título deve ter no máximo 255 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const sanitizedData = {
       ...formData,
+      risk_title: trimmedTitle,
+      risk_description: trimmedDescription,
+      risk_owner: trimmedOwner,
+      control_measures: formData.control_measures.trim(),
+      mitigation_actions: formData.mitigation_actions.trim(),
+      treatment_plan: formData.treatment_plan.trim(),
+      business_impact: formData.business_impact.trim(),
+      regulatory_impact: formData.regulatory_impact.trim(),
+      reputation_impact: formData.reputation_impact.trim(),
       esg_category: formData.esg_category as 'Environmental' | 'Social' | 'Governance',
       next_review_date: nextReviewDate ? format(nextReviewDate, 'yyyy-MM-dd') : ''
     } as any;
 
     if (mode === 'create') {
-      createRiskMutation.mutate(submitData);
+      createRiskMutation.mutate(sanitizedData);
     } else if (mode === 'edit' && risk) {
-      updateRiskMutation.mutate({ id: risk.id, updates: submitData });
+      updateRiskMutation.mutate({ id: risk.id, updates: sanitizedData });
     }
   };
 

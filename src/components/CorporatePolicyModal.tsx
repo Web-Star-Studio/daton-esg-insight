@@ -40,22 +40,55 @@ export function CorporatePolicyModal({ isOpen, onClose, policy, onUpdate }: Corp
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validação e sanitização
+    const trimmedTitle = formData.title.trim();
+    const trimmedCategory = formData.category.trim();
+    const trimmedDescription = formData.description.trim();
+    const trimmedContent = formData.content.trim();
+    const trimmedVersion = formData.version.trim();
+
+    if (!trimmedTitle || !trimmedCategory) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Título e categoria são obrigatórios.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (trimmedTitle.length > 255) {
+      toast({
+        title: "Título muito longo",
+        description: "O título deve ter no máximo 255 caracteres.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const policyData = {
+      const sanitizedData = {
         ...formData,
+        title: trimmedTitle,
+        category: trimmedCategory,
+        description: trimmedDescription,
+        content: trimmedContent,
+        version: trimmedVersion,
+        file_path: formData.file_path.trim(),
         effective_date: format(formData.effective_date, 'yyyy-MM-dd'),
         review_date: formData.review_date ? format(formData.review_date, 'yyyy-MM-dd') : undefined,
         approval_date: formData.approval_date ? format(formData.approval_date, 'yyyy-MM-dd') : undefined,
       };
 
       if (policy) {
-        await updateCorporatePolicy(policy.id, policyData);
+        await updateCorporatePolicy(policy.id, sanitizedData);
         toast({
           title: "Sucesso",
           description: "Política atualizada com sucesso!",
         });
       } else {
-        await createCorporatePolicy(policyData as any);
+        await createCorporatePolicy(sanitizedData as any);
         toast({
           title: "Sucesso",
           description: "Política criada com sucesso!",
@@ -65,9 +98,11 @@ export function CorporatePolicyModal({ isOpen, onClose, policy, onUpdate }: Corp
       onUpdate();
       onClose();
     } catch (error: any) {
+      console.error('Error saving policy:', error);
+      const errorMessage = error?.message || "Erro ao salvar política";
       toast({
         title: "Erro",
-        description: error.message || "Erro ao salvar política",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

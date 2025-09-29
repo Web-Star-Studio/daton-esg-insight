@@ -45,9 +45,37 @@ export function BoardMemberModal({ isOpen, onClose, member, onUpdate }: BoardMem
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Validação client-side
+    const trimmedFullName = formData.full_name.trim();
+    const trimmedPosition = formData.position.trim();
+    
+    if (!trimmedFullName || !trimmedPosition) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome completo e cargo são obrigatórios.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (trimmedFullName.length > 255) {
+      toast({
+        title: "Nome muito longo",
+        description: "Nome deve ter no máximo 255 caracteres.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const memberData = {
+      const sanitizedData = {
         ...formData,
+        full_name: trimmedFullName,
+        position: trimmedPosition,
+        committee: formData.committee.trim(),
+        biography: formData.biography.trim(),
         age: formData.age ? parseInt(formData.age) : undefined,
         experience_years: formData.experience_years ? parseInt(formData.experience_years) : undefined,
         appointment_date: format(formData.appointment_date, 'yyyy-MM-dd'),
@@ -55,13 +83,13 @@ export function BoardMemberModal({ isOpen, onClose, member, onUpdate }: BoardMem
       };
 
       if (member) {
-        await updateBoardMember(member.id, memberData);
+        await updateBoardMember(member.id, sanitizedData);
         toast({
           title: "Sucesso",
           description: "Conselheiro atualizado com sucesso!",
         });
       } else {
-        await createBoardMember(memberData as any);
+        await createBoardMember(sanitizedData as any);
         toast({
           title: "Sucesso",
           description: "Conselheiro adicionado com sucesso!",
@@ -71,9 +99,11 @@ export function BoardMemberModal({ isOpen, onClose, member, onUpdate }: BoardMem
       onUpdate();
       onClose();
     } catch (error: any) {
+      console.error('Error saving board member:', error);
+      const errorMessage = error?.message || "Erro ao salvar conselheiro";
       toast({
         title: "Erro",
-        description: error.message || "Erro ao salvar conselheiro",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
