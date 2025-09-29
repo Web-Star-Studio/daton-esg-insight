@@ -513,12 +513,15 @@ useEffect(() => {
   };
 
   const handleRestart = () => {
+    // Reinício suave sem recarregar página nem mudar rota
     setIsPaused(false);
-    // Reiniciar tour - implementar lógica
-    navigate('/');
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    // Apenas volta ao primeiro passo mantendo a rota atual
+    if (currentStep > 0) {
+      // Usar next/prev em laço simples evita setState em cascata
+      for (let i = currentStep; i > 0; i--) {
+        prevStep();
+      }
+    }
   };
 
   return (
