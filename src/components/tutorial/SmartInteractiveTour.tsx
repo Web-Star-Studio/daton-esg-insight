@@ -391,7 +391,19 @@ export function SmartInteractiveTour() {
         setTourSteps(updatedSteps);
       }
     }
-  }, [tourSteps, navigateToPage]);
+}, [tourSteps, navigateToPage]);
+
+// Navegação por teclado para o tour
+useEffect(() => {
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowRight') nextStep();
+    if (e.key === 'ArrowLeft') prevStep();
+    if (e.key === 'Escape') completeTour();
+  };
+  document.addEventListener('keydown', onKeyDown);
+  return () => document.removeEventListener('keydown', onKeyDown);
+}, [nextStep, prevStep, completeTour]);
+
 
   if (!currentTour || tourSteps.length === 0 || currentStep >= tourSteps.length) {
     return null;
@@ -404,8 +416,8 @@ export function SmartInteractiveTour() {
     if (!targetElement) return { top: window.innerHeight / 2, left: window.innerWidth / 2 };
     
     const rect = targetElement.getBoundingClientRect();
-    const tooltipWidth = isMobile ? 320 : 400;
-    const tooltipHeight = 280;
+    const tooltipWidth = isMobile ? 340 : 420;
+    const tooltipHeight = isMobile ? 300 : 320;
     const margin = 20;
     
     let position: { top: number; left: number };
@@ -542,12 +554,14 @@ export function SmartInteractiveTour() {
 
       {/* Card do tour redesignado */}
       <Card 
-        className={`fixed z-50 shadow-2xl transition-all duration-500 ease-out animate-scale-in
+        className={`fixed z-[60] shadow-2xl transition-all duration-500 ease-out animate-scale-in max-w-[92vw]
           ${isMobile ? 'w-[340px]' : 'w-[420px]'} 
           ${currentStepData.placement === 'center' ? 'border-2 border-primary/20 bg-card/95 backdrop-blur-lg' : 'bg-card/95 backdrop-blur-sm border-border/50'}`}
         style={{
-          top: tooltipPosition.top,
-          left: tooltipPosition.left
+          top: currentStepData.placement === 'center' ? '50%' : tooltipPosition.top,
+          left: currentStepData.placement === 'center' ? '50%' : tooltipPosition.left,
+          transform: currentStepData.placement === 'center' ? 'translate(-50%, -50%)' : 'none',
+          width: isMobile ? 'min(92vw, 340px)' : 'min(92vw, 420px)'
         }}
       >
         <CardContent className="p-6 space-y-6">
