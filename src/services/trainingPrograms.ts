@@ -53,10 +53,34 @@ export const getTrainingProgram = async (id: string) => {
 
 export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' | 'created_at' | 'updated_at'>) => {
   console.log('Creating training program:', program);
+
+  // Ensure company and user context
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  if (authError || !userData?.user) {
+    throw new Error('Usuário não autenticado');
+  }
+
+  const { data: companyId, error: companyError } = await supabase.rpc('get_user_company_id');
+  if (companyError || !companyId) {
+    throw new Error(`Empresa não encontrada para o usuário atual`);
+  }
+
+  // Build safe payload (avoid empty strings for UUID columns)
+  const payload = {
+    name: program.name,
+    description: program.description ?? null,
+    category: program.category ?? null,
+    duration_hours: program.duration_hours ?? null,
+    is_mandatory: program.is_mandatory ?? false,
+    valid_for_months: program.valid_for_months ?? null,
+    status: program.status ?? 'Ativo',
+    company_id: companyId as string,
+    created_by_user_id: userData.user.id as string,
+  };
   
   const { data, error } = await supabase
     .from('training_programs')
-    .insert([program])
+    .insert([payload])
     .select()
     .single();
 
@@ -147,10 +171,27 @@ export const getEmployeeTrainings = async () => {
 
 export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'id' | 'created_at' | 'updated_at'>) => {
   console.log('Creating employee training:', training);
+
+  const { data: companyId, error: companyError } = await supabase.rpc('get_user_company_id');
+  if (companyError || !companyId) {
+    throw new Error('Empresa não encontrada para o usuário atual');
+  }
+
+  const payload = {
+    employee_id: training.employee_id,
+    training_program_id: training.training_program_id,
+    completion_date: training.completion_date ?? null,
+    expiration_date: training.expiration_date ?? null,
+    score: training.score ?? null,
+    status: training.status,
+    trainer: training.trainer ?? null,
+    notes: training.notes ?? null,
+    company_id: companyId as string,
+  };
   
   const { data, error } = await supabase
     .from('employee_trainings')
-    .insert([training])
+    .insert([payload])
     .select()
     .single();
 
