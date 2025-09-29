@@ -6,6 +6,7 @@ import { TutorialProvider } from "@/contexts/TutorialContext"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
 import { UnifiedToolHub } from "@/components/tools/UnifiedToolHub"
 import { SmartInteractiveTour } from "@/components/tutorial/SmartInteractiveTour"
+import { ProfessionalModalProvider } from "@/components/ui/professional-modal-manager"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -25,25 +26,27 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <TutorialProvider>
-      <SidebarProvider defaultOpen={true}>
-        <div className="min-h-screen flex w-full bg-background" data-sidebar>
-          <AppSidebar />
-          
-          <div className="flex-1 flex flex-col min-w-0">
-            <AppHeader />
+      <ProfessionalModalProvider>
+        <SidebarProvider defaultOpen={true}>
+          <div className="min-h-screen flex w-full bg-background" data-sidebar>
+            <AppSidebar />
             
-            <main className="flex-1 p-6 bg-muted/20">
-              {children}
-            </main>
+            <div className="flex-1 flex flex-col min-w-0">
+              <AppHeader />
+              
+              <main className="flex-1 p-6 bg-muted/10">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
-        
-        {/* Unified Tool Hub - Single entry point for all tools */}
-        <UnifiedToolHub />
-        
-        {/* Smart Interactive Tour - Intelligent guided tour system */}
-        <SmartInteractiveTour />
-      </SidebarProvider>
+          
+          {/* Unified Tool Hub - Single entry point for all tools */}
+          <UnifiedToolHub />
+          
+          {/* Smart Interactive Tour - Intelligent guided tour system */}
+          <SmartInteractiveTour />
+        </SidebarProvider>
+      </ProfessionalModalProvider>
     </TutorialProvider>
   )
 }

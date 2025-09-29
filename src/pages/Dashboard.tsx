@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EnhancedCard } from '@/components/ui/enhanced-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -68,8 +69,8 @@ const KPI_CARDS: KPICard[] = [
     change: -12.5,
     changeType: 'positive',
     icon: Leaf,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
     description: 'Total de emissões deste mês'
   },
   {
@@ -79,8 +80,8 @@ const KPI_CARDS: KPICard[] = [
     change: 3.2,
     changeType: 'positive',
     icon: Shield,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
     description: 'Índice de conformidade regulatória'
   },
   {
@@ -90,8 +91,8 @@ const KPI_CARDS: KPICard[] = [
     change: 5.8,
     changeType: 'positive',
     icon: Users,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
+    color: 'text-accent',
+    bgColor: 'bg-accent/10',
     description: 'Total de colaboradores ativos'
   },
   {
@@ -101,8 +102,8 @@ const KPI_CARDS: KPICard[] = [
     change: -0.5,
     changeType: 'negative',
     icon: Award,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
     description: 'Índice de qualidade dos processos'
   }
 ];
@@ -236,7 +237,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6 animate-fade-in" data-tour="dashboard-main">
+    <div className="space-y-8 animate-fade-in" data-tour="dashboard-main">
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -249,15 +250,15 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <Button variant="outline" size="sm" className="gap-2">
+          <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <Button variant="minimal" size="sm" className="gap-2 focus-ring">
               <Filter className="w-4 h-4" />
               Filtros
             </Button>
             <select 
               value={selectedTimeframe}
               onChange={(e) => setSelectedTimeframe(e.target.value)}
-              className="px-3 py-2 text-sm border border-border rounded-md bg-background"
+              className="px-3 py-2 text-sm border border-border/50 rounded-lg bg-background hover:border-border transition-colors focus-ring"
             >
               <option value="week">Esta semana</option>
               <option value="month">Este mês</option>
@@ -268,16 +269,16 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-2 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.3s' }} data-tour="quick-actions">
+        <div className="flex gap-3 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.3s' }} data-tour="quick-actions">
           {QUICK_ACTIONS.map((action) => {
             const Icon = action.icon;
             return (
               <Button
                 key={action.id}
-                variant="outline"
+                variant="minimal"
                 size="sm"
                 onClick={() => navigate(action.path)}
-                className={`flex-shrink-0 gap-2 hover-scale transition-all ${action.color} text-white border-0 shadow-md hover:shadow-lg`}
+                className="flex-shrink-0 gap-2 transition-all hover:shadow-md focus-ring whitespace-nowrap"
               >
                 <Icon className="w-4 h-4" />
                 {action.title}
@@ -288,54 +289,27 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="stats-cards">
         {KPI_CARDS.map((kpi, index) => {
           const Icon = kpi.icon;
           const ChangeIcon = getChangeIcon(kpi.changeType);
           
           return (
-            <Card 
-              key={kpi.id} 
-              className="hover:shadow-lg transition-all duration-300 hover-scale cursor-pointer border-0 shadow-md animate-fade-in"
+            <EnhancedCard
+              key={kpi.id}
+              title={kpi.title}
+              subtitle={kpi.description}
+              icon={Icon}
+              iconColor={kpi.color}
+              iconBg={kpi.bgColor}
+              value={kpi.value}
+              change={kpi.change}
+              changeType={kpi.changeType}
+              trend={ChangeIcon && <ChangeIcon className="w-4 h-4" />}
+              variant="stat"
+              className="group animate-fade-in"
               style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className={`w-10 h-10 rounded-lg ${kpi.bgColor} flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${kpi.color}`} />
-                  </div>
-                  <Button variant="ghost" size="sm" className="w-6 h-6 p-0">
-                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                  </Button>
-                </div>
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {kpi.title}
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-2xl font-bold text-foreground">
-                      {kpi.value}
-                    </span>
-                    
-                    {ChangeIcon && (
-                      <div className={`flex items-center gap-1 ${getChangeColor(kpi.changeType)}`}>
-                        <ChangeIcon className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                          {Math.abs(kpi.change)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground">
-                    {kpi.description}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            />
           );
         })}
       </div>
@@ -343,70 +317,88 @@ export default function Dashboard() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <Card className="lg:col-span-2 shadow-md border-0 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+        <EnhancedCard 
+          className="lg:col-span-2 animate-fade-in" 
+          style={{ animationDelay: '0.8s' }}
+          variant="premium"
+        >
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 Desempenho ESG
               </CardTitle>
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 text-xs">
                 <Sparkles className="w-3 h-3" />
-                Atualizado em tempo real
+                Tempo real
               </Badge>
             </div>
           </CardHeader>
           
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Progress Indicators */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
-                  <span className="text-sm text-muted-foreground">87%</span>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
+                    <span className="text-sm font-bold text-success">87%</span>
+                  </div>
+                  <Progress value={87} className="h-2" />
                 </div>
-                <Progress value={87} className="h-3" />
                 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">Social (S)</span>
-                  <span className="text-sm text-muted-foreground">92%</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Social (S)</span>
+                    <span className="text-sm font-bold text-primary">92%</span>
+                  </div>
+                  <Progress value={92} className="h-2" />
                 </div>
-                <Progress value={92} className="h-3" />
                 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">Governança (G)</span>
-                  <span className="text-sm text-muted-foreground">95%</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Governança (G)</span>
+                    <span className="text-sm font-bold text-accent">95%</span>
+                  </div>
+                  <Progress value={95} className="h-2" />
                 </div>
-                <Progress value={95} className="h-3" />
               </div>
 
-              <div className="pt-4 border-t border-border/50">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Target className="w-4 h-4" />
-                  Meta geral: 90% | Atual: 91.3%
+              <div className="pt-4 border-t border-border/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Target className="w-4 h-4" />
+                    Meta geral: 90%
+                  </div>
+                  <span className="text-sm font-bold text-primary">91.3%</span>
                 </div>
               </div>
             </div>
           </CardContent>
-        </Card>
+        </EnhancedCard>
 
         {/* Recent Activities */}
-        <Card className="shadow-md border-0 animate-fade-in" style={{ animationDelay: '0.9s' }}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <EnhancedCard 
+          className="animate-fade-in" 
+          style={{ animationDelay: '0.9s' }}
+          variant="minimal"
+          hoverable={false}
+        >
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <Bell className="w-5 h-5 text-primary" />
               Atividades Recentes
             </CardTitle>
           </CardHeader>
           
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {RECENT_ACTIVITIES.map((activity) => {
                 const Icon = activity.icon;
                 return (
                   <div 
                     key={activity.id} 
-                    className="flex gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group"
+                    className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
                       <Icon className="w-4 h-4" />
@@ -430,61 +422,63 @@ export default function Dashboard() {
                 );
               })}
               
-              <Button variant="ghost" size="sm" className="w-full justify-center gap-2 mt-3">
-                <Eye className="w-4 h-4" />
-                Ver todas as atividades
-              </Button>
+              <div className="pt-2">
+                <Button variant="ghost" size="sm" className="w-full justify-center gap-2 focus-ring">
+                  <Eye className="w-4 h-4" />
+                  Ver todas as atividades
+                </Button>
+              </div>
             </div>
           </CardContent>
-        </Card>
+        </EnhancedCard>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '1s' }}>
-        <Card className="shadow-md border-0 hover:shadow-lg transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '1s' }}>
+        <EnhancedCard variant="minimal" className="group">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center">
+                <Zap className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Economia de Energia</p>
-                <p className="text-lg font-bold text-foreground">12.5 MWh</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Economia de Energia</p>
+                <p className="text-xl font-bold text-foreground">12.5 MWh</p>
                 <p className="text-xs text-muted-foreground">Este mês</p>
               </div>
             </div>
           </CardContent>
-        </Card>
+        </EnhancedCard>
 
-        <Card className="shadow-md border-0 hover:shadow-lg transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-white" />
+        <EnhancedCard variant="minimal" className="group">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-success to-primary rounded-xl flex items-center justify-center">
+                <Leaf className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Redução CO₂</p>
-                <p className="text-lg font-bold text-foreground">-15.3%</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Redução CO₂</p>
+                <p className="text-xl font-bold text-success">-15.3%</p>
                 <p className="text-xs text-muted-foreground">vs mês anterior</p>
               </div>
             </div>
           </CardContent>
-        </Card>
+        </EnhancedCard>
 
-        <Card className="shadow-md border-0 hover:shadow-lg transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
+        <EnhancedCard variant="minimal" className="group">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-accent to-warning rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Satisfação RH</p>
-                <p className="text-lg font-bold text-foreground">4.7/5</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Satisfação RH</p>
+                <p className="text-xl font-bold text-foreground">4.7/5</p>
                 <p className="text-xs text-muted-foreground">Última pesquisa</p>
               </div>
             </div>
           </CardContent>
-        </Card>
+        </EnhancedCard>
       </div>
     </div>
   );

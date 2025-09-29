@@ -74,8 +74,24 @@ All colors MUST be HSL.
     --shadow-elegant: 0 10px 30px -10px hsl(0 0% 9% / 0.1);
     --shadow-card: 0 4px 12px -2px hsl(0 0% 9% / 0.08);
     
-    /* Transições suaves */
+    /* Transições suaves e sistema de sombras profissionais */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Sistema de sombras minimalistas */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 9% / 0.05);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 9% / 0.1), 0 1px 2px -1px hsl(0 0% 9% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 9% / 0.1), 0 2px 4px -2px hsl(0 0% 9% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 9% / 0.1), 0 4px 6px -4px hsl(0 0% 9% / 0.1);
+    --shadow-hover: 0 20px 25px -5px hsl(0 0% 9% / 0.1), 0 8px 10px -6px hsl(0 0% 9% / 0.1);
+    
+    /* Sistema de spacing profissional (8px grid) */
+    --spacing-xs: 0.25rem; /* 4px */
+    --spacing-sm: 0.5rem;  /* 8px */
+    --spacing-md: 1rem;    /* 16px */
+    --spacing-lg: 1.5rem;  /* 24px */
+    --spacing-xl: 2rem;    /* 32px */
+    --spacing-2xl: 3rem;   /* 48px */
   }
 
   .dark {
@@ -158,5 +174,51 @@ All colors MUST be HSL.
 
   .client-logos-slider:hover {
     animation-play-state: paused;
+  }
+
+  /* Professional card hover states */
+  .card-hover {
+    transition: var(--transition-smooth);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  /* Professional button variants */
+  .btn-minimal {
+    @apply bg-background border border-border/50 text-foreground hover:border-border hover:bg-muted/50;
+    transition: var(--transition-fast);
+  }
+
+  .btn-premium {
+    @apply bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-md hover:shadow-lg;
+    transition: var(--transition-smooth);
+  }
+
+  .btn-premium:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Loading states */
+  .loading-shimmer {
+    background: linear-gradient(90deg, 
+      hsl(var(--muted)) 25%, 
+      hsl(var(--muted-foreground) / 0.1) 50%, 
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Improved focus states */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 }
