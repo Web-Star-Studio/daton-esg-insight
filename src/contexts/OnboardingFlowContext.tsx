@@ -4,26 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface ModuleConfig {
-  inventario_gee?: {
-    ano_base: number;
-    unidade_operacional: string;
-    escopo: string[];
-  };
-  gestao_licencas?: {
-    orgaos_reguladores: string[];
-    tipos_licencas: string[];
-    alertas_vencimento: boolean;
-  };
-  gestao_desempenho?: {
-    ciclo_avaliacao: string;
-    competencias_chave: string[];
-    metas_organizacionais: string[];
-  };
-  sistema_qualidade?: {
-    normas_aplicaveis: string[];
-    processos_criticos: string[];
-    politica_qualidade: string;
-  };
+  [key: string]: any;
 }
 
 interface OnboardingFlowState {
@@ -110,15 +91,38 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     if (!user?.id) return;
 
     try {
-      // Salvar apenas no localStorage por enquanto
+      // Primeiro tenta inserir, se falhar, faz update
+      const { error } = await supabase
+        .from('onboarding_selections')
+        .upsert([{
+          user_id: user.id,
+          company_id: user.company?.id!,
+          current_step: state.currentStep,
+          selected_modules: state.selectedModules,
+          module_configurations: state.moduleConfigurations,
+          is_completed: state.isCompleted,
+          updated_at: new Date().toISOString()
+        }]);
+
+      if (error) {
+        console.error('Error saving to database:', error);
+        // Fallback para localStorage se der erro no banco
+        localStorage.setItem('daton_onboarding_progress', JSON.stringify({
+          currentStep: state.currentStep,
+          selectedModules: state.selectedModules,
+          moduleConfigurations: state.moduleConfigurations,
+          isCompleted: state.isCompleted
+        }));
+      }
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
+      // Fallback para localStorage
       localStorage.setItem('daton_onboarding_progress', JSON.stringify({
         currentStep: state.currentStep,
         selectedModules: state.selectedModules,
         moduleConfigurations: state.moduleConfigurations,
         isCompleted: state.isCompleted
       }));
-    } catch (error) {
-      console.error('Error saving onboarding data:', error);
     }
   };
 
@@ -165,13 +169,26 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
+      // Salvar configurações finais no banco
+      await supabase
+        .from('onboarding_selections')
+        .upsert([{
+          user_id: user!.id,
+          company_id: user!.company?.id!,
+          current_step: state.currentStep,
+          selected_modules: state.selectedModules,
+          module_configurations: state.moduleConfigurations,
+          is_completed: true,
+          updated_at: new Date().toISOString()
+        }]);
+
       // Mark user as completed onboarding
       await supabase
         .from('profiles')
         .update({ has_completed_onboarding: true })
         .eq('id', user!.id);
 
-      // Clear onboarding progress
+      // Clear onboarding progress from localStorage
       localStorage.removeItem('daton_onboarding_progress');
 
       setState(prev => ({
@@ -181,8 +198,8 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
       }));
 
       toast({
-        title: 'Onboarding Concluído!',
-        description: 'Sua configuração inicial foi salva com sucesso.',
+        title: 'Onboarding Concluído! 🎉',
+        description: 'Sua configuração inicial foi salva com sucesso. Bem-vindo ao Daton!',
       });
 
     } catch (error) {
@@ -191,7 +208,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
       
       toast({
         title: 'Erro ao finalizar',
-        description: 'Ocorreu um erro ao finalizar o onboarding.',
+        description: 'Ocorreu um erro ao finalizar o onboarding. Tente novamente.',
         variant: 'destructive'
       });
     }

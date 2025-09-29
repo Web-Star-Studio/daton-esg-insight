@@ -160,9 +160,7 @@ function OnboardingContent() {
               currentStep={state.currentStep}
               totalSteps={state.totalSteps}
               stepTitles={stepTitles}
-              completedSteps={completedSteps}
               selectedModules={state.selectedModules}
-              smartMode={!!companyProfile}
             />
           </div>
         </div>
