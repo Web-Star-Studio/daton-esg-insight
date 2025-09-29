@@ -80,6 +80,9 @@ const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
 const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos").then(module => ({ default: module.GerenciamentoProjetos })));
+const AuditoriaInternas = lazy(() => import("./pages/AuditoriaInternas"));
+const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
+const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
 
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
@@ -346,6 +349,10 @@ const App = () => (
             <Route path="/gestao-fornecedores" element={<LazyPageWrapper><GestaoFornecedores /></LazyPageWrapper>} />
             <Route path="/quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
             <Route path="/gerenciamento-projetos" element={<LazyPageWrapper><GerenciamentoProjetos /></LazyPageWrapper>} />
+            <Route path="/auditorias-internas" element={<LazyPageWrapper><AuditoriaInternas /></LazyPageWrapper>} />
+            <Route path="/acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
+            <Route path="/controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
+            <Route path="/avaliacao-fornecedores" element={<Navigate to="/gestao-fornecedores" replace />} />
             
             {/* RH modules */}
             <Route path="/estrutura-organizacional" element={<LazyPageWrapper><EstruturaOrganizacional /></LazyPageWrapper>} />
@@ -380,6 +387,7 @@ const App = () => (
             <Route path="/painel-governanca" element={<LazyPageWrapper><PainelGovernanca /></LazyPageWrapper>} />
             <Route path="/compliance-politicas" element={<Navigate to="/compliance" replace />} />
             <Route path="/auditorias" element={<Navigate to="/auditoria" replace />} />
+            <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/dashboard-sgq" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/gerador-relatorios" element={<Navigate to="/relatorios" replace />} />
             <Route path="/marketplace-esg" element={<Navigate to="/marketplace" replace />} />
