@@ -55,45 +55,45 @@ const SMART_TOUR_DEFINITIONS = {
       {
         id: 'welcome-dashboard',
         title: '🎯 Bem-vindo ao Daton ESG!',
-        description: 'Esta é sua central de comando ESG. Aqui você monitora métricas sustentáveis em tempo real, acompanha o progresso das iniciativas e toma decisões baseadas em dados para impulsionar a transformação ESG da sua organização.',
+        description: 'Esta é sua central de comando ESG integrada e inteligente. Aqui você monitora métricas sustentáveis em tempo real, acompanha o progresso das iniciativas ESG e toma decisões baseadas em dados precisos e insights acionáveis para impulsionar a transformação sustentável da sua organização.',
         target: '[data-tour="dashboard-main"]',
         placement: 'center' as const,
         page: '/',
-        tip: 'O dashboard é personalizado conforme seu perfil e exibe apenas as métricas mais relevantes para suas responsabilidades.',
+        tip: 'O dashboard adapta-se automaticamente ao seu perfil profissional, priorizando métricas e funcionalidades mais relevantes. Use os filtros para personalizar ainda mais sua experiência.',
         highlight: true,
-        autoAdvance: true,
+        autoAdvance: false,
         delay: 5000
       },
       {
         id: 'sidebar-navigation',
-        title: '🧭 Navegação Inteligente',
-        description: 'O menu lateral organiza todos os módulos ESG de forma intuitiva. Cada seção é focada em uma área específica da sustentabilidade: Environmental (Ambiental), Social (Social) e Governance (Governança).',
+        title: '🧭 Navegação Inteligente e Estruturada',
+        description: 'O menu lateral organiza estrategicamente todos os módulos ESG seguindo as melhores práticas de sustentabilidade. Cada seção representa um pilar fundamental: Environmental (gestão ambiental), Social (capital humano e comunidade) e Governance (transparência e ética corporativa).',
         target: '[data-tour="sidebar"]',
         placement: 'right' as const,
         page: '/',
-        tip: 'Use atalhos de teclado: Ctrl+1 para Dashboard, Ctrl+2 para ESG, Ctrl+3 para Qualidade.',
+        tip: 'Produtividade: Use atalhos Ctrl+K para busca global, Ctrl+1 Dashboard, Ctrl+2 ESG, Ctrl+3 Qualidade. O menu colapsa automaticamente em telas menores para otimizar espaço.',
         highlight: true,
         delay: 4000
       },
       {
         id: 'stats-overview',
-        title: '📊 KPIs ESG em Tempo Real',
-        description: 'Monitore indicadores-chave de sustentabilidade que são atualizados automaticamente. Emissões de CO₂, conformidade regulatória, indicadores sociais e métricas de governança - tudo em um só lugar.',
+        title: '📊 KPIs ESG em Tempo Real com IA',
+        description: 'Monitore indicadores-chave de sustentabilidade atualizados automaticamente via integrações e análise de IA. Acompanhe emissões de CO₂, índices de conformidade regulatória, indicadores sociais, métricas de governança e alertas inteligentes de desvio - tudo consolidado em uma visão executiva.',
         target: '[data-tour="stats-cards"]',
         placement: 'top' as const,
         page: '/',
-        tip: 'Clique em qualquer KPI para ver análises detalhadas, tendências históricas e planos de ação.',
+        tip: 'Análise Avançada: Clique em qualquer KPI para drill-down com tendências históricas, benchmarks do setor, projeções baseadas em ML e planos de ação automáticos. Configurar alertas personalizados para metas críticas.',
         highlight: true,
         delay: 4000
       },
       {
         id: 'quick-actions',
-        title: '⚡ Ações Rápidas Contextuais',
-        description: 'Acesso direto às tarefas mais comuns: registrar emissões, iniciar auditorias, agendar treinamentos e gerar relatórios. As ações se adaptam às suas atividades mais frequentes.',
+        title: '⚡ Ações Rápidas Inteligentes e Contextuais',
+        description: 'Hub de produtividade com acesso direto às tarefas mais críticas: registrar emissões via upload ou API, iniciar auditorias automatizadas, agendar treinamentos com IA, gerar relatórios regulatórios e executar workflows personalizados. As ações se adaptam dinamicamente às suas responsabilidades e urgências.',
         target: '[data-tour="quick-actions"]',
         placement: 'bottom' as const,
         page: '/',
-        tip: 'Essas ações mudam dinamicamente baseado no seu perfil e nas tarefas pendentes mais urgentes.',
+        tip: 'Automação Inteligente: O sistema aprende seus padrões de uso e sugere ações baseadas em deadline, sazonalidade e prioridades. Configure macros para automatizar sequências de tarefas recorrentes.',
         highlight: true,
         delay: 4000
       },
@@ -113,12 +113,12 @@ const SMART_TOUR_DEFINITIONS = {
       },
       {
         id: 'performance-overview',
-        title: '👥 Gestão de Capital Humano',
-        description: 'Desenvolva seu capital humano com ferramentas completas de gestão de desempenho. Crie ciclos avaliativos, defina metas alinhadas aos ODS, acompanhe desenvolvimento e promova uma cultura de alta performance sustentável.',
+        title: '👥 Gestão Estratégica de Capital Humano ESG',
+        description: 'Desenvolva seu capital humano com ferramentas avançadas de gestão de performance alinhadas aos critérios ESG. Crie ciclos avaliativos integrados aos ODS, defina metas individuais conectadas aos objetivos ESG organizacionais, acompanhe desenvolvimento de competências sustentáveis e construa uma cultura de alta performance com propósito.',
         target: '[data-tour="performance-header"]',
         placement: 'bottom' as const,
         page: '/gestao-desempenho',
-        tip: 'Integre metas ESG individuais aos objetivos organizacionais para fortalecer o engajamento em sustentabilidade.',
+        tip: 'Impacto Estratégico: Vincule metas individuais aos KPIs ESG corporativos para multiplicar o engajamento. Use analytics de RH para identificar talentos ESG e desenvolver lideranças sustentáveis através de trilhas de aprendizagem personalizadas.',
         highlight: true,
         delay: 5000
       },
@@ -149,12 +149,12 @@ const SMART_TOUR_DEFINITIONS = {
       },
       {
         id: 'esg-overview',
-        title: '🌍 Central ESG Completa',
-        description: 'Gerencie todos os aspectos ESG em uma plataforma integrada: monitore emissões de carbono, desenvolva projetos sustentáveis, acompanhe indicadores sociais e mantenha governança transparente e ética.',
+        title: '🌍 Central ESG Completa e Integrada',
+        description: 'Plataforma ESG end-to-end que unifica Environmental (monitoramento de carbono, economia circular, biodiversidade), Social (diversidade, impacto comunitário, cadeia de fornecimento) e Governance (transparência, ética, riscos climáticos). Integração nativa com frameworks GRI, SASB, TCFD e regulamentações como CSRD.',
         target: '[data-tour="esg-header"]',
         placement: 'bottom' as const,
         page: '/gestao-esg',
-        tip: 'O sistema integra automaticamente dados de todas as suas operações para cálculos precisos de impacto ESG.',
+        tip: 'Compliance Automático: Integração API com ERP, sensores IoT e fontes externas para coleta automatizada. Motor de IA calcula automaticamente métricas complexas como Scope 3, análise de materialidade e benchmarking setorial.',
         highlight: true,
         delay: 5000
       },
@@ -174,12 +174,12 @@ const SMART_TOUR_DEFINITIONS = {
       },
       {
         id: 'quality-overview',
-        title: '🏆 Excelência em Qualidade',
-        description: 'Mantenha os mais altos padrões de qualidade com conformidade às normas ISO, gestão inteligente de auditorias, controle sistemático de não conformidades e melhoria contínua de processos.',
+        title: '🏆 Sistema de Excelência em Qualidade Integrada',
+        description: 'Sistema avançado de gestão da qualidade com conformidade multi-normas (ISO 9001, 14001, 45001, 50001), gestão inteligente de auditorias com IA, controle preditivo de não conformidades, automação de processos críticos e melhoria contínua baseada em analytics. Integração completa com sistemas ESG para visão 360°.',
         target: '[data-tour="quality-header"]',
         placement: 'bottom' as const,
         page: '/qualidade',
-        tip: 'Automatize processos de qualidade para reduzir erros humanos e garantir conformidade consistente.',
+        tip: 'Qualidade Preditiva: IA identifica potenciais não-conformidades antes que ocorram. Workflows automatizados garantem CAPA (Ações Corretivas e Preventivas) sistemáticas e rastreamento end-to-end de melhorias.',
         highlight: true,
         delay: 5000
       },
@@ -187,12 +187,12 @@ const SMART_TOUR_DEFINITIONS = {
       // Finalização
         {
           id: 'tour-complete',
-          title: '🎉 Jornada ESG Iniciada!',
-          description: 'Parabéns! Agora você conhece todo o poder do Daton. Continue explorando, personalize sua experiência e comece a transformação ESG da sua organização com dados precisos e insights acionáveis.',
+          title: '🎉 Jornada ESG Iniciada com Sucesso!',
+          description: 'Parabéns por completar o tour! Agora você domina todo o ecossistema Daton ESG. Continue explorando funcionalidades avançadas, personalize dashboards e workflows, configure integrações e inicie a transformação sustentável da sua organização com dados precisos, insights de IA e automação inteligente.',
           target: '[data-tour="dashboard-main"]',
           placement: 'center' as const,
           page: '/',
-          tip: 'Acesse nossa central de ajuda (?) sempre que precisar de orientações detalhadas ou tutoriais específicos.',
+          tip: 'Próximos Passos: Configure suas integrações (ERP, sensores, APIs), personalize dashboards, defina metas ESG e explore nossa academy com cursos especializados. Suporte 24/7 disponível via chat.',
           highlight: false,
           autoAdvance: false
         }
@@ -553,152 +553,140 @@ export function SmartInteractiveTour() {
         <CardContent className="p-6 space-y-6">
           {/* Header minimalista */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center shadow-md">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div className="space-y-1">
-                  <Badge variant="secondary" className="text-xs font-medium px-2 py-1">
-                    {currentStep + 1} de {tourSteps.length}
-                  </Badge>
-                  <div className="text-xs text-muted-foreground font-medium">
-                    {currentTourData?.title}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary via-accent to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
+                    <Target className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="text-xs font-medium px-3 py-1.5 bg-primary/10 text-primary border-primary/20">
+                        {currentStep + 1} de {tourSteps.length}
+                      </Badge>
+                      {currentStepData.autoAdvance && !isPaused && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-100 rounded-full border border-green-200">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          <span className="text-xs text-green-700 font-medium">Avançando...</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">
+                      {currentTourData?.title}
+                    </div>
                   </div>
                 </div>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={completeTour}
+                  className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  title="Fechar tour"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              
-              <div className="flex items-center gap-1">
-                {currentStepData.autoAdvance && !isPaused && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 rounded-full border border-primary/20">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                    <span className="text-xs text-primary font-medium">Auto</span>
-                  </div>
-                )}
-                <div className="flex items-center rounded-lg border border-border/50 bg-background/50">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handlePause}
-                    className="h-8 w-8 p-0 rounded-r-none border-r border-border/50"
-                    title={isPaused ? 'Continuar' : 'Pausar'}
-                  >
-                    {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleSkip}
-                    className="h-8 w-8 p-0 rounded-none border-r border-border/50"
-                    title="Pular step"
-                  >
-                    <SkipForward className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleRestart}
-                    className="h-8 w-8 p-0 rounded-none border-r border-border/50"
-                    title="Reiniciar tour"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={completeTour}
-                    className="h-8 w-8 p-0 rounded-l-none hover:bg-destructive/10 hover:text-destructive"
-                    title="Fechar tour"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+            
+            <div className="space-y-2">
+              <Progress value={progress} className="w-full h-2.5 bg-muted/30" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Progresso do Tour</span>
+                <span className="font-medium">{Math.round(progress)}% concluído</span>
               </div>
             </div>
-            
-            <Progress value={progress} className="w-full h-2 bg-muted/50" />
           </div>
 
-          {/* Conteúdo principal refinado */}
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg text-foreground leading-tight">
+          {/* Conteúdo principal aprimorado */}
+          <div className="space-y-5">
+            <div className="space-y-4">
+              <h3 className="font-bold text-xl text-foreground leading-tight tracking-tight">
                 {currentStepData.title}
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {currentStepData.description}
-              </p>
+              <div className="p-4 bg-muted/30 rounded-lg border border-border/30">
+                <p className="text-sm text-foreground leading-relaxed font-medium">
+                  {currentStepData.description}
+                </p>
+              </div>
             </div>
 
-            {/* Dica elegante */}
+            {/* Dica profissional aprimorada */}
             {currentStepData.tip && (
               <div 
-                className={`group p-4 rounded-xl transition-all duration-300 cursor-pointer border ${
+                className={`group p-5 rounded-xl transition-all duration-300 cursor-pointer border-2 ${
                   showTip 
-                    ? 'bg-primary/5 border-primary/20 shadow-sm' 
-                    : 'bg-muted/30 border-border/50 hover:bg-muted/50 hover:border-border'
+                    ? 'bg-gradient-to-br from-primary/5 to-accent/5 border-primary/30 shadow-lg' 
+                    : 'bg-gradient-to-br from-muted/20 to-muted/10 border-border/40 hover:border-primary/20 hover:shadow-md'
                 }`}
                 onClick={() => setShowTip(!showTip)}
               >
-                <div className="flex items-center gap-2.5 mb-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                    showTip ? 'bg-primary/20' : 'bg-muted'
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    showTip ? 'bg-primary/20 shadow-md' : 'bg-muted/60 group-hover:bg-primary/10'
                   }`}>
-                    <Lightbulb className={`w-3.5 h-3.5 transition-colors ${
-                      showTip ? 'text-primary' : 'text-muted-foreground'
+                    <Lightbulb className={`w-4 h-4 transition-colors ${
+                      showTip ? 'text-primary' : 'text-muted-foreground group-hover:text-primary/70'
                     }`} />
                   </div>
-                  <span className={`text-sm font-medium transition-colors ${
-                    showTip ? 'text-primary' : 'text-foreground'
-                  }`}>
-                    {showTip ? 'Ocultar dica' : 'Ver dica útil'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-semibold transition-colors ${
+                      showTip ? 'text-primary' : 'text-foreground group-hover:text-primary/80'
+                    }`}>
+                      {showTip ? 'Ocultar dica profissional' : '💡 Ver dica profissional'}
+                    </span>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                      showTip ? 'bg-primary/20' : 'bg-muted/40 group-hover:bg-primary/10'
+                    }`}>
+                      <span className={`text-xs transition-transform ${showTip ? 'rotate-180' : ''}`}>▼</span>
+                    </div>
+                  </div>
                 </div>
                 {showTip && (
-                  <p className="text-xs text-muted-foreground leading-relaxed animate-fade-in pl-8">
-                    {currentStepData.tip}
-                  </p>
+                  <div className="animate-fade-in pl-11 space-y-2">
+                    <p className="text-sm text-foreground leading-relaxed font-medium">
+                      {currentStepData.tip}
+                    </p>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Status elegante */}
+            {/* Status interativo */}
             {isPaused && (
-              <div className="flex items-center gap-3 p-3 bg-warning/10 rounded-xl border border-warning/20">
-                <div className="w-5 h-5 rounded-full bg-warning/20 flex items-center justify-center">
-                  <Pause className="w-3 h-3 text-warning" />
+              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border-2 border-orange-200">
+                <div className="w-6 h-6 rounded-full bg-orange-200 flex items-center justify-center">
+                  <Pause className="w-3.5 h-3.5 text-orange-600" />
                 </div>
-                <span className="text-sm text-warning font-medium">Tour pausado</span>
+                <span className="text-sm text-orange-700 font-semibold">Tour pausado - Clique em "Próximo" para continuar</span>
               </div>
             )}
 
-            {/* Navegação refinada */}
-            <div className="flex gap-3 pt-2">
+            {/* Navegação aprimorada */}
+            <div className="flex gap-3 pt-4 border-t border-border/30">
               <Button 
                 variant="outline" 
-                size="sm"
+                size="lg"
                 onClick={prevStep}
-                disabled={currentStep === 0 || isPaused || isNavigating}
-                className="flex-1 h-10 gap-2 focus-ring"
+                disabled={currentStep === 0 || isNavigating}
+                className="flex-1 h-12 gap-3 font-semibold border-2 hover:border-primary/30 hover:bg-primary/5 transition-all disabled:opacity-50"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Anterior
               </Button>
               
               <Button 
-                size="sm"
+                size="lg"
                 onClick={currentStep === tourSteps.length - 1 ? completeTour : nextStep}
-                disabled={isPaused || isNavigating}
-                className={`flex-1 h-10 gap-2 focus-ring font-medium ${
+                disabled={isNavigating}
+                className={`flex-1 h-12 gap-3 font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 ${
                   currentStep === tourSteps.length - 1 
-                    ? 'bg-success hover:bg-success/90 text-success-foreground shadow-md' 
-                    : 'bg-primary hover:bg-primary/90 shadow-md'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
+                    : 'bg-gradient-to-r from-primary to-accent hover:from-primary hover:to-accent/90 text-white'
                 }`}
               >
                 {currentStep === tourSteps.length - 1 ? (
                   <>
-                    <CheckCircle className="w-4 h-4" />
-                    Finalizar
+                    <CheckCircle className="w-5 h-5" />
+                    Finalizar Tour
                   </>
                 ) : (
                   <>
@@ -707,6 +695,13 @@ export function SmartInteractiveTour() {
                   </>
                 )}
               </Button>
+            </div>
+            
+            {/* Informação adicional */}
+            <div className="text-center pt-2">
+              <p className="text-xs text-muted-foreground">
+                Use as setas do teclado ← → para navegar | ESC para sair
+              </p>
             </div>
           </div>
         </CardContent>
