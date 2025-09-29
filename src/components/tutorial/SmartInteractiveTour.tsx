@@ -313,7 +313,7 @@ export function SmartInteractiveTour() {
       navigate(page);
       
       // Aguardar navegação + tempo para DOM se estabilizar
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       setIsNavigating(false);
     }
   }, [navigate, location.pathname]);
@@ -422,9 +422,12 @@ export function SmartInteractiveTour() {
           setTimeout(() => tryFindTarget(retries - 1), 200);
         } else {
           console.debug('Tour: Target não encontrado após polling:', step.target, 'na página:', location.pathname);
-          // Fallback: try auto advance if element isn't found
-          if (step.autoAdvance) {
-            setTimeout(() => nextStepRef.current(), 1000);
+          // Fallback: APENAS para steps de navegação com autoAdvance
+          if (step.autoAdvance && step.id.includes('navigate-')) {
+            console.debug('Tour: Auto-avançando step de navegação:', step.id);
+            setTimeout(() => nextStepRef.current(), 1500);
+          } else {
+            console.warn('Tour: Target não encontrado, aguardando interação manual:', step.target);
           }
           if (step.placement === 'center') {
             // Mostra card centralizado mesmo sem target
@@ -436,7 +439,7 @@ export function SmartInteractiveTour() {
         }
       };
 
-      tryFindTarget(25); // 25 tentativas = ~5s
+      tryFindTarget(15); // 15 tentativas = ~3s
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
 
