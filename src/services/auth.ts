@@ -99,54 +99,59 @@ class AuthService {
    * Obter usuário atual - equivalente ao GET /users/me
    */
   async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user) {
-      return null;
-    }
-
-    console.log('Getting profile for user:', session.user.id);
-
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        companies (
-          id,
-          name
-        )
-      `)
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-
-    if (!profile) {
-      console.error('No profile found for user:', session.user.id);
-      return null;
-    }
-
-    if (!profile.companies) {
-      console.error('No company found for profile:', profile.id);
-      return null;
-    }
-
-    console.log('Profile found successfully:', profile.id);
-
-    return {
-      id: profile.id,
-      full_name: profile.full_name,
-      email: session.user.email!,
-      job_title: profile.job_title,
-      role: profile.role,
-      company: {
-        id: profile.companies.id,
-        name: profile.companies.name
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        return null;
       }
-    };
+
+      console.log('Getting profile for user:', session.user.id);
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          companies (
+            id,
+            name
+          )
+        `)
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      if (!profile) {
+        console.error('No profile found for user:', session.user.id);
+        return null;
+      }
+
+      if (!profile.companies) {
+        console.error('No company found for profile:', profile.id);
+        return null;
+      }
+
+      console.log('Profile found successfully:', profile.id);
+
+      return {
+        id: profile.id,
+        full_name: profile.full_name,
+        email: session.user.email!,
+        job_title: profile.job_title,
+        role: profile.role,
+        company: {
+          id: profile.companies.id,
+          name: profile.companies.name
+        }
+      };
+    } catch (error) {
+      console.error('Error in getCurrentUser:', error);
+      return null;
+    }
   }
 
   /**

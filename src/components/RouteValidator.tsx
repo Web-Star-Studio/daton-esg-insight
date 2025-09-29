@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { NavigationMonitor } from '@/components/NavigationMonitor';
 
 // Lista de rotas válidas para validação
@@ -46,26 +45,18 @@ export function RouteValidator({ children }: RouteValidatorProps) {
              route.includes(':'); // Para rotas dinâmicas
     });
 
-    // Se a rota não for válida e não for a página 404, mostrar aviso
+    // Verificações simplificadas - sem toast para reduzir ruído
     if (!isValidRoute && !currentPath.startsWith('/form/')) {
-      console.warn(`Rota potencialmente inválida detectada: ${currentPath}`);
+      console.warn(`Rota potencialmente inválida: ${currentPath}`);
       
-      // Mostrar toast apenas para rotas que parecem ser erros de digitação
+      // Redirecionamento silencioso para rotas comuns
       if (currentPath.includes('/novo') || currentPath.includes('/nova')) {
-        toast.warning('Página não encontrada', {
-          description: `A rota ${currentPath} não existe. Redirecionando...`,
-          duration: 3000,
-        });
-        
-        // Tentar redirecionar para uma rota similar
         if (currentPath.includes('inventario-gee')) {
           navigate('/inventario-gee', { replace: true });
         } else if (currentPath.includes('auditoria')) {
           navigate('/auditoria', { replace: true });
         } else if (currentPath.includes('treinamento')) {
           navigate('/gestao-treinamentos', { replace: true });
-        } else if (currentPath.includes('saude-seguranca')) {
-          navigate('/seguranca-trabalho', { replace: true });
         } else if (currentPath.includes('configuracao-organizacao')) {
           navigate('/configuracao-organizacional', { replace: true });
         } else if (currentPath.includes('relatorio')) {

@@ -57,21 +57,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let isInitialized = false;
+    
     // Configurar listener de mudanças de auth PRIMEIRO
     const { data: { subscription } } = authService.onAuthStateChange(
       async (event, session) => {
+        // Skip duplicate calls during initialization
+        if (event === 'INITIAL_SESSION' && isInitialized) {
+          return;
+        }
+        
         setSession(session);
         
         if (session?.user) {
-          // Buscar dados completos do usuário
+          // Avoid duplicate calls by debouncing
           setTimeout(async () => {
             try {
-              // Remove sensitive logging
               const userData = await authService.getCurrentUser();
               if (userData) {
                 setUser(userData);
-                // Check onboarding status after user data is loaded
-                await checkOnboardingStatus(userData.id);
+                // Only check onboarding status once per session
+                if (!isInitialized) {
+                  await checkOnboardingStatus(userData.id);
+                }
               } else {
                 setUser(null);
               }
@@ -80,36 +88,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(null);
             } finally {
               setIsLoading(false);
+              isInitialized = true;
             }
-          }, 0);
+          }, 100); // Small delay to avoid race conditions
         } else {
           setUser(null);
           setShouldShowOnboarding(false);
           setIsLoading(false);
+          isInitialized = true;
         }
       }
     );
 
-    // ENTÃO verificar se já existe uma sessão
-    console.log('AuthContext: Checking for existing session');
-    authService.getCurrentUser().then(async (userData) => {
-      if (userData) {
-        console.log('AuthContext: Initial user data found:', userData.full_name);
-        setUser(userData);
-        // Check onboarding status for initial load
-        await checkOnboardingStatus(userData.id);
-      } else {
-        console.log('AuthContext: No initial user data found');
-        setUser(userData);
-        setShouldShowOnboarding(false);
-      }
-      setIsLoading(false);
-    }).catch((error) => {
-      console.error('AuthContext: Error checking initial session:', error);
-      setUser(null);
-      setShouldShowOnboarding(false);
-      setIsLoading(false);
-    });
+    // Verificar sessão inicial apenas uma vez
+    if (!isInitialized) {
+      console.log('AuthContext: Checking for existing session');
+      authService.getCurrentUser().then(async (userData) => {
+        if (userData && !isInitialized) {
+          console.log('AuthContext: Initial user data found:', userData.full_name);
+          setUser(userData);
+          await checkOnboardingStatus(userData.id);
+        } else if (!isInitialized) {
+          setUser(null);
+          setShouldShowOnboarding(false);
+        }
+        
+        if (!isInitialized) {
+          setIsLoading(false);
+          isInitialized = true;
+        }
+      }).catch((error) => {
+        if (!isInitialized) {
+          console.error('AuthContext: Error checking initial session:', error);
+          setUser(null);
+          setShouldShowOnboarding(false);
+          setIsLoading(false);
+          isInitialized = true;
+        }
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
