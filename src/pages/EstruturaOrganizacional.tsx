@@ -15,7 +15,7 @@ export default function EstruturaOrganizacional() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" data-tour="estrutura-organizacional-header">
         <div>
           <h1 className="text-3xl font-bold">Estrutura Organizacional</h1>
           <p className="text-muted-foreground">

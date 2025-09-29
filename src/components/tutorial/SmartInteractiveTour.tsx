@@ -109,7 +109,7 @@ const SMART_TOUR_DEFINITIONS = {
           page: '/gestao-desempenho',
           action: () => {},  // Será preenchido dinamicamente
           autoAdvance: true,
-          delay: 3000,
+          delay: 2000,
           highlight: false
         },
       {
@@ -121,35 +121,301 @@ const SMART_TOUR_DEFINITIONS = {
         page: '/gestao-desempenho',
         tip: 'Impacto Estratégico: Vincule metas individuais aos KPIs ESG corporativos para multiplicar o engajamento. Use analytics de RH para identificar talentos ESG e desenvolver lideranças sustentáveis através de trilhas de aprendizagem personalizadas.',
         highlight: true,
-        autoAdvance: true,
-        delay: 4000
-      },
-      {
-        id: 'evaluation-cycles',
-        title: '🔄 Ciclos de Avaliação',
-        description: 'Configure períodos de avaliação (semestral, anual), defina critérios e gerencie todo o processo avaliativo.',
-        target: '[data-tour="evaluation-cycles"]',
-        placement: 'top' as const,
-        page: '/gestao-desempenho',
-        tip: 'Recomendamos ciclos semestrais para melhor acompanhamento.',
-        highlight: true,
-        delay: 3000,
-        openHints: ['ciclo', 'avalia']
+        autoAdvance: false,
+        delay: 5000
       },
 
-      // ESG/Sustentabilidade 
-        {
-          id: 'navigate-esg',
-          title: '🌱 Módulo ESG e Sustentabilidade',
-          description: 'Agora vamos explorar o módulo de ESG e sustentabilidade. Navegando...',
-          target: '[data-tour="sidebar"]',
-          placement: 'right' as const,
-          page: '/gestao-esg',
-          action: () => {},
-          autoAdvance: true,
-          delay: 3000,
-          highlight: false
-        },
+      // TOUR EXPANDIDO - Cobrindo toda a plataforma a partir daqui
+      
+      // 1. RH - Estrutura Organizacional
+      {
+        id: 'navigate-estrutura-organizacional',
+        title: '🏢 Estrutura Organizacional',
+        description: 'Vamos conhecer a gestão da estrutura organizacional. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/estrutura-organizacional',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'estrutura-organizacional-overview',
+        title: '🏢 Estrutura Organizacional Completa',
+        description: 'Gerencie organogramas dinâmicos, departamentos e cargos com governança integrada. Defina hierarquias ESG, responsabilidades de sustentabilidade por área e acompanhe a distribuição de competências verdes na organização.',
+        target: '[data-tour="estrutura-organizacional-header"]',
+        placement: 'bottom' as const,
+        page: '/estrutura-organizacional',
+        tip: 'Governança ESG: Integre responsabilidades de sustentabilidade em cada cargo. Use org charts para mapear champions ESG e garantir accountability em todos os níveis hierárquicos.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 2. RH - Gestão de Funcionários  
+      {
+        id: 'navigate-gestao-funcionarios',
+        title: '👥 Gestão de Funcionários',
+        description: 'Explorando a gestão de funcionários. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/gestao-funcionarios',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'gestao-funcionarios-overview',
+        title: '👥 Gestão Avançada de Capital Humano',
+        description: 'Plataforma 360° para gestão de pessoas com foco em diversidade, inclusão e desenvolvimento sustentável. Monitore indicadores de diversidade, engajamento ESG, desenvolvimento de competências verdes e retenção de talentos alinhados aos valores organizacionais.',
+        target: '[data-tour="gestao-funcionarios-header"]',
+        placement: 'bottom' as const,
+        page: '/gestao-funcionarios',
+        tip: 'Diversidade & Inclusão: Use analytics para monitorar equidade salarial, diversidade em posições de liderança e progressão de carreira inclusiva. Integre metas ESG individuais aos planos de desenvolvimento.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 3. ESG Ambiental - Inventário GEE
+      {
+        id: 'navigate-inventario-gee',
+        title: '🌍 Inventário de Gases de Efeito Estufa',
+        description: 'Vamos conhecer a gestão de emissões de GEE. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/inventario-gee',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'inventario-gee-overview',
+        title: '🌍 Inventário GEE Inteligente e Automatizado',
+        description: 'Sistema avançado de monitoramento de carbono com conformidade GHG Protocol, Science Based Targets e TCFD. Integração automática com sensores IoT, APIs de fornecedores e machine learning para cálculos precisos de Scope 1, 2 e 3.',
+        target: '[data-tour="inventario-gee-header"]',
+        placement: 'bottom' as const,
+        page: '/inventario-gee',
+        tip: 'Automação Inteligente: Configure integrações API para coleta automática de dados de atividade. Use IA para detectar anomalias, projetar emissões futuras e recomendar ações de redução baseadas em benchmarks setoriais.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 4. ESG Ambiental - Dashboard GHG
+      {
+        id: 'navigate-dashboard-ghg',
+        title: '📊 Dashboard de Emissões GHG',
+        description: 'Explorando analytics avançados de emissões. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/dashboard-ghg',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'dashboard-ghg-overview',
+        title: '📊 Analytics Avançados de Carbono com IA',
+        description: 'Dashboard executivo com insights de carbono em tempo real, análise de tendências preditivas, cenários de descarbonização e comparações setoriais. Visualizações interativas para comunicação assertiva de resultados ESG aos stakeholders.',
+        target: '[data-tour="dashboard-ghg-header"]',
+        placement: 'bottom' as const,
+        page: '/dashboard-ghg',
+        tip: 'Insights Executivos: Use cenários de modelagem para simular impactos de iniciativas de redução. Configure relatórios automáticos para investidores e reguladores, alinhados aos padrões CDP e outras frameworks.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 5. ESG Ambiental - Licenciamento
+      {
+        id: 'navigate-licenciamento',
+        title: '📋 Licenciamento Ambiental',
+        description: 'Conhecendo a gestão de licenças ambientais. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/licenciamento',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'licenciamento-overview',
+        title: '📋 Licenciamento Ambiental Inteligente',
+        description: 'Gestão completa de licenças ambientais com análise automática de documentos via IA, alertas preditivos de vencimento, compliance tracking e workflow de renovação automatizado. Integração com órgãos reguladores e análise de riscos regulatórios.',
+        target: '[data-tour="licenciamento-header"]',
+        placement: 'bottom' as const,
+        page: '/licenciamento',
+        tip: 'Compliance Proativo: Configure alertas inteligentes 180/90/30 dias antes do vencimento. IA analisa textos de licenças para extrair condicionantes e gerar calendários de compliance automáticos.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 6. ESG Social & Governança - Social ESG
+      {
+        id: 'navigate-social-esg',
+        title: '🤝 ESG Social',
+        description: 'Explorando a dimensão social do ESG. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/social-esg',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'social-esg-overview',
+        title: '🤝 ESG Social e Impacto Comunitário',
+        description: 'Plataforma integrada para gestão de impactos sociais, diversidade & inclusão, desenvolvimento comunitário e cadeia de valor responsável. Monitoramento de ODS, engajamento de stakeholders e medição de impacto social com metodologias consolidadas.',
+        target: '[data-tour="social-esg-header"]',
+        placement: 'bottom' as const,
+        page: '/social-esg',
+        tip: 'Impacto Mensurável: Use frameworks como IRIS+ e SROI para medir retorno social dos investimentos. Configure dashboards de impacto para comunicar valor criado para comunidades e sociedade.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 7. ESG Social & Governança - Governança ESG
+      {
+        id: 'navigate-governanca-esg',
+        title: '⚖️ Governança ESG',
+        description: 'Conhecendo a estrutura de governança ESG. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/governanca-esg',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'governanca-esg-overview',
+        title: '⚖️ Governança ESG e Transparência Corporativa',
+        description: 'Sistema avançado de governança ESG com gestão de riscos climáticos, compliance regulatório, transparência de dados e engajamento de stakeholders. Conformidade automática com TCFD, CSRD, SASB e outros frameworks de reporte.',
+        target: '[data-tour="governanca-esg-header"]',
+        placement: 'bottom' as const,
+        page: '/governanca-esg',
+        tip: 'Transparência Estratégica: Configure relatórios automáticos para diferentes stakeholders. Use IA para análise de materialidade dinâmica e identificação de riscos emergentes de ESG.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 8. SGQ - Indicadores de Qualidade
+      {
+        id: 'navigate-indicadores-qualidade',
+        title: '🏆 Indicadores de Qualidade',
+        description: 'Explorando o sistema de gestão da qualidade. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/indicadores-qualidade',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'indicadores-qualidade-overview',
+        title: '🏆 Sistema Integrado de Gestão da Qualidade',
+        description: 'SGQ digital completo com conformidade multi-normas (ISO 9001, 14001, 45001), indicadores em tempo real, auditorias inteligentes e melhoria contínua automatizada. Integração total com módulos ESG para visão 360° de performance organizacional.',
+        target: '[data-tour="quality-header"]',
+        placement: 'bottom' as const,
+        page: '/indicadores-qualidade',
+        tip: 'Excelência Integrada: Conecte KPIs de qualidade com metas ESG para visão holística. Use analytics preditivos para antecipação de não-conformidades e otimização de processos críticos.',
+        highlight: true,
+        autoAdvance: false,
+        openHints: ['indicadores', 'dashboard']
+      },
+
+      // 9. Dados e Relatórios - Relatórios
+      {
+        id: 'navigate-relatorios',
+        title: '📄 Centro de Relatórios',
+        description: 'Acessando o centro de relatórios corporativos. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/relatorios',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'relatorios-overview',
+        title: '📄 Centro de Relatórios Inteligente',
+        description: 'Hub centralizado de relatórios ESG, sustentabilidade e compliance com geração automática, templates personalizáveis e distribuição inteligente. Conformidade nativa com GRI, SASB, TCFD, CDP e frameworks regulatórios locais.',
+        target: '[data-tour="relatorios-header"]',
+        placement: 'bottom' as const,
+        page: '/relatorios',
+        tip: 'Relatórios Automatizados: Configure pipelines de dados para atualizações automáticas. Use IA para narrativas contextuais e insights automáticos baseados em trends e benchmarks setoriais.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 10. Inteligência - Intelligence Center
+      {
+        id: 'navigate-intelligence-center',
+        title: '🧠 Centro de Inteligência',
+        description: 'Explorando analytics avançados e IA. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/intelligence-center',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'intelligence-center-overview',
+        title: '🧠 Centro de Inteligência ESG Avançada',
+        description: 'Plataforma de machine learning e analytics preditivos para ESG. Insights automatizados, detecção de padrões, benchmarking inteligente e recomendações baseadas em IA para otimização de performance sustentável e identificação de oportunidades.',
+        target: '[data-tour="intelligence-center-header"]',
+        placement: 'bottom' as const,
+        page: '/intelligence-center',
+        tip: 'IA Estratégica: Use modelos preditivos para antecipação de riscos ESG, otimização de recursos e identificação de oportunidades de inovação sustentável. Configure alertas de ML para anomalias críticas.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // 11. Configurações - Gestão de Usuários
+      {
+        id: 'navigate-gestao-usuarios',
+        title: '👤 Gestão de Usuários',
+        description: 'Acessando a gestão de usuários e permissões. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/gestao-usuarios',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
+      {
+        id: 'gestao-usuarios-overview',
+        title: '👤 Gestão Avançada de Usuários e Governança',
+        description: 'Sistema robusto de gestão de usuários com roles baseados em responsabilidades ESG, auditoria de acessos, SSO corporativo e governança de dados. Controle granular de permissões alinhado à estrutura organizacional e compliance.',
+        target: '[data-tour="gestao-usuarios-header"]',
+        placement: 'bottom' as const,
+        page: '/gestao-usuarios',
+        tip: 'Segurança & Compliance: Configure roles específicos para cada área ESG. Use logs de auditoria para compliance LGPD/GDPR e implemente aprovações multi-nível para ações críticas.',
+        highlight: true,
+        autoAdvance: false
+      },
+
+      // Retorno ao Dashboard - ESG
+      {
+        id: 'navigate-esg',
+        title: '🌱 Retornando ao Hub ESG',
+        description: 'Finalizando o tour no centro de comando ESG. Navegando...',
+        target: '[data-tour="sidebar"]',
+        placement: 'right' as const,
+        page: '/gestao-esg',
+        action: () => {},
+        autoAdvance: true,
+        delay: 2000,
+        highlight: false
+      },
       {
         id: 'esg-overview',
         title: '🌍 Central ESG Completa e Integrada',
@@ -158,32 +424,6 @@ const SMART_TOUR_DEFINITIONS = {
         placement: 'bottom' as const,
         page: '/gestao-esg',
         tip: 'Compliance Automático: Integração API com ERP, sensores IoT e fontes externas para coleta automatizada. Motor de IA calcula automaticamente métricas complexas como Scope 3, análise de materialidade e benchmarking setorial.',
-        highlight: true,
-        autoAdvance: false,
-        delay: 5000
-      },
-
-      // Qualidade
-        {
-          id: 'navigate-quality',
-          title: '🏆 Sistema de Gestão da Qualidade',
-          description: 'Vamos conhecer o módulo de qualidade e conformidade. Redirecionando...',
-          target: '[data-tour="sidebar"]',
-          placement: 'right' as const,
-          page: '/indicadores-qualidade',
-          action: () => {},
-          autoAdvance: true,
-          delay: 3000,
-          highlight: false
-        },
-      {
-        id: 'quality-overview',
-        title: '🏆 Sistema de Excelência em Qualidade Integrada',
-        description: 'Sistema avançado de gestão da qualidade com conformidade multi-normas (ISO 9001, 14001, 45001, 50001), gestão inteligente de auditorias com IA, controle preditivo de não conformidades, automação de processos críticos e melhoria contínua baseada em analytics. Integração completa com sistemas ESG para visão 360°.',
-        target: '[data-tour="quality-header"]',
-        placement: 'bottom' as const,
-        page: '/indicadores-qualidade',
-        tip: 'Qualidade Preditiva: IA identifica potenciais não-conformidades antes que ocorram. Workflows automatizados garantem CAPA (Ações Corretivas e Preventivas) sistemáticas e rastreamento end-to-end de melhorias.',
         highlight: true,
         autoAdvance: false,
         delay: 5000
@@ -315,8 +555,8 @@ export function SmartInteractiveTour() {
       setIsNavigating(true);
       navigate(page);
       
-      // Aguardar navegação + tempo para DOM se estabilizar
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Aguardar navegação + tempo para DOM se estabilizar (reduzido de 3s para 1.5s)
+      await new Promise(resolve => setTimeout(resolve, 1500));
       setIsNavigating(false);
     }
   }, [navigate, location.pathname]);
@@ -391,7 +631,7 @@ export function SmartInteractiveTour() {
         openedStepsRef.current[currentStep] = true;
       }
       
-      // Encontrar elemento alvo com timeout aumentado para aguardar carregamento
+      // Encontrar elemento alvo com timeout aumentado para aguardar carregamento - aumentado para 8s
       const tryFindTarget = (retries: number) => {
         const el = document.querySelector(step.target) as HTMLElement | null;
         if (el) {
@@ -408,367 +648,230 @@ export function SmartInteractiveTour() {
               width: rect.width,
               height: rect.height
             });
-          }, 200);
-
-          // Auto advance apenas para steps de navegação explícitos
-          if (step.autoAdvance && step.delay && !isPaused && step.id.includes('navigate-')) {
-            console.debug('Tour: Auto-avançando step de navegação:', step.id);
-            setTimeout(() => {
-              if (!isPaused && currentStep < tourSteps.length - 1) {
-                nextStepRef.current();
-              }
-            }, step.delay);
-          }
-          return;
-        }
-        // Polling por ~8s (40 * 200ms) para aguardar carregamento de dados
-        if (retries > 0) {
+          }, 100);
+        } else if (retries > 0) {
+          console.debug('Tour: Target não encontrado, tentando novamente:', step.target, 'retries restantes:', retries);
           setTimeout(() => tryFindTarget(retries - 1), 200);
         } else {
-          console.debug('Tour: Target não encontrado após polling:', step.target, 'na página:', location.pathname);
-          // Fallback: APENAS para steps de navegação com autoAdvance
-          if (step.autoAdvance && step.id.includes('navigate-')) {
-            console.debug('Tour: Auto-avançando step de navegação:', step.id);
-            setTimeout(() => nextStepRef.current(), 1500);
-          } else {
-            console.warn('Tour: Target não encontrado, aguardando interação manual:', step.target);
-          }
-          if (step.placement === 'center') {
-            // Mostra card centralizado mesmo sem target
-            setTargetElement(null);
-          } else {
-            // Para steps não-centrais sem target, não avança automaticamente
-            setTargetElement(null);
-          }
+          console.warn('Tour: Target não encontrado após tentativas:', step.target);
+          // Fallback para mostrar tooltip no centro se o target não for encontrado
+          setTargetElement(null);
         }
       };
-
-      tryFindTarget(15); // 15 tentativas = ~3s
-    }
-  }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
-
-  // Preencher ações de navegação dinamicamente (executa uma vez por tour)
-  useEffect(() => {
-    if (!tourSteps.length || stepsPatched) return;
-
-    let changed = false;
-    const updatedSteps = tourSteps.map(step => {
-      if (step.id === 'navigate-performance' && !step.action) {
-        changed = true;
-        return { ...step, action: () => navigateToPageRef.current('/gestao-desempenho') };
-      }
-      if (step.id === 'navigate-esg' && !step.action) {
-        changed = true;
-        return { ...step, action: () => navigateToPageRef.current('/gestao-esg') };
-      }
-      if (step.id === 'navigate-quality' && !step.action) {
-        changed = true;
-        return { ...step, action: () => navigateToPageRef.current('/indicadores-qualidade') };
-      }
-      return step;
-    });
-
-    if (changed) {
-      setTourSteps(updatedSteps);
-    }
-    setStepsPatched(true);
-  }, [tourSteps, stepsPatched]);
-
-// Navegação por teclado para o tour
-useEffect(() => {
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight') nextStep();
-    if (e.key === 'ArrowLeft') prevStep();
-    if (e.key === 'Escape') completeTour();
-  };
-  document.addEventListener('keydown', onKeyDown);
-  return () => document.removeEventListener('keydown', onKeyDown);
-}, [nextStep, prevStep, completeTour]);
-
-  // Recalcular posição em scroll/resize para manter o spotlight alinhado
-  useEffect(() => {
-    if (!targetElement) return;
-    const update = () => {
-      const rect = targetElement.getBoundingClientRect();
-      setOverlayPosition({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height
-      });
-    };
-    update();
-    window.addEventListener('resize', update);
-    window.addEventListener('scroll', update, true);
-    return () => {
-      window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update, true);
-    };
-  }, [targetElement, currentStep]);
-
-
-  if (!currentTour || tourSteps.length === 0 || currentStep >= tourSteps.length) {
-    return null;
-  }
-
-  const currentStepData = tourSteps[currentStep];
-  const progress = ((currentStep + 1) / tourSteps.length) * 100;
-  
-  const getTooltipPosition = (): { top: number; left: number } => {
-    if (!targetElement) return { top: window.innerHeight / 2, left: window.innerWidth / 2 };
-    
-    const rect = targetElement.getBoundingClientRect();
-    const tooltipWidth = isMobile ? 340 : 420;
-    const tooltipHeight = isMobile ? 350 : 380; // Increased height for better content display
-    const margin = 16;
-    
-    let position: { top: number; left: number };
-    
-    // Posicionamento especial para center
-    if (currentStepData.placement === 'center') {
-      position = {
-        top: window.innerHeight / 2 - tooltipHeight / 2,
-        left: window.innerWidth / 2 - tooltipWidth / 2
-      };
-    } else if (isMobile) {
-      // Mobile: posiciona no bottom mas verifica se cabe
-      const preferredTop = rect.bottom + margin;
-      position = {
-        top: preferredTop + tooltipHeight > window.innerHeight 
-          ? window.innerHeight - tooltipHeight - margin 
-          : preferredTop,
-        left: Math.max(margin, Math.min(
-          window.innerWidth - tooltipWidth - margin,
-          rect.left + (rect.width / 2) - (tooltipWidth / 2)
-        ))
-      };
-    } else {
-      // Desktop positioning with better viewport awareness
-      switch (currentStepData.placement) {
-        case 'top':
-          const topPosition = rect.top - tooltipHeight - margin;
-          position = {
-            top: topPosition < 0 ? rect.bottom + margin : topPosition,
-            left: rect.left + (rect.width / 2) - (tooltipWidth / 2)
-          };
-          break;
-        case 'bottom':
-          const bottomPosition = rect.bottom + margin;
-          position = {
-            top: bottomPosition + tooltipHeight > window.innerHeight 
-              ? rect.top - tooltipHeight - margin 
-              : bottomPosition,
-            left: rect.left + (rect.width / 2) - (tooltipWidth / 2)
-          };
-          break;
-        case 'left':
-          const leftPosition = rect.left - tooltipWidth - margin;
-          position = {
-            top: rect.top + (rect.height / 2) - (tooltipHeight / 2),
-            left: leftPosition < 0 ? rect.right + margin : leftPosition
-          };
-          break;
-        case 'right':
-          const rightPosition = rect.right + margin;
-          position = {
-            top: rect.top + (rect.height / 2) - (tooltipHeight / 2),
-            left: rightPosition + tooltipWidth > window.innerWidth 
-              ? rect.left - tooltipWidth - margin 
-              : rightPosition
-          };
-          break;
-        default:
-          position = {
-            top: rect.bottom + margin,
-            left: rect.left + (rect.width / 2) - (tooltipWidth / 2)
-          };
-      }
       
-      // Final viewport bounds check - mais restritivo
-      const minMargin = 8;
-      if (position.left < minMargin) position.left = minMargin;
-      if (position.left + tooltipWidth > window.innerWidth - minMargin) {
-        position.left = window.innerWidth - tooltipWidth - minMargin;
-      }
-      if (position.top < minMargin) position.top = minMargin;
-      if (position.top + tooltipHeight > window.innerHeight - minMargin) {
-        position.top = window.innerHeight - tooltipHeight - minMargin;
+      tryFindTarget(40); // 40 tentativas = ~8 segundos
+    }
+  }, [currentTour, tourSteps, currentStep, location.pathname, isPaused, isNavigating, ensureSectionVisible]);
+
+  // Auto-advance logic - só avança automaticamente se for step de navegação
+  useEffect(() => {
+    if (currentTour && tourSteps.length > 0 && currentStep < tourSteps.length && !isPaused && !isNavigating) {
+      const step = tourSteps[currentStep];
+      
+      // Só avança automaticamente em steps de navegação (que têm autoAdvance: true)
+      if (step.autoAdvance && step.delay && step.id.includes('navigate-')) {
+        console.debug('Tour: Auto-advance ativado para step de navegação:', step.id, 'delay:', step.delay);
+        const timer = setTimeout(() => {
+          if (!isPaused && !isNavigating) {
+            console.debug('Tour: Auto-avançando para próximo step');
+            nextStepRef.current();
+          }
+        }, step.delay);
+
+        return () => clearTimeout(timer);
       }
     }
-    
-    return position;
+  }, [currentTour, tourSteps, currentStep, isPaused, isNavigating]);
+
+  // Handlers
+  const handleNext = () => {
+    if (currentStep < tourSteps.length - 1) {
+      nextStepRef.current();
+    } else {
+      completeTourRef.current();
+    }
   };
 
-  const tooltipPosition = getTooltipPosition();
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      prevStepRef.current();
+    }
+  };
 
-  const handlePause = () => setIsPaused(!isPaused);
   const handleSkip = () => {
-    const nextNonAutoStep = tourSteps.findIndex((step, index) => 
-      index > currentStep && !step.autoAdvance
+    // Encontrar próximo step de "overview" (não navegação)
+    const nextOverviewIndex = tourSteps.findIndex((step, index) => 
+      index > currentStep && !step.id.includes('navigate-')
     );
-    if (nextNonAutoStep !== -1) {
-      // Skip para próximo step não automático
-      for (let i = currentStep; i < nextNonAutoStep; i++) {
-        nextStep();
+    
+    if (nextOverviewIndex !== -1) {
+      // Pular para o próximo overview
+      const stepsToSkip = nextOverviewIndex - currentStep;
+      for (let i = 0; i < stepsToSkip; i++) {
+        nextStepRef.current();
       }
     } else {
-      nextStep();
+      // Se não há mais overviews, finalizar tour
+      completeTourRef.current();
     }
   };
 
   const handleRestart = () => {
-    // Reinício suave sem recarregar página nem mudar rota
     setIsPaused(false);
-    // Apenas volta ao primeiro passo mantendo a rota atual
-    if (currentStep > 0) {
-      // Usar next/prev em laço simples evita setState em cascata
-      for (let i = currentStep; i > 0; i--) {
-        prevStep();
+    // Restart by setting current step to 0 - isso será handled pelo TutorialContext
+    completeTourRef.current();
+    // Depois reinicar o tour...
+    setTimeout(() => {
+      if (currentTour) {
+        // Isso seria feito pelo contexto do tutorial
       }
-    }
+    }, 100);
   };
+
+  const togglePause = () => {
+    setIsPaused(prev => !prev);
+  };
+
+  const currentStepData = tourSteps[currentStep];
+  const progress = tourSteps.length > 0 ? ((currentStep + 1) / tourSteps.length) * 100 : 0;
+
+  // Renderização
+  if (!currentTour || !currentStepData) {
+    return null;
+  }
+
+  const cardStyle = currentStepData.placement === 'center' || !targetElement
+    ? {
+        position: 'fixed' as const,
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 9999,
+        maxWidth: isMobile ? '90vw' : '500px',
+        width: '100%'
+      }
+    : {
+        position: 'absolute' as const,
+        top: currentStepData.placement === 'bottom' 
+          ? overlayPosition.top + overlayPosition.height + 10
+          : currentStepData.placement === 'top'
+          ? overlayPosition.top - 10
+          : overlayPosition.top,
+        left: currentStepData.placement === 'right'
+          ? overlayPosition.left + overlayPosition.width + 10
+          : currentStepData.placement === 'left'
+          ? overlayPosition.left - 10
+          : overlayPosition.left + overlayPosition.width / 2,
+        transform: currentStepData.placement === 'top' || currentStepData.placement === 'bottom'
+          ? 'translate(-50%, -100%)'
+          : currentStepData.placement === 'left'
+          ? 'translate(-100%, -50%)'
+          : 'translateY(-50%)',
+        zIndex: 9999,
+        maxWidth: isMobile ? '90vw' : '400px',
+        width: isMobile ? '90vw' : 'auto',
+        minWidth: '300px'
+      };
 
   return (
     <>
-      {/* Overlay melhorado com visibilidade de fundo */}
+      {/* Overlay escuro */}
       <div 
-        className="fixed inset-0 bg-black/15 dark:bg-black/20 z-40 pointer-events-none transition-all duration-500 ease-out"
-        aria-hidden="true"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+        style={{ display: currentTour ? 'block' : 'none' }}
       />
       
-      {/* Loading indicator minimalista */}
-      {isNavigating && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center">
-          <div className="bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-border/50 animate-scale-in">
-            <div className="flex items-center gap-3">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm font-medium">Preparando página...</span>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Destaque simples no elemento alvo */}
-      {targetElement && currentStepData.highlight && currentStepData.placement !== 'center' && (
+      {/* Highlight do elemento alvo */}
+      {targetElement && currentStepData.highlight && (
         <div
-          className="fixed z-50 pointer-events-none transition-all duration-700 ease-out ring-2 ring-primary ring-offset-2 ring-offset-white/10 rounded-lg"
+          className="fixed border-4 border-primary rounded-lg shadow-2xl shadow-primary/30 animate-pulse z-[9998]"
           style={{
             top: overlayPosition.top - 4,
             left: overlayPosition.left - 4,
             width: overlayPosition.width + 8,
             height: overlayPosition.height + 8,
+            pointerEvents: 'none'
           }}
         />
       )}
 
-      {/* Card do tour com posição fixa */}
-      <Card 
-        className={`fixed z-[60] shadow-2xl transition-all duration-500 ease-out animate-scale-in
-          ${isMobile ? 'w-[340px] bottom-4 right-4' : 'w-[380px] bottom-20 right-4'} 
-          ${currentStepData.placement === 'center' ? 'border-2 border-primary/20 bg-card/95 backdrop-blur-lg' : 'bg-card/95 backdrop-blur-sm border-border/50'}`}
-        style={{
-          ...(currentStepData.placement === 'center' && {
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            bottom: 'auto',
-            right: 'auto'
-          })
-        }}
-      >
-        <CardContent className="p-6 space-y-6">
-          {/* Header minimalista */}
-          <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary via-accent to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
-                    <Target className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="text-xs font-medium px-3 py-1.5 bg-primary/10 text-primary border-primary/20">
-                        {currentStep + 1} de {tourSteps.length}
-                      </Badge>
-                      {currentStepData.autoAdvance && !isPaused && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-100 rounded-full border border-green-200">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          <span className="text-xs text-green-700 font-medium">Avançando...</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground font-medium">
-                      {currentTourData?.title}
-                    </div>
-                  </div>
-                </div>
-                
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={completeTour}
-                  className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                  title="Fechar tour"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+      {/* Card do tour */}
+      <Card className="shadow-2xl border-2 border-primary/20 bg-card/95 backdrop-blur-sm" style={cardStyle}>
+        <CardContent className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                <Badge variant="outline" className="text-xs">
+                  {currentStep + 1} de {tourSteps.length}
+                </Badge>
               </div>
+              {currentTourData && (
+                <Badge variant="secondary" className="text-xs">
+                  {currentTourData.title}
+                </Badge>
+              )}
+            </div>
             
-            <div className="space-y-2">
-              <Progress value={progress} className="w-full h-2.5 bg-muted/30" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Progresso do Tour</span>
-                <span className="font-medium">{Math.round(progress)}% concluído</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={togglePause}
+                className="h-8 w-8 p-0"
+              >
+                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={completeTourRef.current}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
-          {/* Conteúdo principal aprimorado */}
-          <div className="space-y-5">
-            <div className="space-y-4">
-              <h3 className="font-bold text-xl text-foreground leading-tight tracking-tight">
+          {/* Progress bar */}
+          <Progress value={progress} className="mb-4 h-2" />
+
+          {/* Navegação (indicador se está navegando) */}
+          {isNavigating && (
+            <div className="flex items-center gap-2 mb-4 p-3 bg-accent/50 rounded-lg">
+              <Navigation className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Navegando...</span>
+            </div>
+          )}
+
+          {/* Conteúdo principal */}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">
                 {currentStepData.title}
               </h3>
-              <div className="p-4 bg-muted/30 rounded-lg border border-border/30">
-                <p className="text-sm text-foreground leading-relaxed font-medium">
-                  {currentStepData.description}
-                </p>
-              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {currentStepData.description}
+              </p>
             </div>
 
-            {/* Dica profissional aprimorada */}
+            {/* Tip seção */}
             {currentStepData.tip && (
-              <div 
-                className={`group p-5 rounded-xl transition-all duration-300 cursor-pointer border-2 ${
-                  showTip 
-                    ? 'bg-gradient-to-br from-primary/5 to-accent/5 border-primary/30 shadow-lg' 
-                    : 'bg-gradient-to-br from-muted/20 to-muted/10 border-border/40 hover:border-primary/20 hover:shadow-md'
-                }`}
-                onClick={() => setShowTip(!showTip)}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    showTip ? 'bg-primary/20 shadow-md' : 'bg-muted/60 group-hover:bg-primary/10'
-                  }`}>
-                    <Lightbulb className={`w-4 h-4 transition-colors ${
-                      showTip ? 'text-primary' : 'text-muted-foreground group-hover:text-primary/70'
-                    }`} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold transition-colors ${
-                      showTip ? 'text-primary' : 'text-foreground group-hover:text-primary/80'
-                    }`}>
-                      {showTip ? 'Ocultar dica profissional' : '💡 Ver dica profissional'}
-                    </span>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                      showTip ? 'bg-primary/20' : 'bg-muted/40 group-hover:bg-primary/10'
-                    }`}>
-                      <span className={`text-xs transition-transform ${showTip ? 'rotate-180' : ''}`}>▼</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTip(!showTip)}
+                  className="h-auto p-2 text-xs"
+                >
+                  <Lightbulb className="h-3 w-3 mr-1" />
+                  {showTip ? 'Ocultar dica' : 'Ver dica profissional'}
+                </Button>
+                
                 {showTip && (
-                  <div className="animate-fade-in pl-11 space-y-2">
-                    <p className="text-sm text-foreground leading-relaxed font-medium">
+                  <div className="p-3 bg-accent/30 rounded-lg border-l-4 border-primary">
+                    <p className="text-xs text-muted-foreground">
                       {currentStepData.tip}
                     </p>
                   </div>
@@ -776,58 +879,67 @@ useEffect(() => {
               </div>
             )}
 
-            {/* Status interativo */}
-            {isPaused && (
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border-2 border-orange-200">
-                <div className="w-6 h-6 rounded-full bg-orange-200 flex items-center justify-center">
-                  <Pause className="w-3.5 h-3.5 text-orange-600" />
-                </div>
-                <span className="text-sm text-orange-700 font-semibold">Tour pausado - Clique em "Próximo" para continuar</span>
+            {/* Auto-advance indicator */}
+            {currentStepData.autoAdvance && currentStepData.id.includes('navigate-') && !isPaused && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>Avançando automaticamente...</span>
               </div>
             )}
+          </div>
 
-            {/* Navegação aprimorada */}
-            <div className="flex gap-3 pt-4 border-t border-border/30">
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={prevStep}
-                disabled={currentStep === 0 || isNavigating}
-                className="flex-1 h-12 gap-3 font-semibold border-2 hover:border-primary/30 hover:bg-primary/5 transition-all disabled:opacity-50"
+          {/* Controles */}
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrev}
+                disabled={currentStep === 0}
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="h-4 w-4 mr-1" />
                 Anterior
               </Button>
               
-              <Button 
-                size="lg"
-                onClick={currentStep === tourSteps.length - 1 ? completeTour : nextStep}
-                disabled={isNavigating}
-                className={`flex-1 h-12 gap-3 font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 ${
-                  currentStep === tourSteps.length - 1 
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
-                    : 'bg-gradient-to-r from-primary to-accent hover:from-primary hover:to-accent/90 text-white'
-                }`}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSkip}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <SkipForward className="h-4 w-4 mr-1" />
+                Pular seção
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRestart}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                Reiniciar
+              </Button>
+              
+              <Button
+                onClick={handleNext}
+                size="sm"
+                className="gap-1"
               >
                 {currentStep === tourSteps.length - 1 ? (
                   <>
-                    <CheckCircle className="w-5 h-5" />
-                    Finalizar Tour
+                    <CheckCircle className="h-4 w-4" />
+                    Finalizar
                   </>
                 ) : (
                   <>
                     Próximo
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </>
                 )}
               </Button>
-            </div>
-            
-            {/* Informação adicional */}
-            <div className="text-center pt-2">
-              <p className="text-xs text-muted-foreground">
-                Use as setas do teclado ← → para navegar | ESC para sair
-              </p>
             </div>
           </div>
         </CardContent>

@@ -229,7 +229,7 @@ const DashboardGHG = () => {
   return (
     <div className="space-y-6">
         {/* Cabeçalho da página */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" data-tour="dashboard-ghg-header">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard de Emissões (GHG)</h1>
             <p className="text-muted-foreground mt-1">

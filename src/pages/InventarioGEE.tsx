@@ -390,7 +390,7 @@ const InventarioGEE = () => {
   return (
     <div className="space-y-6">
         {/* Cabeçalho da página */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center" data-tour="inventario-gee-header">
           <div>
             <h1 className="text-3xl font-bold">Inventário GEE</h1>
             <p className="text-muted-foreground">Gerencie e analise suas emissões de gases de efeito estufa</p>
