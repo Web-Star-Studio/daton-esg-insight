@@ -9,7 +9,8 @@ import { CleanWelcomeStep } from './CleanWelcomeStep';
 import { CleanModuleSelectionStep } from './CleanModuleSelectionStep';
 import { CleanDataCreationStep } from './CleanDataCreationStep';
 import { CleanCompletionStep } from './CleanCompletionStep';
-import { OnboardingProgress } from './OnboardingProgress';
+import { EnhancedOnboardingProgress } from './EnhancedOnboardingProgress';
+import { OnboardingAssistant } from './OnboardingAssistant';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 
 function CleanOnboardingContent() {
@@ -27,6 +28,8 @@ function CleanOnboardingContent() {
     updateModuleConfiguration,
     completeOnboarding,
   } = useOnboardingFlow();
+
+  const { selectedModules, moduleConfigurations } = state;
 
   const stepTitles = [
     'Boas-vindas',
@@ -87,6 +90,34 @@ function CleanOnboardingContent() {
       setTimeout(() => {
         startTour('dashboard-intro');
       }, 1000);
+    }
+  };
+
+  const handleSuggestionAccept = (suggestionId: string) => {
+    console.log('🎯 Accepting suggestion:', suggestionId);
+    
+    switch (suggestionId) {
+      case 'gee-industrial':
+        if (!selectedModules.includes('inventario_gee')) {
+          setSelectedModules([...selectedModules, 'inventario_gee']);
+          toast({
+            title: 'Módulo Adicionado',
+            description: 'Inventário GEE foi adicionado às suas seleções.',
+          });
+        }
+        break;
+      case 'gee-automation':
+        updateModuleConfiguration('inventario_gee', {
+          ...moduleConfigurations['inventario_gee'],
+          automatic_calculation: true
+        });
+        toast({
+          title: 'Configuração Atualizada',
+          description: 'Cálculos automáticos foram ativados para o Inventário GEE.',
+        });
+        break;
+      default:
+        console.log('Unknown suggestion:', suggestionId);
     }
   };
 
@@ -179,11 +210,23 @@ function CleanOnboardingContent() {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Enhanced Progress Header */}
       {showProgress && (
-        <OnboardingProgress
+        <EnhancedOnboardingProgress
           currentStep={state.currentStep}
           totalSteps={stepTitles.length}
           stepTitles={stepTitles}
           selectedModules={state.selectedModules}
+          moduleConfigurations={state.moduleConfigurations}
+        />
+      )}
+
+      {/* Smart Assistant */}
+      {state.currentStep > 0 && state.currentStep < 3 && (
+        <OnboardingAssistant
+          currentStep={state.currentStep}
+          selectedModules={selectedModules}
+          moduleConfigurations={moduleConfigurations}
+          companyProfile={companyProfile}
+          onSuggestionAccept={handleSuggestionAccept}
         />
       )}
       

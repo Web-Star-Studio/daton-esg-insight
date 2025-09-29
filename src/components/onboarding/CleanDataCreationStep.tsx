@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { 
   Leaf, 
   Shield, 
@@ -16,7 +18,13 @@ import {
   Settings,
   Database,
   Lightbulb,
-  Check
+  Check,
+  CheckCircle,
+  Zap,
+  Target,
+  Sparkles,
+  Clock,
+  Info
 } from "lucide-react";
 
 interface CleanDataCreationStepProps {
@@ -92,30 +100,81 @@ export function CleanDataCreationStep({
     return moduleConfigurations[moduleId] || {};
   };
 
+  // Calculate configuration progress
+  const configurationProgress = (Object.keys(moduleConfigurations).length / selectedModules.length) * 100;
+  const isConfigurationComplete = configurationProgress === 100;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Settings className="h-5 w-5 text-primary" />
+            <Badge variant="secondary" className="px-3 py-1">
+              Configuração Inteligente
+            </Badge>
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Configure seus Módulos
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Personalize as configurações de cada módulo para atender suas necessidades específicas.
+          <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Personalize as configurações de cada módulo selecionado. 
+            As configurações podem ser ajustadas posteriormente no painel administrativo.
           </p>
+
+          {/* Progress Overview */}
+          <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20 max-w-md mx-auto">
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-foreground">Progresso da Configuração</span>
+                  <span className="text-primary font-bold">{Math.round(configurationProgress)}%</span>
+                </div>
+                <Progress value={configurationProgress} className="h-2" />
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-green-600" />
+                    <span>{Object.keys(moduleConfigurations).length} configurados</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-amber-600" />
+                    <span>{selectedModules.length - Object.keys(moduleConfigurations).length} pendentes</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Smart Recommendation */}
-        <Card className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 border-blue-200/30">
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200/50 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-foreground">Configuração Inteligente</h4>
-                <p className="text-sm text-muted-foreground">
-                  Recomendamos ativar as configurações básicas para começar rapidamente. 
-                  Você pode personalizar tudo posteriormente.
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Sparkles className="h-4 w-4 text-blue-600" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h3 className="font-semibold text-blue-900 flex items-center gap-2">
+                  Configuração Inteligente Ativada
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-xs">
+                    IA
+                  </Badge>
+                </h3>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  Aplicamos automaticamente as configurações mais utilizadas por empresas do seu setor. 
+                  Todas as opções podem ser personalizadas agora ou posteriormente no painel.
                 </p>
+                <div className="flex items-center gap-4 text-xs text-blue-600 pt-2">
+                  <div className="flex items-center gap-1">
+                    <Target className="h-3 w-3" />
+                    <span>Otimizado para seu setor</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    <span>Configuração rápida</span>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -155,32 +214,55 @@ export function CleanDataCreationStep({
 
             return (
               <Card key={moduleId} className="border-border/50">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-3 text-lg">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      {Icon && <Icon className="w-4 h-4" />}
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-5 h-5 ${MODULE_ICONS[moduleId] ? 'text-primary' : 'text-muted-foreground'}`} />
+                      {MODULE_NAMES[moduleId]}
                     </div>
-                    {moduleName}
+                    <div className="flex items-center gap-2">
+                      {Object.keys(getModuleConfig(moduleId)).length > 0 && (
+                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Configurado
+                        </Badge>
+                      )}
+                      {Object.keys(getModuleConfig(moduleId)).length === 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          <Settings className="w-3 h-3 mr-1" />
+                          Pendente
+                        </Badge>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
                   {options.map((option) => (
-                    <div key={option.key} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/30">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-foreground text-sm">
-                            {option.label}
-                          </h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {option.description}
-                        </p>
+                    <div key={option.key} className="group flex items-center justify-between p-4 bg-card border border-border/50 rounded-lg hover:shadow-sm transition-all">
+                      <div className="flex-1 space-y-1">
+                        <Label htmlFor={`${moduleId}-${option.key}`} className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          {option.label}
+                          {config[option.key] && (
+                            <Badge variant="secondary" className="text-xs">
+                              Ativo
+                            </Badge>
+                          )}
+                        </Label>
+                        {option.description && (
+                          <div className="flex items-start gap-2">
+                            <Info className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {option.description}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      
                       <Switch
+                        id={`${moduleId}-${option.key}`}
                         checked={config[option.key] || false}
                         onCheckedChange={(checked) => handleConfigToggle(moduleId, option.key, checked)}
+                        className="ml-4"
                       />
                     </div>
                   ))}
@@ -207,6 +289,23 @@ export function CleanDataCreationStep({
           </CardContent>
         </Card>
 
+        {/* Configuration Summary */}
+        {isConfigurationComplete && (
+          <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-green-900">Configuração Concluída! 🎉</h3>
+                  <p className="text-sm text-green-700">
+                    Todos os módulos foram configurados com sucesso. Você está pronto para finalizar!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between">
           <Button 
@@ -220,7 +319,8 @@ export function CleanDataCreationStep({
           
           <Button 
             onClick={onNext}
-            className="gap-2"
+            disabled={!isConfigurationComplete}
+            className={`gap-2 ${isConfigurationComplete ? 'bg-gradient-to-r from-primary to-primary/90 shadow-lg' : ''}`}
           >
             Finalizar
             <ArrowRight className="w-4 h-4" />

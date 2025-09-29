@@ -14,8 +14,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Star,
-  Check
+  Check,
+  Sparkles
 } from "lucide-react";
+import { SmartModuleRecommendations } from './SmartModuleRecommendations';
 
 interface CleanModuleSelectionStepProps {
   selectedModules: string[];
@@ -129,6 +131,10 @@ export function CleanModuleSelectionStep({
     onModulesChange(recommendedIds);
   };
 
+  const handleModuleRecommendation = (moduleIds: string[]) => {
+    onModulesChange(moduleIds);
+  };
+
   const recommendedModules = MODULES.filter(m => m.recommended);
   const otherModules = MODULES.filter(m => !m.recommended);
 
@@ -137,25 +143,40 @@ export function CleanModuleSelectionStep({
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <Badge variant="secondary" className="px-3 py-1">
+              Seleção Inteligente
+            </Badge>
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Selecione seus Módulos
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Escolha os módulos que serão configurados na sua plataforma. 
-            Você pode adicionar outros módulos a qualquer momento.
+            Nossa IA analisou o perfil da sua empresa e criou recomendações personalizadas.
           </p>
           
           {recommendedModules.length > 0 && (
             <Button 
               variant="outline" 
               onClick={handleSelectRecommended}
-              className="gap-2"
+              className="gap-2 shadow-sm hover:shadow-md transition-all"
             >
               <Star className="w-4 h-4" />
               Selecionar Recomendados ({recommendedModules.length})
             </Button>
           )}
         </div>
+
+        {/* Smart Recommendations */}
+        {companyProfile && selectedModules.length < 3 && (
+          <SmartModuleRecommendations
+            companyProfile={companyProfile}
+            selectedModules={selectedModules}
+            onModuleRecommendation={handleModuleRecommendation}
+          />
+        )}
 
         {/* Recommended Modules */}
         {recommendedModules.length > 0 && (
