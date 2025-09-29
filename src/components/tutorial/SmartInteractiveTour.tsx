@@ -168,7 +168,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Vamos conhecer o módulo de qualidade e conformidade. Redirecionando...',
         target: '[data-tour="sidebar"]',
         placement: 'right' as const,
-        page: '/qualidade',
+        page: '/indicadores-qualidade',
         action: () => {},
         autoAdvance: true,
         delay: 2000,
@@ -180,7 +180,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Sistema avançado de gestão da qualidade com conformidade multi-normas (ISO 9001, 14001, 45001, 50001), gestão inteligente de auditorias com IA, controle preditivo de não conformidades, automação de processos críticos e melhoria contínua baseada em analytics. Integração completa com sistemas ESG para visão 360°.',
         target: '[data-tour="quality-header"]',
         placement: 'bottom' as const,
-        page: '/qualidade',
+        page: '/indicadores-qualidade',
         tip: 'Qualidade Preditiva: IA identifica potenciais não-conformidades antes que ocorram. Workflows automatizados garantem CAPA (Ações Corretivas e Preventivas) sistemáticas e rastreamento end-to-end de melhorias.',
         highlight: true,
         delay: 5000
@@ -361,6 +361,8 @@ export function SmartInteractiveTour() {
     if (currentTour && tourSteps.length > 0 && currentStep < tourSteps.length && !isPaused && !isNavigating) {
       const step = tourSteps[currentStep];
       
+      console.debug('Tour: Executando step', currentStep, ':', step.title, 'na página', location.pathname);
+      
       // Executar ação customizada se houver
       if (step.action) {
         step.action();
@@ -368,6 +370,7 @@ export function SmartInteractiveTour() {
       
       // Navegar para página se necessário
       if (step.page && location.pathname !== step.page) {
+        console.debug('Tour: Navegando para', step.page, 'atual:', location.pathname);
         navigateToPageRef.current(step.page);
         return;
       }
@@ -380,6 +383,7 @@ export function SmartInteractiveTour() {
       
       // Abrir abas/seções se houver dicas configuradas (executa uma vez por passo)
       if (step.openHints && !openedStepsRef.current[currentStep]) {
+        console.debug('Tour: Abrindo seções para hints:', step.openHints);
         ensureSectionVisible(step.openHints);
         openedStepsRef.current[currentStep] = true;
       }
@@ -388,6 +392,7 @@ export function SmartInteractiveTour() {
       const tryFindTarget = (retries: number) => {
         const el = document.querySelector(step.target) as HTMLElement | null;
         if (el) {
+          console.debug('Tour: Target encontrado:', step.target);
           setTargetElement(el);
           // Scroll suave para o elemento
           el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
@@ -416,7 +421,7 @@ export function SmartInteractiveTour() {
         if (retries > 0) {
           setTimeout(() => tryFindTarget(retries - 1), 150);
         } else {
-          console.debug('Tour: Target não encontrado após polling:', step.target);
+          console.debug('Tour: Target não encontrado após polling:', step.target, 'na página:', location.pathname);
           if (step.placement === 'center') {
             // Mostra card centralizado mesmo sem target
             setTargetElement(null);
@@ -503,8 +508,8 @@ useEffect(() => {
     
     const rect = targetElement.getBoundingClientRect();
     const tooltipWidth = isMobile ? 340 : 420;
-    const tooltipHeight = isMobile ? 300 : 320;
-    const margin = 20;
+    const tooltipHeight = isMobile ? 350 : 380; // Increased height for better content display
+    const margin = 16;
     
     let position: { top: number; left: number };
     
@@ -515,39 +520,50 @@ useEffect(() => {
         left: window.innerWidth / 2 - tooltipWidth / 2
       };
     } else if (isMobile) {
-      // Mobile sempre no bottom
+      // Mobile: posiciona no bottom mas verifica se cabe
+      const preferredTop = rect.bottom + margin;
       position = {
-        top: rect.bottom + margin,
+        top: preferredTop + tooltipHeight > window.innerHeight 
+          ? window.innerHeight - tooltipHeight - margin 
+          : preferredTop,
         left: Math.max(margin, Math.min(
           window.innerWidth - tooltipWidth - margin,
           rect.left + (rect.width / 2) - (tooltipWidth / 2)
         ))
       };
     } else {
-      // Desktop positioning
+      // Desktop positioning with better viewport awareness
       switch (currentStepData.placement) {
         case 'top':
+          const topPosition = rect.top - tooltipHeight - margin;
           position = {
-            top: rect.top - tooltipHeight - margin,
+            top: topPosition < 0 ? rect.bottom + margin : topPosition,
             left: rect.left + (rect.width / 2) - (tooltipWidth / 2)
           };
           break;
         case 'bottom':
+          const bottomPosition = rect.bottom + margin;
           position = {
-            top: rect.bottom + margin,
+            top: bottomPosition + tooltipHeight > window.innerHeight 
+              ? rect.top - tooltipHeight - margin 
+              : bottomPosition,
             left: rect.left + (rect.width / 2) - (tooltipWidth / 2)
           };
           break;
         case 'left':
+          const leftPosition = rect.left - tooltipWidth - margin;
           position = {
             top: rect.top + (rect.height / 2) - (tooltipHeight / 2),
-            left: rect.left - tooltipWidth - margin
+            left: leftPosition < 0 ? rect.right + margin : leftPosition
           };
           break;
         case 'right':
+          const rightPosition = rect.right + margin;
           position = {
             top: rect.top + (rect.height / 2) - (tooltipHeight / 2),
-            left: rect.right + margin
+            left: rightPosition + tooltipWidth > window.innerWidth 
+              ? rect.left - tooltipWidth - margin 
+              : rightPosition
           };
           break;
         default:
@@ -557,14 +573,15 @@ useEffect(() => {
           };
       }
       
-      // Manter dentro da viewport
-      if (position.left < margin) position.left = margin;
-      if (position.left + tooltipWidth > window.innerWidth - margin) {
-        position.left = window.innerWidth - tooltipWidth - margin;
+      // Final viewport bounds check - mais restritivo
+      const minMargin = 8;
+      if (position.left < minMargin) position.left = minMargin;
+      if (position.left + tooltipWidth > window.innerWidth - minMargin) {
+        position.left = window.innerWidth - tooltipWidth - minMargin;
       }
-      if (position.top < margin) position.top = margin;
-      if (position.top + tooltipHeight > window.innerHeight - margin) {
-        position.top = window.innerHeight - tooltipHeight - margin;
+      if (position.top < minMargin) position.top = minMargin;
+      if (position.top + tooltipHeight > window.innerHeight - minMargin) {
+        position.top = window.innerHeight - tooltipHeight - minMargin;
       }
     }
     
