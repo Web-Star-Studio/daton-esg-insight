@@ -237,7 +237,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in" data-tour="dashboard-main">
+    <div className="space-y-8 animate-fade-in content-area" data-tour="dashboard-main" data-testid="dashboard-content">
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">

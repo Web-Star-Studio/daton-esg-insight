@@ -50,7 +50,7 @@ export function NavigationMonitor() {
     }
 
     // Improved loading detection - only for complex pages
-    const complexPages = ['/dashboard', '/inventario-gee', '/gestao-esg', '/ia-insights'];
+    const complexPages = ['/inventario-gee', '/gestao-esg', '/ia-insights'];
     const isComplexPage = complexPages.some(route => currentPath.startsWith(route));
     
     if (isComplexPage) {
@@ -62,7 +62,7 @@ export function NavigationMonitor() {
         
         // Only show warning if there's actually a problem
         if (mainContent && !hasLoadingSpinner && !hasErrorBoundary) {
-          const hasContent = mainContent.querySelector('[data-testid], .card, .widget, .dashboard-item, .content-area');
+          const hasContent = mainContent.querySelector('[data-testid], .card, .widget, .dashboard-item, .content-area, [data-tour], .space-y-8, .animate-fade-in');
           
           if (!hasContent) {
             console.warn(`NavigationMonitor: Conteúdo não detectado em ${currentPath}`);
@@ -72,7 +72,7 @@ export function NavigationMonitor() {
             });
           }
         }
-      }, 5000); // Increased timeout for lazy-loaded components
+      }, 3000); // Reduced timeout to be less aggressive
 
       return () => clearTimeout(timeoutId);
     }
