@@ -17,47 +17,103 @@ import { getESGDashboard, type ESGDashboardResponse } from "@/services/esg";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-// Circular Progress Component for ESG Score
+// Enhanced Circular Progress Component for ESG Score
 const CircularProgress = ({ value, size = 200 }: { value: number; size?: number }) => {
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   const strokeDasharray = `${(value / 100) * circumference} ${circumference}`;
   
+  // Improved color system based on score ranges
   const getColorByScore = (score: number) => {
-    if (score >= 80) return "hsl(var(--chart-2))"; // Green
-    if (score >= 60) return "hsl(var(--chart-3))"; // Yellow
-    return "hsl(var(--chart-1))"; // Red
+    if (score >= 85) return "hsl(142, 76%, 36%)"; // Vibrant green
+    if (score >= 75) return "hsl(120, 60%, 45%)"; // Green
+    if (score >= 65) return "hsl(84, 81%, 44%)"; // Light green
+    if (score >= 55) return "hsl(45, 93%, 47%)"; // Yellow-orange
+    if (score >= 40) return "hsl(25, 95%, 53%)"; // Orange
+    if (score >= 25) return "hsl(14, 90%, 53%)"; // Red-orange
+    return "hsl(0, 84%, 60%)"; // Red
   };
 
+  const getScoreLabel = (score: number) => {
+    if (score >= 85) return "Excelente";
+    if (score >= 75) return "Muito Bom";
+    if (score >= 65) return "Bom";
+    if (score >= 55) return "Satisfatório";
+    if (score >= 40) return "Regular";
+    if (score >= 25) return "Insuficiente";
+    return "Crítico";
+  };
+
+  const scoreColor = getColorByScore(value);
+  
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center group">
+      {/* Background glow effect */}
+      <div 
+        className="absolute rounded-full opacity-20 animate-pulse blur-lg"
+        style={{ 
+          width: size * 0.8, 
+          height: size * 0.8, 
+          backgroundColor: scoreColor,
+          transition: 'all 0.5s ease-in-out'
+        }}
+      />
+      
+      {/* Main SVG circle */}
       <svg
-        className="transform -rotate-90"
         width={size}
         height={size}
+        viewBox="0 0 100 100"
+        className="transform rotate-[-90deg] transition-all duration-700 ease-out group-hover:scale-105"
       >
+        {/* Background circle */}
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="50"
+          cy="50"
           r={radius}
-          stroke="hsl(var(--muted))"
-          strokeWidth="8"
+          stroke="hsl(var(--muted)/0.2)"
+          strokeWidth="6"
           fill="none"
         />
+        {/* Progress circle with smooth animation */}
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx="50"
+          cy="50"
           r={radius}
-          stroke={getColorByScore(value)}
-          strokeWidth="8"
+          stroke={scoreColor}
+          strokeWidth="6"
           fill="none"
           strokeDasharray={strokeDasharray}
           strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+          style={{
+            filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.1))',
+            strokeDashoffset: 0,
+          }}
         />
       </svg>
-      <div className="absolute text-center">
-        <div className="text-3xl font-bold">{value}</div>
-        <div className="text-sm text-muted-foreground">ESG Score</div>
+      
+      {/* Center content with improved styling */}
+      <div className="absolute text-center space-y-1">
+        <div 
+          className="text-4xl md:text-5xl font-bold transition-all duration-500"
+          style={{ color: scoreColor }}
+        >
+          {value}
+        </div>
+        <div className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          ESG Score
+        </div>
+        <div 
+          className="text-xs md:text-sm font-semibold px-2 py-1 rounded-full transition-all duration-300"
+          style={{ 
+            color: scoreColor,
+            backgroundColor: `${scoreColor}15`,
+            border: `1px solid ${scoreColor}30`
+          }}
+        >
+          {getScoreLabel(value)}
+        </div>
       </div>
     </div>
   );
