@@ -388,7 +388,7 @@ export function SmartInteractiveTour() {
         openedStepsRef.current[currentStep] = true;
       }
       
-      // Encontrar elemento alvo com polling mais longo para aguardar carregamento
+      // Encontrar elemento alvo com timeout aumentado para aguardar carregamento
       const tryFindTarget = (retries: number) => {
         const el = document.querySelector(step.target) as HTMLElement | null;
         if (el) {
@@ -417,11 +417,15 @@ export function SmartInteractiveTour() {
           }
           return;
         }
-        // Polling por ~6s (40 * 150ms) para aguardar carregamento de dados
+        // Polling por ~8s (40 * 200ms) para aguardar carregamento de dados
         if (retries > 0) {
-          setTimeout(() => tryFindTarget(retries - 1), 150);
+          setTimeout(() => tryFindTarget(retries - 1), 200);
         } else {
           console.debug('Tour: Target não encontrado após polling:', step.target, 'na página:', location.pathname);
+          // Fallback: try auto advance if element isn't found
+          if (step.autoAdvance) {
+            setTimeout(() => nextStepRef.current(), 1000);
+          }
           if (step.placement === 'center') {
             // Mostra card centralizado mesmo sem target
             setTargetElement(null);
@@ -432,7 +436,7 @@ export function SmartInteractiveTour() {
         }
       };
 
-      tryFindTarget(40);
+      tryFindTarget(50); // 50 tentativas = ~10s
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
 
@@ -619,9 +623,9 @@ useEffect(() => {
 
   return (
     <>
-      {/* Overlay escuro sem blur para manter conteúdo visível */}
+      {/* Overlay melhorado com visibilidade de fundo */}
       <div 
-        className="fixed inset-0 bg-black/25 dark:bg-black/35 z-40 pointer-events-none transition-all duration-500 ease-out"
+        className="fixed inset-0 bg-black/15 dark:bg-black/20 z-40 pointer-events-none transition-all duration-500 ease-out"
         aria-hidden="true"
       />
       
@@ -637,23 +641,15 @@ useEffect(() => {
         </div>
       )}
       
-      {/* Spotlight minimalista no elemento alvo */}
+      {/* Destaque simples no elemento alvo */}
       {targetElement && currentStepData.highlight && currentStepData.placement !== 'center' && (
         <div
-          className="fixed z-50 pointer-events-none transition-all duration-700 ease-out"
+          className="fixed z-50 pointer-events-none transition-all duration-700 ease-out ring-2 ring-primary ring-offset-2 ring-offset-white/10 rounded-lg"
           style={{
-            top: overlayPosition.top - 8,
-            left: overlayPosition.left - 8,
-            width: overlayPosition.width + 16,
-            height: overlayPosition.height + 16,
-            boxShadow: `
-              0 0 0 2px hsl(var(--primary)),
-              0 0 0 4px hsl(var(--primary) / 0.3),
-              0 0 0 8px hsl(var(--primary) / 0.1),
-              0 0 0 9999px hsl(var(--foreground) / 0.6)
-            `,
-            borderRadius: '12px',
-            animation: currentStepData.autoAdvance ? 'pulse 3s ease-in-out infinite' : 'none'
+            top: overlayPosition.top - 4,
+            left: overlayPosition.left - 4,
+            width: overlayPosition.width + 8,
+            height: overlayPosition.height + 8,
           }}
         />
       )}

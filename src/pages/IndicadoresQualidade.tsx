@@ -25,11 +25,11 @@ const IndicadoresQualidade = () => {
             <BarChart3 className="h-4 w-4" />
             <span>Dashboard</span>
           </TabsTrigger>
-          <TabsTrigger value="indicators" className="flex items-center space-x-2">
+          <TabsTrigger value="indicators" className="flex items-center space-x-2" data-tour="indicators-tab">
             <Activity className="h-4 w-4" />
             <span>Indicadores</span>
           </TabsTrigger>
-          <TabsTrigger value="targets" className="flex items-center space-x-2">
+          <TabsTrigger value="targets" className="flex items-center space-x-2" data-tour="targets-tab">
             <Target className="h-4 w-4" />
             <span>Metas</span>
           </TabsTrigger>
@@ -65,7 +65,7 @@ const IndicadoresQualidade = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="targets">
+        <TabsContent value="targets" data-tour="targets-section">
           <TargetManagementDashboard />
         </TabsContent>
 

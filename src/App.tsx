@@ -79,6 +79,7 @@ const PlanoAcao5W2H = lazy(() => import("./pages/PlanoAcao5W2H"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
+const IndicadoresQualidade = lazy(() => import("./pages/IndicadoresQualidade"));
 const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos").then(module => ({ default: module.GerenciamentoProjetos })));
 const AuditoriaInternas = lazy(() => import("./pages/AuditoriaInternas"));
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
@@ -348,6 +349,8 @@ const App = () => (
             <Route path="/base-conhecimento" element={<LazyPageWrapper><BaseConhecimento /></LazyPageWrapper>} />
             <Route path="/gestao-fornecedores" element={<LazyPageWrapper><GestaoFornecedores /></LazyPageWrapper>} />
             <Route path="/quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
+            <Route path="/indicadores-qualidade" element={<LazyPageWrapper><IndicadoresQualidade /></LazyPageWrapper>} />
+            <Route path="/qualidade" element={<Navigate to="/indicadores-qualidade" replace />} />
             <Route path="/gerenciamento-projetos" element={<LazyPageWrapper><GerenciamentoProjetos /></LazyPageWrapper>} />
             <Route path="/auditorias-internas" element={<LazyPageWrapper><AuditoriaInternas /></LazyPageWrapper>} />
             <Route path="/acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
