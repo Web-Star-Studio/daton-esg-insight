@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Plus, Target, Award, Calendar, Users, FileText, Download, TrendingUp } from "lucide-react";
+import { Plus, Target, Award, Calendar, Users, FileText, Download, TrendingUp, AlertCircle, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 import { 
   getPerformanceStats, 
@@ -28,6 +29,21 @@ import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { AuthErrorFallback } from "@/components/fallbacks/AuthErrorFallback";
+import { DataErrorFallback } from "@/components/fallbacks/DataErrorFallback";
+import { useAuthCheck } from "@/hooks/useAuthCheck";
+
+// Component de fallback para erros específicos de dados
+const PerformanceErrorFallback = ({ error, retry }: { error?: Error; retry: () => void }) => (
+  <DataErrorFallback 
+    error={error}
+    retry={retry}
+    title="Problema no Módulo de Desempenho"
+    moduleName="gestão de desempenho"
+  />
+);
 
 export default function GestaoDesempenho() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
@@ -40,68 +56,87 @@ export default function GestaoDesempenho() {
   const [selectedCompetency, setSelectedCompetency] = useState<any>(null);
   const { toast } = useToast();
 
-  // Initialize default criteria on component load
+  // Use auth check hook
+  const { isAuthenticated, isLoading: authLoading, error: authError, retry: authRetry } = useAuthCheck();
+
+  // Initialize default criteria only after auth is confirmed
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const initDefaults = async () => {
       try {
         await initializeDefaultCriteria();
       } catch (error) {
         console.error('Erro ao inicializar critérios padrão:', error);
-        toast({
-          title: "Aviso",
-          description: "Alguns dados padrão podem não ter sido carregados corretamente.",
-          variant: "destructive",
-        });
+        // Don't show error toast for initialization - it's not critical
       }
     };
     
     initDefaults();
-  }, [toast]);
+  }, [isAuthenticated]);
 
-  // Fetch real data with error handling
+  // Fetch real data with error handling - only when authenticated
   const { data: performanceStats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['performance-stats'],
     queryFn: getPerformanceStats,
+    enabled: isAuthenticated,
     retry: 2,
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
+  // Handle stats error effect
+  useEffect(() => {
+    if (statsError) {
+      console.error('Error loading performance stats:', statsError);
+      toast({
+        title: "Erro ao carregar estatísticas",
+        description: "Não foi possível carregar as estatísticas de desempenho.",
+        variant: "destructive",
+      });
+    }
+  }, [statsError, toast]);
+
   const { data: evaluationsList = [], isLoading: evaluationsLoading, error: evaluationsError } = useQuery({
     queryKey: ['performance-evaluations'],
     queryFn: getPerformanceEvaluations,
+    enabled: isAuthenticated,
     retry: 2
   });
 
   const { data: goalsList = [], isLoading: goalsLoading, error: goalsError } = useQuery({
     queryKey: ['employee-goals'],
     queryFn: getEmployeeGoals,
+    enabled: isAuthenticated,
     retry: 2
   });
 
-  // Fetch competency data
+  // Fetch competency data - only when authenticated  
   const { data: competencies = [], isLoading: competenciesLoading, error: competenciesError } = useQuery({
     queryKey: ['competency-matrix'],
     queryFn: getCompetencyMatrix,
+    enabled: isAuthenticated,
     retry: 2
   });
 
   const { data: assessments = [], isLoading: assessmentsLoading } = useQuery({
     queryKey: ['competency-assessments'],
     queryFn: getEmployeeCompetencyAssessments,
+    enabled: isAuthenticated,
     retry: 2
   });
 
   const { data: gaps = [], isLoading: gapsLoading } = useQuery({
     queryKey: ['competency-gaps'],
     queryFn: getCompetencyGapAnalysis,
+    enabled: isAuthenticated,
     retry: 2
   });
 
-  // Performance stats for display
+  // Performance stats for display with safe property access
   const statsCards = [
     {
       title: "Avaliações Pendentes",
-      value: performanceStats?.pending_evaluations?.toString() || "0",
+      value: (performanceStats as any)?.pending_evaluations?.toString() || "0",
       description: "Avaliações aguardando preenchimento",
       icon: Calendar,
       color: "text-amber-600",
@@ -109,7 +144,7 @@ export default function GestaoDesempenho() {
     },
     {
       title: "Meta de Conclusão",
-      value: `${performanceStats?.completion_percentage || 0}%`,
+      value: `${(performanceStats as any)?.completion_percentage || 0}%`,
       description: "Das avaliações foram concluídas",
       icon: Target,
       color: "text-blue-600",
@@ -117,7 +152,7 @@ export default function GestaoDesempenho() {
     },
     {
       title: "Média Geral",
-      value: performanceStats?.average_score?.toFixed(1) || "0.0",
+      value: (performanceStats as any)?.average_score?.toFixed(1) || "0.0",
       description: "Nota média das avaliações",
       icon: TrendingUp,
       color: "text-green-600",
@@ -125,7 +160,7 @@ export default function GestaoDesempenho() {
     },
     {
       title: "Top Performers",
-      value: performanceStats?.top_performers?.toString() || "0",
+      value: (performanceStats as any)?.top_performers?.toString() || "0",
       description: "Funcionários com nota ≥ 4.5",
       icon: Award,
       color: "text-purple-600",
@@ -223,8 +258,33 @@ export default function GestaoDesempenho() {
     }
   };
 
+  // Show auth error state
+  if (authError) {
+    return (
+      <AuthErrorFallback 
+        error={authError}
+        retry={authRetry}
+        title="Acesso ao Módulo de Desempenho"
+        description="É necessário estar autenticado para acessar o módulo de gestão de desempenho."
+      />
+    );
+  }
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <ErrorBoundary fallback={PerformanceErrorFallback}>
+      <div className="space-y-6">
       <div className="flex items-center justify-between" data-tour="performance-header">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gestão de Desempenho</h1>
@@ -325,7 +385,7 @@ export default function GestaoDesempenho() {
                 </p>
               </CardContent>
             </Card>
-          ) : evaluationsList.length === 0 ? (
+          ) : (evaluationsList as any[])?.length === 0 ? (
             <EmptyState
               icon={Target}
               title="Nenhuma avaliação encontrada"
@@ -343,7 +403,7 @@ export default function GestaoDesempenho() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {evaluationsList.map((evaluation: any) => (
+                  {(evaluationsList as any[])?.map((evaluation: any) => (
                     <div key={evaluation.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex-1">
                         <div className="flex items-center gap-4">
@@ -419,7 +479,7 @@ export default function GestaoDesempenho() {
                 </p>
               </CardContent>
             </Card>
-          ) : goalsList.length === 0 ? (
+          ) : (goalsList as any[])?.length === 0 ? (
             <EmptyState
               icon={Target}
               title="Nenhuma meta encontrada"
@@ -440,7 +500,7 @@ export default function GestaoDesempenho() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {goalsList.map((goal: any) => {
+                  {(goalsList as any[])?.map((goal: any) => {
                     const progress = calculateProgress(goal);
                     return (
                       <div key={goal.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
@@ -542,7 +602,7 @@ export default function GestaoDesempenho() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{gaps.length}</div>
+                <div className="text-2xl font-bold text-red-600">{(gaps as any[])?.length || 0}</div>
                 <p className="text-xs text-muted-foreground">
                   Requerem atenção
                 </p>
@@ -692,6 +752,7 @@ export default function GestaoDesempenho() {
         open={isCompetencyAssessmentModalOpen}
         onOpenChange={setIsCompetencyAssessmentModalOpen}
       />
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
