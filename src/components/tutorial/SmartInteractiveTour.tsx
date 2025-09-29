@@ -121,6 +121,7 @@ const SMART_TOUR_DEFINITIONS = {
         page: '/gestao-desempenho',
         tip: 'Impacto Estratégico: Vincule metas individuais aos KPIs ESG corporativos para multiplicar o engajamento. Use analytics de RH para identificar talentos ESG e desenvolver lideranças sustentáveis através de trilhas de aprendizagem personalizadas.',
         highlight: true,
+        autoAdvance: false,
         delay: 5000
       },
       {
@@ -158,6 +159,7 @@ const SMART_TOUR_DEFINITIONS = {
         page: '/gestao-esg',
         tip: 'Compliance Automático: Integração API com ERP, sensores IoT e fontes externas para coleta automatizada. Motor de IA calcula automaticamente métricas complexas como Scope 3, análise de materialidade e benchmarking setorial.',
         highlight: true,
+        autoAdvance: false,
         delay: 5000
       },
 
@@ -183,6 +185,7 @@ const SMART_TOUR_DEFINITIONS = {
         page: '/indicadores-qualidade',
         tip: 'Qualidade Preditiva: IA identifica potenciais não-conformidades antes que ocorram. Workflows automatizados garantem CAPA (Ações Corretivas e Preventivas) sistemáticas e rastreamento end-to-end de melhorias.',
         highlight: true,
+        autoAdvance: false,
         delay: 5000
       },
 
@@ -407,8 +410,9 @@ export function SmartInteractiveTour() {
             });
           }, 200);
 
-          // Auto advance apenas para steps de navegação
+          // Auto advance apenas para steps de navegação explícitos
           if (step.autoAdvance && step.delay && !isPaused && step.id.includes('navigate-')) {
+            console.debug('Tour: Auto-avançando step de navegação:', step.id);
             setTimeout(() => {
               if (!isPaused && currentStep < tourSteps.length - 1) {
                 nextStepRef.current();
