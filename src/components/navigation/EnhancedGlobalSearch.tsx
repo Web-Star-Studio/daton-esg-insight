@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Search, Command, Star, Clock, FileText, BarChart3, Settings, Users, Leaf, Shield } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { Search, Command, Star, Clock, FileText, BarChart3, Settings, Users, Leaf, Shield, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -81,6 +81,23 @@ export function EnhancedGlobalSearch() {
   const navigate = useNavigate();
   const { favorites } = useFavorites();
 
+  // Global Ctrl+K listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        setIsOpen(true);
+      }
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        setSearchTerm('');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   const filteredResults = useMemo(() => {
     if (!searchTerm.trim()) {
       // Mostrar favoritos quando não há busca
@@ -128,50 +145,49 @@ export function EnhancedGlobalSearch() {
 
   const getIcon = (iconName: string) => {
     const icons: Record<string, React.ComponentType<any>> = {
-      BarChart3, FileText, Leaf, Users, Shield, Settings, Star, Clock
+      BarChart3, FileText, Leaf, Users, Shield, Settings, Star, Clock, Target, Search
     };
-    return icons[iconName] || FileText;
+    const IconComponent = icons[iconName] || FileText;
+    return <IconComponent className="h-4 w-4" />;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          variant="outline" 
-          className="relative w-64 justify-start text-muted-foreground hover:bg-muted/50"
+          variant="ghost"
+          size="sm"
+          className="relative justify-start text-sm text-muted-foreground hover:bg-accent/50 gap-2 min-w-[200px]"
         >
-          <Search className="h-4 w-4 mr-2" />
-          <span>Buscar no sistema...</span>
-          <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-            <span className="text-xs">⌘</span>K
+          <Search className="h-4 w-4" />
+          Buscar...
+          <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            Ctrl+K
           </kbd>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] p-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="flex items-center gap-2">
-            <Command className="h-5 w-5" />
-            Busca Global
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="px-6 pb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Digite para buscar páginas, funcionalidades..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              autoFocus
-            />
-          </div>
+      <DialogContent className="p-0 shadow-2xl max-w-[640px] border-0 backdrop-blur-md bg-background/95">
+        <div className="flex items-center border-b border-border/50 px-4">
+          <Search className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
+          <Input
+            placeholder="Busque por recursos, páginas, configurações..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground h-12"
+            autoFocus
+          />
         </div>
 
-        <div className="max-h-96 overflow-y-auto border-t">
+        <div className="max-h-[400px] overflow-y-auto" ref={containerRef as any}>
           {filteredResults.length === 0 ? (
             <div className="px-6 py-8 text-center text-muted-foreground">
-              {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum favorito adicionado'}
+              <div className="flex flex-col items-center gap-2">
+                <Search className="h-8 w-8 opacity-40" />
+                <p>{searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum favorito adicionado'}</p>
+                <p className="text-xs">
+                  {searchTerm ? 'Tente termos diferentes ou navegue pelas categorias' : 'Adicione favoritos para acesso rápido'}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="p-2">
@@ -180,41 +196,52 @@ export function EnhancedGlobalSearch() {
                   FAVORITOS
                 </div>
               )}
-              {filteredResults.map((result, index) => {
-                const Icon = getIcon(result.icon);
-                return (
-                  <button
-                    key={result.id}
-                    {...getItemProps(index)}
-                    onClick={() => handleItemSelect(result)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left hover:bg-muted/50 transition-colors ${
-                      index === selectedIndex ? 'bg-muted' : ''
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+              {filteredResults.map((result, index) => (
+                <button
+                  key={result.id}
+                  {...getItemProps(index)}
+                  onClick={() => handleItemSelect(result)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-md text-left hover:bg-accent/50 transition-colors group ${
+                    index === selectedIndex ? 'bg-accent' : ''
+                  }`}
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary flex-shrink-0">
+                    {getIcon(result.icon)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{result.title}</div>
+                    <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                      {result.description}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{result.title}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {result.description}
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-muted-foreground px-2 py-1 rounded bg-muted/50">
                       {result.category}
                     </div>
-                  </button>
-                );
-              })}
+                    <kbd className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 select-none items-center justify-center rounded border bg-muted font-mono text-[10px] font-medium text-muted-foreground hidden sm:flex">
+                      ↵
+                    </kbd>
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </div>
 
-        <div className="px-6 py-3 border-t bg-muted/20">
-          <div className="text-xs text-muted-foreground">
-            Use <kbd className="px-1.5 py-0.5 text-xs border rounded bg-background">↑↓</kbd> para navegar,{' '}
-            <kbd className="px-1.5 py-0.5 text-xs border rounded bg-background">Enter</kbd> para selecionar,{' '}
-            <kbd className="px-1.5 py-0.5 text-xs border rounded bg-background">Esc</kbd> para fechar
+        <div className="px-4 py-3 border-t bg-muted/20">
+          <div className="text-xs text-muted-foreground flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 text-xs border rounded bg-background">↑↓</kbd> 
+              navegar
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 text-xs border rounded bg-background">Enter</kbd> 
+              selecionar
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 text-xs border rounded bg-background">Esc</kbd> 
+              fechar
+            </span>
           </div>
         </div>
       </DialogContent>

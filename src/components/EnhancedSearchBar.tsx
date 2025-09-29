@@ -137,12 +137,6 @@ export function EnhancedSearchBar() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        setIsOpen(true);
-        inputRef.current?.focus();
-      }
-      
       if (event.key === 'Escape') {
         setIsOpen(false);
         inputRef.current?.blur();

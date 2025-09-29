@@ -1,7 +1,7 @@
 import { User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { EnhancedSearchBar } from "@/components/EnhancedSearchBar"
+import { EnhancedGlobalSearch } from "@/components/navigation/EnhancedGlobalSearch"
 import { HeaderNotifications } from "@/components/HeaderNotifications"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
@@ -72,7 +72,7 @@ export function AppHeader() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="hover:bg-muted/50" />
         
-        <EnhancedSearchBar />
+        <EnhancedGlobalSearch />
       </div>
 
       <div className="flex items-center gap-3" data-notifications>
