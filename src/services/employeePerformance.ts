@@ -138,12 +138,7 @@ export async function getPerformanceEvaluations() {
   try {
     const { data, error } = await supabase
       .from('performance_evaluations')
-      .select(`
-        *,
-        employee:employees!performance_evaluations_employee_id_fkey(id, full_name, position),
-        evaluator:employees!performance_evaluations_evaluator_id_fkey(id, full_name),
-        cycle:performance_evaluation_cycles(id, name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -151,7 +146,7 @@ export async function getPerformanceEvaluations() {
   } catch (error) {
     console.error('Erro ao carregar avaliações:', error);
     toast.error('Erro ao carregar avaliações de desempenho');
-    throw error;
+    return []; // Return empty array instead of throwing to prevent page crashes
   }
 }
 

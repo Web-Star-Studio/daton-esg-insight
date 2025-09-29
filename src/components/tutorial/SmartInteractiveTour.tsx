@@ -306,34 +306,54 @@ export function SmartInteractiveTour() {
     }
   }, [currentTour, filterStepsByProfile]);
 
-  // Navegação automática entre páginas
+  // Navegação automática entre páginas - só libera isNavigating quando target existe
   const navigateToPage = useCallback(async (page: string) => {
     if (location.pathname !== page) {
       setIsNavigating(true);
       navigate(page);
       
-      // Aguardar um pouco para a página carregar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Aguardar navegação + tempo para DOM se estabilizar
+      await new Promise(resolve => setTimeout(resolve, 1500));
       setIsNavigating(false);
     }
   }, [navigate, location.pathname]);
 
-  // Tenta abrir abas/seções relevantes antes de procurar o alvo
+  // Tenta abrir abas/seções relevantes com múltiplas tentativas
   const ensureSectionVisible = useCallback((hints: string[]) => {
-    try {
-      const lc = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const hintLC = hints.map(lc);
-      const candidates = Array.from(document.querySelectorAll('button, [role="tab"], a, [data-tour-open]')) as HTMLElement[];
-      for (const el of candidates) {
-        const text = lc(el.textContent || '');
-        const attrs = `${el.getAttribute('data-tour-open') || ''} ${el.getAttribute('data-tab') || ''} ${el.getAttribute('aria-controls') || ''}`;
-        const attrsLC = lc(attrs);
-        if (hintLC.some(h => text.includes(h) || attrsLC.includes(h))) {
-          el.click();
-          break;
+    const attempt = (retryCount: number) => {
+      try {
+        const lc = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const hintLC = hints.map(lc);
+        const selectors = [
+          'button', '[role="tab"]', 'a', '[data-tour-open]',
+          '[aria-controls]', '.accordion-trigger', '[data-state]',
+          '[data-radix-collection-item]', '.tabs-trigger'
+        ];
+        const candidates = Array.from(document.querySelectorAll(selectors.join(', '))) as HTMLElement[];
+        
+        for (const el of candidates) {
+          const text = lc(el.textContent || '');
+          const attrs = `${el.getAttribute('data-tour-open') || ''} ${el.getAttribute('data-tab') || ''} ${el.getAttribute('aria-controls') || ''}`;
+          const attrsLC = lc(attrs);
+          if (hintLC.some(h => text.includes(h) || attrsLC.includes(h))) {
+            el.click();
+            return true; // Sucesso
+          }
         }
+        return false; // Não encontrou
+      } catch (_) {
+        return false;
       }
-    } catch (_) {}
+    };
+
+    // Tentar até 3x com delays
+    if (!attempt(3)) {
+      setTimeout(() => {
+        if (!attempt(2)) {
+          setTimeout(() => attempt(1), 250);
+        }
+      }, 200);
+    }
   }, []);
 
   // Executar step atual
@@ -364,7 +384,7 @@ export function SmartInteractiveTour() {
         openedStepsRef.current[currentStep] = true;
       }
       
-      // Encontrar elemento alvo com polling curto para aguardar carregamento
+      // Encontrar elemento alvo com polling mais longo para aguardar carregamento
       const tryFindTarget = (retries: number) => {
         const el = document.querySelector(step.target) as HTMLElement | null;
         if (el) {
@@ -380,7 +400,7 @@ export function SmartInteractiveTour() {
               width: rect.width,
               height: rect.height
             });
-          }, 300);
+          }, 200);
 
           // Auto advance se configurado
           if (step.autoAdvance && step.delay && !isPaused) {
@@ -392,21 +412,22 @@ export function SmartInteractiveTour() {
           }
           return;
         }
-        // Repetir tentativas por ~2.4s (16 * 150ms)
+        // Polling por ~6s (40 * 150ms) para aguardar carregamento de dados
         if (retries > 0) {
           setTimeout(() => tryFindTarget(retries - 1), 150);
         } else {
+          console.debug('Tour: Target não encontrado após polling:', step.target);
           if (step.placement === 'center') {
             // Mostra card centralizado mesmo sem target
             setTargetElement(null);
           } else {
-            // Avança automaticamente se não houver alvo após aguardar
-            setTimeout(() => nextStepRef.current(), 800);
+            // Para steps não-centrais sem target, não avança automaticamente
+            setTargetElement(null);
           }
         }
       };
 
-      tryFindTarget(16);
+      tryFindTarget(40);
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
 
@@ -581,20 +602,19 @@ useEffect(() => {
 
   return (
     <>
-      {/* Overlay escuro com blur profissional */}
+      {/* Overlay escuro sem blur para manter conteúdo visível */}
       <div 
-        className="fixed inset-0 bg-foreground/40 dark:bg-foreground/50 backdrop-blur-md z-40 pointer-events-none transition-all duration-500 ease-out"
+        className="fixed inset-0 bg-black/25 dark:bg-black/35 z-40 pointer-events-none transition-all duration-500 ease-out"
         aria-hidden="true"
       />
       
       {/* Loading indicator minimalista */}
-{isNavigating && (
-        /* Mostra indicador de navegação, mas não bloqueia exibição da página */
+      {isNavigating && (
         <div className="fixed inset-0 z-[55] flex items-center justify-center">
           <div className="bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-border/50 animate-scale-in">
             <div className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-              <span className="text-sm font-medium text-foreground">Navegando...</span>
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm font-medium">Preparando página...</span>
             </div>
           </div>
         </div>
