@@ -583,12 +583,13 @@ useEffect(() => {
     <>
       {/* Overlay escuro com blur profissional */}
       <div 
-        className="fixed inset-0 bg-background/80 backdrop-blur-md z-40 pointer-events-none transition-all duration-500 ease-out"
+        className="fixed inset-0 bg-foreground/40 dark:bg-foreground/50 backdrop-blur-md z-40 pointer-events-none transition-all duration-500 ease-out"
         aria-hidden="true"
       />
       
       {/* Loading indicator minimalista */}
-      {isNavigating && (
+{isNavigating && (
+        /* Mostra indicador de navegação, mas não bloqueia exibição da página */
         <div className="fixed inset-0 z-[55] flex items-center justify-center">
           <div className="bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-border/50 animate-scale-in">
             <div className="flex items-center gap-3">
@@ -612,7 +613,7 @@ useEffect(() => {
               0 0 0 2px hsl(var(--primary)),
               0 0 0 4px hsl(var(--primary) / 0.3),
               0 0 0 8px hsl(var(--primary) / 0.1),
-              0 0 0 9999px hsl(var(--background) / 0.8)
+              0 0 0 9999px hsl(var(--foreground) / 0.6)
             `,
             borderRadius: '12px',
             animation: currentStepData.autoAdvance ? 'pulse 3s ease-in-out infinite' : 'none'
