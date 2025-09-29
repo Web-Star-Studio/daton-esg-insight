@@ -58,7 +58,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Esta é sua central de comando ESG integrada e inteligente. Aqui você monitora métricas sustentáveis em tempo real, acompanha o progresso das iniciativas ESG e toma decisões baseadas em dados precisos e insights acionáveis para impulsionar a transformação sustentável da sua organização.',
         target: '[data-tour="dashboard-main"]',
         placement: 'center' as const,
-        page: '/',
+        page: '/dashboard',
         tip: 'O dashboard adapta-se automaticamente ao seu perfil profissional, priorizando métricas e funcionalidades mais relevantes. Use os filtros para personalizar ainda mais sua experiência.',
         highlight: true,
         autoAdvance: false,
@@ -70,7 +70,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'O menu lateral organiza estrategicamente todos os módulos ESG seguindo as melhores práticas de sustentabilidade. Cada seção representa um pilar fundamental: Environmental (gestão ambiental), Social (capital humano e comunidade) e Governance (transparência e ética corporativa).',
         target: '[data-tour="sidebar"]',
         placement: 'right' as const,
-        page: '/',
+        page: '/dashboard',
         tip: 'Produtividade: Use atalhos Ctrl+K para busca global, Ctrl+1 Dashboard, Ctrl+2 ESG, Ctrl+3 Qualidade. O menu colapsa automaticamente em telas menores para otimizar espaço.',
         highlight: true,
         delay: 4000
@@ -81,7 +81,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Monitore indicadores-chave de sustentabilidade atualizados automaticamente via integrações e análise de IA. Acompanhe emissões de CO₂, índices de conformidade regulatória, indicadores sociais, métricas de governança e alertas inteligentes de desvio - tudo consolidado em uma visão executiva.',
         target: '[data-tour="stats-cards"]',
         placement: 'top' as const,
-        page: '/',
+        page: '/dashboard',
         tip: 'Análise Avançada: Clique em qualquer KPI para drill-down com tendências históricas, benchmarks do setor, projeções baseadas em ML e planos de ação automáticos. Configurar alertas personalizados para metas críticas.',
         highlight: true,
         delay: 4000
@@ -92,7 +92,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Hub de produtividade com acesso direto às tarefas mais críticas: registrar emissões via upload ou API, iniciar auditorias automatizadas, agendar treinamentos com IA, gerar relatórios regulatórios e executar workflows personalizados. As ações se adaptam dinamicamente às suas responsabilidades e urgências.',
         target: '[data-tour="quick-actions"]',
         placement: 'bottom' as const,
-        page: '/',
+        page: '/dashboard',
         tip: 'Automação Inteligente: O sistema aprende seus padrões de uso e sugere ações baseadas em deadline, sazonalidade e prioridades. Configure macros para automatizar sequências de tarefas recorrentes.',
         highlight: true,
         delay: 4000
@@ -105,7 +105,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Vamos conhecer o módulo de gestão de pessoas e desempenho. Redirecionando...',
         target: '[data-tour="sidebar"]',
         placement: 'right' as const,
-        page: '/',
+        page: '/gestao-desempenho',
         action: () => {},  // Será preenchido dinamicamente
         autoAdvance: true,
         delay: 2000,
@@ -141,7 +141,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Agora vamos explorar o módulo de ESG e sustentabilidade. Navegando...',
         target: '[data-tour="sidebar"]',
         placement: 'right' as const,
-        page: '/gestao-desempenho',
+        page: '/gestao-esg',
         action: () => {},
         autoAdvance: true,
         delay: 2000,
@@ -166,7 +166,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Vamos conhecer o módulo de qualidade e conformidade. Redirecionando...',
         target: '[data-tour="sidebar"]',
         placement: 'right' as const,
-        page: '/gestao-esg',
+        page: '/qualidade',
         action: () => {},
         autoAdvance: true,
         delay: 2000,
@@ -191,7 +191,7 @@ const SMART_TOUR_DEFINITIONS = {
           description: 'Parabéns por completar o tour! Agora você domina todo o ecossistema Daton ESG. Continue explorando funcionalidades avançadas, personalize dashboards e workflows, configure integrações e inicie a transformação sustentável da sua organização com dados precisos, insights de IA e automação inteligente.',
           target: '[data-tour="dashboard-main"]',
           placement: 'center' as const,
-          page: '/',
+          page: '/dashboard',
           tip: 'Próximos Passos: Configure suas integrações (ERP, sensores, APIs), personalize dashboards, defina metas ESG e explore nossa academy com cursos especializados. Suporte 24/7 disponível via chat.',
           highlight: false,
           autoAdvance: false
@@ -211,7 +211,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Os widgets se adaptam ao seu perfil e mostram informações relevantes para suas atividades.',
         target: '[data-tour="dashboard-main"]',
         placement: 'center' as const,
-        page: '/',
+        page: '/dashboard',
         highlight: true,
         delay: 3000
       },
@@ -221,7 +221,7 @@ const SMART_TOUR_DEFINITIONS = {
         description: 'Use filtros para personalizar a visualização de dados e encontrar informações específicas rapidamente.',
         target: '[data-tour="filters"]',
         placement: 'bottom' as const,
-        page: '/',
+        page: '/dashboard',
         highlight: true,
         delay: 3000
       }
@@ -370,8 +370,14 @@ export function SmartInteractiveTour() {
           }, step.delay);
         }
       } else {
-        // Se elemento não encontrado, avançar automaticamente
-        setTimeout(() => nextStepRef.current(), 1000);
+        // Se elemento não encontrado
+        if (step.placement === 'center') {
+          // Mostra card centralizado mesmo sem target
+          setTargetElement(null);
+        } else {
+          // Avança automaticamente se não houver alvo para steps contextuais
+          setTimeout(() => nextStepRef.current(), 1000);
+        }
       }
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
