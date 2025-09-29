@@ -236,7 +236,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6 animate-fade-in" data-kpis>
+    <div className="space-y-6 p-6 animate-fade-in" data-tour="dashboard-main">
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -268,7 +268,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-2 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+        <div className="flex gap-2 overflow-x-auto pb-2 animate-fade-in" style={{ animationDelay: '0.3s' }} data-tour="quick-actions">
           {QUICK_ACTIONS.map((action) => {
             const Icon = action.icon;
             return (
@@ -288,7 +288,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats-cards">
         {KPI_CARDS.map((kpi, index) => {
           const Icon = kpi.icon;
           const ChangeIcon = getChangeIcon(kpi.changeType);

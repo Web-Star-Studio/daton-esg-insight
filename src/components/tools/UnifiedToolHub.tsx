@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { 
   MessageCircle, 
@@ -10,7 +11,7 @@ import {
   Accessibility,
   BookOpen,
   RotateCcw,
-  Zap,
+  Settings,
   X,
   Minimize2,
   Maximize2,
@@ -42,6 +43,7 @@ export function UnifiedToolHub() {
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [hubMode, setHubMode] = useState<'compact' | 'expanded'>('compact');
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const { restartOnboarding, startTour } = useTutorial();
 
   const tools: ToolItem[] = [
@@ -50,39 +52,52 @@ export function UnifiedToolHub() {
       name: 'Chat IA',
       description: 'Assistente inteligente ESG',
       icon: MessageCircle,
-      color: 'from-primary to-primary/80',
+      color: 'from-blue-500 to-cyan-500',
       component: ChatIA,
       badge: 'NEW'
     },
     {
-      id: 'tutorials',
-      name: 'Ajuda',
-      description: 'Guias rápidos e tutoriais',
-      icon: HelpCircle,
-      color: 'from-blue-500 to-blue-600',
+      id: 'tour-guiado',
+      name: 'Tour Guiado',
+      description: 'Aprenda a usar a plataforma',
+      icon: BookOpen,
+      color: 'from-green-500 to-emerald-500',
       action: () => {
-        startTour('dashboard-intro');
+        // Aguardar um pouco para garantir que os elementos existam
+        setTimeout(() => {
+          startTour('dashboard-intro');
+        }, 100);
         setIsOpen(false);
       }
     },
     {
-      id: 'accessibility',
-      name: 'Acessibilidade',
-      description: 'Configurações de acessibilidade',
-      icon: Accessibility,
-      color: 'from-green-500 to-green-600',
-      component: () => <AccessibilityHelper embedded />
+      id: 'ajuda',
+      name: 'Ajuda',
+      description: 'Central de ajuda e suporte',
+      icon: HelpCircle,
+      color: 'from-orange-500 to-red-500',
+      action: () => {
+        setShowHelpCenter(true);
+      }
     },
     {
-      id: 'onboarding',
+      id: 'configuracao',
       name: 'Configuração',
-      description: 'Reiniciar configuração inicial',
-      icon: RotateCcw,
-      color: 'from-indigo-500 to-indigo-600',
+      description: 'Refazer configuração inicial',
+      icon: Settings,
+      color: 'from-purple-500 to-pink-500',
       action: () => {
         restartOnboarding();
         setIsOpen(false);
       }
+    },
+    {
+      id: 'acessibilidade',
+      name: 'Acessibilidade',
+      description: 'Ferramentas de acessibilidade',
+      icon: Accessibility,
+      color: 'from-indigo-500 to-purple-500',
+      component: () => <AccessibilityHelper embedded />
     }
   ];
 
@@ -183,9 +198,9 @@ export function UnifiedToolHub() {
     return renderActiveComponent();
   }
 
-  // Responsive Hub Interface
-  const hubWidth = hubMode === 'expanded' ? 'w-[32rem]' : 'w-80';
-  const hubHeight = activeComponent && !isMinimized ? 'h-[32rem]' : 'h-auto';
+  // Responsive Hub Interface with improved dimensions
+  const hubWidth = hubMode === 'expanded' ? 'w-[36rem]' : 'w-[28rem]';
+  const hubHeight = activeComponent && !isMinimized ? 'h-[40rem]' : 'h-auto';
 
   return (
     <div className="fixed bottom-6 right-6 z-40">
@@ -255,33 +270,39 @@ export function UnifiedToolHub() {
         </CardHeader>
 
         <CardContent className={cn("p-3", isMinimized && "hidden")}>
-          {/* Tools Grid */}
+          {/* Tools Grid - Improved with better spacing and larger cards */}
           {!activeComponent && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-4">
               {tools.map((tool) => (
                 <Button
                   key={tool.id}
                   onClick={() => handleToolClick(tool)}
                   variant="ghost"
                   className={cn(
-                    "h-16 flex flex-col items-center justify-center gap-1.5 relative overflow-hidden group",
-                    "hover:scale-[1.02] transition-all duration-200",
-                    "border border-transparent hover:border-primary/20 rounded-lg"
+                    "h-20 flex flex-col items-center justify-center gap-2 relative overflow-hidden group p-4",
+                    "hover:scale-105 transition-all duration-200 hover:shadow-lg",
+                    "border border-border/50 hover:border-primary/30 rounded-xl",
+                    "bg-card hover:bg-accent/50"
                   )}
                 >
                   {/* Background gradient */}
                   <div className={cn(
-                    "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-br",
+                    "absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity bg-gradient-to-br",
                     tool.color
                   )} />
                   
                   {/* Icon */}
                   <div className="relative">
-                    <tool.icon className="h-5 w-5 text-foreground group-hover:text-primary transition-colors" />
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md bg-gradient-to-br",
+                      tool.color
+                    )}>
+                      <tool.icon className="h-5 w-5" />
+                    </div>
                     {tool.badge && (
                       <Badge 
                         variant="secondary" 
-                        className="absolute -top-1.5 -right-1.5 h-3 min-w-3 text-xs px-1 py-0 bg-primary text-primary-foreground"
+                        className="absolute -top-1 -right-1 h-4 min-w-4 text-xs px-1.5 py-0 bg-primary text-primary-foreground"
                       >
                         {tool.badge}
                       </Badge>
@@ -289,11 +310,11 @@ export function UnifiedToolHub() {
                   </div>
                   
                   {/* Text */}
-                  <div className="text-center">
-                    <div className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                  <div className="text-center space-y-1">
+                    <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                       {tool.name}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate w-full leading-tight">
+                    <div className="text-xs text-muted-foreground leading-tight">
                       {tool.description}
                     </div>
                   </div>
@@ -302,10 +323,10 @@ export function UnifiedToolHub() {
             </div>
           )}
 
-          {/* Active Component Area */}
+          {/* Active Component Area - Improved with better sizing */}
           {activeComponent && (
-            <div className="flex flex-col h-[calc(32rem-6rem)]">
-              <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col h-[calc(40rem-8rem)]">
+              <div className="flex items-center justify-between mb-4">
                 <Button
                   variant="outline"
                   size="sm"
@@ -336,6 +357,13 @@ export function UnifiedToolHub() {
           )}
         </CardContent>
       </Card>
+
+      {/* Help Center Dialog */}
+      <Dialog open={showHelpCenter} onOpenChange={setShowHelpCenter}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+          <UnifiedHelpCenter />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

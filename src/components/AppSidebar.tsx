@@ -319,6 +319,7 @@ export function AppSidebar() {
       className="border-r bg-sidebar transition-all duration-300 hover:shadow-lg" 
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
+      data-tour="sidebar"
     >
       <SidebarHeader className={`p-4 border-b transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
         <img 

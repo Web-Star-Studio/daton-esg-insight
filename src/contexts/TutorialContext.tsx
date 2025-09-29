@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface TutorialStep {
   id: string;
@@ -37,6 +38,7 @@ interface TutorialContextType {
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
 
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
   const [currentTour, setCurrentTour] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [tutorialProgress, setTutorialProgress] = useState<TutorialProgress[]>([]);
@@ -66,8 +68,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     
     console.log('Tutorial e onboarding reiniciados - redirecionando...');
     
-    // Navegar para onboarding em vez de reload
-    window.location.href = '/onboarding';
+    // Usar navigate em vez de window.location.href para evitar problemas
+    navigate('/onboarding');
   };
 
   const startTour = (tourId: string) => {
