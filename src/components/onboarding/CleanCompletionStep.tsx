@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Star,
   Trophy,
-  Sparkles
+  Sparkles,
+  Plus
 } from "lucide-react";
 
 interface CleanCompletionStepProps {
@@ -16,6 +17,8 @@ interface CleanCompletionStepProps {
   moduleConfigurations: Record<string, any>;
   onStartUsingPlatform: () => void;
   onTakeTour: () => void;
+  onSetupInitialData?: () => void;
+  onRunValidation?: () => void;
   onEmergencyComplete?: () => void;
 }
 
@@ -35,6 +38,8 @@ export function CleanCompletionStep({
   moduleConfigurations, 
   onStartUsingPlatform, 
   onTakeTour, 
+  onSetupInitialData,
+  onRunValidation,
   onEmergencyComplete 
 }: CleanCompletionStepProps) {
 
@@ -142,21 +147,48 @@ export function CleanCompletionStep({
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
+        {/* Action Buttons with new options */}
         <div className="space-y-4">
-          <Button 
-            onClick={() => {
-              console.log('🎯 Tour button clicked');
-              onTakeTour();
-            }}
-            size="lg"
-            className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg hover:shadow-xl transition-all"
-            disabled={false}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Fazer Tour Guiado
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => {
+                console.log('🎯 Tour button clicked');
+                onTakeTour();
+              }}
+              size="lg"
+              className="flex-1 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Fazer Tour Guiado
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex gap-3">
+            {onSetupInitialData && (
+              <Button 
+                variant="outline"
+                onClick={onSetupInitialData}
+                size="lg"
+                className="flex-1"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Configurar Dados
+              </Button>
+            )}
+            
+            {onRunValidation && (
+              <Button 
+                variant="outline"
+                onClick={onRunValidation}
+                size="lg"
+                className="flex-1"
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Validar Sistema
+              </Button>
+            )}
+          </div>
           
           <Button 
             variant="outline"
@@ -166,7 +198,6 @@ export function CleanCompletionStep({
             }}
             size="lg"
             className="w-full"
-            disabled={false}
           >
             <Rocket className="mr-2 h-4 w-4" />
             Começar a Usar

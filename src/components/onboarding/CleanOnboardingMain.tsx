@@ -11,6 +11,8 @@ import { CleanDataCreationStep } from './CleanDataCreationStep';
 import { CleanCompletionStep } from './CleanCompletionStep';
 import { EnhancedOnboardingProgress } from './EnhancedOnboardingProgress';
 import { OnboardingAssistant } from './OnboardingAssistant';
+import { PostOnboardingValidation } from './PostOnboardingValidation';
+import { InitialDataSetup } from './InitialDataSetup';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 
 function CleanOnboardingContent() {
@@ -19,6 +21,10 @@ function CleanOnboardingContent() {
   const { skipOnboarding, user } = useAuth();
   const { toast } = useToast();
   const [companyProfile, setCompanyProfile] = useState<any>(null);
+  const [showValidation, setShowValidation] = useState(false);
+  const [showDataSetup, setShowDataSetup] = useState(false);
+  const [validationResults, setValidationResults] = useState<any>(null);
+  const [dataSetupResults, setDataSetupResults] = useState<any>(null);
   
   const {
     state,
@@ -35,6 +41,7 @@ function CleanOnboardingContent() {
     'Boas-vindas',
     'Seleção de Módulos', 
     'Configuração',
+    'Validação',
     'Finalização'
   ];
 
@@ -43,6 +50,26 @@ function CleanOnboardingContent() {
       setCompanyProfile(profile);
     }
     nextStep();
+  };
+
+  const handleSetupInitialData = () => {
+    setShowDataSetup(true);
+  };
+
+  const handleDataSetupComplete = (results: any) => {
+    setDataSetupResults(results);
+    setShowDataSetup(false);
+    setShowValidation(true);
+  };
+
+  const handleRunValidation = () => {
+    setShowValidation(true);
+  };
+
+  const handleValidationComplete = (results: any) => {
+    setValidationResults(results);
+    setShowValidation(false);
+    nextStep(); // Move to completion step
   };
 
   const handleSkipOnboarding = async () => {
@@ -178,7 +205,14 @@ function CleanOnboardingContent() {
             selectedModules={state.selectedModules}
             moduleConfigurations={state.moduleConfigurations}
             onConfigurationChange={updateModuleConfiguration}
-            onNext={nextStep}
+            onNext={() => {
+              // Check if user wants to setup initial data
+              if (state.selectedModules.length > 0) {
+                setShowDataSetup(true);
+              } else {
+                nextStep();
+              }
+            }}
             onPrev={prevStep}
           />
         );
@@ -190,6 +224,8 @@ function CleanOnboardingContent() {
             moduleConfigurations={state.moduleConfigurations}
             onStartUsingPlatform={handleStartUsingPlatform}
             onTakeTour={handleTakeTour}
+            onSetupInitialData={handleSetupInitialData}
+            onRunValidation={handleRunValidation}
             onEmergencyComplete={handleEmergencyComplete}
           />
         );
@@ -205,6 +241,36 @@ function CleanOnboardingContent() {
   };
 
   const showProgress = state.currentStep > 0 && state.currentStep < 3;
+
+  // Show validation or data setup modals
+  if (showDataSetup) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <InitialDataSetup
+          selectedModules={state.selectedModules}
+          moduleConfigurations={state.moduleConfigurations}
+          onSetupComplete={handleDataSetupComplete}
+          onSkip={() => {
+            setShowDataSetup(false);
+            nextStep();
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (showValidation) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
+        <PostOnboardingValidation
+          selectedModules={state.selectedModules}
+          moduleConfigurations={state.moduleConfigurations}
+          onValidationComplete={handleValidationComplete}
+          onStartPlatform={handleStartUsingPlatform}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
