@@ -259,13 +259,24 @@ export default function GestaoESG() {
           </Alert>
         )}
 
-        {/* Overall ESG Score */}
-        <Card className="col-span-full">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Score ESG Geral</CardTitle>
+        {/* Enhanced Overall ESG Score */}
+        <Card className="col-span-full overflow-hidden relative group hover:shadow-lg transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="text-center relative z-10 pb-2">
+            <CardTitle className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Score ESG Geral
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              Avaliação consolidada dos pilares Environmental, Social e Governance
+            </p>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <CircularProgress value={displayData.overall_esg_score} />
+          <CardContent className="flex justify-center py-8 relative z-10">
+            <div className="scale-90 sm:scale-100 md:scale-110 transition-transform duration-300">
+              <CircularProgress 
+                value={displayData.overall_esg_score} 
+                size={200}
+              />
+            </div>
           </CardContent>
         </Card>
 
