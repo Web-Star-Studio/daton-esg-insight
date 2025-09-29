@@ -225,7 +225,7 @@ export default function GestaoDesempenho() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" data-tour="performance-header">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gestão de Desempenho</h1>
           <p className="text-muted-foreground">
@@ -287,7 +287,7 @@ export default function GestaoDesempenho() {
         </TabsContent>
 
         <TabsContent value="evaluations" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" data-tour="evaluation-cycles">
             <h2 className="text-2xl font-bold">Avaliações de Desempenho</h2>
             <Button onClick={() => setIsEvaluationModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -380,7 +380,7 @@ export default function GestaoDesempenho() {
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" data-tour="goals-section">
             <h2 className="text-2xl font-bold">Metas e Objetivos</h2>
             <Button onClick={() => {
               setSelectedGoalId(null);

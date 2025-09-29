@@ -9,13 +9,14 @@ import { BarChart3, TrendingUp, AlertTriangle, Activity, Target, Calendar } from
 
 const IndicadoresQualidade = () => {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Indicadores de Qualidade SGQ</h1>
-        <p className="text-muted-foreground">
-          Sistema de monitoramento e análise de indicadores conforme ISO 9001
-        </p>
-      </div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between" data-tour="quality-header">
+          <div>
+            <h1 className="text-3xl font-bold">Indicadores de Qualidade SGQ</h1>
+            <p className="text-muted-foreground">
+              Sistema de Gestão da Qualidade - Controle e monitoramento de indicadores
+            </p>
+          </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
@@ -67,7 +68,7 @@ const IndicadoresQualidade = () => {
           <TargetManagementDashboard />
         </TabsContent>
 
-        <TabsContent value="alerts">
+        <TabsContent value="alerts" data-tour="audit-section">
           <AlertsManagementCenter />
         </TabsContent>
 

@@ -231,7 +231,7 @@ export default function GestaoESG() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2" data-tour="esg-header">
           <div className="flex items-center justify-between mb-4">
             <div />
           </div>
