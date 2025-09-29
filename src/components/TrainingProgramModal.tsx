@@ -28,12 +28,25 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
 const trainingProgramSchema = z.object({
-  name: z.string().min(1, "Nome do programa é obrigatório"),
-  description: z.string().optional(),
+  name: z.string()
+    .trim()
+    .min(1, "Nome do programa é obrigatório")
+    .max(255, "Nome deve ter no máximo 255 caracteres"),
+  description: z.string()
+    .trim()
+    .max(1000, "Descrição deve ter no máximo 1000 caracteres")
+    .optional(),
   category: z.string().min(1, "Categoria é obrigatória"),
-  duration_hours: z.coerce.number().min(1, "Duração deve ser maior que 0"),
+  duration_hours: z.coerce
+    .number()
+    .min(0.5, "Duração deve ser maior que 0")
+    .max(1000, "Duração deve ser menor que 1000 horas"),
   is_mandatory: z.boolean(),
-  valid_for_months: z.coerce.number().optional(),
+  valid_for_months: z.coerce
+    .number()
+    .min(1, "Validade deve ser maior que 0")
+    .max(120, "Validade deve ser menor que 120 meses")
+    .optional(),
   status: z.string().min(1, "Status é obrigatório"),
 });
 
@@ -87,29 +100,31 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   const onSubmit = async (values: z.infer<typeof trainingProgramSchema>) => {
     try {
-      // Remove sensitive logging
+      // Sanitizar dados
+      const sanitizedValues = {
+        name: values.name.trim(),
+        description: values.description?.trim() || null,
+        category: values.category,
+        duration_hours: values.duration_hours,
+        is_mandatory: values.is_mandatory,
+        valid_for_months: values.valid_for_months || null,
+        status: values.status,
+      };
       
       if (isEditing && program?.id) {
-        await updateTrainingProgram(program.id, values);
+        await updateTrainingProgram(program.id, sanitizedValues);
         toast({
           title: "Sucesso",
           description: "Programa de treinamento atualizado com sucesso!",
         });
       } else {
         const programData = {
-          name: values.name,
-          description: values.description || null,
-          category: values.category,
-          duration_hours: values.duration_hours,
-          is_mandatory: values.is_mandatory,
-          valid_for_months: values.valid_for_months || null,
-          status: values.status,
+          ...sanitizedValues,
           // These will be set by database triggers
           company_id: "",
           created_by_user_id: "",
         };
         
-        // Remove sensitive logging
         await createTrainingProgram(programData);
         
         toast({
@@ -124,9 +139,13 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     } catch (error: any) {
       console.error('TrainingProgramModal: Error saving training program:', error);
       
+      const errorMessage = error.message?.includes('duplicate') 
+        ? 'Já existe um programa com este nome'
+        : error.message || 'Tente novamente.';
+      
       toast({
         title: "Erro",
-        description: `Erro ao salvar programa de treinamento: ${error.message || 'Tente novamente.'}`,
+        description: `Erro ao salvar programa: ${errorMessage}`,
         variant: "destructive",
       });
     }

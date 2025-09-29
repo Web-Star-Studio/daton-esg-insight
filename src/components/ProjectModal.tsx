@@ -63,23 +63,51 @@ export function ProjectModal({ open, onOpenChange, onSuccess, project }: Project
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
+    // Validações
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       toast.error('Nome do projeto é obrigatório');
+      return;
+    }
+    
+    if (trimmedName.length > 255) {
+      toast.error('Nome do projeto deve ter no máximo 255 caracteres');
+      return;
+    }
+    
+    if (startDate && endDate && endDate < startDate) {
+      toast.error('Data de fim deve ser posterior à data de início');
+      return;
+    }
+    
+    if (formData.budget < 0) {
+      toast.error('Orçamento não pode ser negativo');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await createProject({
-        ...formData,
+      // Sanitizar dados
+      const sanitizedData = {
+        name: trimmedName,
+        description: formData.description.trim() || null,
+        project_type: formData.project_type,
+        priority: formData.priority,
+        methodology: formData.methodology,
+        scope_description: formData.scope_description.trim() || null,
+        budget: formData.budget,
+        manager_user_id: formData.manager_user_id || null,
+        sponsor_user_id: formData.sponsor_user_id || null,
         planned_start_date: startDate?.toISOString().split('T')[0],
         planned_end_date: endDate?.toISOString().split('T')[0],
         status: 'Planejamento',
         phase: 'Planejamento',
         progress_percentage: 0,
         spent_budget: 0
-      });
+      };
+      
+      await createProject(sanitizedData);
 
       toast.success('Projeto criado com sucesso!');
       onSuccess();
@@ -98,9 +126,12 @@ export function ProjectModal({ open, onOpenChange, onSuccess, project }: Project
       });
       setStartDate(undefined);
       setEndDate(undefined);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating project:', error);
-      toast.error('Erro ao criar projeto. Tente novamente.');
+      const errorMessage = error.message?.includes('duplicate')
+        ? 'Já existe um projeto com este nome'
+        : 'Erro ao criar projeto. Tente novamente.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

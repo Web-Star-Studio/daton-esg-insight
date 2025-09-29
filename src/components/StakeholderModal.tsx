@@ -39,10 +39,31 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: St
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
+    // Validações
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
       toast({
         title: "Erro",
         description: "Nome é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (trimmedName.length > 255) {
+      toast({
+        title: "Erro",
+        description: "Nome deve ter no máximo 255 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validar e-mail se fornecido
+    if (formData.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
+      toast({
+        title: "Erro",
+        description: "E-mail inválido",
         variant: "destructive",
       });
       return;
@@ -51,16 +72,25 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: St
     setIsLoading(true);
     
     try {
-      await onSave({
-        ...formData,
-        company_id: '', // Será preenchido automaticamente via RLS
-        is_active: true,
+      // Sanitizar dados
+      const sanitizedData = {
+        name: trimmedName,
         category: formData.category as Stakeholder['category'],
+        subcategory: formData.subcategory.trim() || null,
+        contact_email: formData.contact_email.trim() || null,
+        contact_phone: formData.contact_phone.trim() || null,
+        organization: formData.organization.trim() || null,
+        position: formData.position.trim() || null,
         influence_level: formData.influence_level as Stakeholder['influence_level'],
         interest_level: formData.interest_level as Stakeholder['interest_level'],
         engagement_frequency: formData.engagement_frequency as Stakeholder['engagement_frequency'],
         preferred_communication: formData.preferred_communication as Stakeholder['preferred_communication'],
-      });
+        notes: formData.notes.trim() || null,
+        company_id: '', // Será preenchido automaticamente via RLS
+        is_active: true,
+      };
+      
+      await onSave(sanitizedData);
       
       toast({
         title: "Sucesso",
@@ -68,10 +98,14 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: St
       });
       
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error.message?.includes('duplicate')
+        ? 'Já existe um stakeholder com este nome'
+        : `Erro ao ${stakeholder ? 'atualizar' : 'criar'} stakeholder`;
+      
       toast({
         title: "Erro",
-        description: `Erro ao ${stakeholder ? 'atualizar' : 'criar'} stakeholder`,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

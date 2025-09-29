@@ -21,12 +21,25 @@ const measurementSchema = z.object({
   }),
   measured_value: z.number({
     message: 'Valor medido é obrigatório'
-  }).min(0, 'Valor deve ser positivo'),
+  }),
   measurement_period_start: z.date().optional(),
   measurement_period_end: z.date().optional(),
-  data_source_reference: z.string().optional(),
-  notes: z.string().optional(),
-});
+  data_source_reference: z.string()
+    .trim()
+    .max(255, 'Referência deve ter no máximo 255 caracteres')
+    .optional(),
+  notes: z.string()
+    .trim()
+    .max(1000, 'Observações devem ter no máximo 1000 caracteres')
+    .optional(),
+}).refine(
+  data => !data.measurement_period_start || !data.measurement_period_end || 
+    data.measurement_period_end >= data.measurement_period_start,
+  {
+    message: 'Data final deve ser posterior à data inicial',
+    path: ['measurement_period_end']
+  }
+);
 
 type MeasurementFormData = z.infer<typeof measurementSchema>;
 
@@ -57,21 +70,29 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
 
   const onSubmit = async (data: MeasurementFormData) => {
     try {
-      await createMeasurement.mutateAsync({
+      // Sanitizar dados
+      const sanitizedData = {
         indicator_id: indicatorId,
         measurement_date: format(data.measurement_date, 'yyyy-MM-dd'),
         measured_value: data.measured_value,
-        measurement_period_start: data.measurement_period_start ? format(data.measurement_period_start, 'yyyy-MM-dd') : undefined,
-        measurement_period_end: data.measurement_period_end ? format(data.measurement_period_end, 'yyyy-MM-dd') : undefined,
-        data_source_reference: data.data_source_reference,
-        notes: data.notes,
-        status: 'valid',
-      });
+        measurement_period_start: data.measurement_period_start 
+          ? format(data.measurement_period_start, 'yyyy-MM-dd') 
+          : undefined,
+        measurement_period_end: data.measurement_period_end 
+          ? format(data.measurement_period_end, 'yyyy-MM-dd') 
+          : undefined,
+        data_source_reference: data.data_source_reference?.trim() || null,
+        notes: data.notes?.trim() || null,
+        status: 'valid' as const,
+      };
+      
+      await createMeasurement.mutateAsync(sanitizedData);
 
       reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao registrar medição:', error);
+      // O erro já é tratado pelo useCreateMeasurement com toast
     }
   };
 

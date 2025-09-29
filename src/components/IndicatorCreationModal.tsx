@@ -13,21 +13,45 @@ import { useCreateIndicator } from '@/services/qualityIndicators';
 import { useEmployeesAsOptions } from '@/services/employees';
 
 const indicatorSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
-  description: z.string().optional(),
+  name: z.string()
+    .trim()
+    .min(1, 'Nome é obrigatório')
+    .max(255, 'Nome deve ter no máximo 255 caracteres'),
+  description: z.string()
+    .trim()
+    .max(1000, 'Descrição deve ter no máximo 1000 caracteres')
+    .optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
   measurement_unit: z.string().min(1, 'Unidade de medida é obrigatória'),
   measurement_type: z.enum(['manual', 'automatic', 'calculated']),
-  calculation_formula: z.string().optional(),
+  calculation_formula: z.string()
+    .trim()
+    .max(500, 'Fórmula deve ter no máximo 500 caracteres')
+    .optional(),
   frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly']),
   responsible_user_id: z.string().optional(),
-  data_source: z.string().optional(),
-  collection_method: z.string().optional(),
-  target_value: z.number().min(0, 'Meta deve ser positiva'),
-  upper_limit: z.number().optional(),
-  lower_limit: z.number().optional(),
-  critical_upper_limit: z.number().optional(),
-  critical_lower_limit: z.number().optional(),
+  data_source: z.string()
+    .trim()
+    .max(255, 'Fonte de dados deve ter no máximo 255 caracteres')
+    .optional(),
+  collection_method: z.string()
+    .trim()
+    .max(255, 'Método de coleta deve ter no máximo 255 caracteres')
+    .optional(),
+  target_value: z.number()
+    .min(0, 'Meta deve ser positiva'),
+  upper_limit: z.number()
+    .min(0, 'Limite superior deve ser positivo')
+    .optional(),
+  lower_limit: z.number()
+    .min(0, 'Limite inferior deve ser positivo')
+    .optional(),
+  critical_upper_limit: z.number()
+    .min(0, 'Limite crítico superior deve ser positivo')
+    .optional(),
+  critical_lower_limit: z.number()
+    .min(0, 'Limite crítico inferior deve ser positivo')
+    .optional(),
 });
 
 // Type for the indicator data without target fields
@@ -92,33 +116,32 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
       // Separar dados do indicador e da meta
       const { target_value, upper_limit, lower_limit, critical_upper_limit, critical_lower_limit, ...indicatorData } = data;
       
-      // Validar campos obrigatórios
-      if (!indicatorData.name || !indicatorData.category || !indicatorData.measurement_unit) {
-        return;
-      }
-      
-      // Criar o indicador primeiro
-      const indicator = await createIndicator.mutateAsync({
-        name: indicatorData.name,
-        description: indicatorData.description,
+      // Sanitizar dados
+      const sanitizedData = {
+        name: indicatorData.name.trim(),
+        description: indicatorData.description?.trim() || null,
         category: indicatorData.category,
         measurement_unit: indicatorData.measurement_unit,
         measurement_type: indicatorData.measurement_type,
-        calculation_formula: indicatorData.calculation_formula,
+        calculation_formula: indicatorData.calculation_formula?.trim() || null,
         frequency: indicatorData.frequency,
-        responsible_user_id: indicatorData.responsible_user_id,
-        data_source: indicatorData.data_source,
-        collection_method: indicatorData.collection_method,
+        responsible_user_id: indicatorData.responsible_user_id || null,
+        data_source: indicatorData.data_source?.trim() || null,
+        collection_method: indicatorData.collection_method?.trim() || null,
         is_active: true
-      });
+      };
+      
+      // Criar o indicador primeiro
+      await createIndicator.mutateAsync(sanitizedData);
       
       // TODO: Criar a meta do indicador
       // Isso seria feito em um serviço separado para targets
       
       reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar indicador:', error);
+      // O erro já é tratado pelo useCreateIndicator com toast
     }
   };
 

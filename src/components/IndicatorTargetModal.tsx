@@ -17,14 +17,50 @@ import { useCreateTarget, useIndicatorTargets } from '@/services/indicatorTarget
 import { useQualityIndicator } from '@/services/qualityIndicators';
 
 const targetSchema = z.object({
-  target_value: z.number({ message: 'Meta é obrigatória' }).min(0, 'Meta deve ser positiva'),
-  upper_limit: z.number().optional(),
-  lower_limit: z.number().optional(),
-  critical_upper_limit: z.number().optional(),
-  critical_lower_limit: z.number().optional(),
-  valid_from: z.date({ message: 'Data de início é obrigatória' }),
+  target_value: z.number({ 
+    message: 'Meta é obrigatória' 
+  }),
+  upper_limit: z.number()
+    .min(0, 'Limite superior deve ser positivo')
+    .optional(),
+  lower_limit: z.number()
+    .min(0, 'Limite inferior deve ser positivo')
+    .optional(),
+  critical_upper_limit: z.number()
+    .min(0, 'Limite crítico superior deve ser positivo')
+    .optional(),
+  critical_lower_limit: z.number()
+    .min(0, 'Limite crítico inferior deve ser positivo')
+    .optional(),
+  valid_from: z.date({ 
+    message: 'Data de início é obrigatória' 
+  }),
   valid_until: z.date().optional(),
-});
+}).refine(
+  data => !data.valid_until || data.valid_until >= data.valid_from,
+  {
+    message: 'Data de término deve ser posterior à data de início',
+    path: ['valid_until']
+  }
+).refine(
+  data => !data.upper_limit || !data.lower_limit || data.upper_limit >= data.lower_limit,
+  {
+    message: 'Limite superior deve ser maior que o limite inferior',
+    path: ['upper_limit']
+  }
+).refine(
+  data => !data.critical_upper_limit || !data.upper_limit || data.critical_upper_limit >= data.upper_limit,
+  {
+    message: 'Limite crítico superior deve ser maior que o limite superior',
+    path: ['critical_upper_limit']
+  }
+).refine(
+  data => !data.critical_lower_limit || !data.lower_limit || data.critical_lower_limit <= data.lower_limit,
+  {
+    message: 'Limite crítico inferior deve ser menor que o limite inferior',
+    path: ['critical_lower_limit']
+  }
+);
 
 type TargetFormData = z.infer<typeof targetSchema>;
 
@@ -60,21 +96,24 @@ export const IndicatorTargetModal: React.FC<IndicatorTargetModalProps> = ({
 
   const onSubmit = async (data: TargetFormData) => {
     try {
-      await createTarget.mutateAsync({
+      const targetData = {
         indicator_id: indicatorId,
         target_value: data.target_value,
-        upper_limit: data.upper_limit,
-        lower_limit: data.lower_limit,
-        critical_upper_limit: data.critical_upper_limit,
-        critical_lower_limit: data.critical_lower_limit,
+        upper_limit: data.upper_limit ?? null,
+        lower_limit: data.lower_limit ?? null,
+        critical_upper_limit: data.critical_upper_limit ?? null,
+        critical_lower_limit: data.critical_lower_limit ?? null,
         valid_from: format(data.valid_from, 'yyyy-MM-dd'),
-        valid_until: data.valid_until ? format(data.valid_until, 'yyyy-MM-dd') : undefined,
-      });
+        valid_until: data.valid_until ? format(data.valid_until, 'yyyy-MM-dd') : null,
+      };
+      
+      await createTarget.mutateAsync(targetData);
 
       reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar meta:', error);
+      // O erro já é tratado pelo useCreateTarget com toast
     }
   };
 
