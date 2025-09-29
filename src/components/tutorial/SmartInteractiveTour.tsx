@@ -100,18 +100,18 @@ const SMART_TOUR_DEFINITIONS = {
       },
 
       // Gestão de Desempenho
-      {
-        id: 'navigate-performance',
-        title: '👥 Módulo de Gestão de Desempenho',
-        description: 'Vamos conhecer o módulo de gestão de pessoas e desempenho. Redirecionando...',
-        target: '[data-tour="sidebar"]',
-        placement: 'right' as const,
-        page: '/gestao-desempenho',
-        action: () => {},  // Será preenchido dinamicamente
-        autoAdvance: true,
-        delay: 2000,
-        highlight: false
-      },
+        {
+          id: 'navigate-performance',
+          title: '👥 Módulo de Gestão de Desempenho',
+          description: 'Vamos conhecer o módulo de gestão de pessoas e desempenho. Redirecionando...',
+          target: '[data-tour="sidebar"]',
+          placement: 'right' as const,
+          page: '/gestao-desempenho',
+          action: () => {},  // Será preenchido dinamicamente
+          autoAdvance: true,
+          delay: 3000,
+          highlight: false
+        },
       {
         id: 'performance-overview',
         title: '👥 Gestão Estratégica de Capital Humano ESG',
@@ -137,18 +137,18 @@ const SMART_TOUR_DEFINITIONS = {
       },
 
       // ESG/Sustentabilidade 
-      {
-        id: 'navigate-esg',
-        title: '🌱 Módulo ESG e Sustentabilidade',
-        description: 'Agora vamos explorar o módulo de ESG e sustentabilidade. Navegando...',
-        target: '[data-tour="sidebar"]',
-        placement: 'right' as const,
-        page: '/gestao-esg',
-        action: () => {},
-        autoAdvance: true,
-        delay: 2000,
-        highlight: false
-      },
+        {
+          id: 'navigate-esg',
+          title: '🌱 Módulo ESG e Sustentabilidade',
+          description: 'Agora vamos explorar o módulo de ESG e sustentabilidade. Navegando...',
+          target: '[data-tour="sidebar"]',
+          placement: 'right' as const,
+          page: '/gestao-esg',
+          action: () => {},
+          autoAdvance: true,
+          delay: 3000,
+          highlight: false
+        },
       {
         id: 'esg-overview',
         title: '🌍 Central ESG Completa e Integrada',
@@ -162,18 +162,18 @@ const SMART_TOUR_DEFINITIONS = {
       },
 
       // Qualidade
-      {
-        id: 'navigate-quality',
-        title: '🏆 Sistema de Gestão da Qualidade',
-        description: 'Vamos conhecer o módulo de qualidade e conformidade. Redirecionando...',
-        target: '[data-tour="sidebar"]',
-        placement: 'right' as const,
-        page: '/indicadores-qualidade',
-        action: () => {},
-        autoAdvance: true,
-        delay: 2000,
-        highlight: false
-      },
+        {
+          id: 'navigate-quality',
+          title: '🏆 Sistema de Gestão da Qualidade',
+          description: 'Vamos conhecer o módulo de qualidade e conformidade. Redirecionando...',
+          target: '[data-tour="sidebar"]',
+          placement: 'right' as const,
+          page: '/indicadores-qualidade',
+          action: () => {},
+          autoAdvance: true,
+          delay: 3000,
+          highlight: false
+        },
       {
         id: 'quality-overview',
         title: '🏆 Sistema de Excelência em Qualidade Integrada',
@@ -407,8 +407,8 @@ export function SmartInteractiveTour() {
             });
           }, 200);
 
-          // Auto advance se configurado
-          if (step.autoAdvance && step.delay && !isPaused) {
+          // Auto advance apenas para steps de navegação
+          if (step.autoAdvance && step.delay && !isPaused && step.id.includes('navigate-')) {
             setTimeout(() => {
               if (!isPaused && currentStep < tourSteps.length - 1) {
                 nextStepRef.current();
@@ -436,7 +436,7 @@ export function SmartInteractiveTour() {
         }
       };
 
-      tryFindTarget(50); // 50 tentativas = ~10s
+      tryFindTarget(25); // 25 tentativas = ~5s
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
 
@@ -456,7 +456,7 @@ export function SmartInteractiveTour() {
       }
       if (step.id === 'navigate-quality' && !step.action) {
         changed = true;
-        return { ...step, action: () => navigateToPageRef.current('/qualidade') };
+        return { ...step, action: () => navigateToPageRef.current('/indicadores-qualidade') };
       }
       return step;
     });
@@ -654,16 +654,19 @@ useEffect(() => {
         />
       )}
 
-      {/* Card do tour redesignado */}
+      {/* Card do tour com posição fixa */}
       <Card 
-        className={`fixed z-[60] shadow-2xl transition-all duration-500 ease-out animate-scale-in max-w-[92vw]
-          ${isMobile ? 'w-[340px]' : 'w-[420px]'} 
+        className={`fixed z-[60] shadow-2xl transition-all duration-500 ease-out animate-scale-in
+          ${isMobile ? 'w-[340px] bottom-4 right-4' : 'w-[380px] bottom-20 right-4'} 
           ${currentStepData.placement === 'center' ? 'border-2 border-primary/20 bg-card/95 backdrop-blur-lg' : 'bg-card/95 backdrop-blur-sm border-border/50'}`}
         style={{
-          top: currentStepData.placement === 'center' ? '50%' : tooltipPosition.top,
-          left: currentStepData.placement === 'center' ? '50%' : tooltipPosition.left,
-          transform: currentStepData.placement === 'center' ? 'translate(-50%, -50%)' : 'none',
-          width: isMobile ? 'min(92vw, 340px)' : 'min(92vw, 420px)'
+          ...(currentStepData.placement === 'center' && {
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bottom: 'auto',
+            right: 'auto'
+          })
         }}
       >
         <CardContent className="p-6 space-y-6">
