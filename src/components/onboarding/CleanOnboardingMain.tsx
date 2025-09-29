@@ -86,9 +86,16 @@ function CleanOnboardingContent() {
     try {
       console.log('⏳ Completing onboarding...');
       await completeOnboarding();
-      console.log('✅ Onboarding completed, navigating to dashboard...');
-      navigate('/dashboard');
-      console.log('🏁 Navigation completed');
+      console.log('✅ Onboarding completed, navigating to dashboard... (from)', window.location.pathname);
+      navigate('/dashboard', { replace: true });
+      console.log('🏁 Navigation requested to /dashboard');
+      // Fallback in case routing is blocked
+      setTimeout(() => {
+        if (window.location.pathname !== '/dashboard') {
+          console.warn('⚠️ Route did not change, forcing navigation to /dashboard');
+          window.location.href = '/dashboard';
+        }
+      }, 1200);
     } catch (error) {
       console.error('❌ Error in handleStartUsingPlatform:', error);
       // Force navigation even if onboarding fails
