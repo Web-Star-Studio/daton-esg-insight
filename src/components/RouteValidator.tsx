@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { NavigationMonitor } from '@/components/NavigationMonitor';
 
 // Lista de rotas válidas para validação
 const VALID_ROUTES = [
@@ -61,6 +62,10 @@ export function RouteValidator({ children }: RouteValidatorProps) {
           navigate('/auditoria', { replace: true });
         } else if (currentPath.includes('treinamento')) {
           navigate('/gestao-treinamentos', { replace: true });
+        } else if (currentPath.includes('saude-seguranca')) {
+          navigate('/seguranca-trabalho', { replace: true });
+        } else if (currentPath.includes('configuracao-organizacao')) {
+          navigate('/configuracao-organizacional', { replace: true });
         } else if (currentPath.includes('relatorio')) {
           navigate('/relatorios', { replace: true });
         } else {
@@ -70,7 +75,12 @@ export function RouteValidator({ children }: RouteValidatorProps) {
     }
   }, [location.pathname, navigate]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <NavigationMonitor />
+      {children}
+    </>
+  );
 }
 
 export default RouteValidator;

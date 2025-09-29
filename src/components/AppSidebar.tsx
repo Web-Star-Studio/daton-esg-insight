@@ -106,8 +106,8 @@ const menuSections: MenuSection[] = [
     items: [
       { id: "social-panel", title: "Painel Social", icon: Users, path: "/painel-social", description: "Visão geral dos aspectos sociais" },
       { id: "employee-management", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão de recursos humanos" },
-      { id: "health-safety", title: "Saúde e Segurança do Trabalho", icon: Heart, path: "/saude-seguranca", description: "SST e bem-estar dos colaboradores" },
-      { id: "training-development", title: "Treinamentos e Desenvolvimento", icon: GraduationCap, path: "/treinamentos", description: "Capacitação e desenvolvimento profissional" }
+      { id: "health-safety", title: "Saúde e Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
+      { id: "training-development", title: "Treinamentos e Desenvolvimento", icon: GraduationCap, path: "/gestao-treinamentos", description: "Capacitação e desenvolvimento profissional" }
     ]
   },
   {
@@ -160,7 +160,7 @@ const menuSections: MenuSection[] = [
     title: "CONFIGURAÇÕES",
     hasDivider: true,
     items: [
-      { id: "organization-config", title: "Configuração da Organização", icon: Building, path: "/configuracao-organizacao", description: "Dados e estrutura organizacional" },
+      { id: "organization-config", title: "Configuração da Organização", icon: Building, path: "/configuracao-organizacional", description: "Dados e estrutura organizacional" },
       { id: "factor-library", title: "Biblioteca de Fatores", icon: FlaskConical, path: "/biblioteca-fatores", description: "Fatores de emissão e conversão" },
       { id: "custom-forms", title: "Formulários Customizados", icon: ClipboardCheck, path: "/formularios-customizados", description: "Criação de formulários personalizados" },
       { id: "user-management", title: "Gestão de Usuários", icon: UserCog, path: "/gestao-usuarios", description: "Controle de usuários e permissões" }
