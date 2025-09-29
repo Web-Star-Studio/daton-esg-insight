@@ -25,24 +25,31 @@ export const CreateFolderModal: React.FC<CreateFolderModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim()) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       toast.error('Nome da pasta é obrigatório');
+      return;
+    }
+
+    if (trimmedName.length > 255) {
+      toast.error('Nome da pasta deve ter no máximo 255 caracteres');
       return;
     }
 
     setLoading(true);
     try {
       await createFolder({
-        name: name.trim(),
+        name: trimmedName,
         parent_folder_id: parentFolderId || undefined
       });
 
       toast.success('Pasta criada com sucesso');
       onSuccess();
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating folder:', error);
-      toast.error('Erro ao criar pasta');
+      const errorMessage = error?.message || 'Erro ao criar pasta';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

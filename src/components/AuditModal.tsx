@@ -63,10 +63,11 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Remove sensitive form data logging
+    const trimmedTitle = formData.title.trim();
+    const trimmedAuditor = formData.auditor.trim();
+    const trimmedScope = formData.scope.trim();
     
-    if (!formData.title || !formData.audit_type) {
-      console.log('Validation failed - missing required fields');
+    if (!trimmedTitle || !formData.audit_type) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha o título e tipo da auditoria.",
@@ -74,9 +75,33 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       });
       return;
     }
+
+    if (trimmedTitle.length > 255) {
+      toast({
+        title: "Título muito longo",
+        description: "O título deve ter no máximo 255 caracteres.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.start_date && formData.end_date && formData.start_date > formData.end_date) {
+      toast({
+        title: "Datas inválidas",
+        description: "A data de início deve ser anterior à data de término.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Remove sensitive form data logging
-    createMutation.mutate(formData);
+    const sanitizedData = {
+      ...formData,
+      title: trimmedTitle,
+      auditor: trimmedAuditor,
+      scope: trimmedScope
+    };
+    
+    createMutation.mutate(sanitizedData);
   };
 
   const handleClose = () => {

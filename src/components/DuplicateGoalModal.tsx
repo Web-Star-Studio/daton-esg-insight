@@ -74,7 +74,9 @@ export function DuplicateGoalModal({ open, onOpenChange, goalId }: DuplicateGoal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!originalGoal || !newName || !newDeadline) {
+    const trimmedName = newName.trim();
+    
+    if (!originalGoal || !trimmedName || !newDeadline) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha o nome e prazo da nova meta.",
@@ -83,8 +85,26 @@ export function DuplicateGoalModal({ open, onOpenChange, goalId }: DuplicateGoal
       return;
     }
 
+    if (trimmedName.length > 255) {
+      toast({
+        title: "Nome muito longo",
+        description: "O nome da meta deve ter no máximo 255 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newDeadline <= new Date()) {
+      toast({
+        title: "Data inválida",
+        description: "O prazo deve ser uma data futura.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const duplicateData: CreateGoalData = {
-      name: newName,
+      name: trimmedName,
       description: originalGoal.description,
       metric_key: originalGoal.metric_key,
       baseline_value: originalGoal.baseline_value,

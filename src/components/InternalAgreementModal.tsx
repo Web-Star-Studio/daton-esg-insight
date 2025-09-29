@@ -35,10 +35,50 @@ export function InternalAgreementModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validação client-side
+    const trimmedNumber = formData.agreement_number.trim();
+    const trimmedTitle = formData.title.trim();
+    
+    if (!trimmedNumber || !trimmedTitle) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha o número e título do acordo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (trimmedTitle.length > 255) {
+      toast({
+        title: "Título muito longo",
+        description: "O título deve ter no máximo 255 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.start_date && formData.end_date && formData.start_date > formData.end_date) {
+      toast({
+        title: "Datas inválidas",
+        description: "A data de início deve ser anterior à data de término.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await createInternalAgreement(formData);
+      const sanitizedData = {
+        ...formData,
+        agreement_number: trimmedNumber,
+        title: trimmedTitle,
+        description: formData.description.trim(),
+        scope: formData.scope.trim()
+      };
+
+      await createInternalAgreement(sanitizedData);
       toast({
         title: "Acordo criado",
         description: "O acordo interno foi criado com sucesso.",
@@ -46,11 +86,12 @@ export function InternalAgreementModal({
       onSuccess?.();
       onClose();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating agreement:', error);
+      const errorMessage = error?.message || "Ocorreu um erro ao criar o acordo. Tente novamente.";
       toast({
         title: "Erro ao criar acordo",
-        description: "Ocorreu um erro ao criar o acordo. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
