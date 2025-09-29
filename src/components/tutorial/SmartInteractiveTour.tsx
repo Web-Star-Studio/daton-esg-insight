@@ -337,48 +337,49 @@ export function SmartInteractiveTour() {
         return;
       }
       
-      // Encontrar elemento alvo
-      const element = document.querySelector(step.target) as HTMLElement;
-      
-      if (element) {
-        setTargetElement(element);
-        
-        // Scroll suave para o elemento
-        element.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center',
-          inline: 'nearest'
-        });
-        
-        // Calcular posição do overlay
-        setTimeout(() => {
-          const rect = element.getBoundingClientRect();
-          setOverlayPosition({
-            top: rect.top + window.scrollY,
-            left: rect.left + window.scrollX,
-            width: rect.width,
-            height: rect.height
-          });
-        }, 500);
-        
-        // Auto advance se configurado
-        if (step.autoAdvance && step.delay && !isPaused) {
+      // Encontrar elemento alvo com polling curto para aguardar carregamento
+      const tryFindTarget = (retries: number) => {
+        const el = document.querySelector(step.target) as HTMLElement | null;
+        if (el) {
+          setTargetElement(el);
+          // Scroll suave para o elemento
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          // Calcular posição do overlay com leve atraso
           setTimeout(() => {
-            if (!isPaused && currentStep < tourSteps.length - 1) {
-              nextStepRef.current();
-            }
-          }, step.delay);
+            const rect = el.getBoundingClientRect();
+            setOverlayPosition({
+              top: rect.top + window.scrollY,
+              left: rect.left + window.scrollX,
+              width: rect.width,
+              height: rect.height
+            });
+          }, 300);
+
+          // Auto advance se configurado
+          if (step.autoAdvance && step.delay && !isPaused) {
+            setTimeout(() => {
+              if (!isPaused && currentStep < tourSteps.length - 1) {
+                nextStepRef.current();
+              }
+            }, step.delay);
+          }
+          return;
         }
-      } else {
-        // Se elemento não encontrado
-        if (step.placement === 'center') {
-          // Mostra card centralizado mesmo sem target
-          setTargetElement(null);
+        // Repetir tentativas por ~2.4s (16 * 150ms)
+        if (retries > 0) {
+          setTimeout(() => tryFindTarget(retries - 1), 150);
         } else {
-          // Avança automaticamente se não houver alvo para steps contextuais
-          setTimeout(() => nextStepRef.current(), 1000);
+          if (step.placement === 'center') {
+            // Mostra card centralizado mesmo sem target
+            setTargetElement(null);
+          } else {
+            // Avança automaticamente se não houver alvo após aguardar
+            setTimeout(() => nextStepRef.current(), 800);
+          }
         }
-      }
+      };
+
+      tryFindTarget(16);
     }
   }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
 
@@ -534,13 +535,13 @@ useEffect(() => {
     <>
       {/* Overlay escuro com blur profissional */}
       <div 
-        className="fixed inset-0 bg-background/80 backdrop-blur-md z-40 pointer-events-auto transition-all duration-500 ease-out"
-        onClick={() => completeTourRef.current()}
+        className="fixed inset-0 bg-background/80 backdrop-blur-md z-40 pointer-events-none transition-all duration-500 ease-out"
+        aria-hidden="true"
       />
       
       {/* Loading indicator minimalista */}
       {isNavigating && (
-        <div className="fixed inset-0 z-45 flex items-center justify-center">
+        <div className="fixed inset-0 z-[55] flex items-center justify-center">
           <div className="bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-border/50 animate-scale-in">
             <div className="flex items-center gap-3">
               <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
