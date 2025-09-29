@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -244,6 +244,19 @@ export function SmartInteractiveTour() {
   const [currentTourData, setCurrentTourData] = useState<any>(null);
   const [stepsPatched, setStepsPatched] = useState(false);
 
+  // Refs estáveis para evitar loops por identidades mutáveis
+  const nextStepRef = useRef(nextStep);
+  const prevStepRef = useRef(prevStep);
+  const completeTourRef = useRef(completeTour);
+  const navigateToPageRef = useRef<(page: string) => void>(() => {});
+
+  useEffect(() => {
+    nextStepRef.current = nextStep;
+    prevStepRef.current = prevStep;
+    completeTourRef.current = completeTour;
+    navigateToPageRef.current = navigateToPage;
+  });
+
   // Filtrar steps baseado no perfil do usuário
   const filterStepsByProfile = useCallback((steps: SmartTourStep[]) => {
     // Lógica para filtrar steps baseado no perfil
@@ -314,13 +327,13 @@ export function SmartInteractiveTour() {
       
       // Navegar para página se necessário
       if (step.page && location.pathname !== step.page) {
-        navigateToPage(step.page);
+        navigateToPageRef.current(step.page);
         return;
       }
       
       // Verificar condição se houver
       if (step.condition && !step.condition()) {
-        nextStep();
+        nextStepRef.current();
         return;
       }
       
@@ -352,16 +365,16 @@ export function SmartInteractiveTour() {
         if (step.autoAdvance && step.delay && !isPaused) {
           setTimeout(() => {
             if (!isPaused && currentStep < tourSteps.length - 1) {
-              nextStep();
+              nextStepRef.current();
             }
           }, step.delay);
         }
       } else {
         // Se elemento não encontrado, avançar automaticamente
-        setTimeout(() => nextStep(), 1000);
+        setTimeout(() => nextStepRef.current(), 1000);
       }
     }
-  }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname, navigateToPage, nextStep]);
+  }, [currentTour, currentStep, tourSteps, isPaused, isNavigating, location.pathname]);
 
   // Preencher ações de navegação dinamicamente (executa uma vez por tour)
   useEffect(() => {
@@ -371,15 +384,15 @@ export function SmartInteractiveTour() {
     const updatedSteps = tourSteps.map(step => {
       if (step.id === 'navigate-performance' && !step.action) {
         changed = true;
-        return { ...step, action: () => navigateToPage('/gestao-desempenho') };
+        return { ...step, action: () => navigateToPageRef.current('/gestao-desempenho') };
       }
       if (step.id === 'navigate-esg' && !step.action) {
         changed = true;
-        return { ...step, action: () => navigateToPage('/gestao-esg') };
+        return { ...step, action: () => navigateToPageRef.current('/gestao-esg') };
       }
       if (step.id === 'navigate-quality' && !step.action) {
         changed = true;
-        return { ...step, action: () => navigateToPage('/qualidade') };
+        return { ...step, action: () => navigateToPageRef.current('/qualidade') };
       }
       return step;
     });
@@ -388,7 +401,7 @@ export function SmartInteractiveTour() {
       setTourSteps(updatedSteps);
     }
     setStepsPatched(true);
-  }, [tourSteps, stepsPatched, navigateToPage]);
+  }, [tourSteps, stepsPatched]);
 
 // Navegação por teclado para o tour
 useEffect(() => {
@@ -513,7 +526,7 @@ useEffect(() => {
       {/* Overlay escuro com blur profissional */}
       <div 
         className="fixed inset-0 bg-background/80 backdrop-blur-md z-40 pointer-events-auto transition-all duration-500 ease-out"
-        onClick={completeTour}
+        onClick={() => completeTourRef.current()}
       />
       
       {/* Loading indicator minimalista */}
