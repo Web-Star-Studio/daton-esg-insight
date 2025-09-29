@@ -87,13 +87,13 @@ function CleanOnboardingContent() {
       console.log('⏳ Completing onboarding...');
       await completeOnboarding();
       console.log('✅ Onboarding completed, navigating to dashboard...');
-      navigate('/');
+      navigate('/dashboard');
       console.log('🏁 Navigation completed');
     } catch (error) {
       console.error('❌ Error in handleStartUsingPlatform:', error);
       // Force navigation even if onboarding fails
       console.log('🚨 Forcing navigation despite error...');
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 
@@ -103,7 +103,7 @@ function CleanOnboardingContent() {
       console.log('⏳ Completing onboarding...');
       await completeOnboarding();
       console.log('✅ Onboarding completed, navigating to dashboard...');
-      navigate('/');
+      navigate('/dashboard');
       setTimeout(() => {
         console.log('🎪 Starting dashboard tour...');
         startTour('dashboard-intro');
@@ -113,7 +113,7 @@ function CleanOnboardingContent() {
       console.error('❌ Error in handleTakeTour:', error);
       // Force navigation even if onboarding fails
       console.log('🚨 Forcing navigation despite error...');
-      navigate('/');
+      navigate('/dashboard');
       setTimeout(() => {
         startTour('dashboard-intro');
       }, 1000);
@@ -165,7 +165,7 @@ function CleanOnboardingContent() {
       }
       
       // Force navigation
-      navigate('/');
+      navigate('/dashboard');
       
       toast({
         title: 'Onboarding Finalizado!',
@@ -174,7 +174,7 @@ function CleanOnboardingContent() {
     } catch (error) {
       console.error('❌ Emergency complete failed:', error);
       // Still force navigation
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 

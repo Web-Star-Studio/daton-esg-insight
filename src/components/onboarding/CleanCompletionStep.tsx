@@ -168,7 +168,10 @@ export function CleanCompletionStep({
             {onSetupInitialData && (
               <Button 
                 variant="outline"
-                onClick={onSetupInitialData}
+                onClick={() => {
+                  console.log('🧱 Setup inicial de dados - button clicked');
+                  onSetupInitialData();
+                }}
                 size="lg"
                 className="flex-1"
               >
@@ -180,7 +183,10 @@ export function CleanCompletionStep({
             {onRunValidation && (
               <Button 
                 variant="outline"
-                onClick={onRunValidation}
+                onClick={() => {
+                  console.log('🛡️ Validação do sistema - button clicked');
+                  onRunValidation();
+                }}
                 size="lg"
                 className="flex-1"
               >
