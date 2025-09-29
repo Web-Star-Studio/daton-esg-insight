@@ -191,12 +191,12 @@ export async function getLicenseById(id: string): Promise<LicenseDetail> {
       .from('licenses')
       .select('*')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (licenseError) {
+    if (licenseError || !licenseData) {
       console.error('Error fetching license:', licenseError)
-      toast.error('Erro ao carregar licença')
-      throw licenseError
+      toast.error('Licença não encontrada')
+      throw new Error('Licença não encontrada')
     }
 
     // Get associated documents
@@ -236,14 +236,14 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
     }
 
     // Get user's company ID
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!profile?.company_id) {
-      throw new Error('User company not found')
+    if (profileError || !profile?.company_id) {
+      throw new Error('Empresa do usuário não encontrada')
     }
 
     const { data, error } = await supabase
@@ -261,12 +261,16 @@ export async function createLicense(licenseData: CreateLicenseData): Promise<Lic
         company_id: profile.company_id
       })
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error creating license:', error)
       toast.error('Erro ao criar licença')
       throw error
+    }
+
+    if (!data) {
+      throw new Error('Erro ao criar licença')
     }
 
     toast.success('Licença criada com sucesso!')
@@ -295,12 +299,16 @@ export async function updateLicense(id: string, updates: UpdateLicenseData): Pro
       .update(updateData)
       .eq('id', id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error updating license:', error)
       toast.error('Erro ao atualizar licença')
       throw error
+    }
+
+    if (!data) {
+      throw new Error('Licença não encontrada')
     }
 
     toast.success('Licença atualizada com sucesso!')
@@ -362,14 +370,14 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
     }
 
     // Get user's company ID
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!profile?.company_id) {
-      throw new Error('User company not found')
+    if (profileError || !profile?.company_id) {
+      throw new Error('Empresa do usuário não encontrada')
     }
 
     // Check for existing document with same name and generate unique name if needed
@@ -383,7 +391,7 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
         .eq('file_name', finalFileName)
         .eq('related_model', 'licenses')
         .eq('related_id', licenseId)
-        .single()
+        .maybeSingle()
       
       if (!existingDoc) break
       
@@ -406,14 +414,14 @@ export async function uploadLicenseDocument(licenseId: string, file: File): Prom
         company_id: profile.company_id
       })
       .select()
-      .single()
+      .maybeSingle()
 
-    if (documentError) {
+    if (documentError || !documentData) {
       console.error('Error saving document record:', documentError)
       // Try to clean up the uploaded file
       await supabase.storage.from('documents').remove([filePath])
       toast.error('Erro ao salvar registro do documento')
-      throw documentError
+      throw documentError || new Error('Erro ao salvar documento')
     }
 
     const successMessage = finalFileName !== file.name 

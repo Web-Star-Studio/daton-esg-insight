@@ -55,10 +55,13 @@ const getCurrentProgress = async (goalId: string): Promise<number> => {
     .eq('goal_id', goalId)
     .order('update_date', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return 0;
-  return data.progress_percentage || 0;
+  if (error) {
+    console.error('Error fetching progress:', error);
+    return 0;
+  }
+  return data?.progress_percentage || 0;
 };
 
 // Determine goal status based on progress and deadline
@@ -115,7 +118,7 @@ export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
     .from('profiles')
     .select('company_id')
     .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile?.company_id) {
     console.error('Error fetching user company:', profileError);
@@ -137,11 +140,15 @@ export const createGoal = async (goalData: CreateGoalData): Promise<Goal> => {
       status: 'No Caminho Certo',
     } as GoalInsert)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating goal:', error);
     throw new Error(`Erro ao salvar meta: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error('Erro ao criar meta');
   }
 
   console.log('Goal created successfully:', data);
@@ -154,11 +161,11 @@ export const getGoalById = async (id: string): Promise<GoalDetail> => {
     .from('goals')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (goalError) {
+  if (goalError || !goal) {
     console.error('Error fetching goal:', goalError);
-    throw goalError;
+    throw new Error('Meta não encontrada');
   }
 
   // Get progress history

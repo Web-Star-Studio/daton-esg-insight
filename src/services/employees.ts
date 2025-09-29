@@ -41,9 +41,11 @@ export const getEmployee = async (id: string) => {
     .from('employees')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error || !data) {
+    throw new Error('Funcionário não encontrado');
+  }
   return data;
 };
 
@@ -63,9 +65,10 @@ export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at
       .from('employees')
       .insert(employeeData)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Erro ao criar funcionário');
     return data;
   }, { 
     formType: 'Funcionário',
@@ -80,9 +83,10 @@ export const updateEmployee = async (id: string, updates: Partial<Employee>) => 
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Funcionário não encontrado');
     return data;
   }, { 
     formType: 'Funcionário',

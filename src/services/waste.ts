@@ -133,15 +133,11 @@ export const getWasteLogById = async (id: string): Promise<WasteLogDetail> => {
     .from('waste_logs')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     console.error('Error fetching waste log:', error);
-    throw new Error('Erro ao buscar registro de resíduo');
-  }
-
-  if (!data) {
-    throw new Error('Registro não encontrado');
+    throw new Error('Registro de resíduo não encontrado');
   }
 
   return {
@@ -157,7 +153,7 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     .from('profiles')
     .select('company_id')
     .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile) {
     throw new Error('Erro ao obter dados da empresa');
@@ -173,10 +169,14 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     .from('waste_logs')
     .insert([insertData])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating waste log:', error);
+    throw new Error('Erro ao criar registro de resíduo');
+  }
+
+  if (!data) {
     throw new Error('Erro ao criar registro de resíduo');
   }
 
@@ -193,11 +193,15 @@ export const updateWasteLog = async (id: string, updates: UpdateWasteLogData): P
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error updating waste log:', error);
     throw new Error('Erro ao atualizar registro de resíduo');
+  }
+
+  if (!data) {
+    throw new Error('Registro de resíduo não encontrado');
   }
 
   return {
@@ -282,7 +286,7 @@ export const uploadWasteDocument = async (wasteLogId: string, file: File): Promi
     .from('profiles')
     .select('company_id')
     .eq('id', user.user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile) {
     throw new Error('Erro ao obter dados da empresa');
