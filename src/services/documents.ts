@@ -105,12 +105,16 @@ export const createFolder = async (folderData: CreateFolderData): Promise<Docume
     throw new Error('User not authenticated');
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) {
+    throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+  }
+  
   if (!profile) {
     throw new Error('User profile not found');
   }
@@ -122,11 +126,15 @@ export const createFolder = async (folderData: CreateFolderData): Promise<Docume
       company_id: profile.company_id
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating folder:', error);
     throw new Error(`Failed to create folder: ${error.message}`);
+  }
+  
+  if (!data) {
+    throw new Error('Não foi possível criar a pasta');
   }
 
   return data;
@@ -217,12 +225,16 @@ export const uploadDocument = async (
     throw new Error('User not authenticated');
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) {
+    throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+  }
+  
   if (!profile) {
     throw new Error('User profile not found');
   }
@@ -262,13 +274,18 @@ export const uploadDocument = async (
       related_id: options?.related_id || crypto.randomUUID(),
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating document record:', error);
     // Clean up uploaded file if record creation fails
     await supabase.storage.from('documents').remove([filePath]);
     throw new Error(`Failed to create document record: ${error.message}`);
+  }
+  
+  if (!data) {
+    await supabase.storage.from('documents').remove([filePath]);
+    throw new Error('Não foi possível criar o registro do documento');
   }
 
   return data;
@@ -285,11 +302,15 @@ export const updateDocument = async (
     .update(updates)
     .eq('id', documentId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error updating document:', error);
     throw new Error(`Failed to update document: ${error.message}`);
+  }
+  
+  if (!data) {
+    throw new Error('Documento não encontrado');
   }
 
   return data;
@@ -303,11 +324,15 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     .from('documents')
     .select('file_path')
     .eq('id', documentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError) {
     console.error('Error fetching document:', fetchError);
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
+  }
+  
+  if (!document) {
+    throw new Error('Documento não encontrado');
   }
 
   // Delete from storage
@@ -339,11 +364,15 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
     .from('documents')
     .select('file_path, file_name')
     .eq('id', documentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError) {
     console.error('Error fetching document:', fetchError);
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
+  }
+  
+  if (!document) {
+    throw new Error('Documento não encontrado');
   }
 
   // Get signed URL for download
@@ -435,11 +464,15 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
     .from('documents')
     .select('file_path, file_type')
     .eq('id', documentId)
-    .single();
+    .maybeSingle();
 
   if (fetchError) {
     console.error('Error fetching document:', fetchError);
     throw new Error(`Failed to fetch document: ${fetchError.message}`);
+  }
+  
+  if (!document) {
+    throw new Error('Documento não encontrado');
   }
 
   // Get signed URL for preview

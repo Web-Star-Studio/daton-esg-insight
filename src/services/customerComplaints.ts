@@ -80,9 +80,9 @@ export const getCustomerComplaintById = async (id: string): Promise<CustomerComp
       .from('customer_complaints')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao buscar reclamação: ${error.message}`);
     return data;
   } catch (error) {
     console.error('Error fetching customer complaint:', error);
@@ -98,11 +98,15 @@ export const createCustomerComplaint = async (complaintData: CreateCustomerCompl
 
     // Get user's company_id
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user?.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+    }
 
     const { data, error } = await supabase
       .from('customer_complaints')
@@ -118,9 +122,10 @@ export const createCustomerComplaint = async (complaintData: CreateCustomerCompl
         }]
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar reclamação: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a reclamação');
     return data;
   } catch (error) {
     console.error('Error creating customer complaint:', error);
@@ -135,9 +140,10 @@ export const updateCustomerComplaint = async (id: string, updates: Partial<Custo
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar reclamação: ${error.message}`);
+    if (!data) throw new Error('Reclamação não encontrada');
     return data;
   } catch (error) {
     console.error('Error updating customer complaint:', error);

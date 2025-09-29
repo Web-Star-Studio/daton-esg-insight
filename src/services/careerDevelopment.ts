@@ -135,9 +135,10 @@ export const createCareerDevelopmentPlan = async (plan: Omit<CareerDevelopmentPl
     .from('career_development_plans')
     .insert(plan)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar plano de desenvolvimento: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar o plano de desenvolvimento');
   return data;
 };
 
@@ -147,9 +148,10 @@ export const updateCareerDevelopmentPlan = async (id: string, updates: Partial<C
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar plano de desenvolvimento: ${error.message}`);
+  if (!data) throw new Error('Plano de desenvolvimento não encontrado');
   return data;
 };
 
@@ -176,9 +178,10 @@ export const createSuccessionPlan = async (plan: Omit<SuccessionPlan, 'id' | 'cr
     .from('succession_plans')
     .insert(plan)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar plano de sucessão: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar o plano de sucessão');
   return data;
 };
 
@@ -202,9 +205,10 @@ export const createMentoringRelationship = async (relationship: Omit<MentoringRe
     .from('mentoring_relationships')
     .insert(relationship)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar relacionamento de mentoria: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar o relacionamento de mentoria');
   return data;
 };
 
@@ -224,9 +228,10 @@ export const createInternalJobPosting = async (posting: Omit<InternalJobPosting,
     .from('internal_job_postings')
     .insert(posting)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar vaga interna: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar a vaga interna');
   return data;
 };
 

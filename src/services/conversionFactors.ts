@@ -67,14 +67,15 @@ export async function getConversionFactor(
     query = query.eq('category', category);
   }
 
-  const { data, error } = await query.single();
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      return 1.0; // Fator padrão quando não encontrado
-    }
     console.error('Erro ao buscar fator de conversão:', error);
-    throw error;
+    throw new Error(`Erro ao buscar fator de conversão: ${error.message}`);
+  }
+  
+  if (!data) {
+    return 1.0; // Fator padrão quando não encontrado
   }
 
   return data?.conversion_factor || 1.0;
@@ -89,11 +90,15 @@ export async function createConversionFactor(factorData: CreateConversionFactorD
       source: factorData.source || 'GHG Protocol Brasil 2025.0.1'
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro ao criar fator de conversão:', error);
-    throw error;
+    throw new Error(`Erro ao criar fator de conversão: ${error.message}`);
+  }
+  
+  if (!data) {
+    throw new Error('Não foi possível criar o fator de conversão');
   }
 
   return data;
@@ -115,7 +120,7 @@ export async function importConversionFactors(
         .eq('from_unit', factor.from_unit)
         .eq('to_unit', factor.to_unit)
         .eq('category', factor.category)
-        .single();
+        .maybeSingle();
 
       if (existingFactor) {
         // Update existing factor

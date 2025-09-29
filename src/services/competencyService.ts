@@ -65,11 +65,15 @@ export const createCompetency = async (competency: {
         company_id: userWithCompany.company_id
       }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Erro ao criar competência:', error);
-      throw error;
+      throw new Error(`Erro ao criar competência: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('Não foi possível criar a competência');
     }
     return data;
   } catch (error) {
@@ -90,9 +94,10 @@ export const updateCompetency = async (id: string, updates: {
     .update(updates)
     .eq("id", id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar competência: ${error.message}`);
+  if (!data) throw new Error('Competência não encontrada');
   return data;
 };
 
@@ -140,11 +145,15 @@ export const createCompetencyAssessment = async (assessment: {
         company_id: userWithCompany.company_id
       }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Erro ao criar avaliação de competência:', error);
-      throw error;
+      throw new Error(`Erro ao criar avaliação de competência: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('Não foi possível criar a avaliação de competência');
     }
     return data;
   } catch (error) {
