@@ -133,17 +133,17 @@ export interface CreatePGRSActionData {
 
 // Helper function to get current user's company ID
 const getCurrentUserCompanyId = async (): Promise<string> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.company_id) throw new Error('Empresa não encontrada');
-  return profile.company_id;
+  const { data: companyId, error } = await supabase.rpc('get_user_company_id');
+  
+  if (error) {
+    throw new Error(`Erro ao obter empresa do usuário: ${error.message}`);
+  }
+  
+  if (!companyId) {
+    throw new Error('Empresa não encontrada no perfil do usuário');
+  }
+  
+  return companyId;
 };
 
 // PGRS Plans Management
