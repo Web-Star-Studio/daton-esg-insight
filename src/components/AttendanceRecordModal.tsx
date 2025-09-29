@@ -105,8 +105,26 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate, e
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação de campos obrigatórios
     if (!formData.employee_id || !formData.date) {
-      toast.error("Por favor, preencha os campos obrigatórios");
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    
+    // Validação de datas/horários
+    if (formData.check_in && formData.check_out && formData.check_in >= formData.check_out) {
+      toast.error("O horário de saída deve ser posterior ao horário de entrada");
+      return;
+    }
+    
+    if (formData.break_start && formData.break_end && formData.break_start >= formData.break_end) {
+      toast.error("O horário de fim do intervalo deve ser posterior ao horário de início");
+      return;
+    }
+    
+    // Validação de observações
+    if (formData.notes && formData.notes.length > 500) {
+      toast.error("As observações devem ter no máximo 500 caracteres");
       return;
     }
 
@@ -145,6 +163,7 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate, e
         break_end: formData.break_end ? `${formData.date}T${formData.break_end}` : null,
         total_hours: Math.round(total_hours * 100) / 100,
         overtime_hours: Math.round(overtime_hours * 100) / 100,
+        notes: formData.notes.trim() || null
       };
 
       await createAttendanceRecord.mutateAsync({
@@ -166,9 +185,10 @@ export default function AttendanceRecordModal({ isOpen, onClose, selectedDate, e
         status: "present",
         notes: ""
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating attendance record:', error);
-      toast.error("Erro ao criar registro de ponto");
+      const errorMessage = error?.message || 'Erro ao criar registro de ponto';
+      toast.error(errorMessage);
     }
   };
 

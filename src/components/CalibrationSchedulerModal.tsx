@@ -41,25 +41,83 @@ export function CalibrationSchedulerModal({ open, onClose }: CalibrationSchedule
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validações de campos obrigatórios
     if (!formData.asset_id || !formData.next_calibration_date) {
       toast({
-        title: "Erro",
+        title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validação de data
+    const nextDate = new Date(formData.next_calibration_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (nextDate < today) {
+      toast({
+        title: "Data inválida",
+        description: "A data da próxima calibração deve ser futura",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validação de frequência
+    if (formData.frequency_months < 1 || formData.frequency_months > 120) {
+      toast({
+        title: "Frequência inválida",
+        description: "A frequência deve ser entre 1 e 120 meses",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validação de campos de texto
+    if (formData.calibration_standard && formData.calibration_standard.length > 255) {
+      toast({
+        title: "Padrão muito longo",
+        description: "O padrão de calibração deve ter no máximo 255 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (formData.calibration_provider && formData.calibration_provider.length > 255) {
+      toast({
+        title: "Fornecedor muito longo",
+        description: "O nome do fornecedor deve ter no máximo 255 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validação de custo
+    if (formData.estimated_cost && (Number(formData.estimated_cost) < 0 || Number(formData.estimated_cost) > 9999999)) {
+      toast({
+        title: "Custo inválido",
+        description: "O custo deve ser um valor entre 0 e 9.999.999",
         variant: "destructive"
       });
       return;
     }
 
     const toleranceRange = formData.tolerance_range.min && formData.tolerance_range.max 
-      ? formData.tolerance_range 
+      ? {
+          min: formData.tolerance_range.min.trim(),
+          max: formData.tolerance_range.max.trim(),
+          unit: formData.tolerance_range.unit.trim()
+        }
       : {};
 
     createSchedule({
       asset_id: formData.asset_id,
-      calibration_standard: formData.calibration_standard || undefined,
+      calibration_standard: formData.calibration_standard.trim() || undefined,
       frequency_months: formData.frequency_months,
       next_calibration_date: formData.next_calibration_date,
-      calibration_provider: formData.calibration_provider || undefined,
+      calibration_provider: formData.calibration_provider.trim() || undefined,
       certificate_required: formData.certificate_required,
       tolerance_range: toleranceRange,
       responsible_user_id: formData.responsible_user_id || undefined,
@@ -83,10 +141,11 @@ export function CalibrationSchedulerModal({ open, onClose }: CalibrationSchedule
           estimated_cost: ""
         });
       },
-      onError: (error) => {
+      onError: (error: any) => {
+        const errorMessage = error?.message || 'Erro ao criar cronograma de calibração';
         toast({
           title: "Erro",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive"
         });
       }

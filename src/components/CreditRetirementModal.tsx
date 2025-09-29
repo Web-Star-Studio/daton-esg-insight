@@ -59,20 +59,41 @@ export function CreditRetirementModal({ open, onClose, onRetirementCreated }: Cr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validação de campos obrigatórios
     if (!selectedCreditId || !quantity || !retirementDate) {
       toast({
-        title: "Erro",
+        title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios",
         variant: "destructive",
       });
       return;
     }
 
+    // Validação de quantidade
     const quantityNum = parseFloat(quantity);
-    if (quantityNum <= 0 || (selectedCredit && quantityNum > selectedCredit.available_quantity)) {
+    if (isNaN(quantityNum) || quantityNum <= 0) {
       toast({
-        title: "Erro",
-        description: "Quantidade inválida. Deve ser maior que zero e não exceder a quantidade disponível.",
+        title: "Quantidade inválida",
+        description: "A quantidade deve ser um número positivo",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (selectedCredit && quantityNum > selectedCredit.available_quantity) {
+      toast({
+        title: "Quantidade excedida",
+        description: `A quantidade não pode exceder ${selectedCredit.available_quantity} tCO₂e disponíveis`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validação de motivo
+    if (reason.trim().length > 500) {
+      toast({
+        title: "Motivo muito longo",
+        description: "O motivo deve ter no máximo 500 caracteres",
         variant: "destructive",
       });
       return;
@@ -81,12 +102,14 @@ export function CreditRetirementModal({ open, onClose, onRetirementCreated }: Cr
     try {
       setLoading(true);
 
-      await carbonProjectsService.createRetirement({
+      const retirementData = {
         credit_purchase_id: selectedCreditId,
         retirement_date: retirementDate.toISOString().split('T')[0],
         quantity_tco2e: quantityNum,
         reason: reason.trim() || undefined,
-      });
+      };
+
+      await carbonProjectsService.createRetirement(retirementData);
 
       toast({
         title: "Sucesso",
@@ -95,11 +118,15 @@ export function CreditRetirementModal({ open, onClose, onRetirementCreated }: Cr
 
       onRetirementCreated();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao aposentar créditos:', error);
+      const errorMessage = error?.message?.includes('Insufficient')
+        ? 'Quantidade de créditos insuficiente'
+        : 'Erro ao aposentar créditos. Tente novamente.';
+      
       toast({
         title: "Erro",
-        description: "Erro ao aposentar créditos",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
