@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, AlertTriangle, CheckCircle, Info, Clock } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const QualityNotificationSystem: React.FC<QualityNotificationSystemProps>
   onDismiss,
   autoDismissTime = 5000
 }) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,6 +81,7 @@ export const QualityNotificationSystem: React.FC<QualityNotificationSystemProps>
 
 // Hook for managing quality alerts
 export const useQualityAlerts = () => {
+  const navigate = useNavigate();
   const [alerts, setAlerts] = React.useState<QualityAlert[]>([]);
 
   const addAlert = (alert: Omit<QualityAlert, 'id' | 'timestamp'>) => {
@@ -106,7 +109,7 @@ export const useQualityAlerts = () => {
       message: `"${ncTitle}" foi registrada no sistema`,
       action: {
         label: 'Ver Detalhes',
-        onClick: () => window.location.href = '#/nao-conformidades'
+        onClick: () => navigate('/nao-conformidades')
       }
     }),
 
@@ -116,7 +119,7 @@ export const useQualityAlerts = () => {
       message: `"${planTitle}" passou do prazo estabelecido`,
       action: {
         label: 'Atualizar',
-        onClick: () => window.location.href = '#/plano-acao-5w2h'
+        onClick: () => navigate('/plano-acao-5w2h')
       }
     }),
 
@@ -132,7 +135,7 @@ export const useQualityAlerts = () => {
       message: riskDescription,
       action: {
         label: 'Avaliar Riscos',
-        onClick: () => window.location.href = '#/gestao-riscos'
+        onClick: () => navigate('/gestao-riscos')
       }
     }),
 
@@ -142,7 +145,7 @@ export const useQualityAlerts = () => {
       message: `Auditoria interna agendada para ${auditDate}`,
       action: {
         label: 'Ver Cronograma',
-        onClick: () => window.location.href = '#/auditoria'
+        onClick: () => navigate('/auditoria')
       }
     })
   };

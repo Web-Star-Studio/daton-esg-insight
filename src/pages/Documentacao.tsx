@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronRight, FileText, Zap, Shield, Target, Users, Cpu, Globe, Award, TrendingUp, Clock, CheckCircle, ArrowRight, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,9 +40,9 @@ const Documentacao = () => {
             <h1 className="text-lg font-semibold">Documentação</h1>
           </div>
           <Button asChild>
-            <a href="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2">
               Voltar ao Site <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
           </Button>
         </div>
       </header>
@@ -647,14 +648,14 @@ const Documentacao = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" asChild>
-                    <a href="/contato" className="flex items-center gap-2">
+                    <Link to="/contato" className="flex items-center gap-2">
                       Agendar Demo <ExternalLink className="h-4 w-4" />
-                    </a>
+                    </Link>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
-                    <a href="/simulador" className="flex items-center gap-2">
+                    <Link to="/simulador" className="flex items-center gap-2">
                       Testar Simulador <ArrowRight className="h-4 w-4" />
-                    </a>
+                    </Link>
                   </Button>
                 </div>
               </CardContent>

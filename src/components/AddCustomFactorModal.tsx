@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -82,6 +83,7 @@ const unidades = [
 ]
 
 export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModalProps) {
+  const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
   
 
@@ -126,9 +128,9 @@ export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModa
 
       resetAndClose();
       
-      // Trigger reload if there's a callback
+      // Trigger reload if we're on the factors page
       if (window.location.pathname === '/biblioteca-fatores') {
-        window.location.reload();
+        navigate(0); // React Router way to reload current route
       }
       
     } catch (error) {
