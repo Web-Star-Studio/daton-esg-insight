@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +32,7 @@ interface ExtractedDataReviewCardProps {
   className?: string;
 }
 
-const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> = ({
+export const ExtractedDataReviewCard: React.FC<ExtractedDataReviewCardProps> = ({
   extraction,
   onUpdate,
   className
@@ -51,14 +51,14 @@ const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> =
 
   const hasLowConfidenceFields = Object.values(confidenceScores || {}).some(score => score < 0.6);
 
-  const handleFieldChange = useCallback((field: string, value: any) => {
+  const handleFieldChange = (field: string, value: any) => {
     setEditedData(prev => ({
       ...prev,
       [field]: value
     }));
-  }, []);
+  };
 
-  const handleApprove = useCallback(async () => {
+  const handleApprove = async () => {
     try {
       setProcessing(true);
       await approveExtractedData(extraction.id, editedData);
@@ -74,9 +74,9 @@ const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> =
     } finally {
       setProcessing(false);
     }
-  }, [extraction.id, editedData, onUpdate]);
+  };
 
-  const handleReject = useCallback(async () => {
+  const handleReject = async () => {
     if (!rejectionNotes.trim()) {
       toast.error('Por favor, adicione uma justificativa para a rejeição');
       return;
@@ -95,9 +95,9 @@ const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> =
       setShowRejectForm(false);
       setRejectionNotes('');
     }
-  }, [extraction.id, rejectionNotes, onUpdate]);
+  };
 
-  const getFieldIcon = useCallback((field: string, value: any) => {
+  const getFieldIcon = (field: string, value: any) => {
     if (field.includes('data') || field.includes('date')) {
       return <Calendar className="h-3 w-3 text-muted-foreground" />;
     }
@@ -105,9 +105,9 @@ const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> =
       return <Hash className="h-3 w-3 text-muted-foreground" />;
     }
     return <Type className="h-3 w-3 text-muted-foreground" />;
-  }, []);
+  };
 
-  const renderFieldEditor = useCallback((field: string, value: any, confidence?: number) => {
+  const renderFieldEditor = (field: string, value: any, confidence?: number) => {
     const isLowConfidence = confidence && confidence < 0.6;
     
     // Detectar tipo do campo para renderizar input apropriado
@@ -232,7 +232,7 @@ const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> =
         )}
       </div>
     );
-  }, [editedData, handleFieldChange, getFieldIcon]);
+  };
 
   return (
     <Card className={`${className}`}>
@@ -355,9 +355,3 @@ const ExtractedDataReviewCardComponent: React.FC<ExtractedDataReviewCardProps> =
     </Card>
   );
 };
-
-// Export memoized component with custom comparator
-export const ExtractedDataReviewCard = memo(ExtractedDataReviewCardComponent, (prevProps, nextProps) => {
-  return prevProps.extraction.id === nextProps.extraction.id && 
-         prevProps.className === nextProps.className;
-});

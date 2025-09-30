@@ -1,10 +1,11 @@
-// Enhanced AIExtractionDashboard with Smart Cache and React.memo optimization
-import React, { useState, memo, useCallback } from 'react';
+// Enhanced AIExtractionDashboard with better error handling and FK relationships
+import React, { useState, useEffect } from 'react';
 import { EnhancedLoading } from '@/components/EnhancedLoading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Bot, 
   FileText, 
@@ -28,70 +29,65 @@ import {
 import type { ExtractionJob, ExtractedDataPreview } from '@/services/documentAI';
 import { ExtractedDataReviewCard } from './ExtractedDataReviewCard';
 import { toast } from 'sonner';
-import { useSmartCache } from '@/hooks/useSmartCache';
 
 interface AIExtractionDashboardProps {
   className?: string;
 }
 
-const AIExtractionDashboardComponent: React.FC<AIExtractionDashboardProps> = ({ className }) => {
+export const AIExtractionDashboard: React.FC<AIExtractionDashboardProps> = ({ className }) => {
+  const [jobs, setJobs] = useState<ExtractionJob[]>([]);
+  const [pendingExtractions, setPendingExtractions] = useState<ExtractedDataPreview[]>([]);
+  const [stats, setStats] = useState({
+    totalProcessed: 0,
+    pendingApproval: 0,
+    approved: 0,
+    rejected: 0,
+    averageConfidence: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedExtraction, setSelectedExtraction] = useState<ExtractedDataPreview | null>(null);
 
-  // Smart cache for extraction jobs (high priority)
-  const { data: jobs = [], isLoading: jobsLoading, refetch: refetchJobs } = useSmartCache<ExtractionJob[]>({
-    queryKey: ['ai-extraction-jobs'],
-    queryFn: async () => {
-      try {
-        return await getExtractionJobs();
-      } catch (error) {
-        console.error('Error loading jobs:', error);
-        return [];
-      }
-    },
-    priority: 'high',
-    staleTime: 30000, // 30 seconds
-  });
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [jobsData, pendingData, statsData] = await Promise.all([
+        getExtractionJobs().catch(err => {
+          return [];
+        }),
+        getPendingExtractions().catch(err => {
+          return [];
+        }),
+        getAIProcessingStats().catch(err => {
+          return {
+            totalProcessed: 0,
+            pendingApproval: 0,
+            approved: 0,
+            rejected: 0,
+            averageConfidence: 0
+          };
+        })
+      ]);
 
-  // Smart cache for pending extractions (high priority)
-  const { data: pendingExtractions = [], isLoading: pendingLoading, refetch: refetchPending } = useSmartCache<ExtractedDataPreview[]>({
-    queryKey: ['ai-pending-extractions'],
-    queryFn: async () => {
-      try {
-        return await getPendingExtractions();
-      } catch (error) {
-        console.error('Error loading pending:', error);
-        return [];
-      }
-    },
-    priority: 'high',
-    staleTime: 20000, // 20 seconds
-    preloadRelated: [['ai-extraction-jobs']],
-  });
+      setJobs(jobsData);
+      setPendingExtractions(pendingData);
+      setStats(statsData);
+      
+    } catch (error) {
+      setError('Erro ao carregar dados de extração IA. Verifique a conectividade.');
+      toast.error('Erro ao carregar dados de extração IA');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Smart cache for stats (high priority)
-  const { data: stats = { totalProcessed: 0, pendingApproval: 0, approved: 0, rejected: 0, averageConfidence: 0 }, isLoading: statsLoading } = useSmartCache({
-    queryKey: ['ai-processing-stats'],
-    queryFn: async () => {
-      try {
-        return await getAIProcessingStats();
-      } catch (error) {
-        console.error('Error loading stats:', error);
-        return { totalProcessed: 0, pendingApproval: 0, approved: 0, rejected: 0, averageConfidence: 0 };
-      }
-    },
-    priority: 'high',
-    staleTime: 30000,
-  });
+  const handleDataUpdate = () => {
+    loadData();
+  };
 
-  const loading = jobsLoading || pendingLoading || statsLoading;
-
-  const handleDataUpdate = useCallback(() => {
-    refetchJobs();
-    refetchPending();
-    setSelectedExtraction(null);
-  }, [refetchJobs, refetchPending]);
-
-  const getStatusIcon = useCallback((status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Processando':
         return <Clock className="h-4 w-4 text-blue-500 animate-pulse" />;
@@ -102,9 +98,9 @@ const AIExtractionDashboardComponent: React.FC<AIExtractionDashboardProps> = ({ 
       default:
         return <Activity className="h-4 w-4 text-gray-500" />;
     }
-  }, []);
+  };
 
-  const getStatusVariant = useCallback((status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (status) {
       case 'Processando':
         return 'secondary';
@@ -115,9 +111,9 @@ const AIExtractionDashboardComponent: React.FC<AIExtractionDashboardProps> = ({ 
       default:
         return 'outline';
     }
-  }, []);
+  };
 
-  const getDocumentName = useCallback((extraction: ExtractedDataPreview): string => {
+  const getDocumentName = (extraction: ExtractedDataPreview): string => {
     // Handle both foreign key relationship and fallback with type safety
     try {
       if (extraction.extraction_job && 
@@ -134,10 +130,33 @@ const AIExtractionDashboardComponent: React.FC<AIExtractionDashboardProps> = ({ 
     
     // Fallback to extraction job ID
     return `Documento ${extraction.extraction_job_id?.toString().slice(-6) || extraction.id.slice(-6)}`;
+  };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 30000); // Atualizar a cada 30 segundos
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return <EnhancedLoading message="Carregando dashboard IA..." />;
+  }
+
+  if (error) {
+    return (
+      <Card className={className}>
+        <CardContent className="p-6">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button onClick={loadData} variant="outline" size="sm" className="mt-4">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar Novamente
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -367,6 +386,3 @@ const AIExtractionDashboardComponent: React.FC<AIExtractionDashboardProps> = ({ 
     </div>
   );
 };
-
-// Export memoized component for performance
-export const AIExtractionDashboard = memo(AIExtractionDashboardComponent);

@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,7 +11,7 @@ interface MaterialityMatrixProps {
   className?: string;
 }
 
-const MaterialityMatrixComponent = ({ themes, matrix, className }: MaterialityMatrixProps) => {
+export const MaterialityMatrix = ({ themes, matrix, className }: MaterialityMatrixProps) => {
   const { themesMap, maxX, maxY, priorityStats } = useMemo(() => {
     const themesMap = themes.reduce((acc, theme) => {
       acc[theme.id] = theme;
@@ -199,10 +199,3 @@ const MaterialityMatrixComponent = ({ themes, matrix, className }: MaterialityMa
     </div>
   );
 };
-
-// Export memoized component with deep comparison of themes and matrix
-export const MaterialityMatrix = memo(MaterialityMatrixComponent, (prevProps, nextProps) => {
-  return prevProps.themes.length === nextProps.themes.length &&
-         Object.keys(prevProps.matrix).length === Object.keys(nextProps.matrix).length &&
-         prevProps.className === nextProps.className;
-});

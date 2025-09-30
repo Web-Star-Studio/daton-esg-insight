@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from "@/utils/logger";
 
 export interface ActivityLog {
   id: string;
@@ -99,16 +98,12 @@ class AuditService {
   }
 
   async createAudit(auditData: CreateAuditData): Promise<Audit> {
-    logger.info('Creating audit', { 
-      component: 'audit',
-      action: 'createAudit',
-      metadata: { auditData } 
-    });
+    console.log('Creating audit:', auditData);
     
     try {
       // Add company_id from current user's profile
       const { data: userResponse } = await supabase.auth.getUser();
-      logger.debug('Current user', userResponse.user?.id, { component: 'audit' });
+      console.log('Current user:', userResponse.user?.id);
       
       if (!userResponse.user) {
         throw new Error('Usuário não autenticado');
@@ -120,7 +115,7 @@ class AuditService {
         .eq('id', userResponse.user.id)
         .maybeSingle();
 
-      logger.debug('Profile data', { profile, profileError }, { component: 'audit' });
+      console.log('Profile data:', profile, 'Profile error:', profileError);
 
       if (profileError) {
         throw new Error(`Erro ao buscar perfil: ${profileError.message}`);

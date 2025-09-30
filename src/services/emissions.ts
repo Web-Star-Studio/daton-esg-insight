@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from "@/utils/logger";
 
 export interface EmissionSource {
   id: string;
@@ -157,16 +156,10 @@ export const updateActivityData = async (id: string, activityData: {
       
       if (factor) {
         finalActivityData.unit = factor.activity_unit; // Override with factor's unit
-        logger.info('Unidade sobrescrita pelo fator', { 
-          component: 'emissions',
-          metadata: { unit: factor.activity_unit } 
-        });
+        console.info('Unidade sobrescrita pelo fator:', factor.activity_unit);
       }
     } catch (error) {
-      logger.warn('Erro ao buscar unidade do fator', { 
-        component: 'emissions',
-        metadata: { error } 
-      });
+      console.warn('Erro ao buscar unidade do fator:', error);
     }
   }
 

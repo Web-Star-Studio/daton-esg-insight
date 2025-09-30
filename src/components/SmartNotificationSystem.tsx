@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, Notification } from '@/services/notifications';
 import { NotificationPreferencesModal, NotificationPreferences } from '@/components/NotificationPreferencesModal';
 import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
 import { toast } from 'sonner';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { useSmartCache } from '@/hooks/useSmartCache';
 
-const SmartNotificationSystemComponent: React.FC = () => {
+export const SmartNotificationSystem: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
     // Carregar preferências do localStorage se disponível
@@ -92,8 +92,8 @@ const SmartNotificationSystemComponent: React.FC = () => {
     }
   }, [preferences]);
 
-  // Smart cache for notifications (high priority)
-  const { data: notifications = [], isLoading, refetch: refetchNotifications } = useSmartCache<Notification[]>({
+  // Smart cache for notifications com error handling robusto
+  const { data: notifications = [], isLoading, error: notificationsError } = useQuery({
     queryKey: ['smart-notifications'],
     queryFn: async () => {
       try {
@@ -104,13 +104,13 @@ const SmartNotificationSystemComponent: React.FC = () => {
         return [];
       }
     },
-    priority: 'high',
-    staleTime: 60000, // 1 minute
-    preloadRelated: [['smart-notifications-unread-count']],
+    staleTime: 1 * 60 * 1000, // 1 minute - high priority
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Smart cache for unread count (very high priority)
-  const { data: unreadCount = 0, refetch: refetchUnread } = useSmartCache<number>({
+  const { data: unreadCount = 0, error: unreadError } = useQuery({
     queryKey: ['smart-notifications-unread-count'],
     queryFn: async () => {
       try {
@@ -120,12 +120,12 @@ const SmartNotificationSystemComponent: React.FC = () => {
         return 0;
       }
     },
-    priority: 'high',
-    staleTime: 30000, // 30 seconds
+    staleTime: 30 * 1000, // 30 seconds - very high priority
+    retry: 2,
   });
 
   // Auto-refresh notifications with real-time updates
-  const { refresh, isRefreshing } = useAutoRefresh({
+  const { refresh, isRefreshing, lastRefresh } = useAutoRefresh({
     queryKeys: [['smart-notifications'], ['smart-notifications-unread-count']],
     interval: 15000, // 15 seconds
     enableRealtime: true,
@@ -139,9 +139,7 @@ const SmartNotificationSystemComponent: React.FC = () => {
           showSmartNotification(newNotification);
         }
       }
-      refetchNotifications();
-      refetchUnread();
-    }, [preferences, refetchNotifications, refetchUnread])
+    }, [preferences])
   });
 
   const markAsReadMutation = useMutation({
@@ -405,6 +403,19 @@ const SmartNotificationSystemComponent: React.FC = () => {
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
                 Carregando...
               </div>
+            ) : (notificationsError || unreadError) ? (
+              <div className="p-4 text-center text-destructive">
+                <AlertTriangle className="h-6 w-6 mx-auto mb-2" />
+                <p className="text-sm">Erro ao carregar notificações</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refresh}
+                  className="mt-2"
+                >
+                  Tentar novamente
+                </Button>
+              </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -457,11 +468,21 @@ const SmartNotificationSystemComponent: React.FC = () => {
             )}
           </ScrollArea>
 
+          {notifications.length > 0 && (
+            <>
+              <Separator />
+              <div className="p-2 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Última atualização: {formatDistanceToNow(lastRefresh, { 
+                    addSuffix: true, 
+                    locale: ptBR 
+                  })}
+                </p>
+              </div>
+            </>
+          )}
         </PopoverContent>
       </Popover>
     </>
   );
 };
-
-// Export memoized component
-export const SmartNotificationSystem = memo(SmartNotificationSystemComponent);
