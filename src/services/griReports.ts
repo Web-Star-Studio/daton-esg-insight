@@ -122,9 +122,9 @@ export async function getGRIReport(id: string): Promise<GRIReport | null> {
     .from('gri_reports')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao buscar relatório GRI: ${error.message}`);
   return data;
 }
 
@@ -136,15 +136,19 @@ export async function createGRIReport(report: Partial<GRIReport>): Promise<GRIRe
   
   // Try to get company_id from profile first
   try {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     
-    companyId = profile?.company_id;
+    if (profileError) {
+      console.warn('Erro ao buscar company_id do perfil:', profileError);
+    } else {
+      companyId = profile?.company_id;
+    }
   } catch (profileError) {
-    console.warn('Erro ao buscar company_id do perfil:', profileError);
+    console.warn('Exceção ao buscar company_id do perfil:', profileError);
   }
   
   // Fallback: try to get company_id using RPC function
@@ -171,12 +175,13 @@ export async function createGRIReport(report: Partial<GRIReport>): Promise<GRIRe
       year: report.year || new Date().getFullYear(),
     } as any])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Erro na inserção do relatório GRI:', error);
-    throw error;
+    throw new Error(`Erro ao criar relatório GRI: ${error.message}`);
   }
+  if (!data) throw new Error('Não foi possível criar relatório GRI');
   return data;
 }
 
@@ -186,9 +191,10 @@ export async function updateGRIReport(id: string, updates: Partial<GRIReport>): 
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar relatório GRI: ${error.message}`);
+  if (!data) throw new Error('Relatório GRI não encontrado');
   return data;
 }
 
@@ -281,9 +287,10 @@ export async function createOrUpdateGRIIndicatorData(
         *,
         indicator:gri_indicators_library(*)
       `)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar dados do indicador: ${error.message}`);
+    if (!updated) throw new Error('Não foi possível atualizar dados do indicador');
     return updated;
   } else {
     // Create new
@@ -299,9 +306,10 @@ export async function createOrUpdateGRIIndicatorData(
         *,
         indicator:gri_indicators_library(*)
       `)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar dados do indicador: ${error.message}`);
+    if (!created) throw new Error('Não foi possível criar dados do indicador');
     return created;
   }
 }
@@ -337,9 +345,10 @@ export async function createOrUpdateGRIReportSection(
       .update(sectionData)
       .eq('id', existing.id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar seção do relatório: ${error.message}`);
+    if (!updated) throw new Error('Seção do relatório não encontrada');
     return updated;
   } else {
     // Create new
@@ -352,9 +361,10 @@ export async function createOrUpdateGRIReportSection(
         ...sectionData,
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar seção do relatório: ${error.message}`);
+    if (!created) throw new Error('Não foi possível criar seção do relatório');
     return created;
   }
 }
@@ -376,9 +386,10 @@ export async function createMaterialityTopic(topic: Partial<MaterialityTopic>): 
     .from('materiality_topics')
     .insert([topic as any])
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar tópico de materialidade: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar tópico de materialidade');
   return data;
 }
 
@@ -388,9 +399,10 @@ export async function updateMaterialityTopic(id: string, updates: Partial<Materi
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar tópico de materialidade: ${error.message}`);
+  if (!data) throw new Error('Tópico de materialidade não encontrado');
   return data;
 }
 
@@ -420,10 +432,10 @@ export async function createSDGAlignment(alignment: Partial<SDGAlignment>): Prom
     .from('sdg_alignment')
     .insert([alignment as any])
     .select()
-    .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao criar alinhamento com ODS: ${error.message}`);
+  if (!data) throw new Error('Não foi possível criar alinhamento com ODS');
   return data;
 }
 
@@ -433,9 +445,10 @@ export async function updateSDGAlignment(id: string, updates: Partial<SDGAlignme
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar alinhamento com ODS: ${error.message}`);
+  if (!data) throw new Error('Alinhamento com ODS não encontrado');
   return data;
 }
 

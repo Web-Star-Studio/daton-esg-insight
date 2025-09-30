@@ -146,9 +146,9 @@ export const documentVersionsService = {
       .select('*')
       .eq('document_id', documentId)
       .eq('is_current', true)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw new Error(`Erro ao buscar versão atual: ${error.message}`);
     return data;
   },
 
@@ -163,9 +163,10 @@ export const documentVersionsService = {
         ...versionData
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar versão: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar versão');
     return data;
   }
 };
@@ -191,9 +192,10 @@ export const approvalWorkflowsService = {
         steps: JSON.stringify(workflow.steps || [])
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar workflow: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar workflow');
     return data;
   },
 
@@ -208,9 +210,10 @@ export const approvalWorkflowsService = {
       .update(updateData)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar workflow: ${error.message}`);
+    if (!data) throw new Error('Workflow não encontrado');
     return data;
   },
 
@@ -247,9 +250,10 @@ export const documentApprovalsService = {
       .from('document_approvals')
       .insert(approval)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar aprovação: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar aprovação');
     return data;
   },
 
@@ -276,9 +280,10 @@ export const documentApprovalsService = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar aprovação: ${error.message}`);
+    if (!data) throw new Error('Aprovação não encontrada');
     return data;
   },
 
@@ -332,9 +337,10 @@ export const masterListService = {
       .from('document_master_list')
       .insert(insertData)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao adicionar à lista mestra: ${error.message}`);
+    if (!data) throw new Error('Não foi possível adicionar à lista mestra');
     return data;
   },
 
@@ -349,9 +355,10 @@ export const masterListService = {
       .update(updateData)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar lista mestra: ${error.message}`);
+    if (!data) throw new Error('Item da lista mestra não encontrado');
     return data;
   },
 
@@ -407,9 +414,10 @@ export const controlledCopiesService = {
       .from('document_controlled_copies')
       .insert(copy)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar cópia controlada: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar cópia controlada');
     return data;
   },
 
@@ -423,9 +431,10 @@ export const controlledCopiesService = {
       })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar cópia controlada: ${error.message}`);
+    if (!data) throw new Error('Cópia controlada não encontrada');
     return data;
   }
 };
@@ -455,9 +464,10 @@ export const documentPermissionsService = {
       .from('document_permissions')
       .insert(permission)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao conceder permissão: ${error.message}`);
+    if (!data) throw new Error('Não foi possível conceder permissão');
     return data;
   },
 
@@ -488,9 +498,10 @@ export const legalDocumentsService = {
       .from('legal_documents')
       .insert(document)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar documento legal: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar documento legal');
     return data;
   },
 
@@ -500,9 +511,10 @@ export const legalDocumentsService = {
       .update(updates)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar documento legal: ${error.message}`);
+    if (!data) throw new Error('Documento legal não encontrado');
     return data;
   },
 
@@ -594,9 +606,10 @@ export const gedDocumentsService = {
       .update(updateData)
       .eq('id', documentId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar campos GED: ${error.message}`);
+    if (!data) throw new Error('Documento não encontrado');
     return data;
   },
 

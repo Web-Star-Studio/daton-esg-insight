@@ -105,9 +105,10 @@ class NonConformitiesService {
         corrective_actions(*)
       `)
       .eq("id", id)
-      .single();
+      .maybeSingle();
     
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao buscar não conformidade: ${error.message}`);
+    if (!nc) throw new Error('Não conformidade não encontrada');
     
     // Get user profiles for responsible and approved_by users
     const userIds = [nc.responsible_user_id, nc.approved_by_user_id].filter(Boolean);
@@ -135,12 +136,13 @@ class NonConformitiesService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Usuário não autenticado");
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("company_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile?.company_id) throw new Error("Company ID não encontrado");
 
     // Generate NC number
@@ -159,9 +161,10 @@ class NonConformitiesService {
         company_id: profile.company_id,
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar não conformidade: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar não conformidade');
 
     // Auto-create approval request if workflow exists
     try {
@@ -185,9 +188,10 @@ class NonConformitiesService {
       .update(updateData)
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar não conformidade: ${error.message}`);
+    if (!data) throw new Error('Não conformidade não encontrada');
     return data as NonConformity;
   }
 
@@ -307,9 +311,14 @@ class NonConformitiesService {
         .eq("workflow_type", entityType)
         .eq("company_id", companyId)
         .eq("is_active", true)
-        .single();
+        .maybeSingle();
 
-      if (workflowError || !workflow) {
+      if (workflowError) {
+        console.log("Error fetching workflow:", workflowError);
+        return null;
+      }
+      
+      if (!workflow) {
         console.log("No active workflow found for", entityType);
         return null;
       }
@@ -327,9 +336,10 @@ class NonConformitiesService {
           current_step: 1
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (requestError) throw requestError;
+      if (requestError) throw new Error(`Erro ao criar solicitação de aprovação: ${requestError.message}`);
+      if (!approvalRequest) throw new Error('Não foi possível criar solicitação de aprovação');
 
       // Create approval steps
       const steps = Array.isArray(workflow.steps) ? workflow.steps : [];
@@ -357,12 +367,13 @@ class NonConformitiesService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Usuário não autenticado");
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("company_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     if (!profile?.company_id) throw new Error("Company ID não encontrado");
 
     // Create approval request
@@ -376,9 +387,10 @@ class NonConformitiesService {
         requested_by_user_id: user.id
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (requestError) throw requestError;
+    if (requestError) throw new Error(`Erro ao criar workflow de aprovação: ${requestError.message}`);
+    if (!approvalRequest) throw new Error('Não foi possível criar workflow de aprovação');
 
     // Create approval steps
     const steps = approvers.map((approverId, index) => ({

@@ -169,11 +169,13 @@ class LMSService {
         throw new Error('Usuário não autenticado');
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', userResponse.user.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
 
       if (!profile?.company_id) {
         throw new Error('Perfil do usuário não encontrado');
@@ -196,7 +198,13 @@ class LMSService {
           created_by_user_id: userResponse.user.id
         }])
         .select()
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error creating course:', error);
+        throw new Error(`Erro ao criar curso: ${error.message}`);
+      }
+      if (!data) throw new Error('Não foi possível criar o curso');
 
       if (error) {
         console.error('Error creating course:', error);
@@ -217,11 +225,10 @@ class LMSService {
       .update(courseData)
       .eq('id', courseId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao atualizar curso: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao atualizar curso: ${error.message}`);
+    if (!data) throw new Error('Curso não encontrado');
 
     return data;
   }
@@ -269,11 +276,10 @@ class LMSService {
         passing_score: moduleData.passing_score
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao criar módulo: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao criar módulo: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o módulo');
 
     return data;
   }
@@ -284,11 +290,10 @@ class LMSService {
       .update(moduleData)
       .eq('id', moduleId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao atualizar módulo: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao atualizar módulo: ${error.message}`);
+    if (!data) throw new Error('Módulo não encontrado');
 
     return data;
   }
@@ -344,11 +349,10 @@ class LMSService {
         allow_review: assessmentData.allow_review || true
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao criar avaliação: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao criar avaliação: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a avaliação');
 
     return data;
   }
@@ -368,11 +372,10 @@ class LMSService {
         correct_answer: questionData.correct_answer
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao criar questão: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao criar questão: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a questão');
 
     return data;
   }
@@ -410,28 +413,30 @@ class LMSService {
 
   async enrollEmployee(courseId: string, employeeId: string, assignedByUserId?: string): Promise<CourseEnrollment> {
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      if (!profile) throw new Error('Perfil não encontrado');
 
       const { data, error } = await supabase
         .from('course_enrollments')
         .insert([{
           course_id: courseId,
           employee_id: employeeId,
-          company_id: profile?.company_id,
+          company_id: profile.company_id,
           assigned_by_user_id: assignedByUserId,
           enrollment_date: new Date().toISOString(),
           status: 'enrolled'
         }])
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        throw new Error(`Erro ao matricular funcionário: ${error.message}`);
-      }
+      if (error) throw new Error(`Erro ao matricular funcionário: ${error.message}`);
+      if (!data) throw new Error('Não foi possível matricular funcionário');
 
       return data;
     } catch (error) {
@@ -446,11 +451,10 @@ class LMSService {
       .update(progressData)
       .eq('id', enrollmentId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao atualizar progresso: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao atualizar progresso: ${error.message}`);
+    if (!data) throw new Error('Matrícula não encontrada');
 
     return data;
   }
@@ -483,11 +487,10 @@ class LMSService {
         score: progressData.score
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao atualizar progresso do módulo: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao atualizar progresso do módulo: ${error.message}`);
+    if (!data) throw new Error('Não foi possível atualizar progresso do módulo');
 
     return data;
   }
@@ -515,11 +518,10 @@ class LMSService {
         answers: {}
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao iniciar tentativa: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao iniciar tentativa: ${error.message}`);
+    if (!data) throw new Error('Não foi possível iniciar tentativa');
 
     return data;
   }
@@ -534,11 +536,10 @@ class LMSService {
       })
       .eq('id', attemptId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      throw new Error(`Erro ao submeter tentativa: ${error.message}`);
-    }
+    if (error) throw new Error(`Erro ao submeter tentativa: ${error.message}`);
+    if (!data) throw new Error('Tentativa não encontrada');
 
     return data;
   }
@@ -564,11 +565,14 @@ class LMSService {
         throw new Error('Usuário não autenticado');
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', userResponse.user.id)
-        .single();
+        .maybeSingle();
+
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      if (!profile) throw new Error('Perfil não encontrado');
 
       const { data, error } = await supabase
         .from('learning_paths')
@@ -576,15 +580,14 @@ class LMSService {
           title: pathData.title || 'Nova Trilha de Aprendizagem',
           description: pathData.description,
           courses: pathData.courses || [],
-          company_id: profile?.company_id,
+          company_id: profile.company_id,
           created_by_user_id: userResponse.user.id
         }])
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        throw new Error(`Erro ao criar trilha: ${error.message}`);
-      }
+      if (error) throw new Error(`Erro ao criar trilha: ${error.message}`);
+      if (!data) throw new Error('Não foi possível criar trilha de aprendizagem');
 
       return data;
     } catch (error) {

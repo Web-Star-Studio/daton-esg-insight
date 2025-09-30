@@ -72,11 +72,14 @@ export interface SuggestedValue {
 
 // Helper functions
 const getCompanyId = async (): Promise<string> => {
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('company_id')
-    .single();
-  return profile?.company_id || '';
+    .maybeSingle();
+  
+  if (error) throw new Error(`Erro ao buscar company_id: ${error.message}`);
+  if (!profile) throw new Error('Perfil não encontrado');
+  return profile.company_id || '';
 };
 
 const getCurrentUserId = async (): Promise<string> => {
@@ -117,12 +120,13 @@ export async function createIndicatorMapping(mapping: Partial<GRIIndicatorMappin
     .from('gri_indicator_mappings')
     .insert(mapping as any)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating indicator mapping:', error);
-    throw error;
+    throw new Error(`Erro ao criar mapeamento de indicador: ${error.message}`);
   }
+  if (!data) throw new Error('Não foi possível criar mapeamento de indicador');
 
   return data;
 }
@@ -133,12 +137,13 @@ export async function updateIndicatorMapping(id: string, updates: Partial<GRIInd
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error updating indicator mapping:', error);
-    throw error;
+    throw new Error(`Erro ao atualizar mapeamento de indicador: ${error.message}`);
   }
+  if (!data) throw new Error('Mapeamento de indicador não encontrado');
 
   return data;
 }
@@ -190,12 +195,13 @@ export async function createIndicatorTarget(target: Partial<GRIIndicatorTarget>)
     .from('gri_indicator_targets')
     .insert(targetData)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating indicator target:', error);
-    throw error;
+    throw new Error(`Erro ao criar meta de indicador: ${error.message}`);
   }
+  if (!data) throw new Error('Não foi possível criar meta de indicador');
 
   return data;
 }
@@ -206,12 +212,13 @@ export async function updateIndicatorTarget(id: string, updates: Partial<GRIIndi
     .update(updates)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error updating indicator target:', error);
-    throw error;
+    throw new Error(`Erro ao atualizar meta de indicador: ${error.message}`);
   }
+  if (!data) throw new Error('Meta de indicador não encontrada');
 
   return data;
 }
@@ -283,12 +290,13 @@ export async function createIndicatorEvidence(evidence: Partial<GRIIndicatorEvid
     .from('gri_indicator_evidence')
     .insert(evidenceData)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating indicator evidence:', error);
-    throw error;
+    throw new Error(`Erro ao criar evidência de indicador: ${error.message}`);
   }
+  if (!data) throw new Error('Não foi possível criar evidência de indicador');
 
   return data;
 }
@@ -324,12 +332,13 @@ export async function createIndicatorHistory(history: Partial<GRIIndicatorHistor
     .from('gri_indicator_history')
     .insert(historyData)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error creating indicator history:', error);
-    throw error;
+    throw new Error(`Erro ao criar histórico de indicador: ${error.message}`);
   }
+  if (!data) throw new Error('Não foi possível criar histórico de indicador');
 
   return data;
 }
