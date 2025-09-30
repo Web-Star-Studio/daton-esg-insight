@@ -340,6 +340,7 @@ const App = () => (
             <Route path="/quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
             <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
+            <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/gerenciamento-projetos" element={<LazyPageWrapper><GerenciamentoProjetos /></LazyPageWrapper>} />
             <Route path="/auditorias-internas" element={<Navigate to="/auditoria" replace />} />
             <Route path="/acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />

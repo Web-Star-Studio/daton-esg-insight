@@ -15,7 +15,8 @@ import {
   Zap, 
   Brain,
   BarChart3,
-  Grid3X3
+  Grid3X3,
+  Activity
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
@@ -25,6 +26,7 @@ import QualityIndicatorDashboard from './QualityIndicatorDashboard';
 import QualityPerformanceWidget from './QualityPerformanceWidget';
 import QualityTrendsAnalyzer from './QualityTrendsAnalyzer';
 import { PredictiveQualityWidget } from './PredictiveQualityWidget';
+import SGQDashboardWidget from './SGQDashboardWidget';
 
 export const UnifiedQualityDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
@@ -76,11 +78,16 @@ export const UnifiedQualityDashboard: React.FC = () => {
 
       {/* Main Dashboard */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-8">
           <TabsTrigger value="overview" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden lg:inline">Visão Geral</span>
             <span className="lg:hidden">Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="sgq" className="flex items-center space-x-2">
+            <Activity className="h-4 w-4" />
+            <span className="hidden lg:inline">SGQ Widget</span>
+            <span className="lg:hidden">SGQ</span>
           </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center space-x-2">
             <TrendingUp className="h-4 w-4" />
@@ -230,6 +237,15 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="sgq" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SGQDashboardWidget />
+            <div className="space-y-6">
+              <PredictiveQualityWidget className="h-auto" />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="performance">

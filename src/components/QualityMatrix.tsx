@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Activity, Shield, TrendingUp, Bell } from 'lucide-react';
-import { qualityManagementService } from '@/services/qualityManagement';
+import { unifiedQualityService } from '@/services/unifiedQualityService';
 import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,13 +22,13 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   
   const { data: matrices, error: matricesError } = useQuery({
     queryKey: ['risk-matrices'],
-    queryFn: () => qualityManagementService.getRiskMatrices(),
+    queryFn: () => unifiedQualityService.getRiskMatrices(),
     retry: 1,
   });
 
   const { data: riskMatrix, isLoading, error: matrixError } = useQuery({
     queryKey: ['risk-matrix', selectedMatrixId],
-    queryFn: () => qualityManagementService.getRiskMatrix(selectedMatrixId),
+    queryFn: () => unifiedQualityService.getRiskMatrix(selectedMatrixId),
     enabled: !!selectedMatrixId,
     retry: 1,
   });

@@ -14,19 +14,19 @@ import {
   FileText,
   ArrowRight
 } from 'lucide-react';
-import { qualityManagementService } from '@/services/qualityManagement';
+import { unifiedQualityService } from '@/services/unifiedQualityService';
 
 const SGQDashboardWidget = () => {
   const { data: dashboard, isLoading: isDashboardLoading, error: dashboardError } = useQuery({
     queryKey: ['sgq-dashboard-widget'],
-    queryFn: () => qualityManagementService.getQualityDashboard(),
+    queryFn: () => unifiedQualityService.getQualityDashboard(),
     refetchInterval: 30000,
     retry: 1,
   });
 
   const { data: indicators, isLoading: isIndicatorsLoading, error: indicatorsError } = useQuery({
     queryKey: ['sgq-indicators-widget'],
-    queryFn: () => qualityManagementService.getQualityIndicators(),
+    queryFn: () => unifiedQualityService.getQualityIndicators(),
     refetchInterval: 30000,
     retry: 1,
   });

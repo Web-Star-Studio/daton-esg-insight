@@ -20,7 +20,7 @@ import {
   Users,
   Zap
 } from 'lucide-react';
-import { qualityManagementService } from '@/services/qualityManagement';
+import { unifiedQualityService } from '@/services/unifiedQualityService';
 import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,7 +30,7 @@ const AIQualityInsights = () => {
   
   const { data: dashboard, isLoading: isDashboardLoading } = useQuery({
     queryKey: ['quality-dashboard'],
-    queryFn: () => qualityManagementService.getQualityDashboard(),
+    queryFn: () => unifiedQualityService.getQualityDashboard(),
     refetchInterval: 60000, // Reduced frequency to improve performance
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
@@ -38,7 +38,7 @@ const AIQualityInsights = () => {
 
   const { data: indicators, isLoading: isIndicatorsLoading } = useQuery({
     queryKey: ['quality-indicators'],
-    queryFn: () => qualityManagementService.getQualityIndicators(),
+    queryFn: () => unifiedQualityService.getQualityIndicators(),
     refetchInterval: 60000, // Reduced frequency
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,

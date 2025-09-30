@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { enhancedQualityService } from "./enhancedQualityService";
+import { unifiedQualityService } from "./unifiedQualityService";
 
 export interface ReportInsight {
   id: string;
@@ -42,7 +42,7 @@ class IntelligentReportingService {
 
     try {
       // Get quality metrics for AI analysis
-      const qualityMetrics = await enhancedQualityService.getQualityMetrics();
+      const qualityMetrics = await unifiedQualityService.getQualityMetrics();
       
       // Generate quality-related insights
       if (reportType === 'quality' || reportType === 'esg') {

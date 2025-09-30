@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, TrendingUp, TrendingDown, Brain, Target } from 'lucide-react';
-import { enhancedQualityService } from '@/services/enhancedQualityService';
+import { unifiedQualityService } from '@/services/unifiedQualityService';
 
 interface PredictiveQualityWidgetProps {
   className?: string;
@@ -14,20 +14,20 @@ interface PredictiveQualityWidgetProps {
 export const PredictiveQualityWidget: React.FC<PredictiveQualityWidgetProps> = ({ className }) => {
   const { data: metrics, isLoading: isMetricsLoading } = useQuery({
     queryKey: ['quality-metrics'],
-    queryFn: () => enhancedQualityService.getQualityMetrics(),
+    queryFn: () => unifiedQualityService.getQualityMetrics(),
     refetchInterval: 60000, // Refresh every minute
   });
 
   const { data: predictions, isLoading: isPredictionsLoading } = useQuery({
     queryKey: ['predictive-analysis', metrics],
-    queryFn: () => metrics ? enhancedQualityService.getPredictiveAnalysis(metrics) : null,
+    queryFn: () => metrics ? unifiedQualityService.getPredictiveAnalysis() : null,
     enabled: !!metrics,
     refetchInterval: 120000, // Refresh every 2 minutes
   });
 
   const { data: trends } = useQuery({
     queryKey: ['quality-trends'],
-    queryFn: () => enhancedQualityService.getQualityTrends('7d'),
+    queryFn: () => unifiedQualityService.getQualityTrends('7d'),
     refetchInterval: 300000, // Refresh every 5 minutes
   });
 

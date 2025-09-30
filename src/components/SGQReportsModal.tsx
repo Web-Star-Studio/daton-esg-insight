@@ -20,7 +20,7 @@ import {
   Filter,
   Settings
 } from 'lucide-react';
-import { qualityManagementService } from '@/services/qualityManagement';
+import { unifiedQualityService } from '@/services/unifiedQualityService';
 
 interface SGQReportsModalProps {
   children: React.ReactNode;
@@ -33,17 +33,17 @@ const SGQReportsModal: React.FC<SGQReportsModalProps> = ({ children }) => {
 
   const { data: dashboard } = useQuery({
     queryKey: ['quality-dashboard'],
-    queryFn: () => qualityManagementService.getQualityDashboard(),
+    queryFn: () => unifiedQualityService.getQualityDashboard(),
   });
 
   const { data: ncStats } = useQuery({
     queryKey: ['nc-stats'],
-    queryFn: () => qualityManagementService.getNonConformityStats(),
+    queryFn: () => unifiedQualityService.getNonConformityStats(),
   });
 
   const { data: actionPlansProgress } = useQuery({
     queryKey: ['action-plans-progress'],
-    queryFn: () => qualityManagementService.getActionPlansProgress(),
+    queryFn: () => unifiedQualityService.getActionPlansProgress(),
   });
 
   const reportTypes = [
