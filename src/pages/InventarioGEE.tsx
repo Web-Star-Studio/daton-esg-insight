@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { errorHandler } from "@/utils/errorHandler";
+import { logger } from "@/utils/logger";
 import { 
   Building2, 
   Factory, 
@@ -196,12 +198,14 @@ const InventarioGEE = () => {
       setEmissionSources(sourcesData)
       setStats(statsData)
     } catch (error) {
-      console.error('Erro ao carregar dados:', error)
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados do inventário",
-        variant: "destructive",
-      })
+      logger.error('Erro ao carregar dados do inventário', error as Error, {
+        component: 'InventarioGEE',
+        action: 'loadData'
+      });
+      errorHandler.showUserError(error, {
+        component: 'InventarioGEE',
+        function: 'loadData'
+      });
     } finally {
       setIsLoading(false)
     }
@@ -217,12 +221,15 @@ const InventarioGEE = () => {
           description: "Fonte de emissão excluída com sucesso!",
         })
       } catch (error) {
-        console.error('Erro ao excluir fonte:', error)
-        toast({
-          title: "Erro",
-          description: "Erro ao excluir fonte de emissão",
-          variant: "destructive",
-        })
+        logger.error('Erro ao excluir fonte de emissão', error as Error, {
+          component: 'InventarioGEE',
+          action: 'deleteSource',
+          metadata: { sourceId: id }
+        });
+        errorHandler.showUserError(error, {
+          component: 'InventarioGEE',
+          function: 'handleDeleteSource'
+        });
       }
     }
   }

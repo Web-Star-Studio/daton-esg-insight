@@ -20,6 +20,8 @@ import {
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { analyticsService, AnalyticsData, UserActivityData, SystemPerformanceData } from '@/services/analyticsService';
 import { toast } from 'sonner';
+import { errorHandler } from '@/utils/errorHandler';
+import { logger } from '@/utils/logger';
 
 const AdvancedAnalytics = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
@@ -55,8 +57,14 @@ const AdvancedAnalytics = () => {
       setUserActivityData(userActivity);
       setSystemPerformanceData(systemPerformance);
     } catch (error) {
-      console.error('Error loading analytics:', error);
-      toast.error('Erro ao carregar dados de analytics');
+      logger.error('Erro ao carregar analytics', error as Error, {
+        component: 'AdvancedAnalytics',
+        action: 'loadAnalyticsData'
+      });
+      errorHandler.showUserError(error, {
+        component: 'AdvancedAnalytics',
+        function: 'loadAnalyticsData'
+      });
     } finally {
       setIsLoading(false);
     }
