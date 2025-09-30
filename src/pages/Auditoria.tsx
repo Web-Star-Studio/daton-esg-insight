@@ -639,6 +639,7 @@ export default function Auditoria() {
       <AuditModal
         isOpen={isAuditModalOpen}
         onClose={() => setIsAuditModalOpen(false)}
+        onSuccess={handleAuditCreated}
       />
 
       {selectedAudit && (

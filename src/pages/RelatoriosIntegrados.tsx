@@ -506,7 +506,7 @@ export default function RelatoriosIntegrados() {
             setSelectedGRIReport(null);
           }}
           report={selectedGRIReport}
-          onUpdate={handleGRIReportUpdated}
+          onUpdate={() => loadGRIReports()}
         />
       )}
     </div>
