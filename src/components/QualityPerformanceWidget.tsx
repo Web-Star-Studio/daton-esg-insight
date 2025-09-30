@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -25,7 +25,7 @@ interface QualityPerformanceWidgetProps {
   className?: string;
 }
 
-export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> = ({ 
+const QualityPerformanceWidgetComponent: React.FC<QualityPerformanceWidgetProps> = ({
   className 
 }) => {
   // Mock data with performance calculations
@@ -86,7 +86,7 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
     }
   ], []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'excellent': return 'text-success';
       case 'good': return 'text-primary';
@@ -94,9 +94,9 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
       case 'critical': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
-  };
+  }, []);
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = useCallback((status: string) => {
     switch (status) {
       case 'excellent':
       case 'good':
@@ -107,16 +107,16 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
       default:
         return <Target className="h-4 w-4" />;
     }
-  };
+  }, []);
 
-  const getProgressValue = (metric: QualityMetric) => {
+  const getProgressValue = useCallback((metric: QualityMetric) => {
     if (metric.id === 'defect-rate' || metric.id === 'cost-of-quality' || metric.id === 'avg-resolution-time') {
       // Para métricas onde menor é melhor
       return Math.max(0, Math.min(100, ((metric.target / metric.value) * 100)));
     }
     // Para métricas onde maior é melhor
     return Math.max(0, Math.min(100, (metric.value / metric.target) * 100));
-  };
+  }, []);
 
   const overallScore = useMemo(() => {
     const scores = qualityMetrics.map(getProgressValue);
@@ -251,4 +251,6 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
   );
 };
 
+// Export memoized component
+export const QualityPerformanceWidget = memo(QualityPerformanceWidgetComponent);
 export default QualityPerformanceWidget;

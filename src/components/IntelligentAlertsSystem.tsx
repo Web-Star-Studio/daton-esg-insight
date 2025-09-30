@@ -6,7 +6,7 @@ import {
   Bell, 
   AlertTriangle, 
   Calendar, 
-  FileText, 
+  FileText,
   RefreshCw,
   CheckCircle,
   Clock,
@@ -14,12 +14,13 @@ import {
   TrendingUp,
   Shield
 } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCriticalAlerts, getUpcomingConditions, resolveAlert } from "@/services/licenseAI";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, memo } from "react";
+import { useSmartCache } from "@/hooks/useSmartCache";
 
 interface AlertPrediction {
   type: 'renewal_urgent' | 'condition_overdue' | 'document_missing' | 'regulatory_change';
@@ -30,11 +31,12 @@ interface AlertPrediction {
   recommendations: string[];
 }
 
-export function IntelligentAlertsSystem() {
+const IntelligentAlertsSystemComponent = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: criticalAlerts, isLoading: alertsLoading, error: alertsError } = useQuery({
+  // Smart cache for critical alerts (high priority)
+  const { data: criticalAlerts = [], isLoading: alertsLoading } = useSmartCache({
     queryKey: ['critical-alerts'],
     queryFn: async () => {
       try {
@@ -49,16 +51,17 @@ export function IntelligentAlertsSystem() {
         return [];
       }
     },
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    priority: 'high',
+    staleTime: 30000,
+    backgroundRefetch: true,
   });
 
-  const { data: upcomingConditions, isLoading: conditionsLoading, error: conditionsError } = useQuery({
+  // Smart cache for upcoming conditions (high priority)
+  const { data: upcomingConditions = [], isLoading: conditionsLoading } = useSmartCache({
     queryKey: ['upcoming-conditions'],
     queryFn: async () => {
       try {
-        return await getUpcomingConditions(60); // 60 dias
+        return await getUpcomingConditions(60);
       } catch (error) {
         console.error('Erro ao carregar condições próximas:', error);
         toast({
@@ -69,7 +72,9 @@ export function IntelligentAlertsSystem() {
         return [];
       }
     },
-    retry: 2,
+    priority: 'high',
+    staleTime: 60000,
+    preloadRelated: [['critical-alerts']],
   });
 
   const resolveAlertMutation = useMutation({
@@ -450,8 +455,11 @@ export function IntelligentAlertsSystem() {
                 })}
             </div>
           </CardContent>
-        </Card>
-      )}
+      </Card>
+        )}
     </div>
   );
-}
+};
+
+// Export memoized component
+export const IntelligentAlertsSystem = memo(IntelligentAlertsSystemComponent);
