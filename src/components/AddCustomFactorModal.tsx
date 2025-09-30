@@ -102,7 +102,7 @@ export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModa
 
   const onSubmit = async (data: CustomFactorData) => {
     try {
-      console.log("Criando fator customizado:", { ...data, vigencia: dateRange })
+      
       
       // Prepare the data for creation
       const factorData = {
@@ -133,7 +133,6 @@ export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModa
       }
       
     } catch (error) {
-      console.error('Erro ao criar fator:', error);
       toast({
         title: "Erro",
         description: "Erro ao criar fator de emissão. Tente novamente.",

@@ -91,14 +91,10 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
         reporting_period_end: format(endDate, 'yyyy-MM-dd'),
       };
 
-      console.log('Criando relatório GRI:', reportData);
       const newReport = await createGRIReport(reportData);
-      console.log('Relatório criado:', newReport);
 
       if (newReport?.id) {
-        console.log('Inicializando relatório GRI:', newReport.id);
         await initializeGRIReport(newReport.id);
-        console.log('Relatório inicializado com sucesso');
 
         toast({
           title: "Sucesso",
@@ -117,7 +113,6 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
         setDuplicateReport(null);
       }
     } catch (error: any) {
-      console.error('Erro na inserção do relatório GRI:', error);
       
       // Handle duplicate key error specifically
       if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('já existe')) {

@@ -30,7 +30,6 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
   const createMutation = useMutation({
     mutationFn: (data: CreateAuditData) => auditService.createAudit(data),
     onSuccess: (data) => {
-      console.log('Audit created successfully in component:', data);
       toast({
         title: "Auditoria criada com sucesso",
         description: `A auditoria "${data.title}" foi adicionada ao sistema.`
@@ -39,7 +38,6 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       resetForm();
     },
     onError: (error: any) => {
-      console.error('Error creating audit in component:', error);
       toast({
         title: "Erro ao criar auditoria",
         description: error.message || "Ocorreu um erro inesperado.",

@@ -52,19 +52,14 @@ export const AIExtractionDashboard: React.FC<AIExtractionDashboardProps> = ({ cl
       setLoading(true);
       setError(null);
       
-      console.log('Loading AI extraction dashboard data...');
-      
       const [jobsData, pendingData, statsData] = await Promise.all([
         getExtractionJobs().catch(err => {
-          console.warn('Jobs fetch failed:', err);
           return [];
         }),
         getPendingExtractions().catch(err => {
-          console.warn('Pending extractions fetch failed (might be FK issue):', err);
           return [];
         }),
         getAIProcessingStats().catch(err => {
-          console.warn('Stats fetch failed:', err);
           return {
             totalProcessed: 0,
             pendingApproval: 0,
@@ -79,14 +74,7 @@ export const AIExtractionDashboard: React.FC<AIExtractionDashboardProps> = ({ cl
       setPendingExtractions(pendingData);
       setStats(statsData);
       
-      console.log('Dashboard data loaded:', {
-        jobs: jobsData.length,
-        pending: pendingData.length,
-        stats: statsData
-      });
-      
     } catch (error) {
-      console.error('Error loading AI extraction data:', error);
       setError('Erro ao carregar dados de extração IA. Verifique a conectividade.');
       toast.error('Erro ao carregar dados de extração IA');
     } finally {

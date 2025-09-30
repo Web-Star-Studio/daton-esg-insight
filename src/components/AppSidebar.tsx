@@ -118,7 +118,7 @@ const menuSections: MenuSection[] = [
       { id: "governance-panel", title: "Painel de Governança", icon: Shield, path: "/painel-governanca", description: "Visão geral da governança corporativa" },
       { id: "risk-management", title: "Gestão de Riscos", icon: AlertTriangle, path: "/gestao-riscos", description: "Identificação e mitigação de riscos" },
       { id: "compliance-policies", title: "Compliance e Políticas", icon: Scale, path: "/compliance", description: "Conformidade regulatória e políticas" },
-      { id: "audits", title: "Auditorias", icon: CheckCircle, path: "/auditorias", description: "Gestão de auditorias internas e externas" }
+      { id: "audits", title: "Auditorias", icon: CheckCircle, path: "/auditoria", description: "Gestão de auditorias internas e externas" }
     ]
   },
   {
@@ -131,7 +131,7 @@ const menuSections: MenuSection[] = [
       { id: "strategic-planning", title: "Planejamento Estratégico", icon: Target, path: "/planejamento-estrategico", description: "Definição de estratégias organizacionais" },
       { id: "process-mapping", title: "Mapeamento de Processos", icon: Workflow, path: "/mapeamento-processos", description: "Documentação e otimização de processos" },
       { id: "non-conformities", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades", description: "Gestão de não conformidades e ações corretivas" },
-      { id: "internal-audits", title: "Auditorias Internas", icon: Search, path: "/auditorias-internas", description: "Auditorias do sistema de qualidade" },
+      { id: "internal-audits", title: "Auditorias Internas", icon: Search, path: "/auditoria", description: "Auditorias do sistema de qualidade" },
       { id: "corrective-actions", title: "Ações Corretivas", icon: CheckSquare, path: "/acoes-corretivas", description: "Planos de ação e melhorias" },
       { id: "document-control", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Versionamento e controle documental" },
       { id: "supplier-evaluation", title: "Avaliação de Fornecedores", icon: Users2, path: "/avaliacao-fornecedores", description: "Qualificação e monitoramento de fornecedores" }

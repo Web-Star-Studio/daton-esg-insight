@@ -149,7 +149,6 @@ export function AdvancedReporting() {
       const productionData = await generateProductionReportData(template)
       setReportData(productionData)
     } catch (error) {
-      console.error('Error generating report:', error)
     } finally {
       setIsGenerating(false)
     }
@@ -292,7 +291,6 @@ export function AdvancedReporting() {
         ]
       }
     } catch (error) {
-      console.error('Error generating production report data:', error)
       throw error
     }
   }
@@ -357,7 +355,6 @@ export function AdvancedReporting() {
 
   const downloadReport = (format: string) => {
     // Simulate report download
-    console.log(`Downloading report in ${format} format`)
     
     // In a real implementation, this would generate and download the actual file
     const link = document.createElement('a')
@@ -369,7 +366,6 @@ export function AdvancedReporting() {
   }
 
   const scheduleReport = () => {
-    console.log('Scheduling automated report generation')
     // Implementation for report scheduling
   }
 
