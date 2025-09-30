@@ -13,7 +13,8 @@ import {
   Plus,
   TrendingUp,
   AlertTriangle,
-  Activity
+  Activity,
+  UserCheck
 } from "lucide-react";
 import { getEmployees, getEmployeesStats } from "@/services/employees";
 import { getSafetyIncidents, getSafetyMetrics } from "@/services/safetyIncidents";
@@ -82,13 +83,12 @@ export default function SocialESG() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="employees">Colaboradores</TabsTrigger>
-          <TabsTrigger value="safety">Saúde & Segurança</TabsTrigger>
-          <TabsTrigger value="training">Desenvolvimento</TabsTrigger>
-          <TabsTrigger value="social">Impacto Social</TabsTrigger>
-        </TabsList>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="employees">Gestão de Pessoas</TabsTrigger>
+            <TabsTrigger value="safety">Saúde & Segurança</TabsTrigger>
+            <TabsTrigger value="social">Impacto Social</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -249,59 +249,91 @@ export default function SocialESG() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="safety" className="space-y-6">
-          <Card>
+        <TabsContent value="employees" className="space-y-6">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/gestao-funcionarios'}>
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Saúde e Segurança</CardTitle>
-                  <CardDescription>Gestão de incidentes e indicadores de segurança</CardDescription>
-                </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Registrar Incidente
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-6 w-6" />
+                Gestão de Funcionários
+                <Button variant="ghost" size="sm" className="ml-auto">
+                  Acessar →
                 </Button>
-              </div>
+              </CardTitle>
+              <CardDescription>
+                Sistema completo de gestão de recursos humanos
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Shield className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Saúde e Segurança</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para gestão de SST
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá registro de incidentes, indicadores LTIFR, TRIFR e programas de segurança
-                </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">
+                    {employeesStats?.totalEmployees || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Funcionários</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">
+                    {employeesStats?.departments || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Departamentos</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">
+                    {employeesStats?.activeEmployees || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Ativos</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-primary">
+                    R$ {employeesStats?.avgSalary?.toLocaleString() || '0'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Salário Médio</div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="training" className="space-y-6">
-          <Card>
+        <TabsContent value="safety" className="space-y-6">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/seguranca-trabalho'}>
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Desenvolvimento e Treinamento</CardTitle>
-                  <CardDescription>Programas de capacitação e desenvolvimento</CardDescription>
-                </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Programa
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-6 w-6" />
+                Segurança do Trabalho
+                <Button variant="ghost" size="sm" className="ml-auto">
+                  Acessar →
                 </Button>
-              </div>
+              </CardTitle>
+              <CardDescription>
+                Sistema completo de SST e bem-estar
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Desenvolvimento</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para gestão de treinamentos
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá programas de treinamento, avaliações, certificações e planos de desenvolvimento
-                </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {safetyMetrics?.ltifr?.toFixed(2) || '0.00'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">LTIFR</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {safetyMetrics?.totalIncidents || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Incidentes</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {safetyMetrics?.withMedicalTreatment || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Com Atendimento</div>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {safetyMetrics?.daysLostTotal || 0}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Dias Perdidos</div>
+                </div>
               </div>
             </CardContent>
           </Card>

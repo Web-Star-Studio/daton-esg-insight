@@ -104,10 +104,11 @@ const menuSections: MenuSection[] = [
     id: "social",
     title: "SOCIAL (S)",
     items: [
-      { id: "social-panel", title: "Painel Social", icon: Users, path: "/painel-social", description: "Visão geral dos aspectos sociais" },
-      { id: "employee-management", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão de recursos humanos" },
-      { id: "health-safety", title: "Saúde e Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
-      { id: "training-development", title: "Treinamentos e Desenvolvimento", icon: GraduationCap, path: "/gestao-treinamentos", description: "Capacitação e desenvolvimento profissional" }
+      { id: "social-dashboard", title: "Dashboard Social", icon: Users, path: "/social-esg", description: "Visão geral consolidada dos aspectos sociais" },
+      { id: "employee-management", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão completa de recursos humanos" },
+      { id: "health-safety", title: "Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
+      { id: "training-management", title: "Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos", description: "Gestão de capacitação e treinamentos" },
+      { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" }
     ]
   },
   {

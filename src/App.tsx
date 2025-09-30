@@ -106,7 +106,6 @@ const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 // Lazy loading para páginas de compatibilidade/redirect
 const PainelPrincipal = lazy(() => import("./pages/PainelPrincipal"));
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
-const PainelSocial = lazy(() => import("./pages/PainelSocial"));
 const PainelGovernanca = lazy(() => import("./pages/PainelGovernanca"));
 
 // Backward-compat alias
@@ -384,7 +383,7 @@ const App = () => (
             <Route path="/painel-gestao-esg" element={<Navigate to="/gestao-esg" replace />} />
             <Route path="/metas-sustentabilidade" element={<Navigate to="/metas" replace />} />
             <Route path="/emissoes-gee" element={<LazyPageWrapper><EmissoesGEE /></LazyPageWrapper>} />
-            <Route path="/painel-social" element={<LazyPageWrapper><PainelSocial /></LazyPageWrapper>} />
+            <Route path="/painel-social" element={<Navigate to="/social-esg" replace />} />
             <Route path="/saude-seguranca-trabalho" element={<Navigate to="/seguranca-trabalho" replace />} />
             <Route path="/treinamentos-desenvolvimento" element={<Navigate to="/gestao-treinamentos" replace />} />
             <Route path="/painel-governanca" element={<LazyPageWrapper><PainelGovernanca /></LazyPageWrapper>} />

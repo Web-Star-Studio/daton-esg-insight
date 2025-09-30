@@ -36,7 +36,7 @@ const searchData: SearchResult[] = [
   { id: 'environmental-licensing', title: 'Licenciamento Ambiental', path: '/licenciamento', description: 'Gestão de licenças ambientais', category: 'Ambiental', icon: 'FileText', keywords: ['licenca', 'ambiental', 'regulatorio', 'permissoes'] },
 
   // SOCIAL (S)
-  { id: 'social-panel', title: 'Painel Social', path: '/painel-social', description: 'Visão geral dos aspectos sociais', category: 'Social', icon: 'Users', keywords: ['social', 'painel', 'aspectos', 'dashboard'] },
+  { id: 'social-dashboard', title: 'Dashboard Social', path: '/social-esg', description: 'Visão geral consolidada dos aspectos sociais', category: 'Social', icon: 'Users', keywords: ['social', 'dashboard', 'aspectos', 'painel'] },
   { id: 'employee-management', title: 'Gestão de Funcionários', path: '/gestao-funcionarios', description: 'Gestão de recursos humanos', category: 'Social', icon: 'Users', keywords: ['funcionarios', 'rh', 'recursos', 'humanos', 'colaboradores'] },
   { id: 'health-safety', title: 'Saúde e Segurança do Trabalho', path: '/saude-seguranca', description: 'SST e bem-estar dos colaboradores', category: 'Social', icon: 'Shield', keywords: ['saude', 'seguranca', 'sst', 'trabalho', 'bem-estar'] },
   { id: 'training-development', title: 'Treinamentos e Desenvolvimento', path: '/treinamentos', description: 'Capacitação e desenvolvimento profissional', category: 'Social', icon: 'Users', keywords: ['treinamento', 'capacitacao', 'educacao', 'desenvolvimento'] },

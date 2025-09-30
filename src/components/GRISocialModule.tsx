@@ -1,22 +1,30 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, ExternalLink } from "lucide-react";
 
 export function GRISocialModule() {
   return (
-    <Card>
+    <Card className="hover:shadow-md transition-shadow cursor-pointer">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-6 w-6" />
-          Módulo Social - Em Desenvolvimento
+          Indicadores Sociais GRI
         </CardTitle>
         <CardDescription>
-          Indicadores sociais GRI (401-418) - Funcionalidade em construção
+          Acesse o dashboard completo de gestão social
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground">
-          Este módulo será implementado para gerenciar indicadores sociais como emprego, saúde e segurança, treinamento e diversidade.
+        <p className="text-muted-foreground mb-4">
+          Gerencie todos os aspectos sociais: funcionários, segurança, treinamentos e impacto social.
         </p>
+        <Button 
+          onClick={() => window.location.href = '/social-esg'} 
+          className="w-full"
+        >
+          <ExternalLink className="mr-2 h-4 w-4" />
+          Acessar Dashboard Social
+        </Button>
       </CardContent>
     </Card>
   );
