@@ -800,4 +800,215 @@ TOTAL:                           734 linhas
 ✅ **Escalabilidade**: Estrutura pronta para crescer
 ✅ **Padrões Estabelecidos**: Guia para futuras refatorações
 
-🔄 **Próximo**: Continuar com outros componentes grandes ou ETAPA 7 (Testes e Validação Final)
+🔄 **Próximo**: Continuar refatoração de outros componentes ou ETAPA 7 (Testes e Validação)
+
+---
+
+## 🎉 Conclusão da ETAPA 6.4
+
+✅ **LicenseDetails Refatorado**: COMPLETO
+- 686 → 140 linhas (80% redução)
+- 1 hook customizado criado (`useLicenseDetails`)
+- 6 componentes especializados criados
+- Lógica de dados isolada
+- Cards organizados em componentes
+
+### 6.4 Refatoração do LicenseDetails ✅
+
+**Antes:**
+- ❌ 686 linhas em um único arquivo
+- ❌ Lógica de queries misturada com UI
+- ❌ Múltiplos handlers inline
+- ❌ Cards grandes com muita lógica
+- ❌ Difícil testar isoladamente
+
+**Depois:**
+- ✅ 140 linhas no arquivo principal
+- ✅ Hook customizado para queries e handlers
+- ✅ 6 componentes especializados por card
+- ✅ Lógica de badges isolada nos componentes
+- ✅ Testabilidade melhorada
+
+### 6.4.1 Arquivos Criados
+
+#### Hook de Dados: `useLicenseDetails.ts`
+**Localização:** `src/hooks/data/useLicenseDetails.ts`
+
+**Responsabilidades:**
+- 3 queries (license, conditions, alerts)
+- Handlers de ações (update, resolve, download, view)
+- Estado do modal de upload
+- Refetch centralizado
+
+**Benefícios:**
+- ✅ Todas as queries em um lugar
+- ✅ Handlers reutilizáveis
+- ✅ Testável isoladamente
+
+#### Componentes de Card
+
+**1. `LicenseDetailsHeader.tsx`**
+**Localização:** `src/components/license/LicenseDetailsHeader.tsx`
+
+**Responsabilidades:**
+- Cabeçalho com nome da licença
+- Botões de ação (voltar, anexar, editar)
+- Estado de loading
+
+**2. `LicenseInfoCard.tsx`**
+**Localização:** `src/components/license/LicenseInfoCard.tsx`
+
+**Responsabilidades:**
+- Card com informações principais
+- Formatação de datas
+- Badges de status
+- 7 campos de informação
+
+**3. `LicenseConditionsCard.tsx`**
+**Localização:** `src/components/license/LicenseConditionsCard.tsx`
+
+**Responsabilidades:**
+- Lista de condicionantes
+- Badges de prioridade e status
+- Dropdown de ações
+- Indicador de IA
+
+**4. `LicenseAlertsCard.tsx`**
+**Localização:** `src/components/license/LicenseAlertsCard.tsx`
+
+**Responsabilidades:**
+- Lista de alertas
+- Badges de severidade
+- Botão de resolver alerta
+- Formatação de datas
+
+**5. `LicenseDocumentsCard.tsx`**
+**Localização:** `src/components/license/LicenseDocumentsCard.tsx`
+
+**Responsabilidades:**
+- Tabela de documentos
+- Ações (visualizar, baixar, excluir)
+- Estado vazio com CTA
+- Formatação de datas
+
+**6. `LicenseSidebar.tsx`**
+**Localização:** `src/components/license/LicenseSidebar.tsx`
+
+**Responsabilidades:**
+- Card de análise IA
+- Card de ações rápidas
+- Status de processamento
+- Scores de confiança
+
+### 6.4.2 Nova Estrutura de Pastas Atualizada
+
+```
+src/
+├── hooks/
+│   ├── data/
+│   │   ├── useInventoryData.ts           # Hook do inventário
+│   │   ├── useAnalyticsData.ts           # Hook de analytics
+│   │   └── useLicenseDetails.ts          # Hook de detalhes de licença
+│   └── navigation/
+│       └── useDocumentationNav.ts        # Hook de navegação
+├── components/
+│   ├── inventory/
+│   │   ├── InventoryHeader.tsx
+│   │   ├── InventoryFilters.tsx
+│   │   ├── InventoryCharts.tsx
+│   │   └── InventoryTable.tsx
+│   ├── analytics/
+│   │   ├── AnalyticsHeader.tsx
+│   │   ├── AnalyticsOverviewTab.tsx
+│   │   ├── AnalyticsEmissionsTab.tsx
+│   │   ├── AnalyticsQualityTab.tsx
+│   │   ├── AnalyticsComplianceTab.tsx
+│   │   └── AnalyticsPerformanceTab.tsx
+│   ├── documentation/
+│   │   ├── DocNavigation.tsx
+│   │   ├── DocOverviewSection.tsx
+│   │   ├── DocModulesSection.tsx
+│   │   ├── DocTechnologiesSection.tsx
+│   │   ├── DocBenefitsClientsSection.tsx
+│   │   ├── DocSecuritySupportSection.tsx
+│   │   └── DocRoadmapCTA.tsx
+│   └── license/
+│       ├── LicenseDetailsHeader.tsx      # Cabeçalho
+│       ├── LicenseInfoCard.tsx           # Card informações
+│       ├── LicenseConditionsCard.tsx     # Card condicionantes
+│       ├── LicenseAlertsCard.tsx         # Card alertas
+│       ├── LicenseDocumentsCard.tsx      # Card documentos
+│       └── LicenseSidebar.tsx            # Sidebar IA + ações
+└── pages/
+    ├── InventarioGEE.tsx                 # Orquestrador (277 linhas)
+    ├── AdvancedAnalytics.tsx             # Orquestrador (86 linhas)
+    ├── Documentacao.tsx                  # Orquestrador (76 linhas)
+    └── LicenseDetails.tsx                # Orquestrador (140 linhas)
+```
+
+### 6.4.3 Comparação Antes x Depois
+
+**Antes (686 linhas):**
+```typescript
+- 70 linhas de queries e hooks
+- 94 linhas de helper functions
+- 48 linhas de handlers
+- 194 linhas de info + conditions cards
+- 145 linhas de alerts + documents cards
+- 85 linhas de sidebar
+- 50 linhas de error states
+= TOTAL: 686 linhas
+```
+
+**Depois (distribuído):**
+```typescript
+useLicenseDetails.ts:          99 linhas (queries + handlers)
+LicenseDetailsHeader.tsx:      42 linhas (header)
+LicenseInfoCard.tsx:           70 linhas (info)
+LicenseConditionsCard.tsx:    136 linhas (conditions)
+LicenseAlertsCard.tsx:         90 linhas (alerts)
+LicenseDocumentsCard.tsx:     104 linhas (documents)
+LicenseSidebar.tsx:            86 linhas (sidebar)
+LicenseDetails.tsx:           140 linhas (orquestrador)
+----------------------------------------------------
+TOTAL:                        767 linhas
+```
+
+**Trade-off:** +81 linhas totais, MAS:
+- ✅ Cada arquivo < 140 linhas (muito mais legível)
+- ✅ Cards independentes e reutilizáveis
+- ✅ Lógica isolada no hook
+- ✅ Badges e formatação encapsulados
+- ✅ Fácil manutenção
+
+### Métricas de Impacto:
+- **Legibilidade**: ⭐⭐⭐⭐⭐ (5/5)
+- **Manutenibilidade**: ⭐⭐⭐⭐⭐ (5/5)
+- **Testabilidade**: ⭐⭐⭐⭐⭐ (5/5)
+- **Reutilização**: ⭐⭐⭐⭐⭐ (5/5)
+- **Performance**: ⭐⭐⭐⭐☆ (4/5)
+
+---
+
+## 📈 Resumo Geral da ETAPA 6 (Atualizado)
+
+### Componentes Refatorados (4/6):
+
+| Componente | Antes | Depois | Redução | Arquivos Criados |
+|------------|-------|--------|---------|------------------|
+| InventarioGEE | 792 linhas | 277 linhas | 65% | 1 hook + 4 componentes |
+| AdvancedAnalytics | 574 linhas | 86 linhas | 85% | 1 hook + 6 componentes |
+| Documentacao | 670 linhas | 76 linhas | 89% | 1 hook + 7 componentes |
+| LicenseDetails | 686 linhas | 140 linhas | 80% | 1 hook + 6 componentes |
+| **TOTAL** | **2722 linhas** | **579 linhas** | **79%** | **4 hooks + 23 componentes** |
+
+### Benefícios Consolidados:
+
+✅ **Redução Massiva**: 79% menos linhas nos arquivos principais
+✅ **Organização Clara**: 27 novos arquivos especializados  
+✅ **Manutenção Fácil**: Mudanças isoladas por arquivo
+✅ **Testabilidade**: Hooks e componentes testáveis
+✅ **Escalabilidade**: Estrutura pronta para crescer
+✅ **Padrões Estabelecidos**: Guia claro para refatorações
+
+🔄 **Próximo**: Continuar refatoração de outros componentes ou ETAPA 7 (Testes e Validação Final)
