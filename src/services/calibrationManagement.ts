@@ -95,13 +95,14 @@ export const useCreateCalibrationSchedule = () => {
   return useMutation({
     mutationFn: async (data: CreateCalibrationScheduleData) => {
       // Get user's company_id
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      if (!profile?.company_id) throw new Error('ID da empresa não encontrado');
 
       const { data: schedule, error } = await supabase
         .from('calibration_schedules')
@@ -110,9 +111,10 @@ export const useCreateCalibrationSchedule = () => {
           company_id: profile.company_id
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao criar cronograma de calibração: ${error.message}`);
+      if (!schedule) throw new Error('Não foi possível criar o cronograma de calibração');
       return schedule;
     },
     onSuccess: () => {
@@ -146,13 +148,14 @@ export const useCreateCalibrationRecord = () => {
   return useMutation({
     mutationFn: async (data: CreateCalibrationRecordData) => {
       // Get user's company_id
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      if (!profile?.company_id) throw new Error('ID da empresa não encontrado');
 
       const { data: record, error } = await supabase
         .from('calibration_records')
@@ -161,9 +164,10 @@ export const useCreateCalibrationRecord = () => {
           company_id: profile.company_id
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao criar registro de calibração: ${error.message}`);
+      if (!record) throw new Error('Não foi possível criar o registro de calibração');
 
       // Update schedule if linked
       if (data.schedule_id && data.next_calibration_date) {

@@ -58,12 +58,13 @@ export async function getAdvancedEmissionAnalytics(period: string): Promise<Anal
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuário não autenticado');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   if (!profile) throw new Error('Perfil não encontrado');
 
   // Calculate date range

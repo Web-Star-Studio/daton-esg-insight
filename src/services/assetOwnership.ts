@@ -99,13 +99,14 @@ export const useCreateOwnershipRecord = () => {
   return useMutation({
     mutationFn: async (data: CreateOwnershipRecordData) => {
       // Get user's company_id
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      if (!profile?.company_id) throw new Error('ID da empresa não encontrado');
 
       const { data: record, error } = await supabase
         .from('asset_ownership_records')
@@ -114,9 +115,10 @@ export const useCreateOwnershipRecord = () => {
           company_id: profile.company_id
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao criar registro de propriedade: ${error.message}`);
+      if (!record) throw new Error('Não foi possível criar o registro de propriedade');
       return record;
     },
     onSuccess: () => {
@@ -150,13 +152,14 @@ export const useCreateLoanAgreement = () => {
   return useMutation({
     mutationFn: async (data: CreateLoanAgreementData) => {
       // Get user's company_id
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .maybeSingle();
 
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      if (!profile?.company_id) throw new Error('ID da empresa não encontrado');
 
       const { data: agreement, error } = await supabase
         .from('loan_agreements')
@@ -165,9 +168,10 @@ export const useCreateLoanAgreement = () => {
           company_id: profile.company_id
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao criar contrato de empréstimo: ${error.message}`);
+      if (!agreement) throw new Error('Não foi possível criar o contrato de empréstimo');
       return agreement;
     },
     onSuccess: () => {
@@ -186,9 +190,10 @@ export const useUpdateLoanAgreement = () => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(`Erro ao atualizar contrato de empréstimo: ${error.message}`);
+      if (!data) throw new Error('Contrato de empréstimo não encontrado para atualização');
       return data;
     },
     onSuccess: () => {

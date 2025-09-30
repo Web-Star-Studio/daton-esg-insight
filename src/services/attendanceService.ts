@@ -196,9 +196,10 @@ class AttendanceService {
           department
         )
       `)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar registro de presença: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o registro de presença');
     return data;
   }
 
@@ -215,9 +216,10 @@ class AttendanceService {
           department
         )
       `)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar registro de presença: ${error.message}`);
+    if (!data) throw new Error('Registro de presença não encontrado para atualização');
     return data;
   }
 
@@ -269,9 +271,10 @@ class AttendanceService {
           department
         )
       `)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar solicitação de licença: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar a solicitação de licença');
     return data;
   }
 
@@ -298,9 +301,10 @@ class AttendanceService {
           department
         )
       `)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atualizar status da solicitação: ${error.message}`);
+    if (!data) throw new Error('Solicitação de licença não encontrada para atualização');
     return data;
   }
 
@@ -331,9 +335,10 @@ class AttendanceService {
         is_active: schedule.is_active !== false
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao criar horário de trabalho: ${error.message}`);
+    if (!data) throw new Error('Não foi possível criar o horário de trabalho');
     return data;
   }
 
@@ -412,9 +417,10 @@ class AttendanceService {
         is_active: true
       }])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) throw new Error(`Erro ao atribuir horário ao funcionário: ${error.message}`);
+    if (!data) throw new Error('Não foi possível atribuir o horário ao funcionário');
     return data;
   }
 

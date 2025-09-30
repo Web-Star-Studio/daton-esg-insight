@@ -75,20 +75,24 @@ export async function generateAnnualReport(year: number): Promise<GHGReport> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuário não autenticado');
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id, full_name')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
+  if (profileError) throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   if (!profile) throw new Error('Perfil não encontrado');
 
   // Buscar dados da empresa
-  const { data: company } = await supabase
+  const { data: company, error: companyError } = await supabase
     .from('companies')
     .select('*')
     .eq('id', profile.company_id)
-    .single();
+    .maybeSingle();
+
+  if (companyError) throw new Error(`Erro ao buscar dados da empresa: ${companyError.message}`);
+  if (!company) throw new Error('Dados da empresa não encontrados');
 
   // Obter estatísticas de emissões atuais
   const emissionsStats = await getEmissionStats();
@@ -156,9 +160,10 @@ export async function generateAnnualReport(year: number): Promise<GHGReport> {
       onConflict: 'company_id,report_year,report_type'
     })
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao salvar relatório GHG: ${error.message}`);
+  if (!report) throw new Error('Não foi possível salvar o relatório GHG');
   return report as GHGReport;
 }
 
@@ -198,9 +203,10 @@ export async function generateRPEReport(year: number): Promise<GHGReport> {
       onConflict: 'company_id,report_year,report_type'
     })
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao salvar relatório RPE: ${error.message}`);
+  if (!rpeReport) throw new Error('Não foi possível salvar o relatório RPE');
   return rpeReport as GHGReport;
 }
 
@@ -227,9 +233,10 @@ export async function exportReport(reportId: string, format: 'pdf' | 'xlsx' | 'j
     .from('ghg_reports')
     .select('*')
     .eq('id', reportId)
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao buscar relatório para exportação: ${error.message}`);
+  if (!report) throw new Error('Relatório não encontrado para exportação');
 
   switch (format) {
     case 'json':
@@ -452,8 +459,9 @@ export async function updateVerificationStatus(
     .update({ verification_status: status })
     .eq('id', reportId)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new Error(`Erro ao atualizar status de verificação: ${error.message}`);
+  if (!data) throw new Error('Relatório não encontrado para atualização');
   return data as GHGReport;
 }
