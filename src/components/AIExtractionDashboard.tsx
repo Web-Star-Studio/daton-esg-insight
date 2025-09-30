@@ -1,5 +1,6 @@
 // Enhanced AIExtractionDashboard with better error handling and FK relationships
 import React, { useState, useEffect } from 'react';
+import { EnhancedLoading } from '@/components/EnhancedLoading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -138,14 +139,7 @@ export const AIExtractionDashboard: React.FC<AIExtractionDashboardProps> = ({ cl
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto" />
-          <span className="text-sm text-muted-foreground">Carregando dashboard IA...</span>
-        </div>
-      </div>
-    );
+    return <EnhancedLoading message="Carregando dashboard IA..." />;
   }
 
   if (error) {

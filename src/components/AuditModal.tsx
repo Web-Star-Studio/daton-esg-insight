@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { unifiedToast } from "@/utils/unifiedToast";
 import { auditService, type CreateAuditData } from "@/services/audit";
 
 interface AuditModalProps {
@@ -16,7 +16,7 @@ interface AuditModalProps {
 }
 
 export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
-  const { toast } = useToast();
+  
   const [formData, setFormData] = useState<CreateAuditData>({
     title: "",
     audit_type: "",
@@ -30,18 +30,15 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
   const createMutation = useMutation({
     mutationFn: (data: CreateAuditData) => auditService.createAudit(data),
     onSuccess: (data) => {
-      toast({
-        title: "Auditoria criada com sucesso",
+      unifiedToast.success("Auditoria criada com sucesso", {
         description: `A auditoria "${data.title}" foi adicionada ao sistema.`
       });
       onSuccess();
       resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: "Erro ao criar auditoria",
-        description: error.message || "Ocorreu um erro inesperado.",
-        variant: "destructive"
+      unifiedToast.error("Erro ao criar auditoria", {
+        description: error.message || "Ocorreu um erro inesperado."
       });
     }
   });
@@ -66,28 +63,22 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
     const trimmedScope = formData.scope.trim();
     
     if (!trimmedTitle || !formData.audit_type) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha o título e tipo da auditoria.",
-        variant: "destructive"
+      unifiedToast.error("Campos obrigatórios", {
+        description: "Preencha o título e tipo da auditoria."
       });
       return;
     }
 
     if (trimmedTitle.length > 255) {
-      toast({
-        title: "Título muito longo",
-        description: "O título deve ter no máximo 255 caracteres.",
-        variant: "destructive"
+      unifiedToast.error("Título muito longo", {
+        description: "O título deve ter no máximo 255 caracteres."
       });
       return;
     }
 
     if (formData.start_date && formData.end_date && formData.start_date > formData.end_date) {
-      toast({
-        title: "Datas inválidas",
-        description: "A data de início deve ser anterior à data de término.",
-        variant: "destructive"
+      unifiedToast.error("Datas inválidas", {
+        description: "A data de início deve ser anterior à data de término."
       });
       return;
     }

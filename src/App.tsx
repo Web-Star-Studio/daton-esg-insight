@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { LoadingFallback } from "@/components/LoadingFallback";
+import { LazyPageWrapper } from "@/components/LazyPageWrapper";
 import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
@@ -135,18 +135,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Componente otimizado para wrapping de páginas lazy
-const LazyPageWrapper = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<LoadingFallback message="Carregando página..." />}>
-    <ProtectedRoute>{children}</ProtectedRoute>
-  </Suspense>
-);
-
-const LazyPublicPageWrapper = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<LoadingFallback message="Carregando..." />}>
-    {children}
-  </Suspense>
-);
 
 const App = () => (
   <ErrorBoundary>
@@ -176,19 +164,19 @@ const App = () => (
             
             {/* Páginas públicas com lazy loading */}
             <Route path="/contato" element={
-              <LazyPublicPageWrapper>
+              <LazyPageWrapper>
                 <Contato />
-              </LazyPublicPageWrapper>
+              </LazyPageWrapper>
             } />
             <Route path="/funcionalidades" element={
-              <LazyPublicPageWrapper>
+              <LazyPageWrapper>
                 <Funcionalidades />
-              </LazyPublicPageWrapper>
+              </LazyPageWrapper>
             } />
             <Route path="/documentacao" element={
-              <LazyPublicPageWrapper>
+              <LazyPageWrapper>
                 <Documentacao />
-              </LazyPublicPageWrapper>
+              </LazyPageWrapper>
             } />
 
             {/* Rotas protegidas principais com lazy loading */}
@@ -225,11 +213,9 @@ const App = () => (
             <Route path="/licenciamento/nova" element={<Navigate to="/licenciamento/novo" replace />} />
             <Route path="/licenciamento/:id/analise" element={<Navigate to="/licenciamento/processar" replace />} />
             <Route path="/licenciamento/novo" element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProtectedRoute requiredRole="Editor">
-                  <LicenseForm />
-                </ProtectedRoute>
-              </Suspense>
+              <LazyPageWrapper>
+                <LicenseForm />
+              </LazyPageWrapper>
             } />
             <Route path="/licenciamento/:id" element={
               <LazyPageWrapper>
@@ -237,11 +223,9 @@ const App = () => (
               </LazyPageWrapper>
             } />
             <Route path="/licenciamento/:id/editar" element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProtectedRoute requiredRole="Editor">
-                  <LicenseForm />
-                </ProtectedRoute>
-              </Suspense>
+              <LazyPageWrapper>
+                <LicenseForm />
+              </LazyPageWrapper>
             } />
 
             {/* Resíduos */}
@@ -251,11 +235,9 @@ const App = () => (
               </LazyPageWrapper>
             } />
             <Route path="/fornecedores-residuos" element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProtectedRoute requiredRole="Editor">
-                  <FornecedoresResiduos />
-                </ProtectedRoute>
-              </Suspense>
+              <LazyPageWrapper>
+                <FornecedoresResiduos />
+              </LazyPageWrapper>
             } />
 
             {/* Metas */}
@@ -265,11 +247,9 @@ const App = () => (
               </LazyPageWrapper>
             } />
             <Route path="/metas/nova" element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProtectedRoute requiredRole="Editor">
-                  <CriarMeta />
-                </ProtectedRoute>
-              </Suspense>
+              <LazyPageWrapper>
+                <CriarMeta />
+              </LazyPageWrapper>
             } />
 
             {/* Relatórios - Redirecionamentos para Sistema Unificado */}
@@ -288,11 +268,9 @@ const App = () => (
               </LazyPageWrapper>
             } />
             <Route path="/projetos-carbono/registrar-atividade" element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProtectedRoute requiredRole="Editor">
-                  <RegistrarAtividadeConservacao />
-                </ProtectedRoute>
-              </Suspense>
+              <LazyPageWrapper>
+                <RegistrarAtividadeConservacao />
+              </LazyPageWrapper>
             } />
             
             {/* Demais rotas com lazy loading */}
@@ -300,11 +278,9 @@ const App = () => (
             <Route path="/ativos" element={<LazyPageWrapper><Ativos /></LazyPageWrapper>} />
             <Route path="/desempenho" element={<LazyPageWrapper><Desempenho /></LazyPageWrapper>} />
             <Route path="/configuracao" element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProtectedRoute requiredRole="Admin">
-                  <Configuracao />
-                </ProtectedRoute>
-              </Suspense>
+              <LazyPageWrapper>
+                <Configuracao />
+              </LazyPageWrapper>
             } />
             <Route path="/ia-insights" element={<LazyPageWrapper><IAInsights /></LazyPageWrapper>} />
             <Route path="/marketplace" element={<LazyPageWrapper><Marketplace /></LazyPageWrapper>} />
@@ -388,9 +364,9 @@ const App = () => (
             
             {/* Formulário público */}
             <Route path="/form/:formId" element={
-              <Suspense fallback={<LoadingFallback />}>
+              <LazyPageWrapper>
                 <PublicForm />
-              </Suspense>
+              </LazyPageWrapper>
             } />
             
             {/* Catch-all deve ser sempre a última rota */}

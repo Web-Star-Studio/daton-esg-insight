@@ -37,7 +37,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
+import { unifiedToast } from "@/utils/unifiedToast"
 
 const customFactorSchema = z.object({
   nome: z.string().min(1, "Nome do fator é obrigatório"),
@@ -83,7 +83,7 @@ const unidades = [
 
 export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModalProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const { toast } = useToast()
+  
 
   const form = useForm<CustomFactorData>({
     resolver: zodResolver(customFactorSchema),
@@ -120,9 +120,8 @@ export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModa
       const { createCustomEmissionFactor } = await import("@/services/emissionFactors");
       await createCustomEmissionFactor(factorData);
       
-      toast({
-        title: "Fator de Emissão Criado",
-        description: "O fator customizado foi adicionado com sucesso à biblioteca.",
+      unifiedToast.success("Fator de Emissão Criado", {
+        description: "O fator customizado foi adicionado com sucesso à biblioteca."
       });
 
       resetAndClose();
@@ -133,10 +132,8 @@ export function AddCustomFactorModal({ open, onOpenChange }: AddCustomFactorModa
       }
       
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao criar fator de emissão. Tente novamente.",
-        variant: "destructive",
+      unifiedToast.error("Erro ao criar fator de emissão", {
+        description: "Tente novamente."
       });
     }
   }
