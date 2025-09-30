@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LazyPageWrapper } from "@/components/LazyPageWrapper";
+import { ProtectedLazyPageWrapper } from "@/components/ProtectedLazyPageWrapper";
 import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
@@ -181,75 +182,75 @@ const App = () => (
 
             {/* Rotas protegidas principais com lazy loading */}
             <Route path="/dashboard" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <Dashboard />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             
             {/* Inventário e GHG */}
             <Route path="/inventario-gee" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <InventarioGEE />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/dashboard-ghg" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <DashboardGHG />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
 
             {/* Licenciamento */}
             <Route path="/licenciamento" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <Licenciamento />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/processar" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <ProcessarLicenca />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/analise" element={<Navigate to="/licenciamento/processar" replace />} />
             <Route path="/licenciamento/nova" element={<Navigate to="/licenciamento/novo" replace />} />
             <Route path="/licenciamento/:id/analise" element={<Navigate to="/licenciamento/processar" replace />} />
             <Route path="/licenciamento/novo" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <LicenseForm />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/:id" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <LicenseDetails />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/:id/editar" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <LicenseForm />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
 
             {/* Resíduos */}
             <Route path="/residuos" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <Residuos />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/fornecedores-residuos" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <FornecedoresResiduos />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
 
             {/* Metas */}
             <Route path="/metas" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <Metas />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/metas/nova" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <CriarMeta />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
 
             {/* Relatórios - Redirecionamentos para Sistema Unificado */}
@@ -258,98 +259,98 @@ const App = () => (
 
             {/* Continue com outras rotas... */}
             <Route path="/biblioteca-fatores" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <BibliotecaFatores />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/projetos-carbono" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <ProjetosCarbono />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             <Route path="/projetos-carbono/registrar-atividade" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <RegistrarAtividadeConservacao />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
             
             {/* Demais rotas com lazy loading */}
-            <Route path="/gestao-esg" element={<LazyPageWrapper><GestaoESG /></LazyPageWrapper>} />
-            <Route path="/ativos" element={<LazyPageWrapper><Ativos /></LazyPageWrapper>} />
-            <Route path="/desempenho" element={<LazyPageWrapper><Desempenho /></LazyPageWrapper>} />
+            <Route path="/gestao-esg" element={<ProtectedLazyPageWrapper><GestaoESG /></ProtectedLazyPageWrapper>} />
+            <Route path="/ativos" element={<ProtectedLazyPageWrapper><Ativos /></ProtectedLazyPageWrapper>} />
+            <Route path="/desempenho" element={<ProtectedLazyPageWrapper><Desempenho /></ProtectedLazyPageWrapper>} />
             <Route path="/configuracao" element={
-              <LazyPageWrapper>
+              <ProtectedLazyPageWrapper>
                 <Configuracao />
-              </LazyPageWrapper>
+              </ProtectedLazyPageWrapper>
             } />
-            <Route path="/ia-insights" element={<LazyPageWrapper><IAInsights /></LazyPageWrapper>} />
-            <Route path="/marketplace" element={<LazyPageWrapper><Marketplace /></LazyPageWrapper>} />
-            <Route path="/coleta-dados" element={<LazyPageWrapper><ColetaDados /></LazyPageWrapper>} />
-            <Route path="/formularios-customizados" element={<LazyPageWrapper><FormulariosCustomizados /></LazyPageWrapper>} />
-            <Route path="/documentos" element={<LazyPageWrapper><Documentos /></LazyPageWrapper>} />
-            <Route path="/reconciliacao-documentos" element={<LazyPageWrapper><ReconciliacaoDocumentos /></LazyPageWrapper>} />
-            <Route path="/auditoria" element={<LazyPageWrapper><Auditoria /></LazyPageWrapper>} />
-            <Route path="/compliance" element={<LazyPageWrapper><ComplianceNew /></LazyPageWrapper>} />
+            <Route path="/ia-insights" element={<ProtectedLazyPageWrapper><IAInsights /></ProtectedLazyPageWrapper>} />
+            <Route path="/marketplace" element={<ProtectedLazyPageWrapper><Marketplace /></ProtectedLazyPageWrapper>} />
+            <Route path="/coleta-dados" element={<ProtectedLazyPageWrapper><ColetaDados /></ProtectedLazyPageWrapper>} />
+            <Route path="/formularios-customizados" element={<ProtectedLazyPageWrapper><FormulariosCustomizados /></ProtectedLazyPageWrapper>} />
+            <Route path="/documentos" element={<ProtectedLazyPageWrapper><Documentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/reconciliacao-documentos" element={<ProtectedLazyPageWrapper><ReconciliacaoDocumentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/auditoria" element={<ProtectedLazyPageWrapper><Auditoria /></ProtectedLazyPageWrapper>} />
+            <Route path="/compliance" element={<ProtectedLazyPageWrapper><ComplianceNew /></ProtectedLazyPageWrapper>} />
             <Route path="/compliance-old" element={<Navigate to="/compliance" replace />} />
             
             {/* Sistema e alertas */}
-            <Route path="/smart-notifications" element={<LazyPageWrapper><SmartNotificationSystem /></LazyPageWrapper>} />
-            <Route path="/intelligent-alerts" element={<LazyPageWrapper><IntelligentAlertsSystem /></LazyPageWrapper>} />
-            <Route path="/advanced-reports" element={<LazyPageWrapper><AdvancedReportingSystem /></LazyPageWrapper>} />
+            <Route path="/smart-notifications" element={<ProtectedLazyPageWrapper><SmartNotificationSystem /></ProtectedLazyPageWrapper>} />
+            <Route path="/intelligent-alerts" element={<ProtectedLazyPageWrapper><IntelligentAlertsSystem /></ProtectedLazyPageWrapper>} />
+            <Route path="/advanced-reports" element={<ProtectedLazyPageWrapper><AdvancedReportingSystem /></ProtectedLazyPageWrapper>} />
             
             {/* ESG e stakeholders */}
-            <Route path="/gestao-stakeholders" element={<LazyPageWrapper><GestaoStakeholders /></LazyPageWrapper>} />
-            <Route path="/analise-materialidade" element={<LazyPageWrapper><AnaliseMaterialidade /></LazyPageWrapper>} />
-            <Route path="/configuracao-organizacional" element={<LazyPageWrapper><ConfiguracaoOrganizacional /></LazyPageWrapper>} />
-            <Route path="/social-esg" element={<LazyPageWrapper><SocialESG /></LazyPageWrapper>} />
-            <Route path="/governanca-esg" element={<LazyPageWrapper><GovernancaESG /></LazyPageWrapper>} />
-            <Route path="/relatorios-integrados" element={<LazyPageWrapper><RelatoriosIntegrados /></LazyPageWrapper>} />
+            <Route path="/gestao-stakeholders" element={<ProtectedLazyPageWrapper><GestaoStakeholders /></ProtectedLazyPageWrapper>} />
+            <Route path="/analise-materialidade" element={<ProtectedLazyPageWrapper><AnaliseMaterialidade /></ProtectedLazyPageWrapper>} />
+            <Route path="/configuracao-organizacional" element={<ProtectedLazyPageWrapper><ConfiguracaoOrganizacional /></ProtectedLazyPageWrapper>} />
+            <Route path="/social-esg" element={<ProtectedLazyPageWrapper><SocialESG /></ProtectedLazyPageWrapper>} />
+            <Route path="/governanca-esg" element={<ProtectedLazyPageWrapper><GovernancaESG /></ProtectedLazyPageWrapper>} />
+            <Route path="/relatorios-integrados" element={<ProtectedLazyPageWrapper><RelatoriosIntegrados /></ProtectedLazyPageWrapper>} />
             
             {/* SGQ modules */}
-            <Route path="/planejamento-estrategico" element={<LazyPageWrapper><PlanejamentoEstrategico /></LazyPageWrapper>} />
-            <Route path="/mapeamento-processos" element={<LazyPageWrapper><MapeamentoProcessos /></LazyPageWrapper>} />
-            <Route path="/gestao-riscos" element={<LazyPageWrapper><GestaoRiscos /></LazyPageWrapper>} />
-            <Route path="/nao-conformidades" element={<LazyPageWrapper><NaoConformidades /></LazyPageWrapper>} />
-            <Route path="/plano-acao-5w2h" element={<LazyPageWrapper><PlanoAcao5W2H /></LazyPageWrapper>} />
-            <Route path="/base-conhecimento" element={<LazyPageWrapper><BaseConhecimento /></LazyPageWrapper>} />
-            <Route path="/gestao-fornecedores" element={<LazyPageWrapper><GestaoFornecedores /></LazyPageWrapper>} />
-            <Route path="/quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
+            <Route path="/planejamento-estrategico" element={<ProtectedLazyPageWrapper><PlanejamentoEstrategico /></ProtectedLazyPageWrapper>} />
+            <Route path="/mapeamento-processos" element={<ProtectedLazyPageWrapper><MapeamentoProcessos /></ProtectedLazyPageWrapper>} />
+            <Route path="/gestao-riscos" element={<ProtectedLazyPageWrapper><GestaoRiscos /></ProtectedLazyPageWrapper>} />
+            <Route path="/nao-conformidades" element={<ProtectedLazyPageWrapper><NaoConformidades /></ProtectedLazyPageWrapper>} />
+            <Route path="/plano-acao-5w2h" element={<ProtectedLazyPageWrapper><PlanoAcao5W2H /></ProtectedLazyPageWrapper>} />
+            <Route path="/base-conhecimento" element={<ProtectedLazyPageWrapper><BaseConhecimento /></ProtectedLazyPageWrapper>} />
+            <Route path="/gestao-fornecedores" element={<ProtectedLazyPageWrapper><GestaoFornecedores /></ProtectedLazyPageWrapper>} />
+            <Route path="/quality-dashboard" element={<ProtectedLazyPageWrapper><QualityDashboard /></ProtectedLazyPageWrapper>} />
             <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
-            <Route path="/gerenciamento-projetos" element={<LazyPageWrapper><GerenciamentoProjetos /></LazyPageWrapper>} />
+            <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
             <Route path="/auditorias-internas" element={<Navigate to="/auditoria" replace />} />
-            <Route path="/acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
-            <Route path="/controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
+            <Route path="/acoes-corretivas" element={<ProtectedLazyPageWrapper><AcoesCorretivas /></ProtectedLazyPageWrapper>} />
+            <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/avaliacao-fornecedores" element={<Navigate to="/gestao-fornecedores" replace />} />
             
             {/* RH modules */}
-            <Route path="/estrutura-organizacional" element={<LazyPageWrapper><EstruturaOrganizacional /></LazyPageWrapper>} />
-            <Route path="/gestao-funcionarios" element={<LazyPageWrapper><GestaoFuncionarios /></LazyPageWrapper>} />
-            <Route path="/gestao-treinamentos" element={<LazyPageWrapper><GestaoTreinamentos /></LazyPageWrapper>} />
-            <Route path="/gestao-desempenho" element={<LazyPageWrapper><GestaoDesempenho /></LazyPageWrapper>} />
-            <Route path="/beneficios-remuneracao" element={<LazyPageWrapper><BeneficiosRemuneracao /></LazyPageWrapper>} />
-            <Route path="/recrutamento" element={<LazyPageWrapper><Recrutamento /></LazyPageWrapper>} />
-            <Route path="/seguranca-trabalho" element={<LazyPageWrapper><SeguracaTrabalho /></LazyPageWrapper>} />
-            <Route path="/ponto-frequencia" element={<LazyPageWrapper><PontoFrequencia /></LazyPageWrapper>} />
-            <Route path="/desenvolvimento-carreira" element={<LazyPageWrapper><DesenvolvimentoCarreira /></LazyPageWrapper>} />
-            <Route path="/ouvidoria-clientes" element={<LazyPageWrapper><OuvidoriaClientes /></LazyPageWrapper>} />
+            <Route path="/estrutura-organizacional" element={<ProtectedLazyPageWrapper><EstruturaOrganizacional /></ProtectedLazyPageWrapper>} />
+            <Route path="/gestao-funcionarios" element={<ProtectedLazyPageWrapper><GestaoFuncionarios /></ProtectedLazyPageWrapper>} />
+            <Route path="/gestao-treinamentos" element={<ProtectedLazyPageWrapper><GestaoTreinamentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/gestao-desempenho" element={<ProtectedLazyPageWrapper><GestaoDesempenho /></ProtectedLazyPageWrapper>} />
+            <Route path="/beneficios-remuneracao" element={<ProtectedLazyPageWrapper><BeneficiosRemuneracao /></ProtectedLazyPageWrapper>} />
+            <Route path="/recrutamento" element={<ProtectedLazyPageWrapper><Recrutamento /></ProtectedLazyPageWrapper>} />
+            <Route path="/seguranca-trabalho" element={<ProtectedLazyPageWrapper><SeguracaTrabalho /></ProtectedLazyPageWrapper>} />
+            <Route path="/ponto-frequencia" element={<ProtectedLazyPageWrapper><PontoFrequencia /></ProtectedLazyPageWrapper>} />
+            <Route path="/desenvolvimento-carreira" element={<ProtectedLazyPageWrapper><DesenvolvimentoCarreira /></ProtectedLazyPageWrapper>} />
+            <Route path="/ouvidoria-clientes" element={<ProtectedLazyPageWrapper><OuvidoriaClientes /></ProtectedLazyPageWrapper>} />
 
             {/* Gestão de Usuários */}
-            <Route path="/gestao-usuarios" element={<LazyPageWrapper><GestaoUsuarios /></LazyPageWrapper>} />
+            <Route path="/gestao-usuarios" element={<ProtectedLazyPageWrapper><GestaoUsuarios /></ProtectedLazyPageWrapper>} />
 
             {/* Intelligence Center */}
-            <Route path="/intelligence-center" element={<LazyPageWrapper><IntelligenceCenter /></LazyPageWrapper>} />
+            <Route path="/intelligence-center" element={<ProtectedLazyPageWrapper><IntelligenceCenter /></ProtectedLazyPageWrapper>} />
 
             {/* Simulador */}
-            <Route path="/simulador" element={<LazyPageWrapper><SimuladorEcoImpacto /></LazyPageWrapper>} />
+            <Route path="/simulador" element={<ProtectedLazyPageWrapper><SimuladorEcoImpacto /></ProtectedLazyPageWrapper>} />
 
             {/* Redirects e páginas de compatibilidade com nova estrutura de navegação */}
             <Route path="/painel-principal" element={<Navigate to="/dashboard" replace />} />
             <Route path="/analise-desempenho" element={<Navigate to="/desempenho" replace />} />
             <Route path="/painel-gestao-esg" element={<Navigate to="/gestao-esg" replace />} />
             <Route path="/metas-sustentabilidade" element={<Navigate to="/metas" replace />} />
-            <Route path="/emissoes-gee" element={<LazyPageWrapper><EmissoesGEE /></LazyPageWrapper>} />
+            <Route path="/emissoes-gee" element={<ProtectedLazyPageWrapper><EmissoesGEE /></ProtectedLazyPageWrapper>} />
             <Route path="/painel-social" element={<Navigate to="/social-esg" replace />} />
             <Route path="/saude-seguranca-trabalho" element={<Navigate to="/seguranca-trabalho" replace />} />
             <Route path="/treinamentos-desenvolvimento" element={<Navigate to="/gestao-treinamentos" replace />} />
