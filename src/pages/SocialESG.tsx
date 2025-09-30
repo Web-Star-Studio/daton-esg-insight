@@ -11,20 +11,21 @@ import {
   GraduationCap, 
   Heart,
   Plus,
-  TrendingUp,
-  AlertTriangle,
-  Activity,
-  UserCheck
+  TrendingUp
 } from "lucide-react";
-import { getEmployees, getEmployeesStats } from "@/services/employees";
-import { getSafetyIncidents, getSafetyMetrics } from "@/services/safetyIncidents";
-import { getTrainingPrograms, getTrainingMetrics } from "@/services/trainingPrograms";
-import { getSocialProjects, getSocialImpactMetrics } from "@/services/socialProjects";
+import { getEmployeesStats } from "@/services/employees";
+import { getSafetyMetrics } from "@/services/safetyIncidents";
+import { getTrainingMetrics } from "@/services/trainingPrograms";
+import { getSocialImpactMetrics } from "@/services/socialProjects";
+import { ModuleSummaryCard } from "@/components/ModuleSummaryCard";
+import { useNavigate } from "react-router-dom";
 
 
 export default function SocialESG() {
   const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
 
+  // Only essential queries for dashboard KPIs
   const { data: employeesStats } = useQuery({
     queryKey: ['employees-stats'],
     queryFn: getEmployeesStats
@@ -45,26 +46,6 @@ export default function SocialESG() {
     queryFn: getSocialImpactMetrics
   });
 
-  const { data: employees } = useQuery({
-    queryKey: ['employees'],
-    queryFn: getEmployees
-  });
-
-  const { data: safetyIncidents } = useQuery({
-    queryKey: ['safety-incidents'],
-    queryFn: getSafetyIncidents
-  });
-
-  const { data: trainingPrograms } = useQuery({
-    queryKey: ['training-programs'],
-    queryFn: getTrainingPrograms
-  });
-
-  const { data: socialProjects } = useQuery({
-    queryKey: ['social-projects'],
-    queryFn: getSocialProjects
-  });
-
   return (
     <div className="space-y-6">
     <div className="flex justify-between items-center">
@@ -83,10 +64,8 @@ export default function SocialESG() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="employees">Gestão de Pessoas</TabsTrigger>
-            <TabsTrigger value="safety">Saúde & Segurança</TabsTrigger>
             <TabsTrigger value="social">Impacto Social</TabsTrigger>
           </TabsList>
 
@@ -94,7 +73,7 @@ export default function SocialESG() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Colaboradores</CardTitle>
+                <CardTitle className="text-sm font-medium">Funcionários</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -126,7 +105,7 @@ export default function SocialESG() {
               <CardContent>
                 <div className="text-2xl font-bold">{trainingMetrics?.totalHoursTrained || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {trainingMetrics?.averageHoursPerEmployee || 0} média/colaborador
+                  {trainingMetrics?.averageHoursPerEmployee || 0} média/funcionário
                 </p>
               </CardContent>
             </Card>
@@ -195,149 +174,49 @@ export default function SocialESG() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance de Treinamento</CardTitle>
-              <CardDescription>Distribuição de treinamentos por categoria</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {trainingMetrics?.categoryDistribution && Object.entries(trainingMetrics.categoryDistribution).map(([category, count]) => (
-                  <div key={category} className="text-center">
-                    <div className="text-2xl font-bold">{count}</div>
-                    <div className="text-sm text-muted-foreground">{category}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex justify-between text-sm">
-                  <span>Taxa de Conclusão</span>
-                  <span className="font-medium">{trainingMetrics?.completionRate?.toFixed(1) || 0}%</span>
-                </div>
-                <Progress value={trainingMetrics?.completionRate || 0} className="mt-2" />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Module Access Cards */}
+          <div className="space-y-6">
+            <ModuleSummaryCard
+              title="Gestão de Funcionários"
+              description="Sistema completo de recursos humanos"
+              icon={Users}
+              metrics={[
+                { label: 'Funcionários', value: employeesStats?.totalEmployees || 0 },
+                { label: 'Departamentos', value: employeesStats?.departments || 0 },
+                { label: 'Ativos', value: employeesStats?.activeEmployees || 0 },
+                { label: 'Salário Médio', value: `R$ ${(employeesStats?.avgSalary || 0).toLocaleString()}` }
+              ]}
+              onAccess={() => navigate('/gestao-funcionarios')}
+            />
+
+            <ModuleSummaryCard
+              title="Segurança do Trabalho"
+              description="Sistema de SST e bem-estar ocupacional"
+              icon={Shield}
+              metrics={[
+                { label: 'LTIFR', value: safetyMetrics?.ltifr?.toFixed(2) || '0.00', variant: 'success' },
+                { label: 'Incidentes', value: safetyMetrics?.totalIncidents || 0, variant: safetyMetrics?.totalIncidents ? 'warning' : 'success' },
+                { label: 'Com Tratamento', value: safetyMetrics?.withMedicalTreatment || 0, variant: 'warning' },
+                { label: 'Dias Perdidos', value: safetyMetrics?.daysLostTotal || 0, variant: 'destructive' }
+              ]}
+              onAccess={() => navigate('/seguranca-trabalho')}
+            />
+
+            <ModuleSummaryCard
+              title="Gestão de Treinamentos"
+              description="Programas de capacitação e desenvolvimento"
+              icon={GraduationCap}
+              metrics={[
+                { label: 'Horas Totais', value: trainingMetrics?.totalHoursTrained || 0 },
+                { label: 'Média/Funcionário', value: `${trainingMetrics?.averageHoursPerEmployee || 0}h` },
+                { label: 'Taxa Conclusão', value: `${trainingMetrics?.completionRate?.toFixed(1) || 0}%`, variant: 'success' },
+                { label: 'Treinamentos', value: trainingMetrics?.totalTrainings || 0 }
+              ]}
+              onAccess={() => navigate('/gestao-treinamentos')}
+            />
+          </div>
         </TabsContent>
 
-        <TabsContent value="employees" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Gestão de Colaboradores</CardTitle>
-                  <CardDescription>Cadastro e informações dos colaboradores</CardDescription>
-                </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Colaborador
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">Módulo de Colaboradores</h3>
-                <p className="text-muted-foreground mb-4">
-                  Funcionalidade em desenvolvimento para gestão completa de colaboradores
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Incluirá cadastro, dados demográficos, avaliações e muito mais
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="employees" className="space-y-6">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/gestao-funcionarios'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-6 w-6" />
-                Gestão de Funcionários
-                <Button variant="ghost" size="sm" className="ml-auto">
-                  Acessar →
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Sistema completo de gestão de recursos humanos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
-                    {employeesStats?.totalEmployees || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Funcionários</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
-                    {employeesStats?.departments || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Departamentos</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
-                    {employeesStats?.activeEmployees || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Ativos</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
-                    R$ {employeesStats?.avgSalary?.toLocaleString() || '0'}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Salário Médio</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="safety" className="space-y-6">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/seguranca-trabalho'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-6 w-6" />
-                Segurança do Trabalho
-                <Button variant="ghost" size="sm" className="ml-auto">
-                  Acessar →
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Sistema completo de SST e bem-estar
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {safetyMetrics?.ltifr?.toFixed(2) || '0.00'}
-                  </div>
-                  <div className="text-sm text-muted-foreground">LTIFR</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {safetyMetrics?.totalIncidents || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Incidentes</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {safetyMetrics?.withMedicalTreatment || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Com Atendimento</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {safetyMetrics?.daysLostTotal || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Dias Perdidos</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="social" className="space-y-6">
           <Card>
