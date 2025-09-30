@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Plus, AlertTriangle, FileText, TrendingUp, Calendar, Filter, Download, Bell, Shield, BarChart3, Eye, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { useCompliance } from '@/hooks/data/useCompliance';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,75 +28,26 @@ export default function Compliance() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['compliance-stats'],
-    queryFn: complianceService.getStats,
-  });
+  const { tasks, stats, trendData, riskData, isLoading } = useCompliance();
 
-  // Mock data for enhanced features
-  const mockTasks = [
-    {
-      id: 1,
-      title: "Relatório Mensal IBAMA",
-      description: "Envio do relatório de emissões atmosféricas",
-      dueDate: "2024-01-15",
-      status: "pending",
-      priority: "high",
-      responsible: "João Silva",
-      category: "Environmental",
-      riskScore: 85,
-      evidence: ["documento1.pdf", "comprovante.jpg"]
-    },
-    {
-      id: 2,
-      title: "Licença de Operação",
-      description: "Renovação da licença ambiental",
-      dueDate: "2024-01-20",
-      status: "in_progress",
-      priority: "critical",
-      responsible: "Maria Santos",
-      category: "Licensing",
-      riskScore: 95,
-      evidence: ["licenca_atual.pdf"]
-    },
-    {
-      id: 3,
-      title: "Treinamento NR-25",
-      description: "Capacitação sobre resíduos industriais",
-      dueDate: "2024-01-10",
-      status: "completed",
-      priority: "medium",
-      responsible: "Carlos Lima",
-      category: "Training",
-      riskScore: 60,
-      evidence: ["certificado.pdf", "lista_presenca.pdf"]
-    }
-  ];
-
-  const mockTrendData = [
-    { month: "Set", completed: 85, pending: 15, overdue: 5 },
-    { month: "Out", completed: 90, pending: 12, overdue: 3 },
-    { month: "Nov", completed: 88, pending: 18, overdue: 8 },
-    { month: "Dez", completed: 92, pending: 10, overdue: 2 },
-    { month: "Jan", completed: 87, pending: 20, overdue: 6 }
-  ];
-
-  const mockRiskData = [
-    { name: "Baixo Risco", value: 45, color: "#10b981" },
-    { name: "Médio Risco", value: 30, color: "#f59e0b" },
-    { name: "Alto Risco", value: 20, color: "#ef4444" },
-    { name: "Crítico", value: 5, color: "#dc2626" }
-  ];
-
-  const mockComplianceScore = 87;
+  const mockComplianceScore = stats.completionRate;
   const mockNotifications = [
-    { id: 1, type: "warning", message: "5 tarefas vencem nos próximos 3 dias", time: "há 2 horas" },
-    { id: 2, type: "alert", message: "Licença ambiental expira em 15 dias", time: "há 4 horas" },
-    { id: 3, type: "info", message: "Nova regulamentação CONAMA disponível", time: "há 1 dia" }
+    { 
+      id: 1, 
+      type: "warning", 
+      message: `${stats.duingSoon} tarefas vencem nos próximos 30 dias`, 
+      time: "atualizado agora" 
+    },
+    { 
+      id: 2, 
+      type: "alert", 
+      message: `${stats.overdueTasks} tarefas em atraso`, 
+      time: "atualizado agora" 
+    },
   ];
 
   const filteredTasks = useMemo(() => {
-    return mockTasks.filter(task => {
+    return tasks.filter(task => {
       const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           task.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "all" || task.status === statusFilter;
@@ -104,7 +55,7 @@ export default function Compliance() {
       
       return matchesSearch && matchesStatus && matchesPriority;
     });
-  }, [searchTerm, statusFilter, priorityFilter]);
+  }, [tasks, searchTerm, statusFilter, priorityFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -135,14 +86,13 @@ export default function Compliance() {
 
   const exportComplianceReport = () => {
     const csvContent = [
-      ['Tarefa', 'Status', 'Prioridade', 'Vencimento', 'Responsável', 'Score de Risco'],
+      ['Tarefa', 'Status', 'Prioridade', 'Vencimento', 'Responsável'],
       ...filteredTasks.map(task => [
         task.title,
         task.status,
         task.priority,
-        task.dueDate,
-        task.responsible,
-        task.riskScore.toString()
+        task.due_date,
+        task.responsible
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -209,7 +159,7 @@ export default function Compliance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {statsLoading ? '...' : stats?.totalRequirements || 147}
+                {isLoading ? '...' : stats.totalRequirements}
               </div>
               <p className="text-xs text-muted-foreground">
                 Requisitos regulatórios cadastrados
@@ -224,7 +174,7 @@ export default function Compliance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {statsLoading ? '...' : stats?.pendingTasks || 23}
+                {isLoading ? '...' : stats.pendingTasks}
               </div>
               <p className="text-xs text-muted-foreground">
                 Aguardando execução
@@ -239,7 +189,7 @@ export default function Compliance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-amber-600">
-                {statsLoading ? '...' : stats?.duingSoon || 8}
+                {isLoading ? '...' : stats.duingSoon}
               </div>
               <p className="text-xs text-muted-foreground">
                 Requer atenção urgente
@@ -254,7 +204,7 @@ export default function Compliance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">
-                {statsLoading ? '...' : stats?.overdueTasks || 3}
+                {isLoading ? '...' : stats.overdueTasks}
               </div>
               <p className="text-xs text-muted-foreground">
                 Prazo vencido - Ação imediata
@@ -269,10 +219,10 @@ export default function Compliance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {statsLoading ? '...' : stats?.totalTasks ? Math.floor(stats.totalTasks * 0.8) : 94}
+                {isLoading ? '...' : tasks.filter(t => t.status === 'completed').length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Este mês
+                Completadas
               </p>
             </CardContent>
           </Card>
@@ -298,7 +248,7 @@ export default function Compliance() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={mockTrendData}>
+                    <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -320,7 +270,7 @@ export default function Compliance() {
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={mockRiskData}
+                        data={riskData}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -328,7 +278,7 @@ export default function Compliance() {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {mockRiskData.map((entry, index) => (
+                        {riskData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -336,10 +286,10 @@ export default function Compliance() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="mt-4 grid grid-cols-2 gap-2">
-                    {mockRiskData.map((item, index) => (
+                    {riskData.map((item, index) => (
                       <div key={index} className="flex items-center text-sm">
                         <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></div>
-                        <span>{item.name}: {item.value}%</span>
+                        <span>{item.name}: {item.value}</span>
                       </div>
                     ))}
                   </div>
@@ -459,17 +409,17 @@ export default function Compliance() {
                             {task.priority}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm">{task.dueDate}</TableCell>
+                        <TableCell className="text-sm">{new Date(task.due_date).toLocaleDateString('pt-BR')}</TableCell>
                         <TableCell className="text-sm">{task.responsible}</TableCell>
                         <TableCell>
-                          <div className={`text-sm font-medium ${getRiskColor(task.riskScore)}`}>
-                            {task.riskScore}%
+                          <div className="text-sm font-medium">
+                            {task.category}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{task.evidence.length}</span>
+                            <span className="text-sm">-</span>
                           </div>
                         </TableCell>
                         <TableCell>

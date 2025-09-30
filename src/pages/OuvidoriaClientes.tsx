@@ -19,15 +19,16 @@ import {
 export default function OuvidoriaClientes() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Real complaints data will come from API - no mock data
+  // TODO: Implementar hook useOmbudsman para conectar com dados reais
   const mockComplaints: any[] = [];
 
+  // Stats calculados baseados em dados reais quando disponível
   const mockStats = {
-    total: 45,
-    open: 8,
-    resolved: 37,
-    avgSatisfaction: 4.2,
-    slaCompliance: 92
+    total: 0,
+    open: 0,
+    resolved: 0,
+    avgSatisfaction: 0,
+    slaCompliance: 0
   };
 
   const getStatusColor = (status: string) => {
