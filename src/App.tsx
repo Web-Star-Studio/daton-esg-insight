@@ -35,7 +35,7 @@ const Residuos = lazy(() => import("./pages/Residuos"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
 const Metas = lazy(() => import("./pages/Metas"));
 const CriarMeta = lazy(() => import("./pages/CriarMeta"));
-const Relatorios = lazy(() => import("./pages/Relatorios"));
+
 const BibliotecaFatores = lazy(() => import("./pages/BibliotecaFatores"));
 const ProjetosCarbono = lazy(() => import("./pages/ProjetosCarbono"));
 const RegistrarAtividadeConservacao = lazy(() => import("./pages/RegistrarAtividadeConservacao"));
@@ -68,7 +68,7 @@ const ConfiguracaoOrganizacional = lazy(() => import("./pages/ConfiguracaoOrgani
 const SocialESG = lazy(() => import("./pages/SocialESG"));
 const GovernancaESG = lazy(() => import("./pages/GovernancaESG"));
 const RelatoriosIntegrados = lazy(() => import("./pages/RelatoriosIntegrados"));
-const RelatoriosSustentabilidade = lazy(() => import("./pages/RelatoriosSustentabilidade"));
+
 
 // Lazy loading para SGQ modules
 const PlanejamentoEstrategico = lazy(() => import("./pages/PlanejamentoEstrategico"));
@@ -79,9 +79,9 @@ const PlanoAcao5W2H = lazy(() => import("./pages/PlanoAcao5W2H"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
-const IndicadoresQualidade = lazy(() => import("./pages/IndicadoresQualidade"));
+
 const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos").then(module => ({ default: module.GerenciamentoProjetos })));
-const AuditoriaInternas = lazy(() => import("./pages/AuditoriaInternas"));
+
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
 
@@ -103,10 +103,8 @@ const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
 // Lazy loading para Intelligence Center
 const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 
-// Lazy loading para páginas de compatibilidade/redirect
-const PainelPrincipal = lazy(() => import("./pages/PainelPrincipal"));
+// Páginas específicas mantidas
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
-const PainelGovernanca = lazy(() => import("./pages/PainelGovernanca"));
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
@@ -274,17 +272,9 @@ const App = () => (
               </Suspense>
             } />
 
-            {/* Relatórios */}
-            <Route path="/relatorios" element={
-              <LazyPageWrapper>
-                <Relatorios />
-              </LazyPageWrapper>
-            } />
-            <Route path="/relatorios-sustentabilidade" element={
-              <LazyPageWrapper>
-                <RelatoriosSustentabilidade />
-              </LazyPageWrapper>
-            } />
+            {/* Relatórios - Redirecionamentos para Sistema Unificado */}
+            <Route path="/relatorios" element={<Navigate to="/relatorios-integrados" replace />} />
+            <Route path="/relatorios-sustentabilidade" element={<Navigate to="/relatorios-integrados" replace />} />
 
             {/* Continue com outras rotas... */}
             <Route path="/biblioteca-fatores" element={
@@ -324,7 +314,7 @@ const App = () => (
             <Route path="/reconciliacao-documentos" element={<LazyPageWrapper><ReconciliacaoDocumentos /></LazyPageWrapper>} />
             <Route path="/auditoria" element={<LazyPageWrapper><Auditoria /></LazyPageWrapper>} />
             <Route path="/compliance" element={<LazyPageWrapper><ComplianceNew /></LazyPageWrapper>} />
-            <Route path="/compliance-old" element={<LazyPageWrapper><Compliance /></LazyPageWrapper>} />
+            <Route path="/compliance-old" element={<Navigate to="/compliance" replace />} />
             
             {/* Sistema e alertas */}
             <Route path="/smart-notifications" element={<LazyPageWrapper><SmartNotificationSystem /></LazyPageWrapper>} />
@@ -348,10 +338,10 @@ const App = () => (
             <Route path="/base-conhecimento" element={<LazyPageWrapper><BaseConhecimento /></LazyPageWrapper>} />
             <Route path="/gestao-fornecedores" element={<LazyPageWrapper><GestaoFornecedores /></LazyPageWrapper>} />
             <Route path="/quality-dashboard" element={<LazyPageWrapper><QualityDashboard /></LazyPageWrapper>} />
-            <Route path="/indicadores-qualidade" element={<LazyPageWrapper><IndicadoresQualidade /></LazyPageWrapper>} />
-            <Route path="/qualidade" element={<Navigate to="/indicadores-qualidade" replace />} />
+            <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
+            <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/gerenciamento-projetos" element={<LazyPageWrapper><GerenciamentoProjetos /></LazyPageWrapper>} />
-            <Route path="/auditorias-internas" element={<LazyPageWrapper><AuditoriaInternas /></LazyPageWrapper>} />
+            <Route path="/auditorias-internas" element={<Navigate to="/auditoria" replace />} />
             <Route path="/acoes-corretivas" element={<LazyPageWrapper><AcoesCorretivas /></LazyPageWrapper>} />
             <Route path="/controle-documentos" element={<LazyPageWrapper><ControleDocumentos /></LazyPageWrapper>} />
             <Route path="/avaliacao-fornecedores" element={<Navigate to="/gestao-fornecedores" replace />} />
@@ -378,7 +368,7 @@ const App = () => (
             <Route path="/simulador" element={<LazyPageWrapper><SimuladorEcoImpacto /></LazyPageWrapper>} />
 
             {/* Redirects e páginas de compatibilidade com nova estrutura de navegação */}
-            <Route path="/painel-principal" element={<LazyPageWrapper><PainelPrincipal /></LazyPageWrapper>} />
+            <Route path="/painel-principal" element={<Navigate to="/dashboard" replace />} />
             <Route path="/analise-desempenho" element={<Navigate to="/desempenho" replace />} />
             <Route path="/painel-gestao-esg" element={<Navigate to="/gestao-esg" replace />} />
             <Route path="/metas-sustentabilidade" element={<Navigate to="/metas" replace />} />
@@ -386,7 +376,7 @@ const App = () => (
             <Route path="/painel-social" element={<Navigate to="/social-esg" replace />} />
             <Route path="/saude-seguranca-trabalho" element={<Navigate to="/seguranca-trabalho" replace />} />
             <Route path="/treinamentos-desenvolvimento" element={<Navigate to="/gestao-treinamentos" replace />} />
-            <Route path="/painel-governanca" element={<LazyPageWrapper><PainelGovernanca /></LazyPageWrapper>} />
+            <Route path="/painel-governanca" element={<Navigate to="/governanca-esg" replace />} />
             <Route path="/compliance-politicas" element={<Navigate to="/compliance" replace />} />
             <Route path="/auditorias" element={<Navigate to="/auditoria" replace />} />
             <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
