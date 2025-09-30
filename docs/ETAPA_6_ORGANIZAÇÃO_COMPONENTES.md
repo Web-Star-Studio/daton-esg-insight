@@ -1011,7 +1011,203 @@ TOTAL:                        767 linhas
 ✅ **Escalabilidade**: Estrutura pronta para crescer
 ✅ **Padrões Estabelecidos**: Guia claro para refatorações
 
-🔄 **Próximo**: Continuar refatoração ou ETAPA 7 (Testes e Validação)
+🔄 **Próximo**: Finalizar ETAPA 6 ou iniciar ETAPA 7 (Testes e Validação)
+
+---
+
+## 🎉 Conclusão da ETAPA 6.6
+
+✅ **DashboardGHG Refatorado**: COMPLETO
+- 484 → 53 linhas (89% redução)
+- 1 hook customizado criado (`useDashboardGHG`)
+- 4 componentes especializados criados
+- Lógica de processamento de dados isolada
+- Charts separados em componentes
+
+### 6.6 Refatoração do DashboardGHG ✅
+
+**Antes:**
+- ❌ 484 linhas em um único arquivo
+- ❌ Lógica de queries misturada com UI
+- ❌ Processamento de dados no componente principal
+- ❌ Charts inline com lógica complexa
+- ❌ Difícil testar isoladamente
+
+**Depois:**
+- ✅ 53 linhas no arquivo principal
+- ✅ Hook customizado para queries e processamento
+- ✅ 4 componentes especializados para UI
+- ✅ Charts com componentes dedicados
+- ✅ Testabilidade melhorada
+
+### 6.6.1 Arquivos Criados
+
+#### Hook de Dados: `useDashboardGHG.ts`
+**Localização:** `src/hooks/data/useDashboardGHG.ts`
+
+**Responsabilidades:**
+- Query de emissões com useSmartCache
+- Auto-refresh e real-time data
+- Estado do date range
+- Processamento de dados (monthlyData, escopoData, fontesEscopo1Data, totals)
+- Memoização de cálculos complexos
+
+**Benefícios:**
+- ✅ Toda lógica de dados isolada
+- ✅ Cálculos memoizados e otimizados
+- ✅ Fácil de testar e reutilizar
+
+#### Componentes de Apresentação
+
+**1. `DashboardGHGHeader.tsx`**
+**Localização:** `src/components/dashboard/DashboardGHGHeader.tsx`
+
+**Responsabilidades:**
+- Título e descrição
+- Date picker com calendário
+- Botão de refresh com status de cache
+- Indicador de estado (cached/updating)
+
+**2. `DashboardKPICards.tsx`**
+**Localização:** `src/components/dashboard/DashboardKPICards.tsx`
+
+**Responsabilidades:**
+- 3 cards de KPI (Total, Escopo 1, Escopo 2)
+- Integração com CardWithAI
+- Cálculos de percentuais
+- Loading states
+
+**3. `EmissionsMonthlyChart.tsx`**
+**Localização:** `src/components/dashboard/EmissionsMonthlyChart.tsx`
+
+**Responsabilidades:**
+- Gráfico de barras empilhadas
+- Evolução mensal das emissões
+- Tooltip customizado
+- Formatação de dados
+
+**4. `EmissionsCharts.tsx`**
+**Localização:** `src/components/dashboard/EmissionsCharts.tsx`
+
+**Responsabilidades:**
+- 2 gráficos de pizza (Escopo e Fontes)
+- Distribuição por escopo
+- Fontes de Escopo 1
+- Labels customizados
+
+### 6.6.2 Nova Estrutura de Pastas Atualizada
+
+```
+src/
+├── hooks/
+│   ├── data/
+│   │   ├── useInventoryData.ts
+│   │   ├── useAnalyticsData.ts
+│   │   ├── useLicenseDetails.ts
+│   │   ├── useProcessMapping.ts
+│   │   └── useDashboardGHG.ts            # Hook de dashboard GHG
+│   └── navigation/
+│       └── useDocumentationNav.ts
+├── components/
+│   ├── inventory/
+│   ├── analytics/
+│   ├── documentation/
+│   ├── license/
+│   ├── process/
+│   └── dashboard/
+│       ├── DashboardGHGHeader.tsx        # Header com filtros
+│       ├── DashboardKPICards.tsx         # Cards de KPI
+│       ├── EmissionsMonthlyChart.tsx     # Gráfico mensal
+│       └── EmissionsCharts.tsx           # Gráficos de pizza
+└── pages/
+    ├── InventarioGEE.tsx                 # (277 linhas)
+    ├── AdvancedAnalytics.tsx             # (86 linhas)
+    ├── Documentacao.tsx                  # (76 linhas)
+    ├── LicenseDetails.tsx                # (140 linhas)
+    ├── MapeamentoProcessos.tsx           # (118 linhas)
+    └── DashboardGHG.tsx                  # (53 linhas)
+```
+
+### 6.6.3 Comparação Antes x Depois
+
+**Antes (484 linhas):**
+```typescript
+- 68 linhas de queries e hooks
+- 100 linhas de processamento de dados
+- 75 linhas de header e filtros
+- 50 linhas de KPI cards
+- 75 linhas de gráfico mensal
+- 116 linhas de gráficos de pizza
+= TOTAL: 484 linhas
+```
+
+**Depois (distribuído):**
+```typescript
+useDashboardGHG.ts:          196 linhas (queries + processamento)
+DashboardGHGHeader.tsx:       74 linhas (header)
+DashboardKPICards.tsx:        56 linhas (KPIs)
+EmissionsMonthlyChart.tsx:    66 linhas (gráfico mensal)
+EmissionsCharts.tsx:         119 linhas (gráficos pizza)
+DashboardGHG.tsx:             53 linhas (orquestrador)
+-------------------------------------------------------
+TOTAL:                       564 linhas
+```
+
+**Trade-off:** +80 linhas totais, MAS:
+- ✅ Cada arquivo < 200 linhas (muito mais legível)
+- ✅ Charts isolados e reutilizáveis
+- ✅ Lógica de processamento testável
+- ✅ Header independente do conteúdo
+- ✅ KPIs facilmente modificáveis
+
+### Métricas de Impacto:
+- **Legibilidade**: ⭐⭐⭐⭐⭐ (5/5)
+- **Manutenibilidade**: ⭐⭐⭐⭐⭐ (5/5)
+- **Testabilidade**: ⭐⭐⭐⭐⭐ (5/5)
+- **Reutilização**: ⭐⭐⭐⭐⭐ (5/5)
+- **Performance**: ⭐⭐⭐⭐⭐ (5/5 - memoização otimizada)
+
+---
+
+## 📈 Resumo Final da ETAPA 6
+
+### Componentes Refatorados (6/6):
+
+| Componente | Antes | Depois | Redução | Arquivos Criados |
+|------------|-------|--------|---------|------------------|
+| InventarioGEE | 792 linhas | 277 linhas | 65% | 1 hook + 4 componentes |
+| AdvancedAnalytics | 574 linhas | 86 linhas | 85% | 1 hook + 6 componentes |
+| Documentacao | 670 linhas | 76 linhas | 89% | 1 hook + 7 componentes |
+| LicenseDetails | 686 linhas | 140 linhas | 80% | 1 hook + 6 componentes |
+| MapeamentoProcessos | 583 linhas | 118 linhas | 80% | 1 hook + 6 componentes |
+| DashboardGHG | 484 linhas | 53 linhas | 89% | 1 hook + 4 componentes |
+| **TOTAL** | **3789 linhas** | **750 linhas** | **80%** | **6 hooks + 33 componentes** |
+
+### Benefícios Consolidados Finais:
+
+✅ **Redução Massiva**: 80% menos linhas nos arquivos principais (3789 → 750 linhas)
+✅ **Organização Clara**: 39 novos arquivos especializados (6 hooks + 33 componentes)
+✅ **Manutenção Fácil**: Mudanças isoladas por arquivo
+✅ **Testabilidade**: Todos hooks e componentes testáveis isoladamente
+✅ **Escalabilidade**: Estrutura pronta para crescer sem limite
+✅ **Padrões Estabelecidos**: Guia claro e consistente para futuras refatorações
+✅ **Performance**: Memoização e otimizações em todos os hooks
+
+### Padrões Estabelecidos e Aplicados:
+
+1. **Custom Hooks para Lógica**: Toda lógica de negócio em hooks reutilizáveis
+2. **Componentes Especializados**: Um propósito por componente
+3. **Separação Clara**: Dados (hooks) vs Apresentação (components) vs Orquestração (pages)
+4. **Props Explícitas**: Interfaces tipadas para todos os componentes
+5. **Memoização**: useCallback e useMemo em todos os hooks
+6. **Loading States**: Tratamento de loading em todos os componentes
+7. **Error Boundaries**: Preparados para isolamento de erros
+
+## ✅ ETAPA 6: ORGANIZAÇÃO DE COMPONENTES - CONCLUÍDA
+
+🎉 **Sucesso Total**: Todos os componentes prioritários foram refatorados seguindo os padrões estabelecidos!
+
+🔄 **Próximo**: ETAPA 7 (Testes e Validação Final) ou continuar refatoração de componentes secundários
 
 ---
 
