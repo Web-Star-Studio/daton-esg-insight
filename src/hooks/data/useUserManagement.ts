@@ -22,6 +22,19 @@ export interface UserStats {
   lastLogin24h: number;
 }
 
+// Helper function to call edge function
+async function callManageUserFunction(action: string, userData: any) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('No session');
+
+  const { data, error } = await supabase.functions.invoke('manage-user', {
+    body: { action, userData },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
 export const useUserManagement = () => {
   const queryClient = useQueryClient();
 
@@ -32,29 +45,11 @@ export const useUserManagement = () => {
       const userAndCompany = await getUserAndCompany();
       if (!userAndCompany?.company_id) throw new Error('Company not found');
 
-      // Get profiles with user emails from auth
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('company_id', userAndCompany.company_id)
-        .order('created_at', { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      // Get auth users to fetch emails
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) console.error('Error fetching auth users:', authError);
-      
-      const authUsers = authData?.users || [];
-
-      // Merge profile data with auth emails
-      return profiles.map(profile => {
-        const authUser = authUsers.find(u => u.id === profile.id);
-        return {
-          ...profile,
-          email: authUser?.email || 'N/A',
-        } as UserProfile;
+      const result = await callManageUserFunction('list', { 
+        company_id: userAndCompany.company_id 
       });
+
+      return result.users as UserProfile[];
     },
   });
 
@@ -76,18 +71,10 @@ export const useUserManagement = () => {
       const userAndCompany = await getUserAndCompany();
       if (!userAndCompany?.company_id) throw new Error('Company not found');
 
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: userData.email!,
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.full_name,
-          company_id: userAndCompany.company_id,
-          role: userData.role || 'User',
-        },
+      return await callManageUserFunction('create', {
+        ...userData,
+        company_id: userAndCompany.company_id,
       });
-
-      if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -100,25 +87,11 @@ export const useUserManagement = () => {
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, email, ...userData }: Partial<UserProfile> & { id: string }) => {
-      // Only update profile fields (not email, as it's in auth.users)
-      const { full_name, role, phone, department, avatar_url } = userData;
-      
-      // Prepare update data with only allowed role values
-      const updateData: any = { full_name, job_title: department };
-      if (role && ['Admin', 'Editor', 'Leitor'].includes(role)) {
-        updateData.role = role;
-      }
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ id, ...userData }: Partial<UserProfile> & { id: string }) => {
+      return await callManageUserFunction('update', {
+        id,
+        ...userData,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -129,11 +102,10 @@ export const useUserManagement = () => {
     },
   });
 
-  // Delete user mutation (using Supabase auth admin)
+  // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
+      return await callManageUserFunction('delete', { id: userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

@@ -40,7 +40,11 @@ export const useCompliance = () => {
 
       if (error) throw error;
       return data.map(task => {
-        const metadata = task.metadata as any;
+        const metadata = (task.metadata || {}) as {
+          priority?: string;
+          responsible?: string;
+          category?: string;
+        };
         return {
           id: task.id,
           title: task.name,
