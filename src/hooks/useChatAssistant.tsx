@@ -95,6 +95,18 @@ Converse naturalmente! Exemplos:
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
 
+  // Sanitize file names to prevent storage errors with special characters
+  const sanitizeFileName = (fileName: string): string => {
+    // Normalize Unicode characters (remove accents)
+    const normalized = fileName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    
+    // Replace spaces and special characters with underscore
+    const sanitized = normalized.replace(/[^a-zA-Z0-9._-]/g, '_');
+    
+    // Remove duplicate underscores
+    return sanitized.replace(/_+/g, '_');
+  };
+
   const addAttachment = async (file: File) => {
     const id = crypto.randomUUID();
     const newAttachment: FileAttachmentData = {
@@ -113,8 +125,9 @@ Converse naturalmente! Exemplos:
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error('User not authenticated');
 
-      // Upload to storage
-      const filePath = `${authUser.id}/${Date.now()}_${file.name}`;
+      // Upload to storage with sanitized filename
+      const sanitizedName = sanitizeFileName(file.name);
+      const filePath = `${authUser.id}/${Date.now()}_${sanitizedName}`;
       const { error: uploadError } = await supabase.storage
         .from('chat-attachments')
         .upload(filePath, file);
