@@ -1,6 +1,13 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { 
+  executeWriteTool, 
+  getActionDisplayName, 
+  getActionDescription, 
+  getActionImpact, 
+  getActionCategory 
+} from './write-tools.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,14 +20,44 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, companyId, currentPage } = await req.json();
+    const { messages, companyId, currentPage, confirmed, action } = await req.json();
     
-    console.log('Daton AI Chat request:', { companyId, currentPage, messageCount: messages?.length });
+    console.log('Daton AI Chat request:', { companyId, currentPage, messageCount: messages?.length, confirmed });
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
+
+    // Get auth header for user validation
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseClient.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
+    // If this is a confirmed action, execute it directly
+    if (confirmed && action) {
+      console.log('Executing confirmed action:', action);
+      const result = await executeWriteTool(
+        action.toolName, 
+        action.params, 
+        companyId, 
+        userId || 'system',
+        supabaseClient
+      );
+      
+      return new Response(JSON.stringify({ 
+        message: result.message || '✅ Ação executada com sucesso!',
+        success: result.success,
+        data: result.data
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
@@ -34,8 +71,9 @@ serve(async (req) => {
       .eq('id', companyId)
       .single();
 
-    // Define tools for AI to access data
+    // Define tools for AI to access data (READ + WRITE)
     const tools = [
+      // READ TOOLS
       {
         type: "function" as const,
         function: {
@@ -119,6 +157,101 @@ serve(async (req) => {
             properties: {}
           }
         }
+      },
+      // WRITE TOOLS
+      {
+        type: "function" as const,
+        function: {
+          name: "create_goal",
+          description: "Criar nova meta ESG. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome da meta" },
+              category: { 
+                type: "string", 
+                enum: ["Ambiental", "Social", "Governança"],
+                description: "Categoria da meta" 
+              },
+              target_value: { type: "number", description: "Valor alvo" },
+              target_date: { type: "string", format: "date", description: "Data alvo (YYYY-MM-DD)" },
+              baseline_value: { type: "number", description: "Valor baseline (padrão: 0)" },
+              unit: { type: "string", description: "Unidade de medida" }
+            },
+            required: ["name", "category", "target_value", "target_date"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_task",
+          description: "Criar tarefa de coleta de dados. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome da tarefa" },
+              description: { type: "string", description: "Descrição da tarefa" },
+              task_type: { 
+                type: "string",
+                enum: ["Emissões", "Resíduos", "Água", "Energia", "Social", "Conformidade"],
+                description: "Tipo da tarefa"
+              },
+              due_date: { type: "string", format: "date", description: "Data de vencimento (YYYY-MM-DD)" },
+              frequency: {
+                type: "string",
+                enum: ["Única", "Semanal", "Mensal", "Trimestral", "Anual"],
+                description: "Frequência"
+              }
+            },
+            required: ["name", "task_type", "due_date", "frequency"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "add_license",
+          description: "Registrar nova licença ambiental. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome da licença" },
+              license_number: { type: "string", description: "Número da licença" },
+              license_type: {
+                type: "string",
+                enum: ["Prévia", "Instalação", "Operação", "Simplificada"],
+                description: "Tipo da licença"
+              },
+              issue_date: { type: "string", format: "date", description: "Data de emissão" },
+              expiration_date: { type: "string", format: "date", description: "Data de validade" },
+              issuing_agency: { type: "string", description: "Órgão emissor" }
+            },
+            required: ["name", "license_type", "issue_date", "expiration_date"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "log_waste",
+          description: "Registrar log de resíduos. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              waste_type: { type: "string", description: "Tipo de resíduo" },
+              class: {
+                type: "string",
+                enum: ["I - Perigoso", "II A - Não Inerte", "II B - Inerte"],
+                description: "Classe do resíduo"
+              },
+              quantity: { type: "number", description: "Quantidade em kg" },
+              log_date: { type: "string", format: "date", description: "Data do registro" },
+              final_destination: { type: "string", description: "Destino final" }
+            },
+            required: ["waste_type", "class", "quantity", "log_date"]
+          }
+        }
       }
     ];
 
@@ -129,22 +262,53 @@ serve(async (req) => {
 **Setor:** ${company?.sector || 'N/A'}
 **Página atual:** ${currentPage || 'dashboard'}
 
-**Suas capacidades:**
-- Analisar dados de emissões de GEE
+**CAPACIDADES COMPLETAS:**
+
+📊 **LEITURA (imediata):**
+- Analisar dados de emissões de GEE e inventário
 - Verificar status de licenças ambientais
 - Acompanhar progresso de metas ESG
 - Analisar conformidade regulatória
-- Fornecer insights sobre gestão de resíduos
-- Analisar métricas sociais e de colaboradores
+- Consultar métricas de resíduos
+- Verificar dados de colaboradores
+
+✏️ **ESCRITA (requer confirmação):**
+- Criar novas metas ESG
+- Adicionar tarefas de coleta de dados
+- Registrar licenças ambientais
+- Adicionar logs de resíduos
+
+**IMPORTANTE - PROCESSO DE CONFIRMAÇÃO:**
+1. Quando o usuário pedir para CRIAR, ADICIONAR ou REGISTRAR algo, você deve:
+   - Preparar os dados necessários
+   - Apresentar um resumo claro da ação
+   - Pedir confirmação EXPLÍCITA do usuário
+   
+2. NUNCA execute ações de escrita sem confirmação
+3. SEMPRE valide que os dados estão completos e corretos
+4. Explique o impacto da ação antes de pedir confirmação
+
+**FORMATO DE RESPOSTA PARA AÇÕES DE ESCRITA:**
+Quando identificar uma solicitação de escrita, responda assim:
+
+"📋 **Ação proposta:** [descrição clara]
+
+**Detalhes:**
+- Campo 1: valor
+- Campo 2: valor
+- ...
+
+**Impacto:** [explicar o que acontecerá]
+
+Para confirmar esta ação, por favor diga 'confirmar' ou 'executar'."
 
 **Como responder:**
 - Seja direto, claro e objetivo
 - Use dados reais quando disponíveis
 - Forneça insights acionáveis
-- Sugira próximos passos quando apropriado
 - Use emojis para destacar informações importantes
-- Organize informações em bullets ou tabelas quando necessário
-- Sempre que acessar dados, mencione a fonte
+- Organize informações em bullets ou tabelas
+- Para ações de escrita, SEMPRE peça confirmação primeiro
 
 **Contexto da página atual:** ${getPageContext(currentPage)}`;
 
@@ -183,7 +347,37 @@ serve(async (req) => {
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls) {
       console.log('AI requested tool calls:', choice.message.tool_calls);
       
-      // Execute tool calls
+      // Check if any write tools were called
+      const writeTools = ['create_goal', 'create_task', 'add_license', 'log_waste'];
+      const hasWriteAction = choice.message.tool_calls.some((tc: any) => 
+        writeTools.includes(tc.function.name)
+      );
+
+      // If write action detected, return pending action for confirmation
+      if (hasWriteAction) {
+        const writeCall = choice.message.tool_calls.find((tc: any) => 
+          writeTools.includes(tc.function.name)
+        );
+        
+        const functionArgs = JSON.parse(writeCall.function.arguments);
+        
+        // Return pending action to frontend
+        return new Response(JSON.stringify({
+          message: `📋 Preparei a seguinte ação para você confirmar:\n\n**${getActionDisplayName(writeCall.function.name)}**\n\nPor favor, confirme se deseja executar esta ação.`,
+          pendingAction: {
+            toolName: writeCall.function.name,
+            displayName: getActionDisplayName(writeCall.function.name),
+            description: getActionDescription(writeCall.function.name, functionArgs),
+            params: functionArgs,
+            impact: getActionImpact(writeCall.function.name),
+            category: getActionCategory(writeCall.function.name)
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Execute read-only tools
       const toolResults = await Promise.all(
         choice.message.tool_calls.map(async (toolCall: any) => {
           const functionName = toolCall.function.name;

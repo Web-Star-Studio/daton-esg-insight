@@ -13,7 +13,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
-import { ChatAssistant } from "@/components/ChatAssistant";
+import { ChatAssistant } from "@/components/tools/ChatAssistant";
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
