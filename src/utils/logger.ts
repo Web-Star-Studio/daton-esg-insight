@@ -1,48 +1,71 @@
-// Sistema de logging estruturado para produção
-export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+/**
+ * Production-safe logging utility
+ * Respects production configuration and only logs appropriate messages
+ */
 
-export interface LogContext {
-  component?: string;
-  userId?: string;
-  action?: string;
-  metadata?: Record<string, any>;
-}
+import { PRODUCTION_CONFIG, isProduction } from './productionConfig';
+
+type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 class Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development';
-
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
-    const timestamp = new Date().toISOString();
-    const contextStr = context ? ` [${JSON.stringify(context)}]` : '';
-    return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
-  }
-
-  info(message: string, context?: LogContext): void {
-    if (this.isDevelopment) {
-      console.info(this.formatMessage('info', message, context));
+  private shouldLog(level: LogLevel): boolean {
+    if (!PRODUCTION_CONFIG.LOGGING.ENABLE_CONSOLE_LOGS && isProduction()) {
+      return level === 'error';
     }
-  }
-
-  warn(message: string, context?: LogContext): void {
-    console.warn(this.formatMessage('warn', message, context));
-  }
-
-  error(message: string, error?: Error, context?: LogContext): void {
-    const errorDetails = error ? ` - ${error.message}` : '';
-    console.error(this.formatMessage('error', message + errorDetails, context));
     
-    if (error?.stack && this.isDevelopment) {
-      console.error(error.stack);
+    const configLevel = PRODUCTION_CONFIG.LOGGING.LEVEL;
+    const levels: Record<LogLevel, number> = {
+      debug: 0,
+      info: 1,
+      warn: 2,
+      error: 3,
+    };
+    
+    return levels[level] >= levels[configLevel];
+  }
+
+  info(message: string, ...args: any[]) {
+    if (this.shouldLog('info')) {
+      console.info(`ℹ️ ${message}`, ...args);
     }
   }
 
-  debug(message: string, data?: any, context?: LogContext): void {
-    if (this.isDevelopment) {
-      console.debug(this.formatMessage('debug', message, context));
-      if (data) {
-        console.debug('Debug data:', data);
+  warn(message: string, ...args: any[]) {
+    if (this.shouldLog('warn')) {
+      console.warn(`⚠️ ${message}`, ...args);
+    }
+  }
+
+  error(message: string, error?: Error | unknown, ...args: any[]) {
+    if (this.shouldLog('error')) {
+      console.error(`❌ ${message}`, error, ...args);
+      
+      // In production, send to error reporting service
+      if (isProduction() && PRODUCTION_CONFIG.LOGGING.ENABLE_ERROR_REPORTING) {
+        this.reportError(message, error);
       }
     }
+  }
+
+  debug(message: string, ...args: any[]) {
+    if (this.shouldLog('debug')) {
+      console.debug(`🔍 ${message}`, ...args);
+    }
+  }
+
+  private reportError(message: string, error?: Error | unknown) {
+    // TODO: Integrate with error reporting service (Sentry, etc.)
+    // This is a placeholder for future integration
+    const errorData = {
+      message,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+    };
+    
+    // In production, this would send to an external service
+    console.error('Error Report:', errorData);
   }
 }
 
