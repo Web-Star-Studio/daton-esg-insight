@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
+import { ProductionHealthWidget } from '@/components/production/ProductionHealthWidget';
 
 interface KPICard {
   id: string;
@@ -433,8 +434,8 @@ export default function Dashboard() {
         </EnhancedCard>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '1s' }}>
+      {/* Quick Stats & System Health */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '1s' }}>
         <EnhancedCard variant="minimal" className="group">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
@@ -479,6 +480,9 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </EnhancedCard>
+
+        {/* Production Health Widget */}
+        <ProductionHealthWidget />
       </div>
     </div>
   );
