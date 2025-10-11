@@ -37,28 +37,42 @@ export function useChatAssistant(): UseChatAssistantReturn {
     {
       id: 'welcome',
       role: 'assistant',
-      content: `👋 Olá! Sou o **Assistente IA do Daton**, seu parceiro inteligente em gestão ESG.
+      content: `👋 **Olá! Sou o Assistente IA do Daton**, seu parceiro inteligente em gestão ESG.
 
-Tenho acesso **completo** aos dados da sua empresa e posso:
+Tenho acesso **completo e em tempo real** aos dados da sua empresa e posso ajudar de várias formas:
 
-**📊 ANALISAR:**
-🌍 Emissões de GEE e inventário de carbono
-📋 Licenças ambientais e vencimentos
-🎯 Progresso de metas e KPIs ESG
-♻️ Métricas de resíduos e destinação
-👥 Dados de colaboradores e indicadores sociais
-⚖️ Status de conformidade e auditorias
+**📊 CONSULTAS E ANÁLISES**
+Posso consultar instantaneamente:
+• Emissões de GEE e inventário de carbono por escopo
+• Licenças ambientais e alertas de vencimento
+• Progresso de metas ESG e OKRs
+• Métricas de resíduos e destinação
+• Dados de colaboradores e indicadores sociais
+• Status de conformidade e auditorias
+• Tarefas pendentes e em atraso
+• Riscos ESG por categoria e nível
 
-**✏️ CRIAR E GERENCIAR:**
-✨ Criar novas metas ESG
-📝 Adicionar registros de emissões
-🗓️ Criar e atribuir tarefas
-📄 Registrar licenças ambientais
-📊 Adicionar logs de resíduos
+**✏️ AÇÕES DE GERENCIAMENTO**
+Com sua confirmação, posso criar e atualizar:
+• Metas ESG, OKRs e projetos
+• Tarefas de coleta de dados
+• Licenças ambientais
+• Registros de emissões e resíduos
+• Não conformidades e riscos
+• Indicadores e medições
+• Funcionários, fornecedores e stakeholders
+• Programas de treinamento e auditorias
 
-*Todas as ações de escrita requerem sua confirmação antes de serem executadas.*
+**💡 COMO USAR**
+Converse naturalmente! Exemplos:
+• "Quais licenças vencem nos próximos 30 dias?"
+• "Mostre o progresso das metas ambientais"
+• "Crie uma tarefa de coleta de emissões para próximo mês"
+• "Analise os riscos críticos da categoria ambiental"
 
-**Como posso ajudar você hoje?**`,
+*Todas as ações de escrita requerem sua confirmação antes da execução.*
+
+**Como posso ajudar você hoje?** 🚀`,
       timestamp: new Date(),
     }
   ]);
@@ -178,9 +192,14 @@ Tenho acesso **completo** aos dados da sua empresa e posso:
       {
         id: 'welcome',
         role: 'assistant',
-        content: `👋 Olá! Sou o **Assistente IA do Daton**.
+        content: `👋 **Olá novamente!**
 
-**Como posso ajudar você hoje?**`,
+Estou pronto para ajudar. Posso:
+• Consultar e analisar seus dados ESG
+• Criar e gerenciar registros (com sua confirmação)
+• Responder perguntas sobre o sistema
+
+**O que você gostaria de fazer?**`,
         timestamp: new Date(),
       }
     ]);

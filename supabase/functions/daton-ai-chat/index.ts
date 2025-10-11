@@ -158,6 +158,82 @@ serve(async (req) => {
           }
         }
       },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_pending_tasks",
+          description: "Buscar tarefas pendentes ou em atraso",
+          parameters: {
+            type: "object",
+            properties: {
+              status: {
+                type: "string",
+                enum: ["all", "pending", "overdue", "in_progress"],
+                description: "Filtrar por status"
+              }
+            }
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_goal_details",
+          description: "Obter detalhes completos de uma meta específica incluindo histórico de progresso",
+          parameters: {
+            type: "object",
+            properties: {
+              goal_id: {
+                type: "string",
+                description: "ID da meta"
+              }
+            },
+            required: ["goal_id"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "get_risks_summary",
+          description: "Obter resumo de riscos ESG por categoria e nível",
+          parameters: {
+            type: "object",
+            properties: {
+              category: {
+                type: "string",
+                enum: ["all", "Ambiental", "Social", "Governança"],
+                description: "Filtrar por categoria"
+              }
+            }
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "search_across_modules",
+          description: "Buscar informações em múltiplos módulos do sistema",
+          parameters: {
+            type: "object",
+            properties: {
+              search_term: {
+                type: "string",
+                description: "Termo de busca"
+              },
+              modules: {
+                type: "array",
+                items: {
+                  type: "string",
+                  enum: ["goals", "tasks", "licenses", "emissions", "waste", "risks", "employees"]
+                },
+                description: "Módulos para buscar (deixe vazio para buscar em todos)"
+              }
+            },
+            required: ["search_term"]
+          }
+        }
+      },
       // WRITE TOOLS
       {
         type: "function" as const,
@@ -610,66 +686,101 @@ serve(async (req) => {
     ];
 
     // Build system prompt with context
-    const systemPrompt = `Você é o Assistente IA do Daton, um sistema especializado em gestão ESG (Ambiental, Social e Governança).
+    const systemPrompt = `Você é o Assistente IA do Daton, especialista em gestão ESG (Ambiental, Social e Governança).
 
-**Empresa atual:** ${company?.name || 'Empresa'}
-**Setor:** ${company?.sector || 'N/A'}
-**Página atual:** ${currentPage || 'dashboard'}
+**Contexto da Empresa:**
+🏢 ${company?.name || 'Empresa'} | 🏭 ${company?.sector || 'Setor não informado'}
+📍 Módulo atual: ${getPageContext(currentPage)}
 
-**CAPACIDADES COMPLETAS:**
+**SUAS CAPACIDADES:**
 
-📊 **LEITURA (imediata):**
-- Analisar dados de emissões de GEE e inventário
-- Verificar status de licenças ambientais
-- Acompanhar progresso de metas ESG
-- Analisar conformidade regulatória
-- Consultar métricas de resíduos
-- Verificar dados de colaboradores
+📊 **ANÁLISE E CONSULTA (Imediata):**
+Você tem acesso total aos dados da empresa e pode:
+• Analisar emissões de GEE por escopo e fonte
+• Verificar status e vencimentos de licenças
+• Acompanhar progresso de metas e OKRs
+• Avaliar conformidade e riscos ESG
+• Consultar métricas de resíduos e destinação
+• Verificar dados de colaboradores por departamento
+• Buscar tarefas pendentes e em atraso
+• Obter detalhes completos de registros específicos
+• Fazer buscas inteligentes em múltiplos módulos
 
-✏️ **ESCRITA (requer confirmação):**
-- Criar e atualizar metas ESG e OKRs
-- Adicionar e gerenciar tarefas e projetos
-- Registrar e atualizar licenças ambientais
-- Adicionar logs de resíduos
-- Criar fontes de emissão e registrar atividades
-- Registrar não conformidades e riscos ESG
-- Adicionar funcionários, fornecedores e stakeholders
-- Criar indicadores e registrar medições
-- Gerenciar treinamentos e auditorias
+✏️ **AÇÕES DE GERENCIAMENTO (Requer Confirmação):**
+Você pode propor ações de escrita que incluem:
 
-**IMPORTANTE - PROCESSO DE CONFIRMAÇÃO:**
-1. Quando o usuário pedir para CRIAR, ADICIONAR ou REGISTRAR algo, você deve:
-   - Preparar os dados necessários
-   - Apresentar um resumo claro da ação
-   - Pedir confirmação EXPLÍCITA do usuário
-   
-2. NUNCA execute ações de escrita sem confirmação
-3. SEMPRE valide que os dados estão completos e corretos
-4. Explique o impacto da ação antes de pedir confirmação
+**Metas & Estratégia:**
+• Criar e atualizar metas ESG
+• Criar OKRs e adicionar resultados-chave
+• Atualizar progresso de metas e OKRs
+• Criar projetos ESG e adicionar tarefas
 
-**FORMATO DE RESPOSTA PARA AÇÕES DE ESCRITA:**
-Quando identificar uma solicitação de escrita, responda assim:
+**Operacional:**
+• Criar tarefas de coleta de dados
+• Registrar licenças ambientais
+• Adicionar fontes de emissão
+• Registrar atividades de emissões
+• Adicionar logs de resíduos
 
-"📋 **Ação proposta:** [descrição clara]
+**Conformidade & Riscos:**
+• Registrar não conformidades
+• Criar riscos ESG
+• Criar auditorias
+• Criar indicadores de monitoramento
+• Registrar medições de indicadores
 
-**Detalhes:**
-- Campo 1: valor
-- Campo 2: valor
-- ...
+**Gestão de Pessoas:**
+• Adicionar funcionários
+• Criar programas de treinamento
+• Adicionar fornecedores e stakeholders
 
-**Impacto:** [explicar o que acontecerá]
+**⚠️ REGRAS CRÍTICAS:**
 
-Para confirmar esta ação, por favor diga 'confirmar' ou 'executar'."
+1. **Para Ações de Escrita:**
+   - SEMPRE colete todos os dados necessários primeiro
+   - Apresente um resumo claro e completo da ação
+   - Liste todos os campos que serão preenchidos
+   - Explique o impacto da ação
+   - NUNCA execute sem confirmação explícita do usuário
 
-**Como responder:**
-- Seja direto, claro e objetivo
-- Use dados reais quando disponíveis
-- Forneça insights acionáveis
-- Use emojis para destacar informações importantes
-- Organize informações em bullets ou tabelas
-- Para ações de escrita, SEMPRE peça confirmação primeiro
+2. **Para Consultas:**
+   - Use as ferramentas disponíveis para buscar dados reais
+   - Sempre que possível, busque informações específicas (IDs, datas, valores)
+   - Forneça análises com base nos dados, não suposições
+   - Se não encontrar dados, informe claramente
 
-**Contexto da página atual:** ${getPageContext(currentPage)}`;
+3. **Qualidade das Respostas:**
+   - Seja conciso mas completo
+   - Use formatação (bullets, negrito, emojis) para clareza
+   - Apresente números e métricas quando relevantes
+   - Sugira próximos passos quando apropriado
+   - Se o usuário perguntar algo vago, faça perguntas clarificadoras
+
+**FORMATO PARA CONFIRMAÇÃO DE AÇÕES:**
+
+"📋 **Ação Proposta:** [Nome da ação]
+
+**Detalhes da Operação:**
+• Campo 1: [valor]
+• Campo 2: [valor]
+• ...
+
+**Categoria:** [categoria]
+**Impacto:** [nível de impacto]
+
+⚠️ Esta ação irá [explicar o que acontecerá]. 
+
+✅ Para confirmar, responda 'confirmar' ou 'executar'
+❌ Para cancelar, responda 'cancelar'"
+
+**CONTEXTO DO MÓDULO ATUAL:**
+${getPageContext(currentPage)}
+
+**DICAS DE INTELIGÊNCIA:**
+• Quando o usuário mencionar "última", "recente" ou "atual", busque os dados mais recentes
+• Quando perguntar sobre prazos, sempre calcule dias restantes ou vencidos
+• Quando analisar métricas, compare com metas quando disponível
+• Seja proativo em identificar problemas ou oportunidades nos dados`;
 
     // Call Lovable AI with tool calling
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -826,15 +937,21 @@ Para confirmar esta ação, por favor diga 'confirmar' ou 'executar'."
 
 function getPageContext(page: string): string {
   const contexts: Record<string, string> = {
-    'dashboard': 'Você está na página principal. Forneça visão geral e KPIs importantes.',
-    'inventario-gee': 'Página de inventário de GEE. Foque em emissões, fontes e análise de carbono.',
-    'licenciamento': 'Página de licenciamento ambiental. Foque em licenças, vencimentos e conformidade.',
-    'metas': 'Página de metas ESG. Foque em progresso, OKRs e objetivos de sustentabilidade.',
-    'gestao-esg': 'Página de gestão ESG. Forneça análise holística de performance ESG.',
-    'documentos': 'Página de documentos. Ajude com gestão documental e organização.',
-    'auditoria': 'Página de auditoria. Foque em conformidade e auditorias.',
+    'dashboard': '📊 Dashboard - Forneça visão geral executiva, KPIs principais, alertas urgentes e tendências',
+    'inventario-gee': '🌍 Inventário GEE - Analise emissões por escopo, fontes principais, tendências de carbono e oportunidades de redução',
+    'licenciamento': '📄 Licenciamento - Priorize vencimentos próximos, status de conformidade, renovações pendentes',
+    'metas': '🎯 Metas ESG - Analise progresso vs. metas, identifique metas em risco, sugira ações corretivas',
+    'gestao-esg': '♻️ Gestão ESG - Visão holística de performance ESG, compare categorias (E/S/G), identifique gaps',
+    'documentos': '📁 Documentos - Ajude com organização, busca, categorização e gestão documental',
+    'auditoria': '🔍 Auditoria - Foque em conformidade, não conformidades, ações corretivas, próximas auditorias',
+    'riscos': '⚠️ Riscos - Analise matriz de riscos, priorize riscos críticos, avalie tratamentos',
+    'residuos': '♻️ Resíduos - Analise volumes, destinações, taxa de reciclagem, oportunidades de economia circular',
+    'tarefas': '✅ Tarefas - Priorize tarefas atrasadas, distribua carga de trabalho, identifique gargalos',
+    'projetos': '🚀 Projetos - Analise andamento, recursos, marcos, identifique riscos e atrasos',
+    'okrs': '🎯 OKRs - Avalie progresso de objetivos, analise resultados-chave, sugira ajustes',
+    'indicadores': '📈 Indicadores - Analise tendências, compare com metas, identifique desvios críticos'
   };
-  return contexts[page] || 'Contexto geral do sistema.';
+  return contexts[page] || '📋 Visão geral do sistema - Ajude o usuário a navegar e entender seus dados ESG';
 }
 
 async function executeTool(
@@ -1024,8 +1141,178 @@ async function executeTool(
           acc[dept] = (acc[dept] || 0) + 1;
           return acc;
         }, {}) || {},
-        averageTenure: 'N/A' // Could calculate if we have hire_date
+        averageTenure: 'N/A'
       };
+    }
+
+    case 'get_pending_tasks': {
+      const { status } = args;
+      const now = new Date().toISOString().split('T')[0];
+      
+      let query = supabase
+        .from('data_collection_tasks')
+        .select('*')
+        .eq('company_id', companyId);
+      
+      if (status === 'pending') {
+        query = query.eq('status', 'Pendente');
+      } else if (status === 'overdue') {
+        query = query.eq('status', 'Em Atraso').lt('due_date', now);
+      } else if (status === 'in_progress') {
+        query = query.eq('status', 'Em Andamento');
+      }
+      
+      const { data: tasks, error } = await query.order('due_date');
+      
+      if (error) return { error: 'Erro ao buscar tarefas' };
+
+      return {
+        total: tasks?.length || 0,
+        tasks: tasks?.map(t => ({
+          id: t.id,
+          name: t.name,
+          type: t.task_type,
+          status: t.status,
+          dueDate: t.due_date,
+          daysUntilDue: Math.ceil((new Date(t.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        })) || []
+      };
+    }
+
+    case 'get_goal_details': {
+      const { goal_id } = args;
+      
+      const { data: goal, error: goalError } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('id', goal_id)
+        .eq('company_id', companyId)
+        .single();
+      
+      if (goalError) return { error: 'Meta não encontrada' };
+
+      const { data: updates } = await supabase
+        .from('goal_progress_updates')
+        .select('*')
+        .eq('goal_id', goal_id)
+        .order('update_date', { ascending: false })
+        .limit(10);
+
+      return {
+        goal: {
+          name: goal.goal_name,
+          category: goal.category,
+          targetValue: goal.target_value,
+          baselineValue: goal.baseline_value,
+          currentProgress: goal.progress,
+          status: goal.status,
+          targetDate: goal.target_date,
+          unit: goal.unit
+        },
+        recentUpdates: updates?.map(u => ({
+          date: u.update_date,
+          value: u.current_value,
+          progress: u.progress_percentage,
+          notes: u.notes
+        })) || []
+      };
+    }
+
+    case 'get_risks_summary': {
+      const { category } = args;
+      
+      let query = supabase
+        .from('esg_risks')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('status', 'Ativo');
+      
+      if (category !== 'all') {
+        query = query.eq('category', category);
+      }
+      
+      const { data: risks, error } = await query;
+      
+      if (error) return { error: 'Erro ao buscar riscos' };
+
+      const byLevel = risks?.reduce((acc: any, risk: any) => {
+        const level = risk.inherent_risk_level || 'Indefinido';
+        acc[level] = (acc[level] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      return {
+        total: risks?.length || 0,
+        byLevel,
+        critical: risks?.filter(r => r.inherent_risk_level === 'Crítico').length || 0,
+        high: risks?.filter(r => r.inherent_risk_level === 'Alto').length || 0,
+        risks: risks?.map(r => ({
+          id: r.id,
+          title: r.title,
+          category: r.category,
+          level: r.inherent_risk_level,
+          probability: r.probability,
+          impact: r.impact
+        })) || []
+      };
+    }
+
+    case 'search_across_modules': {
+      const { search_term, modules } = args;
+      const results: any = {};
+      
+      const searchModules = modules?.length > 0 ? modules : ['goals', 'tasks', 'licenses', 'emissions', 'risks'];
+      
+      for (const module of searchModules) {
+        try {
+          switch (module) {
+            case 'goals': {
+              const { data } = await supabase
+                .from('goals')
+                .select('id, goal_name, category, status')
+                .eq('company_id', companyId)
+                .ilike('goal_name', `%${search_term}%`)
+                .limit(5);
+              results.goals = data || [];
+              break;
+            }
+            case 'tasks': {
+              const { data } = await supabase
+                .from('data_collection_tasks')
+                .select('id, name, task_type, status, due_date')
+                .eq('company_id', companyId)
+                .ilike('name', `%${search_term}%`)
+                .limit(5);
+              results.tasks = data || [];
+              break;
+            }
+            case 'licenses': {
+              const { data } = await supabase
+                .from('licenses')
+                .select('id, license_name, license_type, status')
+                .eq('company_id', companyId)
+                .ilike('license_name', `%${search_term}%`)
+                .limit(5);
+              results.licenses = data || [];
+              break;
+            }
+            case 'risks': {
+              const { data } = await supabase
+                .from('esg_risks')
+                .select('id, title, category, inherent_risk_level')
+                .eq('company_id', companyId)
+                .ilike('title', `%${search_term}%`)
+                .limit(5);
+              results.risks = data || [];
+              break;
+            }
+          }
+        } catch (e) {
+          console.error(`Error searching ${module}:`, e);
+        }
+      }
+
+      return results;
     }
 
     default:
