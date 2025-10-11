@@ -80,7 +80,7 @@ async function getAllAssets(supabase: any, company_id: string) {
   const hierarchy = buildHierarchy(data || [])
 
   return new Response(
-    JSON.stringify(hierarchy),
+    JSON.stringify({ assets: hierarchy }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }

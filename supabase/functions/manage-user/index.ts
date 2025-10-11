@@ -34,11 +34,11 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Check if user is admin using the new user_roles table
-    const { data: userRole, error: roleError } = await supabaseClient
-      .from('user_roles')
+    // Check if user is admin using profiles table
+    const { data: userProfile, error: roleError } = await supabaseClient
+      .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     if (roleError) {
@@ -46,7 +46,7 @@ serve(async (req) => {
       throw new Error('Failed to verify user permissions');
     }
 
-    if (!userRole || userRole.role !== 'Admin') {
+    if (!userProfile || userProfile.role !== 'Admin') {
       throw new Error('Only admins can manage users');
     }
 
@@ -76,14 +76,13 @@ serve(async (req) => {
 
         if (profileError) throw profileError;
 
-        // Create user role in separate table for security
+        // Update profile with role
         const { error: roleError } = await supabaseClient
-          .from('user_roles')
-          .insert({
-            user_id: newUser.user.id,
-            company_id: userData.company_id,
+          .from('profiles')
+          .update({
             role: userData.role,
-          });
+          })
+          .eq('id', newUser.user.id);
 
         if (roleError) throw roleError;
 
@@ -94,27 +93,21 @@ serve(async (req) => {
 
       case 'update': {
         // Update profile
+        const updateData: any = {
+          full_name: userData.full_name,
+          job_title: userData.department,
+        };
+
+        if (userData.role) {
+          updateData.role = userData.role;
+        }
+
         const { error: updateError } = await supabaseClient
           .from('profiles')
-          .update({
-            full_name: userData.full_name,
-            job_title: userData.department,
-          })
+          .update(updateData)
           .eq('id', userData.id);
 
         if (updateError) throw updateError;
-
-        // Update role in user_roles table
-        if (userData.role) {
-          const { error: roleUpdateError } = await supabaseClient
-            .from('user_roles')
-            .update({
-              role: userData.role,
-            })
-            .eq('user_id', userData.id);
-
-          if (roleUpdateError) throw roleUpdateError;
-        }
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,13 +126,10 @@ serve(async (req) => {
       }
 
       case 'list': {
-        // Get company users with roles from user_roles table
+        // Get company users with roles from profiles
         const { data: profiles, error: profilesError } = await supabaseClient
           .from('profiles')
-          .select(`
-            *,
-            user_roles!inner(role)
-          `)
+          .select('*')
           .eq('company_id', userData.company_id)
           .order('created_at', { ascending: false });
 
@@ -148,15 +138,14 @@ serve(async (req) => {
         // Get auth users for emails
         const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
 
-        // Merge data with role from user_roles table
+        // Merge data with role from profiles
         const users = profiles.map(profile => {
           const authUser = authUsers?.users.find(u => u.id === profile.id);
-          const userRoles = profile.user_roles as any[];
           return {
             id: profile.id,
             full_name: profile.full_name,
             email: authUser?.email || 'N/A',
-            role: userRoles?.[0]?.role || 'Colaborador',
+            role: profile.role || 'Colaborador',
             company_id: profile.company_id,
             created_at: profile.created_at,
             avatar_url: profile.avatar_url,
