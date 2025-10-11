@@ -185,6 +185,45 @@ serve(async (req) => {
       {
         type: "function" as const,
         function: {
+          name: "update_goal",
+          description: "Atualizar meta ESG existente. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              goal_id: { type: "string", description: "ID da meta a atualizar" },
+              goal_name: { type: "string", description: "Novo nome (opcional)" },
+              target_value: { type: "number", description: "Novo valor alvo (opcional)" },
+              target_date: { type: "string", format: "date", description: "Nova data (opcional)" },
+              status: { 
+                type: "string", 
+                enum: ["Ativa", "Concluída", "Cancelada"],
+                description: "Novo status (opcional)" 
+              }
+            },
+            required: ["goal_id"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "update_goal_progress",
+          description: "Atualizar progresso de uma meta ESG. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              goal_id: { type: "string", description: "ID da meta" },
+              current_value: { type: "number", description: "Valor atual alcançado" },
+              update_date: { type: "string", format: "date", description: "Data da atualização (YYYY-MM-DD)" },
+              notes: { type: "string", description: "Observações sobre o progresso" }
+            },
+            required: ["goal_id", "current_value"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
           name: "create_task",
           description: "Criar tarefa de coleta de dados. SEMPRE peça confirmação antes de chamar esta função.",
           parameters: {
@@ -205,6 +244,25 @@ serve(async (req) => {
               }
             },
             required: ["name", "task_type", "due_date", "frequency"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "update_task_status",
+          description: "Atualizar status de uma tarefa. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              task_id: { type: "string", description: "ID da tarefa" },
+              status: { 
+                type: "string",
+                enum: ["Pendente", "Em Andamento", "Concluída", "Em Atraso"],
+                description: "Novo status" 
+              }
+            },
+            required: ["task_id", "status"]
           }
         }
       },
@@ -234,6 +292,27 @@ serve(async (req) => {
       {
         type: "function" as const,
         function: {
+          name: "update_license",
+          description: "Atualizar licença ambiental existente. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              license_id: { type: "string", description: "ID da licença" },
+              status: { 
+                type: "string",
+                enum: ["Ativa", "Vencida", "Em Renovação", "Suspensa"],
+                description: "Novo status (opcional)" 
+              },
+              expiration_date: { type: "string", format: "date", description: "Nova data de validade (opcional)" },
+              license_number: { type: "string", description: "Novo número (opcional)" }
+            },
+            required: ["license_id"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
           name: "log_waste",
           description: "Registrar log de resíduos. SEMPRE peça confirmação antes de chamar esta função.",
           parameters: {
@@ -250,6 +329,125 @@ serve(async (req) => {
               final_destination: { type: "string", description: "Destino final" }
             },
             required: ["waste_type", "class", "quantity", "log_date"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "add_emission_source",
+          description: "Criar nova fonte de emissão no inventário GEE. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              source_name: { type: "string", description: "Nome da fonte de emissão" },
+              scope: { 
+                type: "integer",
+                enum: [1, 2, 3],
+                description: "Escopo GHG Protocol (1, 2 ou 3)" 
+              },
+              description: { type: "string", description: "Descrição da fonte" },
+              category: { type: "string", description: "Categoria da fonte" },
+              unit: { type: "string", description: "Unidade de medida (padrão: kg)" }
+            },
+            required: ["source_name", "scope"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "log_emission",
+          description: "Registrar atividade/dado de emissão. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              emission_source_id: { type: "string", description: "ID da fonte de emissão" },
+              quantity: { type: "number", description: "Quantidade da atividade" },
+              period_start: { type: "string", format: "date", description: "Início do período (YYYY-MM-DD)" },
+              period_end: { type: "string", format: "date", description: "Fim do período (YYYY-MM-DD)" },
+              data_quality: { 
+                type: "string",
+                enum: ["Medido", "Calculado", "Estimado"],
+                description: "Qualidade do dado" 
+              },
+              notes: { type: "string", description: "Observações" }
+            },
+            required: ["emission_source_id", "quantity"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_non_conformity",
+          description: "Registrar não conformidade no sistema. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Título da não conformidade" },
+              description: { type: "string", description: "Descrição detalhada" },
+              category: { 
+                type: "string",
+                enum: ["Ambiental", "Social", "Governança", "Qualidade", "Segurança"],
+                description: "Categoria" 
+              },
+              severity: { 
+                type: "string",
+                enum: ["Baixa", "Média", "Alta", "Crítica"],
+                description: "Severidade" 
+              }
+            },
+            required: ["title", "description"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_risk",
+          description: "Registrar novo risco ESG. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Título do risco" },
+              description: { type: "string", description: "Descrição do risco" },
+              category: { 
+                type: "string",
+                enum: ["Ambiental", "Social", "Governança"],
+                description: "Categoria ESG" 
+              },
+              probability: { 
+                type: "string",
+                enum: ["Baixa", "Média", "Alta"],
+                description: "Probabilidade de ocorrência" 
+              },
+              impact: { 
+                type: "string",
+                enum: ["Baixo", "Médio", "Alto"],
+                description: "Impacto potencial" 
+              }
+            },
+            required: ["title", "category", "probability", "impact"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "add_employee",
+          description: "Adicionar novo funcionário ao sistema. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome completo" },
+              email: { type: "string", format: "email", description: "Email corporativo" },
+              employee_code: { type: "string", description: "Código do funcionário" },
+              department: { type: "string", description: "Departamento" },
+              role: { type: "string", description: "Cargo/função" },
+              hire_date: { type: "string", format: "date", description: "Data de admissão (YYYY-MM-DD)" }
+            },
+            required: ["name", "email"]
           }
         }
       }
@@ -273,10 +471,13 @@ serve(async (req) => {
 - Verificar dados de colaboradores
 
 ✏️ **ESCRITA (requer confirmação):**
-- Criar novas metas ESG
-- Adicionar tarefas de coleta de dados
-- Registrar licenças ambientais
+- Criar e atualizar metas ESG
+- Adicionar e gerenciar tarefas de coleta de dados
+- Registrar e atualizar licenças ambientais
 - Adicionar logs de resíduos
+- Criar fontes de emissão e registrar atividades
+- Registrar não conformidades e riscos ESG
+- Adicionar funcionários ao sistema
 
 **IMPORTANTE - PROCESSO DE CONFIRMAÇÃO:**
 1. Quando o usuário pedir para CRIAR, ADICIONAR ou REGISTRAR algo, você deve:
@@ -348,7 +549,15 @@ Para confirmar esta ação, por favor diga 'confirmar' ou 'executar'."
       console.log('AI requested tool calls:', choice.message.tool_calls);
       
       // Check if any write tools were called
-      const writeTools = ['create_goal', 'create_task', 'add_license', 'log_waste'];
+      const writeTools = [
+        'create_goal', 'update_goal', 'update_goal_progress',
+        'create_task', 'update_task_status',
+        'add_license', 'update_license',
+        'log_waste',
+        'add_emission_source', 'log_emission',
+        'create_non_conformity', 'create_risk',
+        'add_employee'
+      ];
       const hasWriteAction = choice.message.tool_calls.some((tc: any) => 
         writeTools.includes(tc.function.name)
       );
