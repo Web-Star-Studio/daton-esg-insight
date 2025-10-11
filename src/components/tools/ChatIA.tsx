@@ -70,79 +70,9 @@ export function ChatIA() {
   }, []);
 
   const generateAIResponse = async (userMessage: string): Promise<AIMessage> => {
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-    
-    let response = '';
-    let type: AIMessage['type'] = 'text';
-
-    if (userMessage.toLowerCase().includes('desempenho') || userMessage.toLowerCase().includes('esg')) {
-      type = 'analysis';
-      response = `📊 **Análise ESG Atual**
-
-**Performance Geral:** 85.2/100 (+5.3% vs mês anterior)
-
-**Destaques:**
-• Redução de emissões: 12% este ano
-• Taxa de reciclagem: 92% (meta: 85%)
-• Score de diversidade: 78%
-
-**Áreas de atenção:**
-• 3 licenças vencem em 60 dias
-• Meta de energia renovável: 68/75%
-
-*Análise baseada em dados em tempo real*`;
-    } else if (userMessage.toLowerCase().includes('licença') || userMessage.toLowerCase().includes('vencimento')) {
-      type = 'alert';
-      response = `⚠️ **Status de Licenças**
-
-**🔴 Urgente (< 30 dias):**
-• Licença Ambiental - 23 dias
-• Autorização Emissões - 28 dias
-
-**🟡 Atenção (30-90 dias):**
-• Certificação ISO 14001 - 67 dias
-• Autorização IBAMA - 82 dias
-
-**Ação recomendada:** Iniciar renovação imediatamente`;
-    } else if (userMessage.toLowerCase().includes('meta') || userMessage.toLowerCase().includes('sustentabilidade')) {
-      type = 'recommendation';
-      response = `🎯 **Metas de Sustentabilidade 2024**
-
-**✅ No prazo:**
-• CO₂: 68% concluído
-• Reciclagem: 112% da meta
-• Treinamentos: 89%
-
-**⚠️ Requer atenção:**
-• Energia renovável: 45/60%
-• Diversidade: 32/40%
-
-**Sugestões:**
-1. Acelerar instalação solar
-2. Programa diversidade
-3. Auditoria ISO urgente`;
-    } else {
-      response = `🤖 **Assistente ESG**
-
-Como posso ajudar hoje? Posso fornecer:
-
-• **Análises em tempo real** de dados ESG
-• **Status de compliance** e licenças
-• **Acompanhamento de metas**
-• **Alertas preditivos** de riscos
-• **Relatórios personalizados**
-
-Experimente perguntar sobre performance, licenças ou metas!`;
-    }
-
-    return {
-      id: `ai-${Date.now()}`,
-      role: 'assistant',
-      content: response,
-      timestamp: new Date(),
-      type
-    };
+    // This now uses real AI through the Daton AI Chat system
+    // Import the actual implementation from useChatAssistant
+    throw new Error('Use the ChatAssistant component instead - this is deprecated');
   };
 
   const handleSendMessage = async (message?: string) => {

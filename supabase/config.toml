@@ -111,3 +111,6 @@ verify_jwt = true
 
 [functions.gri-indicator-autofill]
 verify_jwt = true
+
+[functions.daton-ai-chat]
+verify_jwt = true

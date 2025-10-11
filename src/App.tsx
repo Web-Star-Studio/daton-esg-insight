@@ -13,6 +13,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
+import { ChatAssistant } from "@/components/ChatAssistant";
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
@@ -381,6 +382,9 @@ const App = () => (
                   </Routes>
                 </PageTransition>
               </RouteValidator>
+              
+              {/* Assistente IA Global - Aparece em todas as páginas */}
+              <ChatAssistant />
             </BrowserRouter>
         </SmartToastProvider>
       </TooltipProvider>
