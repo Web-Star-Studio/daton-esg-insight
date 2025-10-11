@@ -450,6 +450,162 @@ serve(async (req) => {
             required: ["name", "email"]
           }
         }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_okr",
+          description: "Criar novo OKR (Objective and Key Results). SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Título do objetivo" },
+              description: { type: "string", description: "Descrição do objetivo" },
+              objective_type: { type: "string", enum: ["Estratégico", "Tático", "Operacional"], description: "Tipo de objetivo" },
+              time_period: { type: "string", description: "Período (ex: Q1 2025, Anual 2025)" },
+              start_date: { type: "string", format: "date", description: "Data de início (YYYY-MM-DD)" },
+              end_date: { type: "string", format: "date", description: "Data de fim (YYYY-MM-DD)" },
+              owner_user_id: { type: "string", description: "ID do responsável" }
+            },
+            required: ["title", "time_period"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "add_key_result",
+          description: "Adicionar resultado-chave a um OKR. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              okr_id: { type: "string", description: "ID do OKR" },
+              title: { type: "string", description: "Título do resultado-chave" },
+              description: { type: "string", description: "Descrição" },
+              target_value: { type: "number", description: "Valor meta" },
+              current_value: { type: "number", description: "Valor atual (inicial)" },
+              unit: { type: "string", description: "Unidade de medida" },
+              due_date: { type: "string", format: "date", description: "Data limite (YYYY-MM-DD)" },
+              owner_user_id: { type: "string", description: "ID do responsável" }
+            },
+            required: ["okr_id", "title", "target_value"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "update_okr_progress",
+          description: "Atualizar progresso de um OKR. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              okr_id: { type: "string", description: "ID do OKR" },
+              progress_percentage: { type: "number", description: "Percentual de progresso (0-100)" },
+              status: { type: "string", enum: ["not_started", "in_progress", "at_risk", "completed", "cancelled"], description: "Status do OKR" }
+            },
+            required: ["okr_id", "progress_percentage"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_project",
+          description: "Criar novo projeto. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome do projeto" },
+              description: { type: "string", description: "Descrição do projeto" },
+              project_type: { type: "string", enum: ["ESG", "Ambiental", "Social", "Governança", "Outro"], description: "Tipo de projeto" },
+              start_date: { type: "string", format: "date", description: "Data de início (YYYY-MM-DD)" },
+              end_date: { type: "string", format: "date", description: "Data de término (YYYY-MM-DD)" },
+              budget: { type: "number", description: "Orçamento" },
+              manager_user_id: { type: "string", description: "ID do gerente" },
+              priority: { type: "string", enum: ["Baixa", "Média", "Alta", "Crítica"], description: "Prioridade" }
+            },
+            required: ["name"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "add_project_task",
+          description: "Adicionar tarefa a um projeto. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              project_id: { type: "string", description: "ID do projeto" },
+              title: { type: "string", description: "Título da tarefa" },
+              description: { type: "string", description: "Descrição" },
+              assigned_to_user_id: { type: "string", description: "ID do responsável" },
+              start_date: { type: "string", format: "date", description: "Data de início (YYYY-MM-DD)" },
+              due_date: { type: "string", format: "date", description: "Data de vencimento (YYYY-MM-DD)" },
+              priority: { type: "string", enum: ["Baixa", "Média", "Alta", "Crítica"], description: "Prioridade" }
+            },
+            required: ["project_id", "title"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_indicator",
+          description: "Criar indicador de monitoramento. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Nome do indicador" },
+              description: { type: "string", description: "Descrição" },
+              category: { type: "string", enum: ["Ambiental", "Social", "Governança", "Qualidade", "Segurança", "Outro"], description: "Categoria" },
+              unit: { type: "string", description: "Unidade de medida" },
+              measurement_frequency: { type: "string", enum: ["Diária", "Semanal", "Quinzenal", "Mensal", "Trimestral", "Semestral", "Anual"], description: "Frequência" },
+              target_value: { type: "number", description: "Valor meta" },
+              responsible_user_id: { type: "string", description: "ID do responsável" }
+            },
+            required: ["name", "category"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "add_indicator_measurement",
+          description: "Registrar medição de indicador. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              indicator_id: { type: "string", description: "ID do indicador" },
+              measurement_date: { type: "string", format: "date", description: "Data da medição (YYYY-MM-DD)" },
+              measured_value: { type: "number", description: "Valor medido" },
+              notes: { type: "string", description: "Observações" }
+            },
+            required: ["indicator_id", "measured_value"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_license",
+          description: "Criar nova licença ambiental. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              asset_id: { type: "string", description: "ID do ativo relacionado" },
+              license_name: { type: "string", description: "Nome da licença" },
+              license_number: { type: "string", description: "Número da licença" },
+              license_type: { type: "string", enum: ["LP", "LI", "LO", "LAU", "Outras"], description: "Tipo de licença" },
+              issuing_body: { type: "string", description: "Órgão emissor" },
+              issue_date: { type: "string", format: "date", description: "Data de emissão (YYYY-MM-DD)" },
+              expiration_date: { type: "string", format: "date", description: "Data de vencimento (YYYY-MM-DD)" },
+              responsible_user_id: { type: "string", description: "ID do responsável" }
+            },
+            required: ["license_name", "license_type", "expiration_date"]
+          }
+        }
       }
     ];
 
@@ -471,13 +627,15 @@ serve(async (req) => {
 - Verificar dados de colaboradores
 
 ✏️ **ESCRITA (requer confirmação):**
-- Criar e atualizar metas ESG
-- Adicionar e gerenciar tarefas de coleta de dados
+- Criar e atualizar metas ESG e OKRs
+- Adicionar e gerenciar tarefas e projetos
 - Registrar e atualizar licenças ambientais
 - Adicionar logs de resíduos
 - Criar fontes de emissão e registrar atividades
 - Registrar não conformidades e riscos ESG
-- Adicionar funcionários ao sistema
+- Adicionar funcionários, fornecedores e stakeholders
+- Criar indicadores e registrar medições
+- Gerenciar treinamentos e auditorias
 
 **IMPORTANTE - PROCESSO DE CONFIRMAÇÃO:**
 1. Quando o usuário pedir para CRIAR, ADICIONAR ou REGISTRAR algo, você deve:
@@ -556,7 +714,12 @@ Para confirmar esta ação, por favor diga 'confirmar' ou 'executar'."
         'log_waste',
         'add_emission_source', 'log_emission',
         'create_non_conformity', 'create_risk',
-        'add_employee'
+        'add_employee', 'add_supplier', 'add_stakeholder',
+        'create_training', 'create_audit',
+        'create_okr', 'add_key_result', 'update_okr_progress',
+        'create_project', 'add_project_task',
+        'create_indicator', 'add_indicator_measurement',
+        'create_license'
       ];
       const hasWriteAction = choice.message.tool_calls.some((tc: any) => 
         writeTools.includes(tc.function.name)

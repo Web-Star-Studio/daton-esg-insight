@@ -51,6 +51,22 @@ export async function executeWriteTool(
       return await createTrainingAction(args, companyId, userId, supabase);
     case 'create_audit':
       return await createAuditAction(args, companyId, userId, supabase);
+    case 'create_okr':
+      return await createOKRAction(args, companyId, userId, supabase);
+    case 'add_key_result':
+      return await addKeyResultAction(args, companyId, userId, supabase);
+    case 'update_okr_progress':
+      return await updateOKRProgressAction(args, companyId, userId, supabase);
+    case 'create_project':
+      return await createProjectAction(args, companyId, userId, supabase);
+    case 'add_project_task':
+      return await addProjectTaskAction(args, companyId, userId, supabase);
+    case 'create_indicator':
+      return await createIndicatorAction(args, companyId, userId, supabase);
+    case 'add_indicator_measurement':
+      return await addIndicatorMeasurementAction(args, companyId, userId, supabase);
+    case 'create_license':
+      return await createLicenseAction(args, companyId, userId, supabase);
     default:
       return { error: `Ferramenta de escrita desconhecida: ${toolName}` };
   }
@@ -627,6 +643,203 @@ async function createAuditAction(args: any, companyId: string, userId: string, s
   return { success: true, message: `✅ Auditoria "${args.title}" criada!`, data: { auditId: data.id } };
 }
 
+async function createOKRAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.title || !args.time_period) {
+    return { success: false, error: "Dados incompletos", missing: ["title", "time_period"] };
+  }
+
+  const { data, error } = await supabase
+    .from('okrs')
+    .insert({
+      company_id: companyId,
+      title: args.title,
+      description: args.description,
+      objective_type: args.objective_type || 'Estratégico',
+      time_period: args.time_period,
+      start_date: args.start_date,
+      end_date: args.end_date,
+      owner_user_id: args.owner_user_id,
+      status: 'not_started',
+      progress_percentage: 0
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao criar OKR", details: error.message };
+  return { success: true, message: `✅ OKR "${args.title}" criado para ${args.time_period}!`, data: { okrId: data.id } };
+}
+
+async function addKeyResultAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.okr_id || !args.title || !args.target_value) {
+    return { success: false, error: "Dados incompletos", missing: ["okr_id", "title", "target_value"] };
+  }
+
+  const { data, error } = await supabase
+    .from('key_results')
+    .insert({
+      okr_id: args.okr_id,
+      title: args.title,
+      description: args.description,
+      target_value: args.target_value,
+      current_value: args.current_value || 0,
+      unit: args.unit,
+      due_date: args.due_date,
+      owner_user_id: args.owner_user_id,
+      status: 'not_started',
+      progress_percentage: 0
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao adicionar resultado-chave", details: error.message };
+  return { success: true, message: `✅ Resultado-chave "${args.title}" adicionado ao OKR!`, data: { keyResultId: data.id } };
+}
+
+async function updateOKRProgressAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.okr_id || args.progress_percentage === undefined) {
+    return { success: false, error: "Dados incompletos", missing: ["okr_id", "progress_percentage"] };
+  }
+
+  const { data, error } = await supabase
+    .from('okrs')
+    .update({
+      progress_percentage: args.progress_percentage,
+      status: args.status || (args.progress_percentage >= 100 ? 'completed' : 'in_progress'),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', args.okr_id)
+    .eq('company_id', companyId)
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao atualizar progresso do OKR", details: error.message };
+  return { success: true, message: `✅ Progresso do OKR atualizado para ${args.progress_percentage}%!`, data: { okrId: data.id } };
+}
+
+async function createProjectAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.name) {
+    return { success: false, error: "Dados incompletos", missing: ["name"] };
+  }
+
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({
+      company_id: companyId,
+      name: args.name,
+      description: args.description,
+      project_type: args.project_type || 'ESG',
+      start_date: args.start_date,
+      end_date: args.end_date,
+      budget: args.budget,
+      manager_user_id: args.manager_user_id,
+      status: 'Planejamento',
+      priority: args.priority || 'Média',
+      progress_percentage: 0
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao criar projeto", details: error.message };
+  return { success: true, message: `✅ Projeto "${args.name}" criado com sucesso!`, data: { projectId: data.id } };
+}
+
+async function addProjectTaskAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.project_id || !args.title) {
+    return { success: false, error: "Dados incompletos", missing: ["project_id", "title"] };
+  }
+
+  const { data, error } = await supabase
+    .from('project_tasks')
+    .insert({
+      project_id: args.project_id,
+      title: args.title,
+      description: args.description,
+      assigned_to_user_id: args.assigned_to_user_id,
+      start_date: args.start_date,
+      due_date: args.due_date,
+      priority: args.priority || 'Média',
+      status: 'Pendente'
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao adicionar tarefa ao projeto", details: error.message };
+  return { success: true, message: `✅ Tarefa "${args.title}" adicionada ao projeto!`, data: { taskId: data.id } };
+}
+
+async function createIndicatorAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.name || !args.category) {
+    return { success: false, error: "Dados incompletos", missing: ["name", "category"] };
+  }
+
+  const { data, error } = await supabase
+    .from('indicators')
+    .insert({
+      company_id: companyId,
+      name: args.name,
+      description: args.description,
+      category: args.category,
+      unit: args.unit,
+      measurement_frequency: args.measurement_frequency || 'Mensal',
+      target_value: args.target_value,
+      responsible_user_id: args.responsible_user_id,
+      is_active: true
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao criar indicador", details: error.message };
+  return { success: true, message: `✅ Indicador "${args.name}" criado com frequência ${args.measurement_frequency || 'Mensal'}!`, data: { indicatorId: data.id } };
+}
+
+async function addIndicatorMeasurementAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.indicator_id || args.measured_value === undefined) {
+    return { success: false, error: "Dados incompletos", missing: ["indicator_id", "measured_value"] };
+  }
+
+  const { data, error } = await supabase
+    .from('indicator_measurements')
+    .insert({
+      indicator_id: args.indicator_id,
+      measurement_date: args.measurement_date || new Date().toISOString().split('T')[0],
+      measured_value: args.measured_value,
+      measured_by_user_id: userId,
+      notes: args.notes,
+      status: 'valid'
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao registrar medição", details: error.message };
+  return { success: true, message: `✅ Medição de ${args.measured_value} registrada para o indicador!`, data: { measurementId: data.id } };
+}
+
+async function createLicenseAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.license_name || !args.license_type || !args.expiration_date) {
+    return { success: false, error: "Dados incompletos", missing: ["license_name", "license_type", "expiration_date"] };
+  }
+
+  const { data, error } = await supabase
+    .from('licenses')
+    .insert({
+      company_id: companyId,
+      asset_id: args.asset_id,
+      license_name: args.license_name,
+      license_number: args.license_number,
+      license_type: args.license_type,
+      issuing_body: args.issuing_body,
+      issue_date: args.issue_date || new Date().toISOString().split('T')[0],
+      expiration_date: args.expiration_date,
+      status: 'Ativa',
+      responsible_user_id: args.responsible_user_id
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao criar licença", details: error.message };
+  return { success: true, message: `✅ Licença "${args.license_name}" (${args.license_type}) criada, válida até ${args.expiration_date}!`, data: { licenseId: data.id } };
+}
+
 // Helper functions for action display
 export function getActionDisplayName(toolName: string): string {
   const names: Record<string, string> = {
@@ -646,7 +859,15 @@ export function getActionDisplayName(toolName: string): string {
     'add_supplier': 'Adicionar Fornecedor',
     'add_stakeholder': 'Adicionar Stakeholder',
     'create_training': 'Criar Programa de Treinamento',
-    'create_audit': 'Criar Auditoria'
+    'create_audit': 'Criar Auditoria',
+    'create_okr': 'Criar OKR',
+    'add_key_result': 'Adicionar Resultado-Chave',
+    'update_okr_progress': 'Atualizar Progresso do OKR',
+    'create_project': 'Criar Projeto',
+    'add_project_task': 'Adicionar Tarefa ao Projeto',
+    'create_indicator': 'Criar Indicador',
+    'add_indicator_measurement': 'Registrar Medição de Indicador',
+    'create_license': 'Criar Licença Ambiental'
   };
   return names[toolName] || toolName;
 }
@@ -687,6 +908,22 @@ export function getActionDescription(toolName: string, params: any): string {
       return `Criar treinamento "${params.name}" com ${params.duration_hours}h`;
     case 'create_audit':
       return `Criar auditoria "${params.title}" tipo ${params.audit_type}`;
+    case 'create_okr':
+      return `Criar OKR "${params.title}" para o período ${params.time_period}`;
+    case 'add_key_result':
+      return `Adicionar resultado-chave "${params.title}" com meta de ${params.target_value} ${params.unit || ''}`;
+    case 'update_okr_progress':
+      return `Atualizar progresso do OKR para ${params.progress_percentage}%`;
+    case 'create_project':
+      return `Criar projeto "${params.name}" do tipo ${params.project_type || 'ESG'}`;
+    case 'add_project_task':
+      return `Adicionar tarefa "${params.title}" ao projeto com prazo ${params.due_date || 'a definir'}`;
+    case 'create_indicator':
+      return `Criar indicador "${params.name}" da categoria ${params.category} com frequência ${params.measurement_frequency || 'Mensal'}`;
+    case 'add_indicator_measurement':
+      return `Registrar medição de ${params.measured_value} para o indicador`;
+    case 'create_license':
+      return `Criar licença "${params.license_name}" (${params.license_type}) válida até ${params.expiration_date}`;
     default:
       return 'Ação não especificada';
   }
@@ -710,7 +947,15 @@ export function getActionImpact(toolName: string): 'low' | 'medium' | 'high' {
     'add_supplier': 'medium',
     'add_stakeholder': 'medium',
     'create_training': 'medium',
-    'create_audit': 'high'
+    'create_audit': 'high',
+    'create_okr': 'high',
+    'add_key_result': 'medium',
+    'update_okr_progress': 'low',
+    'create_project': 'high',
+    'add_project_task': 'low',
+    'create_indicator': 'medium',
+    'add_indicator_measurement': 'low',
+    'create_license': 'high'
   };
   return impacts[toolName] || 'medium';
 }
@@ -733,7 +978,15 @@ export function getActionCategory(toolName: string): string {
     'add_supplier': 'Fornecedores',
     'add_stakeholder': 'Stakeholders',
     'create_training': 'Treinamentos',
-    'create_audit': 'Auditoria'
+    'create_audit': 'Auditoria',
+    'create_okr': 'OKRs',
+    'add_key_result': 'OKRs',
+    'update_okr_progress': 'OKRs',
+    'create_project': 'Projetos',
+    'add_project_task': 'Projetos',
+    'create_indicator': 'Indicadores',
+    'add_indicator_measurement': 'Indicadores',
+    'create_license': 'Licenciamento'
   };
   return categories[toolName] || 'Geral';
 }
