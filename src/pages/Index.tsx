@@ -13,9 +13,7 @@ import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
 import UnifiedDashboardWidget from "@/components/UnifiedDashboardWidget"
 import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
 import SystemPerformanceMonitor from "@/components/SystemPerformanceMonitor"
-import { OnboardingDashboardWidget } from "@/components/onboarding/OnboardingDashboardWidget"
-import { FirstStepsSection } from "@/components/dashboard/FirstStepsSection"
-import { PrimeirosPassosWidget } from "@/components/dashboard/PrimeirosPassosWidget"
+import { OnboardingOrchestrator } from "@/components/onboarding/OnboardingOrchestrator"
 import { useAuth } from "@/contexts/AuthContext"
 import { 
   Flag, 
@@ -136,10 +134,8 @@ const Index = () => {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-10">
 
-            {/* Onboarding Widget - Always visible at top for quick access */}
-            {shouldShowOnboarding && (
-              <OnboardingDashboardWidget showWidget={true} />
-            )}
+            {/* Unified Onboarding System */}
+            <OnboardingOrchestrator completedModules={[]} />
 
         {/* Primeira Linha - Cards de Resumo Rápido */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -300,16 +296,6 @@ const Index = () => {
 
         {/* Terceira Linha - Conteúdo Dinâmico */}
         <div className="space-y-8">
-          {/* Primeiros Passos Widget - para novos usuários */}
-          {!shouldShowOnboarding && (
-            <PrimeirosPassosWidget />
-          )}
-          
-          {/* First Steps Section - Show for users who completed onboarding but need guidance */}
-          {!shouldShowOnboarding && (
-            <FirstStepsSection completedModules={[]} />
-          )}
-          
           <div className="w-full">
             <AIProcessingStatusWidget />
           </div>

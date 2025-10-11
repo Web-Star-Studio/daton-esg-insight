@@ -34,12 +34,17 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Check if user is admin
-    const { data: userRole } = await supabaseClient
+    // Check if user is admin using the new user_roles table
+    const { data: userRole, error: roleError } = await supabaseClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (roleError) {
+      console.error('Error fetching user role:', roleError);
+      throw new Error('Failed to verify user permissions');
+    }
 
     if (!userRole || userRole.role !== 'Admin') {
       throw new Error('Only admins can manage users');
@@ -67,10 +72,20 @@ serve(async (req) => {
             id: newUser.user.id,
             full_name: userData.full_name,
             company_id: userData.company_id,
-            role: userData.role,
           });
 
         if (profileError) throw profileError;
+
+        // Create user role in separate table for security
+        const { error: roleError } = await supabaseClient
+          .from('user_roles')
+          .insert({
+            user_id: newUser.user.id,
+            company_id: userData.company_id,
+            role: userData.role,
+          });
+
+        if (roleError) throw roleError;
 
         return new Response(JSON.stringify({ success: true, user: newUser }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -83,12 +98,23 @@ serve(async (req) => {
           .from('profiles')
           .update({
             full_name: userData.full_name,
-            role: userData.role,
             job_title: userData.department,
           })
           .eq('id', userData.id);
 
         if (updateError) throw updateError;
+
+        // Update role in user_roles table
+        if (userData.role) {
+          const { error: roleUpdateError } = await supabaseClient
+            .from('user_roles')
+            .update({
+              role: userData.role,
+            })
+            .eq('user_id', userData.id);
+
+          if (roleUpdateError) throw roleUpdateError;
+        }
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -107,10 +133,13 @@ serve(async (req) => {
       }
 
       case 'list': {
-        // Get company users
+        // Get company users with roles from user_roles table
         const { data: profiles, error: profilesError } = await supabaseClient
           .from('profiles')
-          .select('*, user_roles(role)')
+          .select(`
+            *,
+            user_roles!inner(role)
+          `)
           .eq('company_id', userData.company_id)
           .order('created_at', { ascending: false });
 
@@ -119,13 +148,20 @@ serve(async (req) => {
         // Get auth users for emails
         const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
 
-        // Merge data
+        // Merge data with role from user_roles table
         const users = profiles.map(profile => {
           const authUser = authUsers?.users.find(u => u.id === profile.id);
+          const userRoles = profile.user_roles as any[];
           return {
-            ...profile,
+            id: profile.id,
+            full_name: profile.full_name,
             email: authUser?.email || 'N/A',
-            role: profile.user_roles?.[0]?.role || profile.role,
+            role: userRoles?.[0]?.role || 'Colaborador',
+            company_id: profile.company_id,
+            created_at: profile.created_at,
+            avatar_url: profile.avatar_url,
+            phone: profile.phone,
+            department: profile.job_title,
           };
         });
 
