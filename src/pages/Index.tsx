@@ -45,11 +45,18 @@ import { getLicenseStats } from "@/services/licenses"
 import { getWasteDashboard } from "@/services/waste"
 import { useSystemOptimization } from "@/hooks/useSystemOptimization"
 import SettingsModal from "@/components/SettingsModal"
+import { useDashboardPreferences } from "@/hooks/data/useDashboardPreferences"
+import IntelligenceHub from "@/components/IntelligenceHub"
 
 const Index = () => {
   const { metrics, isOptimized } = useSystemOptimization();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const { shouldShowOnboarding } = useAuth();
+  const { preferences, isLoading: preferencesLoading } = useDashboardPreferences();
+  
+  const showWidget = (widgetId: string) => {
+    return preferences?.widgets?.includes(widgetId) ?? true;
+  };
   
   // Fetch real data from various services
   const { data: esgData, isLoading: esgLoading } = useQuery({
@@ -135,7 +142,14 @@ const Index = () => {
           <TabsContent value="overview" className="space-y-10">
 
             {/* Unified Onboarding System */}
-            <OnboardingOrchestrator completedModules={[]} />
+            {showWidget('onboarding') && <OnboardingOrchestrator completedModules={[]} />}
+            
+            {/* Intelligence Hub */}
+            {showWidget('intelligence') && (
+              <div className="mb-10">
+                <IntelligenceHub />
+              </div>
+            )}
 
         {/* Primeira Linha - Cards de Resumo Rápido */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">

@@ -7556,6 +7556,8 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_data: Json | null
+          action_type: string | null
           action_url: string | null
           company_id: string
           created_at: string
@@ -7563,12 +7565,15 @@ export type Database = {
           is_read: boolean
           message: string
           metadata: Json | null
+          priority: string | null
           read_at: string | null
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          action_data?: Json | null
+          action_type?: string | null
           action_url?: string | null
           company_id: string
           created_at?: string
@@ -7576,12 +7581,15 @@ export type Database = {
           is_read?: boolean
           message: string
           metadata?: Json | null
+          priority?: string | null
           read_at?: string | null
           title: string
           type?: string
           user_id: string
         }
         Update: {
+          action_data?: Json | null
+          action_type?: string | null
           action_url?: string | null
           company_id?: string
           created_at?: string
@@ -7589,6 +7597,7 @@ export type Database = {
           is_read?: boolean
           message?: string
           metadata?: Json | null
+          priority?: string | null
           read_at?: string | null
           title?: string
           type?: string
@@ -8625,6 +8634,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          dashboard_preferences: Json | null
           full_name: string
           has_completed_onboarding: boolean | null
           id: string
@@ -8634,6 +8644,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          dashboard_preferences?: Json | null
           full_name: string
           has_completed_onboarding?: boolean | null
           id: string
@@ -8643,6 +8654,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          dashboard_preferences?: Json | null
           full_name?: string
           has_completed_onboarding?: boolean | null
           id?: string
