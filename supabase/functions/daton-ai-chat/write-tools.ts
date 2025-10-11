@@ -43,6 +43,14 @@ export async function executeWriteTool(
       return await createRiskAction(args, companyId, userId, supabase);
     case 'add_employee':
       return await addEmployeeAction(args, companyId, userId, supabase);
+    case 'add_supplier':
+      return await addSupplierAction(args, companyId, userId, supabase);
+    case 'add_stakeholder':
+      return await addStakeholderAction(args, companyId, userId, supabase);
+    case 'create_training':
+      return await createTrainingAction(args, companyId, userId, supabase);
+    case 'create_audit':
+      return await createAuditAction(args, companyId, userId, supabase);
     default:
       return { error: `Ferramenta de escrita desconhecida: ${toolName}` };
   }
@@ -525,6 +533,100 @@ async function addEmployeeAction(args: any, companyId: string, userId: string, s
   };
 }
 
+async function addSupplierAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.name || !args.category) {
+    return { success: false, error: "Dados incompletos", missing: ["name", "category"] };
+  }
+
+  const { data, error } = await supabase
+    .from('suppliers')
+    .insert({
+      company_id: companyId,
+      name: args.name,
+      cnpj: args.cnpj,
+      contact_email: args.contact_email,
+      contact_phone: args.contact_phone,
+      category: args.category,
+      status: 'Ativo'
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao adicionar fornecedor", details: error.message };
+  return { success: true, message: `✅ Fornecedor "${args.name}" adicionado!`, data: { supplierId: data.id } };
+}
+
+async function addStakeholderAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.name || !args.category) {
+    return { success: false, error: "Dados incompletos", missing: ["name", "category"] };
+  }
+
+  const { data, error } = await supabase
+    .from('stakeholders')
+    .insert({
+      company_id: companyId,
+      name: args.name,
+      organization: args.organization,
+      category: args.category,
+      contact_email: args.contact_email,
+      influence_level: args.influence_level,
+      interest_level: args.interest_level
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao adicionar stakeholder", details: error.message };
+  return { success: true, message: `✅ Stakeholder "${args.name}" adicionado!`, data: { stakeholderId: data.id } };
+}
+
+async function createTrainingAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.name || !args.duration_hours) {
+    return { success: false, error: "Dados incompletos", missing: ["name", "duration_hours"] };
+  }
+
+  const { data, error } = await supabase
+    .from('training_programs')
+    .insert({
+      company_id: companyId,
+      name: args.name,
+      description: args.description,
+      category: args.category,
+      duration_hours: args.duration_hours,
+      is_mandatory: args.is_mandatory || false,
+      status: 'Ativo',
+      created_by_user_id: userId
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao criar treinamento", details: error.message };
+  return { success: true, message: `✅ Treinamento "${args.name}" criado!`, data: { trainingId: data.id } };
+}
+
+async function createAuditAction(args: any, companyId: string, userId: string, supabase: any) {
+  if (!args.title || !args.audit_type) {
+    return { success: false, error: "Dados incompletos", missing: ["title", "audit_type"] };
+  }
+
+  const { data, error } = await supabase
+    .from('audits')
+    .insert({
+      company_id: companyId,
+      title: args.title,
+      audit_type: args.audit_type,
+      start_date: args.start_date,
+      end_date: args.end_date,
+      auditor: args.auditor,
+      scope: args.scope,
+      status: 'Planejada'
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: "Falha ao criar auditoria", details: error.message };
+  return { success: true, message: `✅ Auditoria "${args.title}" criada!`, data: { auditId: data.id } };
+}
+
 // Helper functions for action display
 export function getActionDisplayName(toolName: string): string {
   const names: Record<string, string> = {
@@ -540,7 +642,11 @@ export function getActionDisplayName(toolName: string): string {
     'log_emission': 'Registrar Atividade de Emissão',
     'create_non_conformity': 'Registrar Não Conformidade',
     'create_risk': 'Registrar Risco ESG',
-    'add_employee': 'Adicionar Funcionário'
+    'add_employee': 'Adicionar Funcionário',
+    'add_supplier': 'Adicionar Fornecedor',
+    'add_stakeholder': 'Adicionar Stakeholder',
+    'create_training': 'Criar Programa de Treinamento',
+    'create_audit': 'Criar Auditoria'
   };
   return names[toolName] || toolName;
 }
@@ -573,6 +679,14 @@ export function getActionDescription(toolName: string, params: any): string {
       return `Registrar risco ESG "${params.title}" com probabilidade ${params.probability} e impacto ${params.impact}`;
     case 'add_employee':
       return `Adicionar funcionário "${params.name}" ao departamento ${params.department || 'não especificado'}`;
+    case 'add_supplier':
+      return `Adicionar fornecedor "${params.name}" categoria ${params.category}`;
+    case 'add_stakeholder':
+      return `Adicionar stakeholder "${params.name}" categoria ${params.category}`;
+    case 'create_training':
+      return `Criar treinamento "${params.name}" com ${params.duration_hours}h`;
+    case 'create_audit':
+      return `Criar auditoria "${params.title}" tipo ${params.audit_type}`;
     default:
       return 'Ação não especificada';
   }
@@ -592,7 +706,11 @@ export function getActionImpact(toolName: string): 'low' | 'medium' | 'high' {
     'log_emission': 'low',
     'create_non_conformity': 'high',
     'create_risk': 'high',
-    'add_employee': 'medium'
+    'add_employee': 'medium',
+    'add_supplier': 'medium',
+    'add_stakeholder': 'medium',
+    'create_training': 'medium',
+    'create_audit': 'high'
   };
   return impacts[toolName] || 'medium';
 }
@@ -611,7 +729,11 @@ export function getActionCategory(toolName: string): string {
     'log_emission': 'Inventário GEE',
     'create_non_conformity': 'Conformidade',
     'create_risk': 'Gestão de Riscos',
-    'add_employee': 'Recursos Humanos'
+    'add_employee': 'Recursos Humanos',
+    'add_supplier': 'Fornecedores',
+    'add_stakeholder': 'Stakeholders',
+    'create_training': 'Treinamentos',
+    'create_audit': 'Auditoria'
   };
   return categories[toolName] || 'Geral';
 }
