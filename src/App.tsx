@@ -106,6 +106,7 @@ const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 
 // Páginas específicas mantidas
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
+const SystemStatus = lazy(() => import("./pages/SystemStatus"));
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
@@ -369,6 +370,9 @@ const App = () => (
                 <PublicForm />
               </LazyPageWrapper>
             } />
+            
+            {/* System Status - Production Readiness */}
+            <Route path="/system-status" element={<ProtectedLazyPageWrapper><SystemStatus /></ProtectedLazyPageWrapper>} />
             
             {/* Catch-all deve ser sempre a última rota */}
             <Route path="*" element={<NotFound />} />
