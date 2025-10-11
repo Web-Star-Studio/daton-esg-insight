@@ -1,5 +1,5 @@
 // Chat assistant hook with AI action confirmation capabilities
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -38,6 +38,7 @@ export interface UseChatAssistantReturn {
 }
 
 export function useChatAssistant(): UseChatAssistantReturn {
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -94,6 +95,33 @@ Converse naturalmente! Exemplos:
   const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
+
+  // Initialize or load conversation
+  useEffect(() => {
+    const initConversation = async () => {
+      if (!user?.company.id) return;
+
+      try {
+        // Create new conversation
+        const { data: conv, error } = await supabase
+          .from('ai_chat_conversations')
+          .insert({
+            company_id: user.company.id,
+            user_id: user.id,
+            title: 'Nova Conversa'
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setConversationId(conv.id);
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+      }
+    };
+
+    initConversation();
+  }, [user]);
 
   // Sanitize file names to prevent storage errors with special characters
   const sanitizeFileName = (fileName: string): string => {
@@ -196,6 +224,21 @@ Converse naturalmente! Exemplos:
         throw new Error('Company ID not found');
       }
 
+      // Save user message to database
+      if (conversationId) {
+        await supabase.from('ai_chat_messages').insert({
+          conversation_id: conversationId,
+          company_id: companyId,
+          user_id: user.id,
+          role: 'user',
+          content,
+          metadata: {
+            currentPage,
+            hasAttachments: (messageAttachments || attachments).length > 0
+          }
+        });
+      }
+
       // Prepare messages for API (only content and role)
       const apiMessages = messages.map(m => ({
         role: m.role,
@@ -226,8 +269,14 @@ Converse naturalmente! Exemplos:
         body: {
           messages: apiMessages,
           companyId,
+          conversationId,
           currentPage: currentPage || 'dashboard',
-          attachments: processedAttachments.length > 0 ? processedAttachments : undefined
+          attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
+          userContext: {
+            userName: user.full_name,
+            companyName: user.company.name,
+            userRole: user.role
+          }
         }
       });
 
@@ -279,6 +328,21 @@ Converse naturalmente! Exemplos:
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Save assistant message to database
+      if (conversationId) {
+        await supabase.from('ai_chat_messages').insert({
+          conversation_id: conversationId,
+          company_id: companyId,
+          user_id: user.id,
+          role: 'assistant',
+          content: data.message,
+          metadata: {
+            dataAccessed: data.dataAccessed,
+            tokensUsed: data.tokensUsed
+          }
+        });
+      }
 
       // Clear attachments after successful send
       if (attachmentsToSend.length > 0) {

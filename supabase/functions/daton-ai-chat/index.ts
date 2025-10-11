@@ -8,6 +8,8 @@ import {
   getActionImpact, 
   getActionCategory 
 } from './write-tools.ts';
+import { readTools } from './read-tools.ts';
+import { executeReadTool } from './tool-executors.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,9 +22,9 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, companyId, currentPage, confirmed, action, attachments } = await req.json();
+    const { messages, companyId, conversationId, currentPage, confirmed, action, attachments, userContext } = await req.json();
     
-    console.log('Daton AI Chat request:', { companyId, currentPage, messageCount: messages?.length, confirmed, attachmentsCount: attachments?.length });
+    console.log('Daton AI Chat request:', { companyId, conversationId, currentPage, messageCount: messages?.length, confirmed, attachmentsCount: attachments?.length });
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
