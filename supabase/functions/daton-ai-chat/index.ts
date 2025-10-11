@@ -20,9 +20,9 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, companyId, currentPage, confirmed, action } = await req.json();
+    const { messages, companyId, currentPage, confirmed, action, attachments } = await req.json();
     
-    console.log('Daton AI Chat request:', { companyId, currentPage, messageCount: messages?.length, confirmed });
+    console.log('Daton AI Chat request:', { companyId, currentPage, messageCount: messages?.length, confirmed, attachmentsCount: attachments?.length });
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -685,12 +685,57 @@ serve(async (req) => {
       }
     ];
 
+    // Process attachments if any
+    let attachmentContext = '';
+    if (attachments && attachments.length > 0) {
+      console.log('Processing attachments:', attachments.length);
+      
+      for (const attachment of attachments) {
+        try {
+          console.log('Parsing attachment:', attachment.name);
+          
+          // Call parse-chat-document function
+          const { data: parseData, error: parseError } = await supabaseClient.functions.invoke('parse-chat-document', {
+            body: { 
+              filePath: attachment.path, 
+              fileType: attachment.type 
+            }
+          });
+
+          if (parseError) {
+            console.error('Parse error for', attachment.name, ':', parseError);
+            attachmentContext += `\n\n❌ **Erro ao processar arquivo: ${attachment.name}**\nNão foi possível extrair o conteúdo.`;
+            continue;
+          }
+
+          if (parseData && parseData.content) {
+            console.log('Attachment parsed successfully:', attachment.name);
+            attachmentContext += `\n\n📎 **ARQUIVO ANEXADO: ${attachment.name}** (${attachment.type})\n`;
+            attachmentContext += `---\n${parseData.content}\n---`;
+            
+            // Update processing status
+            await supabaseClient
+              .from('chat_file_uploads')
+              .update({ 
+                processing_status: 'processed',
+                parsed_content: parseData.structured 
+              })
+              .eq('file_path', attachment.path);
+          }
+        } catch (error) {
+          console.error('Error processing attachment:', error);
+          attachmentContext += `\n\n❌ **Erro ao processar arquivo: ${attachment.name}**\n${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+        }
+      }
+    }
+
     // Build system prompt with context
     const systemPrompt = `Você é o Assistente IA do Daton, especialista em gestão ESG (Ambiental, Social e Governança).
 
 **Contexto da Empresa:**
 🏢 ${company?.name || 'Empresa'} | 🏭 ${company?.sector || 'Setor não informado'}
 📍 Módulo atual: ${getPageContext(currentPage)}
+${attachmentContext ? `\n\n**📎 ARQUIVOS ANEXADOS PELO USUÁRIO:**${attachmentContext}\n\n⚠️ **IMPORTANTE:** O usuário anexou arquivo(s). Use as informações extraídas para responder às perguntas ou executar as ações solicitadas. Se o usuário pedir para cadastrar/importar dados dos arquivos, use as ferramentas de escrita disponíveis (sempre pedindo confirmação).` : ''}
 
 **SUAS CAPACIDADES:**
 

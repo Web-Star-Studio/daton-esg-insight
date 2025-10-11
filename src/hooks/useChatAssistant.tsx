@@ -93,7 +93,7 @@ Converse naturalmente! Exemplos:
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const { profile } = useAuth();
+  const { user } = useAuth();
 
   const addAttachment = async (file: File) => {
     const id = crypto.randomUUID();
@@ -110,11 +110,11 @@ Converse naturalmente! Exemplos:
     setIsUploading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('User not authenticated');
 
       // Upload to storage
-      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+      const filePath = `${authUser.id}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('chat-attachments')
         .upload(filePath, file);
@@ -123,8 +123,8 @@ Converse naturalmente! Exemplos:
 
       // Log upload
       await supabase.from('chat_file_uploads').insert({
-        company_id: profile?.company_id,
-        user_id: user.id,
+        company_id: user?.company.id,
+        user_id: authUser.id,
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
@@ -178,7 +178,7 @@ Converse naturalmente! Exemplos:
     setIsLoading(true);
 
     try {
-      const companyId = profile?.company_id;
+      const companyId = user?.company.id;
       if (!companyId) {
         throw new Error('Company ID not found');
       }
@@ -241,7 +241,7 @@ Converse naturalmente! Exemplos:
           content: data.message || '📋 **Ação preparada para confirmação**\n\nPor favor, revise os detalhes da ação e confirme se deseja executá-la.',
           timestamp: new Date(),
           context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
-          companyName: profile?.company_id ? 'Dados da empresa' : undefined,
+          companyName: user?.company.name,
           pendingAction: action,
         };
 
@@ -262,7 +262,7 @@ Converse naturalmente! Exemplos:
         content: data.message || 'Desculpe, não consegui gerar uma resposta adequada.',
         timestamp: new Date(),
         context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
-        companyName: profile?.company_id ? 'Dados da empresa' : undefined,
+        companyName: user?.company.name,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -316,7 +316,7 @@ Estou pronto para ajudar. Posso:
     setPendingAction(null);
 
     try {
-      const companyId = profile?.company_id;
+      const companyId = user?.company.id;
       if (!companyId) {
         throw new Error('Company ID not found');
       }
