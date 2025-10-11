@@ -69,6 +69,7 @@ const ConfiguracaoOrganizacional = lazy(() => import("./pages/ConfiguracaoOrgani
 const SocialESG = lazy(() => import("./pages/SocialESG"));
 const GovernancaESG = lazy(() => import("./pages/GovernancaESG"));
 const RelatoriosIntegrados = lazy(() => import("./pages/RelatoriosIntegrados"));
+const ProductionMonitoring = lazy(() => import("./pages/ProductionMonitoring"));
 
 
 // Lazy loading para SGQ modules
@@ -306,6 +307,7 @@ const App = () => (
             <Route path="/social-esg" element={<ProtectedLazyPageWrapper><SocialESG /></ProtectedLazyPageWrapper>} />
             <Route path="/governanca-esg" element={<ProtectedLazyPageWrapper><GovernancaESG /></ProtectedLazyPageWrapper>} />
             <Route path="/relatorios-integrados" element={<ProtectedLazyPageWrapper><RelatoriosIntegrados /></ProtectedLazyPageWrapper>} />
+            <Route path="/production-monitoring" element={<ProtectedLazyPageWrapper><ProductionMonitoring /></ProtectedLazyPageWrapper>} />
             
             {/* SGQ modules */}
             <Route path="/planejamento-estrategico" element={<ProtectedLazyPageWrapper><PlanejamentoEstrategico /></ProtectedLazyPageWrapper>} />
