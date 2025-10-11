@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { PendingAction } from '@/components/ai/AIActionConfirmation';
+import type { FileAttachmentData } from '@/components/ai/FileAttachment';
 
 export interface ChatMessage {
   id: string;
@@ -25,11 +26,15 @@ export interface ChatMessage {
 export interface UseChatAssistantReturn {
   messages: ChatMessage[];
   isLoading: boolean;
-  sendMessage: (content: string, currentPage?: string) => Promise<void>;
+  sendMessage: (content: string, currentPage?: string, attachments?: FileAttachmentData[]) => Promise<void>;
   clearMessages: () => void;
   pendingAction: PendingAction | null;
   confirmAction: (action: PendingAction) => Promise<void>;
   cancelAction: () => void;
+  attachments: FileAttachmentData[];
+  addAttachment: (file: File) => Promise<void>;
+  removeAttachment: (id: string) => void;
+  isUploading: boolean;
 }
 
 export function useChatAssistant(): UseChatAssistantReturn {
@@ -38,6 +43,14 @@ export function useChatAssistant(): UseChatAssistantReturn {
       id: 'welcome',
       role: 'assistant',
       content: `👋 **Olá! Sou o Assistente IA do Daton**, seu parceiro inteligente em gestão ESG.
+
+**📎 AGORA COM UPLOAD DE ARQUIVOS!**
+Você pode anexar documentos (PDF, CSV, Excel, imagens) e eu posso:
+• Extrair dados automaticamente
+• Cadastrar licenças de PDFs
+• Importar planilhas de emissões, metas, funcionários
+• Ler medidores e formulários em fotos
+• Processar relatórios e notas fiscais
 
 Tenho acesso **completo e em tempo real** aos dados da sua empresa e posso ajudar de várias formas:
 
@@ -78,9 +91,79 @@ Converse naturalmente! Exemplos:
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const { profile } = useAuth();
 
-  const sendMessage = async (content: string, currentPage?: string) => {
+  const addAttachment = async (file: File) => {
+    const id = crypto.randomUUID();
+    const newAttachment: FileAttachmentData = {
+      id,
+      file,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      status: 'uploading'
+    };
+
+    setAttachments(prev => [...prev, newAttachment]);
+    setIsUploading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Upload to storage
+      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Log upload
+      await supabase.from('chat_file_uploads').insert({
+        company_id: profile?.company_id,
+        user_id: user.id,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        file_path: filePath,
+        processing_status: 'uploaded'
+      });
+
+      // Update status
+      setAttachments(prev =>
+        prev.map(att => att.id === id ? { ...att, status: 'uploaded', path: filePath } : att)
+      );
+
+      toast.success('Arquivo enviado', {
+        description: `${file.name} foi enviado com sucesso.`
+      });
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      setAttachments(prev =>
+        prev.map(att => att.id === id ? { 
+          ...att, 
+          status: 'error', 
+          error: error instanceof Error ? error.message : 'Erro ao enviar arquivo' 
+        } : att)
+      );
+      
+      toast.error('Erro no upload', {
+        description: error instanceof Error ? error.message : 'Não foi possível enviar o arquivo.'
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== id));
+  };
+
+  const sendMessage = async (content: string, currentPage?: string, messageAttachments?: FileAttachmentData[]) => {
     if (!content.trim()) return;
 
     // Add user message
@@ -114,12 +197,24 @@ Converse naturalmente! Exemplos:
 
       console.log('Sending chat request to Daton AI...');
 
+      // Process attachments
+      const attachmentsToSend = messageAttachments || attachments;
+      const processedAttachments = attachmentsToSend
+        .filter(att => att.status === 'uploaded' && att.path)
+        .map(att => ({
+          name: att.name,
+          type: att.type,
+          size: att.size,
+          path: att.path!
+        }));
+
       // Call Daton AI Chat edge function
       const { data, error } = await supabase.functions.invoke('daton-ai-chat', {
         body: {
           messages: apiMessages,
           companyId,
-          currentPage: currentPage || 'dashboard'
+          currentPage: currentPage || 'dashboard',
+          attachments: processedAttachments.length > 0 ? processedAttachments : undefined
         }
       });
 
@@ -171,6 +266,11 @@ Converse naturalmente! Exemplos:
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Clear attachments after successful send
+      if (attachmentsToSend.length > 0) {
+        setAttachments([]);
+      }
 
     } catch (error) {
       console.error('Error in chat assistant:', error);
@@ -312,5 +412,9 @@ Estou pronto para ajudar. Posso:
     pendingAction,
     confirmAction,
     cancelAction,
+    attachments,
+    addAttachment,
+    removeAttachment,
+    isUploading
   };
 }

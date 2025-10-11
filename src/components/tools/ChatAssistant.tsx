@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
 import { AIActionConfirmation, PendingAction } from '@/components/ai/AIActionConfirmation';
 import { QuickActions } from '@/components/ai/QuickActions';
+import { FileUploadButton } from '@/components/ai/FileUploadButton';
+import { FileAttachment } from '@/components/ai/FileAttachment';
 import ReactMarkdown from 'react-markdown';
 
 // Chat assistant component with AI action confirmation support
@@ -17,16 +19,19 @@ export function ChatAssistant() {
   const [showQuickActions, setShowQuickActions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const hookResult = useChatAssistant();
   const { 
     messages, 
     isLoading, 
     sendMessage, 
-    clearMessages
-  } = hookResult;
-  const pendingAction = (hookResult as any).pendingAction as PendingAction | null;
-  const confirmAction = (hookResult as any).confirmAction as (action: PendingAction) => Promise<void>;
-  const cancelAction = (hookResult as any).cancelAction as () => void;
+    clearMessages,
+    attachments,
+    addAttachment,
+    removeAttachment,
+    isUploading,
+    pendingAction,
+    confirmAction,
+    cancelAction
+  } = useChatAssistant();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -48,7 +53,13 @@ export function ChatAssistant() {
     const message = inputMessage;
     setInputMessage('');
     setShowQuickActions(false);
-    await sendMessage(message, window.location.pathname.split('/')[1]);
+    await sendMessage(message, window.location.pathname.split('/')[1], attachments);
+  };
+
+  const handleFileSelect = async (files: File[]) => {
+    for (const file of files) {
+      await addAttachment(file);
+    }
   };
 
   const handleQuickAction = (prompt: string) => {
@@ -207,8 +218,28 @@ export function ChatAssistant() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t space-y-3">
+            {/* File attachments preview */}
+            {attachments.length > 0 && (
+              <div className="space-y-2">
+                {attachments.map(attachment => (
+                  <FileAttachment
+                    key={attachment.id}
+                    attachment={attachment}
+                    onRemove={removeAttachment}
+                    canRemove={!isLoading}
+                  />
+                ))}
+              </div>
+            )}
+            
             <div className="flex gap-2">
+              <FileUploadButton
+                onFileSelect={handleFileSelect}
+                isUploading={isUploading}
+                disabled={isLoading}
+              />
+              
               <Textarea
                 placeholder="Digite sua mensagem..."
                 value={inputMessage}
