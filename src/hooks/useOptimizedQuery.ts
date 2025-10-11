@@ -1,196 +1,76 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient, QueryKey } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { PERFORMANCE_CONFIG } from '@/config/performanceConfig';
 
-interface OptimizedQueryOptions<T> {
-  queryKey: (string | number | boolean)[];
+interface OptimizedQueryConfig<T> {
+  queryKey: QueryKey;
   queryFn: () => Promise<T>;
-  staleTime?: number;
-  gcTime?: number;
-  refetchInterval?: number | false;
+  priority?: 'critical' | 'standard' | 'static';
+  prefetchRelated?: Array<{
+    key: QueryKey;
+    fn: () => Promise<any>;
+  }>;
   enabled?: boolean;
-  retry?: number | boolean;
-  refetchOnWindowFocus?: boolean;
-  select?: (data: T) => any;
 }
 
-// Enhanced query hook with intelligent caching and performance optimizations
-export function useOptimizedQuery<T>(options: OptimizedQueryOptions<T>) {
+/**
+ * Optimized query hook with automatic prefetching and caching
+ */
+export function useOptimizedQuery<T>({
+  queryKey,
+  queryFn,
+  priority = 'standard',
+  prefetchRelated = [],
+  enabled = true,
+}: OptimizedQueryConfig<T>) {
   const queryClient = useQueryClient();
 
-  // Memoize query configuration
-  const queryConfig = useMemo(() => ({
-    queryKey: options.queryKey,
-    queryFn: options.queryFn,
-    staleTime: options.staleTime ?? 5 * 60 * 1000, // 5 minutes default
-    gcTime: options.gcTime ?? 10 * 60 * 1000, // 10 minutes default
-    refetchInterval: options.refetchInterval ?? false,
-    enabled: options.enabled ?? true,
-    retry: options.retry ?? 3,
-    refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
-    select: options.select,
-  }), [options]);
+  // Get cache duration based on priority
+  const staleTime = PERFORMANCE_CONFIG.cache[priority];
 
-  const query = useQuery(queryConfig);
+  // Configure query with optimized settings
+  const query = useQuery({
+    queryKey,
+    queryFn,
+    staleTime,
+    gcTime: staleTime * 2, // Keep in cache twice as long as stale time
+    enabled,
+    refetchOnWindowFocus: priority === 'critical',
+    refetchOnReconnect: priority === 'critical',
+    retry: priority === 'critical' ? 3 : 1,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 
-  // Prefetch related data
-  const prefetch = useCallback(
-    (newQueryKey: (string | number | boolean)[], newQueryFn: () => Promise<any>) => {
-      queryClient.prefetchQuery({
-        queryKey: newQueryKey,
-        queryFn: newQueryFn,
-        staleTime: queryConfig.staleTime,
+  // Prefetch related queries when main query succeeds
+  useEffect(() => {
+    if (query.isSuccess && query.data && prefetchRelated.length > 0) {
+      prefetchRelated.forEach(({ key, fn }) => {
+        const cached = queryClient.getQueryData(key);
+        if (!cached) {
+          queryClient.prefetchQuery({
+            queryKey: key,
+            queryFn: fn,
+            staleTime: PERFORMANCE_CONFIG.cache.standard,
+          });
+        }
       });
-    },
-    [queryClient, queryConfig.staleTime]
+    }
+  }, [query.isSuccess, query.data, prefetchRelated, queryClient]);
+
+  // Cache metadata
+  const cacheInfo = useMemo(
+    () => ({
+      priority,
+      staleTime,
+      lastFetched: query.dataUpdatedAt,
+      isCached: !!queryClient.getQueryData(queryKey),
+      isStale: query.isStale,
+    }),
+    [priority, staleTime, query.dataUpdatedAt, query.isStale, queryClient, queryKey]
   );
-
-  // Optimistic updates
-  const optimisticUpdate = useCallback(
-    (updater: (oldData: T | undefined) => T) => {
-      queryClient.setQueryData(options.queryKey, updater);
-    },
-    [queryClient, options.queryKey]
-  );
-
-  // Invalidate and refetch
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: options.queryKey });
-  }, [queryClient, options.queryKey]);
-
-  // Smart refresh - only if data is stale
-  const smartRefresh = useCallback(() => {
-    queryClient.refetchQueries({ queryKey: options.queryKey });
-  }, [queryClient, options.queryKey]);
 
   return {
     ...query,
-    prefetch,
-    optimisticUpdate,
-    invalidate,
-    smartRefresh,
-  };
-}
-
-// Hook for paginated queries with optimizations
-export function usePaginatedQuery<T>({
-  queryKey,
-  queryFn,
-  page = 1,
-  pageSize = 20,
-  ...options
-}: {
-  queryKey: (string | number | boolean)[];
-  queryFn: (page: number, pageSize: number) => Promise<{
-    data: T[];
-    total: number;
-    hasNextPage: boolean;
-  }>;
-  page?: number;
-  pageSize?: number;
-} & Omit<OptimizedQueryOptions<any>, 'queryKey' | 'queryFn'>) {
-  
-  const queryClient = useQueryClient();
-  
-  const paginatedKey = [...queryKey, 'page', page, 'size', pageSize];
-  
-  const result = useOptimizedQuery({
-    queryKey: paginatedKey,
-    queryFn: () => queryFn(page, pageSize),
-    ...options,
-  });
-
-  // Prefetch next page
-  const prefetchNextPage = useCallback(() => {
-    if (result.data?.hasNextPage) {
-      const nextPageKey = [...queryKey, 'page', page + 1, 'size', pageSize];
-      queryClient.prefetchQuery({
-        queryKey: nextPageKey,
-        queryFn: () => queryFn(page + 1, pageSize),
-        staleTime: 5 * 60 * 1000,
-      });
-    }
-  }, [queryClient, queryKey, page, pageSize, queryFn, result.data?.hasNextPage]);
-
-  return {
-    ...result,
-    prefetchNextPage,
-    page,
-    pageSize,
-    totalItems: result.data?.total ?? 0,
-    hasNextPage: result.data?.hasNextPage ?? false,
-  };
-}
-
-// Hook for real-time data with intelligent polling
-export function useRealtimeQuery<T>(
-  options: OptimizedQueryOptions<T> & {
-    pollingInterval?: number;
-    enablePolling?: boolean;
-  }
-) {
-  const { pollingInterval = 30000, enablePolling = true, ...queryOptions } = options;
-
-  // Adjust polling based on document visibility
-  const adaptivePolling = useMemo(() => {
-    if (!enablePolling) return false;
-    
-    return document.visibilityState === 'visible' ? pollingInterval : false;
-  }, [enablePolling, pollingInterval]);
-
-  return useOptimizedQuery({
-    ...queryOptions,
-    refetchInterval: adaptivePolling,
-    refetchOnWindowFocus: true,
-  });
-}
-
-// Cache management utilities
-export function useCacheManager() {
-  const queryClient = useQueryClient();
-
-  const clearCache = useCallback(
-    (pattern?: string) => {
-      if (pattern) {
-        queryClient.removeQueries({
-          predicate: (query) => 
-            query.queryKey.some(key => 
-              typeof key === 'string' && key.includes(pattern)
-            )
-        });
-      } else {
-        queryClient.clear();
-      }
-    },
-    [queryClient]
-  );
-
-  const warmCache = useCallback(
-    async (queries: Array<{ key: any[]; fn: () => Promise<any> }>) => {
-      const promises = queries.map(({ key, fn }) =>
-        queryClient.prefetchQuery({
-          queryKey: key,
-          queryFn: fn,
-          staleTime: 5 * 60 * 1000,
-        })
-      );
-      
-      await Promise.allSettled(promises);
-    },
-    [queryClient]
-  );
-
-  const getCacheStats = useCallback(() => {
-    const cache = queryClient.getQueryCache();
-    return {
-      totalQueries: cache.getAll().length,
-      staleQueries: 0,
-      fetchingQueries: cache.getAll().filter(q => q.state.status === 'pending').length,
-    };
-  }, [queryClient]);
-
-  return {
-    clearCache,
-    warmCache,
-    getCacheStats,
+    cacheInfo,
   };
 }

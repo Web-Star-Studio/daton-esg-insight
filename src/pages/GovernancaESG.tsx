@@ -59,7 +59,7 @@ export default function GovernancaESG() {
   const { data: governanceMetrics, isLoading: loadingGovernance, error: governanceError } = useOptimizedQuery({
     queryKey: ['governance-metrics'],
     queryFn: getGovernanceMetrics,
-    staleTime: 5 * 60 * 1000,
+    priority: 'standard',
   });
 
   const { data: employees, refetch: refetchEmployees, isLoading: loadingEmployees } = useOptimizedQuery({

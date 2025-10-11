@@ -1,4 +1,3 @@
-
 import React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,12 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import SGQDashboardWidget from "@/components/SGQDashboardWidget"
 import { AIProcessingStatusWidget } from "@/components/AIProcessingStatusWidget"
-import { SmartNotificationSystem } from "@/components/SmartNotificationSystem"
 import { IntelligentAlertsSystem } from "@/components/IntelligentAlertsSystem"
 import UnifiedDashboardWidget from "@/components/UnifiedDashboardWidget"
 import AdvancedNotificationPanel from "@/components/AdvancedNotificationPanel"
-import SystemPerformanceMonitor from "@/components/SystemPerformanceMonitor"
 import { OnboardingOrchestrator } from "@/components/onboarding/OnboardingOrchestrator"
+import { SmartNotificationSystem } from "@/components/notifications/SmartNotificationSystem"
 import { useAuth } from "@/contexts/AuthContext"
 import { 
   Flag, 
@@ -46,7 +44,10 @@ import { getWasteDashboard } from "@/services/waste"
 import { useSystemOptimization } from "@/hooks/useSystemOptimization"
 import SettingsModal from "@/components/SettingsModal"
 import { useDashboardPreferences } from "@/hooks/data/useDashboardPreferences"
-import IntelligenceHub from "@/components/IntelligenceHub"
+import { 
+  LazyIntelligenceHub, 
+  LazyPerformanceMonitor 
+} from "@/components/optimized/LazyDashboardComponents"
 
 const Index = () => {
   const { metrics, isOptimized } = useSystemOptimization();
@@ -147,7 +148,7 @@ const Index = () => {
             {/* Intelligence Hub */}
             {showWidget('intelligence') && (
               <div className="mb-10">
-                <IntelligenceHub />
+                <LazyIntelligenceHub />
               </div>
             )}
 
@@ -443,7 +444,7 @@ const Index = () => {
           {/* System Tab */}
           <TabsContent value="system" className="space-y-6">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <SystemPerformanceMonitor />
+              <LazyPerformanceMonitor />
               <AdvancedNotificationPanel />
             </div>
           </TabsContent>
