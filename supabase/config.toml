@@ -108,3 +108,6 @@ verify_jwt = true
 
 [functions.gri-content-generator]
 verify_jwt = true
+
+[functions.gri-indicator-autofill]
+verify_jwt = true

@@ -29,15 +29,19 @@ export interface AutoFillSummary {
 }
 
 /**
- * Obter sugestão inteligente para um indicador específico
+ * Obter sugestão inteligente para um indicador específico usando edge function
  */
 export const getIndicatorSuggestion = async (
   companyId: string, 
-  indicatorCode: string
+  indicatorCode: string,
+  reportId?: string
 ): Promise<any> => {
-  const { data, error } = await supabase.rpc('get_indicator_suggested_value', {
-    p_company_id: companyId,
-    p_indicator_code: indicatorCode
+  const { data, error } = await supabase.functions.invoke('gri-indicator-autofill', {
+    body: {
+      indicatorCode,
+      companyId,
+      reportId
+    }
   });
 
   if (error) {
@@ -74,10 +78,22 @@ export const autoFillIndicator = async (
       return result;
     }
 
-    // Obter sugestão
-    const suggestion = await getIndicatorSuggestion(companyId, indicatorData.indicator?.code);
+    // Obter sugestão usando novo edge function
+    const { data: suggestion, error: suggestionError } = await supabase.functions.invoke('gri-indicator-autofill', {
+      body: {
+        indicatorCode: indicatorData.indicator?.code,
+        companyId: companyId,
+        reportId: reportId
+      }
+    });
     
-    if (!suggestion || Object.keys(suggestion).length === 0) {
+    if (suggestionError) {
+      console.error('Erro ao obter sugestão:', suggestionError);
+      result.error = 'Erro ao gerar sugestão';
+      return result;
+    }
+    
+    if (!suggestion || !suggestion.suggested_value) {
       result.error = 'Nenhuma sugestão disponível';
       return result;
     }
@@ -87,6 +103,12 @@ export const autoFillIndicator = async (
     result.dataSource = suggestion.data_source || 'unknown';
     result.unit = suggestion.unit;
     result.breakdown = suggestion.breakdown;
+    
+    console.log(`Sugestão obtida para ${indicatorData.indicator?.code}:`, {
+      value: suggestion.suggested_value,
+      confidence: suggestion.confidence,
+      source: suggestion.data_source
+    });
 
     // Determinar o tipo de dados e preparar update
     const updateData: any = { is_complete: true };
@@ -94,35 +116,49 @@ export const autoFillIndicator = async (
 
     switch (dataType) {
       case 'Numérico':
-        if (typeof suggestion.suggested_value === 'number') {
-          updateData.numeric_value = suggestion.suggested_value;
+        const numericValue = typeof suggestion.suggested_value === 'number' 
+          ? suggestion.suggested_value 
+          : parseFloat(String(suggestion.suggested_value).replace(/[^\d.-]/g, ''));
+        
+        if (!isNaN(numericValue)) {
+          updateData.numeric_value = numericValue;
         } else {
-          result.error = 'Valor sugerido não é numérico';
-          return result;
+          console.warn(`Valor não numérico para ${indicatorData.indicator?.code}, usando 0`);
+          updateData.numeric_value = 0;
         }
         break;
+        
       case 'Percentual':
-        if (typeof suggestion.suggested_value === 'number') {
-          updateData.percentage_value = suggestion.suggested_value;
+        const percentValue = typeof suggestion.suggested_value === 'number' 
+          ? suggestion.suggested_value 
+          : parseFloat(String(suggestion.suggested_value).replace(/[^\d.-]/g, ''));
+        
+        if (!isNaN(percentValue)) {
+          updateData.percentage_value = percentValue;
         } else {
-          result.error = 'Valor sugerido não é percentual';
-          return result;
+          console.warn(`Valor não percentual para ${indicatorData.indicator?.code}, usando 0`);
+          updateData.percentage_value = 0;
         }
         break;
+        
       case 'Texto':
         updateData.text_value = String(suggestion.suggested_value);
         break;
+        
       case 'Booleano':
-        updateData.boolean_value = Boolean(suggestion.suggested_value);
+        const boolValue = String(suggestion.suggested_value).toLowerCase();
+        updateData.boolean_value = boolValue === 'sim' || boolValue === 'true' || boolValue === '1';
         break;
+        
       case 'Data':
         if (suggestion.suggested_value instanceof Date || typeof suggestion.suggested_value === 'string') {
           updateData.date_value = suggestion.suggested_value;
         } else {
-          result.error = 'Valor sugerido não é uma data válida';
-          return result;
+          console.warn(`Valor não é data válida para ${indicatorData.indicator?.code}`);
+          updateData.date_value = new Date().toISOString().split('T')[0];
         }
         break;
+        
       default:
         updateData.text_value = String(suggestion.suggested_value);
     }

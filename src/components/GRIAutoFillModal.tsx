@@ -95,7 +95,8 @@ export function GRIAutoFillModal({
       
       toast({
         title: "Auto Preenchimento Concluído",
-        description: `${summary.successful} indicadores preenchidos com sucesso de ${summary.totalIndicators} processados.`,
+        description: `${summary.successful} indicadores preenchidos de ${summary.totalIndicators} processados. ${summary.skipped} já estavam completos. ⚠️ Revise e valide todos os valores sugeridos.`,
+        variant: summary.successful > 0 ? "default" : "destructive",
       });
 
       // Recarregar estatísticas
