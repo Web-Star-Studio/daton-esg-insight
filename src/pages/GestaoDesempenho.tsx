@@ -30,7 +30,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthErrorFallback } from "@/components/fallbacks/AuthErrorFallback";
 import { DataErrorFallback } from "@/components/fallbacks/DataErrorFallback";
 import { useAuthCheck } from "@/hooks/useAuthCheck";
@@ -283,7 +283,7 @@ export default function GestaoDesempenho() {
   }
 
   return (
-    <ErrorBoundary fallback={PerformanceErrorFallback}>
+    <ErrorBoundary>
       <div className="space-y-6">
       <div className="flex items-center justify-between" data-tour="performance-header">
         <div>

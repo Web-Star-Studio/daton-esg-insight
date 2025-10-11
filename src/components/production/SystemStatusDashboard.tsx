@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ProductionReadinessCard } from "./ProductionReadinessCard";
 import { ProductionReadinessChecker } from "@/utils/productionReadinessChecker";
+import { healthChecker, HealthCheckResult } from "@/utils/healthCheck";
 import { PRODUCTION_CONFIG } from "@/utils/productionConfig";
-import { RefreshCw, Download } from "lucide-react";
+import { RefreshCw, Download, Activity } from "lucide-react";
 import { toast } from "sonner";
 
 interface ReadinessCheck {
@@ -23,21 +24,27 @@ interface ReadinessResult {
 
 export function SystemStatusDashboard() {
   const [readinessResult, setReadinessResult] = useState<ReadinessResult | null>(null);
+  const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
 
   const runChecks = async () => {
     setIsChecking(true);
     try {
+      // Run production readiness checks
       const checker = new ProductionReadinessChecker();
       const result = await checker.runAllChecks();
       setReadinessResult(result);
       
-      if (result.isReady) {
+      // Run health checks
+      const health = await healthChecker.runHealthCheck();
+      setHealthResult(health);
+      
+      if (result.isReady && health.status === 'healthy') {
         toast.success("Sistema pronto para produção!");
-      } else if (result.criticalFailures.length > 0) {
-        toast.error(`${result.criticalFailures.length} problema(s) crítico(s) encontrado(s)`);
+      } else if (result.criticalFailures.length > 0 || health.status === 'unhealthy') {
+        toast.error("Problemas críticos encontrados");
       } else {
-        toast.warning(`${result.warnings.length} aviso(s) encontrado(s)`);
+        toast.warning("Sistema operacional com avisos");
       }
     } catch (error) {
       toast.error("Erro ao executar verificações");
@@ -130,6 +137,62 @@ export function SystemStatusDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Health Check Results */}
+      {healthResult && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Health Check
+                </CardTitle>
+                <CardDescription>Status dos serviços do sistema</CardDescription>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                healthResult.status === 'healthy' 
+                  ? 'bg-success/10 text-success' 
+                  : healthResult.status === 'degraded'
+                  ? 'bg-warning/10 text-warning'
+                  : 'bg-destructive/10 text-destructive'
+              }`}>
+                {healthResult.status === 'healthy' ? '✓ Saudável' : 
+                 healthResult.status === 'degraded' ? '⚠ Degradado' : '✗ Crítico'}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {Object.entries(healthResult.checks).map(([key, check]) => (
+                <div 
+                  key={key} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`h-2 w-2 rounded-full ${
+                      check.status === 'pass' 
+                        ? 'bg-success' 
+                        : check.status === 'warn'
+                        ? 'bg-warning'
+                        : 'bg-destructive'
+                    }`} />
+                    <div>
+                      <span className="text-sm font-medium capitalize">{key}</span>
+                      <p className="text-xs text-muted-foreground">{check.message}</p>
+                    </div>
+                  </div>
+                  {check.responseTime && (
+                    <span className="text-xs text-muted-foreground">
+                      {check.responseTime}ms
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Readiness Check Results */}
       {readinessResult && (

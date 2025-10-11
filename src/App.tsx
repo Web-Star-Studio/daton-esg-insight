@@ -11,7 +11,7 @@ import { ProtectedLazyPageWrapper } from "@/components/ProtectedLazyPageWrapper"
 import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 
 // Páginas críticas carregadas sincronamente
