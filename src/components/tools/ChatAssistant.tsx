@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Trash2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,12 +7,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
 import { AIActionConfirmation, PendingAction } from '@/components/ai/AIActionConfirmation';
+import { QuickActions } from '@/components/ai/QuickActions';
 import ReactMarkdown from 'react-markdown';
 
 // Chat assistant component with AI action confirmation support
 export function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const hookResult = useChatAssistant();
@@ -33,12 +35,25 @@ export function ChatAssistant() {
     }
   }, [messages]);
 
+  // Hide quick actions after first user message
+  useEffect(() => {
+    if (messages.length > 1) {
+      setShowQuickActions(false);
+    }
+  }, [messages]);
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
     const message = inputMessage;
     setInputMessage('');
+    setShowQuickActions(false);
     await sendMessage(message, window.location.pathname.split('/')[1]);
+  };
+
+  const handleQuickAction = (prompt: string) => {
+    setInputMessage(prompt);
+    setShowQuickActions(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -68,13 +83,15 @@ export function ChatAssistant() {
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 to-primary/5">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 bg-primary">
-                <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-                  🤖
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  <Sparkles className="h-5 w-5" />
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h3 className="font-semibold text-lg">Assistente ESG IA</h3>
-                <p className="text-xs text-muted-foreground">Daton Intelligence</p>
+                <p className="text-xs text-muted-foreground">
+                  {isLoading ? 'Analisando dados...' : 'Online e pronto'}
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -83,6 +100,7 @@ export function ChatAssistant() {
                 size="icon"
                 onClick={clearMessages}
                 title="Limpar conversa"
+                disabled={isLoading}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -169,12 +187,20 @@ export function ChatAssistant() {
                 <div className="flex gap-3 justify-start">
                   <Avatar className="h-8 w-8 bg-primary">
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      AI
+                      <Sparkles className="h-3 w-3" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="bg-muted rounded-lg px-4 py-2">
+                  <div className="bg-muted rounded-lg px-4 py-2 flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Analisando dados...</span>
                   </div>
+                </div>
+              )}
+
+              {/* Quick Actions - Show only on first message */}
+              {showQuickActions && messages.length === 1 && !isLoading && (
+                <div className="mt-6 px-2">
+                  <QuickActions onSelectAction={handleQuickAction} />
                 </div>
               )}
             </div>

@@ -143,7 +143,7 @@ Converse naturalmente! Exemplos:
         const assistantMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: data.message || 'Desculpe, não consegui gerar uma resposta adequada.',
+          content: data.message || '📋 **Ação preparada para confirmação**\n\nPor favor, revise os detalhes da ação e confirme se deseja executá-la.',
           timestamp: new Date(),
           context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
           companyName: profile?.company_id ? 'Dados da empresa' : undefined,
@@ -151,6 +151,12 @@ Converse naturalmente! Exemplos:
         };
 
         setMessages(prev => [...prev, assistantMessage]);
+        
+        // Show toast notification
+        toast.info('Ação aguardando confirmação', {
+          description: action.displayName
+        });
+        
         return;
       }
 
@@ -217,6 +223,15 @@ Estou pronto para ajudar. Posso:
 
       console.log('Confirming action:', action);
 
+      // Add message showing action is being executed
+      const executingMessage: ChatMessage = {
+        id: `executing-${Date.now()}`,
+        role: 'assistant',
+        content: `⏳ Executando: **${action.displayName}**...\n\nPor favor, aguarde enquanto processo sua solicitação.`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, executingMessage]);
+
       // Call edge function with confirmation
       const { data, error } = await supabase.functions.invoke('daton-ai-chat', {
         body: {
@@ -232,21 +247,22 @@ Estou pronto para ajudar. Posso:
         throw error;
       }
 
-      console.log('Action executed:', data);
+      console.log('Action executed successfully:', data);
 
       // Add success message
       const successMessage: ChatMessage = {
         id: `success-${Date.now()}`,
         role: 'assistant',
-        content: data.message || '✅ Ação executada com sucesso!',
+        content: data.message || `✅ **Ação executada com sucesso!**\n\n${action.displayName} foi concluída.`,
         timestamp: new Date(),
-        context: 'Ação executada',
+        context: 'Ação executada com sucesso',
       };
 
       setMessages(prev => [...prev, successMessage]);
 
       toast.success('Ação executada com sucesso', {
-        description: action.displayName
+        description: action.displayName,
+        duration: 5000
       });
 
     } catch (error) {
@@ -255,14 +271,15 @@ Estou pronto para ajudar. Posso:
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         role: 'assistant',
-        content: '❌ Erro ao executar a ação. Por favor, tente novamente.',
+        content: `❌ **Erro ao executar ação**\n\nDesculpe, ocorreu um erro ao executar "${action.displayName}". Por favor, tente novamente ou entre em contato com o suporte se o problema persistir.`,
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, errorMessage]);
       
       toast.error('Erro ao executar ação', {
-        description: 'Não foi possível completar a operação'
+        description: 'Não foi possível completar a operação',
+        duration: 5000
       });
     } finally {
       setIsLoading(false);
@@ -270,16 +287,21 @@ Estou pronto para ajudar. Posso:
   };
 
   const cancelAction = () => {
+    const canceledAction = pendingAction;
     setPendingAction(null);
     
     const cancelMessage: ChatMessage = {
       id: `cancel-${Date.now()}`,
       role: 'assistant',
-      content: '🚫 Ação cancelada. Como posso ajudar de outra forma?',
+      content: `🚫 **Ação cancelada**\n\nA ação "${canceledAction?.displayName}" foi cancelada conforme solicitado.\n\n**Como posso ajudar de outra forma?**`,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, cancelMessage]);
+    
+    toast.info('Ação cancelada', {
+      description: 'A operação foi cancelada pelo usuário'
+    });
   };
 
   return {
