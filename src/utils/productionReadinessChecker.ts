@@ -4,6 +4,8 @@
  */
 
 import { PRODUCTION_CONFIG, isProduction } from './productionConfig';
+import { performanceMonitor } from './performanceMonitor';
+import { logger } from './logger';
 
 interface ReadinessCheck {
   name: string;
@@ -28,6 +30,7 @@ export class ProductionReadinessChecker {
     this.checkSecurityFeatures();
     this.checkPerformanceFeatures();
     this.checkMockDataDisabled();
+    this.checkProductionUtilities();
     await this.checkDatabaseConnection();
 
     const criticalFailures = this.checks.filter(c => c.status === 'fail' && c.critical);
@@ -118,6 +121,39 @@ export class ProductionReadinessChecker {
         : 'Mock data is still enabled - should be disabled in production',
       critical: isProduction(),
     });
+  }
+
+  private checkProductionUtilities() {
+    // Check if production utilities are available
+    const utilitiesAvailable = 
+      typeof performanceMonitor !== 'undefined' &&
+      typeof logger !== 'undefined';
+
+    this.checks.push({
+      name: 'Production Utilities',
+      status: utilitiesAvailable ? 'pass' : 'fail',
+      message: utilitiesAvailable 
+        ? 'Performance monitoring and logging utilities are available' 
+        : 'Production utilities not properly initialized',
+      critical: false,
+    });
+
+    // Check if error reporting is configured for production
+    if (isProduction() && !PRODUCTION_CONFIG.LOGGING.ENABLE_ERROR_REPORTING) {
+      this.checks.push({
+        name: 'Error Reporting',
+        status: 'warn',
+        message: 'Error reporting is disabled - recommended for production monitoring',
+        critical: false,
+      });
+    } else {
+      this.checks.push({
+        name: 'Error Reporting',
+        status: 'pass',
+        message: 'Error reporting configuration is appropriate',
+        critical: false,
+      });
+    }
   }
 
   private async checkDatabaseConnection() {
