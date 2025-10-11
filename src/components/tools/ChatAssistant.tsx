@@ -6,23 +6,25 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
-import { AIActionConfirmation } from '@/components/ai/AIActionConfirmation';
+import { AIActionConfirmation, PendingAction } from '@/components/ai/AIActionConfirmation';
 import ReactMarkdown from 'react-markdown';
 
+// Chat assistant component with AI action confirmation support
 export function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   
+  const hookResult = useChatAssistant();
   const { 
     messages, 
     isLoading, 
     sendMessage, 
-    clearMessages,
-    pendingAction,
-    confirmAction,
-    cancelAction
-  } = useChatAssistant();
+    clearMessages
+  } = hookResult;
+  const pendingAction = (hookResult as any).pendingAction as PendingAction | null;
+  const confirmAction = (hookResult as any).confirmAction as (action: PendingAction) => Promise<void>;
+  const cancelAction = (hookResult as any).cancelAction as () => void;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

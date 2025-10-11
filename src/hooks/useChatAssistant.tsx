@@ -1,3 +1,4 @@
+// Chat assistant hook with AI action confirmation capabilities
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,17 @@ export interface ChatMessage {
   pendingAction?: PendingAction;
 }
 
-export function useChatAssistant() {
+export interface UseChatAssistantReturn {
+  messages: ChatMessage[];
+  isLoading: boolean;
+  sendMessage: (content: string, currentPage?: string) => Promise<void>;
+  clearMessages: () => void;
+  pendingAction: PendingAction | null;
+  confirmAction: (action: PendingAction) => Promise<void>;
+  cancelAction: () => void;
+}
+
+export function useChatAssistant(): UseChatAssistantReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -260,5 +271,5 @@ Tenho acesso **completo** aos dados da sua empresa e posso:
     pendingAction,
     confirmAction,
     cancelAction,
-  } as const;
+  };
 }
