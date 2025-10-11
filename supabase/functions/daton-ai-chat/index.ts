@@ -73,169 +73,27 @@ serve(async (req) => {
       .eq('id', companyId)
       .single();
 
-    // Define tools for AI to access data (READ + WRITE)
+    // Load conversation history if conversationId is provided
+    let conversationHistory: any[] = [];
+    if (conversationId) {
+      const { data: historyMessages } = await supabaseClient
+        .from('ai_chat_messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(20); // Last 20 messages for context
+      
+      if (historyMessages && historyMessages.length > 0) {
+        conversationHistory = historyMessages;
+        console.log('Loaded conversation history:', conversationHistory.length, 'messages');
+      }
+    }
+
+    // Combine read and write tools
     const tools = [
-      // READ TOOLS
-      {
-        type: "function" as const,
-        function: {
-          name: "get_emissions_data",
-          description: "Buscar dados de emissões de GEE da empresa, incluindo totais por escopo e fontes de emissão",
-          parameters: {
-            type: "object",
-            properties: {
-              scope: {
-                type: "string",
-                enum: ["1", "2", "3", "all"],
-                description: "Escopo de emissões (1, 2, 3 ou 'all' para todos)"
-              }
-            }
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_licenses_status",
-          description: "Verificar status de licenças ambientais, incluindo vencimentos próximos",
-          parameters: {
-            type: "object",
-            properties: {
-              urgency: {
-                type: "string",
-                enum: ["all", "expiring_soon", "expired"],
-                description: "Filtrar por urgência"
-              }
-            }
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_goals_progress",
-          description: "Obter progresso das metas ESG e de sustentabilidade da empresa",
-          parameters: {
-            type: "object",
-            properties: {
-              category: {
-                type: "string",
-                enum: ["all", "environmental", "social", "governance"],
-                description: "Categoria das metas"
-              }
-            }
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_compliance_status",
-          description: "Verificar status geral de conformidade regulatória",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_waste_metrics",
-          description: "Obter métricas de gestão de resíduos",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_employee_metrics",
-          description: "Obter dados sobre colaboradores e métricas sociais",
-          parameters: {
-            type: "object",
-            properties: {}
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_pending_tasks",
-          description: "Buscar tarefas pendentes ou em atraso",
-          parameters: {
-            type: "object",
-            properties: {
-              status: {
-                type: "string",
-                enum: ["all", "pending", "overdue", "in_progress"],
-                description: "Filtrar por status"
-              }
-            }
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_goal_details",
-          description: "Obter detalhes completos de uma meta específica incluindo histórico de progresso",
-          parameters: {
-            type: "object",
-            properties: {
-              goal_id: {
-                type: "string",
-                description: "ID da meta"
-              }
-            },
-            required: ["goal_id"]
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "get_risks_summary",
-          description: "Obter resumo de riscos ESG por categoria e nível",
-          parameters: {
-            type: "object",
-            properties: {
-              category: {
-                type: "string",
-                enum: ["all", "Ambiental", "Social", "Governança"],
-                description: "Filtrar por categoria"
-              }
-            }
-          }
-        }
-      },
-      {
-        type: "function" as const,
-        function: {
-          name: "search_across_modules",
-          description: "Buscar informações em múltiplos módulos do sistema",
-          parameters: {
-            type: "object",
-            properties: {
-              search_term: {
-                type: "string",
-                description: "Termo de busca"
-              },
-              modules: {
-                type: "array",
-                items: {
-                  type: "string",
-                  enum: ["goals", "tasks", "licenses", "emissions", "waste", "risks", "employees"]
-                },
-                description: "Módulos para buscar (deixe vazio para buscar em todos)"
-              }
-            },
-            required: ["search_term"]
-          }
-        }
-      },
+      // READ TOOLS - from read-tools.ts
+      ...readTools,
+      
       // WRITE TOOLS
       {
         type: "function" as const,
@@ -731,103 +589,143 @@ serve(async (req) => {
       }
     }
 
-    // Build system prompt with context
-    const systemPrompt = `Você é o Assistente IA do Daton, especialista em gestão ESG (Ambiental, Social e Governança).
+    // Build enhanced system prompt with user context
+    const userContextInfo = userContext ? `
+**👤 Contexto do Usuário:**
+• Nome: ${userContext.userName || 'Usuário'}
+• Cargo: ${userContext.userRole || 'Não especificado'}
+• Empresa: ${userContext.companyName || company?.name || 'Empresa'}
+` : '';
 
-**Contexto da Empresa:**
-🏢 ${company?.name || 'Empresa'} | 🏭 ${company?.sector || 'Setor não informado'}
-📍 Módulo atual: ${getPageContext(currentPage)}
+    const systemPrompt = `Você é o Assistente IA do Daton, um especialista avançado em gestão ESG (Ambiental, Social e Governança) com capacidades de análise profunda de dados.
+
+**🏢 Contexto Empresarial:**
+${company?.name || 'Empresa'} | Setor: ${company?.sector || 'Não informado'}
+CNPJ: ${company?.cnpj || 'Não informado'}
+${userContextInfo}
+📍 **Módulo Atual:** ${getPageContext(currentPage)}
 ${attachmentContext ? `\n\n**📎 ARQUIVOS ANEXADOS PELO USUÁRIO:**${attachmentContext}\n\n⚠️ **IMPORTANTE:** O usuário anexou arquivo(s). Use as informações extraídas para responder às perguntas ou executar as ações solicitadas. Se o usuário pedir para cadastrar/importar dados dos arquivos, use as ferramentas de escrita disponíveis (sempre pedindo confirmação).` : ''}
 
-**SUAS CAPACIDADES:**
+**🧠 SUAS CAPACIDADES AVANÇADAS:**
 
-📊 **ANÁLISE E CONSULTA (Imediata):**
-Você tem acesso total aos dados da empresa e pode:
-• Analisar emissões de GEE por escopo e fonte
-• Verificar status e vencimentos de licenças
-• Acompanhar progresso de metas e OKRs
-• Avaliar conformidade e riscos ESG
-• Consultar métricas de resíduos e destinação
-• Verificar dados de colaboradores por departamento
-• Buscar tarefas pendentes e em atraso
-• Obter detalhes completos de registros específicos
-• Fazer buscas inteligentes em múltiplos módulos
+📊 **ANÁLISE E CONSULTA DE DADOS (Execução Imediata):**
+Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferramentas especializadas:
 
-✏️ **AÇÕES DE GERENCIAMENTO (Requer Confirmação):**
-Você pode propor ações de escrita que incluem:
+**Emissões & Inventário GEE:**
+• query_emissions_data - Consultar emissões por escopo, período, fonte ou categoria
+• Analisar tendências de carbono e identificar fontes principais
+• Calcular totais e comparar entre períodos
 
-**Metas & Estratégia:**
-• Criar e atualizar metas ESG
-• Criar OKRs e adicionar resultados-chave
-• Atualizar progresso de metas e OKRs
-• Criar projetos ESG e adicionar tarefas
+**Metas & Progresso:**
+• query_goals_progress - Acompanhar metas ESG com filtros por status e categoria
+• Analisar taxa de progresso e identificar metas em risco
+• Visualizar histórico de evolução
 
-**Operacional:**
-• Criar tarefas de coleta de dados
-• Registrar licenças ambientais
-• Adicionar fontes de emissão
-• Registrar atividades de emissões
-• Adicionar logs de resíduos
+**Licenciamento Ambiental:**
+• query_licenses - Verificar licenças ativas, vencidas ou próximas ao vencimento
+• Priorizar renovações e alertar sobre não conformidades
+• Consultar por dias até vencimento
 
-**Conformidade & Riscos:**
-• Registrar não conformidades
-• Criar riscos ESG
-• Criar auditorias
-• Criar indicadores de monitoramento
-• Registrar medições de indicadores
+**Gestão de Tarefas:**
+• query_tasks - Buscar tarefas por status, tipo, responsável ou prioridade
+• Identificar atrasos e gargalos operacionais
+• Sugerir redistribuição de carga de trabalho
+
+**Riscos ESG:**
+• query_risks - Analisar riscos por nível, categoria e status
+• Priorizar riscos críticos e de alto impacto
+• Avaliar efetividade de tratamentos
+
+**Não Conformidades:**
+• query_non_conformities - Consultar NCs por status e gravidade
+• Acompanhar tratamentos e prazos
+• Analisar padrões e recorrências
 
 **Gestão de Pessoas:**
-• Adicionar funcionários
-• Criar programas de treinamento
-• Adicionar fornecedores e stakeholders
+• query_employees - Dados de colaboradores por status, departamento, gênero ou cargo
+• Analisar diversidade e distribuição organizacional
+• Identificar necessidades de treinamento
 
-**⚠️ REGRAS CRÍTICAS:**
+**Visão Executiva:**
+• get_dashboard_summary - Resumo executivo com KPIs principais e alertas
+• Consolidar métricas críticas de todos os módulos
+• Identificar itens que precisam atenção imediata
 
-1. **Para Ações de Escrita:**
-   - SEMPRE colete todos os dados necessários primeiro
-   - Apresente um resumo claro e completo da ação
-   - Liste todos os campos que serão preenchidos
-   - Explique o impacto da ação
-   - NUNCA execute sem confirmação explícita do usuário
+✏️ **AÇÕES DE GERENCIAMENTO (Requerem Confirmação do Usuário):**
+Você pode PROPOR ações de escrita, mas NUNCA as execute sem confirmação:
 
-2. **Para Consultas:**
-   - Use as ferramentas disponíveis para buscar dados reais
-   - Sempre que possível, busque informações específicas (IDs, datas, valores)
-   - Forneça análises com base nos dados, não suposições
-   - Se não encontrar dados, informe claramente
+• Criar/atualizar metas ESG e OKRs
+• Registrar emissões, resíduos e licenças
+• Criar tarefas, projetos e indicadores
+• Adicionar riscos, não conformidades e colaboradores
+• Atualizar status e progressos
 
-3. **Qualidade das Respostas:**
-   - Seja conciso mas completo
-   - Use formatação (bullets, negrito, emojis) para clareza
-   - Apresente números e métricas quando relevantes
-   - Sugira próximos passos quando apropriado
-   - Se o usuário perguntar algo vago, faça perguntas clarificadoras
+**⚠️ REGRAS CRÍTICAS DE COMPORTAMENTO:**
 
-**FORMATO PARA CONFIRMAÇÃO DE AÇÕES:**
+1. **SEMPRE CONSULTE DADOS REAIS PRIMEIRO:**
+   - Use as ferramentas de consulta disponíveis antes de responder
+   - NUNCA invente ou presuma dados
+   - Se os dados não existirem, informe claramente
+   - Busque informações específicas (IDs, datas exatas, valores numéricos)
+
+2. **SEJA PROATIVO E INTELIGENTE:**
+   - Quando o usuário perguntar sobre "últimas", "recentes" ou "atuais", busque dados dos últimos 30-90 dias
+   - Sempre calcule dias restantes/vencidos para prazos
+   - Compare valores atuais com metas quando disponível
+   - Identifique tendências, padrões e anomalias
+   - Sugira ações corretivas quando identificar problemas
+
+3. **ANÁLISE CONTEXTUAL:**
+   - Considere o módulo atual do usuário para dar respostas relevantes
+   - Relacione dados de diferentes módulos quando apropriado
+   - Priorize informações urgentes (vencimentos próximos, riscos críticos, tarefas atrasadas)
+   - Forneça insights acionáveis, não apenas dados brutos
+
+4. **PARA AÇÕES DE ESCRITA:**
+   - Colete TODOS os dados necessários conversando com o usuário
+   - Apresente um resumo COMPLETO da ação com todos os campos
+   - Explique o IMPACTO e as CONSEQUÊNCIAS da ação
+   - NUNCA execute sem uma confirmação EXPLÍCITA ("confirmar", "executar", "sim")
+   - Se o usuário cancelar, respeite e não insista
+
+5. **QUALIDADE DAS RESPOSTAS:**
+   - Seja CONCISO mas COMPLETO
+   - Use formatação (bullets, negrito, emojis) para facilitar leitura
+   - Apresente NÚMEROS e MÉTRICAS sempre que relevante
+   - Sugira PRÓXIMOS PASSOS quando apropriado
+   - Faça perguntas clarificadoras quando necessário
+
+**📋 FORMATO PARA CONFIRMAÇÃO DE AÇÕES:**
 
 "📋 **Ação Proposta:** [Nome da ação]
 
-**Detalhes da Operação:**
+**📝 Detalhes da Operação:**
 • Campo 1: [valor]
 • Campo 2: [valor]
-• ...
+• [...]
 
-**Categoria:** [categoria]
-**Impacto:** [nível de impacto]
+**🏷️ Categoria:** [categoria]
+**⚡ Impacto:** [nível de impacto]
 
-⚠️ Esta ação irá [explicar o que acontecerá]. 
+⚠️ Esta ação irá [explicar CLARAMENTE o que acontecerá e quais dados serão afetados]. 
 
-✅ Para confirmar, responda 'confirmar' ou 'executar'
-❌ Para cancelar, responda 'cancelar'"
+✅ Para confirmar e executar, responda **'confirmar'** ou **'executar'**
+❌ Para cancelar, responda **'cancelar'** ou **'não'**"
 
-**CONTEXTO DO MÓDULO ATUAL:**
+**🎯 CONTEXTO DO MÓDULO ATUAL:**
 ${getPageContext(currentPage)}
 
-**DICAS DE INTELIGÊNCIA:**
-• Quando o usuário mencionar "última", "recente" ou "atual", busque os dados mais recentes
-• Quando perguntar sobre prazos, sempre calcule dias restantes ou vencidos
-• Quando analisar métricas, compare com metas quando disponível
-• Seja proativo em identificar problemas ou oportunidades nos dados`;
+**💡 DICAS DE INTELIGÊNCIA AVANÇADA:**
+• Use query_emissions_data para análises de carbono, query_goals_progress para metas
+• Sempre que consultar dados, processe e analise antes de apresentar
+• Identifique correlações entre módulos (ex: metas vs. emissões, riscos vs. NCs)
+• Calcule automaticamente KPIs relevantes (variação %, dias restantes, taxa de conformidade)
+• Antecipe necessidades: se usuário pergunta sobre meta, busque também seu histórico
+• Em dashboards, priorize alertas e itens críticos primeiro
+• Personalize respostas com base no cargo do usuário (Admin vs. Operacional)
+
+**🔄 MEMÓRIA DE CONVERSA:**
+Esta conversa tem memória persistente. Você pode referenciar discussões anteriores e manter contexto entre mensagens.`;
 
     // Call Lovable AI with tool calling
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -907,7 +805,7 @@ ${getPageContext(currentPage)}
         });
       }
       
-      // Execute read-only tools
+      // Execute read-only tools using the new executeReadTool function
       const toolResults = await Promise.all(
         choice.message.tool_calls.map(async (toolCall: any) => {
           const functionName = toolCall.function.name;
@@ -915,7 +813,7 @@ ${getPageContext(currentPage)}
           
           console.log(`Executing tool: ${functionName}`, functionArgs);
           
-          const result = await executeTool(functionName, functionArgs, companyId, supabaseClient);
+          const result = await executeReadTool(functionName, functionArgs, companyId, supabaseClient);
           
           return {
             tool_call_id: toolCall.id,
@@ -1001,381 +899,3 @@ function getPageContext(page: string): string {
   return contexts[page] || '📋 Visão geral do sistema - Ajude o usuário a navegar e entender seus dados ESG';
 }
 
-async function executeTool(
-  toolName: string, 
-  args: any, 
-  companyId: string, 
-  supabase: any
-): Promise<any> {
-  console.log(`Executing tool: ${toolName} for company ${companyId}`);
-
-  switch (toolName) {
-    case 'get_emissions_data': {
-      const { scope } = args;
-      
-      // Get emission sources
-      let query = supabase
-        .from('emission_sources')
-        .select('*, calculated_emissions(total_co2e, calculation_date)')
-        .eq('company_id', companyId);
-      
-      if (scope !== 'all') {
-        query = query.eq('scope', parseInt(scope));
-      }
-      
-      const { data: sources, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching emissions:', error);
-        return { error: 'Erro ao buscar dados de emissões' };
-      }
-
-      // Calculate totals by scope
-      const totalsByScope = sources?.reduce((acc: any, source: any) => {
-        const scopeKey = `scope${source.scope}`;
-        const emissions = source.calculated_emissions?.[0]?.total_co2e || 0;
-        acc[scopeKey] = (acc[scopeKey] || 0) + emissions;
-        return acc;
-      }, {}) || {};
-
-      return {
-        totalSources: sources?.length || 0,
-        totalsByScope,
-        totalEmissions: Object.values(totalsByScope).reduce((a: any, b: any) => a + b, 0),
-        sources: sources?.map(s => ({
-          name: s.name,
-          category: s.category,
-          scope: s.scope,
-          emissions: s.calculated_emissions?.[0]?.total_co2e || 0
-        })) || []
-      };
-    }
-
-    case 'get_licenses_status': {
-      const { urgency } = args;
-      const now = new Date().toISOString();
-      const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      
-      let query = supabase
-        .from('licenses')
-        .select('*')
-        .eq('company_id', companyId);
-      
-      if (urgency === 'expiring_soon') {
-        query = query.gte('expiration_date', now).lte('expiration_date', thirtyDaysFromNow);
-      } else if (urgency === 'expired') {
-        query = query.lt('expiration_date', now);
-      }
-      
-      const { data: licenses, error } = await query.order('expiration_date');
-      
-      if (error) {
-        console.error('Error fetching licenses:', error);
-        return { error: 'Erro ao buscar licenças' };
-      }
-
-      return {
-        total: licenses?.length || 0,
-        expiringSoon: licenses?.filter(l => 
-          new Date(l.expiration_date) > new Date() && 
-          new Date(l.expiration_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        ).length || 0,
-        expired: licenses?.filter(l => new Date(l.expiration_date) < new Date()).length || 0,
-        licenses: licenses?.map(l => ({
-          name: l.name,
-          type: l.type,
-          status: l.status,
-          expirationDate: l.expiration_date,
-          daysUntilExpiration: Math.ceil((new Date(l.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        })) || []
-      };
-    }
-
-    case 'get_goals_progress': {
-      const { category } = args;
-      
-      let query = supabase
-        .from('goals')
-        .select('*')
-        .eq('company_id', companyId);
-      
-      if (category !== 'all') {
-        query = query.eq('category', category);
-      }
-      
-      const { data: goals, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching goals:', error);
-        return { error: 'Erro ao buscar metas' };
-      }
-
-      const summary = {
-        total: goals?.length || 0,
-        onTrack: goals?.filter(g => g.progress >= 80).length || 0,
-        atRisk: goals?.filter(g => g.progress >= 50 && g.progress < 80).length || 0,
-        delayed: goals?.filter(g => g.progress < 50).length || 0,
-        averageProgress: goals?.reduce((sum, g) => sum + (g.progress || 0), 0) / (goals?.length || 1),
-        goals: goals?.map(g => ({
-          name: g.name,
-          category: g.category,
-          progress: g.progress,
-          targetDate: g.target_date,
-          status: g.status
-        })) || []
-      };
-
-      return summary;
-    }
-
-    case 'get_compliance_status': {
-      // Check various compliance indicators
-      const [licensesResult, auditsResult, risksResult] = await Promise.all([
-        supabase.from('licenses').select('*').eq('company_id', companyId).eq('status', 'Ativa'),
-        supabase.from('audits').select('*').eq('company_id', companyId),
-        supabase.from('risks').select('*').eq('company_id', companyId).in('risk_level', ['Alto', 'Crítico'])
-      ]);
-
-      return {
-        activeLicenses: licensesResult.data?.length || 0,
-        recentAudits: auditsResult.data?.length || 0,
-        highRisks: risksResult.data?.length || 0,
-        complianceScore: calculateComplianceScore(licensesResult.data, risksResult.data)
-      };
-    }
-
-    case 'get_waste_metrics': {
-      const { data: wasteLogs, error } = await supabase
-        .from('waste_logs')
-        .select('*')
-        .eq('company_id', companyId);
-      
-      if (error) {
-        console.error('Error fetching waste data:', error);
-        return { error: 'Erro ao buscar dados de resíduos' };
-      }
-
-      const byClass = wasteLogs?.reduce((acc: any, log: any) => {
-        const classKey = log.class || 'Não classificado';
-        acc[classKey] = (acc[classKey] || 0) + (log.quantity || 0);
-        return acc;
-      }, {}) || {};
-
-      return {
-        totalRecords: wasteLogs?.length || 0,
-        totalQuantity: wasteLogs?.reduce((sum, l) => sum + (l.quantity || 0), 0) || 0,
-        byClass,
-        recycled: wasteLogs?.filter(l => l.final_destination?.includes('Reciclagem')).length || 0
-      };
-    }
-
-    case 'get_employee_metrics': {
-      const { data: employees, error } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('status', 'Ativo');
-      
-      if (error) {
-        console.error('Error fetching employee data:', error);
-        return { error: 'Erro ao buscar dados de colaboradores' };
-      }
-
-      return {
-        totalActive: employees?.length || 0,
-        byDepartment: employees?.reduce((acc: any, emp: any) => {
-          const dept = emp.department || 'Não especificado';
-          acc[dept] = (acc[dept] || 0) + 1;
-          return acc;
-        }, {}) || {},
-        averageTenure: 'N/A'
-      };
-    }
-
-    case 'get_pending_tasks': {
-      const { status } = args;
-      const now = new Date().toISOString().split('T')[0];
-      
-      let query = supabase
-        .from('data_collection_tasks')
-        .select('*')
-        .eq('company_id', companyId);
-      
-      if (status === 'pending') {
-        query = query.eq('status', 'Pendente');
-      } else if (status === 'overdue') {
-        query = query.eq('status', 'Em Atraso').lt('due_date', now);
-      } else if (status === 'in_progress') {
-        query = query.eq('status', 'Em Andamento');
-      }
-      
-      const { data: tasks, error } = await query.order('due_date');
-      
-      if (error) return { error: 'Erro ao buscar tarefas' };
-
-      return {
-        total: tasks?.length || 0,
-        tasks: tasks?.map(t => ({
-          id: t.id,
-          name: t.name,
-          type: t.task_type,
-          status: t.status,
-          dueDate: t.due_date,
-          daysUntilDue: Math.ceil((new Date(t.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        })) || []
-      };
-    }
-
-    case 'get_goal_details': {
-      const { goal_id } = args;
-      
-      const { data: goal, error: goalError } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('id', goal_id)
-        .eq('company_id', companyId)
-        .single();
-      
-      if (goalError) return { error: 'Meta não encontrada' };
-
-      const { data: updates } = await supabase
-        .from('goal_progress_updates')
-        .select('*')
-        .eq('goal_id', goal_id)
-        .order('update_date', { ascending: false })
-        .limit(10);
-
-      return {
-        goal: {
-          name: goal.goal_name,
-          category: goal.category,
-          targetValue: goal.target_value,
-          baselineValue: goal.baseline_value,
-          currentProgress: goal.progress,
-          status: goal.status,
-          targetDate: goal.target_date,
-          unit: goal.unit
-        },
-        recentUpdates: updates?.map(u => ({
-          date: u.update_date,
-          value: u.current_value,
-          progress: u.progress_percentage,
-          notes: u.notes
-        })) || []
-      };
-    }
-
-    case 'get_risks_summary': {
-      const { category } = args;
-      
-      let query = supabase
-        .from('esg_risks')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('status', 'Ativo');
-      
-      if (category !== 'all') {
-        query = query.eq('category', category);
-      }
-      
-      const { data: risks, error } = await query;
-      
-      if (error) return { error: 'Erro ao buscar riscos' };
-
-      const byLevel = risks?.reduce((acc: any, risk: any) => {
-        const level = risk.inherent_risk_level || 'Indefinido';
-        acc[level] = (acc[level] || 0) + 1;
-        return acc;
-      }, {}) || {};
-
-      return {
-        total: risks?.length || 0,
-        byLevel,
-        critical: risks?.filter(r => r.inherent_risk_level === 'Crítico').length || 0,
-        high: risks?.filter(r => r.inherent_risk_level === 'Alto').length || 0,
-        risks: risks?.map(r => ({
-          id: r.id,
-          title: r.title,
-          category: r.category,
-          level: r.inherent_risk_level,
-          probability: r.probability,
-          impact: r.impact
-        })) || []
-      };
-    }
-
-    case 'search_across_modules': {
-      const { search_term, modules } = args;
-      const results: any = {};
-      
-      const searchModules = modules?.length > 0 ? modules : ['goals', 'tasks', 'licenses', 'emissions', 'risks'];
-      
-      for (const module of searchModules) {
-        try {
-          switch (module) {
-            case 'goals': {
-              const { data } = await supabase
-                .from('goals')
-                .select('id, goal_name, category, status')
-                .eq('company_id', companyId)
-                .ilike('goal_name', `%${search_term}%`)
-                .limit(5);
-              results.goals = data || [];
-              break;
-            }
-            case 'tasks': {
-              const { data } = await supabase
-                .from('data_collection_tasks')
-                .select('id, name, task_type, status, due_date')
-                .eq('company_id', companyId)
-                .ilike('name', `%${search_term}%`)
-                .limit(5);
-              results.tasks = data || [];
-              break;
-            }
-            case 'licenses': {
-              const { data } = await supabase
-                .from('licenses')
-                .select('id, license_name, license_type, status')
-                .eq('company_id', companyId)
-                .ilike('license_name', `%${search_term}%`)
-                .limit(5);
-              results.licenses = data || [];
-              break;
-            }
-            case 'risks': {
-              const { data } = await supabase
-                .from('esg_risks')
-                .select('id, title, category, inherent_risk_level')
-                .eq('company_id', companyId)
-                .ilike('title', `%${search_term}%`)
-                .limit(5);
-              results.risks = data || [];
-              break;
-            }
-          }
-        } catch (e) {
-          console.error(`Error searching ${module}:`, e);
-        }
-      }
-
-      return results;
-    }
-
-    default:
-      return { error: `Ferramenta desconhecida: ${toolName}` };
-  }
-}
-
-function calculateComplianceScore(licenses: any[], risks: any[]): number {
-  let score = 100;
-  
-  // Penalize for missing/expired licenses
-  const inactiveLicenses = licenses?.filter(l => l.status !== 'Ativa').length || 0;
-  score -= inactiveLicenses * 5;
-  
-  // Penalize for high risks
-  score -= (risks?.length || 0) * 10;
-  
-  return Math.max(0, Math.min(100, score));
-}
