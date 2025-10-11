@@ -11504,6 +11504,24 @@ export type Database = {
         Args: { policy_name: string; table_name: string }
         Returns: boolean
       }
+      search_across_tables: {
+        Args: {
+          result_limit?: number
+          search_query: string
+          user_company_id: string
+        }
+        Returns: {
+          category: string
+          description: string
+          id: string
+          last_modified: string
+          relevance: number
+          tags: string[]
+          title: string
+          type: string
+          url: string
+        }[]
+      }
       update_overdue_tasks: {
         Args: Record<PropertyKey, never>
         Returns: undefined

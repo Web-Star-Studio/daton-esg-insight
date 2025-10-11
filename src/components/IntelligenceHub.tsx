@@ -25,55 +25,26 @@ import { UnifiedDashboardWidget } from "./UnifiedDashboardWidget";
 import { PredictiveQualityWidget } from "./PredictiveQualityWidget";
 import { RealtimeReportingWidget } from "./RealtimeReportingWidget";
 import { useIntelligenceInsights } from "@/services/crossPlatformAnalytics";
-
-interface AIRecommendation {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  category: string;
-  estimated_impact: number;
-  implementation_time: string;
-  status: 'pending' | 'in_progress' | 'completed';
-}
+import { useIntelligentRecommendations } from "@/hooks/data/useIntelligentRecommendations";
+import { useNavigate } from "react-router-dom";
 
 const IntelligenceHub = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const { data: insights } = useIntelligenceInsights();
+  const { data: recommendations = [], isLoading: recommendationsLoading } = useIntelligentRecommendations();
+  const navigate = useNavigate();
 
-  const mockRecommendations: AIRecommendation[] = [
-    {
-      id: '1',
-      title: 'Otimização do Consumo Energético',
-      description: 'IA identificou padrão de consumo que pode ser otimizado, reduzindo custos e emissões em até 18%.',
-      priority: 'high',
-      category: 'Energia',
-      estimated_impact: 18,
-      implementation_time: '2-4 semanas',
-      status: 'pending'
-    },
-    {
-      id: '2',
-      title: 'Melhoria na Coleta de Dados ESG',
-      description: 'Sistema detectou inconsistências na coleta de dados que afetam a precisão dos relatórios ESG.',
-      priority: 'medium',
-      category: 'Qualidade',
-      estimated_impact: 12,
-      implementation_time: '1-2 semanas',
-      status: 'in_progress'
-    },
-    {
-      id: '3',
-      title: 'Automação de Compliance',
-      description: 'Oportunidade de automatizar 85% dos processos de compliance através de IA.',
-      priority: 'high',
-      category: 'Compliance',
-      estimated_impact: 25,
-      implementation_time: '6-8 semanas',
-      status: 'pending'
-    }
-  ];
+  const filteredRecommendations = recommendations.filter(rec => {
+    const matchesSearch = searchTerm === "" || 
+      rec.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rec.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === "all" || 
+      rec.category.toLowerCase() === selectedCategory.toLowerCase();
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -163,8 +134,19 @@ const IntelligenceHub = () => {
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                {mockRecommendations.map((rec) => (
+              {recommendationsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredRecommendations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
+                  <p className="text-lg font-medium">Tudo em dia!</p>
+                  <p className="text-sm">Não há recomendações urgentes no momento.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredRecommendations.map((rec) => (
                   <div key={rec.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -206,16 +188,30 @@ const IntelligenceHub = () => {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        Ver Detalhes
-                      </Button>
-                      <Button size="sm">
-                        Implementar
+                      {rec.actionUrl && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => navigate(rec.actionUrl!)}
+                        >
+                          Ver Detalhes
+                        </Button>
+                      )}
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          if (rec.actionUrl) {
+                            navigate(rec.actionUrl);
+                          }
+                        }}
+                      >
+                        {rec.actionUrl ? 'Ir para Módulo' : 'Implementar'}
                       </Button>
                     </div>
                   </div>
                 ))}
               </div>
+            )}
             </CardContent>
           </Card>
         </TabsContent>

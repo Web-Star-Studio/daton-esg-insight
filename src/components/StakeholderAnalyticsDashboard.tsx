@@ -40,77 +40,13 @@ import {
   PieChart as PieChartIcon
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useStakeholderAnalytics } from '@/hooks/data/useStakeholderAnalytics';
 
 const StakeholderAnalyticsDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('3months');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ['stakeholder-analytics', selectedPeriod, selectedCategory],
-    queryFn: async () => {
-      // Mock data - in production, this would come from your API
-      return {
-        summary: {
-          totalStakeholders: 45,
-          activeEngagement: 38,
-          averageScore: 72,
-          totalInteractions: 156,
-          scheduledMeetings: 12,
-          overdueFollowups: 3,
-          trending: {
-            stakeholders: 8.5,
-            engagement: -2.3,
-            interactions: 15.2
-          }
-        },
-        engagementByCategory: [
-          { category: 'Investidores', count: 8, avgScore: 85, interactions: 45 },
-          { category: 'Clientes', count: 12, avgScore: 78, interactions: 67 },
-          { category: 'Funcionários', count: 15, avgScore: 68, interactions: 89 },
-          { category: 'Comunidade', count: 6, avgScore: 62, interactions: 23 },
-          { category: 'Fornecedores', count: 4, avgScore: 71, interactions: 18 }
-        ],
-        engagementTrend: [
-          { month: 'Set', score: 65, interactions: 42 },
-          { month: 'Out', score: 68, interactions: 38 },
-          { month: 'Nov', score: 70, interactions: 45 },
-          { month: 'Dez', score: 72, interactions: 52 },
-          { month: 'Jan', score: 69, interactions: 48 },
-          { month: 'Fev', score: 72, interactions: 56 }
-        ],
-        influenceDistribution: [
-          { name: 'Alta', value: 12, color: '#EF4444' },
-          { name: 'Média', value: 18, color: '#F59E0B' },
-          { name: 'Baixa', value: 15, color: '#10B981' }
-        ],
-        interestDistribution: [
-          { name: 'Alto', value: 14, color: '#3B82F6' },
-          { name: 'Médio', value: 20, color: '#8B5CF6' },
-          { name: 'Baixo', value: 11, color: '#6B7280' }
-        ],
-        maturityRadar: [
-          { subject: 'Identificação', score: 85 },
-          { subject: 'Mapeamento', score: 78 },
-          { subject: 'Engajamento', score: 72 },
-          { subject: 'Monitoramento', score: 68 },
-          { subject: 'Avaliação', score: 65 },
-          { subject: 'Melhoria', score: 58 }
-        ],
-        riskMetrics: [
-          { risk: 'Baixo Engajamento', stakeholders: 8, trend: 'up' },
-          { risk: 'Interesse Decrescente', stakeholders: 5, trend: 'down' },
-          { risk: 'Comunicação Ineficaz', stakeholders: 3, trend: 'stable' },
-          { risk: 'Expectativas Não Atendidas', stakeholders: 6, trend: 'up' }
-        ],
-        upcomingActions: [
-          { stakeholder: 'Associação de Investidores', action: 'Apresentação Trimestral', date: '2025-02-15', priority: 'Alta' },
-          { stakeholder: 'Sindicato dos Trabalhadores', action: 'Negociação Coletiva', date: '2025-02-20', priority: 'Alta' },
-          { stakeholder: 'Prefeitura Municipal', action: 'Relatório de Impacto', date: '2025-02-25', priority: 'Média' },
-          { stakeholder: 'ONG Ambiental Local', action: 'Workshop Sustentabilidade', date: '2025-03-01', priority: 'Média' }
-        ]
-      };
-    },
-  });
+  const { data: analyticsData, isLoading } = useStakeholderAnalytics(selectedPeriod);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

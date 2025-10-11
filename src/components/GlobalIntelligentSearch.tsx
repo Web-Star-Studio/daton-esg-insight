@@ -10,21 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useNavigate } from 'react-router-dom';
 import { useIntelligentCache } from '@/hooks/useIntelligentCache';
-
-interface SearchResult {
-  id: string;
-  title: string;
-  description: string;
-  type: 'page' | 'document' | 'data' | 'action' | 'insight';
-  category: string;
-  url?: string;
-  relevance: number;
-  lastModified?: Date;
-  tags?: string[];
-  metadata?: {
-    [key: string]: any;
-  };
-}
+import { useGlobalSearch, useRecentSearches, SearchResult } from '@/hooks/data/useGlobalSearch';
 
 interface SearchFilters {
   type: string[];
@@ -42,14 +28,6 @@ const SEARCH_CATEGORIES = [
   { id: 'insights', label: 'Insights', icon: Users },
 ];
 
-const RECENT_SEARCHES = [
-  'emissões escopo 1',
-  'licenças vencimento',
-  'metas carbono',
-  'relatório sustentabilidade',
-  'auditoria iso 14001'
-];
-
 const QUICK_ACTIONS = [
   { label: 'Nova Meta', url: '/metas/nova', icon: Zap },
   { label: 'Inventário GEE', url: '/inventario-gee', icon: TrendingUp },
@@ -58,180 +36,24 @@ const QUICK_ACTIONS = [
   { label: 'Dashboard', url: '/dashboard', icon: TrendingUp },
 ];
 
-// Mock search data - in real app, this would come from API
-const MOCK_SEARCH_DATA: SearchResult[] = [
-  {
-    id: '1',
-    title: 'Dashboard Principal',
-    description: 'Centro de comando ESG com métricas em tempo real',
-    type: 'page',
-    category: 'navigation',
-    url: '/dashboard',
-    relevance: 0.95,
-    tags: ['dashboard', 'esg', 'métricas']
-  },
-  {
-    id: '2',
-    title: 'Inventário de Emissões GEE',
-    description: 'Gestão completa do inventário de gases de efeito estufa',
-    type: 'page',
-    category: 'environmental',
-    url: '/inventario-gee',
-    relevance: 0.9,
-    tags: ['emissões', 'ghg', 'carbono']
-  },
-  {
-    id: '3',
-    title: 'Licenças Ambientais',
-    description: 'Controle e monitoramento de licenças e autorizações',
-    type: 'page',
-    category: 'compliance',
-    url: '/licenciamento',
-    relevance: 0.85,
-    tags: ['licenças', 'compliance', 'legal']
-  },
-  {
-    id: '4',
-    title: 'Relatório de Emissões Q4 2024',
-    description: 'Documento com dados consolidados do último trimestre',
-    type: 'document',
-    category: 'reports',
-    relevance: 0.8,
-    lastModified: new Date('2024-01-15'),
-    tags: ['relatório', 'emissões', 'trimestral']
-  },
-  {
-    id: '5',
-    title: 'Meta de Redução CO2 2025',
-    description: 'Objetivo de reduzir 15% das emissões até dezembro',
-    type: 'data',
-    category: 'targets',
-    relevance: 0.75,
-    tags: ['meta', 'co2', 'redução']
-  }
-];
-
 export function GlobalIntelligentSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState<SearchFilters>({
-    type: [],
-    category: [],
-    dateRange: 'all',
-    tags: []
-  });
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [recentSearches, setRecentSearches] = useState<string[]>(RECENT_SEARCHES);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const { getFromCache, setInCache } = useIntelligentCache();
+  const { recentSearches, addRecentSearch } = useRecentSearches();
 
-  // Intelligent search with caching and ML-like scoring
-  const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      return;
-    }
+  // Use real search hook
+  const { data: searchResults = [], isLoading } = useGlobalSearch(query, isOpen);
 
-    setIsLoading(true);
-    
-    // Check cache first
-    const cacheKey = `search:${searchQuery}:${JSON.stringify(filters)}`;
-    const cachedResults = getFromCache(cacheKey);
-    
-    if (cachedResults) {
-      setResults(cachedResults);
-      setIsLoading(false);
-      return;
-    }
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Advanced search algorithm with multiple scoring factors
-    const searchResults = MOCK_SEARCH_DATA
-      .map(item => {
-        let score = 0;
-        const queryLower = searchQuery.toLowerCase();
-        const titleLower = item.title.toLowerCase();
-        const descLower = item.description.toLowerCase();
-        const tagsLower = item.tags?.map(tag => tag.toLowerCase()) || [];
-
-        // Exact title match (highest priority)
-        if (titleLower === queryLower) score += 1.0;
-        else if (titleLower.includes(queryLower)) score += 0.8;
-        
-        // Description match
-        if (descLower.includes(queryLower)) score += 0.6;
-        
-        // Tags match
-        const tagMatches = tagsLower.filter(tag => 
-          tag.includes(queryLower) || queryLower.includes(tag)
-        ).length;
-        score += tagMatches * 0.4;
-        
-        // Fuzzy matching for typos
-        const titleWords = titleLower.split(' ');
-        const queryWords = queryLower.split(' ');
-        let fuzzyScore = 0;
-        
-        queryWords.forEach(qWord => {
-          titleWords.forEach(tWord => {
-            if (tWord.includes(qWord) || qWord.includes(tWord)) {
-              fuzzyScore += 0.3;
-            }
-          });
-        });
-        score += fuzzyScore;
-
-        // Boost by base relevance and recency
-        score *= item.relevance;
-        if (item.lastModified) {
-          const daysSinceModified = (Date.now() - item.lastModified.getTime()) / (1000 * 60 * 60 * 24);
-          if (daysSinceModified < 7) score *= 1.2; // Recent boost
-        }
-
-        return { ...item, score };
-      })
-      .filter(item => item.score > 0.1) // Minimum relevance threshold
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20); // Limit results
-
-    // Apply filters
-    let filteredResults = searchResults;
-    
-    if (selectedCategory !== 'all') {
-      filteredResults = filteredResults.filter(item => 
+  // Filter by category
+  const filteredResults = selectedCategory === 'all' 
+    ? searchResults 
+    : searchResults.filter(item => 
         item.category === selectedCategory || item.type === selectedCategory
       );
-    }
-
-    if (filters.type.length > 0) {
-      filteredResults = filteredResults.filter(item => 
-        filters.type.includes(item.type)
-      );
-    }
-
-    // Cache results
-    setInCache(cacheKey, filteredResults, 'medium');
-    
-    setResults(filteredResults);
-    setIsLoading(false);
-  }, [filters, selectedCategory, getFromCache, setInCache]);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (query) {
-        performSearch(query);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [query, performSearch]);
 
   // Global keyboard shortcut (Ctrl/Cmd + K)
   useEffect(() => {
@@ -259,11 +81,9 @@ export function GlobalIntelligentSearch() {
 
   const handleResultClick = (result: SearchResult) => {
     // Save to recent searches
-    setRecentSearches(prev => {
-      const updated = [query, ...prev.filter(s => s !== query)].slice(0, 5);
-      localStorage.setItem('recent-searches', JSON.stringify(updated));
-      return updated;
-    });
+    if (query.trim()) {
+      addRecentSearch(query);
+    }
 
     if (result.url) {
       navigate(result.url);
@@ -438,9 +258,9 @@ export function GlobalIntelligentSearch() {
                           ))}
                         </div>
                       </div>
-                    ) : results.length > 0 ? (
+                    ) : filteredResults.length > 0 ? (
                       <div className="p-4 space-y-2">
-                        {results.map((result) => {
+                        {filteredResults.map((result) => {
                           const IconComponent = getResultIcon(result.type);
                           return (
                             <Card
@@ -497,7 +317,7 @@ export function GlobalIntelligentSearch() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Use ↑↓ para navegar • Enter para selecionar • Esc para fechar</span>
                 <div className="flex items-center gap-4">
-                  <span>{results.length} resultados</span>
+                  <span>{filteredResults.length} resultados</span>
                   {selectedCategory !== 'all' && (
                     <Badge variant="outline" className="text-xs">
                       Filtrado por: {SEARCH_CATEGORIES.find(c => c.id === selectedCategory)?.label}
