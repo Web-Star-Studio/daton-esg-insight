@@ -165,7 +165,8 @@ const menuSections: MenuSection[] = [
       { id: "factor-library", title: "Biblioteca de Fatores", icon: FlaskConical, path: "/biblioteca-fatores", description: "Fatores de emissão e conversão" },
       { id: "custom-forms", title: "Formulários Customizados", icon: ClipboardCheck, path: "/formularios-customizados", description: "Criação de formulários personalizados" },
       { id: "user-management", title: "Gestão de Usuários", icon: UserCog, path: "/gestao-usuarios", description: "Controle de usuários e permissões" },
-      { id: "system-status", title: "Status do Sistema", icon: Activity, path: "/system-status", description: "Monitoramento e prontidão para produção" }
+      { id: "system-status", title: "Status do Sistema", icon: Activity, path: "/system-status", description: "Monitoramento e prontidão para produção" },
+      { id: "production-monitoring", title: "Monitoramento de Produção", icon: Monitor, path: "/production-monitoring", description: "Logs, performance e métricas em tempo real" }
     ]
   }
 ]
