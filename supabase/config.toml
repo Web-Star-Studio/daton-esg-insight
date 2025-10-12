@@ -120,3 +120,6 @@ verify_jwt = false
 
 [functions.process-intelligent-alerts]
 verify_jwt = false
+
+[functions.predictive-analytics]
+verify_jwt = true

@@ -32,6 +32,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 import { ProductionHealthWidget } from '@/components/production/ProductionHealthWidget';
 import { AlertsWidget } from '@/components/dashboard/AlertsWidget';
+import { PredictiveInsightsWidget } from '@/components/dashboard/PredictiveInsightsWidget';
 
 interface KPICard {
   id: string;
@@ -316,9 +317,10 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Intelligent Alerts */}
-      <div className="animate-fade-in" style={{ animationDelay: '0.7s' }}>
+      {/* Intelligent Alerts & Predictive Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
         <AlertsWidget />
+        <PredictiveInsightsWidget />
       </div>
 
       {/* Main Content Grid */}
