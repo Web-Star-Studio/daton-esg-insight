@@ -56,7 +56,6 @@ const Documentos = lazy(() => import("./pages/Documentos"));
 const ReconciliacaoDocumentos = lazy(() => import("./pages/ReconciliacaoDocumentos").then(module => ({ default: module.ReconciliacaoDocumentos })));
 const Auditoria = lazy(() => import("./pages/Auditoria"));
 const Compliance = lazy(() => import("./pages/Compliance"));
-const ComplianceNew = lazy(() => import("./pages/ComplianceNew"));
 
 // Lazy loading para componentes de sistema
 const SmartNotificationSystem = lazy(() => import("./components/SmartNotificationSystem").then(module => ({ default: module.SmartNotificationSystem })));
@@ -293,8 +292,7 @@ const App = () => (
             <Route path="/documentos" element={<ProtectedLazyPageWrapper><Documentos /></ProtectedLazyPageWrapper>} />
             <Route path="/reconciliacao-documentos" element={<ProtectedLazyPageWrapper><ReconciliacaoDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/auditoria" element={<ProtectedLazyPageWrapper><Auditoria /></ProtectedLazyPageWrapper>} />
-            <Route path="/compliance" element={<ProtectedLazyPageWrapper><ComplianceNew /></ProtectedLazyPageWrapper>} />
-            <Route path="/compliance-old" element={<Navigate to="/compliance" replace />} />
+            <Route path="/compliance" element={<ProtectedLazyPageWrapper><Compliance /></ProtectedLazyPageWrapper>} />
             
             {/* Sistema e alertas */}
             <Route path="/smart-notifications" element={<ProtectedLazyPageWrapper><SmartNotificationSystem /></ProtectedLazyPageWrapper>} />
