@@ -300,11 +300,18 @@ async function generateExcelReport(
 
 export async function downloadReport(filePath: string, fileName: string): Promise<void> {
   try {
-    const { data } = await supabase.storage
-      .from('documents')
+    const { data, error } = await supabase.storage
+      .from('license-reports')
       .createSignedUrl(filePath, 3600);
 
-    if (!data?.signedUrl) throw new Error('Failed to generate download URL');
+    if (error) {
+      console.error('Supabase storage error:', error);
+      throw new Error(`Erro ao gerar URL: ${error.message}`);
+    }
+
+    if (!data?.signedUrl) {
+      throw new Error('URL de download não foi gerada');
+    }
 
     const link = document.createElement('a');
     link.href = data.signedUrl;
@@ -313,7 +320,7 @@ export async function downloadReport(filePath: string, fileName: string): Promis
     link.click();
     document.body.removeChild(link);
 
-    toast.success('Download iniciado');
+    toast.success('Download iniciado com sucesso');
   } catch (error) {
     console.error('Error downloading report:', error);
     toast.error('Erro ao fazer download do relatório');

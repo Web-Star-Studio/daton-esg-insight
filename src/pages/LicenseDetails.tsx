@@ -655,31 +655,6 @@ const LicenseDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Agendar Renovação
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full justify-start"
-                  onClick={() => document.getElementById('condicionantes')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Ver Condicionantes ({conditions?.length || 0})
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório
-                </Button>
-              </CardContent>
-            </Card>
         </div>
       </div>
 
