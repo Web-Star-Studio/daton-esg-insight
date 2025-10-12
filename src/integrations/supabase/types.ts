@@ -4251,6 +4251,73 @@ export type Database = {
           },
         ]
       }
+      extraction_approval_log: {
+        Row: {
+          action: string
+          approval_notes: string | null
+          approved_by_user_id: string
+          company_id: string
+          created_at: string
+          edited_fields: Json | null
+          extraction_id: string
+          file_id: string
+          high_confidence_count: number | null
+          id: string
+          items_count: number
+          processing_time_seconds: number | null
+        }
+        Insert: {
+          action: string
+          approval_notes?: string | null
+          approved_by_user_id: string
+          company_id: string
+          created_at?: string
+          edited_fields?: Json | null
+          extraction_id: string
+          file_id: string
+          high_confidence_count?: number | null
+          id?: string
+          items_count?: number
+          processing_time_seconds?: number | null
+        }
+        Update: {
+          action?: string
+          approval_notes?: string | null
+          approved_by_user_id?: string
+          company_id?: string
+          created_at?: string
+          edited_fields?: Json | null
+          extraction_id?: string
+          file_id?: string
+          high_confidence_count?: number | null
+          id?: string
+          items_count?: number
+          processing_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extraction_approval_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_approval_log_extraction_id_fkey"
+            columns: ["extraction_id"]
+            isOneToOne: false
+            referencedRelation: "extractions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_approval_log_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       extraction_items_curated: {
         Row: {
           approved_at: string | null

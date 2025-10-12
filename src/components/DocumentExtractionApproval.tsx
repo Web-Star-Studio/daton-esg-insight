@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, AlertCircle, Loader2, FileText, Edit3 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DocumentExtractionEditor } from './DocumentExtractionEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { FileText, CheckCircle, XCircle, AlertTriangle, Loader2, ChevronDown, ChevronUp, Edit, Eye, Zap, AlertCircle, Edit3 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { DocumentExtractionEditor } from './DocumentExtractionEditor';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DocumentViewer } from './DocumentViewer';
+import { useExtractionRealtime } from '@/hooks/useExtractionRealtime';
+import { createApprovalLog } from '@/services/extractionApprovalLog';
 
 interface ExtractedPreview {
   id: string;
@@ -27,10 +32,20 @@ interface ExtractedPreview {
 }
 
 export function DocumentExtractionApproval() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [editingItems, setEditingItems] = useState<Set<string>>(new Set());
+  const [viewingDocuments, setViewingDocuments] = useState<Set<string>>(new Set());
+  const [selectedForBatch, setSelectedForBatch] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // Enable realtime updates
+  useExtractionRealtime({
+    enabled: true,
+    onApprovalLog: (log) => {
+      console.log('Approval log received:', log);
+    },
+  });
 
   // Fetch pending extractions
   const { data: previews, isLoading } = useQuery({
@@ -55,9 +70,47 @@ export function DocumentExtractionApproval() {
     }
   });
 
+  // Batch approve high confidence items
+  const batchApproveMutation = useMutation({
+    mutationFn: async (previewIds: string[]) => {
+      const startTime = Date.now();
+      
+      for (const previewId of previewIds) {
+        const { data, error } = await supabase.functions.invoke('document-ai-processor', {
+          body: {
+            action: 'approve',
+            preview_id: previewId,
+            batch_mode: true
+          }
+        });
+
+        if (error) throw error;
+      }
+
+      return { success: true, processingTime: (Date.now() - startTime) / 1000 };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
+      setSelectedForBatch(new Set());
+      toast({
+        title: 'Aprovação em lote concluída',
+        description: `${selectedForBatch.size} extrações aprovadas com sucesso em ${data.processingTime.toFixed(1)}s!`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erro na aprovação em lote',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Approve mutation with edited fields
   const approveMutation = useMutation({
     mutationFn: async ({ previewId, editedFields }: { previewId: string; editedFields?: Record<string, any> }) => {
+      const startTime = Date.now();
+
       const { data, error } = await supabase.functions.invoke('document-ai-processor', {
         body: {
           action: 'approve',
@@ -67,14 +120,19 @@ export function DocumentExtractionApproval() {
       });
 
       if (error) throw error;
-      return data;
+
+      return { data, processingTime: (Date.now() - startTime) / 1000 };
     },
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
-      setEditingId(null);
+      setEditingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.previewId);
+        return newSet;
+      });
       toast({
         title: 'Dados Aprovados',
-        description: 'Os dados foram inseridos no sistema com sucesso.',
+        description: `Os dados foram inseridos no sistema com sucesso em ${result.processingTime.toFixed(1)}s.`,
       });
     },
     onError: (error: Error) => {
@@ -141,9 +199,75 @@ export function DocumentExtractionApproval() {
     return names[table] || table;
   };
 
+  const toggleExpanded = (id: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleEditing = (id: string) => {
+    setEditingItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleViewDocument = (id: string) => {
+    setViewingDocuments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleBatchSelection = (id: string) => {
+    setSelectedForBatch(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBatchApprove = () => {
+    if (selectedForBatch.size === 0) {
+      toast({
+        title: 'Nenhuma extração selecionada',
+        description: 'Selecione pelo menos uma extração para aprovar em lote.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    batchApproveMutation.mutate(Array.from(selectedForBatch));
+  };
+
+  // Get high confidence extractions (>= 85%)
+  const highConfidenceExtractions = previews?.filter(
+    preview => getAverageConfidence(preview.confidence_scores) >= 0.85
+  ) || [];
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -152,24 +276,83 @@ export function DocumentExtractionApproval() {
   if (!previews || previews.length === 0) {
     return (
       <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma extração pendente de aprovação.</p>
-          </div>
+        <CardContent className="flex flex-col items-center justify-center p-12">
+          <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground text-center">
+            Nenhuma extração pendente de aprovação no momento.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
+  // Batch approval section
+  const batchApprovalSection = highConfidenceExtractions.length > 0 && (
+    <Card className="mb-6 border-primary/20 bg-primary/5 animate-fade-in">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Zap className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle className="text-lg">Aprovação Rápida</CardTitle>
+              <CardDescription>
+                {highConfidenceExtractions.length} extrações com alta confiança (≥85%) disponíveis
+              </CardDescription>
+            </div>
+          </div>
+          <Button
+            onClick={handleBatchApprove}
+            disabled={selectedForBatch.size === 0 || batchApproveMutation.isPending}
+            className="gap-2"
+          >
+            {batchApproveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <CheckCircle className="h-4 w-4" />
+            Aprovar {selectedForBatch.size > 0 ? `(${selectedForBatch.size})` : 'Selecionadas'}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {highConfidenceExtractions.map((preview) => (
+            <div
+              key={preview.id}
+              className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors"
+            >
+              <Checkbox
+                checked={selectedForBatch.has(preview.id)}
+                onCheckedChange={() => toggleBatchSelection(preview.id)}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{preview.document_extraction_jobs?.documents?.file_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatTableName(preview.target_table)} • {Object.keys(preview.extracted_fields).length} campos
+                </p>
+              </div>
+              <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20">
+                {Math.round(getAverageConfidence(preview.confidence_scores) * 100)}% confiança
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {batchApprovalSection}
+      
       {previews.map((preview) => {
-        const isEditing = editingId === preview.id;
+        const isEditing = editingItems.has(preview.id);
+        const isViewingDoc = viewingDocuments.has(preview.id);
         const avgConfidence = getAverageConfidence(preview.confidence_scores);
 
+        // Get document URL
+        const filePath = preview.document_extraction_jobs?.documents?.file_path;
+        const fileUrl = filePath ? supabase.storage.from('uploads').getPublicUrl(filePath).data.publicUrl : null;
+
         return (
-          <Card key={preview.id} className="border-l-4 border-l-primary">
+          <Card key={preview.id} className="border-l-4 border-l-primary animate-fade-in">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -181,10 +364,42 @@ export function DocumentExtractionApproval() {
                     Tabela de destino: <strong>{formatTableName(preview.target_table)}</strong>
                   </CardDescription>
                 </div>
-                {getConfidenceBadge(preview.confidence_scores)}
+                <div className="flex items-center gap-2">
+                  {getConfidenceBadge(preview.confidence_scores)}
+                  {fileUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleViewDocument(preview.id)}
+                      className="gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      {isViewingDoc ? 'Ocultar' : 'Ver'} Documento
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleEditing(preview.id)}
+                    className="gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    {isEditing ? 'Cancelar Edição' : 'Editar Campos'}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
+
+            <CardContent className="pt-6">
+              {isViewingDoc && fileUrl && (
+                <div className="mb-6">
+                  <DocumentViewer
+                    fileUrl={fileUrl}
+                    fileName={preview.document_extraction_jobs?.documents?.file_name}
+                  />
+                </div>
+              )}
+              
               {isEditing ? (
                 <DocumentExtractionEditor
                   preview={preview}
@@ -192,7 +407,7 @@ export function DocumentExtractionApproval() {
                     approveMutation.mutate({ previewId: preview.id, editedFields })
                   }
                   onReject={() => {
-                    setEditingId(null);
+                    toggleEditing(preview.id);
                     rejectMutation.mutate(preview.id);
                   }}
                   isLoading={approveMutation.isPending || rejectMutation.isPending}
@@ -253,7 +468,7 @@ export function DocumentExtractionApproval() {
                     {/* Quick Actions */}
                     <div className="flex gap-2 pt-4 border-t">
                       <Button
-                        onClick={() => setEditingId(preview.id)}
+                        onClick={() => toggleEditing(preview.id)}
                         variant="outline"
                         className="flex-1"
                       >
@@ -317,7 +532,7 @@ export function DocumentExtractionApproval() {
                         <h4 className="text-sm font-medium mb-3">Confiança por Campo:</h4>
                         <div className="space-y-2">
                           {Object.entries(preview.confidence_scores)
-                            .sort(([, a], [, b]) => a - b) // Ordenar por confiança (menor primeiro)
+                            .sort(([, a], [, b]) => a - b)
                             .map(([field, score]) => (
                               <div key={field} className="flex items-center justify-between p-2 rounded bg-muted">
                                 <span className="text-sm font-medium">{field}</span>
