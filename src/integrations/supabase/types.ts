@@ -4259,11 +4259,13 @@ export type Database = {
           company_id: string
           created_at: string
           edited_fields: Json | null
-          extraction_id: string
-          file_id: string
+          extraction_id: string | null
+          file_id: string | null
           high_confidence_count: number | null
           id: string
           items_count: number
+          job_id: string | null
+          preview_id: string | null
           processing_time_seconds: number | null
         }
         Insert: {
@@ -4273,11 +4275,13 @@ export type Database = {
           company_id: string
           created_at?: string
           edited_fields?: Json | null
-          extraction_id: string
-          file_id: string
+          extraction_id?: string | null
+          file_id?: string | null
           high_confidence_count?: number | null
           id?: string
           items_count?: number
+          job_id?: string | null
+          preview_id?: string | null
           processing_time_seconds?: number | null
         }
         Update: {
@@ -4287,11 +4291,13 @@ export type Database = {
           company_id?: string
           created_at?: string
           edited_fields?: Json | null
-          extraction_id?: string
-          file_id?: string
+          extraction_id?: string | null
+          file_id?: string | null
           high_confidence_count?: number | null
           id?: string
           items_count?: number
+          job_id?: string | null
+          preview_id?: string | null
           processing_time_seconds?: number | null
         }
         Relationships: [
@@ -4303,17 +4309,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "extraction_approval_log_extraction_id_fkey"
-            columns: ["extraction_id"]
+            foreignKeyName: "extraction_approval_log_job_id_fkey"
+            columns: ["job_id"]
             isOneToOne: false
-            referencedRelation: "extractions"
+            referencedRelation: "document_extraction_jobs"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "extraction_approval_log_file_id_fkey"
-            columns: ["file_id"]
+            foreignKeyName: "extraction_approval_log_preview_id_fkey"
+            columns: ["preview_id"]
             isOneToOne: false
-            referencedRelation: "files"
+            referencedRelation: "extracted_data_preview"
             referencedColumns: ["id"]
           },
         ]

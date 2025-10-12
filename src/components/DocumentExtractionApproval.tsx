@@ -12,7 +12,7 @@ import { DocumentExtractionEditor } from './DocumentExtractionEditor';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DocumentViewer } from './DocumentViewer';
 import { useExtractionRealtime } from '@/hooks/useExtractionRealtime';
-import { createApprovalLog } from '@/services/extractionApprovalLog';
+import { createDocumentApprovalLog } from '@/services/documentApprovalLog';
 
 interface ExtractedPreview {
   id: string;
@@ -85,6 +85,19 @@ export function DocumentExtractionApproval() {
         });
 
         if (error) throw error;
+
+        // Log the approval
+        const preview = previews?.find(p => p.id === previewId);
+        if (preview) {
+          await createDocumentApprovalLog({
+            preview_id: previewId,
+            job_id: preview.extraction_job_id,
+            action: 'batch_approved',
+            items_count: Object.keys(preview.extracted_fields).length,
+            high_confidence_count: Object.values(preview.confidence_scores).filter(s => s >= 0.85).length,
+            processing_time_seconds: (Date.now() - startTime) / 1000,
+          });
+        }
       }
 
       return { success: true, processingTime: (Date.now() - startTime) / 1000 };
@@ -121,6 +134,23 @@ export function DocumentExtractionApproval() {
 
       if (error) throw error;
 
+      // Log the approval
+      const preview = previews?.find(p => p.id === previewId);
+      if (preview) {
+        await createDocumentApprovalLog({
+          preview_id: previewId,
+          job_id: preview.extraction_job_id,
+          action: editedFields ? 'edited' : 'approved',
+          items_count: Object.keys(preview.extracted_fields).length,
+          edited_fields: editedFields ? Object.entries(editedFields).map(([field, value]) => ({
+            field,
+            old_value: String(preview.extracted_fields[field] || ''),
+            new_value: String(value)
+          })) : undefined,
+          processing_time_seconds: (Date.now() - startTime) / 1000,
+        });
+      }
+
       return { data, processingTime: (Date.now() - startTime) / 1000 };
     },
     onSuccess: (result, variables) => {
@@ -155,6 +185,18 @@ export function DocumentExtractionApproval() {
       });
 
       if (error) throw error;
+
+      // Log the rejection
+      const preview = previews?.find(p => p.id === previewId);
+      if (preview) {
+        await createDocumentApprovalLog({
+          preview_id: previewId,
+          job_id: preview.extraction_job_id,
+          action: 'rejected',
+          items_count: Object.keys(preview.extracted_fields).length,
+        });
+      }
+
       return data;
     },
     onSuccess: () => {

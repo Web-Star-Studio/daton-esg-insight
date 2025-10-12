@@ -6,13 +6,13 @@ import { toast } from '@/hooks/use-toast';
 interface ExtractionRealtimeConfig {
   enabled?: boolean;
   onApprovalLog?: (log: any) => void;
-  onItemUpdate?: (item: any) => void;
+  onPreviewUpdate?: (preview: any) => void;
 }
 
 export function useExtractionRealtime({
   enabled = true,
   onApprovalLog,
-  onItemUpdate,
+  onPreviewUpdate,
 }: ExtractionRealtimeConfig = {}) {
   const queryClient = useQueryClient();
 
@@ -65,26 +65,26 @@ export function useExtractionRealtime({
       )
       .subscribe();
 
-    // Subscribe to extraction items updates
-    const itemsChannel = supabase
-      .channel('extraction-items-updates')
+    // Subscribe to extracted_data_preview updates
+    const previewChannel = supabase
+      .channel('extraction-preview-updates')
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'extraction_items_staging',
+          table: 'extracted_data_preview',
         },
         (payload) => {
-          console.log('Item updated:', payload.new);
+          console.log('Preview updated:', payload.new);
           
           // Call custom handler
-          if (onItemUpdate) {
-            onItemUpdate(payload.new);
+          if (onPreviewUpdate) {
+            onPreviewUpdate(payload.new);
           }
 
           // Invalidate queries
-          queryClient.invalidateQueries({ queryKey: ['extraction-items'] });
+          queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
         }
       )
       .subscribe();
@@ -92,7 +92,7 @@ export function useExtractionRealtime({
     // Cleanup
     return () => {
       supabase.removeChannel(approvalChannel);
-      supabase.removeChannel(itemsChannel);
+      supabase.removeChannel(previewChannel);
     };
-  }, [enabled, queryClient, onApprovalLog, onItemUpdate]);
+  }, [enabled, queryClient, onApprovalLog, onPreviewUpdate]);
 }
