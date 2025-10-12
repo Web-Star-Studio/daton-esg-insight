@@ -200,6 +200,7 @@ const App = () => (
                 <DashboardGHG />
               </ProtectedLazyPageWrapper>
             } />
+            <Route path="/emissoes" element={<Navigate to="/inventario-gee" replace />} />
 
             {/* Licenciamento */}
             <Route path="/licenciamento" element={
