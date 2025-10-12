@@ -44,11 +44,18 @@ import { toast } from 'sonner';
 import { getLicenseById, getDocumentUrl, type LicenseDetail } from '@/services/licenses';
 import { getLicenseConditions, getLicenseAlerts, updateConditionStatus, resolveAlert } from '@/services/licenseAI';
 import { LicenseDocumentUploadModal } from '@/components/LicenseDocumentUploadModal';
+import { LicenseQuickActions } from '@/components/license/LicenseQuickActions';
+import { RenewalScheduleModal } from '@/components/license/RenewalScheduleModal';
+import { ConditionsManagerModal } from '@/components/license/ConditionsManagerModal';
+import { LicenseReportGenerator } from '@/components/license/LicenseReportGenerator';
 
 const LicenseDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [showConditionsModal, setShowConditionsModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const { data: license, isLoading, error, refetch } = useQuery({
     queryKey: ['license-details', id],
@@ -249,6 +256,18 @@ const LicenseDetails = () => {
           </Button>
         </div>
       </div>
+
+      {/* Quick Actions */}
+      {!isLoading && license && (
+        <LicenseQuickActions
+          license={license}
+          conditionsCount={conditions?.length || 0}
+          pendingConditionsCount={conditions?.filter((c) => c.status === 'pending').length || 0}
+          onScheduleRenewal={() => setShowRenewalModal(true)}
+          onViewConditions={() => setShowConditionsModal(true)}
+          onGenerateReport={() => setShowReportModal(true)}
+        />
+      )}
 
         {/* License Information */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

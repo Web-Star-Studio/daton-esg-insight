@@ -6839,6 +6839,141 @@ export type Database = {
           },
         ]
       }
+      license_renewal_schedules: {
+        Row: {
+          assigned_to_user_id: string | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string
+          expected_completion_date: string | null
+          id: string
+          license_id: string
+          notification_config: Json | null
+          protocol_deadline: string
+          scheduled_start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by_user_id: string
+          expected_completion_date?: string | null
+          id?: string
+          license_id: string
+          notification_config?: Json | null
+          protocol_deadline: string
+          scheduled_start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          expected_completion_date?: string | null
+          id?: string
+          license_id?: string
+          notification_config?: Json | null
+          protocol_deadline?: string
+          scheduled_start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_renewal_schedules_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_renewal_schedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_renewal_schedules_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_renewal_schedules_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_report_history: {
+        Row: {
+          company_id: string
+          created_at: string
+          file_path_pdf: string | null
+          file_path_xlsx: string | null
+          generated_at: string
+          generated_by_user_id: string
+          id: string
+          license_id: string
+          report_config: Json
+          report_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          file_path_pdf?: string | null
+          file_path_xlsx?: string | null
+          generated_at?: string
+          generated_by_user_id: string
+          id?: string
+          license_id: string
+          report_config?: Json
+          report_type: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          file_path_pdf?: string | null
+          file_path_xlsx?: string | null
+          generated_at?: string
+          generated_by_user_id?: string
+          id?: string
+          license_id?: string
+          report_config?: Json
+          report_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_report_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_report_history_generated_by_user_id_fkey"
+            columns: ["generated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_report_history_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licenses: {
         Row: {
           ai_confidence_score: number | null
