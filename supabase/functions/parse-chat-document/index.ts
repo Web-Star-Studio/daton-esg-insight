@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     if (fileType.includes('pdf')) {
       console.log('Parsing PDF...');
       const buffer = await fileData.arrayBuffer();
-      const data = await pdfParse(Buffer.from(buffer));
+      const data = await pdfParse(new Uint8Array(buffer));
       
       parsedContent = {
         type: 'pdf',
