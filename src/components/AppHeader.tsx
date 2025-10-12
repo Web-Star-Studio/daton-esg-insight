@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { EnhancedGlobalSearch } from "@/components/navigation/EnhancedGlobalSearch"
 import { NotificationCenter } from "@/components/notifications/NotificationCenter"
+import { TourTriggerButton } from "@/components/tutorial/unified/TourTriggerButton"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
@@ -77,6 +78,8 @@ export function AppHeader() {
 
       <div className="flex items-center gap-3" data-notifications>
         <NotificationCenter />
+        
+        <TourTriggerButton />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
