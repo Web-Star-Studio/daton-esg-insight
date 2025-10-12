@@ -724,14 +724,97 @@ export const ReconciliacaoDocumentos = () => {
                     </TabsContent>
 
                     <TabsContent value="mappings" className="space-y-4">
-                      <div className="space-y-3">
-                        {Object.entries(selectedExtraction.suggested_mappings as Record<string, string>).map(([field, mapping]) => (
-                          <div key={field} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <span className="text-sm font-medium">{field}</span>
-                            <span className="text-sm text-muted-foreground">{mapping}</span>
-                          </div>
-                        ))}
-                      </div>
+                      {(() => {
+                        const mappings = selectedExtraction.suggested_mappings;
+                        
+                        // Check if this is the new format (with normalized_fields)
+                        const hasNewFormat = mappings && typeof mappings === 'object' && 'normalized_fields' in mappings;
+                        
+                        if (hasNewFormat) {
+                          const normalizedFields = (mappings as any).normalized_fields || {};
+                          const appliedCorrections = (mappings as any).applied_corrections || [];
+                          const dataQualityIssues = (mappings as any).data_quality_issues || [];
+                          const fieldConfidence = (mappings as any).field_confidence || {};
+                          
+                          return (
+                            <div className="space-y-4">
+                              {/* Normalized Fields */}
+                              <div className="space-y-3">
+                                <h4 className="text-sm font-semibold">Campos Normalizados</h4>
+                                {Object.entries(normalizedFields).map(([field, value]) => (
+                                  <div key={field} className="flex items-start justify-between p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex-1">
+                                      <span className="text-sm font-medium block mb-1">{getFieldLabel(field)}</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                                      </span>
+                                    </div>
+                                    {fieldConfidence[field] && (
+                                      <Badge variant={getConfidenceBadgeVariant(fieldConfidence[field])} className="text-xs ml-2">
+                                        {formatConfidenceScore(fieldConfidence[field])}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* Applied Corrections */}
+                              {appliedCorrections.length > 0 && (
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold">Correções Aplicadas</h4>
+                                  <Alert>
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    <AlertDescription>
+                                      <ul className="list-disc list-inside space-y-1 text-sm">
+                                        {appliedCorrections.map((correction: string, idx: number) => (
+                                          <li key={idx}>{correction}</li>
+                                        ))}
+                                      </ul>
+                                    </AlertDescription>
+                                  </Alert>
+                                </div>
+                              )}
+                              
+                              {/* Data Quality Issues */}
+                              {dataQualityIssues.length > 0 && (
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold">Problemas de Qualidade</h4>
+                                  <Alert variant="destructive">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <AlertDescription>
+                                      <ul className="list-disc list-inside space-y-1 text-sm">
+                                        {dataQualityIssues.map((issue: string, idx: number) => (
+                                          <li key={idx}>{issue}</li>
+                                        ))}
+                                      </ul>
+                                    </AlertDescription>
+                                  </Alert>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                        
+                        // Fallback to old format (string mappings)
+                        if (mappings && typeof mappings === 'object') {
+                          return (
+                            <div className="space-y-3">
+                              {Object.entries(mappings as Record<string, any>).map(([field, value]) => (
+                                <div key={field} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                  <span className="text-sm font-medium">{field}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <p className="text-sm text-muted-foreground">Nenhum mapeamento disponível</p>
+                        );
+                      })()}
                     </TabsContent>
                   </Tabs>
 
