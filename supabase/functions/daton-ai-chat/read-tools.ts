@@ -197,5 +197,26 @@ export const readTools = [
         required: []
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "review_pending_extractions",
+      description: "Lista extrações de documentos pendentes de aprovação. Use para saber quais documentos foram processados pela IA e aguardam validação.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Número máximo de extrações a retornar (padrão: 10)"
+          },
+          minConfidence: {
+            type: "number",
+            description: "Confiança mínima (0-1) para filtrar extrações"
+          }
+        },
+        required: []
+      }
+    }
   }
 ];

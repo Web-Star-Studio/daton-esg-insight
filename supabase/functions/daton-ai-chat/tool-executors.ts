@@ -38,6 +38,9 @@ export async function executeReadTool(
       case 'get_dashboard_summary':
         return await getDashboardSummary(args, companyId, supabaseClient);
       
+      case 'review_pending_extractions':
+        return await reviewPendingExtractions(args, companyId, supabaseClient);
+      
       default:
         return { error: `Unknown tool: ${toolName}` };
     }
@@ -356,5 +359,59 @@ async function getDashboardSummary(args: any, companyId: string, supabase: any) 
     data: summary,
     alerts,
     message: `Dashboard: ${summary.goals.total} metas, ${summary.tasks.pending} tarefas pendentes, ${summary.risks.critical} riscos críticos`
+  };
+}
+
+async function reviewPendingExtractions(args: any, companyId: string, supabase: any) {
+  const { limit = 10, minConfidence = 0 } = args;
+
+  let query = supabase
+    .from('extracted_data_preview')
+    .select(`
+      *,
+      document_extraction_jobs (
+        documents (
+          file_name,
+          file_type
+        )
+      )
+    `)
+    .eq('company_id', companyId)
+    .eq('validation_status', 'Pendente')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  // Filter by confidence if specified
+  const filtered = data?.filter((item: any) => {
+    const avgConfidence = Object.values(item.confidence_scores || {})
+      .reduce((sum: number, score: any) => sum + score, 0) / 
+      (Object.keys(item.confidence_scores || {}).length || 1);
+    return avgConfidence >= minConfidence;
+  }) || [];
+
+  // Format for AI response
+  const formatted = filtered.map((item: any) => {
+    const avgConfidence = Object.values(item.confidence_scores || {})
+      .reduce((sum: number, score: any) => sum + score, 0) / 
+      (Object.keys(item.confidence_scores || {}).length || 1);
+    
+    return {
+      id: item.id,
+      documento: item.document_extraction_jobs?.documents?.file_name || 'Desconhecido',
+      tabela_destino: item.target_table,
+      confianca_media: `${Math.round(avgConfidence * 100)}%`,
+      campos_extraidos: Object.keys(item.extracted_fields || {}).length,
+      data_extracao: new Date(item.created_at).toLocaleDateString('pt-BR')
+    };
+  });
+
+  return {
+    success: true,
+    data: formatted,
+    count: formatted.length,
+    message: `Encontradas ${formatted.length} extrações pendentes de aprovação. Acesse /extracoes-documentos para revisar.`
   };
 }
