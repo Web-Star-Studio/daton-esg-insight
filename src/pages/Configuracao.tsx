@@ -159,7 +159,7 @@ export default function Configuracao() {
         .from('profiles')
         .update({
           full_name: sanitizedData.nome,
-          role: sanitizedData.cargo as "Admin" | "Editor" | "Leitor",
+          role: sanitizedData.cargo as any,
         })
         .eq('id', userData.id);
 

@@ -8172,6 +8172,74 @@ export type Database = {
           },
         ]
       }
+      permission_audit_log: {
+        Row: {
+          action: string
+          company_id: string
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          target_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          company_id: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          target_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          target_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissions: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       pgrs_actions: {
         Row: {
           action_description: string
@@ -8778,7 +8846,7 @@ export type Database = {
           has_completed_onboarding: boolean | null
           id: string
           job_title: string | null
-          role: Database["public"]["Enums"]["user_role_enum"]
+          role: Database["public"]["Enums"]["user_role_type"]
         }
         Insert: {
           company_id: string
@@ -8788,7 +8856,7 @@ export type Database = {
           has_completed_onboarding?: boolean | null
           id: string
           job_title?: string | null
-          role?: Database["public"]["Enums"]["user_role_enum"]
+          role?: Database["public"]["Enums"]["user_role_type"]
         }
         Update: {
           company_id?: string
@@ -8798,7 +8866,7 @@ export type Database = {
           has_completed_onboarding?: boolean | null
           id?: string
           job_title?: string | null
-          role?: Database["public"]["Enums"]["user_role_enum"]
+          role?: Database["public"]["Enums"]["user_role_type"]
         }
         Relationships: [
           {
@@ -9480,6 +9548,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_id: string
+          role: Database["public"]["Enums"]["user_role_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_id: string
+          role: Database["public"]["Enums"]["user_role_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_id?: string
+          role?: Database["public"]["Enums"]["user_role_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       safety_incidents: {
         Row: {
@@ -11154,6 +11251,51 @@ export type Database = {
           },
         ]
       }
+      user_custom_permissions: {
+        Row: {
+          company_id: string
+          created_at: string
+          granted: boolean
+          granted_by_user_id: string | null
+          id: string
+          permission_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          granted?: boolean
+          granted_by_user_id?: string | null
+          id?: string
+          permission_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          granted?: boolean
+          granted_by_user_id?: string | null
+          id?: string
+          permission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_custom_permissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_custom_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       value_chain_mapping: {
         Row: {
           company_id: string
@@ -11681,6 +11823,10 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      user_has_permission: {
+        Args: { p_permission_code: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       approval_status_enum:
@@ -11747,6 +11893,14 @@ export type Database = {
         | "anual"
         | "bienal"
       user_role_enum: "Admin" | "Editor" | "Leitor"
+      user_role_type:
+        | "super_admin"
+        | "admin"
+        | "manager"
+        | "analyst"
+        | "operator"
+        | "viewer"
+        | "auditor"
       waste_class_enum:
         | "Classe I - Perigoso"
         | "Classe II A - Não Inerte"
@@ -11953,6 +12107,15 @@ export const Constants = {
         "bienal",
       ],
       user_role_enum: ["Admin", "Editor", "Leitor"],
+      user_role_type: [
+        "super_admin",
+        "admin",
+        "manager",
+        "analyst",
+        "operator",
+        "viewer",
+        "auditor",
+      ],
       waste_class_enum: [
         "Classe I - Perigoso",
         "Classe II A - Não Inerte",

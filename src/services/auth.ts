@@ -6,7 +6,7 @@ export interface AuthUser {
   full_name: string;
   email: string;
   job_title?: string;
-  role: 'Admin' | 'Editor' | 'Leitor';
+  role: 'super_admin' | 'admin' | 'manager' | 'analyst' | 'operator' | 'viewer' | 'auditor';
   company: {
     id: string;
     name: string;
@@ -23,7 +23,7 @@ export interface RegisterCompanyData {
 
 export interface InviteUserData {
   email: string;
-  role: 'Admin' | 'Editor' | 'Leitor';
+  role: 'super_admin' | 'admin' | 'manager' | 'analyst' | 'operator' | 'viewer' | 'auditor';
 }
 
 class AuthService {
