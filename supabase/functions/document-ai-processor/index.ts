@@ -27,7 +27,15 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    const { document_id, processing_type } = await req.json()
+    const { document_id, processing_type, action, preview_id } = await req.json()
+    console.log('Request:', { document_id, processing_type, action, preview_id });
+
+    // Handle approval/rejection actions
+    if (action === 'approve' || action === 'reject') {
+      return await handleApprovalAction(supabaseClient, action, preview_id, user.id);
+    }
+
+    // Continue with document processing
     console.log('Processing document:', document_id, 'Type:', processing_type);
 
     // Get document info
@@ -213,15 +221,19 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
     const { error: previewError } = await supabaseClient
       .from('extracted_data_preview')
       .insert({
-        job_id: jobId,
-        document_id: document.id,
+        extraction_job_id: jobId,
         company_id: document.company_id,
-        user_id: userId,
-        document_type: extractedData.document_type,
-        suggested_tables: extractedData.suggested_tables,
+        target_table: extractedData.suggested_tables[0] || 'unknown',
         extracted_fields: extractedData.extracted_fields,
-        confidence_score: extractedData.confidence / 100,
-        summary: extractedData.summary,
+        confidence_scores: Object.keys(extractedData.extracted_fields).reduce((acc: any, key) => {
+          acc[key] = extractedData.confidence / 100;
+          return acc;
+        }, {}),
+        suggested_mappings: {
+          document_type: extractedData.document_type,
+          summary: extractedData.summary,
+          all_suggested_tables: extractedData.suggested_tables
+        },
         validation_status: 'Pendente'
       });
 
@@ -285,4 +297,105 @@ Se for nota fiscal de resíduos, extraia: tipo de resíduo, quantidade, unidade,
 
 Seja preciso e extraia o máximo de informações úteis possível.
 `;
+}
+
+async function handleApprovalAction(supabaseClient: any, action: string, previewId: string, userId: string) {
+  try {
+    console.log(`Handling ${action} for preview:`, previewId);
+
+    // Get preview data
+    const { data: preview, error: previewError } = await supabaseClient
+      .from('extracted_data_preview')
+      .select('*')
+      .eq('id', previewId)
+      .single();
+
+    if (previewError || !preview) {
+      throw new Error('Preview not found');
+    }
+
+    if (action === 'approve') {
+      // Insert data into target table
+      const recordData = {
+        ...preview.extracted_fields,
+        company_id: preview.company_id,
+        created_at: new Date().toISOString()
+      };
+
+      // Special handling for specific tables
+      const tableName = preview.target_table;
+      
+      if (tableName === 'licenses') {
+        recordData.status = recordData.status || 'Ativa';
+      } else if (tableName === 'waste_logs') {
+        recordData.log_date = recordData.log_date || new Date().toISOString().split('T')[0];
+      } else if (tableName === 'emission_sources') {
+        recordData.scope = recordData.scope || 1;
+      }
+
+      const { data: insertedData, error: insertError } = await supabaseClient
+        .from(tableName)
+        .insert(recordData)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error(`Error inserting into ${tableName}:`, insertError);
+        throw new Error(`Failed to insert into ${tableName}: ${insertError.message}`);
+      }
+
+      console.log(`Inserted into ${tableName}:`, insertedData.id);
+
+      // Update preview status
+      await supabaseClient
+        .from('extracted_data_preview')
+        .update({
+          validation_status: 'Aprovado',
+          approved_at: new Date().toISOString(),
+          approved_by_user_id: userId
+        })
+        .eq('id', previewId);
+
+      console.log('Approval completed');
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Dados aprovados e inseridos com sucesso',
+        inserted_record: insertedData
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+
+    } else if (action === 'reject') {
+      // Update preview status to rejected
+      await supabaseClient
+        .from('extracted_data_preview')
+        .update({
+          validation_status: 'Rejeitado',
+          approved_at: new Date().toISOString(),
+          approved_by_user_id: userId
+        })
+        .eq('id', previewId);
+
+      console.log('Rejection completed');
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Extração rejeitada'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    throw new Error('Invalid action');
+
+  } catch (error) {
+    console.error('Error in approval action:', error);
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 }

@@ -86,6 +86,7 @@ const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos")
 
 const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
+const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
 
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
@@ -201,6 +202,13 @@ const App = () => (
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/emissoes" element={<Navigate to="/inventario-gee" replace />} />
+            
+            {/* Gestão de Documentos e Extrações */}
+            <Route path="/extracoes-documentos" element={
+              <ProtectedLazyPageWrapper>
+                <ExtracoesDocumentos />
+              </ProtectedLazyPageWrapper>
+            } />
 
             {/* Licenciamento */}
             <Route path="/licenciamento" element={
