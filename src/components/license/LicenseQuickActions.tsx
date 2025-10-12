@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Calendar, CheckSquare, FileText, ArrowRight } from 'lucide-react';
 import type { LicenseDetail } from '@/services/licenses';
 
@@ -85,8 +84,9 @@ export const LicenseQuickActions: React.FC<LicenseQuickActionsProps> = ({
         {actions.map((action) => (
           <Card
             key={action.id}
+            onClick={action.disabled ? undefined : action.onClick}
             className={`relative overflow-hidden border-2 transition-all duration-200 hover:shadow-lg ${
-              action.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+              action.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:border-primary/50'
             }`}
           >
             <CardContent className="p-6">
@@ -104,15 +104,10 @@ export const LicenseQuickActions: React.FC<LicenseQuickActionsProps> = ({
               <h3 className="text-lg font-semibold mb-1">{action.title}</h3>
               <p className="text-sm text-muted-foreground mb-4">{action.description}</p>
               
-              <Button
-                onClick={action.onClick}
-                disabled={action.disabled}
-                className="w-full group"
-                variant="outline"
-              >
+              <div className="flex items-center text-sm font-medium text-primary">
                 <span>Acessar</span>
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
