@@ -292,7 +292,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="stats-cards">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="metrics">
         {KPI_CARDS.map((kpi, index) => {
           const Icon = kpi.icon;
           const ChangeIcon = getChangeIcon(kpi.changeType);

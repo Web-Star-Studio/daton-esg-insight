@@ -241,14 +241,17 @@ export default function GestaoStakeholders() {
             Gerencie e engaje com todas as partes interessadas da organização
           </p>
         </div>
-          <Button onClick={() => {
+        <Button 
+          onClick={() => {
             setSelectedStakeholder(null);
             setIsModalOpen(true);
-          }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Stakeholder
-          </Button>
-        </div>
+          }}
+          data-tour="add-stakeholder"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Stakeholder
+        </Button>
+      </div>
 
         {/* Estatísticas */}
         {engagementStats && (
@@ -318,7 +321,7 @@ export default function GestaoStakeholders() {
                   />
                 </div>
               </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter} data-tour="stakeholder-categories">
                 <SelectTrigger className="w-full sm:w-48">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filtrar por categoria" />

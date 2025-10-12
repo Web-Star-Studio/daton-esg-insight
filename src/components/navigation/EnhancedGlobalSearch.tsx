@@ -158,6 +158,7 @@ export function EnhancedGlobalSearch() {
           variant="ghost"
           size="sm"
           className="relative justify-start text-sm text-muted-foreground hover:bg-accent/50 gap-2 min-w-[200px]"
+          data-tour="search"
         >
           <Search className="h-4 w-4" />
           Buscar...
