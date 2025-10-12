@@ -6,10 +6,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
-import { AIActionConfirmation, PendingAction } from '@/components/ai/AIActionConfirmation';
+import { AIActionConfirmation } from '@/components/ai/AIActionConfirmation';
 import { QuickActions } from '@/components/ai/QuickActions';
 import { FileUploadButton } from '@/components/ai/FileUploadButton';
 import { FileAttachment } from '@/components/ai/FileAttachment';
+import { ProactiveInsights, ProactiveInsight } from '@/components/ai/ProactiveInsights';
+import { DataVisualization } from '@/components/ai/DataVisualization';
 import ReactMarkdown from 'react-markdown';
 
 // Chat assistant component with AI action confirmation support
@@ -65,6 +67,12 @@ export function ChatAssistant() {
   const handleQuickAction = (prompt: string) => {
     setInputMessage(prompt);
     setShowQuickActions(false);
+    // Auto-send if it's an insight action
+    setTimeout(() => {
+      if (prompt) {
+        handleSendMessage();
+      }
+    }, 100);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -167,6 +175,25 @@ export function ChatAssistant() {
                         {message.content}
                       </ReactMarkdown>
                     </div>
+                    
+                    {/* Render proactive insights if present */}
+                    {message.insights && message.insights.length > 0 && (
+                      <div className="mt-3">
+                        <ProactiveInsights 
+                          insights={message.insights as ProactiveInsight[]} 
+                          onActionClick={handleQuickAction}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Render data visualizations if present */}
+                    {message.visualizations && message.visualizations.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {message.visualizations.map((viz: any, idx: number) => (
+                          <DataVisualization key={idx} data={viz} />
+                        ))}
+                      </div>
+                    )}
                     
                     {message.context && (
                       <p className="text-xs text-muted-foreground mt-2 italic">

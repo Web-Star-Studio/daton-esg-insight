@@ -10,6 +10,7 @@ import {
 } from './write-tools.ts';
 import { readTools } from './read-tools.ts';
 import { executeReadTool } from './tool-executors.ts';
+import { generateProactiveInsights, generateDataVisualizations } from './proactive-analysis.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -851,19 +852,46 @@ Esta conversa tem memória persistente. Você pode referenciar discussões anter
       const finalData = await finalResponse.json();
       const assistantMessage = finalData.choices[0].message.content;
       
+      // Generate proactive insights based on current context and data
+      const insights = await generateProactiveInsights(
+        companyId, 
+        userContext?.currentRoute || currentPage, 
+        supabaseClient
+      );
+      
+      // Generate visualizations based on tool results
+      const visualizations: any[] = [];
+      for (const toolResult of toolResults) {
+        const result = JSON.parse(toolResult.content);
+        if (result.success && result.data) {
+          const viz = await generateDataVisualizations(result, toolResult.name);
+          visualizations.push(...viz);
+        }
+      }
+      
       return new Response(JSON.stringify({ 
         message: assistantMessage,
-        dataAccessed: toolResults.map((r: any) => r.name)
+        dataAccessed: toolResults.map((r: any) => r.name),
+        insights: insights.length > 0 ? insights : undefined,
+        visualizations: visualizations.length > 0 ? visualizations : undefined
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // No tool calls, return direct response
+    // No tool calls, return direct response with proactive insights
     const assistantMessage = choice.message.content;
     
+    // Generate proactive insights even without tool calls
+    const insights = await generateProactiveInsights(
+      companyId, 
+      userContext?.currentRoute || currentPage, 
+      supabaseClient
+    );
+    
     return new Response(JSON.stringify({ 
-      message: assistantMessage 
+      message: assistantMessage,
+      insights: insights.length > 0 ? insights : undefined
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

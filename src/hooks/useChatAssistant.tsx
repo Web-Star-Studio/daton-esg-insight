@@ -14,6 +14,8 @@ export interface ChatMessage {
   context?: string;
   marketInfo?: string;
   companyName?: string;
+  insights?: any[];
+  visualizations?: any[];
   suggestedActions?: Array<{
     type: 'navigate' | 'action';
     label: string;
@@ -325,6 +327,8 @@ Converse naturalmente! Exemplos:
         timestamp: new Date(),
         context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
         companyName: user?.company.name,
+        insights: data.insights || [],
+        visualizations: data.visualizations || []
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -339,7 +343,11 @@ Converse naturalmente! Exemplos:
           content: data.message,
           metadata: {
             dataAccessed: data.dataAccessed,
-            tokensUsed: data.tokensUsed
+            tokensUsed: data.tokensUsed,
+            hasInsights: (data.insights?.length || 0) > 0,
+            hasVisualizations: (data.visualizations?.length || 0) > 0,
+            insights: data.insights || [],
+            visualizations: data.visualizations || []
           }
         });
       }
