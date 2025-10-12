@@ -6668,6 +6668,70 @@ export type Database = {
           },
         ]
       }
+      license_action_history: {
+        Row: {
+          action_target_id: string
+          action_target_type: string
+          action_type: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          license_id: string
+          new_values: Json | null
+          old_values: Json | null
+          user_id: string
+        }
+        Insert: {
+          action_target_id: string
+          action_target_type: string
+          action_type: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          license_id: string
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id: string
+        }
+        Update: {
+          action_target_id?: string
+          action_target_type?: string
+          action_type?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          license_id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_action_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_action_history_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_action_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       license_ai_analysis: {
         Row: {
           ai_insights: Json
@@ -6718,10 +6782,78 @@ export type Database = {
           },
         ]
       }
+      license_alert_comments: {
+        Row: {
+          alert_id: string | null
+          comment_text: string
+          company_id: string
+          created_at: string | null
+          id: string
+          is_internal: boolean | null
+          observation_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_id?: string | null
+          comment_text: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_internal?: boolean | null
+          observation_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_id?: string | null
+          comment_text?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_internal?: boolean | null
+          observation_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_alert_comments_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "license_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_alert_comments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_alert_comments_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "license_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_alert_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       license_alerts: {
         Row: {
           action_required: boolean
           alert_type: string
+          assigned_to_user_id: string | null
+          auto_generated: boolean | null
+          category: string | null
           company_id: string
           created_at: string
           due_date: string | null
@@ -6730,15 +6862,23 @@ export type Database = {
           license_id: string
           message: string
           metadata: Json | null
+          notification_sent: boolean | null
+          priority: string | null
+          resolution_notes: string | null
           resolved_at: string | null
           resolved_by_user_id: string | null
           severity: string
+          snooze_until: string | null
+          tags: string[] | null
           title: string
           updated_at: string
         }
         Insert: {
           action_required?: boolean
           alert_type: string
+          assigned_to_user_id?: string | null
+          auto_generated?: boolean | null
+          category?: string | null
           company_id: string
           created_at?: string
           due_date?: string | null
@@ -6747,15 +6887,23 @@ export type Database = {
           license_id: string
           message: string
           metadata?: Json | null
+          notification_sent?: boolean | null
+          priority?: string | null
+          resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by_user_id?: string | null
           severity?: string
+          snooze_until?: string | null
+          tags?: string[] | null
           title: string
           updated_at?: string
         }
         Update: {
           action_required?: boolean
           alert_type?: string
+          assigned_to_user_id?: string | null
+          auto_generated?: boolean | null
+          category?: string | null
           company_id?: string
           created_at?: string
           due_date?: string | null
@@ -6764,13 +6912,25 @@ export type Database = {
           license_id?: string
           message?: string
           metadata?: Json | null
+          notification_sent?: boolean | null
+          priority?: string | null
+          resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by_user_id?: string | null
           severity?: string
+          snooze_until?: string | null
+          tags?: string[] | null
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "license_alerts_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "license_alerts_license_id_fkey"
             columns: ["license_id"]
@@ -6835,6 +6995,127 @@ export type Database = {
             columns: ["license_id"]
             isOneToOne: false
             referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_observations: {
+        Row: {
+          archived_at: string | null
+          attachments: Json | null
+          category: string | null
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string
+          followup_assigned_to: string | null
+          followup_date: string | null
+          id: string
+          is_archived: boolean | null
+          license_id: string
+          metadata: Json | null
+          observation_text: string
+          observation_type: string
+          priority: string | null
+          related_alert_id: string | null
+          related_condition_id: string | null
+          related_document_ids: Json | null
+          requires_followup: boolean | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          attachments?: Json | null
+          category?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by_user_id: string
+          followup_assigned_to?: string | null
+          followup_date?: string | null
+          id?: string
+          is_archived?: boolean | null
+          license_id: string
+          metadata?: Json | null
+          observation_text: string
+          observation_type: string
+          priority?: string | null
+          related_alert_id?: string | null
+          related_condition_id?: string | null
+          related_document_ids?: Json | null
+          requires_followup?: boolean | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          attachments?: Json | null
+          category?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string
+          followup_assigned_to?: string | null
+          followup_date?: string | null
+          id?: string
+          is_archived?: boolean | null
+          license_id?: string
+          metadata?: Json | null
+          observation_text?: string
+          observation_type?: string
+          priority?: string | null
+          related_alert_id?: string | null
+          related_condition_id?: string | null
+          related_document_ids?: Json | null
+          requires_followup?: boolean | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_observations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_observations_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_observations_followup_assigned_to_fkey"
+            columns: ["followup_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_observations_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_observations_related_alert_id_fkey"
+            columns: ["related_alert_id"]
+            isOneToOne: false
+            referencedRelation: "license_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_observations_related_condition_id_fkey"
+            columns: ["related_condition_id"]
+            isOneToOne: false
+            referencedRelation: "license_conditions"
             referencedColumns: ["id"]
           },
         ]

@@ -48,6 +48,7 @@ import { LicenseQuickActions } from '@/components/license/LicenseQuickActions';
 import { RenewalScheduleModal } from '@/components/license/RenewalScheduleModal';
 import { ConditionsManagerModal } from '@/components/license/ConditionsManagerModal';
 import { LicenseReportGenerator } from '@/components/license/LicenseReportGenerator';
+import { AlertsObservationsSection } from '@/components/license/AlertsObservationsSection';
 
 const LicenseDetails = () => {
   const { id } = useParams<{ id: string }>();
