@@ -177,39 +177,52 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',  // Using Pro model for complex document analysis
         messages: aiMessages,
         tools: [{
           type: "function",
           function: {
             name: "extract_document_data",
-            description: "Extrai dados estruturados do documento e sugere tabelas de destino",
+            description: "Extrai dados estruturados do documento e sugere tabelas de destino com confiança por campo",
             parameters: {
               type: "object",
               properties: {
                 document_type: {
                   type: "string",
-                  description: "Tipo identificado: licenca, relatorio_emissoes, nota_fiscal_residuos, consumo_energia, consumo_agua, etc."
+                  description: "Tipo identificado do documento (ex: licenca_ambiental, nota_fiscal_residuos, conta_energia, relatorio_emissoes, etc.)"
                 },
                 confidence: {
                   type: "number",
-                  description: "Confiança na identificação (0-100)"
+                  description: "Confiança geral na identificação do tipo de documento (0-100)"
                 },
                 suggested_tables: {
                   type: "array",
                   items: { type: "string" },
-                  description: "Tabelas sugeridas: licenses, emission_sources, waste_logs, energy_consumption, water_consumption, etc."
+                  description: "Lista de tabelas do sistema onde os dados devem ser inseridos (pode ser múltiplas)"
                 },
                 extracted_fields: {
                   type: "object",
-                  description: "Campos extraídos organizados por tabela sugerida"
+                  description: "Campos extraídos organizados por tabela. Estrutura: { 'table_name': { 'field_name': value } }. SEMPRE normalize dados (datas ISO, números limpos, unidades padrão)."
+                },
+                field_confidence: {
+                  type: "object",
+                  description: "Confiança individual para cada campo extraído (0.0-1.0). Estrutura: { 'field_name': 0.85 }. OBRIGATÓRIO para TODOS os campos."
+                },
+                extraction_reasoning: {
+                  type: "object",
+                  description: "Explicação do raciocínio para cada campo extraído. Estrutura: { 'field_name': 'Raciocínio detalhado...' }. Explique: de onde veio o valor, qual normalização foi feita, por que essa confiança."
                 },
                 summary: {
                   type: "string",
-                  description: "Resumo executivo do documento"
+                  description: "Resumo executivo do documento (2-3 frases)"
+                },
+                data_quality_issues: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Lista de problemas encontrados nos dados (ex: 'Data sem ano inferido', 'Unidade não especificada', 'Valor ilegível estimado')"
                 }
               },
-              required: ["document_type", "confidence", "suggested_tables", "extracted_fields", "summary"]
+              required: ["document_type", "confidence", "suggested_tables", "extracted_fields", "field_confidence", "extraction_reasoning", "summary"]
             }
           }
         }],
@@ -232,7 +245,12 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
     }
 
     const extractedData = JSON.parse(toolCall.function.arguments);
-    console.log('Data extracted:', extractedData.document_type, 'confidence:', extractedData.confidence);
+    console.log('Data extracted successfully!');
+    console.log('- Document type:', extractedData.document_type);
+    console.log('- Overall confidence:', extractedData.confidence);
+    console.log('- Target tables:', extractedData.suggested_tables?.join(', '));
+    console.log('- Fields extracted:', Object.keys(extractedData.extracted_fields || {}).length);
+    console.log('- Data quality issues:', extractedData.data_quality_issues?.length || 0);
 
     // 4. Save extracted data preview
     const { error: previewError } = await supabaseClient
@@ -242,14 +260,13 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
         company_id: document.company_id,
         target_table: extractedData.suggested_tables[0] || 'unknown',
         extracted_fields: extractedData.extracted_fields,
-        confidence_scores: Object.keys(extractedData.extracted_fields).reduce((acc: any, key) => {
-          acc[key] = extractedData.confidence / 100;
-          return acc;
-        }, {}),
+        confidence_scores: extractedData.field_confidence || {},
         suggested_mappings: {
           document_type: extractedData.document_type,
           summary: extractedData.summary,
-          all_suggested_tables: extractedData.suggested_tables
+          all_suggested_tables: extractedData.suggested_tables,
+          extraction_reasoning: extractedData.extraction_reasoning || {},
+          data_quality_issues: extractedData.data_quality_issues || []
         },
         validation_status: 'Pendente'
       });
@@ -286,33 +303,285 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
 
 function buildAnalysisPrompt(fileName: string, content: string): string {
   return `
-Analise o seguinte documento e extraia informações estruturadas relevantes para um sistema de gestão ESG/Ambiental.
+# SISTEMA DE ANÁLISE INTELIGENTE DE DOCUMENTOS ESG/AMBIENTAL
+
+Você é um especialista em extração de dados de documentos ESG bagunçados, confusos e mal formatados. Sua missão é **SEMPRE extrair informações úteis**, mesmo quando os dados estão incompletos, mal escritos ou organizados de forma não convencional.
+
+---
+
+## 📄 DOCUMENTO A ANALISAR
 
 **Nome do arquivo:** ${fileName}
 
 **Conteúdo do documento:**
-${content ? content.substring(0, 8000) : 'Conteúdo não disponível em texto, analisar imagem.'}
+${content ? content.substring(0, 12000) : 'Conteúdo não disponível em texto. IMPORTANTE: Analise a imagem fornecida com atenção máxima, aplicando OCR se necessário. Busque por tabelas, carimbos, assinaturas, números de protocolo, datas manuscritas, etc.'}
 
-**Instruções:**
-1. Identifique o tipo de documento (licença ambiental, relatório de emissões, nota fiscal de resíduos, conta de energia, etc.)
-2. Extraia TODOS os campos relevantes com seus valores exatos
-3. Sugira as tabelas do sistema onde esses dados devem ser inseridos
-4. Forneça uma confiança (0-100) na sua análise
+---
 
-**Tabelas disponíveis no sistema:**
-- licenses: Licenças ambientais (license_name, license_number, license_type, issuing_body, issue_date, expiration_date, status)
-- emission_sources: Fontes de emissão GEE (source_name, scope, category, fuel_type, location)
-- activity_data: Dados de atividades com emissões (quantity, unit, period_start_date, period_end_date)
-- waste_logs: Gestão de resíduos (waste_type, quantity, unit, treatment_method, disposal_site, log_date)
-- energy_consumption: Consumo de energia (source_type, quantity_kwh, consumption_date, cost)
-- water_consumption: Consumo de água (source, quantity_m3, consumption_date, cost)
-- suppliers: Fornecedores (name, cnpj, category, status)
+## 🎯 INSTRUÇÕES CRÍTICAS PARA LIDAR COM DADOS BAGUNÇADOS
 
-**Exemplo de resposta esperada:**
-Se for uma licença ambiental, extraia: número da licença, órgão emissor, data de emissão, validade, condicionantes, etc.
-Se for nota fiscal de resíduos, extraia: tipo de resíduo, quantidade, unidade, destinador, data, etc.
+### 1. NORMALIZAÇÃO INTELIGENTE
+- **Datas**: Aceite QUALQUER formato (DD/MM/YYYY, DD-MM-YY, "15 de março de 2024", "15/03/24") e converta para YYYY-MM-DD
+- **CNPJ/CPF**: Extraia mesmo sem pontuação (12345678000190 → 12.345.678/0001-90)
+- **Números**: Reconheça vírgulas/pontos como separadores decimais (1.234,56 → 1234.56)
+- **Unidades**: Converta automaticamente (kg→toneladas se >1000, L→m³, kWh→MWh)
+- **Valores monetários**: Extraia números mesmo com "R$", "$", espaços, pontos, vírgulas
 
-Seja preciso e extraia o máximo de informações úteis possível.
+### 2. INFERÊNCIA E CONTEXTO
+- Se faltar o **ano**, infira do contexto (ex: "validade até 03/2026" → assumir dia 31)
+- Se faltar **unidade**, deduza pelo contexto (ex: "Resíduo Classe II - 500" → assumir kg se não especificado)
+- Se houver **abreviações** comuns, expanda-as: "Lic. Op." → "Licença de Operação", "CETESB" → manter sigla mas adicionar como issuing_body
+
+### 3. CORREÇÃO DE ERROS DE OCR
+- Troque confusões comuns: O↔0, l↔1, S↔5, B↔8, |↔I
+- Corrija erros de espaçamento: "L icença" → "Licença"
+- Ignore caracteres especiais estranhos: "L¡cença" → "Licença"
+
+### 4. EXTRAÇÃO AGRESSIVA
+- **SEMPRE** extraia ALGUMA informação, mesmo que parcial
+- Se não tiver certeza, extraia com confiança baixa (<60%) mas EXTRAIA
+- Campos em branco SÓ se realmente não houver NADA no documento
+- Se houver múltiplas interpretações, escolha a mais provável
+
+### 5. RACIOCÍNIO EXPLÍCITO (Chain-of-Thought)
+Para CADA campo extraído, você DEVE explicar seu raciocínio no campo "extraction_reasoning":
+- Por que identificou esse valor?
+- Qual parte do documento usou?
+- Qual foi a confiança e por quê?
+- Houve alguma inferência ou correção?
+
+Exemplo: 
+\`\`\`json
+"license_number": "123/2024",
+"license_number_confidence": 0.95,
+"license_number_reasoning": "Encontrado no cabeçalho como 'Licença nº 123/2024'. Alta confiança pois está claramente identificado e segue padrão CETESB."
+\`\`\`
+
+---
+
+## 🗄️ TABELAS COMPLETAS DO SISTEMA (50+ tabelas mapeadas)
+
+### **AMBIENTAL & LICENCIAMENTO**
+- **licenses**: Licenças ambientais
+  - Campos: license_name, license_number, license_type, issuing_body, issue_date, expiration_date, status, validity_period, conditions, covered_activities, monitoring_requirements
+- **assets**: Ativos e instalações físicas
+  - Campos: name, asset_type, location, description, productive_capacity, capacity_unit, installation_year, operational_status, pollution_potential, cnae_code
+- **environmental_incidents**: Incidentes ambientais
+  - Campos: incident_date, incident_type, severity, location, description, immediate_actions, root_cause
+
+### **EMISSÕES GEE**
+- **emission_sources**: Fontes de emissão
+  - Campos: source_name, scope, category, fuel_type, location, emission_factor, description
+- **activity_data**: Dados de atividade
+  - Campos: emission_source_id, quantity, unit, period_start_date, period_end_date, notes
+- **transport_distribution**: Transporte e distribuição
+  - Campos: direction, transport_mode, fuel_type, distance_km, weight_tonnes, fuel_consumption
+
+### **RESÍDUOS**
+- **waste_logs**: Registros de resíduos
+  - Campos: waste_type, waste_class, quantity, unit, log_date, treatment_method, disposal_site, mtr_number, notes
+- **waste_suppliers**: Fornecedores de gestão de resíduos
+  - Campos: company_name, cnpj, supplier_type, contact_name, contact_email, license_number, license_type, license_expiry, status
+- **pgrs_plans**: Planos de gerenciamento de resíduos
+  - Campos: plan_name, creation_date, status, version, responsible_user_id
+
+### **RECURSOS NATURAIS**
+- **energy_consumption**: Consumo de energia
+  - Campos: source_type, quantity_kwh, consumption_date, cost, supplier, invoice_number, demand_kw
+- **water_consumption**: Consumo de água
+  - Campos: source, quantity_m3, consumption_date, cost, invoice_number, water_type
+- **wastewater_treatment**: Tratamento de efluentes
+  - Campos: treatment_type, volume_treated, organic_load_bod, nitrogen_content, discharge_pathway, ch4_emissions, n2o_emissions
+
+### **FORNECEDORES & STAKEHOLDERS**
+- **suppliers**: Fornecedores gerais
+  - Campos: name, cnpj, contact_email, contact_phone, address, category, status, qualification_status, rating, notes
+- **stakeholders**: Partes interessadas
+  - Campos: name, category, contact_email, contact_phone, influence_level, interest_level, engagement_strategy
+- **stakeholder_assessments**: Avaliações de materialidade
+  - Campos: assessment_year, methodology, participants_count, assessment_date, status
+
+### **COMPLIANCE & AUDITORIAS**
+- **audits**: Auditorias
+  - Campos: title, audit_type, auditor, start_date, end_date, scope, status
+- **nonconformities**: Não conformidades
+  - Campos: title, description, severity, detection_date, deadline, responsible_user_id, status, corrective_action
+- **findings**: Constatações de auditoria
+  - Campos: audit_id, finding_type, description, severity, evidence, recommendations
+
+### **TREINAMENTOS & RH**
+- **training_programs**: Programas de treinamento
+  - Campos: name, description, category, duration_hours, is_mandatory, valid_for_months, status
+- **employees**: Funcionários
+  - Campos: full_name, email, phone, hire_date, department, position, employment_type, status
+- **attendance_records**: Registros de ponto
+  - Campos: employee_id, date, check_in, check_out, total_hours, overtime_hours, status
+- **leave_requests**: Solicitações de afastamento
+  - Campos: employee_id, leave_type_id, start_date, end_date, reason, status
+
+### **METAS & ESTRATÉGIA**
+- **goals**: Metas ESG
+  - Campos: title, description, category, baseline_value, target_value, unit, target_date, progress_percentage, status
+- **okrs**: OKRs (Objectives and Key Results)
+  - Campos: title, description, period_start, period_end, owner_user_id, status, progress_percentage
+- **key_results**: Resultados-chave
+  - Campos: okr_id, title, description, target_value, current_value, unit, progress_percentage, status
+
+### **RISCOS & OPORTUNIDADES**
+- **risks**: Riscos
+  - Campos: title, description, category, probability, impact, risk_level, status, mitigation_actions
+- **opportunities**: Oportunidades
+  - Campos: title, description, category, probability, impact, potential_value, implementation_cost, roi_estimate, status
+- **risk_occurrences**: Ocorrências de risco
+  - Campos: risk_id, occurrence_date, actual_impact, financial_impact, operational_impact, response_actions, status
+
+### **RELATÓRIOS & FRAMEWORKS**
+- **gri_reports**: Relatórios GRI
+  - Campos: report_year, reporting_period_start, reporting_period_end, gri_version, status
+- **gri_disclosures**: Divulgações GRI
+  - Campos: report_id, disclosure_number, disclosure_name, topic, content_text, quantitative_data, data_sources
+- **tcfd_disclosures**: Divulgações TCFD
+  - Campos: pillar, recommendation_id, recommendation_title, disclosure_content, implementation_status, maturity_level, status
+- **ifrs_disclosures**: Divulgações IFRS S1/S2
+  - Campos: disclosure_id, disclosure_name, category, requirement_type, disclosure_content, quantitative_data, status
+- **tnfd_disclosures**: Divulgações TNFD
+  - Campos: pillar, disclosure_id, disclosure_title, nature_related_topic, biomes_ecosystems, disclosure_content, status
+
+### **PROCESSOS & QUALIDADE**
+- **process_maps**: Mapas de processos
+  - Campos: process_name, process_type, description, objective, owner_user_id, status
+- **action_plans**: Planos de ação
+  - Campos: title, description, objective, plan_type, status
+- **projects**: Projetos
+  - Campos: project_name, description, project_type, start_date, end_date, budget, status, progress_percentage
+
+### **BIODIVERSIDADE & CONSERVAÇÃO**
+- **conservation_areas**: Áreas de conservação
+  - Campos: area_name, location, area_hectares, biome_type, protection_status, management_plan
+- **conservation_activities**: Atividades de conservação
+  - Campos: activity_type_id, conservation_area_id, activity_date, area_hectares, carbon_sequestered_tonnes
+
+### **DOCUMENTOS & GOVERNANÇA**
+- **documents**: Documentos gerais do sistema
+  - Campos: file_name, file_type, document_type, code, related_model, related_id, folder_id, tags, effective_date, controlled_copy
+
+---
+
+## 📚 EXEMPLOS DE EXTRAÇÕES BEM-SUCEDIDAS (Multi-Shot Learning)
+
+### Exemplo 1: Licença Ambiental Bagunçada
+**Documento:** "LIC OPERAÇÃO 456-2023 CETESB válida até 15março2025 Empresa: ACME LTDA CNPJ: 12345678000190"
+
+**Extração:**
+\`\`\`json
+{
+  "document_type": "licenca_ambiental",
+  "confidence": 85,
+  "suggested_tables": ["licenses"],
+  "extracted_fields": {
+    "license_number": "456/2023",
+    "license_type": "Licença de Operação",
+    "issuing_body": "CETESB",
+    "expiration_date": "2025-03-15",
+    "status": "Ativa"
+  },
+  "field_confidence": {
+    "license_number": 0.90,
+    "license_type": 0.85,
+    "issuing_body": 0.95,
+    "expiration_date": 0.80,
+    "status": 0.75
+  },
+  "extraction_reasoning": {
+    "license_number": "Identificado 'LIC OPERAÇÃO 456-2023', normalizado para 456/2023",
+    "license_type": "Abreviação 'LIC OPERAÇÃO' expandida para 'Licença de Operação'",
+    "expiration_date": "Data '15março2025' sem espaços, convertida para formato ISO assumindo último dia do mês"
+  }
+}
+\`\`\`
+
+### Exemplo 2: Nota Fiscal de Resíduos com Erros OCR
+**Documento:** "NF 789 Res|duo C1asse II - Plásti co 1.250 Kg 20/04/2024 Destinad0r: ECOLIXO LTDA"
+
+**Extração:**
+\`\`\`json
+{
+  "document_type": "nota_fiscal_residuos",
+  "confidence": 75,
+  "suggested_tables": ["waste_logs", "waste_suppliers"],
+  "extracted_fields": {
+    "waste_logs": {
+      "waste_type": "Plástico",
+      "waste_class": "Classe II",
+      "quantity": 1.25,
+      "unit": "toneladas",
+      "log_date": "2024-04-20",
+      "disposal_site": "ECOLIXO LTDA"
+    },
+    "waste_suppliers": {
+      "company_name": "ECOLIXO LTDA",
+      "supplier_type": "Tratamento e Destinação"
+    }
+  },
+  "field_confidence": {
+    "waste_type": 0.85,
+    "waste_class": 0.90,
+    "quantity": 0.70,
+    "unit": 0.65
+  },
+  "extraction_reasoning": {
+    "waste_type": "Corrigido erro OCR 'Plásti co' → 'Plástico'",
+    "quantity": "Convertido 1.250 Kg para 1.25 toneladas (padrão do sistema)",
+    "unit": "Inferido conversão kg→toneladas pois valor >1000kg, confiança média pois não explícito"
+  }
+}
+\`\`\`
+
+### Exemplo 3: Conta de Energia Incompleta
+**Documento:** "CPFL Consumo: 3450 Valor: R$ 2.875,00 Ref: 03/2024"
+
+**Extração:**
+\`\`\`json
+{
+  "document_type": "conta_energia",
+  "confidence": 70,
+  "suggested_tables": ["energy_consumption"],
+  "extracted_fields": {
+    "source_type": "Rede Elétrica",
+    "quantity_kwh": 3450,
+    "consumption_date": "2024-03-31",
+    "cost": 2875.00,
+    "supplier": "CPFL"
+  },
+  "field_confidence": {
+    "source_type": 0.60,
+    "quantity_kwh": 0.95,
+    "consumption_date": 0.65,
+    "cost": 0.90,
+    "supplier": 0.95
+  },
+  "extraction_reasoning": {
+    "source_type": "Inferido como 'Rede Elétrica' pois CPFL é distribuidora, mas não explícito no doc (baixa confiança)",
+    "consumption_date": "Referência '03/2024' convertida para último dia do mês (31/03/2024) assumindo fechamento mensal",
+    "cost": "Valor 'R$ 2.875,00' normalizado para 2875.00 (ponto como decimal)"
+  }
+}
+\`\`\`
+
+---
+
+## 🎯 TAREFA FINAL
+
+1. **IDENTIFIQUE o tipo de documento** com base em palavras-chave, estrutura, logos, carimbos
+2. **EXTRAIA TODOS os campos** relevantes aplicando TODAS as técnicas de normalização acima
+3. **SUGIRA as tabelas** corretas do sistema (pode ser múltiplas tabelas)
+4. **FORNEÇA confiança individual por campo** (0.0 a 1.0)
+5. **EXPLIQUE seu raciocínio** para cada campo extraído
+6. **NUNCA deixe campos importantes vazios** - extraia parcialmente com baixa confiança se necessário
+
+**LEMBRE-SE:** Documentos reais são bagunçados! Seu trabalho é ser INTELIGENTE e extrair informações úteis mesmo do caos.
+
+Execute a extração agora usando a função \`extract_document_data\`.
 `;
 }
 
