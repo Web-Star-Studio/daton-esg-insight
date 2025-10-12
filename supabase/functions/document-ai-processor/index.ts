@@ -13,33 +13,50 @@ serve(async (req) => {
   try {
     console.log('Starting document-ai-processor...');
     
+    // Create client for user authentication
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('Unauthorized: No authorization header');
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        }
+      }
     )
-
-    const authHeader = req.headers.get('Authorization')!
-    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
 
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
       console.error('Unauthorized: No user found');
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
+    
+    console.log('User authenticated:', user.id);
+    
+    // Create service role client for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
     const { document_id, processing_type, action, preview_id } = await req.json()
     console.log('Request:', { document_id, processing_type, action, preview_id });
 
     // Handle approval/rejection actions
     if (action === 'approve' || action === 'reject') {
-      return await handleApprovalAction(supabaseClient, action, preview_id, user.id);
+      return await handleApprovalAction(supabaseAdmin, action, preview_id, user.id);
     }
 
     // Continue with document processing
     console.log('Processing document:', document_id, 'Type:', processing_type);
 
     // Get document info
-    const { data: document, error: docError } = await supabaseClient
+    const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
       .select('*')
       .eq('id', document_id)
@@ -51,13 +68,13 @@ serve(async (req) => {
     }
 
     // Create job
-    const { data: job, error: jobError } = await supabaseClient
+    const { data: job, error: jobError } = await supabaseAdmin
       .from('document_extraction_jobs')
       .insert({
         document_id,
         processing_type: processing_type || 'general_extraction',
         status: 'Processando',
-        company_id: user.id,
+        company_id: document.company_id,
         user_id: user.id
       })
       .select()
@@ -71,7 +88,7 @@ serve(async (req) => {
     console.log('Job created:', job.id);
 
     // Process document in background
-    EdgeRuntime.waitUntil(processDocumentWithAI(supabaseClient, job.id, document, user.id));
+    EdgeRuntime.waitUntil(processDocumentWithAI(supabaseAdmin, job.id, document, user.id));
 
     return new Response(JSON.stringify(job), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
