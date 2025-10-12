@@ -107,10 +107,10 @@ export function AIActionConfirmation({ action, onConfirm, onCancel }: AIActionCo
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4 border">
-                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Descrição
-                </h4>
+            <div className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              Descrição
+            </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {action.description}
                 </p>
