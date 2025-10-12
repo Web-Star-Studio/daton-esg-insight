@@ -61,7 +61,7 @@ export const ExtractedDataReviewCard: React.FC<ExtractedDataReviewCardProps> = (
   const handleApprove = async () => {
     try {
       setProcessing(true);
-      await approveExtractedData(extraction.id, editedData);
+      await approveExtractedData(extraction.id);
       toast.success('Dados aprovados e integrados com sucesso!', {
         description: 'Os dados foram inseridos na tabela de atividades.'
       });

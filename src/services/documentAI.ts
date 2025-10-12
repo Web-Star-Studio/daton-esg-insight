@@ -24,7 +24,7 @@ export interface AIPattern extends Omit<AIPatternRow, 'field_patterns' | 'extrac
 }
 
 // Processar documento com IA
-export const processDocumentWithAI = async (documentId: string): Promise<{ jobId: string; status: string; message: string }> => {
+export const processDocumentWithAI = async (documentId: string): Promise<{ jobId: string }> => {
   console.log('Starting AI processing for document:', documentId);
 
   if (!documentId || typeof documentId !== 'string' || documentId.trim().length === 0) {
@@ -34,11 +34,8 @@ export const processDocumentWithAI = async (documentId: string): Promise<{ jobId
 
   const { data, error } = await supabase.functions.invoke('document-ai-processor', {
     body: { 
-      action: 'process',
-      documentId 
-    },
-    headers: {
-      'Content-Type': 'application/json',
+      document_id: documentId,
+      processing_type: 'general_extraction'
     }
   });
 
@@ -47,46 +44,41 @@ export const processDocumentWithAI = async (documentId: string): Promise<{ jobId
     throw new Error(`Failed to process document: ${error.message}`);
   }
 
-  return data;
+  if (!data || !data.id) {
+    throw new Error('Invalid response from AI processor');
+  }
+
+  return { jobId: data.id };
 };
 
 // Obter status do job de processamento
-export const getExtractionJobStatus = async (jobId: string): Promise<ExtractionJob & { extracted_data_preview?: ExtractedDataPreview[] }> => {
+export const getExtractionJobStatus = async (jobId: string): Promise<ExtractionJob> => {
   console.log('Getting extraction job status:', jobId);
 
-  const { data, error } = await supabase.functions.invoke('document-ai-processor', {
-    body: { 
-      action: 'status',
-      jobId 
-    },
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  const { data, error } = await supabase
+    .from('document_extraction_jobs')
+    .select('*')
+    .eq('id', jobId)
+    .single();
 
   if (error) {
     console.error('Error getting job status:', error);
     throw new Error(`Failed to get job status: ${error.message}`);
   }
 
-  return data;
+  return data as ExtractionJob;
 };
 
 // Aprovar dados extraídos
 export const approveExtractedData = async (
-  previewId: string, 
-  finalData: Record<string, any>
+  previewId: string
 ): Promise<{ success: boolean; message: string }> => {
   console.log('Approving extracted data:', previewId);
 
   const { data, error } = await supabase.functions.invoke('document-ai-processor', {
     body: { 
       action: 'approve',
-      previewId, 
-      finalData 
-    },
-    headers: {
-      'Content-Type': 'application/json',
+      preview_id: previewId
     }
   });
 
@@ -100,19 +92,16 @@ export const approveExtractedData = async (
 
 // Rejeitar dados extraídos
 export const rejectExtractedData = async (
-  previewId: string, 
-  rejectionNotes: string
+  previewId: string,
+  rejectionNotes?: string
 ): Promise<{ success: boolean; message: string }> => {
   console.log('Rejecting extracted data:', previewId);
 
   const { data, error } = await supabase.functions.invoke('document-ai-processor', {
     body: { 
       action: 'reject',
-      previewId, 
-      rejectionNotes 
-    },
-    headers: {
-      'Content-Type': 'application/json',
+      preview_id: previewId,
+      rejection_notes: rejectionNotes
     }
   });
 

@@ -111,7 +111,7 @@ export const ReconciliacaoDocumentos = () => {
     try {
       setProcessing(true);
       
-      await approveExtractedData(selectedExtraction.id, editedData);
+      await approveExtractedData(selectedExtraction.id);
       
       toast.success('Dados aprovados e importados com sucesso!');
       
