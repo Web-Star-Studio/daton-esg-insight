@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { TourDefinition, TourProgress, TourContextValue, TourPriority } from '@/types/tour';
 import { tourDefinitions } from '@/components/tutorial/unified/tourDefinitions';
+import { useTourAnalytics } from '@/hooks/useTourAnalytics';
 
 const UnifiedTourContext = createContext<TourContextValue | undefined>(undefined);
 
@@ -13,6 +14,9 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState<TourProgress[]>([]);
   const [queue, setQueue] = useState<TourDefinition[]>([]);
+  const [tourStartTime, setTourStartTime] = useState<number | null>(null);
+  
+  const analytics = useTourAnalytics();
 
   // Carregar progresso do localStorage
   useEffect(() => {
@@ -45,6 +49,10 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
     setCurrentStepIndex(0);
     setIsPlaying(true);
     setIsPaused(false);
+    setTourStartTime(Date.now());
+
+    // Analytics: Track tour start
+    analytics.trackTourStart(tourId);
 
     // Criar ou atualizar progresso
     const existingProgress = progress.find(p => p.tourId === tourId);
@@ -58,10 +66,17 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
       };
       saveProgress([...progress, newProgress]);
     }
-  }, [progress, saveProgress]);
+  }, [progress, saveProgress, analytics]);
 
   const nextStep = useCallback(() => {
     if (!activeTour) return;
+
+    const currentStep = activeTour.steps[currentStepIndex];
+    
+    // Analytics: Track step view
+    if (currentStep) {
+      analytics.trackStepView(activeTour.id, currentStep.id, currentStepIndex);
+    }
 
     const nextIndex = currentStepIndex + 1;
     
@@ -95,7 +110,7 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
         : p
     );
     saveProgress(updatedProgress);
-  }, [activeTour, currentStepIndex, progress, saveProgress]);
+  }, [activeTour, currentStepIndex, progress, saveProgress, analytics]);
 
   const prevStep = useCallback(() => {
     if (!activeTour || currentStepIndex === 0) return;
@@ -136,6 +151,12 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
   const completeTour = useCallback(() => {
     if (!activeTour) return;
 
+    // Analytics: Track tour completion
+    if (tourStartTime) {
+      const durationSeconds = Math.floor((Date.now() - tourStartTime) / 1000);
+      analytics.trackTourComplete(activeTour.id, durationSeconds);
+    }
+
     // Marcar como completo
     const updatedProgress = progress.map(p => 
       p.tourId === activeTour.id
@@ -149,6 +170,7 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
     setCurrentStepIndex(0);
     setIsPlaying(false);
     setIsPaused(false);
+    setTourStartTime(null);
 
     // Iniciar próximo tour da fila
     if (queue.length > 0) {
@@ -156,10 +178,16 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
       setQueue(remainingQueue);
       setTimeout(() => startTour(nextTour.id), 500);
     }
-  }, [activeTour, progress, queue, saveProgress, startTour]);
+  }, [activeTour, progress, queue, saveProgress, startTour, tourStartTime, analytics]);
 
   const dismissTour = useCallback(() => {
     if (!activeTour) return;
+
+    // Analytics: Track tour dismissal
+    if (tourStartTime) {
+      const durationSeconds = Math.floor((Date.now() - tourStartTime) / 1000);
+      analytics.trackTourDismiss(activeTour.id, currentStepIndex, durationSeconds);
+    }
 
     // Marcar como dismissed
     const updatedProgress = progress.map(p => 
@@ -173,7 +201,8 @@ export function UnifiedTourProvider({ children }: { children: React.ReactNode })
     setCurrentStepIndex(0);
     setIsPlaying(false);
     setIsPaused(false);
-  }, [activeTour, progress, saveProgress]);
+    setTourStartTime(null);
+  }, [activeTour, progress, saveProgress, currentStepIndex, tourStartTime, analytics]);
 
   const queueTour = useCallback((tourId: string, priority: TourPriority = 'automatic') => {
     const tour = tourDefinitions[tourId];

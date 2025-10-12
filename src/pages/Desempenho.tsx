@@ -159,7 +159,7 @@ export default function Desempenho() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Seleção de Métrica */}
-                <div className="space-y-2">
+                <div className="space-y-2" data-tour="kpis">
                   <Label>Métrica a Analisar</Label>
                   <Select 
                     value={analysisConfig.metric_key} 
