@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingFlowProvider, useOnboardingFlow } from '@/contexts/OnboardingFlowContext';
 import { useTutorial } from '@/contexts/TutorialContext';
+import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +19,8 @@ import { OnboardingRedirectHandler } from './OnboardingRedirectHandler';
 
 function CleanOnboardingContent() {
   const navigate = useNavigate();
-  const { startTour } = useTutorial();
+  const { startTour } = useUnifiedTour();
+  const { restartOnboarding } = useTutorial();
   const { skipOnboarding, user } = useAuth();
   const { toast } = useToast();
   const [companyProfile, setCompanyProfile] = useState<any>(null);

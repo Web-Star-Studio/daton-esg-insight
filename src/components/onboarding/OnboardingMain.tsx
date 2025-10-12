@@ -20,10 +20,12 @@ import { RealTimeFeedbackSystem } from './RealTimeFeedbackSystem';
 import { PredictiveAnalyticsEngine } from './PredictiveAnalyticsEngine';
 import { InteractiveTutorialSystem } from './InteractiveTutorialSystem';
 import { SmartContentGenerator } from './SmartContentGenerator';
+import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
 
 function OnboardingContent() {
   const navigate = useNavigate();
-  const { startTour } = useTutorial();
+  const { startTour: startOldTour } = useTutorial();
+  const { startTour } = useUnifiedTour();
   const { skipOnboarding } = useAuth();
   const [companyProfile, setCompanyProfile] = useState<any>(null);
   const [userActions, setUserActions] = useState<string[]>([]);

@@ -23,6 +23,7 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { useTutorial } from '@/contexts/TutorialContext';
+import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 const TUTORIAL_MODULES = [
@@ -125,7 +126,8 @@ interface UnifiedHelpCenterProps {
 export function UnifiedHelpCenter({ trigger }: UnifiedHelpCenterProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { startTour, restartOnboarding } = useTutorial();
+  const { restartOnboarding } = useTutorial();
+  const { startTour } = useUnifiedTour();
   const { user } = useAuth();
 
   const filteredTutorials = TUTORIAL_MODULES.map(module => ({

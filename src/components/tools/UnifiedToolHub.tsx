@@ -25,6 +25,7 @@ import { toast } from '@/hooks/use-toast';
 import { UnifiedHelpCenter } from '@/components/tutorial/UnifiedHelpCenter';
 import { ChatAssistant } from '@/components/tools/ChatAssistant';
 import { useTutorial } from '@/contexts/TutorialContext';
+import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
 
 interface ToolItem {
   id: string;
@@ -40,7 +41,8 @@ export function UnifiedToolHub() {
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showHelpCenter, setShowHelpCenter] = useState(false);
-  const { restartOnboarding, startTour } = useTutorial();
+  const { restartOnboarding, startTour: startOldTour } = useTutorial();
+  const { startTour } = useUnifiedTour();
 
   const tools: ToolItem[] = [
     {
