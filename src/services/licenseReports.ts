@@ -90,8 +90,9 @@ export async function generateLicenseReport(
     toast.success('Relatório gerado com sucesso!');
     return {
       ...data,
+      report_type: config.type,
       report_config: config,
-    };
+    } as GeneratedReport;
   } catch (error) {
     console.error('Error generating report:', error);
     toast.error('Erro ao gerar relatório');

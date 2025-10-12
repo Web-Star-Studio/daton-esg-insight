@@ -698,6 +698,34 @@ const LicenseDetails = () => {
           licenseName={license.name}
         />
       )}
+
+      {showRenewalModal && license && (
+        <RenewalScheduleModal
+          isOpen={showRenewalModal}
+          onClose={() => setShowRenewalModal(false)}
+          license={license}
+          onSuccess={() => {
+            setShowRenewalModal(false);
+            refetch();
+          }}
+        />
+      )}
+
+      {showConditionsModal && (
+        <ConditionsManagerModal
+          isOpen={showConditionsModal}
+          onClose={() => setShowConditionsModal(false)}
+          licenseId={id!}
+        />
+      )}
+
+      {showReportModal && license && (
+        <LicenseReportGenerator
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          license={license}
+        />
+      )}
     </div>
   );
 };
