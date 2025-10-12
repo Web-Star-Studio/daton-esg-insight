@@ -30,8 +30,9 @@ export const PERFORMANCE_CONFIG = {
   prefetchRoutes: [
     '/inventario-gee',
     '/metas',
-    '/gestao-tarefas',
     '/documentos',
     '/licenciamento',
+    '/residuos',
+    '/gestao-esg',
   ],
 } as const;

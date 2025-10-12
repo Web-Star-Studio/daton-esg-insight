@@ -25,6 +25,27 @@ export default defineConfig(({ mode }) => ({
   build: {
     commonjsOptions: {
       include: [/react-quill/, /node_modules/]
-    }
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+          ],
+          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'chart-vendor': ['recharts'],
+          'supabase': ['@supabase/supabase-js'],
+          'tanstack': ['@tanstack/react-query'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Warn for chunks > 1MB
+    sourcemap: false, // Disable sourcemaps in production for smaller builds
   },
 }));
