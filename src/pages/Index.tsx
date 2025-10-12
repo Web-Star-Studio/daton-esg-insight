@@ -44,10 +44,6 @@ import { getWasteDashboard } from "@/services/waste"
 import { useSystemOptimization } from "@/hooks/useSystemOptimization"
 import SettingsModal from "@/components/SettingsModal"
 import { useDashboardPreferences } from "@/hooks/data/useDashboardPreferences"
-import { 
-  LazyIntelligenceHub, 
-  LazyPerformanceMonitor 
-} from "@/components/optimized/LazyDashboardComponents"
 
 const Index = () => {
   const { metrics, isOptimized } = useSystemOptimization();
@@ -144,13 +140,6 @@ const Index = () => {
 
             {/* Unified Onboarding System */}
             {showWidget('onboarding') && <OnboardingOrchestrator completedModules={[]} />}
-            
-            {/* Intelligence Hub */}
-            {showWidget('intelligence') && (
-              <div className="mb-10">
-                <LazyIntelligenceHub />
-              </div>
-            )}
 
         {/* Primeira Linha - Cards de Resumo Rápido */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -443,10 +432,7 @@ const Index = () => {
           
           {/* System Tab */}
           <TabsContent value="system" className="space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <LazyPerformanceMonitor />
-              <AdvancedNotificationPanel />
-            </div>
+            <AdvancedNotificationPanel />
           </TabsContent>
         </Tabs>
 

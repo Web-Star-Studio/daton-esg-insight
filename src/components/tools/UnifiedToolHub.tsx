@@ -23,7 +23,7 @@ import { AccessibilityHelper } from '@/components/accessibility/AccessibilityHel
 import { toast } from '@/hooks/use-toast';
 
 import { UnifiedHelpCenter } from '@/components/tutorial/UnifiedHelpCenter';
-import { ChatIA } from '@/components/tools/ChatIA';
+import { ChatAssistant } from '@/components/tools/ChatAssistant';
 import { useTutorial } from '@/contexts/TutorialContext';
 
 interface ToolItem {
@@ -48,7 +48,7 @@ export function UnifiedToolHub() {
       name: 'Chat IA',
       description: 'Assistente ESG inteligente',
       icon: MessageCircle,
-      component: ChatIA
+      component: ChatAssistant
     },
     {
       id: 'tour-guiado',

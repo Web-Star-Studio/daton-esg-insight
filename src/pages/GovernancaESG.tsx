@@ -29,7 +29,6 @@ import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
 import { EmployeeModal } from "@/components/EmployeeModal";
 import { GovernanceDashboard } from "@/components/GovernanceDashboard";
 import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
-import { LazyIntelligenceHub, LazySystemPerformanceMonitor } from "@/components/optimized/LazyGovernanceComponents";
 import { GovernanceStructure } from "@/components/GovernanceStructure";
 import { CorporatePolicies } from "@/components/CorporatePolicies";
 import { EmployeesList } from "@/components/EmployeesList";
@@ -165,15 +164,13 @@ export default function GovernancaESG() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="structure">Estrutura</TabsTrigger>
               <TabsTrigger value="policies">Políticas</TabsTrigger>
               <TabsTrigger value="employees">Funcionários</TabsTrigger>
               <TabsTrigger value="risks">Riscos ESG</TabsTrigger>
               <TabsTrigger value="ethics">Ética</TabsTrigger>
-              <TabsTrigger value="intelligence">Central IA</TabsTrigger>
-              <TabsTrigger value="system">Sistema</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -228,28 +225,6 @@ export default function GovernancaESG() {
                 onViewReport={handleViewReport}
                 onInvestigateReport={handleInvestigateReport}
               />
-            </TabsContent>
-
-            <TabsContent value="intelligence" className="space-y-6">
-              <ErrorBoundary>
-                <LazyIntelligenceHub />
-              </ErrorBoundary>
-            </TabsContent>
-
-            <TabsContent value="system" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance do Sistema</CardTitle>
-                  <CardDescription>
-                    Monitoramento e otimização do desempenho da plataforma
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ErrorBoundary>
-                    <LazySystemPerformanceMonitor />
-                  </ErrorBoundary>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
 

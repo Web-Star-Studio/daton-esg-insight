@@ -13,7 +13,6 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
-import { ChatAssistant } from "@/components/tools/ChatAssistant";
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
@@ -52,8 +51,7 @@ const GestaoESG = lazy(() => import("./pages/GestaoESG"));
 const ColetaDados = lazy(() => import("./pages/ColetaDados"));
 const FormulariosCustomizados = lazy(() => import("./pages/FormulariosCustomizados"));
 const PublicForm = lazy(() => import("./pages/PublicForm"));
-const Documentos = lazy(() => import("./pages/Documentos"));
-const ReconciliacaoDocumentos = lazy(() => import("./pages/ReconciliacaoDocumentos").then(module => ({ default: module.ReconciliacaoDocumentos })));
+const DocumentosHub = lazy(() => import("./pages/DocumentosHub"));
 const Auditoria = lazy(() => import("./pages/Auditoria"));
 const Compliance = lazy(() => import("./pages/Compliance"));
 
@@ -203,12 +201,16 @@ const App = () => (
             } />
             <Route path="/emissoes" element={<Navigate to="/inventario-gee" replace />} />
             
-            {/* Gestão de Documentos e Extrações */}
-            <Route path="/extracoes-documentos" element={
+            {/* Gestão de Documentos - Hub Unificado */}
+            <Route path="/documentos" element={
               <ProtectedLazyPageWrapper>
-                <ExtracoesDocumentos />
+                <DocumentosHub />
               </ProtectedLazyPageWrapper>
             } />
+            
+            {/* Redirects antigos para o novo hub */}
+            <Route path="/extracoes-documentos" element={<Navigate to="/documentos?tab=extracoes" replace />} />
+            <Route path="/reconciliacao-documentos" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
 
             {/* Licenciamento */}
             <Route path="/licenciamento" element={
@@ -298,8 +300,6 @@ const App = () => (
             <Route path="/marketplace" element={<ProtectedLazyPageWrapper><Marketplace /></ProtectedLazyPageWrapper>} />
             <Route path="/coleta-dados" element={<ProtectedLazyPageWrapper><ColetaDados /></ProtectedLazyPageWrapper>} />
             <Route path="/formularios-customizados" element={<ProtectedLazyPageWrapper><FormulariosCustomizados /></ProtectedLazyPageWrapper>} />
-            <Route path="/documentos" element={<ProtectedLazyPageWrapper><Documentos /></ProtectedLazyPageWrapper>} />
-            <Route path="/reconciliacao-documentos" element={<ProtectedLazyPageWrapper><ReconciliacaoDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/auditoria" element={<ProtectedLazyPageWrapper><Auditoria /></ProtectedLazyPageWrapper>} />
             <Route path="/compliance" element={<ProtectedLazyPageWrapper><Compliance /></ProtectedLazyPageWrapper>} />
             
@@ -389,9 +389,6 @@ const App = () => (
                   </Routes>
                 </PageTransition>
               </RouteValidator>
-              
-              {/* Assistente IA Global - Aparece em todas as páginas */}
-              <ChatAssistant />
             </BrowserRouter>
         </SmartToastProvider>
       </TooltipProvider>

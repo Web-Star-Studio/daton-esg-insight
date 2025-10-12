@@ -142,10 +142,8 @@ const menuSections: MenuSection[] = [
     title: "CENTRAL DE DADOS",
     items: [
       { id: "data-collection", title: "Coleta de Dados", icon: Database, path: "/coleta-dados", description: "Importação e gestão de dados ESG" },
-      { id: "documents", title: "Documentos", icon: Folder, path: "/documentos", description: "Biblioteca de documentos e arquivos" },
-      { id: "document-extractions", title: "Extrações IA", icon: Brain, path: "/extracoes-documentos", description: "Aprovação de dados extraídos por IA" },
-      { id: "assets", title: "Ativos", icon: Building2, path: "/ativos", description: "Gestão de ativos da organização" },
-      { id: "ai-reconciliation", title: "Reconciliação IA", icon: Brain, path: "/reconciliacao-ia", description: "Reconciliação inteligente de dados" }
+      { id: "documents", title: "Documentos", icon: Folder, path: "/documentos", description: "Biblioteca, extrações e reconciliação IA" },
+      { id: "assets", title: "Ativos", icon: Building2, path: "/ativos", description: "Gestão de ativos da organização" }
     ]
   },
   {
