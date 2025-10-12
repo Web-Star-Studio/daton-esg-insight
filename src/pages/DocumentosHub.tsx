@@ -45,11 +45,11 @@ export default function DocumentosHub() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <header>
+      <header className="animate-fade-in">
         <div className="flex items-center gap-3 mb-2">
-          <FileText className="h-8 w-8 text-primary" />
+          <FileText className="h-8 w-8 text-primary transition-all duration-300 hover-scale" />
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Gestão de Documentos</h1>
             <p className="text-muted-foreground">
@@ -60,36 +60,36 @@ export default function DocumentosHub() {
       </header>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="animate-fade-in">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="biblioteca" className="flex items-center gap-2">
+          <TabsTrigger value="biblioteca" className="flex items-center gap-2 transition-all duration-200 hover-scale">
             <FileText className="h-4 w-4" />
             <span>Biblioteca</span>
           </TabsTrigger>
-          <TabsTrigger value="extracoes" className="flex items-center gap-2">
+          <TabsTrigger value="extracoes" className="flex items-center gap-2 transition-all duration-200 hover-scale">
             <Brain className="h-4 w-4" />
             <span>Aprovações Pendentes</span>
             {pendingCount > 0 && (
-              <Badge variant="destructive" className="ml-1">
+              <Badge variant="destructive" className="ml-1 animate-scale-in">
                 {pendingCount}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="reconciliacao" className="flex items-center gap-2">
+          <TabsTrigger value="reconciliacao" className="flex items-center gap-2 transition-all duration-200 hover-scale">
             <GitCompare className="h-4 w-4" />
             <span>Reconciliação IA</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="biblioteca" className="mt-6">
+        <TabsContent value="biblioteca" className="mt-6 animate-fade-in">
           <Documentos />
         </TabsContent>
 
-        <TabsContent value="extracoes" className="mt-6">
+        <TabsContent value="extracoes" className="mt-6 animate-fade-in">
           <ExtracoesDocumentos />
         </TabsContent>
 
-        <TabsContent value="reconciliacao" className="mt-6">
+        <TabsContent value="reconciliacao" className="mt-6 animate-fade-in">
           <ReconciliacaoDocumentos />
         </TabsContent>
       </Tabs>

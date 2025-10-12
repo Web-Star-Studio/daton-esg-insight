@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Star, StarOff, ChevronRight } from "lucide-react"
+import { Star, StarOff, ChevronRight, Search, X } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +33,7 @@ import datonLogo from "@/assets/daton-logo-header.png"
 import {
   LayoutDashboard, BarChart3, TrendingUp, PieChart, Activity, Monitor,
   Leaf, CloudRain, Users, Shield, Eye, Heart, Scale,
-  Award, CheckSquare, AlertTriangle, Target, Search, ClipboardCheck,
+  Award, CheckSquare, AlertTriangle, Target, ClipboardCheck,
   FileText, Upload, Database, Building, FileSpreadsheet, Layers, Folder, HardDrive,
   Users2, UserCheck, UserCog, GraduationCap, Briefcase, Calendar,
   FileBarChart, FileCheck, BookOpen, TrendingDown, CheckCircle, ShieldCheck,
@@ -154,6 +155,7 @@ export function AppSidebar() {
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [isHovering, setIsHovering] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path
@@ -290,6 +292,35 @@ export function AppSidebar() {
     )
   }
 
+  // Filter menu items based on search
+  const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
+    if (!searchQuery.trim()) return items
+    
+    return items.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           item.description.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      if (matchesSearch) return true
+      
+      // Check subitems
+      if (item.subItems) {
+        return item.subItems.some(subItem => 
+          subItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          subItem.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      }
+      
+      return false
+    })
+  }
+
+  const filteredSections = searchQuery.trim() 
+    ? menuSections.map(section => ({
+        ...section,
+        items: filterMenuItems(section.items)
+      })).filter(section => section.items.length > 0)
+    : menuSections
+
   return (
     <Sidebar 
       className="border-r bg-sidebar transition-all duration-300 hover:shadow-lg" 
@@ -306,8 +337,34 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
+        {/* Quick Search - Only visible when expanded */}
+        {!collapsed && (
+          <div className="px-3 py-3 border-b animate-fade-in">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-muted/50 border-muted-foreground/20 focus:border-primary transition-colors"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Configuração Inicial */}
-        <SidebarGroup>
+        <SidebarGroup className="animate-fade-in">
           <SidebarGroupLabel>Configuração Inicial</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -320,7 +377,7 @@ export function AppSidebar() {
                         await restartOnboarding();
                       }
                     }}
-                    className="flex items-center gap-2 w-full text-left"
+                    className="flex items-center gap-2 w-full text-left transition-all duration-200 hover-scale"
                   >
                     <Settings className="h-4 w-4" />
                     {!collapsed && <span>Guia de Configuração</span>}
@@ -332,16 +389,19 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Favoritos */}
-        {favorites.length > 0 && !collapsed && (
-          <SidebarGroup className="px-0">
+        {favorites.length > 0 && !collapsed && !searchQuery && (
+          <SidebarGroup className="px-0 animate-fade-in">
             <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
               ⭐ FAVORITOS
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {favorites.slice(0, 5).map((fav) => (
-                  <SidebarMenuItem key={`fav-${fav.id}`}>
-                    <SidebarMenuButton onClick={() => navigate(fav.path)}>
+                  <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
+                    <SidebarMenuButton 
+                      onClick={() => navigate(fav.path)}
+                      className="transition-all duration-200 hover-scale"
+                    >
                       <Star className="h-4 w-4 fill-current text-yellow-500" />
                       <span className="text-sm">{fav.title}</span>
                     </SidebarMenuButton>
@@ -352,28 +412,38 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
+        {/* Search Results Info */}
+        {searchQuery && filteredSections.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground animate-fade-in">
+            <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>Nenhum resultado encontrado</p>
+            <p className="text-xs mt-1">Tente outro termo de busca</p>
+          </div>
+        )}
+
         {/* Seções principais */}
-        {menuSections.map((section) => (
-          <div key={section.id}>
-            {section.hasDivider && (
+        {filteredSections.map((section) => (
+          <div key={section.id} className="animate-fade-in">
+            {section.hasDivider && !searchQuery && (
               <div className="mx-4 my-4 border-t border-border"></div>
             )}
             
-            {section.isCollapsible ? (
+            {section.isCollapsible && !searchQuery ? (
               <Collapsible 
-                defaultOpen={section.defaultOpen}
+                defaultOpen={section.defaultOpen || searchQuery.length > 0}
+                open={searchQuery.length > 0 ? true : expandedSections[section.id]}
                 onOpenChange={(open) => setExpandedSections(prev => ({ ...prev, [section.id]: open }))}
               >
                 <SidebarGroup className="px-0">
                   <CollapsibleTrigger asChild>
-                    <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-colors flex items-center justify-between">
+                    <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-all duration-200 flex items-center justify-between group">
                       <span>{section.title}</span>
                       {!collapsed && (
-                        <ChevronRight className={`h-3 w-3 transition-transform ${expandedSections[section.id] ? 'rotate-90' : ''}`} />
+                        <ChevronRight className={`h-3 w-3 transition-all duration-200 group-hover:text-foreground ${expandedSections[section.id] || searchQuery ? 'rotate-90' : ''}`} />
                       )}
                     </SidebarGroupLabel>
                   </CollapsibleTrigger>
-                  <CollapsibleContent>
+                  <CollapsibleContent className="transition-all duration-200">
                     <SidebarGroupContent>
                       <SidebarMenu>
                         {section.items.map((item) => renderMenuItem(item))}
