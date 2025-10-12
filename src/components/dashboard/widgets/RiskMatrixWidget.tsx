@@ -9,7 +9,7 @@ export function RiskMatrixWidget({ companyId }: { companyId: string }) {
     queryKey: ['risk-matrix', companyId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('risks')
+        .from('esg_risks')
         .select('probability, impact, status')
         .eq('company_id', companyId)
         .eq('status', 'Ativo') as { data: any[] | null; error: any };
