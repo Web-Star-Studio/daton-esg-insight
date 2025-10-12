@@ -646,22 +646,34 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
     }
 
     if (action === 'approve') {
+      // Validate extracted fields
+      const extractedFields = preview.extracted_fields || {};
+      const fieldCount = Object.keys(extractedFields).length;
+      
+      if (fieldCount === 0) {
+        throw new Error('Não é possível aprovar: nenhum campo foi extraído do documento. Por favor, reprocesse o documento ou extraia os dados manualmente.');
+      }
+
       // Insert data into target table
+      const tableName = preview.target_table;
       const recordData = {
-        ...preview.extracted_fields,
+        ...extractedFields,
         company_id: preview.company_id,
         created_at: new Date().toISOString()
       };
 
       // Special handling for specific tables
-      const tableName = preview.target_table;
-      
       if (tableName === 'licenses') {
         recordData.status = recordData.status || 'Ativa';
       } else if (tableName === 'waste_logs') {
         recordData.log_date = recordData.log_date || new Date().toISOString().split('T')[0];
       } else if (tableName === 'emission_sources') {
         recordData.scope = recordData.scope || 1;
+      } else if (tableName === 'assets') {
+        // Validate required fields for assets table
+        if (!recordData.name) {
+          throw new Error('Não é possível aprovar: campo obrigatório "name" (nome do ativo) não foi extraído. Por favor, edite e adicione este campo.');
+        }
       }
 
       const { data: insertedData, error: insertError } = await supabaseClient
@@ -672,7 +684,7 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
 
       if (insertError) {
         console.error(`Error inserting into ${tableName}:`, insertError);
-        throw new Error(`Failed to insert into ${tableName}: ${insertError.message}`);
+        throw new Error(`Falha ao inserir em ${tableName}: ${insertError.message}`);
       }
 
       console.log(`Inserted into ${tableName}:`, insertedData.id);
