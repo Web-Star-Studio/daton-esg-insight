@@ -6864,11 +6864,13 @@ export type Database = {
           metadata: Json | null
           notification_sent: boolean | null
           priority: string | null
+          related_observation_id: string | null
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by_user_id: string | null
           severity: string
           snooze_until: string | null
+          source_condition_id: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -6889,11 +6891,13 @@ export type Database = {
           metadata?: Json | null
           notification_sent?: boolean | null
           priority?: string | null
+          related_observation_id?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by_user_id?: string | null
           severity?: string
           snooze_until?: string | null
+          source_condition_id?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -6914,11 +6918,13 @@ export type Database = {
           metadata?: Json | null
           notification_sent?: boolean | null
           priority?: string | null
+          related_observation_id?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by_user_id?: string | null
           severity?: string
           snooze_until?: string | null
+          source_condition_id?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -6938,63 +6944,127 @@ export type Database = {
             referencedRelation: "licenses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "license_alerts_related_observation_id_fkey"
+            columns: ["related_observation_id"]
+            isOneToOne: false
+            referencedRelation: "license_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_alerts_source_condition_id_fkey"
+            columns: ["source_condition_id"]
+            isOneToOne: false
+            referencedRelation: "license_conditions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       license_conditions: {
         Row: {
           ai_confidence: number | null
           ai_extracted: boolean
+          approval_date: string | null
+          approved_by_user_id: string | null
+          attachment_urls: Json | null
           company_id: string
+          completion_date: string | null
+          completion_notes: string | null
+          compliance_impact: string | null
           condition_category: string | null
           condition_text: string
           created_at: string
           due_date: string | null
           frequency: Database["public"]["Enums"]["frequency_enum"] | null
           id: string
+          last_notification_sent: string | null
           license_id: string
+          notification_days_before: number | null
           priority: string
+          related_alert_id: string | null
+          related_observation_ids: Json | null
+          requires_approval: boolean | null
           responsible_user_id: string | null
           status: string
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
           ai_confidence?: number | null
           ai_extracted?: boolean
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          attachment_urls?: Json | null
           company_id: string
+          completion_date?: string | null
+          completion_notes?: string | null
+          compliance_impact?: string | null
           condition_category?: string | null
           condition_text: string
           created_at?: string
           due_date?: string | null
           frequency?: Database["public"]["Enums"]["frequency_enum"] | null
           id?: string
+          last_notification_sent?: string | null
           license_id: string
+          notification_days_before?: number | null
           priority?: string
+          related_alert_id?: string | null
+          related_observation_ids?: Json | null
+          requires_approval?: boolean | null
           responsible_user_id?: string | null
           status?: string
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
           ai_confidence?: number | null
           ai_extracted?: boolean
+          approval_date?: string | null
+          approved_by_user_id?: string | null
+          attachment_urls?: Json | null
           company_id?: string
+          completion_date?: string | null
+          completion_notes?: string | null
+          compliance_impact?: string | null
           condition_category?: string | null
           condition_text?: string
           created_at?: string
           due_date?: string | null
           frequency?: Database["public"]["Enums"]["frequency_enum"] | null
           id?: string
+          last_notification_sent?: string | null
           license_id?: string
+          notification_days_before?: number | null
           priority?: string
+          related_alert_id?: string | null
+          related_observation_ids?: Json | null
+          requires_approval?: boolean | null
           responsible_user_id?: string | null
           status?: string
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "license_conditions_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "license_conditions_license_id_fkey"
             columns: ["license_id"]
             isOneToOne: false
             referencedRelation: "licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_conditions_related_alert_id_fkey"
+            columns: ["related_alert_id"]
+            isOneToOne: false
+            referencedRelation: "license_alerts"
             referencedColumns: ["id"]
           },
         ]

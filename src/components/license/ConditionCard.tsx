@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Calendar, MoreVertical, Brain, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { Calendar, MoreVertical, Brain, CheckCircle2, Clock, Circle, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { updateConditionStatus } from '@/services/licenseAI';
@@ -12,9 +12,10 @@ import { toast } from 'sonner';
 interface ConditionCardProps {
   condition: any;
   onUpdate: () => void;
+  onCreateObservation?: () => void;
 }
 
-export const ConditionCard: React.FC<ConditionCardProps> = ({ condition, onUpdate }) => {
+export const ConditionCard: React.FC<ConditionCardProps> = ({ condition, onUpdate, onCreateObservation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
@@ -110,6 +111,19 @@ export const ConditionCard: React.FC<ConditionCardProps> = ({ condition, onUpdat
                 </Badge>
               )}
             </div>
+
+            {/* Quick Action: Create Observation */}
+            {onCreateObservation && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onCreateObservation}
+                className="mt-2"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Adicionar Observação
+              </Button>
+            )}
           </div>
 
           {/* Actions */}
