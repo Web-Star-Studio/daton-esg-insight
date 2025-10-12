@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { normalizeExtractedData, validateBusinessRules } from '../_shared/normalizers.ts'
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
@@ -252,40 +253,84 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
     console.log('- Fields extracted:', Object.keys(extractedData.extracted_fields || {}).length);
     console.log('- Data quality issues:', extractedData.data_quality_issues?.length || 0);
 
-    // 4. Save extracted data preview
+    // 4. VALIDAÇÃO E NORMALIZAÇÃO INTELIGENTE (Fase 3)
+    console.log('Starting intelligent validation and normalization...');
+    
+    const targetTable = extractedData.suggested_tables[0] || 'unknown';
+    const normalizationResult = normalizeExtractedData(
+      extractedData.extracted_fields || {},
+      targetTable
+    );
+    
+    console.log('Normalization completed:');
+    console.log('- Fields normalized:', Object.keys(normalizationResult.normalizedFields).length);
+    console.log('- Data quality issues found:', normalizationResult.dataQualityIssues.length);
+    console.log('- Corrections applied:', normalizationResult.appliedCorrections.length);
+    
+    // Validar regras de negócio
+    const businessRuleIssues = validateBusinessRules(
+      normalizationResult.normalizedFields,
+      targetTable
+    );
+    
+    if (businessRuleIssues.length > 0) {
+      console.log('Business rule validation issues:', businessRuleIssues);
+    }
+    
+    // Combinar todas as issues
+    const allQualityIssues = [
+      ...(extractedData.data_quality_issues || []),
+      ...normalizationResult.dataQualityIssues,
+      ...businessRuleIssues
+    ];
+
+    // 5. Save extracted data preview
     const { error: previewError } = await supabaseClient
       .from('extracted_data_preview')
       .insert({
         extraction_job_id: jobId,
         company_id: document.company_id,
-        target_table: extractedData.suggested_tables[0] || 'unknown',
-        extracted_fields: extractedData.extracted_fields,
-        confidence_scores: extractedData.field_confidence || {},
+        target_table: targetTable,
+        extracted_fields: normalizationResult.normalizedFields, // Usar dados normalizados
+        confidence_scores: {
+          ...normalizationResult.fieldConfidence, // Usar confiança por campo
+          ...extractedData.field_confidence
+        },
         suggested_mappings: {
           document_type: extractedData.document_type,
           summary: extractedData.summary,
           all_suggested_tables: extractedData.suggested_tables,
           extraction_reasoning: extractedData.extraction_reasoning || {},
-          data_quality_issues: extractedData.data_quality_issues || []
+          data_quality_issues: allQualityIssues,
+          applied_corrections: normalizationResult.appliedCorrections,
+          raw_extracted_fields: extractedData.extracted_fields // Manter dados originais para referência
         },
         validation_status: 'Pendente'
       });
 
     if (previewError) {
       console.error('Failed to save preview:', previewError);
+    } else {
+      console.log('Preview saved successfully with normalized data');
     }
 
-    // 5. Update job status
+    // 6. Update job status
+    const avgConfidence = Object.values(normalizationResult.fieldConfidence).reduce((a, b) => a + b, 0) / 
+                         Math.max(Object.keys(normalizationResult.fieldConfidence).length, 1);
+    
     await supabaseClient
       .from('document_extraction_jobs')
       .update({
         status: 'Concluído',
         completed_at: new Date().toISOString(),
-        confidence_score: extractedData.confidence / 100
+        confidence_score: avgConfidence
       })
       .eq('id', jobId);
 
     console.log('Job completed successfully:', jobId);
+    console.log('Average field confidence:', avgConfidence.toFixed(3));
+    console.log('Total quality issues:', allQualityIssues.length);
+    console.log('Total corrections applied:', normalizationResult.appliedCorrections.length);
 
   } catch (error) {
     console.error('Error processing document:', error);

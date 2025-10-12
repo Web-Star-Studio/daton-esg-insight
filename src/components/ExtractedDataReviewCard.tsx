@@ -268,6 +268,59 @@ export const ExtractedDataReviewCard: React.FC<ExtractedDataReviewCardProps> = (
           </Alert>
         )}
 
+        {/* Qualidade de Dados e Correções (Fase 3) */}
+        {extraction.suggested_mappings && (
+          <>
+            {/* Correções Aplicadas */}
+            {(extraction.suggested_mappings as any).applied_corrections?.length > 0 && (
+              <Alert className="border-blue-200 bg-blue-50">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-medium text-blue-900">
+                      ✨ {(extraction.suggested_mappings as any).applied_corrections.length} correção(ões) automática(s) aplicada(s)
+                    </p>
+                    <ul className="text-xs text-blue-800 space-y-1 ml-4 list-disc">
+                      {(extraction.suggested_mappings as any).applied_corrections.slice(0, 5).map((correction: string, idx: number) => (
+                        <li key={idx}>{correction}</li>
+                      ))}
+                      {(extraction.suggested_mappings as any).applied_corrections.length > 5 && (
+                        <li className="font-medium">
+                          +{(extraction.suggested_mappings as any).applied_corrections.length - 5} mais...
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Problemas de Qualidade */}
+            {(extraction.suggested_mappings as any).data_quality_issues?.length > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-medium">
+                      ⚠️ {(extraction.suggested_mappings as any).data_quality_issues.length} problema(s) de qualidade detectado(s)
+                    </p>
+                    <ul className="text-xs space-y-1 ml-4 list-disc">
+                      {(extraction.suggested_mappings as any).data_quality_issues.slice(0, 5).map((issue: string, idx: number) => (
+                        <li key={idx}>{issue}</li>
+                      ))}
+                      {(extraction.suggested_mappings as any).data_quality_issues.length > 5 && (
+                        <li className="font-medium">
+                          +{(extraction.suggested_mappings as any).data_quality_issues.length - 5} mais...
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
+        )}
+
         {/* Campos extraídos */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
