@@ -71,24 +71,20 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
-    id: "strategy-esg",
-    title: "ESTRATÉGIA ESG",
+    id: "esg",
+    title: "ESG",
+    isCollapsible: true,
+    defaultOpen: true,
     items: [
       { id: "esg-management", title: "Painel de Gestão ESG", icon: Leaf, path: "/gestao-esg", description: "Central de gestão ESG" },
       { id: "materiality-analysis", title: "Análise de Materialidade", icon: Eye, path: "/analise-materialidade", description: "Identificação de temas ESG relevantes" },
       { id: "stakeholder-management", title: "Gestão de Stakeholders", icon: Handshake, path: "/gestao-stakeholders", description: "Gestão de partes interessadas" },
-      { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" }
-    ]
-  },
-  {
-    id: "environmental",
-    title: "AMBIENTAL (E)",
-    items: [
+      { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" },
       {
         id: "emissions",
         title: "Emissões de GEE",
         icon: CloudRain,
-        path: "/emissoes",
+        path: "/inventario-gee",
         description: "Gestão de gases de efeito estufa",
         subItems: [
           { id: "ghg-dashboard", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg", description: "Painel de monitoramento de emissões" },
@@ -97,25 +93,13 @@ const menuSections: MenuSection[] = [
         ]
       },
       { id: "waste-management", title: "Gestão de Resíduos", icon: Recycle, path: "/residuos", description: "Controle e destinação de resíduos" },
-      { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" }
-    ]
-  },
-  {
-    id: "social",
-    title: "SOCIAL (S)",
-    items: [
+      { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" },
       { id: "social-dashboard", title: "Dashboard Social", icon: Users, path: "/social-esg", description: "Visão geral consolidada dos aspectos sociais" },
       { id: "employee-management", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão completa de recursos humanos" },
       { id: "health-safety", title: "Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
       { id: "training-management", title: "Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos", description: "Gestão de capacitação e treinamentos" },
-      { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" }
-    ]
-  },
-  {
-    id: "governance",
-    title: "GOVERNANÇA (G)",
-    items: [
-      { id: "governance-panel", title: "Painel de Governança", icon: Shield, path: "/painel-governanca", description: "Visão geral da governança corporativa" },
+      { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" },
+      { id: "governance-panel", title: "Painel de Governança", icon: Shield, path: "/governanca-esg", description: "Visão geral da governança corporativa" },
       { id: "risk-management", title: "Gestão de Riscos", icon: AlertTriangle, path: "/gestao-riscos", description: "Identificação e mitigação de riscos" },
       { id: "compliance-policies", title: "Compliance e Políticas", icon: Scale, path: "/compliance", description: "Conformidade regulatória e políticas" },
       { id: "audits", title: "Auditorias", icon: CheckCircle, path: "/auditoria", description: "Gestão de auditorias internas e externas" }
@@ -123,7 +107,7 @@ const menuSections: MenuSection[] = [
   },
   {
     id: "sgq",
-    title: "GESTÃO DA QUALIDADE (SGQ)",
+    title: "QUALIDADE",
     isCollapsible: true,
     defaultOpen: false,
     items: [
@@ -131,28 +115,19 @@ const menuSections: MenuSection[] = [
       { id: "strategic-planning", title: "Planejamento Estratégico", icon: Target, path: "/planejamento-estrategico", description: "Definição de estratégias organizacionais" },
       { id: "process-mapping", title: "Mapeamento de Processos", icon: Workflow, path: "/mapeamento-processos", description: "Documentação e otimização de processos" },
       { id: "non-conformities", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades", description: "Gestão de não conformidades e ações corretivas" },
-      { id: "internal-audits", title: "Auditorias Internas", icon: Search, path: "/auditoria", description: "Auditorias do sistema de qualidade" },
       { id: "corrective-actions", title: "Ações Corretivas", icon: CheckSquare, path: "/acoes-corretivas", description: "Planos de ação e melhorias" },
       { id: "document-control", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Versionamento e controle documental" },
       { id: "supplier-evaluation", title: "Avaliação de Fornecedores", icon: Users2, path: "/avaliacao-fornecedores", description: "Qualificação e monitoramento de fornecedores" }
     ]
   },
   {
-    id: "data-center",
-    title: "CENTRAL DE DADOS",
+    id: "data-reports",
+    title: "DADOS E RELATÓRIOS",
     items: [
       { id: "data-collection", title: "Coleta de Dados", icon: Database, path: "/coleta-dados", description: "Importação e gestão de dados ESG" },
       { id: "documents", title: "Documentos", icon: Folder, path: "/documentos", description: "Biblioteca, extrações e reconciliação IA" },
-      { id: "assets", title: "Ativos", icon: Building2, path: "/ativos", description: "Gestão de ativos da organização" }
-    ]
-  },
-  {
-    id: "reports",
-    title: "RELATÓRIOS E DIVULGAÇÃO",
-    items: [
-      { id: "report-generator", title: "Gerador de Relatórios", icon: FileText, path: "/gerador-relatorios", description: "Criação personalizada de relatórios" },
-      { id: "integrated-reports", title: "Relatórios Integrados", icon: BookMarked, path: "/relatorios-integrados", description: "Relatórios ESG completos e integrados" },
-      { id: "esg-marketplace", title: "Marketplace ESG", icon: ShoppingCart, path: "/marketplace-esg", description: "Plataforma de soluções ESG" }
+      { id: "assets", title: "Ativos", icon: Building2, path: "/ativos", description: "Gestão de ativos da organização" },
+      { id: "integrated-reports", title: "Relatórios Integrados", icon: BookMarked, path: "/relatorios-integrados", description: "Relatórios ESG completos e integrados" }
     ]
   },
   {
@@ -164,8 +139,7 @@ const menuSections: MenuSection[] = [
       { id: "factor-library", title: "Biblioteca de Fatores", icon: FlaskConical, path: "/biblioteca-fatores", description: "Fatores de emissão e conversão" },
       { id: "custom-forms", title: "Formulários Customizados", icon: ClipboardCheck, path: "/formularios-customizados", description: "Criação de formulários personalizados" },
       { id: "user-management", title: "Gestão de Usuários", icon: UserCog, path: "/gestao-usuarios", description: "Controle de usuários e permissões" },
-      { id: "system-status", title: "Status do Sistema", icon: Activity, path: "/system-status", description: "Monitoramento e prontidão para produção" },
-      { id: "production-monitoring", title: "Monitoramento de Produção", icon: Monitor, path: "/production-monitoring", description: "Logs, performance e métricas em tempo real" }
+      { id: "system-status", title: "Status do Sistema", icon: Activity, path: "/system-status", description: "Monitoramento e prontidão para produção" }
     ]
   }
 ]

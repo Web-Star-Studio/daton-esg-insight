@@ -265,10 +265,12 @@ const App = () => (
                 <CriarMeta />
               </ProtectedLazyPageWrapper>
             } />
+            <Route path="/metas-sustentabilidade" element={<Navigate to="/metas" replace />} />
 
-            {/* Relatórios - Redirecionamentos para Sistema Unificado */}
+            {/* Relatórios - Consolidado */}
             <Route path="/relatorios" element={<Navigate to="/relatorios-integrados" replace />} />
             <Route path="/relatorios-sustentabilidade" element={<Navigate to="/relatorios-integrados" replace />} />
+            <Route path="/gerador-relatorios" element={<Navigate to="/relatorios-integrados" replace />} />
 
             {/* Continue com outras rotas... */}
             <Route path="/biblioteca-fatores" element={
@@ -329,10 +331,12 @@ const App = () => (
             <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
-            <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
+            
+            {/* SGQ - Quality Dashboard Redirects Consolidados */}
+            <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
+            <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
+            <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/auditorias-internas" element={<Navigate to="/auditoria" replace />} />
-            <Route path="/acoes-corretivas" element={<ProtectedLazyPageWrapper><AcoesCorretivas /></ProtectedLazyPageWrapper>} />
-            <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/avaliacao-fornecedores" element={<Navigate to="/gestao-fornecedores" replace />} />
             
             {/* RH modules */}
