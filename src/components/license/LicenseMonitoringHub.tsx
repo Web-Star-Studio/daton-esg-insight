@@ -11,6 +11,16 @@ import { Button } from "@/components/ui/button";
 import { ObservationManager } from "./ObservationManager";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { resolveAlert, snoozeAlert } from "@/services/licenseAlerts";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface LicenseMonitoringHubProps {
   licenseId: string;
@@ -35,6 +45,14 @@ export function LicenseMonitoringHub({
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [showObservationModal, setShowObservationModal] = useState(false);
   const [selectedCondition, setSelectedCondition] = useState<any>(null);
+  
+  // Alert resolution state
+  const [showResolveDialog, setShowResolveDialog] = useState(false);
+  const [showSnoozeDialog, setShowSnoozeDialog] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<any>(null);
+  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [snoozeDate, setSnoozeDate] = useState<Date | undefined>(undefined);
+  const [snoozeReason, setSnoozeReason] = useState("");
 
   // Calcular KPIs
   const totalConditions = conditions.length;
@@ -86,6 +104,54 @@ export function LicenseMonitoringHub({
   const handleCreateObservationFromCondition = (condition: any) => {
     setSelectedCondition(condition);
     setShowObservationModal(true);
+  };
+
+  // Handle alert resolution
+  const handleResolveAlert = async (alert: any) => {
+    setSelectedAlert(alert);
+    setShowResolveDialog(true);
+  };
+
+  const confirmResolveAlert = async () => {
+    if (!selectedAlert) return;
+
+    try {
+      await resolveAlert(selectedAlert.id, resolutionNotes);
+      toast.success("Alerta resolvido com sucesso");
+      setShowResolveDialog(false);
+      setResolutionNotes("");
+      setSelectedAlert(null);
+      onRefresh();
+    } catch (error) {
+      console.error("Erro ao resolver alerta:", error);
+      toast.error("Erro ao resolver alerta");
+    }
+  };
+
+  // Handle alert snooze
+  const handleSnoozeAlert = async (alert: any) => {
+    setSelectedAlert(alert);
+    setShowSnoozeDialog(true);
+  };
+
+  const confirmSnoozeAlert = async () => {
+    if (!selectedAlert || !snoozeDate) {
+      toast.error("Selecione uma data para adiar");
+      return;
+    }
+
+    try {
+      await snoozeAlert(selectedAlert.id, snoozeDate, snoozeReason);
+      toast.success(`Alerta adiado até ${format(snoozeDate, "dd/MM/yyyy", { locale: ptBR })}`);
+      setShowSnoozeDialog(false);
+      setSnoozeDate(undefined);
+      setSnoozeReason("");
+      setSelectedAlert(null);
+      onRefresh();
+    } catch (error) {
+      console.error("Erro ao adiar alerta:", error);
+      toast.error("Erro ao adiar alerta");
+    }
   };
 
   return (
@@ -277,17 +343,14 @@ export function LicenseMonitoringHub({
                 <AlertCard
                   key={alert.id}
                   alert={alert}
-                  onResolve={() => {
-                    // Implementar resolução
-                    onRefresh();
-                  }}
-                  onSnooze={() => {
-                    // Implementar adiamento
-                  }}
+                  onResolve={() => handleResolveAlert(alert)}
+                  onSnooze={() => handleSnoozeAlert(alert)}
                   onViewSource={() => {
-                    // Navegar para origem
                     if (alert.source_condition_id) {
                       setActiveTab("conditions");
+                      setSearchQuery(alert.source_condition_id);
+                    } else if (alert.related_observation_id) {
+                      setActiveTab("observations");
                     }
                   }}
                 />
@@ -344,6 +407,126 @@ export function LicenseMonitoringHub({
         }}
         licenseId={licenseId}
       />
+
+      {/* Dialog para resolver alerta */}
+      <Dialog open={showResolveDialog} onOpenChange={setShowResolveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resolver Alerta</DialogTitle>
+            <DialogDescription>
+              Adicione notas sobre a resolução do alerta (opcional)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {selectedAlert && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-semibold text-sm">{selectedAlert.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{selectedAlert.message}</p>
+              </div>
+            )}
+            
+            <div>
+              <Label htmlFor="notes">Notas de Resolução</Label>
+              <Textarea
+                id="notes"
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                placeholder="Descreva como o alerta foi resolvido..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowResolveDialog(false);
+                setResolutionNotes("");
+                setSelectedAlert(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={confirmResolveAlert}>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Resolver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para adiar alerta */}
+      <Dialog open={showSnoozeDialog} onOpenChange={setShowSnoozeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adiar Alerta</DialogTitle>
+            <DialogDescription>
+              Selecione até quando deseja adiar este alerta
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {selectedAlert && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-semibold text-sm">{selectedAlert.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{selectedAlert.message}</p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label>Data de Adiamento</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {snoozeDate ? format(snoozeDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={snoozeDate}
+                    onSelect={setSnoozeDate}
+                    locale={ptBR}
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <Label htmlFor="reason">Motivo (opcional)</Label>
+              <Textarea
+                id="reason"
+                value={snoozeReason}
+                onChange={(e) => setSnoozeReason(e.target.value)}
+                placeholder="Por que está adiando este alerta?"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSnoozeDialog(false);
+                setSnoozeDate(undefined);
+                setSnoozeReason("");
+                setSelectedAlert(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={confirmSnoozeAlert} disabled={!snoozeDate}>
+              <Clock className="h-4 w-4 mr-2" />
+              Adiar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
