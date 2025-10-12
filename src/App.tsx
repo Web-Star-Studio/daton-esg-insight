@@ -26,6 +26,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Contato = lazy(() => import("./pages/Contato"));
 const Funcionalidades = lazy(() => import("./pages/Funcionalidades"));
 const Documentacao = lazy(() => import("./pages/Documentacao"));
+const FAQ = lazy(() => import("./pages/FAQ"));
 const InventarioGEE = lazy(() => import("./pages/InventarioGEE"));
 const DashboardGHG = lazy(() => import("./pages/DashboardGHG"));
 const Licenciamento = lazy(() => import("./pages/Licenciamento"));
@@ -178,6 +179,11 @@ const App = () => (
             <Route path="/documentacao" element={
               <LazyPageWrapper>
                 <Documentacao />
+              </LazyPageWrapper>
+            } />
+            <Route path="/faq" element={
+              <LazyPageWrapper>
+                <FAQ />
               </LazyPageWrapper>
             } />
 

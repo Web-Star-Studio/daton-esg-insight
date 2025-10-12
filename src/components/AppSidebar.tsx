@@ -40,7 +40,7 @@ import {
   Settings, Bell, Clock, Building2, MapPin,
   Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
-  FolderKanban, DollarSign
+  FolderKanban, DollarSign, HelpCircle
 } from "lucide-react"
 
 // Nova estrutura ESG completa reorganizada
@@ -141,6 +141,13 @@ const menuSections: MenuSection[] = [
       { id: "custom-forms", title: "Formulários Customizados", icon: ClipboardCheck, path: "/formularios-customizados", description: "Criação de formulários personalizados" },
       { id: "user-management", title: "Gestão de Usuários", icon: UserCog, path: "/gestao-usuarios", description: "Controle de usuários e permissões" },
       { id: "system-status", title: "Status do Sistema", icon: Activity, path: "/system-status", description: "Monitoramento e prontidão para produção" }
+    ]
+  },
+  {
+    id: "help",
+    title: "AJUDA",
+    items: [
+      { id: "faq", title: "Perguntas Frequentes", icon: HelpCircle, path: "/faq", description: "Central de ajuda e dúvidas comuns" }
     ]
   }
 ]

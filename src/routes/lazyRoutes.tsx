@@ -33,3 +33,6 @@ export const IntelligenceCenter = lazyLoad(() => import('@/pages/IntelligenceCen
 // Admin and settings
 export const GestaoUsuarios = lazyLoad(() => import('@/pages/GestaoUsuarios'));
 export const Configuracao = lazyLoad(() => import('@/pages/Configuracao'));
+
+// Help and support
+export const FAQ = lazyLoad(() => import('@/pages/FAQ'));
