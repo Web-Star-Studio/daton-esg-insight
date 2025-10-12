@@ -128,6 +128,16 @@ export const formErrorHandler = {
       return error.retryable;
     }
 
+    // Unique constraint violations are NOT retryable
+    const nonRetryableCodes = [
+      '23505', // Unique constraint violation
+      '23503', // Foreign key constraint violation
+    ];
+
+    if (nonRetryableCodes.includes(error?.code)) {
+      return false;
+    }
+
     // Network or temporary database errors are retryable
     const retryableCodes = [
       'NETWORK_ERROR',
@@ -197,8 +207,13 @@ export const formErrorHandler = {
         title = "Relacionamento Inválido";
         break;
       case '23505': // Unique constraint violation
-        userMessage = "Já existe um registro com essas informações.";
-        title = "Duplicação";
+        if (error.message?.includes('employee_code') || error.message?.includes('employees_company_id_employee_code_key')) {
+          userMessage = "Código do funcionário já existe. Use um código diferente ou gere automaticamente.";
+          title = "Código Duplicado";
+        } else {
+          userMessage = "Já existe um registro com essas informações.";
+          title = "Duplicação";
+        }
         break;
       case '23503': // Foreign key constraint violation
         userMessage = "Não é possível excluir - existem dados relacionados.";

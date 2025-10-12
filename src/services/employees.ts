@@ -191,3 +191,16 @@ export const useEmployeesAsOptions = () => {
     queryFn: getEmployeesAsOptions,
   });
 };
+
+// Check if employee code already exists
+export const checkEmployeeCodeExists = async (code: string, companyId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('employees')
+    .select('employee_code')
+    .eq('company_id', companyId)
+    .eq('employee_code', code)
+    .maybeSingle();
+
+  if (error) throw error;
+  return !!data;
+};
