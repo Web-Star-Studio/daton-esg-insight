@@ -19,11 +19,14 @@ export const getLicenseAlerts = async (licenseId: string): Promise<any[]> => {
 
 // Resolver alerta
 export const resolveAlert = async (alertId: string, notes?: string): Promise<void> => {
+  const { data: userData } = await supabase.auth.getUser();
+  
   const { error } = await supabase
     .from("license_alerts")
     .update({
-      status: "resolved",
+      is_resolved: true,
       resolved_at: new Date().toISOString(),
+      resolved_by_user_id: userData.user?.id,
     })
     .eq("id", alertId);
 
@@ -38,8 +41,6 @@ export const resolveAlert = async (alertId: string, notes?: string): Promise<voi
       .single();
 
     if (alert) {
-      const { data: userData } = await supabase.auth.getUser();
-      
       await supabase.from("license_action_history").insert({
         company_id: alert.company_id,
         license_id: alert.license_id,
