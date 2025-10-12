@@ -11,6 +11,7 @@ import { ObservationManager } from './ObservationManager';
 import { ObservationCard } from './ObservationCard';
 import { CommentThread } from './CommentThread';
 import { LicenseActivityTimeline } from './LicenseActivityTimeline';
+import { ExportReportButton } from './ExportReportButton';
 import { logAction } from '@/services/licenseActivityHistory';
 
 interface AlertsObservationsSectionProps {
@@ -81,10 +82,13 @@ export function AlertsObservationsSection({ licenseId, activeAlertsCount }: Aler
             <CardTitle className="flex items-center gap-2">
               📊 Monitoramento e Observações
             </CardTitle>
-            <Button onClick={handleNewObservation} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Observação
-            </Button>
+            <div className="flex gap-2">
+              <ExportReportButton licenseId={licenseId} />
+              <Button onClick={handleNewObservation} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Observação
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

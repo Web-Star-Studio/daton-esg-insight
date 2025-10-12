@@ -32,6 +32,7 @@ const DashboardGHG = lazy(() => import("./pages/DashboardGHG"));
 const Licenciamento = lazy(() => import("./pages/Licenciamento"));
 const LicenseDetails = lazy(() => import("./pages/LicenseDetails"));
 const LicenseForm = lazy(() => import("./pages/LicenseForm"));
+const LicenseMonitoring = lazy(() => import("./pages/LicenseMonitoring"));
 const ProcessarLicenca = lazy(() => import("./pages/ProcessarLicenca"));
 const Residuos = lazy(() => import("./pages/Residuos"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
@@ -222,6 +223,16 @@ const App = () => (
             <Route path="/licenciamento" element={
               <ProtectedLazyPageWrapper>
                 <Licenciamento />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/monitoramento" element={
+              <ProtectedLazyPageWrapper>
+                <LicenseMonitoring />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/license-monitoring" element={
+              <ProtectedLazyPageWrapper>
+                <LicenseMonitoring />
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/processar" element={
