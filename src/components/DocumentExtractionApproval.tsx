@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, AlertCircle, Loader2, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Loader2, FileText, Edit3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DocumentExtractionEditor } from './DocumentExtractionEditor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ExtractedPreview {
   id: string;
@@ -19,6 +21,7 @@ interface ExtractedPreview {
   document_extraction_jobs?: {
     documents?: {
       file_name: string;
+      file_path: string;
     };
   };
 }
@@ -27,6 +30,7 @@ export function DocumentExtractionApproval() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Fetch pending extractions
   const { data: previews, isLoading } = useQuery({
@@ -38,7 +42,8 @@ export function DocumentExtractionApproval() {
           *,
           document_extraction_jobs (
             documents (
-              file_name
+              file_name,
+              file_path
             )
           )
         `)
@@ -50,13 +55,14 @@ export function DocumentExtractionApproval() {
     }
   });
 
-  // Approve mutation
+  // Approve mutation with edited fields
   const approveMutation = useMutation({
-    mutationFn: async (previewId: string) => {
+    mutationFn: async ({ previewId, editedFields }: { previewId: string; editedFields?: Record<string, any> }) => {
       const { data, error } = await supabase.functions.invoke('document-ai-processor', {
         body: {
           action: 'approve',
-          preview_id: previewId
+          preview_id: previewId,
+          edited_fields: editedFields
         }
       });
 
@@ -65,6 +71,7 @@ export function DocumentExtractionApproval() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
+      setEditingId(null);
       toast({
         title: 'Dados Aprovados',
         description: 'Os dados foram inseridos no sistema com sucesso.',
@@ -157,104 +164,190 @@ export function DocumentExtractionApproval() {
 
   return (
     <div className="space-y-4">
-      {previews.map((preview) => (
-        <Card key={preview.id} className="border-l-4 border-l-primary">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  {preview.document_extraction_jobs?.documents?.file_name || 'Documento'}
-                </CardTitle>
-                <CardDescription className="mt-2">
-                  Tabela de destino: <strong>{formatTableName(preview.target_table)}</strong>
-                </CardDescription>
+      {previews.map((preview) => {
+        const isEditing = editingId === preview.id;
+        const avgConfidence = getAverageConfidence(preview.confidence_scores);
+
+        return (
+          <Card key={preview.id} className="border-l-4 border-l-primary">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    {preview.document_extraction_jobs?.documents?.file_name || 'Documento'}
+                  </CardTitle>
+                  <CardDescription className="mt-2">
+                    Tabela de destino: <strong>{formatTableName(preview.target_table)}</strong>
+                  </CardDescription>
+                </div>
+                {getConfidenceBadge(preview.confidence_scores)}
               </div>
-              {getConfidenceBadge(preview.confidence_scores)}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Suggested Mappings */}
-            {preview.suggested_mappings && Object.keys(preview.suggested_mappings).length > 0 && (
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="text-sm font-medium mb-2">Mapeamentos Sugeridos:</h4>
-                <div className="space-y-1 text-sm">
-                  {Object.entries(preview.suggested_mappings).map(([key, value]) => (
-                    <div key={key} className="flex justify-between">
-                      <span className="text-muted-foreground">{key}:</span>
-                      <span className="font-medium">{String(value)}</span>
+            </CardHeader>
+            <CardContent>
+              {isEditing ? (
+                <DocumentExtractionEditor
+                  preview={preview}
+                  onApprove={(editedFields) => 
+                    approveMutation.mutate({ previewId: preview.id, editedFields })
+                  }
+                  onReject={() => {
+                    setEditingId(null);
+                    rejectMutation.mutate(preview.id);
+                  }}
+                  isLoading={approveMutation.isPending || rejectMutation.isPending}
+                />
+              ) : (
+                <Tabs defaultValue="review" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="review">Revisão</TabsTrigger>
+                    <TabsTrigger value="fields">Campos</TabsTrigger>
+                    <TabsTrigger value="confidence">Confiança</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="review" className="space-y-4">
+                    {/* Suggested Mappings */}
+                    {preview.suggested_mappings && typeof preview.suggested_mappings === 'object' && (
+                      <div className="space-y-3">
+                        {/* Normalized Fields */}
+                        {preview.suggested_mappings.normalized_fields && (
+                          <div className="bg-muted p-4 rounded-lg">
+                            <h4 className="text-sm font-medium mb-2">Campos Normalizados:</h4>
+                            <div className="space-y-1 text-sm">
+                              {Object.entries(preview.suggested_mappings.normalized_fields).map(([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="text-muted-foreground">{key}:</span>
+                                  <span className="font-medium">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Applied Corrections */}
+                        {preview.suggested_mappings.applied_corrections?.length > 0 && (
+                          <div className="bg-success/10 border border-success/20 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium mb-2 text-success">✓ Correções Aplicadas:</h4>
+                            <ul className="list-disc list-inside text-sm text-success space-y-1">
+                              {preview.suggested_mappings.applied_corrections.map((correction: string, i: number) => (
+                                <li key={i}>{correction}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Data Quality Issues */}
+                        {preview.suggested_mappings.data_quality_issues?.length > 0 && (
+                          <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium mb-2 text-warning">⚠ Problemas de Qualidade:</h4>
+                            <ul className="list-disc list-inside text-sm text-warning space-y-1">
+                              {preview.suggested_mappings.data_quality_issues.map((issue: string, i: number) => (
+                                <li key={i}>{issue}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button
+                        onClick={() => setEditingId(preview.id)}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        <Edit3 className="h-4 w-4 mr-2" />
+                        Editar Campos
+                      </Button>
+                      {avgConfidence >= 0.95 && (
+                        <Button
+                          onClick={() => approveMutation.mutate({ previewId: preview.id })}
+                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                          className="flex-1"
+                        >
+                          {approveMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                          )}
+                          Aprovar Direto (Alta Confiança)
+                        </Button>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </TabsContent>
 
-            {/* Extracted Fields */}
-            <div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setExpandedId(expandedId === preview.id ? null : preview.id)}
-                className="mb-2"
-              >
-                {expandedId === preview.id ? 'Ocultar' : 'Ver'} Campos Extraídos
-                <AlertCircle className="h-4 w-4 ml-2" />
-              </Button>
+                  <TabsContent value="fields" className="space-y-4">
+                    <div className="bg-muted p-4 rounded-lg">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedId(expandedId === preview.id ? null : preview.id)}
+                        className="mb-2"
+                      >
+                        {expandedId === preview.id ? 'Ocultar' : 'Ver'} JSON Completo
+                        <AlertCircle className="h-4 w-4 ml-2" />
+                      </Button>
 
-              {expandedId === preview.id && (
-                <div className="bg-muted p-4 rounded-lg">
-                  <pre className="text-xs overflow-auto max-h-64">
-                    {JSON.stringify(preview.extracted_fields, null, 2)}
-                  </pre>
-                </div>
+                      {expandedId === preview.id ? (
+                        <pre className="text-xs overflow-auto max-h-64">
+                          {JSON.stringify(preview.extracted_fields, null, 2)}
+                        </pre>
+                      ) : (
+                        <div className="space-y-1 text-sm">
+                          {Object.entries(preview.extracted_fields).slice(0, 5).map(([key, value]) => (
+                            <div key={key} className="flex justify-between">
+                              <span className="text-muted-foreground">{key}:</span>
+                              <span className="font-medium">{String(value)}</span>
+                            </div>
+                          ))}
+                          {Object.keys(preview.extracted_fields).length > 5 && (
+                            <p className="text-xs text-muted-foreground italic mt-2">
+                              + {Object.keys(preview.extracted_fields).length - 5} campos adicionais
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="confidence" className="space-y-4">
+                    {Object.keys(preview.confidence_scores).length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-3">Confiança por Campo:</h4>
+                        <div className="space-y-2">
+                          {Object.entries(preview.confidence_scores)
+                            .sort(([, a], [, b]) => a - b) // Ordenar por confiança (menor primeiro)
+                            .map(([field, score]) => (
+                              <div key={field} className="flex items-center justify-between p-2 rounded bg-muted">
+                                <span className="text-sm font-medium">{field}</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-32 h-2 bg-background rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full ${
+                                        score >= 0.8 ? 'bg-success' : 
+                                        score >= 0.6 ? 'bg-warning' : 
+                                        'bg-destructive'
+                                      }`}
+                                      style={{ width: `${score * 100}%` }}
+                                    />
+                                  </div>
+                                  <Badge variant="outline" className="min-w-[60px] justify-center">
+                                    {Math.round(score * 100)}%
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               )}
-            </div>
-
-            {/* Confidence Scores */}
-            {Object.keys(preview.confidence_scores).length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium mb-2">Confiança por Campo:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(preview.confidence_scores).map(([field, score]) => (
-                    <Badge key={field} variant="outline">
-                      {field}: {Math.round(score * 100)}%
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-4 border-t">
-              <Button
-                onClick={() => approveMutation.mutate(preview.id)}
-                disabled={approveMutation.isPending || rejectMutation.isPending}
-                className="flex-1"
-              >
-                {approveMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                )}
-                Aprovar e Inserir
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => rejectMutation.mutate(preview.id)}
-                disabled={approveMutation.isPending || rejectMutation.isPending}
-                className="flex-1"
-              >
-                {rejectMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <XCircle className="h-4 w-4 mr-2" />
-                )}
-                Rejeitar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

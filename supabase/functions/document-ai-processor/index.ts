@@ -45,12 +45,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { document_id, processing_type, action, preview_id } = await req.json()
+    const { document_id, processing_type, action, preview_id, edited_fields } = await req.json()
     console.log('Request:', { document_id, processing_type, action, preview_id });
 
     // Handle approval/rejection actions
     if (action === 'approve' || action === 'reject') {
-      return await handleApprovalAction(supabaseAdmin, action, preview_id, user.id);
+      return await handleApprovalAction(supabaseAdmin, action, preview_id, user.id, edited_fields);
     }
 
     // Continue with document processing
@@ -630,7 +630,20 @@ Execute a extração agora usando a função \`extract_document_data\`.
 `;
 }
 
-async function handleApprovalAction(supabaseClient: any, action: string, previewId: string, userId: string) {
+// Required fields per table
+const REQUIRED_FIELDS: Record<string, string[]> = {
+  licenses: ['license_name', 'license_type', 'issue_date', 'expiration_date'],
+  assets: ['name', 'asset_type'],
+  waste_logs: ['waste_type', 'quantity', 'unit', 'log_date'],
+  emission_sources: ['source_name', 'scope', 'category'],
+  suppliers: ['name'],
+  employees: ['full_name', 'hire_date'],
+  energy_consumption: ['source_type', 'consumption_date', 'quantity_kwh'],
+  water_consumption: ['consumption_date', 'quantity_m3'],
+  activity_data: ['quantity', 'period_start_date', 'emission_source_id'],
+};
+
+async function handleApprovalAction(supabaseClient: any, action: string, previewId: string, userId: string, editedFields?: Record<string, any>) {
   try {
     console.log(`Handling ${action} for preview:`, previewId);
 
@@ -646,18 +659,33 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
     }
 
     if (action === 'approve') {
-      // Validate extracted fields
-      const extractedFields = preview.extracted_fields || {};
-      const fieldCount = Object.keys(extractedFields).length;
+      // Use edited fields if provided, otherwise use extracted fields
+      const fieldsToInsert = editedFields || preview.extracted_fields || {};
+      const fieldCount = Object.keys(fieldsToInsert).length;
       
       if (fieldCount === 0) {
         throw new Error('Não é possível aprovar: nenhum campo foi extraído do documento. Por favor, reprocesse o documento ou extraia os dados manualmente.');
       }
 
-      // Insert data into target table
       const tableName = preview.target_table;
+      
+      // Validate required fields
+      const requiredFields = REQUIRED_FIELDS[tableName] || [];
+      const missingFields: string[] = [];
+      
+      requiredFields.forEach(field => {
+        if (!fieldsToInsert[field] || String(fieldsToInsert[field]).trim() === '') {
+          missingFields.push(field);
+        }
+      });
+
+      if (missingFields.length > 0) {
+        throw new Error(`Não é possível aprovar: os seguintes campos obrigatórios estão faltando: ${missingFields.join(', ')}. Por favor, edite e adicione esses campos.`);
+      }
+
+      // Prepare record data
       const recordData = {
-        ...extractedFields,
+        ...fieldsToInsert,
         company_id: preview.company_id,
         created_at: new Date().toISOString()
       };
@@ -669,11 +697,6 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
         recordData.log_date = recordData.log_date || new Date().toISOString().split('T')[0];
       } else if (tableName === 'emission_sources') {
         recordData.scope = recordData.scope || 1;
-      } else if (tableName === 'assets') {
-        // Validate required fields for assets table
-        if (!recordData.name) {
-          throw new Error('Não é possível aprovar: campo obrigatório "name" (nome do ativo) não foi extraído. Por favor, edite e adicione este campo.');
-        }
       }
 
       const { data: insertedData, error: insertError } = await supabaseClient
