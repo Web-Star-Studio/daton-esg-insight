@@ -123,3 +123,9 @@ verify_jwt = false
 
 [functions.predictive-analytics]
 verify_jwt = true
+
+[functions.intelligent-document-classifier]
+verify_jwt = false
+
+[functions.advanced-document-extractor]
+verify_jwt = false

@@ -612,6 +612,22 @@ Converse naturalmente! Exemplos:
 
       if (error) {
         console.error('Chat AI error:', error);
+        
+        // Check for specific error codes
+        if (error.message?.includes('429') || data?.error === 'Rate limits exceeded') {
+          toast.error('Limite de requisições atingido', {
+            description: '⏳ Por favor, aguarde alguns instantes e tente novamente.'
+          });
+          throw new Error('Rate limit exceeded');
+        }
+        
+        if (error.message?.includes('402') || data?.error === 'Payment required') {
+          toast.error('Créditos de IA esgotados', {
+            description: '💳 Adicione créditos na sua workspace Lovable para continuar.'
+          });
+          throw new Error('Payment required');
+        }
+        
         throw error;
       }
 
@@ -768,6 +784,22 @@ Estou pronto para ajudar. Posso:
 
       if (error) {
         console.error('Action execution error:', error);
+        
+        // Check for specific error codes
+        if (error.message?.includes('429') || data?.error === 'Rate limits exceeded') {
+          toast.error('Limite de requisições atingido', {
+            description: '⏳ Por favor, aguarde alguns instantes e tente novamente.'
+          });
+          throw new Error('Rate limit exceeded');
+        }
+        
+        if (error.message?.includes('402') || data?.error === 'Payment required') {
+          toast.error('Créditos de IA esgotados', {
+            description: '💳 Adicione créditos na sua workspace Lovable para continuar.'
+          });
+          throw new Error('Payment required');
+        }
+        
         throw error;
       }
 

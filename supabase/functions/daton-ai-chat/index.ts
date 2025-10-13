@@ -11,6 +11,7 @@ import {
 import { readTools } from './read-tools.ts';
 import { executeReadTool } from './tool-executors.ts';
 import { generateProactiveInsights, generateDataVisualizations } from './proactive-analysis.ts';
+import { generateIntelligentSuggestions } from './intelligent-suggestions.ts';
 import { 
   analyzeTrends, 
   comparePeriods, 
@@ -1227,8 +1228,26 @@ Lembre-se: Você é um PARCEIRO ESTRATÉGICO de ${company?.name || 'da empresa'}
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: 'Rate limits exceeded',
+          message: '⏳ O limite de requisições foi atingido. Por favor, aguarde alguns instantes e tente novamente.'
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: 'Payment required',
+          message: '💳 Os créditos de IA se esgotaram. Por favor, adicione créditos na sua workspace Lovable para continuar.'
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const errorText = await response.text();
-      console.error('AI API error:', errorText);
+      console.error('AI API error:', response.status, errorText);
       throw new Error(`AI API error: ${response.status}`);
     }
 
@@ -1324,6 +1343,26 @@ Lembre-se: Você é um PARCEIRO ESTRATÉGICO de ${company?.name || 'da empresa'}
       });
 
       if (!finalResponse.ok) {
+        if (finalResponse.status === 429) {
+          return new Response(JSON.stringify({ 
+            error: 'Rate limits exceeded',
+            message: '⏳ O limite de requisições foi atingido. Por favor, aguarde alguns instantes e tente novamente.'
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (finalResponse.status === 402) {
+          return new Response(JSON.stringify({ 
+            error: 'Payment required',
+            message: '💳 Os créditos de IA se esgotaram. Por favor, adicione créditos na sua workspace Lovable para continuar.'
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        const errorText = await finalResponse.text();
+        console.error('AI final response error:', finalResponse.status, errorText);
         throw new Error(`AI API error: ${finalResponse.status}`);
       }
 
