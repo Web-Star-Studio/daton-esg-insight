@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { retrySupabaseOperation } from '@/utils/retryOperation';
+import { logDatabaseOperation, createPerformanceLogger } from '@/utils/formLogging';
 
 interface ModuleConfig {
   [key: string]: any;
@@ -116,28 +118,36 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('onboarding_selections')
-        .upsert([{
-          user_id: user.id,
-          company_id: user.company.id,
-          current_step: state.currentStep,
-          selected_modules: state.selectedModules,
-          module_configurations: state.moduleConfigurations,
-          is_completed: state.isCompleted,
-          updated_at: new Date().toISOString()
-        }], {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
+    const perfLogger = createPerformanceLogger('saveOnboardingData');
 
-      if (error) {
-        console.error('❌ Error saving to database:', error);
-        throw error;
-      }
+    try {
+      await retrySupabaseOperation(
+        async () => {
+          const result = await supabase
+            .from('onboarding_selections')
+            .upsert([{
+              user_id: user.id,
+              company_id: user.company.id,
+              current_step: state.currentStep,
+              selected_modules: state.selectedModules,
+              module_configurations: state.moduleConfigurations,
+              is_completed: state.isCompleted,
+              updated_at: new Date().toISOString()
+            }], {
+              onConflict: 'user_id',
+              ignoreDuplicates: false
+            });
+
+          logDatabaseOperation('upsert', 'onboarding_selections', !result.error, result.error);
+          return result;
+        },
+        { maxRetries: 3, initialDelay: 1000 }
+      );
+
+      perfLogger.end(true);
     } catch (error) {
-      console.error('❌ Error saving onboarding data:', error);
+      perfLogger.end(false, error);
+      console.error('❌ Error saving onboarding data after retries:', error);
       throw error;
     }
   };

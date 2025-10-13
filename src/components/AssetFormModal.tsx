@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { logFormSubmission, createPerformanceLogger } from '@/utils/formLogging';
+import { sanitizeUUID } from '@/utils/formValidation';
 import { 
   createAsset, 
   updateAsset, 
@@ -181,27 +183,27 @@ export function AssetFormModal({ open, onClose, onSuccess, editingAsset }: Asset
   });
 
   const onSubmit = (data: AssetFormData) => {
-    // Helper para sanitizar UUIDs
-    const sanitizeUUID = (value: string | undefined): string | undefined => {
-      if (!value || value === 'none' || value === 'undefined' || value === 'null' || value.trim() === '') {
-        return undefined;
-      }
-      return value;
-    };
+    const perfLogger = createPerformanceLogger('AssetFormSubmission');
 
     const formattedData = {
       ...data,
       parent_asset_id: sanitizeUUID(data.parent_asset_id),
-      // Converter critical_parameters de string para array
       critical_parameters: data.critical_parameters 
         ? data.critical_parameters.split(',').map(param => param.trim()).filter(Boolean)
         : undefined,
     };
 
-    if (editingAsset) {
-      updateAssetMutation.mutate({ id: editingAsset.id, data: formattedData });
-    } else {
-      createAssetMutation.mutate(formattedData as CreateAssetData);
+    try {
+      if (editingAsset) {
+        updateAssetMutation.mutate({ id: editingAsset.id, data: formattedData });
+      } else {
+        createAssetMutation.mutate(formattedData as CreateAssetData);
+      }
+      logFormSubmission('AssetFormModal', formattedData, true);
+      perfLogger.end(true);
+    } catch (error) {
+      logFormSubmission('AssetFormModal', formattedData, false, error);
+      perfLogger.end(false, error);
     }
   };
 
