@@ -266,14 +266,40 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             {/* File attachments preview */}
             {attachments.length > 0 && (
               <div className="space-y-2">
-                {attachments.map(attachment => (
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    📎 Anexos ({attachments.length})
+                  </span>
+                  {!isLoading && !isUploading && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => attachments.forEach(att => removeAttachment(att.id))}
+                      className="h-6 text-xs hover:text-destructive"
+                    >
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+                {attachments.map(att => (
                   <FileAttachment
-                    key={attachment.id}
-                    attachment={attachment}
+                    key={att.id}
+                    file={att}
                     onRemove={removeAttachment}
                     canRemove={!isLoading}
                   />
                 ))}
+                {isUploading && (
+                  <div className="text-xs bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 space-y-1">
+                    <p className="font-medium text-orange-700 dark:text-orange-300 flex items-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Enviando e analisando arquivos...
+                    </p>
+                    <p className="text-orange-600/80 dark:text-orange-400/80">
+                      A IA está processando os anexos para extrair informações relevantes.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             

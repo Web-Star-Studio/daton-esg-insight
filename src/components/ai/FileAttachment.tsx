@@ -14,7 +14,7 @@ export interface FileAttachmentData {
 }
 
 interface FileAttachmentProps {
-  attachment: FileAttachmentData;
+  file: FileAttachmentData;
   onRemove: (id: string) => void;
   canRemove?: boolean;
 }
@@ -36,7 +36,7 @@ function getStatusIcon(status: FileAttachmentData['status']) {
   switch (status) {
     case 'uploading':
     case 'processing':
-      return <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />;
+      return <Loader2 className="h-3 w-3 animate-spin text-orange-500" />;
     case 'uploaded':
     case 'processed':
       return <CheckCircle2 className="h-3 w-3 text-green-600" />;
@@ -50,45 +50,58 @@ function getStatusText(status: FileAttachmentData['status']) {
     case 'uploading':
       return 'Enviando...';
     case 'uploaded':
-      return 'Enviado';
+      return 'Enviado ✓';
     case 'processing':
-      return 'Processando...';
+      return 'Analisando com IA...';
     case 'processed':
-      return 'Processado';
+      return 'Pronto ✓';
     case 'error':
       return 'Erro';
   }
 }
 
-export function FileAttachment({ attachment, onRemove, canRemove = true }: FileAttachmentProps) {
-  const Icon = getFileIcon(attachment.type);
-  const isProcessing = attachment.status === 'uploading' || attachment.status === 'processing';
+export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachmentProps) {
+  const Icon = getFileIcon(file.type);
+  const isProcessing = file.status === 'uploading' || file.status === 'processing';
 
   return (
     <div className={cn(
-      "flex items-center gap-2 p-2 rounded-lg border bg-card text-card-foreground",
-      attachment.status === 'error' && "border-destructive/50 bg-destructive/5"
+      "flex items-center gap-2 p-2.5 rounded-lg border bg-card text-card-foreground transition-all",
+      file.status === 'error' && "border-destructive/50 bg-destructive/5",
+      file.status === 'processed' && "border-green-500/30 bg-green-500/5",
+      isProcessing && "border-orange-500/30 bg-orange-500/5"
     )}>
       <div className="shrink-0">
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className={cn(
+          "h-4 w-4",
+          file.status === 'error' && "text-destructive",
+          file.status === 'processed' && "text-green-600",
+          isProcessing && "text-orange-500"
+        )} />
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium truncate">
-            {attachment.name}
+            {file.name}
           </p>
-          {getStatusIcon(attachment.status)}
+          {getStatusIcon(file.status)}
         </div>
         
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{formatFileSize(attachment.size)}</span>
+          <span>{formatFileSize(file.size)}</span>
           <span>•</span>
-          <span>{getStatusText(attachment.status)}</span>
+          <span className={cn(
+            file.status === 'processed' && "text-green-600 font-medium",
+            isProcessing && "text-orange-600 font-medium"
+          )}>{getStatusText(file.status)}</span>
         </div>
         
-        {attachment.error && (
-          <p className="text-xs text-destructive mt-1">{attachment.error}</p>
+        {file.error && (
+          <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            {file.error}
+          </p>
         )}
       </div>
       
@@ -97,8 +110,8 @@ export function FileAttachment({ attachment, onRemove, canRemove = true }: FileA
           type="button"
           variant="ghost"
           size="icon"
-          className="h-6 w-6 shrink-0"
-          onClick={() => onRemove(attachment.id)}
+          className="h-6 w-6 shrink-0 hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => onRemove(file.id)}
         >
           <X className="h-3 w-3" />
         </Button>

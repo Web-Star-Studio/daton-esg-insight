@@ -736,30 +736,49 @@ serve(async (req) => {
       }
     ];
 
-    // Process attachments with intelligent classification and extraction
+    // Process attachments with advanced AI analysis
     let attachmentContext = '';
     if (attachments && attachments.length > 0) {
-      console.log('Processing attachments with AI:', attachments.length);
+      console.log('🔍 Processing', attachments.length, 'attachment(s) with advanced AI analysis...');
       
       for (const attachment of attachments) {
         try {
-          console.log('Parsing attachment:', attachment.name);
+          console.log('📄 Analyzing:', attachment.name, `(${(attachment.size / 1024).toFixed(1)} KB)`);
           
-          // Step 1: Parse document
-          const { data: parseData, error: parseError } = await supabaseClient.functions.invoke('parse-chat-document', {
-            body: { 
-              filePath: attachment.path, 
-              fileType: attachment.type 
+          // Step 1: Parse document with retry logic
+          let parseData: any = null;
+          let parseError: any = null;
+          
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            const { data, error } = await supabaseClient.functions.invoke('parse-chat-document', {
+              body: { 
+                filePath: attachment.path, 
+                fileType: attachment.type,
+                useVision: attachment.type.startsWith('image/')
+              }
+            });
+            
+            if (error || !data?.content) {
+              parseError = error;
+              console.warn(`Parse attempt ${attempt}/3 failed:`, error);
+              if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+              continue;
             }
-          });
+            
+            parseData = data;
+            break;
+          }
 
           if (parseError || !parseData?.content) {
-            console.error('Parse error for', attachment.name, ':', parseError);
-            attachmentContext += `\n\n❌ **Erro ao processar: ${attachment.name}**`;
+            console.error('❌ Failed to parse:', attachment.name, parseError);
+            attachmentContext += `\n\n❌ **Falha ao processar: ${attachment.name}**`;
+            attachmentContext += `\nMotivo: ${parseError?.message || 'Não foi possível extrair conteúdo do arquivo'}`;
             continue;
           }
 
-          // Step 2: Classify document type
+          console.log('✅ Successfully parsed:', attachment.name, `(${parseData.content.length} chars)`);
+
+          // Step 2: Classify document type with AI
           const { data: classData } = await supabaseClient.functions.invoke('intelligent-document-classifier', {
             body: {
               content: parseData.content,
@@ -770,67 +789,122 @@ serve(async (req) => {
           });
 
           const classification = classData?.classification;
-          console.log('Document classified:', classification?.documentType);
+          console.log('🏷️ Document classified:', classification?.documentType, `(${Math.round((classification?.confidence || 0) * 100)}% confidence)`);
 
-          // Step 3: Advanced extraction (if supported type)
+          // Step 3: Advanced extraction for structured documents
           let extractedData = parseData.structured;
           if (attachment.type.includes('spreadsheet') || attachment.type.includes('excel') || 
               attachment.type.includes('csv') || attachment.type.includes('pdf')) {
-            const { data: extractData } = await supabaseClient.functions.invoke('advanced-document-extractor', {
-              body: {
-                filePath: attachment.path,
-                fileType: attachment.type,
-                classification
+            try {
+              const { data: extractData } = await supabaseClient.functions.invoke('advanced-document-extractor', {
+                body: {
+                  filePath: attachment.path,
+                  fileType: attachment.type,
+                  classification
+                }
+              });
+              if (extractData?.structuredData) {
+                extractedData = extractData.structuredData;
+                console.log('📊 Advanced extraction completed');
               }
-            });
-            if (extractData?.structuredData) {
-              extractedData = extractData.structuredData;
+            } catch (extractError) {
+              console.warn('Advanced extraction failed, using basic data:', extractError);
             }
           }
 
-          // Generate intelligent suggestions
-          let suggestions;
+          // Step 4: Generate intelligent suggestions with AI
+          let suggestions: any = null;
           if (classification && extractedData) {
-            suggestions = await generateIntelligentSuggestions(
-              classification.documentType,
-              extractedData,
-              { company_id: companyId, user_id: userId },
-              supabaseClient
-            );
+            try {
+              suggestions = await generateIntelligentSuggestions(
+                classification.documentType,
+                extractedData,
+                { company_id: companyId, user_id: userId },
+                supabaseClient
+              );
+              console.log('💡 Generated intelligent suggestions');
+            } catch (suggestionError) {
+              console.warn('Suggestion generation failed:', suggestionError);
+            }
           }
 
-          // Build rich context
-          attachmentContext += `\n\n📎 **ARQUIVO: ${attachment.name}**`;
+          // Build comprehensive context for AI
+          attachmentContext += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+          attachmentContext += `\n📎 **ARQUIVO ANALISADO: ${attachment.name}**`;
+          attachmentContext += `\n📏 Tamanho: ${(attachment.size / 1024).toFixed(1)} KB`;
+          
           if (classification) {
-            attachmentContext += `\n🏷️ **Tipo identificado:** ${classification.documentType} (${Math.round(classification.confidence * 100)}% confiança)`;
-            attachmentContext += `\n📋 **Categoria:** ${classification.category}`;
+            attachmentContext += `\n\n🏷️ **Classificação Inteligente:**`;
+            attachmentContext += `\n   • Tipo: ${classification.documentType}`;
+            attachmentContext += `\n   • Categoria: ${classification.category}`;
+            attachmentContext += `\n   • Confiança: ${Math.round(classification.confidence * 100)}%`;
+            
             if (classification.suggestedActions?.length > 0) {
-              attachmentContext += `\n💡 **Ações sugeridas:** ${classification.suggestedActions.join(', ')}`;
+              attachmentContext += `\n\n💡 **Ações Sugeridas pelo Sistema:**`;
+              classification.suggestedActions.forEach((action: string) => {
+                attachmentContext += `\n   • ${action}`;
+              });
+            }
+            
+            if (classification.relevantFields?.length > 0) {
+              attachmentContext += `\n\n📋 **Campos Relevantes Identificados:**`;
+              attachmentContext += `\n   ${classification.relevantFields.join(', ')}`;
             }
           }
           
-          if (extractedData?.records) {
-            attachmentContext += `\n📊 **Dados estruturados:** ${extractedData.records.length} registros encontrados`;
-            attachmentContext += `\n📌 **Colunas:** ${extractedData.headers?.join(', ')}`;
+          if (extractedData?.records && extractedData.records.length > 0) {
+            attachmentContext += `\n\n📊 **Dados Estruturados Extraídos:**`;
+            attachmentContext += `\n   • Total de registros: ${extractedData.records.length}`;
+            if (extractedData.headers) {
+              attachmentContext += `\n   • Colunas (${extractedData.headers.length}): ${extractedData.headers.slice(0, 10).join(', ')}${extractedData.headers.length > 10 ? '...' : ''}`;
+            }
+            
+            // Show sample data
+            if (extractedData.records.length > 0) {
+              attachmentContext += `\n\n📝 **Amostra dos Dados (primeiros 3 registros):**`;
+              extractedData.records.slice(0, 3).forEach((record: any, idx: number) => {
+                attachmentContext += `\n   ${idx + 1}. ${JSON.stringify(record).substring(0, 150)}...`;
+              });
+            }
           }
 
-          // Add intelligent suggestions
+          // Add intelligent suggestions with context
           if (suggestions) {
-            if (suggestions.insights.length > 0) {
-              attachmentContext += `\n\n💡 **Insights:**\n${suggestions.insights.map(i => `  • ${i}`).join('\n')}`;
+            if (suggestions.insights && suggestions.insights.length > 0) {
+              attachmentContext += `\n\n🧠 **Insights de IA:**`;
+              suggestions.insights.forEach((insight: string) => {
+                attachmentContext += `\n   • ${insight}`;
+              });
             }
-            if (suggestions.warnings.length > 0) {
-              attachmentContext += `\n\n⚠️ **Alertas:**\n${suggestions.warnings.map(w => `  • ${w}`).join('\n')}`;
+            
+            if (suggestions.warnings && suggestions.warnings.length > 0) {
+              attachmentContext += `\n\n⚠️ **Alertas Importantes:**`;
+              suggestions.warnings.forEach((warning: string) => {
+                attachmentContext += `\n   • ${warning}`;
+              });
             }
-            if (suggestions.opportunities.length > 0) {
-              attachmentContext += `\n\n🎯 **Oportunidades:**\n${suggestions.opportunities.map(o => `  • ${o}`).join('\n')}`;
+            
+            if (suggestions.opportunities && suggestions.opportunities.length > 0) {
+              attachmentContext += `\n\n🎯 **Oportunidades de Melhoria:**`;
+              suggestions.opportunities.forEach((opp: string) => {
+                attachmentContext += `\n   • ${opp}`;
+              });
             }
-            if (suggestions.actions.length > 0) {
-              attachmentContext += `\n\n✅ **Ações Recomendadas:**\n${suggestions.actions.map(a => `  • ${a.description} (${a.priority})`).join('\n')}`;
+            
+            if (suggestions.actions && suggestions.actions.length > 0) {
+              attachmentContext += `\n\n✅ **Ações Recomendadas:**`;
+              suggestions.actions.forEach((action: any) => {
+                attachmentContext += `\n   • [${action.priority}] ${action.description}`;
+                if (action.impact) attachmentContext += ` → Impacto: ${action.impact}`;
+              });
             }
           }
           
-          attachmentContext += `\n---\n${parseData.content.substring(0, 1500)}${parseData.content.length > 1500 ? '...' : ''}\n---`;
+          // Add full content (truncated for context window)
+          const contentPreview = parseData.content.substring(0, 3000);
+          attachmentContext += `\n\n📄 **Conteúdo Extraído:**`;
+          attachmentContext += `\n\`\`\`\n${contentPreview}${parseData.content.length > 3000 ? '\n\n... (conteúdo truncado, total: ' + parseData.content.length + ' caracteres)' : ''}\n\`\`\``;
+          attachmentContext += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
           
           // Update processing status
           await supabaseClient
@@ -838,14 +912,28 @@ serve(async (req) => {
             .update({ 
               processing_status: 'processed',
               parsed_content: extractedData,
-              metadata: { classification, extraction_method: 'ai_enhanced' }
+              metadata: { 
+                classification, 
+                extraction_method: 'ai_enhanced',
+                content_length: parseData.content.length,
+                has_suggestions: !!suggestions,
+                processed_at: new Date().toISOString()
+              }
             })
             .eq('file_path', attachment.path);
 
+          console.log('✅ Complete analysis for:', attachment.name);
+
         } catch (error) {
-          console.error('Error processing attachment:', error);
-          attachmentContext += `\n\n❌ **Erro: ${attachment.name}** - ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+          console.error('❌ Critical error processing attachment:', error);
+          attachmentContext += `\n\n❌ **Erro Crítico: ${attachment.name}**`;
+          attachmentContext += `\nDetalhes: ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+          attachmentContext += `\nPor favor, tente enviar o arquivo novamente ou em outro formato.`;
         }
+      }
+      
+      if (attachmentContext) {
+        attachmentContext = `\n\n${'='.repeat(60)}\n🔍 **ANÁLISE COMPLETA DOS ARQUIVOS ANEXADOS**\n${'='.repeat(60)}${attachmentContext}\n\n⚡ **INSTRUÇÕES PARA A IA:**\n• Use as informações extraídas acima para responder perguntas específicas\n• Se solicitado importar/cadastrar dados, use as ferramentas de escrita (sempre pedindo confirmação)\n• Sugira ações proativas baseadas nos insights e oportunidades identificadas\n• Se houver alertas, priorize-os na resposta\n${'='.repeat(60)}\n`;
       }
     }
 
@@ -857,17 +945,267 @@ serve(async (req) => {
 • Empresa: ${userContext.companyName || company?.name || 'Empresa'}
 ` : '';
 
-    const systemPrompt = `Você é o Assistente IA Avançado do Daton, um especialista de elite em gestão ESG (Ambiental, Social e Governança) com capacidades de análise profunda, raciocínio estratégico, inteligência preditiva e consultoria executiva.
+    const systemPrompt = `Você é o **Assistente IA Elite do Daton** - Um consultor ESG sênior de alto nível com capacidades avançadas de análise, raciocínio estratégico, inteligência preditiva e visão executiva.
 
-**🎯 VOCÊ É UM CONSULTOR ESG DE ALTO NÍVEL:**
-Imagine que você é um consultor sênior de uma das Big 4, especializado em ESG, com 15+ anos de experiência. Você não apenas apresenta dados - você INTERPRETA, CONTEXTUALIZA e ACONSELHA com sabedoria estratégica.
+╔══════════════════════════════════════════════════════════════╗
+║  🧠 VOCÊ É UM CONSULTOR ESG DE ELITE                          ║
+╚══════════════════════════════════════════════════════════════╝
 
-**🏢 Contexto Empresarial:**
-${company?.name || 'Empresa'} | Setor: ${company?.sector || 'Não informado'}
-CNPJ: ${company?.cnpj || 'Não informado'}
+Imagine que você é um consultor sênior com 15+ anos de experiência em ESG, trabalhando para as Big 4. Você não apenas apresenta dados - você INTERPRETA, CONTEXTUALIZA e ACONSELHA com sabedoria estratégica e visão de negócios.
+
+**🎯 SUA MISSÃO:**
+Ajudar ${company?.name || 'a empresa'} a alcançar excelência em gestão ESG através de:
+• Análises profundas e insights acionáveis
+• Recomendações estratégicas priorizadas por impacto
+• Identificação proativa de riscos e oportunidades
+• Suporte na tomada de decisões baseada em dados
+• Facilitação da jornada de sustentabilidade corporativa
+
+╔══════════════════════════════════════════════════════════════╗
+║  🏢 CONTEXTO EMPRESARIAL                                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Empresa:** ${company?.name || 'Organização'}
+**Setor:** ${company?.sector || 'Não especificado'}
+**CNPJ:** ${company?.cnpj || 'Não informado'}
 ${userContextInfo}
-📍 **Módulo Atual:** ${getPageContext(currentPage)}
-${attachmentContext ? `\n\n**📎 ARQUIVOS ANEXADOS PELO USUÁRIO:**${attachmentContext}\n\n⚠️ **IMPORTANTE:** O usuário anexou arquivo(s). Use as informações extraídas para responder às perguntas ou executar as ações solicitadas. Se o usuário pedir para cadastrar/importar dados dos arquivos, use as ferramentas de escrita disponíveis (sempre pedindo confirmação).` : ''}
+**📍 Módulo Atual:** ${getPageContext(currentPage)}
+
+${attachmentContext ? `\n╔══════════════════════════════════════════════════════════════╗\n║  📎 ARQUIVOS ANEXADOS - ANÁLISE COMPLETA                     ║\n╚══════════════════════════════════════════════════════════════╝\n${attachmentContext}\n\n⚡ **COMO USAR OS ARQUIVOS:**\n• Analise profundamente as informações extraídas\n• Responda perguntas específicas com base nos dados\n• Sugira ações proativas com base nos insights\n• Se solicitado importar dados, use as ferramentas de escrita (sempre confirmando antes)\n• Priorize alertas e oportunidades identificadas\n` : ''}
+
+╔══════════════════════════════════════════════════════════════╗
+║  🚀 SUAS CAPACIDADES AVANÇADAS                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+**📊 ANÁLISE E CONSULTA DE DADOS (Execução Imediata - Sem Confirmação)**
+
+Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferramentas especializadas. Use-as PROATIVAMENTE para fornecer respostas precisas e insights valiosos:
+
+🌍 **Emissões & Inventário GEE:**
+   • query_emissions_data - Consultar emissões por escopo, período, fonte ou categoria
+   • Analisar tendências de carbono e identificar principais fontes
+   • Calcular totais e comparar entre períodos
+   • Identificar oportunidades de redução de carbono
+
+🎯 **Metas & Progresso:**
+   • query_goals_progress - Acompanhar metas ESG com filtros por status e categoria
+   • Analisar taxa de progresso e identificar metas em risco
+   • Visualizar histórico de evolução
+   • Sugerir ajustes estratégicos
+
+📜 **Licenciamento Ambiental:**
+   • query_licenses - Verificar licenças ativas, vencidas ou próximas ao vencimento
+   • Priorizar renovações e alertar sobre não conformidades
+   • Mapear obrigações legais e condicionantes
+   • Prevenir multas e sanções
+
+✅ **Gestão de Tarefas:**
+   • query_tasks - Buscar tarefas por status, tipo, responsável ou prioridade
+   • Identificar atrasos e gargalos operacionais
+   • Sugerir redistribuição de carga de trabalho
+   • Otimizar processos de coleta de dados
+
+⚠️ **Riscos ESG:**
+   • query_risks - Analisar riscos por nível, categoria e status
+   • Priorizar riscos críticos e de alto impacto
+   • Avaliar efetividade de tratamentos
+   • Recomendar planos de mitigação
+
+🔴 **Não Conformidades:**
+   • query_non_conformities - Consultar NCs por status e gravidade
+   • Acompanhar tratamentos e prazos
+   • Analisar padrões e recorrências
+   • Identificar causas raiz sistêmicas
+
+👥 **Gestão de Pessoas:**
+   • query_employees - Dados de colaboradores por status, departamento, gênero ou cargo
+   • Analisar diversidade e distribuição organizacional
+   • Identificar necessidades de treinamento
+   • Mapear gaps de competências ESG
+
+📈 **Visão Executiva:**
+   • get_dashboard_summary - Resumo executivo com KPIs principais e alertas
+   • Consolidar métricas críticas de todos os módulos
+   • Identificar itens que precisam atenção imediata
+   • Fornecer visão estratégica integrada
+
+**🧪 ANÁLISES AVANÇADAS E INTELIGÊNCIA PREDITIVA**
+
+🔮 **Análise de Tendências:**
+   • analyze_trends - Identificar padrões e evoluções temporais em métricas ESG
+   • Detectar tendências de curto, médio e longo prazo
+   • Calcular velocidade de mudança e pontos de inflexão
+   • Prever cenários futuros com base em histórico
+
+📊 **Comparação de Períodos:**
+   • compare_periods - Comparar métricas entre períodos (mês a mês, ano a ano)
+   • Calcular variações absolutas e percentuais
+   • Interpretar significância estatística das mudanças
+   • Identificar sazonalidades e anomalias
+
+🎲 **Previsão e Projeção:**
+   • predict_future_metrics - Prever valores futuros com base em dados históricos
+   • Gerar projeções com intervalos de confiança
+   • Identificar cenários otimistas, realistas e pessimistas
+   • Alertar sobre desvios de trajetória
+
+🔗 **Análise de Correlações:**
+   • analyze_correlations - Descobrir relações entre diferentes métricas ESG
+   • Identificar drivers de performance e fatores de risco
+   • Sugerir ações baseadas em correlações identificadas
+   • Mapear interdependências críticas
+
+📋 **Resumo Executivo Avançado:**
+   • generate_executive_summary - Gerar visão estratégica completa com insights acionáveis
+   • Incluir recomendações priorizadas por impacto e urgência
+   • Consolidar análise multi-dimensional (ambiental, social, governança)
+   • Fornecer roadmap de ações prioritárias
+
+🔍 **Análise de Gaps de Conformidade:**
+   • analyze_compliance_gaps - Identificar lacunas em conformidade regulatória
+   • Priorizar ações de remediação por risco e impacto
+   • Mapear requisitos pendentes por framework
+   • Estimar esforço e recursos necessários
+
+🏆 **Benchmarking Setorial:**
+   • benchmark_performance - Comparar performance com benchmarks do setor
+   • Identificar gaps e oportunidades de melhoria
+   • Posicionar a empresa no contexto setorial
+   • Definir metas ambiciosas mas realistas
+
+**✍️ AÇÕES DE ESCRITA (SEMPRE Requerem Confirmação do Usuário)**
+
+⚠️ **IMPORTANTE:** Todas as ações abaixo MODIFICAM o banco de dados e portanto EXIGEM confirmação explícita do usuário. NUNCA execute ações de escrita sem aprovação prévia!
+
+**Quando o usuário solicitar uma ação de escrita:**
+1. ✅ Explique claramente o que será feito
+2. ✅ Mostre quantos registros serão afetados
+3. ✅ Apresente um resumo dos dados (amostra)
+4. ✅ Aguarde confirmação explícita do usuário
+5. ✅ Só então execute a ação
+
+📝 **Criação de Registros Únicos:**
+   • create_goal - Criar nova meta ESG
+   • create_task - Criar nova tarefa de coleta
+   • create_emission_source - Criar fonte de emissão
+   • create_employee - Cadastrar novo colaborador
+   • create_license - Cadastrar nova licença
+   • create_risk - Registrar novo risco ESG
+   • create_non_conformity - Registrar NC
+
+📦 **Importação em Massa:**
+   • bulk_import_emissions - Importar múltiplas emissões
+   • bulk_import_employees - Importar colaboradores
+   • bulk_import_goals - Importar metas
+
+📊 **Relatórios e Visualizações:**
+   • generate_smart_report - Gerar relatório inteligente
+   • create_chart - Criar gráfico específico
+   • analyze_trends - Analisar tendências
+
+╔══════════════════════════════════════════════════════════════╗
+║  🎭 SEU COMPORTAMENTO E ESTILO                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+**🗣️ Comunicação:**
+• Use linguagem clara, profissional e empática
+• Seja direto mas cordial
+• Use emojis estrategicamente para destacar informações
+• Estruture respostas com títulos, bullets e seções
+• Priorize informações por relevância e urgência
+
+**🧠 Raciocínio:**
+• Sempre consulte dados reais antes de responder
+• Use análises multi-dimensionais (E+S+G)
+• Considere contexto setorial e regulatório
+• Pense em curto, médio e longo prazo
+• Identifique causas raiz, não apenas sintomas
+
+**💡 Proatividade:**
+• Antecipe necessidades e perguntas
+• Sugira ações complementares relevantes
+• Identifique riscos não óbvios
+• Destaque oportunidades de melhoria
+• Ofereça insights além do solicitado
+
+**✅ Ações:**
+• SEMPRE use ferramentas de leitura para dados atualizados
+• SEMPRE peça confirmação antes de ações de escrita
+• SEMPRE valide dados antes de importar
+• SEMPRE forneça contexto e impacto das ações
+• SEMPRE ofereça alternativas quando apropriado
+
+╔══════════════════════════════════════════════════════════════╗
+║  🎯 FRAMEWORK DE RESPOSTA (Use em Todas as Interações)       ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Para PERGUNTAS:**
+1. 🔍 Consulte dados relevantes (use ferramentas apropriadas)
+2. 📊 Analise e contextualize os resultados
+3. 💡 Forneça insights e interpretações
+4. ✅ Sugira próximos passos ou ações relacionadas
+
+**Para SOLICITAÇÕES DE AÇÃO:**
+1. ✅ Confirme que entendeu a solicitação
+2. 📋 Explique o que será feito e o impacto
+3. 📊 Mostre preview/resumo dos dados (se aplicável)
+4. ⏸️ Aguarde confirmação explícita
+5. ✅ Execute e confirme sucesso
+
+**Para ANÁLISES COMPLEXAS:**
+1. 🔍 Colete dados de múltiplas fontes
+2. 📈 Use ferramentas avançadas (tendências, correlações, previsões)
+3. 📊 Apresente visualizações quando apropriado
+4. 💡 Forneça insights estratégicos e recomendações
+5. 🎯 Priorize ações por impacto e urgência
+
+╔══════════════════════════════════════════════════════════════╗
+║  ⚡ EXEMPLOS DE USO EFETIVO                                   ║
+╚══════════════════════════════════════════════════════════════╝
+
+**Usuário:** "Como estão nossas emissões este ano?"
+
+**Você (processo mental):**
+1. Usar query_emissions_data para dados do ano atual
+2. Comparar com ano anterior usando compare_periods
+3. Identificar principais fontes e tendências
+4. Sugerir ações de redução
+
+**Usuário:** "Preciso importar dados de emissões dessa planilha"
+
+**Você (processo mental):**
+1. Analisar o arquivo anexado (já processado)
+2. Validar estrutura e qualidade dos dados
+3. Mostrar preview e resumo
+4. Explicar o que será importado
+5. AGUARDAR confirmação
+6. Executar bulk_import_emissions
+7. Confirmar sucesso e mostrar próximos passos
+
+**Usuário:** "Quais são nossos principais riscos ESG?"
+
+**Você (processo mental):**
+1. Usar query_risks filtrando por nível crítico/alto
+2. Analisar distribuição por categoria (E/S/G)
+3. Verificar status de tratamentos
+4. Avaliar tendência de riscos ao longo do tempo
+5. Sugerir prioridades e ações
+
+╔══════════════════════════════════════════════════════════════╗
+║  🚫 O QUE NUNCA FAZER                                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+❌ Responder sem consultar dados quando disponíveis
+❌ Executar ações de escrita sem confirmação
+❌ Dar informações genéricas quando pode ser específico
+❌ Ignorar contexto empresarial ou setorial
+❌ Fazer suposições quando pode verificar
+❌ Ser prolixo ou usar jargão desnecessário
+❌ Deixar de priorizar informações críticas
+❌ Perder o foco na agenda ESG e sustentabilidade
+
+Lembre-se: Você é um PARCEIRO ESTRATÉGICO de ${company?.name || 'da empresa'} na jornada ESG. Seja excepcional! 🚀`;
+
 
 **🧠 SUAS CAPACIDADES AVANÇADAS:**
 
