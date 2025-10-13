@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Rocket, Settings, BarChart, Clock, Users, Shield, Leaf, ArrowRight } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle, Rocket, Settings, BarChart, Clock, Users, Shield, Leaf, ArrowRight, Zap, Info } from "lucide-react";
 import { OnboardingWelcomeAnimation } from "./OnboardingWelcomeAnimation";
 import { CompanyProfileWizard } from "./CompanyProfileWizard";
+import { KeyboardShortcutsGuide } from "./KeyboardShortcutsGuide";
 
 interface EnhancedWelcomeStepProps {
   onNext: (profile?: any) => void;
@@ -13,9 +15,27 @@ interface EnhancedWelcomeStepProps {
 
 export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps) {
   const [showProfileWizard, setShowProfileWizard] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !showProfileWizard) {
+        handleStartConfiguration();
+      } else if (e.key === 'Escape' && onSkip) {
+        onSkip();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showProfileWizard, onSkip]);
 
   const handleStartConfiguration = () => {
-    setShowProfileWizard(true);
+    setIsAnimating(true);
+    setTimeout(() => {
+      setShowProfileWizard(true);
+    }, 300);
   };
 
   const handleProfileComplete = (profile: any) => {
@@ -28,10 +48,12 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
 
   if (showProfileWizard) {
     return (
-      <CompanyProfileWizard
-        onProfileComplete={handleProfileComplete}
-        onSkip={handleSkipProfile}
-      />
+      <div className="animate-fade-in">
+        <CompanyProfileWizard
+          onProfileComplete={handleProfileComplete}
+          onSkip={handleSkipProfile}
+        />
+      </div>
     );
   }
   const benefits = [
@@ -63,18 +85,30 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <div className="w-full max-w-4xl space-y-6">
-        {/* Header Card */}
-        <Card className="shadow-xl border-border/40 bg-card/95 backdrop-blur-sm">
+    <TooltipProvider>
+      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4 transition-all duration-700 ${
+        isAnimating ? 'animate-scale-out opacity-0' : 'animate-fade-in'
+      }`}>
+        <div className="w-full max-w-4xl space-y-6">
+          {/* Header Card */}
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm hover:shadow-[0_20px_50px_rgba(0,191,99,0.15)] transition-all duration-700">
           <CardHeader className="text-center space-y-6 pb-8">
             <OnboardingWelcomeAnimation />
             
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Badge variant="secondary" className="px-3 py-1">
-                  🚀 Setup Inteligente
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="secondary" className="px-3 py-1 hover-scale cursor-help bg-gradient-to-r from-secondary to-secondary/80">
+                      <Zap className="w-3 h-3 mr-1 text-primary" />
+                      Setup Inteligente
+                      <Info className="w-3 h-3 ml-1 text-muted-foreground" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Configuração guiada por IA para melhor experiência</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <CardTitle className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Bem-vindo ao Daton!
@@ -87,30 +121,40 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
           </CardHeader>
 
           <CardContent className="space-y-8">
-            {/* Benefits Grid */}
-            <div className="grid md:grid-cols-3 gap-6">
+            {/* Benefits Grid - Enhanced */}
+            <div className="grid md:grid-cols-3 gap-4">
               {benefits.map((benefit, index) => (
-                <div key={index} className="group relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative p-6 rounded-lg border border-border/50 bg-card/50 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 p-2 rounded-lg bg-background shadow-sm">
-                        {benefit.icon}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-foreground">{benefit.title}</h4>
-                          <Badge variant="outline" className="text-xs px-2 py-0.5">
-                            {benefit.highlight}
-                          </Badge>
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <div 
+                      className="group relative animate-slide-up cursor-help"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="relative p-5 rounded-lg border border-border/50 bg-card/50 hover:shadow-lg hover:border-primary/30 transition-all duration-300 hover-scale">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 p-2 rounded-lg bg-gradient-to-br from-background to-muted shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all">
+                            {benefit.icon}
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-foreground text-sm">{benefit.title}</h4>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                                {benefit.highlight}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {benefit.description}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {benefit.description}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clique para saber mais sobre {benefit.title}</p>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
 
@@ -153,26 +197,52 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4">
-          <Button 
-            variant="outline"
-            onClick={onSkip}
-            size="lg"
-            className="min-w-40 hover:bg-muted/50"
-          >
-            Configurar Depois
-          </Button>
-          <Button 
-            onClick={handleStartConfiguration}
-            size="lg" 
-            className="min-w-52 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            <Rocket className="mr-2 h-4 w-4" />
-            Começar Configuração Inteligente
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+        <div className="space-y-4">
+          <div className="flex justify-center gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline"
+                  onClick={onSkip}
+                  size="lg"
+                  disabled={isAnimating}
+                  className="min-w-40 hover:bg-muted/50 hover-scale border-2 hover:border-primary/30 transition-all"
+                >
+                  Configurar Depois
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Pressione <Badge variant="outline" className="text-[10px] mx-1">Esc</Badge> para pular</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleStartConfiguration}
+                  size="lg"
+                  disabled={isAnimating}
+                  className="min-w-52 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary hover:via-primary/95 hover:to-primary/85 shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all hover-scale group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                  <Rocket className="mr-2 h-4 w-4 relative z-10 group-hover:rotate-12 transition-transform" />
+                  <span className="relative z-10 font-semibold">Começar Configuração Inteligente</span>
+                  <ArrowRight className="ml-2 h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Pressione <Badge variant="outline" className="text-[10px] mx-1">Enter</Badge> para começar</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Keyboard Shortcuts Guide */}
+          <div className="flex justify-center">
+            <KeyboardShortcutsGuide />
+          </div>
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
