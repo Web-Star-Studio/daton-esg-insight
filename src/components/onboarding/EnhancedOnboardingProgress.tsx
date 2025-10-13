@@ -115,7 +115,7 @@ export function EnhancedOnboardingProgress({
                     </div>
                     
                     <Badge 
-                      className="bg-gradient-to-r from-primary/10 to-primary/5 text-primary hover:from-primary/20 hover:to-primary/10 transition-all animate-scale-in"
+                      className="bg-gradient-to-r from-primary/10 to-primary/5 text-white hover:from-primary/20 hover:to-primary/10 transition-all animate-scale-in"
                     >
                       {getMotivationalMessage()}
                     </Badge>
