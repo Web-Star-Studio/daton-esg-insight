@@ -16,51 +16,44 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const { shouldShowOnboarding, isLoading } = useAuth();
 
-  // Show loading while checking auth status
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show onboarding flow for first-time users
-  if (shouldShowOnboarding) {
-    return (
-      <TutorialProvider>
-        <CleanOnboardingMain />
-      </TutorialProvider>
-    );
-  }
-
   return (
     <TutorialProvider>
       <UnifiedTourProvider>
-        <ProfessionalModalProvider>
-          <SidebarProvider defaultOpen={true}>
-            <div className="min-h-screen flex w-full bg-background" data-sidebar>
-              <AppSidebar />
-              
-              <div className="flex-1 flex flex-col min-w-0">
-                <AppHeader />
-                
-                <main className="flex-1 p-6 bg-muted/10">
-                  {children}
-                </main>
-              </div>
+        {/* Show loading while checking auth status */}
+        {isLoading ? (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+              <p className="text-sm text-muted-foreground">Carregando...</p>
             </div>
-            
-            {/* Unified Tool Hub - Single entry point for all tools */}
-            <UnifiedToolHub />
-            
-            {/* Unified Tour System - Sistema consolidado de tours */}
-            <UnifiedTourSystem />
-          </SidebarProvider>
-        </ProfessionalModalProvider>
+          </div>
+        ) : shouldShowOnboarding ? (
+          /* Show onboarding flow for first-time users */
+          <CleanOnboardingMain />
+        ) : (
+          /* Main application layout */
+          <ProfessionalModalProvider>
+            <SidebarProvider defaultOpen={true}>
+              <div className="min-h-screen flex w-full bg-background" data-sidebar>
+                <AppSidebar />
+                
+                <div className="flex-1 flex flex-col min-w-0">
+                  <AppHeader />
+                  
+                  <main className="flex-1 p-6 bg-muted/10">
+                    {children}
+                  </main>
+                </div>
+              </div>
+              
+              {/* Unified Tool Hub - Single entry point for all tools */}
+              <UnifiedToolHub />
+              
+              {/* Unified Tour System - Sistema consolidado de tours */}
+              <UnifiedTourSystem />
+            </SidebarProvider>
+          </ProfessionalModalProvider>
+        )}
       </UnifiedTourProvider>
     </TutorialProvider>
   )
