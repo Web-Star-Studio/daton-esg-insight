@@ -646,6 +646,65 @@ serve(async (req) => {
           }
         }
       },
+      // REPORT TOOLS
+      {
+        type: "function" as const,
+        function: {
+          name: "generate_smart_report",
+          description: "Gera um relatório inteligente com análises, gráficos e insights de IA. Use quando o usuário pedir relatórios, análises ou visualizações de dados.",
+          parameters: {
+            type: "object",
+            properties: {
+              reportType: { type: "string", enum: ["emissions", "quality", "compliance", "esg", "gri"], description: "Tipo de relatório" },
+              dateRange: {
+                type: "object",
+                properties: {
+                  start: { type: "string", description: "Data inicial (YYYY-MM-DD)" },
+                  end: { type: "string", description: "Data final (YYYY-MM-DD)" }
+                },
+                required: ["start", "end"]
+              },
+              includeCharts: { type: "boolean", description: "Incluir gráficos", default: true },
+              includeInsights: { type: "boolean", description: "Incluir insights de IA", default: true }
+            },
+            required: ["reportType", "dateRange"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "create_chart",
+          description: "Cria um gráfico específico a partir de dados.",
+          parameters: {
+            type: "object",
+            properties: {
+              chartType: { type: "string", enum: ["line", "bar", "pie", "area"], description: "Tipo de gráfico" },
+              dataSource: { type: "string", description: "Tabela fonte" },
+              title: { type: "string", description: "Título do gráfico" },
+              xAxis: { type: "string", description: "Campo eixo X" },
+              yAxis: { type: "string", description: "Campo eixo Y" },
+              groupBy: { type: "string", description: "Campo para agrupar" }
+            },
+            required: ["chartType", "dataSource", "title"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "analyze_trends",
+          description: "Analisa tendências em dados temporais.",
+          parameters: {
+            type: "object",
+            properties: {
+              dataType: { type: "string", enum: ["emissions", "quality", "compliance", "goals"], description: "Tipo de dado" },
+              period: { type: "string", enum: ["last_month", "last_quarter", "last_year"], description: "Período de análise" }
+            },
+            required: ["dataType", "period"]
+          }
+        }
+      },
       {
         type: "function" as const,
         function: {

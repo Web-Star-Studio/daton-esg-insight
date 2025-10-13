@@ -5,6 +5,12 @@ import {
   bulkImportGoalsAction,
   bulkImportWasteAction
 } from './bulk-import-actions.ts';
+import {
+  handleGenerateSmartReport,
+  handleCreateChart,
+  handleScheduleReport,
+  handleAnalyzeTrends
+} from './report-actions.ts';
 
 export async function executeWriteTool(
   toolName: string,
@@ -84,6 +90,16 @@ export async function executeWriteTool(
       return await bulkImportGoalsAction(args, companyId, userId, supabase);
     case 'bulk_import_waste':
       return await bulkImportWasteAction(args, companyId, userId, supabase);
+    
+    // Report tools
+    case 'generate_smart_report':
+      return await handleGenerateSmartReport(supabase, args, companyId);
+    case 'create_chart':
+      return await handleCreateChart(supabase, args, companyId);
+    case 'schedule_report':
+      return await handleScheduleReport(supabase, args, companyId, userId);
+    case 'analyze_trends':
+      return await handleAnalyzeTrends(supabase, args, companyId);
     
     default:
       return { error: `Ferramenta de escrita desconhecida: ${toolName}` };
@@ -1008,7 +1024,11 @@ export function getActionCategory(toolName: string): string {
     'add_project_task': 'Projetos',
     'create_indicator': 'Indicadores',
     'add_indicator_measurement': 'Indicadores',
-    'create_license': 'Licenciamento'
+    'create_license': 'Licenciamento',
+    'generate_smart_report': 'Relatórios',
+    'create_chart': 'Visualizações',
+    'schedule_report': 'Relatórios',
+    'analyze_trends': 'Analytics'
   };
   return categories[toolName] || 'Geral';
 }
