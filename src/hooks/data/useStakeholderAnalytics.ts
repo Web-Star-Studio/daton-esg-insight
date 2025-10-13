@@ -102,6 +102,7 @@ export const useStakeholderAnalytics = (period: string = '3months') => {
             trending: { stakeholders: 0, engagement: 0, interactions: 0 }
           },
           engagementByCategory: [],
+          engagementTrend: [],
           influenceDistribution: [
             { name: 'Alta', value: 0, color: '#EF4444' },
             { name: 'Média', value: 0, color: '#F59E0B' },
@@ -111,7 +112,10 @@ export const useStakeholderAnalytics = (period: string = '3months') => {
             { name: 'Alto', value: 0, color: '#3B82F6' },
             { name: 'Médio', value: 0, color: '#8B5CF6' },
             { name: 'Baixo', value: 0, color: '#6B7280' }
-          ]
+          ],
+          maturityRadar: [],
+          riskMetrics: [],
+          upcomingActions: []
         } as StakeholderAnalytics;
       }
 
@@ -224,8 +228,21 @@ export const useStakeholderAnalytics = (period: string = '3months') => {
           trending
         },
         engagementByCategory,
+        engagementTrend: [],
         influenceDistribution,
-        interestDistribution
+        interestDistribution,
+        maturityRadar: [
+          { subject: 'Identificação', score: 75 },
+          { subject: 'Engajamento', score: averageScore },
+          { subject: 'Comunicação', score: activeEngagement > 0 ? 80 : 40 },
+          { subject: 'Monitoramento', score: 60 },
+          { subject: 'Resposta', score: 70 }
+        ],
+        riskMetrics: [
+          { risk: 'Baixo engajamento', stakeholders: stakeholders.length - activeEngagement, trend: 'stable' },
+          { risk: 'Falta de comunicação recente', stakeholders: 0, trend: 'down' }
+        ],
+        upcomingActions: []
       } as StakeholderAnalytics;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
