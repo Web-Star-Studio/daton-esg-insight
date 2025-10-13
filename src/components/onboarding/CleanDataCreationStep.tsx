@@ -99,71 +99,72 @@ export function CleanDataCreationStep({
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardContent className="p-8 space-y-8">
-          {/* Header */}
-          <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">
-              Configure Módulos 3/4
-            </div>
-          </div>
-
-          {/* Modules Configuration */}
-          <div className="space-y-6">
-            {selectedModules.map(moduleId => {
-              const Icon = MODULE_ICONS[moduleId];
-              const moduleName = MODULE_NAMES[moduleId];
-              const options = CONFIGURATION_OPTIONS[moduleId as keyof typeof CONFIGURATION_OPTIONS] || [];
-              const config = moduleConfigurations[moduleId] || {};
-
-              return (
-                <div key={moduleId} className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-semibold text-sm">{moduleName}</span>
-                  </div>
-                  
-                  <div className="space-y-2 pl-6">
-                    {options.map(option => (
-                      <div key={option.key} className="flex items-center justify-between">
-                        <Label htmlFor={`${moduleId}-${option.key}`} className="text-sm cursor-pointer">
-                          {option.label}
-                        </Label>
-                        <Switch
-                          id={`${moduleId}-${option.key}`}
-                          checked={config[option.key] || false}
-                          onCheckedChange={(checked) => handleConfigToggle(moduleId, option.key, checked)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Quick Setup Button */}
-          <Button 
-            variant="outline" 
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="space-y-4 text-center">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Etapa 3 de 4</p>
+          <h2 className="text-xl font-semibold tracking-tight">Configure os Módulos</h2>
+          <Button
             onClick={handleQuickSetup}
-            className="w-full"
+            variant="outline"
             size="sm"
+            className="h-9"
           >
-            Configuração Rápida
+            Ativar Tudo
           </Button>
+        </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between gap-3">
-            <Button variant="outline" onClick={onPrev} size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <Button onClick={onNext} size="sm">
-              Avançar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Module Configurations */}
+        <div className="space-y-6">
+          {selectedModules.map((moduleId) => {
+            const Icon = MODULE_ICONS[moduleId];
+            const moduleName = MODULE_NAMES[moduleId];
+            const options = CONFIGURATION_OPTIONS[moduleId as keyof typeof CONFIGURATION_OPTIONS] || [];
+            const config = moduleConfigurations[moduleId] || {};
+
+            return (
+              <div key={moduleId} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-medium">{moduleName}</h3>
+                </div>
+
+                <div className="space-y-2 pl-6">
+                  {options.map(option => (
+                    <div key={option.key} className="flex items-center justify-between py-1">
+                      <Label htmlFor={`${moduleId}-${option.key}`} className="text-sm text-muted-foreground">
+                        {option.label}
+                      </Label>
+                      <Switch
+                        id={`${moduleId}-${option.key}`}
+                        checked={config[option.key] || false}
+                        onCheckedChange={(checked) => handleConfigToggle(moduleId, option.key, checked)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Button
+            onClick={onPrev}
+            variant="outline"
+            className="flex-1 h-11"
+          >
+            Voltar
+          </Button>
+          <Button
+            onClick={onNext}
+            className="flex-1 h-11"
+          >
+            Avançar
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

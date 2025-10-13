@@ -52,61 +52,57 @@ export function CleanModuleSelectionStep({
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardContent className="p-8 space-y-8">
-          {/* Header */}
-          <div className="space-y-1">
-            <div className="text-sm text-muted-foreground">
-              Selecione Módulos 2/4
-            </div>
-          </div>
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="space-y-2 text-center">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Etapa 2 de 4</p>
+          <h2 className="text-xl font-semibold tracking-tight">Selecione os Módulos</h2>
+        </div>
 
-          {/* Modules List */}
-          <div className="space-y-2">
-            {MODULES.map((module) => {
-              const Icon = module.icon;
-              const isSelected = selectedModules.includes(module.id);
-              
-              return (
-                <div 
-                  key={module.id} 
-                  className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
-                  onClick={() => handleModuleToggle(module.id)}
-                >
-                  <Checkbox 
-                    checked={isSelected}
-                    onCheckedChange={() => handleModuleToggle(module.id)}
-                  />
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <Label className="cursor-pointer flex-1">
-                    {module.name}
-                  </Label>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Selected Count */}
-          <div className="text-sm text-muted-foreground">
-            {selectedModules.length} selecionados
-          </div>
-
-          {/* Navigation */}
-          <div className="flex justify-between gap-3">
-            <Button variant="outline" onClick={onPrev} size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <Button 
-              onClick={onNext}
-              disabled={selectedModules.length === 0}
-              size="sm"
+        {/* Module List */}
+        <div className="space-y-1">
+          {MODULES.map((module) => (
+            <label
+              key={module.id}
+              className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
             >
-              Avançar
-            </Button>
+              <input
+                type="checkbox"
+                checked={selectedModules.includes(module.id)}
+                onChange={() => handleModuleToggle(module.id)}
+                className="w-4 h-4"
+              />
+              <module.icon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{module.name}</span>
+            </label>
+          ))}
+        </div>
+
+        {/* Selected Count */}
+        {selectedModules.length > 0 && (
+          <div className="text-xs text-muted-foreground text-center">
+            {selectedModules.length} selecionado{selectedModules.length !== 1 ? 's' : ''}
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Button
+            onClick={onPrev}
+            variant="outline"
+            className="flex-1 h-11"
+          >
+            Voltar
+          </Button>
+          <Button
+            onClick={onNext}
+            disabled={selectedModules.length === 0}
+            className="flex-1 h-11"
+          >
+            Avançar
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

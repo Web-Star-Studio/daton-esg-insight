@@ -37,67 +37,54 @@ export function CleanWelcomeStep({ onNext, onSkip }: CleanWelcomeStepProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-12 pb-12 px-8 text-center space-y-8">
-          {/* Logo */}
-          <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Leaf className="h-6 w-6 text-primary" />
-            </div>
+      <div className="w-full max-w-sm space-y-12 text-center">
+        {/* Header */}
+        <div className="space-y-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/5">
+            <Leaf className="h-7 w-7 text-primary" />
           </div>
-
-          {/* Title */}
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold">Configure sua plataforma ESG</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Configure sua plataforma</h1>
+            <p className="text-sm text-muted-foreground">4 etapas · 3 minutos</p>
           </div>
+        </div>
 
-          {/* Steps */}
-          <div className="grid grid-cols-4 gap-4 py-4">
-            <div className="flex flex-col items-center gap-2">
-              <Building2 className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Setor</span>
+        {/* Steps Preview */}
+        <div className="flex items-center justify-between px-4">
+          {[
+            { icon: Building2, label: "Perfil" },
+            { icon: Sliders, label: "Módulos" },
+            { icon: Database, label: "Dados" },
+            { icon: CheckCircle, label: "Pronto" }
+          ].map((step, index) => (
+            <div key={index} className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 rounded-full border flex items-center justify-center">
+                <step.icon className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <span className="text-xs text-muted-foreground">{step.label}</span>
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <Sliders className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Módulos</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Database className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Dados</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Pronto</span>
-            </div>
-          </div>
+          ))}
+        </div>
 
-          {/* Time estimate */}
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>3 minutos · 4 etapas</span>
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-3 pt-4">
+        {/* Actions */}
+        <div className="space-y-3">
+          <Button 
+            onClick={handleStartConfiguration}
+            className="w-full h-11"
+          >
+            Começar
+          </Button>
+          {onSkip && (
             <Button 
-              onClick={handleStartConfiguration}
-              className="w-full"
-              size="lg"
+              onClick={onSkip}
+              variant="ghost"
+              className="w-full h-11"
             >
-              Começar
+              Fazer depois
             </Button>
-            {onSkip && (
-              <Button 
-                onClick={onSkip}
-                variant="ghost"
-                className="w-full"
-              >
-                Depois
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

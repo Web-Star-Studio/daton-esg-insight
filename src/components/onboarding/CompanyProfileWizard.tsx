@@ -93,70 +93,80 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
       case 0:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Qual é o setor?</h3>
-            
-            <RadioGroup
-              value={profile.sector}
-              onValueChange={(value) => setProfile({ ...profile, sector: value })}
-              className="space-y-2"
-            >
+            <h3 className="text-lg font-medium">Qual o setor?</h3>
+            <div className="space-y-2">
               {SECTORS.map((sector) => (
-                <div key={sector.id} className="flex items-center space-x-3">
-                  <RadioGroupItem value={sector.id} id={sector.id} />
-                  <Label htmlFor={sector.id} className="cursor-pointer">
-                    {sector.name}
-                  </Label>
-                </div>
+                <label
+                  key={sector.id}
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="sector"
+                    value={sector.id}
+                    checked={profile.sector === sector.id}
+                    onChange={(e) => setProfile({ ...profile, sector: e.target.value })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{sector.name}</span>
+                </label>
               ))}
-            </RadioGroup>
+            </div>
           </div>
         );
 
       case 1:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Qual o tamanho?</h3>
-            
-            <RadioGroup
-              value={profile.size}
-              onValueChange={(value) => setProfile({ ...profile, size: value })}
-              className="space-y-2"
-            >
+            <h3 className="text-lg font-medium">Qual o tamanho?</h3>
+            <div className="space-y-2">
               {COMPANY_SIZES.map((size) => (
-                <div key={size.id} className="flex items-center space-x-3">
-                  <RadioGroupItem value={size.id} id={size.id} />
-                  <Label htmlFor={size.id} className="cursor-pointer">
-                    {size.name}
-                  </Label>
-                </div>
+                <label
+                  key={size.id}
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="size"
+                    value={size.id}
+                    checked={profile.size === size.id}
+                    onChange={(e) => setProfile({ ...profile, size: e.target.value })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{size.name}</span>
+                </label>
               ))}
-            </RadioGroup>
+            </div>
           </div>
         );
 
       case 2:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Quais são os objetivos?</h3>
-            
+            <div className="space-y-1">
+              <h3 className="text-lg font-medium">Objetivos principais?</h3>
+              <p className="text-xs text-muted-foreground">Selecione os que se aplicam</p>
+            </div>
             <div className="space-y-2">
               {BUSINESS_GOALS.map((goal) => (
-                <div key={goal.id} className="flex items-center space-x-3">
-                  <Checkbox
-                    id={goal.id}
+                <label
+                  key={goal.id}
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
                     checked={profile.goals.includes(goal.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
+                    onChange={(e) => {
+                      if (e.target.checked) {
                         setProfile({ ...profile, goals: [...profile.goals, goal.id] });
                       } else {
                         setProfile({ ...profile, goals: profile.goals.filter(g => g !== goal.id) });
                       }
                     }}
+                    className="w-4 h-4"
                   />
-                  <Label htmlFor={goal.id} className="cursor-pointer">
-                    {goal.name}
-                  </Label>
-                </div>
+                  <span className="text-sm">{goal.name}</span>
+                </label>
               ))}
             </div>
           </div>
@@ -165,22 +175,25 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
       case 3:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Qual o nível de maturidade?</h3>
-            
-            <RadioGroup
-              value={profile.maturityLevel}
-              onValueChange={(value) => setProfile({ ...profile, maturityLevel: value })}
-              className="space-y-2"
-            >
+            <h3 className="text-lg font-medium">Nível de maturidade ESG?</h3>
+            <div className="space-y-2">
               {MATURITY_LEVELS.map((level) => (
-                <div key={level.id} className="flex items-center space-x-3">
-                  <RadioGroupItem value={level.id} id={level.id} />
-                  <Label htmlFor={level.id} className="cursor-pointer">
-                    {level.name}
-                  </Label>
-                </div>
+                <label
+                  key={level.id}
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="maturity"
+                    value={level.id}
+                    checked={profile.maturityLevel === level.id}
+                    onChange={(e) => setProfile({ ...profile, maturityLevel: e.target.value })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{level.name}</span>
+                </label>
               ))}
-            </RadioGroup>
+            </div>
           </div>
         );
 
@@ -190,40 +203,38 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardContent className="p-8 space-y-8">
-        {/* Header */}
-        <div className="space-y-1">
-          <div className="text-sm text-muted-foreground">
-            Perfil da Empresa {currentStep + 1}/{steps.length}
-          </div>
-        </div>
+    <div className="w-full max-w-md mx-auto space-y-8">
+      {/* Header */}
+      <div className="space-y-1 text-center">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider">
+          Etapa {currentStep + 1} de {steps.length}
+        </p>
+      </div>
 
-        {/* Step Content */}
+      {/* Step Content */}
+      <div className="space-y-6">
         {renderStep()}
+      </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between gap-3 pt-4">
-          <div className="flex gap-2">
-            {currentStep > 0 && (
-              <Button variant="outline" onClick={handleBack} size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Button>
-            )}
-            <Button variant="ghost" onClick={onSkip} size="sm">
-              Pular
-            </Button>
-          </div>
-          <Button 
-            onClick={handleNext}
-            disabled={!canProceed()}
-            size="sm"
+      {/* Actions */}
+      <div className="flex gap-3">
+        {currentStep > 0 && (
+          <Button
+            onClick={handleBack}
+            variant="outline"
+            className="flex-1 h-11"
           >
-            {currentStep === steps.length - 1 ? 'Finalizar' : 'Avançar'}
+            Voltar
           </Button>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+        <Button
+          onClick={currentStep === steps.length - 1 ? onProfileComplete.bind(null, profile) : handleNext}
+          disabled={!canProceed()}
+          className="flex-1 h-11"
+        >
+          {currentStep === steps.length - 1 ? 'Concluir' : 'Avançar'}
+        </Button>
+      </div>
+    </div>
   );
 }
