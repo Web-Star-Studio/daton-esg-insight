@@ -6,7 +6,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CheckCircle, Rocket, Settings, BarChart, Clock, Users, Shield, Leaf, ArrowRight, Zap, Info } from "lucide-react";
 import { OnboardingWelcomeAnimation } from "./OnboardingWelcomeAnimation";
 import { CompanyProfileWizard } from "./CompanyProfileWizard";
-import { KeyboardShortcutsGuide } from "./KeyboardShortcutsGuide";
 
 interface EnhancedWelcomeStepProps {
   onNext: (profile?: any) => void;
@@ -234,11 +233,6 @@ export function EnhancedWelcomeStep({ onNext, onSkip }: EnhancedWelcomeStepProps
                 <p>Pressione <Badge variant="outline" className="text-[10px] mx-1">Enter</Badge> para começar</p>
               </TooltipContent>
             </Tooltip>
-          </div>
-
-          {/* Keyboard Shortcuts Guide */}
-          <div className="flex justify-center">
-            <KeyboardShortcutsGuide />
           </div>
         </div>
       </div>

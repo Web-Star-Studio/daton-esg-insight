@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Clock, CheckCircle2, TrendingUp, Zap, Save, Info } from 'lucide-react';
-import { Confetti } from './Confetti';
 
 interface SmartProgressIndicatorProps {
   currentStep: number;
@@ -27,17 +26,11 @@ export function SmartProgressIndicator({
     return saved ? parseInt(saved) : Date.now();
   });
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number>(0);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [lastCompletedStep, setLastCompletedStep] = useState(-1);
 
   useEffect(() => {
     setStepStartTime(Date.now());
-    
-    // Show confetti when completing a step
-    if (currentStep > lastCompletedStep && currentStep > 0) {
-      setShowConfetti(true);
-      setLastCompletedStep(currentStep);
-    }
+    setLastCompletedStep(currentStep);
   }, [currentStep]);
 
   useEffect(() => {
@@ -89,7 +82,6 @@ export function SmartProgressIndicator({
 
   return (
     <TooltipProvider>
-      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
       <Card className="border-border/40 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all animate-fade-in">
       <CardContent className="p-6">
         <div className="space-y-4">
