@@ -50,7 +50,7 @@ export function UnifiedToolHub() {
       name: 'Chat IA',
       description: 'Assistente ESG inteligente',
       icon: MessageCircle,
-      component: ChatAssistant
+      component: () => <ChatAssistant embedded />
     },
     {
       id: 'tour-guiado',

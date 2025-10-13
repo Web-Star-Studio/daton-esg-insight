@@ -15,8 +15,12 @@ import { DataVisualization } from '@/components/ai/DataVisualization';
 import ReactMarkdown from 'react-markdown';
 
 // Chat assistant component with AI action confirmation support
-export function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatAssistantProps {
+  embedded?: boolean; // When true, always shows chat without floating button
+}
+
+export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
+  const [isOpen, setIsOpen] = useState(embedded); // Start open if embedded
   const [inputMessage, setInputMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -84,8 +88,8 @@ export function ChatAssistant() {
 
   return (
     <>
-      {/* Floating Chat Button */}
-      {!isOpen && (
+      {/* Floating Chat Button - Only show when not embedded */}
+      {!embedded && !isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-50"
@@ -97,7 +101,10 @@ export function ChatAssistant() {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-[420px] h-[600px] flex flex-col shadow-2xl z-50 border-2">
+        <Card className={embedded 
+          ? "w-full h-full flex flex-col border-0 rounded-none shadow-none" 
+          : "fixed bottom-6 right-6 w-[420px] h-[600px] flex flex-col shadow-2xl z-50 border-2"
+        }>
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 to-primary/5">
             <div className="flex items-center gap-3">
@@ -123,13 +130,16 @@ export function ChatAssistant() {
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              {/* Close button - Only show when not embedded */}
+              {!embedded && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
