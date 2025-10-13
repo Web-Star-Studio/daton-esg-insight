@@ -1,10 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { 
   Rocket, CheckCircle2, ArrowRight, Clock, Target,
-  Leaf, Shield, BarChart3, Users, FileText, Building, Database
+  Leaf, Shield, BarChart3, Users, FileText, Building
 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -102,177 +100,136 @@ export function OnboardingOrchestrator({ completedModules = [] }: OnboardingOrch
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-destructive/10 text-destructive';
-      case 'medium': return 'bg-warning/10 text-warning';
-      case 'low': return 'bg-success/10 text-success';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'Alta';
-      case 'medium': return 'Média';
-      case 'low': return 'Baixa';
-      default: return priority;
-    }
-  };
-
   // Estado completo
   if (isComplete) {
     return (
-      <Card className="border-success/20 bg-success/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-success">
-            <CheckCircle2 className="h-5 w-5" />
-            Configuração Concluída!
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Sua plataforma Daton está completamente configurada. Todos os {totalSteps} módulos foram ativados com dados reais.
-            </p>
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-success border-success/30">
-                {completedSteps}/{totalSteps} módulos ativos
-              </Badge>
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => navigate('/relatorios')}
-              >
-                Ver Relatórios
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
+      <div className="border rounded-lg p-4 bg-muted/20">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <h3 className="font-medium">Configuração Concluída</h3>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-sm text-muted-foreground">
+            Sua plataforma está completamente configurada com {totalSteps} módulos ativos.
+          </p>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => navigate('/relatorios')}
+            className="w-full"
+          >
+            Ver Relatórios
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
     );
   }
 
   // Estado inicial - nunca começou
   if (shouldShowOnboarding && completedSteps === 0) {
     return (
-      <Card className="border-primary/20 bg-primary/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Rocket className="h-5 w-5 text-primary" />
-            Complete Sua Configuração
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Configure sua plataforma em poucos minutos criando seus primeiros dados reais em cada módulo.
-            </p>
-            
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="border rounded-lg p-4">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Rocket className="h-4 w-4 text-primary" />
+            <h3 className="font-medium">Complete Sua Configuração</h3>
+          </div>
+          
+          <p className="text-sm text-muted-foreground">
+            Configure sua plataforma em poucos minutos criando seus primeiros dados reais em cada módulo.
+          </p>
+          
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>5-10 minutos</span>
-              <span>•</span>
-              <Target className="h-3 w-3" />
-              <span>{totalSteps} passos essenciais</span>
+              <span>5-10 min</span>
             </div>
-
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleStartOnboarding}
-                size="sm" 
-                className="flex-1"
-              >
-                Começar Agora
-                <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleSkipOnboarding}
-              >
-                Pular
-              </Button>
+            <span>•</span>
+            <div className="flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              <span>{totalSteps} passos</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleStartOnboarding}
+              size="sm" 
+              className="flex-1"
+            >
+              Começar Agora
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSkipOnboarding}
+            >
+              Pular
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Estado em progresso - mostrar próximos passos
   return (
-    <Card>
-      <CardHeader>
+    <div className="border rounded-lg p-4">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Primeiros Passos</CardTitle>
-          <Badge variant="outline">
-            {completedSteps}/{totalSteps} concluídos
-          </Badge>
+          <h3 className="font-medium">Primeiros Passos</h3>
+          <span className="text-sm text-muted-foreground">
+            {completedSteps}/{totalSteps}
+          </span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progresso</span>
-              <span className="font-medium">{Math.round(completionPercentage)}%</span>
-            </div>
-            <Progress value={completionPercentage} className="h-2" />
-          </div>
 
-          <p className="text-sm text-muted-foreground">
-            Complete estes passos para aproveitar ao máximo sua plataforma ESG.
-          </p>
-          
-          <div className="space-y-2">
-            {pendingSteps.slice(0, 3).map((step) => (
-              <div
-                key={step.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
-                onClick={() => navigate(step.route)}
-              >
-                <div className={`p-2 rounded-lg ${getPriorityColor(step.priority)}`}>
-                  {step.icon}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-sm">{step.title}</h4>
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs"
-                    >
-                      {getPriorityLabel(step.priority)}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {step.description}
-                  </p>
-                </div>
-                
-                <Button variant="ghost" size="sm">
-                  Fazer
-                  <ArrowRight className="ml-1 h-3 w-3" />
-                </Button>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Progresso</span>
+            <span>{Math.round(completionPercentage)}%</span>
+          </div>
+          <Progress value={completionPercentage} className="h-1.5" />
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Complete estes passos para aproveitar ao máximo sua plataforma.
+        </p>
+        
+        <div className="space-y-2">
+          {pendingSteps.slice(0, 3).map((step) => (
+            <div
+              key={step.id}
+              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/30 transition-colors cursor-pointer"
+              onClick={() => navigate(step.route)}
+            >
+              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                {step.icon}
               </div>
-            ))}
-          </div>
-
-          {pendingSteps.length > 3 && (
-            <div className="text-center pt-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleStartOnboarding}
-              >
-                Ver todos os {pendingSteps.length} passos restantes
-              </Button>
+              
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm">{step.title}</h4>
+                <p className="text-xs text-muted-foreground">
+                  {step.description}
+                </p>
+              </div>
+              
+              <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </div>
-          )}
+          ))}
         </div>
-      </CardContent>
-    </Card>
+
+        {pendingSteps.length > 3 && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleStartOnboarding}
+            className="w-full"
+          >
+            Ver todos os {pendingSteps.length} passos restantes
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
