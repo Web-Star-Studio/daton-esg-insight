@@ -27,6 +27,7 @@ import { RealtimeReportingWidget } from "./RealtimeReportingWidget";
 import { useIntelligenceInsights } from "@/services/crossPlatformAnalytics";
 import { useIntelligentRecommendations } from "@/hooks/data/useIntelligentRecommendations";
 import { useNavigate } from "react-router-dom";
+import { ChatAssistant } from "./tools/ChatAssistant";
 
 const IntelligenceHub = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,14 +87,32 @@ const IntelligenceHub = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="chat" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="chat">Chat IA</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
           <TabsTrigger value="widgets">Widgets</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="chat" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Assistente ESG Inteligente
+              </CardTitle>
+              <CardDescription>
+                Converse com a IA e envie documentos (PDF, Excel, CSV, imagens) para análise inteligente e automação
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="min-h-[600px]">
+              <ChatAssistant embedded />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

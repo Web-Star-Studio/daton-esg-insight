@@ -33,7 +33,23 @@ serve(async (req) => {
   try {
     const { messages, companyId, conversationId, currentPage, confirmed, action, attachments, userContext } = await req.json();
     
-    console.log('Daton AI Chat request:', { companyId, conversationId, currentPage, messageCount: messages?.length, confirmed, attachmentsCount: attachments?.length });
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🚀 Daton AI Chat request received:');
+    console.log('   • Company:', companyId);
+    console.log('   • Conversation:', conversationId);
+    console.log('   • Current Page:', currentPage);
+    console.log('   • Messages:', messages?.length);
+    console.log('   • Confirmed Action:', confirmed);
+    console.log('   • Attachments:', attachments?.length || 0);
+    if (attachments && attachments.length > 0) {
+      console.log('   • Attachment details:', attachments.map((a: any) => ({
+        name: a.name,
+        type: a.type,
+        size: `${(a.size / 1024).toFixed(1)} KB`,
+        path: a.path
+      })));
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

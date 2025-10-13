@@ -412,28 +412,35 @@ Converse naturalmente! Exemplos:
           throw new Error('Falha na verificação do upload');
         }
 
-        // Update status to processing
-        setAttachments(prev =>
-          prev.map(att => att.id === id ? { ...att, status: 'processing' } : att)
-        );
+        console.log('✅ Upload verified successfully');
 
-        // Log upload
-        const { error: logError } = await supabase.from('chat_file_uploads').insert({
-          company_id: user?.company.id,
-          user_id: authUser.id,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          file_path: filePath,
-          processing_status: 'uploaded'
-        });
+        // Log upload to database
+        const companyId = user?.company.id;
+        if (companyId) {
+          const { error: logError } = await supabase.from('chat_file_uploads').insert({
+            company_id: companyId,
+            user_id: authUser.id,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+            file_path: filePath,
+            processing_status: 'uploaded',
+            metadata: {
+              upload_timestamp: new Date().toISOString(),
+              original_name: file.name,
+              sanitized_name: sanitizedName
+            }
+          });
 
-        if (logError) {
-          console.error('Error logging upload:', logError);
-          // Non-critical error, continue
+          if (logError) {
+            console.error('⚠️ Error logging upload:', logError);
+            // Non-critical error, continue
+          } else {
+            console.log('✅ Upload logged to database');
+          }
         }
 
-        // Update status to uploaded
+        // Update status to uploaded (skip processing status)
         setAttachments(prev =>
           prev.map(att => att.id === id ? { ...att, status: 'uploaded', path: filePath } : att)
         );
@@ -441,6 +448,8 @@ Converse naturalmente! Exemplos:
         toast.success('Arquivo enviado com sucesso', {
           description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`
         });
+
+        console.log('✅ File ready to send:', { name: file.name, path: filePath });
 
         return; // Success, exit retry loop
 
@@ -518,11 +527,14 @@ Converse naturalmente! Exemplos:
 
     // Process attachments FIRST before adding user message
     console.log('📎 Attachments to send:', attachmentsToSend.length);
-    console.log('📎 Attachment statuses:', attachmentsToSend.map(a => ({ 
-      name: a.name, 
-      status: a.status, 
-      hasPath: !!a.path 
-    })));
+    if (attachmentsToSend.length > 0) {
+      console.log('📎 Attachment details:', attachmentsToSend.map(a => ({ 
+        name: a.name, 
+        status: a.status, 
+        hasPath: !!a.path,
+        path: a.path
+      })));
+    }
 
     const processedAttachments = attachmentsToSend
       .filter(att => att.status === 'uploaded' && att.path)
@@ -534,6 +546,9 @@ Converse naturalmente! Exemplos:
       }));
 
     console.log('✅ Processed attachments ready to send:', processedAttachments.length);
+    if (processedAttachments.length > 0) {
+      console.log('✅ Attachments being sent:', processedAttachments.map(a => ({ name: a.name, path: a.path })));
+    }
 
     if (attachmentsToSend.length > 0 && processedAttachments.length === 0) {
       toast.error('Erro nos anexos', {
@@ -591,7 +606,8 @@ Converse naturalmente! Exemplos:
       console.log('📤 Sending chat request to Daton AI...', {
         hasAttachments: processedAttachments.length > 0,
         attachmentCount: processedAttachments.length,
-        attachments: processedAttachments
+        attachments: processedAttachments,
+        messageLength: content.length
       });
 
       // Call Daton AI Chat edge function
@@ -610,8 +626,14 @@ Converse naturalmente! Exemplos:
         }
       });
 
+      console.log('📨 Edge function response received:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        dataKeys: data ? Object.keys(data) : [] 
+      });
+
       if (error) {
-        console.error('Chat AI error:', error);
+        console.error('❌ Chat AI error:', error);
         
         // Check for specific error codes
         if (error.message?.includes('429') || data?.error === 'Rate limits exceeded') {
