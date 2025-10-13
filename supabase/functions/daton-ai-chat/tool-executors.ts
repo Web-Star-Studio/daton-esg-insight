@@ -3,6 +3,19 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { 
+  analyzeTrends, 
+  comparePeriods, 
+  predictFutureMetrics, 
+  analyzeCorrelations, 
+  generateExecutiveSummary 
+} from './advanced-analytics.ts';
+import {
+  analyzeComplianceGaps,
+  benchmarkPerformance,
+  identifyOptimizationOpportunities,
+  analyzeStakeholderImpact
+} from './advanced-tool-executors.ts';
 
 export async function executeReadTool(
   toolName: string,
@@ -41,19 +54,33 @@ export async function executeReadTool(
       case 'review_pending_extractions':
         return await reviewPendingExtractions(args, companyId, supabaseClient);
       
+      // Advanced Analytics Tools
       case 'analyze_trends':
+        return await analyzeTrends(args.metric, args.period, args.groupBy || 'month', companyId, supabaseClient);
+      
       case 'compare_periods':
+        return await comparePeriods(args.metric, args.currentPeriod, args.previousPeriod, companyId, supabaseClient);
+      
       case 'predict_future_metrics':
+        return await predictFutureMetrics(args.metric, args.forecastPeriod, args.includeConfidence || false, companyId, supabaseClient);
+      
       case 'analyze_correlations':
+        return await analyzeCorrelations(args.metrics, args.period || 'last_6_months', companyId, supabaseClient);
+      
       case 'generate_executive_summary':
+        return await generateExecutiveSummary(args.scope, args.includeRecommendations || true, args.priorityLevel || 'all', companyId, supabaseClient);
+      
       case 'analyze_compliance_gaps':
+        return await analyzeComplianceGaps(args, companyId, supabaseClient);
+      
       case 'benchmark_performance':
+        return await benchmarkPerformance(args, companyId, supabaseClient);
+      
       case 'identify_optimization_opportunities':
+        return await identifyOptimizationOpportunities(args, companyId, supabaseClient);
+      
       case 'analyze_stakeholder_impact':
-        return { 
-          message: `Ferramenta de análise avançada "${toolName}" em desenvolvimento. Em breve estará disponível com capacidades completas de IA preditiva e análise estratégica.`,
-          status: 'coming_soon'
-        };
+        return await analyzeStakeholderImpact(args, companyId, supabaseClient);
       
       default:
         return { error: `Unknown tool: ${toolName}` };
