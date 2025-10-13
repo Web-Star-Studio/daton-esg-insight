@@ -550,6 +550,130 @@ serve(async (req) => {
             required: ["license_name", "license_type", "expiration_date"]
           }
         }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "bulk_import_emissions",
+          description: "Importar múltiplas fontes de emissão de planilha/documento. SEMPRE peça confirmação antes de chamar esta função. Use quando houver vários registros de emissões.",
+          parameters: {
+            type: "object",
+            properties: {
+              emissions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    source_name: { type: "string", description: "Nome da fonte de emissão" },
+                    scope: { type: "number", enum: [1, 2, 3], description: "Escopo (1, 2 ou 3)" },
+                    category: { type: "string", description: "Categoria da fonte" },
+                    quantity: { type: "number", description: "Quantidade consumida" },
+                    unit: { type: "string", description: "Unidade (L, kg, kWh, etc)" },
+                    period_start: { type: "string", format: "date", description: "Início do período (YYYY-MM-DD)" },
+                    period_end: { type: "string", format: "date", description: "Fim do período (YYYY-MM-DD)" },
+                    description: { type: "string", description: "Descrição adicional" }
+                  },
+                  required: ["source_name", "scope"]
+                }
+              },
+              skip_duplicates: { type: "boolean", description: "Ignorar duplicatas", default: true },
+              update_existing: { type: "boolean", description: "Atualizar registros existentes", default: false }
+            },
+            required: ["emissions"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "bulk_import_employees",
+          description: "Importar múltiplos funcionários de planilha. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              employees: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    full_name: { type: "string", description: "Nome completo" },
+                    email: { type: "string", description: "Email" },
+                    cpf: { type: "string", description: "CPF" },
+                    department: { type: "string", description: "Departamento" },
+                    position: { type: "string", description: "Cargo" },
+                    hire_date: { type: "string", format: "date", description: "Data de admissão (YYYY-MM-DD)" },
+                    birth_date: { type: "string", format: "date", description: "Data de nascimento (YYYY-MM-DD)" },
+                    gender: { type: "string", enum: ["Masculino", "Feminino", "Outro"], description: "Gênero" }
+                  },
+                  required: ["full_name"]
+                }
+              },
+              skip_duplicates: { type: "boolean", description: "Ignorar duplicatas", default: true },
+              update_existing: { type: "boolean", description: "Atualizar registros existentes", default: false }
+            },
+            required: ["employees"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "bulk_import_goals",
+          description: "Importar múltiplas metas ESG de planilha. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              goals: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    goal_name: { type: "string", description: "Nome da meta" },
+                    category: { type: "string", enum: ["Ambiental", "Social", "Governança"], description: "Categoria" },
+                    target_value: { type: "number", description: "Valor alvo" },
+                    baseline_value: { type: "number", description: "Valor baseline" },
+                    target_date: { type: "string", format: "date", description: "Data alvo (YYYY-MM-DD)" },
+                    unit: { type: "string", description: "Unidade de medida" },
+                    description: { type: "string", description: "Descrição" }
+                  },
+                  required: ["goal_name", "target_value"]
+                }
+              },
+              skip_duplicates: { type: "boolean", description: "Ignorar duplicatas", default: true },
+              update_existing: { type: "boolean", description: "Atualizar registros existentes", default: false }
+            },
+            required: ["goals"]
+          }
+        }
+      },
+      {
+        type: "function" as const,
+        function: {
+          name: "bulk_import_waste",
+          description: "Importar múltiplos registros de resíduos. SEMPRE peça confirmação antes de chamar esta função.",
+          parameters: {
+            type: "object",
+            properties: {
+              waste: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    waste_type: { type: "string", description: "Tipo de resíduo" },
+                    waste_class: { type: "string", enum: ["I", "IIA", "IIB"], description: "Classe" },
+                    quantity: { type: "number", description: "Quantidade" },
+                    unit: { type: "string", description: "Unidade (kg, ton, etc)" },
+                    disposal_method: { type: "string", description: "Método de destinação" },
+                    log_date: { type: "string", format: "date", description: "Data (YYYY-MM-DD)" },
+                    notes: { type: "string", description: "Observações" }
+                  },
+                  required: ["waste_type", "quantity"]
+                }
+              }
+            },
+            required: ["waste"]
+          }
+        }
       }
     ];
 
@@ -605,6 +729,17 @@ serve(async (req) => {
             }
           }
 
+          // Generate intelligent suggestions
+          let suggestions;
+          if (classification && extractedData) {
+            suggestions = await generateIntelligentSuggestions(
+              classification.documentType,
+              extractedData,
+              { company_id: companyId, user_id: userId },
+              supabaseClient
+            );
+          }
+
           // Build rich context
           attachmentContext += `\n\n📎 **ARQUIVO: ${attachment.name}**`;
           if (classification) {
@@ -618,6 +753,22 @@ serve(async (req) => {
           if (extractedData?.records) {
             attachmentContext += `\n📊 **Dados estruturados:** ${extractedData.records.length} registros encontrados`;
             attachmentContext += `\n📌 **Colunas:** ${extractedData.headers?.join(', ')}`;
+          }
+
+          // Add intelligent suggestions
+          if (suggestions) {
+            if (suggestions.insights.length > 0) {
+              attachmentContext += `\n\n💡 **Insights:**\n${suggestions.insights.map(i => `  • ${i}`).join('\n')}`;
+            }
+            if (suggestions.warnings.length > 0) {
+              attachmentContext += `\n\n⚠️ **Alertas:**\n${suggestions.warnings.map(w => `  • ${w}`).join('\n')}`;
+            }
+            if (suggestions.opportunities.length > 0) {
+              attachmentContext += `\n\n🎯 **Oportunidades:**\n${suggestions.opportunities.map(o => `  • ${o}`).join('\n')}`;
+            }
+            if (suggestions.actions.length > 0) {
+              attachmentContext += `\n\n✅ **Ações Recomendadas:**\n${suggestions.actions.map(a => `  • ${a.description} (${a.priority})`).join('\n')}`;
+            }
           }
           
           attachmentContext += `\n---\n${parseData.content.substring(0, 1500)}${parseData.content.length > 1500 ? '...' : ''}\n---`;

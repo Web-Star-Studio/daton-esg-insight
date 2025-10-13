@@ -1,4 +1,11 @@
 // Write tool execution functions
+import {
+  bulkImportEmissionsAction,
+  bulkImportEmployeesAction,
+  bulkImportGoalsAction,
+  bulkImportWasteAction
+} from './bulk-import-actions.ts';
+
 export async function executeWriteTool(
   toolName: string,
   args: any,
@@ -67,6 +74,17 @@ export async function executeWriteTool(
       return await addIndicatorMeasurementAction(args, companyId, userId, supabase);
     case 'create_license':
       return await createLicenseAction(args, companyId, userId, supabase);
+    
+    // Bulk import tools
+    case 'bulk_import_emissions':
+      return await bulkImportEmissionsAction(args, companyId, userId, supabase);
+    case 'bulk_import_employees':
+      return await bulkImportEmployeesAction(args, companyId, userId, supabase);
+    case 'bulk_import_goals':
+      return await bulkImportGoalsAction(args, companyId, userId, supabase);
+    case 'bulk_import_waste':
+      return await bulkImportWasteAction(args, companyId, userId, supabase);
+    
     default:
       return { error: `Ferramenta de escrita desconhecida: ${toolName}` };
   }
@@ -979,6 +997,10 @@ export function getActionCategory(toolName: string): string {
     'add_stakeholder': 'Stakeholders',
     'create_training': 'Treinamentos',
     'create_audit': 'Auditoria',
+    'bulk_import_emissions': 'Inventário GEE',
+    'bulk_import_employees': 'Recursos Humanos',
+    'bulk_import_goals': 'Metas ESG',
+    'bulk_import_waste': 'Gestão de Resíduos',
     'create_okr': 'OKRs',
     'add_key_result': 'OKRs',
     'update_okr_progress': 'OKRs',
