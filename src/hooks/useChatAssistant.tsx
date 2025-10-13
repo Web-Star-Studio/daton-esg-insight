@@ -372,7 +372,6 @@ Converse naturalmente! Exemplos:
     };
 
     setAttachments(prev => [...prev, newAttachment]);
-    setIsUploading(true);
 
     // Retry logic
     const maxRetries = 3;
@@ -473,13 +472,31 @@ Converse naturalmente! Exemplos:
     toast.error('Falha no upload', {
       description: lastError?.message || 'Não foi possível enviar o arquivo. Tente novamente.'
     });
-
-    setIsUploading(false);
   };
 
   const removeAttachment = (id: string) => {
-    setAttachments(prev => prev.filter(att => att.id !== id));
+    setAttachments(prev => {
+      const filtered = prev.filter(att => att.id !== id);
+      // Se não há mais anexos em upload, desabilitar isUploading
+      const anyUploading = filtered.some(att => att.status === 'uploading' || att.status === 'processing');
+      if (!anyUploading && isUploading) {
+        setIsUploading(false);
+      }
+      return filtered;
+    });
   };
+
+  // Monitor attachment status changes to update isUploading
+  useEffect(() => {
+    const anyUploading = attachments.some(att => 
+      att.status === 'uploading' || att.status === 'processing'
+    );
+    
+    if (anyUploading !== isUploading) {
+      setIsUploading(anyUploading);
+      console.log('🔄 Upload status changed:', anyUploading ? 'uploading' : 'ready');
+    }
+  }, [attachments]);
 
   const sendMessage = async (content: string, currentPage?: string, messageAttachments?: FileAttachmentData[]) => {
     if (!content.trim()) return;
