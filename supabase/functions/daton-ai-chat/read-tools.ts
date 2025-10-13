@@ -218,5 +218,229 @@ export const readTools = [
         required: []
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_trends",
+      description: "Analisa tendências e padrões em dados históricos. Use para identificar evolução temporal de métricas ESG.",
+      parameters: {
+        type: "object",
+        properties: {
+          metric: {
+            type: "string",
+            enum: ["emissions", "goals", "tasks", "licenses", "risks", "non_conformities"],
+            description: "Métrica a analisar"
+          },
+          period: {
+            type: "string",
+            enum: ["last_30_days", "last_90_days", "last_6_months", "last_year", "year_to_date"],
+            description: "Período de análise"
+          },
+          groupBy: {
+            type: "string",
+            enum: ["day", "week", "month", "quarter"],
+            description: "Granularidade da análise temporal"
+          }
+        },
+        required: ["metric", "period"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "compare_periods",
+      description: "Compara métricas entre dois períodos para identificar variações e tendências. Essencial para análises de evolução.",
+      parameters: {
+        type: "object",
+        properties: {
+          metric: {
+            type: "string",
+            enum: ["emissions", "goals_progress", "task_completion", "license_compliance"],
+            description: "Métrica a comparar"
+          },
+          currentPeriod: {
+            type: "string",
+            description: "Período atual (ex: '2025-01', 'Q1-2025', '2025')"
+          },
+          previousPeriod: {
+            type: "string",
+            description: "Período anterior (ex: '2024-12', 'Q4-2024', '2024')"
+          }
+        },
+        required: ["metric", "currentPeriod", "previousPeriod"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "predict_future_metrics",
+      description: "Prediz valores futuros de métricas com base em dados históricos. Use para projeções e planejamento estratégico.",
+      parameters: {
+        type: "object",
+        properties: {
+          metric: {
+            type: "string",
+            enum: ["emissions", "goal_achievement", "task_completion_rate"],
+            description: "Métrica a prever"
+          },
+          forecastPeriod: {
+            type: "string",
+            enum: ["next_month", "next_quarter", "next_6_months", "next_year"],
+            description: "Período de previsão"
+          },
+          includeConfidence: {
+            type: "boolean",
+            description: "Incluir intervalos de confiança na previsão"
+          }
+        },
+        required: ["metric", "forecastPeriod"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_correlations",
+      description: "Analisa correlações entre diferentes métricas ESG. Use para identificar relações causais e impactos indiretos.",
+      parameters: {
+        type: "object",
+        properties: {
+          metrics: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["emissions", "goals", "tasks", "risks", "non_conformities", "employees"]
+            },
+            description: "Lista de métricas a correlacionar (mínimo 2)"
+          },
+          period: {
+            type: "string",
+            enum: ["last_90_days", "last_6_months", "last_year"],
+            description: "Período de análise"
+          }
+        },
+        required: ["metrics"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_executive_summary",
+      description: "Gera resumo executivo completo com insights, alertas e recomendações estratégicas. Use para visão holística da gestão ESG.",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: {
+            type: "string",
+            enum: ["full", "environmental", "social", "governance"],
+            description: "Escopo do resumo"
+          },
+          includeRecommendations: {
+            type: "boolean",
+            description: "Incluir recomendações estratégicas"
+          },
+          priorityLevel: {
+            type: "string",
+            enum: ["critical_only", "high_priority", "all"],
+            description: "Filtro de prioridade de insights"
+          }
+        },
+        required: ["scope"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_compliance_gaps",
+      description: "Analisa lacunas de conformidade e identifica áreas de risco regulatório. Essencial para gestão de compliance.",
+      parameters: {
+        type: "object",
+        properties: {
+          framework: {
+            type: "string",
+            enum: ["all", "licenses", "gri", "iso14001", "iso45001"],
+            description: "Framework de conformidade a analisar"
+          },
+          includeRemediation: {
+            type: "boolean",
+            description: "Incluir plano de remediação"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "benchmark_performance",
+      description: "Compara performance da empresa com benchmarks do setor. Use para análise competitiva e identificação de oportunidades.",
+      parameters: {
+        type: "object",
+        properties: {
+          metric: {
+            type: "string",
+            enum: ["emissions_intensity", "goal_achievement_rate", "compliance_score"],
+            description: "Métrica a comparar"
+          },
+          sector: {
+            type: "string",
+            description: "Setor industrial para comparação (opcional, usa setor da empresa se não especificado)"
+          }
+        },
+        required: ["metric"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "identify_optimization_opportunities",
+      description: "Identifica oportunidades de otimização em processos ESG com base em análise de dados e padrões.",
+      parameters: {
+        type: "object",
+        properties: {
+          focus: {
+            type: "string",
+            enum: ["all", "cost_reduction", "efficiency", "risk_mitigation", "goal_acceleration"],
+            description: "Foco da análise de otimização"
+          },
+          includeImpact: {
+            type: "boolean",
+            description: "Incluir estimativa de impacto das oportunidades"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_stakeholder_impact",
+      description: "Analisa impacto de ações ESG em diferentes stakeholders. Use para análise de materialidade e priorização.",
+      parameters: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            description: "Ação ou iniciativa a analisar"
+          },
+          stakeholderGroups: {
+            type: "array",
+            items: {
+              type: "string"
+            },
+            description: "Grupos de stakeholders a considerar (ex: ['funcionários', 'comunidade', 'investidores'])"
+          }
+        },
+        required: ["action"]
+      }
+    }
   }
 ];

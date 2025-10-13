@@ -41,6 +41,20 @@ export async function executeReadTool(
       case 'review_pending_extractions':
         return await reviewPendingExtractions(args, companyId, supabaseClient);
       
+      case 'analyze_trends':
+      case 'compare_periods':
+      case 'predict_future_metrics':
+      case 'analyze_correlations':
+      case 'generate_executive_summary':
+      case 'analyze_compliance_gaps':
+      case 'benchmark_performance':
+      case 'identify_optimization_opportunities':
+      case 'analyze_stakeholder_impact':
+        return { 
+          message: `Ferramenta de análise avançada "${toolName}" em desenvolvimento. Em breve estará disponível com capacidades completas de IA preditiva e análise estratégica.`,
+          status: 'coming_soon'
+        };
+      
       default:
         return { error: `Unknown tool: ${toolName}` };
     }
