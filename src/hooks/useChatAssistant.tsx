@@ -98,32 +98,152 @@ Converse naturalmente! Exemplos:
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
 
+  // Backup de mensagens em localStorage para recuperação rápida
+  useEffect(() => {
+    if (messages.length > 1 && conversationId) { // Mais que apenas boas-vindas
+      localStorage.setItem(`chat_messages_${conversationId}`, JSON.stringify({
+        messages: messages.map(m => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp.toISOString(),
+          context: m.context,
+          insights: m.insights,
+          visualizations: m.visualizations
+        })),
+        lastUpdate: new Date().toISOString()
+      }));
+    }
+  }, [messages, conversationId]);
+
   // Initialize or load conversation
   useEffect(() => {
     const initConversation = async () => {
       if (!user?.company.id) return;
 
       try {
-        // Create new conversation
-        const { data: conv, error } = await supabase
+        console.log('🔍 Looking for existing conversation...');
+        
+        // Buscar conversação mais recente (últimas 24h)
+        const oneDayAgo = new Date();
+        oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+        
+        const { data: existingConv, error: fetchError } = await supabase
           .from('ai_chat_conversations')
-          .insert({
-            company_id: user.company.id,
-            user_id: user.id,
-            title: 'Nova Conversa'
-          })
-          .select()
-          .single();
+          .select('*')
+          .eq('company_id', user.company.id)
+          .eq('user_id', user.id)
+          .gte('created_at', oneDayAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-        if (error) throw error;
-        setConversationId(conv.id);
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          throw fetchError;
+        }
+
+        if (existingConv) {
+          console.log('♻️ Reusing existing conversation:', existingConv.id);
+          setConversationId(existingConv.id);
+        } else {
+          console.log('🆕 Creating new conversation');
+          
+          // Criar nova conversação
+          const { data: newConv, error: createError } = await supabase
+            .from('ai_chat_conversations')
+            .insert({
+              company_id: user.company.id,
+              user_id: user.id,
+              title: 'Nova Conversa'
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          
+          console.log('✅ New conversation created:', newConv.id);
+          setConversationId(newConv.id);
+        }
       } catch (error) {
-        console.error('Error creating conversation:', error);
+        console.error('❌ Error initializing conversation:', error);
+        toast.error('Erro ao inicializar chat', {
+          description: 'Não foi possível conectar ao assistente'
+        });
       }
     };
 
     initConversation();
-  }, [user]);
+  }, [user?.company.id, user?.id]);
+
+  // Carregar de localStorage na inicialização (recuperação rápida)
+  useEffect(() => {
+    if (conversationId) {
+      const cached = localStorage.getItem(`chat_messages_${conversationId}`);
+      if (cached) {
+        try {
+          const { messages: cachedMessages, lastUpdate } = JSON.parse(cached);
+          const cacheAge = Date.now() - new Date(lastUpdate).getTime();
+          
+          // Usar cache se tiver menos de 5 minutos
+          if (cacheAge < 5 * 60 * 1000) {
+            console.log('⚡ Using cached messages');
+            setMessages(cachedMessages.map((m: any) => ({
+              ...m,
+              timestamp: new Date(m.timestamp)
+            })));
+          }
+        } catch (e) {
+          console.warn('Failed to parse cached messages:', e);
+        }
+      }
+    }
+  }, [conversationId]);
+
+  // Carregar mensagens da conversação do banco de dados
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!conversationId) return;
+      
+      try {
+        console.log('📥 Loading messages for conversation:', conversationId);
+        
+        const { data: savedMessages, error } = await supabase
+          .from('ai_chat_messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (savedMessages && savedMessages.length > 0) {
+          const loadedMessages: ChatMessage[] = savedMessages.map(msg => {
+            const metadata = msg.metadata as any || {};
+            return {
+              id: msg.id,
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content,
+              timestamp: new Date(msg.created_at),
+              context: metadata.dataAccessed ? 
+                `Dados consultados: ${metadata.dataAccessed.join(', ')}` : 
+                undefined,
+              insights: metadata.insights || [],
+              visualizations: metadata.visualizations || []
+            };
+          });
+          
+          setMessages(loadedMessages);
+          console.log(`✅ Loaded ${loadedMessages.length} messages`);
+        }
+      } catch (error) {
+        console.error('❌ Error loading messages:', error);
+        toast.error('Erro ao carregar histórico', {
+          description: 'Não foi possível carregar o histórico da conversa'
+        });
+      }
+    };
+    
+    loadMessages();
+  }, [conversationId]);
 
   // Sanitize file names to prevent storage errors with special characters
   const sanitizeFileName = (fileName: string): string => {
@@ -470,6 +590,12 @@ Converse naturalmente! Exemplos:
   };
 
   const clearMessages = () => {
+    // Limpar localStorage
+    if (conversationId) {
+      localStorage.removeItem(`chat_messages_${conversationId}`);
+      console.log('🧹 Cleared localStorage cache for conversation:', conversationId);
+    }
+    
     setMessages([
       {
         id: 'welcome',
@@ -485,6 +611,10 @@ Estou pronto para ajudar. Posso:
         timestamp: new Date(),
       }
     ]);
+    
+    toast.info('Conversa limpa', {
+      description: 'O histórico foi apagado'
+    });
   };
 
   const confirmAction = async (action: PendingAction) => {
