@@ -55,10 +55,10 @@ export const getStakeholdersByCategory = async (category: string, companyId?: st
   return data as Stakeholder[];
 };
 
-export const createStakeholder = async (stakeholder: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at'>) => {
+export const createStakeholder = async (stakeholder: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
   const { data, error } = await supabase
     .from('stakeholders')
-    .insert(stakeholder)
+    .insert(stakeholder as any)
     .select()
     .single();
   

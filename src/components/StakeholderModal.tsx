@@ -15,7 +15,7 @@ interface StakeholderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   stakeholder?: Stakeholder | null;
-  onSave: (stakeholder: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSave: (stakeholder: Omit<Stakeholder, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => Promise<void>;
 }
 
 export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: StakeholderModalProps) => {
@@ -86,7 +86,6 @@ export const StakeholderModal = ({ open, onOpenChange, stakeholder, onSave }: St
         engagement_frequency: formData.engagement_frequency as Stakeholder['engagement_frequency'],
         preferred_communication: formData.preferred_communication as Stakeholder['preferred_communication'],
         notes: formData.notes.trim() || null,
-        company_id: '', // Será preenchido automaticamente via RLS
         is_active: true,
       };
       
