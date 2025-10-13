@@ -173,7 +173,7 @@ export function UnifiedToolHub() {
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 animate-scale-in">
         <Card className={cn(
           "w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-background/95 backdrop-blur-lg border shadow-2xl",
-          activeComponent ? "h-[70vh] sm:h-[32rem]" : "h-auto"
+          activeComponent ? "h-[90vh] sm:h-[calc(100vh-8rem)]" : "h-auto"
         )}>
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b">
@@ -255,7 +255,7 @@ export function UnifiedToolHub() {
 
             {/* Active Component */}
             {activeComponent && (
-              <div className="flex flex-col h-[calc(70vh-6rem)] sm:h-[calc(32rem-6rem)]">
+              <div className="flex flex-col h-[calc(90vh-6rem)] sm:h-[calc(100vh-14rem)]">
                 <div className="flex items-center justify-between mb-3">
                   <Button
                     variant="outline"
