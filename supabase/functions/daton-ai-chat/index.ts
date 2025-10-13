@@ -553,16 +553,16 @@ serve(async (req) => {
       }
     ];
 
-    // Process attachments if any
+    // Process attachments with intelligent classification and extraction
     let attachmentContext = '';
     if (attachments && attachments.length > 0) {
-      console.log('Processing attachments:', attachments.length);
+      console.log('Processing attachments with AI:', attachments.length);
       
       for (const attachment of attachments) {
         try {
           console.log('Parsing attachment:', attachment.name);
           
-          // Call parse-chat-document function
+          // Step 1: Parse document
           const { data: parseData, error: parseError } = await supabaseClient.functions.invoke('parse-chat-document', {
             body: { 
               filePath: attachment.path, 
@@ -570,29 +570,71 @@ serve(async (req) => {
             }
           });
 
-          if (parseError) {
+          if (parseError || !parseData?.content) {
             console.error('Parse error for', attachment.name, ':', parseError);
-            attachmentContext += `\n\n❌ **Erro ao processar arquivo: ${attachment.name}**\nNão foi possível extrair o conteúdo.`;
+            attachmentContext += `\n\n❌ **Erro ao processar: ${attachment.name}**`;
             continue;
           }
 
-          if (parseData && parseData.content) {
-            console.log('Attachment parsed successfully:', attachment.name);
-            attachmentContext += `\n\n📎 **ARQUIVO ANEXADO: ${attachment.name}** (${attachment.type})\n`;
-            attachmentContext += `---\n${parseData.content}\n---`;
-            
-            // Update processing status
-            await supabaseClient
-              .from('chat_file_uploads')
-              .update({ 
-                processing_status: 'processed',
-                parsed_content: parseData.structured 
-              })
-              .eq('file_path', attachment.path);
+          // Step 2: Classify document type
+          const { data: classData } = await supabaseClient.functions.invoke('intelligent-document-classifier', {
+            body: {
+              content: parseData.content,
+              fileType: attachment.type,
+              fileName: attachment.name,
+              structured: parseData.structured
+            }
+          });
+
+          const classification = classData?.classification;
+          console.log('Document classified:', classification?.documentType);
+
+          // Step 3: Advanced extraction (if supported type)
+          let extractedData = parseData.structured;
+          if (attachment.type.includes('spreadsheet') || attachment.type.includes('excel') || 
+              attachment.type.includes('csv') || attachment.type.includes('pdf')) {
+            const { data: extractData } = await supabaseClient.functions.invoke('advanced-document-extractor', {
+              body: {
+                filePath: attachment.path,
+                fileType: attachment.type,
+                classification
+              }
+            });
+            if (extractData?.structuredData) {
+              extractedData = extractData.structuredData;
+            }
           }
+
+          // Build rich context
+          attachmentContext += `\n\n📎 **ARQUIVO: ${attachment.name}**`;
+          if (classification) {
+            attachmentContext += `\n🏷️ **Tipo identificado:** ${classification.documentType} (${Math.round(classification.confidence * 100)}% confiança)`;
+            attachmentContext += `\n📋 **Categoria:** ${classification.category}`;
+            if (classification.suggestedActions?.length > 0) {
+              attachmentContext += `\n💡 **Ações sugeridas:** ${classification.suggestedActions.join(', ')}`;
+            }
+          }
+          
+          if (extractedData?.records) {
+            attachmentContext += `\n📊 **Dados estruturados:** ${extractedData.records.length} registros encontrados`;
+            attachmentContext += `\n📌 **Colunas:** ${extractedData.headers?.join(', ')}`;
+          }
+          
+          attachmentContext += `\n---\n${parseData.content.substring(0, 1500)}${parseData.content.length > 1500 ? '...' : ''}\n---`;
+          
+          // Update processing status
+          await supabaseClient
+            .from('chat_file_uploads')
+            .update({ 
+              processing_status: 'processed',
+              parsed_content: extractedData,
+              metadata: { classification, extraction_method: 'ai_enhanced' }
+            })
+            .eq('file_path', attachment.path);
+
         } catch (error) {
           console.error('Error processing attachment:', error);
-          attachmentContext += `\n\n❌ **Erro ao processar arquivo: ${attachment.name}**\n${error instanceof Error ? error.message : 'Erro desconhecido'}`;
+          attachmentContext += `\n\n❌ **Erro: ${attachment.name}** - ${error instanceof Error ? error.message : 'Erro desconhecido'}`;
         }
       }
     }
