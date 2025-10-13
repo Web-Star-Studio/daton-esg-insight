@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import {
   Plus,
   Shield
 } from "lucide-react";
+import { Confetti } from "./Confetti";
 
 interface CleanCompletionStepProps {
   selectedModules: string[];
@@ -44,6 +46,11 @@ export function CleanCompletionStep({
   onRunValidation,
   onEmergencyComplete 
 }: CleanCompletionStepProps) {
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  useEffect(() => {
+    setShowConfetti(true);
+  }, []);
 
   const configuredModulesCount = Object.keys(moduleConfigurations).length;
   const totalConfigOptions = Object.values(moduleConfigurations).reduce(
@@ -53,6 +60,7 @@ export function CleanCompletionStep({
 
   return (
     <TooltipProvider>
+      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
       <div className="container mx-auto px-4 py-8 animate-fade-in">
         <div className="max-w-2xl mx-auto space-y-8">
           {/* Success Animation Area */}

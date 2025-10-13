@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Leaf, 
   Shield, 
@@ -15,9 +17,11 @@ import {
   ArrowRight,
   Star,
   Check,
-  Sparkles
+  Sparkles,
+  Filter
 } from "lucide-react";
 import { SmartModuleRecommendations } from './SmartModuleRecommendations';
+import { Confetti } from './Confetti';
 
 interface CleanModuleSelectionStepProps {
   selectedModules: string[];
@@ -117,6 +121,9 @@ export function CleanModuleSelectionStep({
   onPrev,
   companyProfile 
 }: CleanModuleSelectionStepProps) {
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [showConfetti, setShowConfetti] = useState(false);
+  
   const handleModuleToggle = (moduleId: string) => {
     const isSelected = selectedModules.includes(moduleId);
     if (isSelected) {
@@ -129,17 +136,21 @@ export function CleanModuleSelectionStep({
   const handleSelectRecommended = () => {
     const recommendedIds = MODULES.filter(m => m.recommended).map(m => m.id);
     onModulesChange(recommendedIds);
+    setShowConfetti(true);
   };
 
   const handleModuleRecommendation = (moduleIds: string[]) => {
     onModulesChange(moduleIds);
   };
 
-  const recommendedModules = MODULES.filter(m => m.recommended);
-  const otherModules = MODULES.filter(m => !m.recommended);
+  const categories = ['all', ...Array.from(new Set(MODULES.map(m => m.category)))];
+  const recommendedModules = MODULES.filter(m => m.recommended && (categoryFilter === 'all' || m.category === categoryFilter));
+  const otherModules = MODULES.filter(m => !m.recommended && (categoryFilter === 'all' || m.category === categoryFilter));
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <TooltipProvider>
+      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
+      <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -157,17 +168,48 @@ export function CleanModuleSelectionStep({
             Nossa IA analisou o perfil da sua empresa e criou recomendações personalizadas.
           </p>
           
-          {recommendedModules.length > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={handleSelectRecommended}
-              className="gap-2 shadow-sm hover:shadow-md transition-all"
-            >
-              <Star className="w-4 h-4" />
-              Selecionar Recomendados ({recommendedModules.length})
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2 justify-center mt-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  onClick={handleSelectRecommended}
+                  className="gap-2 shadow-sm hover:shadow-md transition-all animate-bounce-in"
+                >
+                  <Star className="w-4 h-4" />
+                  Selecionar Recomendados ({MODULES.filter(m => m.recommended).length})
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Aplica todos os módulos essenciais recomendados</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
+
+        {/* Category Filter */}
+        <Card className="bg-muted/30 border-border/50 shadow-sm animate-slide-up">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Filter className="w-4 h-4" />
+                <span>Filtrar por:</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {categories.map(cat => (
+                  <Badge
+                    key={cat}
+                    variant={categoryFilter === cat ? "default" : "outline"}
+                    className="cursor-pointer hover-scale transition-all"
+                    onClick={() => setCategoryFilter(cat)}
+                  >
+                    {cat === 'all' ? 'Todos' : cat}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Smart Recommendations */}
         {companyProfile && selectedModules.length < 3 && (
@@ -197,15 +239,16 @@ export function CleanModuleSelectionStep({
                 const isSelected = selectedModules.includes(module.id);
                 
                 return (
-                  <Card 
-                    key={module.id}
-                    className={`cursor-pointer transition-all hover:shadow-md border-2 ${
-                      isSelected 
-                        ? 'border-primary shadow-sm' 
-                        : 'border-border/50 hover:border-border'
-                    }`}
-                    onClick={() => handleModuleToggle(module.id)}
-                  >
+                  <Tooltip key={module.id}>
+                    <TooltipTrigger asChild>
+                      <Card 
+                        className={`cursor-pointer transition-all duration-300 hover:shadow-lg border-2 ${
+                          isSelected 
+                            ? 'border-primary shadow-md animate-flip-in' 
+                            : 'border-border/50 hover:border-primary/40'
+                        } hover-scale`}
+                        onClick={() => handleModuleToggle(module.id)}
+                      >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-lg ${module.bgColor} flex items-center justify-center flex-shrink-0`}>
@@ -237,6 +280,12 @@ export function CleanModuleSelectionStep({
                       </div>
                     </CardContent>
                   </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">{module.name}</p>
+                      <p className="text-xs text-muted-foreground">{module.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
             </div>
@@ -299,13 +348,26 @@ export function CleanModuleSelectionStep({
 
         {/* Selection Summary */}
         {selectedModules.length > 0 && (
-          <Card className="bg-muted/30 border-border/50">
+          <Card className="bg-gradient-to-r from-green-50/50 to-blue-50/50 border-green-200/30 animate-bounce-in shadow-lg">
             <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-600" />
-                <span className="font-medium text-foreground">
-                  {selectedModules.length} módulos selecionados
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-foreground text-lg">
+                      {selectedModules.length} {selectedModules.length === 1 ? 'módulo selecionado' : 'módulos selecionados'}
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      Pronto para configurar
+                    </p>
+                  </div>
+                </div>
+                <Badge className="bg-green-600 hover:bg-green-700 animate-pulse">
+                  <Star className="w-3 h-3 mr-1" />
+                  Ótima escolha!
+                </Badge>
               </div>
             </CardContent>
           </Card>
@@ -313,25 +375,44 @@ export function CleanModuleSelectionStep({
 
         {/* Navigation */}
         <div className="flex justify-between">
-          <Button 
-            variant="outline" 
-            onClick={onPrev}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Anterior
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                onClick={onPrev}
+                className="gap-2 hover-scale group"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                Anterior
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Voltar para o passo anterior</p>
+            </TooltipContent>
+          </Tooltip>
           
-          <Button 
-            onClick={onNext}
-            disabled={selectedModules.length === 0}
-            className="gap-2"
-          >
-            Próximo
-            <ArrowRight className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={onNext}
+                disabled={selectedModules.length === 0}
+                className={`gap-2 hover-scale group ${
+                  selectedModules.length > 0 
+                    ? 'bg-gradient-to-r from-primary to-primary/90 shadow-lg hover:shadow-xl' 
+                    : ''
+                }`}
+              >
+                Próximo
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{selectedModules.length === 0 ? 'Selecione ao menos 1 módulo' : 'Avançar para configuração'}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
