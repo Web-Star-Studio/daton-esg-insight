@@ -251,29 +251,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const restartOnboarding = async () => {
     try {
+      console.log('🔄 Restarting onboarding...');
+      
       // Reset onboarding status in database
       if (user?.id) {
-        await supabase
+        console.log('📝 Updating profile to reset onboarding status...');
+        const { error: updateError } = await supabase
           .from('profiles')
           .update({ has_completed_onboarding: false })
           .eq('id', user.id);
+          
+        if (updateError) {
+          console.error('❌ Error updating profile:', updateError);
+          throw updateError;
+        }
+        console.log('✅ Profile updated successfully');
+        
+        // Also clear any onboarding selections
+        console.log('🗑️ Clearing onboarding selections...');
+        const { error: deleteError } = await supabase
+          .from('onboarding_selections')
+          .delete()
+          .eq('user_id', user.id);
+          
+        if (deleteError && deleteError.code !== 'PGRST116') { // Ignore not found error
+          console.warn('⚠️ Error clearing onboarding selections:', deleteError);
+        }
       }
       
-      // Clear local storage
+      // Clear all local storage related to onboarding and tutorials
+      console.log('🧹 Clearing local storage...');
       localStorage.removeItem('daton_onboarding_progress');
+      localStorage.removeItem('daton_onboarding_selections');
+      localStorage.removeItem('daton_onboarding_completed');
       localStorage.removeItem('daton_tutorial_completed');
+      localStorage.removeItem('daton_tutorial_progress');
+      localStorage.removeItem('daton_user_profile');
       localStorage.removeItem('daton_primeiros_passos_dismissed');
+      localStorage.removeItem('unified_tour_progress');
       
-      // Force show onboarding
-      forceShowOnboarding();
+      // Force show onboarding immediately
+      console.log('✨ Forcing onboarding to show...');
+      setShouldShowOnboarding(true);
       
       toast({
-        title: "Guia reiniciado",
-        description: "O guia de configuração foi reiniciado com sucesso."
+        title: "Guia reiniciado! 🎉",
+        description: "O guia de configuração foi reiniciado. Recarregando página...",
       });
       
+      // Reload page to ensure clean state
+      setTimeout(() => {
+        console.log('🔄 Reloading page for clean state...');
+        window.location.reload();
+      }, 1500);
+      
     } catch (error) {
-      console.error('Error restarting onboarding:', error);
+      console.error('❌ Error restarting onboarding:', error);
       toast({
         title: "Erro",
         description: "Não foi possível reiniciar o guia de configuração.",

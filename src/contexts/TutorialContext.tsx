@@ -48,6 +48,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restartOnboarding = () => {
+    console.log('🔄 TutorialContext: Restarting onboarding from tutorial context...');
+    
     // Limpar todos os dados de onboarding e tutorial
     localStorage.removeItem('daton_tutorial_completed');
     localStorage.removeItem('daton_tutorial_progress');
@@ -56,9 +58,12 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('daton_onboarding_progress');
     localStorage.removeItem('daton_onboarding_selections');
     localStorage.removeItem('unified_tour_progress');
+    localStorage.removeItem('daton_primeiros_passos_dismissed');
     
-    console.log('Tutorial e onboarding reiniciados - redirecionando...');
-    navigate('/onboarding');
+    console.log('✅ Local storage cleared - reloading page...');
+    
+    // Reload page to ensure clean state
+    window.location.reload();
   };
 
   // Legacy startTour - mantido para compatibilidade, mas não faz nada

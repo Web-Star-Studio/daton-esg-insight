@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { AppSidebar } from "@/components/AppSidebar"
 import { AppHeader } from "@/components/AppHeader"
@@ -14,7 +15,17 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const { shouldShowOnboarding, isLoading } = useAuth();
+  const { shouldShowOnboarding, isLoading, user } = useAuth();
+  
+  // Force check if onboarding should be shown on mount
+  useEffect(() => {
+    if (user?.id && !isLoading) {
+      console.log('🔍 MainLayout: Checking onboarding status...', {
+        shouldShowOnboarding,
+        userId: user.id
+      });
+    }
+  }, [user?.id, isLoading, shouldShowOnboarding]);
 
   return (
     <TutorialProvider>
