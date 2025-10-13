@@ -28,6 +28,7 @@ export interface ChatMessage {
 export interface UseChatAssistantReturn {
   messages: ChatMessage[];
   isLoading: boolean;
+  isLoadingMessages: boolean;
   sendMessage: (content: string, currentPage?: string, attachments?: FileAttachmentData[]) => Promise<void>;
   clearMessages: () => void;
   pendingAction: PendingAction | null;
@@ -93,6 +94,7 @@ Converse naturalmente! Exemplos:
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -101,7 +103,7 @@ Converse naturalmente! Exemplos:
   // Backup de mensagens em localStorage para recuperação rápida
   useEffect(() => {
     if (messages.length > 1 && conversationId) { // Mais que apenas boas-vindas
-      localStorage.setItem(`chat_messages_${conversationId}`, JSON.stringify({
+      const cacheData = {
         messages: messages.map(m => ({
           id: m.id,
           role: m.role,
@@ -111,8 +113,11 @@ Converse naturalmente! Exemplos:
           insights: m.insights,
           visualizations: m.visualizations
         })),
-        lastUpdate: new Date().toISOString()
-      }));
+        lastUpdate: new Date().toISOString(),
+        conversationId // Incluir conversationId para validação
+      };
+      localStorage.setItem(`chat_messages_${conversationId}`, JSON.stringify(cacheData));
+      console.log(`💾 Saved ${messages.length} messages to cache`);
     }
   }, [messages, conversationId]);
 
@@ -163,6 +168,20 @@ Converse naturalmente! Exemplos:
           
           console.log('✅ New conversation created:', newConv.id);
           setConversationId(newConv.id);
+          
+          // Salvar mensagem de boas-vindas no banco
+          const welcomeMessage = messages[0];
+          await supabase.from('ai_chat_messages').insert({
+            conversation_id: newConv.id,
+            company_id: user.company.id,
+            user_id: user.id,
+            role: 'assistant',
+            content: welcomeMessage.content,
+            metadata: {
+              isWelcomeMessage: true
+            }
+          });
+          console.log('✅ Welcome message saved to database');
         }
       } catch (error) {
         console.error('❌ Error initializing conversation:', error);
@@ -181,16 +200,39 @@ Converse naturalmente! Exemplos:
       const cached = localStorage.getItem(`chat_messages_${conversationId}`);
       if (cached) {
         try {
-          const { messages: cachedMessages, lastUpdate } = JSON.parse(cached);
+          const { messages: cachedMessages, lastUpdate, conversationId: cachedConvId } = JSON.parse(cached);
           const cacheAge = Date.now() - new Date(lastUpdate).getTime();
           
-          // Usar cache se tiver menos de 5 minutos
-          if (cacheAge < 5 * 60 * 1000) {
+          // Usar cache se tiver menos de 24 horas e corresponder à conversação atual
+          if (cacheAge < 24 * 60 * 60 * 1000 && cachedConvId === conversationId) {
             console.log('⚡ Using cached messages');
-            setMessages(cachedMessages.map((m: any) => ({
+            
+            // Verificar se tem mensagem de boas-vindas
+            const hasWelcome = cachedMessages.some((m: any) => 
+              m.id === 'welcome' || 
+              m.content.includes('Olá! Sou o Assistente IA do Daton')
+            );
+            
+            const loadedMessages = cachedMessages.map((m: any) => ({
               ...m,
               timestamp: new Date(m.timestamp)
-            })));
+            }));
+            
+            // Se não tem boas-vindas, adicionar
+            if (!hasWelcome) {
+              setMessages([
+                {
+                  id: 'welcome',
+                  role: 'assistant',
+                  content: messages[0].content, // Usar a mensagem inicial do estado
+                  timestamp: new Date(),
+                },
+                ...loadedMessages
+              ]);
+            } else {
+              setMessages(loadedMessages);
+            }
+            setIsLoadingMessages(false);
           }
         } catch (e) {
           console.warn('Failed to parse cached messages:', e);
@@ -203,6 +245,8 @@ Converse naturalmente! Exemplos:
   useEffect(() => {
     const loadMessages = async () => {
       if (!conversationId) return;
+      
+      setIsLoadingMessages(true);
       
       try {
         console.log('📥 Loading messages for conversation:', conversationId);
@@ -231,14 +275,34 @@ Converse naturalmente! Exemplos:
             };
           });
           
-          setMessages(loadedMessages);
-          console.log(`✅ Loaded ${loadedMessages.length} messages`);
+          // Verificar se já tem mensagem de boas-vindas
+          const hasWelcomeMessage = loadedMessages.some(msg => 
+            msg.id === 'welcome' || 
+            msg.content.includes('Olá! Sou o Assistente IA do Daton')
+          );
+          
+          // Se não tem boas-vindas, adicionar no início
+          if (!hasWelcomeMessage) {
+            const welcomeMessage: ChatMessage = {
+              id: 'welcome',
+              role: 'assistant',
+              content: messages[0].content, // Usar a mensagem inicial do estado
+              timestamp: new Date(savedMessages[0].created_at),
+            };
+            setMessages([welcomeMessage, ...loadedMessages]);
+            console.log(`✅ Loaded ${loadedMessages.length} messages (+ welcome message)`);
+          } else {
+            setMessages(loadedMessages);
+            console.log(`✅ Loaded ${loadedMessages.length} messages`);
+          }
         }
       } catch (error) {
         console.error('❌ Error loading messages:', error);
         toast.error('Erro ao carregar histórico', {
           description: 'Não foi possível carregar o histórico da conversa'
         });
+      } finally {
+        setIsLoadingMessages(false);
       }
     };
     
@@ -713,6 +777,7 @@ Estou pronto para ajudar. Posso:
   return {
     messages,
     isLoading,
+    isLoadingMessages,
     sendMessage,
     clearMessages,
     pendingAction,
