@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Bot, 
   Lightbulb, 
@@ -15,7 +16,8 @@ import {
   MessageCircle,
   X,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Minimize2
 } from "lucide-react";
 
 interface OnboardingAssistantProps {
@@ -158,70 +160,117 @@ export function OnboardingAssistant({
 
   if (!isExpanded) {
     return (
-      <div className="fixed bottom-4 right-4 z-40">
-        <Button
-          onClick={() => setIsExpanded(true)}
-          className="rounded-full shadow-lg bg-primary hover:bg-primary/90"
-          size="sm"
-        >
-          <Bot className="h-4 w-4 mr-2" />
-          Assistente
-        </Button>
-      </div>
+      <TooltipProvider>
+        <div className="fixed bottom-4 right-4 z-40">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => setIsExpanded(true)}
+                className="rounded-full shadow-2xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary hover:to-primary/85 hover-scale animate-pulse"
+                size="lg"
+              >
+                <Bot className="h-5 w-5 mr-2" />
+                <span className="font-semibold">Assistente</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p>Abrir assistente de configuração</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     );
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 z-40 animate-fade-in">
-      <Card className="shadow-2xl border-border/20 bg-card/95 backdrop-blur-sm">
-        <CardHeader className="pb-3">
+    <TooltipProvider>
+      <div className="fixed bottom-4 right-4 w-80 sm:w-96 z-40 animate-slide-in-right">
+        <Card className="shadow-2xl border-0 bg-gradient-to-br from-card via-card/98 to-card/95 backdrop-blur-lg">
+        <CardHeader className="pb-3 bg-gradient-to-b from-muted/10 to-transparent">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Bot className="h-4 w-4 text-primary" />
-              Assistente de Configuração
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                <Bot className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-semibold">Assistente de Configuração</span>
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsExpanded(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsExpanded(false)}
+                    className="h-7 w-7 p-0 hover-scale"
+                  >
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Minimizar assistente</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
           {/* Progresso */}
-          <div className="space-y-2">
+          <div className="space-y-2 mt-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{getProgressText()}</span>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{getStepEstimate()}</span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help hover:text-foreground transition-colors">{getProgressText()}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Progresso total do onboarding</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 cursor-help hover:text-foreground transition-colors">
+                    <Clock className="h-3 w-3" />
+                    <span>{getStepEstimate()}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tempo estimado para esta etapa</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <Progress value={((currentStep + 1) / 4) * 100} className="h-2" />
+            <Progress value={((currentStep + 1) / 4) * 100} className="h-2 bg-muted/50" />
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           {/* Estatísticas rápidas */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-              <Users className="h-3 w-3 text-blue-600" />
-              <div>
-                <div className="font-medium">{selectedModules.length}</div>
-                <div className="text-muted-foreground">Módulos</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-              <CheckCircle className="h-3 w-3 text-green-600" />
-              <div>
-                <div className="font-medium">{Object.keys(moduleConfigurations).length}</div>
-                <div className="text-muted-foreground">Configurados</div>
-              </div>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 p-3 bg-gradient-to-br from-muted/40 to-muted/20 rounded-lg border border-border/40 hover:border-primary/30 transition-all hover-scale cursor-help">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <div className="font-semibold text-base">{selectedModules.length}</div>
+                    <div className="text-muted-foreground">Módulos</div>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Total de módulos selecionados</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2 p-3 bg-gradient-to-br from-muted/40 to-muted/20 rounded-lg border border-border/40 hover:border-primary/30 transition-all hover-scale cursor-help">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div>
+                    <div className="font-semibold text-base">{Object.keys(moduleConfigurations).length}</div>
+                    <div className="text-muted-foreground">Configurados</div>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Módulos já configurados</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Sugestões */}
@@ -292,12 +341,14 @@ export function OnboardingAssistant({
           )}
 
           {/* Dicas rápidas */}
-          <div className="p-2 bg-muted/20 rounded-lg">
+          <div className="p-3 bg-gradient-to-r from-muted/30 to-muted/10 rounded-lg border border-border/30">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-3 w-3 text-primary" />
-              <span className="text-xs font-medium">Dica Rápida</span>
+              <div className="w-6 h-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-3 w-3 text-primary" />
+              </div>
+              <span className="text-xs font-semibold">Dica Rápida</span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {currentStep === 1 && "Use 'Selecionar Recomendados' para uma configuração otimizada."}
               {currentStep === 2 && "Configurações podem ser ajustadas posteriormente no painel."}
               {currentStep === 3 && "O tour guiado te ajudará a explorar todos os recursos."}
@@ -305,6 +356,7 @@ export function OnboardingAssistant({
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

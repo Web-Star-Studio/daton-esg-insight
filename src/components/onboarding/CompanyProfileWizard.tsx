@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building2, Users, Target, TrendingUp, Lightbulb } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Building2, Users, Target, TrendingUp, Lightbulb, Info, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface CompanyProfile {
   sector: string;
@@ -233,43 +234,55 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <div className="w-full max-w-2xl space-y-6">
-        {/* Progress */}
-        <div className="flex items-center justify-between mb-8">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-            
-            return (
-              <div key={index} className="flex items-center">
-                <div className={`
-                  flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all
-                  ${isActive ? 'bg-primary border-primary text-primary-foreground' : 
-                    isCompleted ? 'bg-green-500 border-green-500 text-white' : 
-                    'border-muted-foreground/30 text-muted-foreground'}
-                `}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-2 ${
-                    isCompleted ? 'bg-green-500' : 'bg-muted-foreground/30'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+    <TooltipProvider>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4 animate-fade-in">
+        <div className="w-full max-w-2xl space-y-6">
+          {/* Progress */}
+          <div className="flex items-center justify-between mb-8 px-2">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = index === currentStep;
+              const isCompleted = index < currentStep;
+              
+              return (
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <div className={`
+                        flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 cursor-help hover-scale
+                        ${isActive ? 'bg-gradient-to-br from-primary to-primary/90 border-primary text-primary-foreground shadow-lg shadow-primary/30' : 
+                          isCompleted ? 'bg-gradient-to-br from-green-500 to-green-600 border-green-500 text-white shadow-md' : 
+                          'border-muted-foreground/30 text-muted-foreground hover:border-muted-foreground/50'}
+                      `}>
+                        <Icon className={`h-5 w-5 ${isActive ? 'animate-pulse' : ''}`} />
+                      </div>
+                      {index < steps.length - 1 && (
+                        <div className={`w-12 sm:w-16 h-1 mx-2 rounded-full transition-all duration-500 ${
+                          isCompleted ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-muted-foreground/20'
+                        }`} />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{step.title} {isCompleted ? '✓' : isActive ? '(atual)' : ''}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
 
-        <Card className="shadow-xl">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Lightbulb className="h-5 w-5 text-primary" />
+          <Card className="shadow-2xl border-0 bg-gradient-to-br from-card via-card/95 to-card/90 backdrop-blur-sm animate-scale-in">
+          <CardHeader className="text-center pb-6 bg-gradient-to-b from-muted/10 to-transparent">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Lightbulb className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               Personalização Inteligente
             </CardTitle>
-            <div className="flex justify-center">
-              <Badge variant="secondary">
+            <div className="flex justify-center mt-4">
+              <Badge variant="secondary" className="bg-gradient-to-r from-secondary to-secondary/80">
                 Passo {currentStep + 1} de {steps.length}
               </Badge>
             </div>
@@ -278,29 +291,63 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
           <CardContent className="space-y-6">
             {renderStep()}
             
-            <div className="flex justify-between gap-4 pt-6">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 pt-6 border-t border-border/20">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {currentStep > 0 && (
-                  <Button variant="outline" onClick={handleBack}>
-                    Voltar
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" onClick={handleBack} className="hover-scale group">
+                        <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                        Voltar
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Voltar para o passo anterior</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
-                <Button variant="ghost" onClick={onSkip}>
-                  Pular Personalização
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" onClick={onSkip} className="hover-scale">
+                      Pular Personalização
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Configurar manualmente depois</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               
-              <Button 
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="min-w-32"
-              >
-                {currentStep === steps.length - 1 ? 'Finalizar' : 'Próximo'}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={handleNext}
+                    disabled={!canProceed()}
+                    className="min-w-full sm:min-w-40 bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary hover:via-primary/95 hover:to-primary/85 shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all hover-scale group"
+                  >
+                    <span>{currentStep === steps.length - 1 ? 'Finalizar' : 'Próximo'}</span>
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{canProceed() ? 'Avançar para o próximo passo' : 'Selecione uma opção para continuar'}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </CardContent>
         </Card>
+
+        {/* Helper Text */}
+        <div className="text-center animate-fade-in px-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-muted/30 to-muted/10 border border-border/30">
+            <Info className="h-4 w-4 text-primary" />
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Essas configurações ajudam a personalizar sua experiência
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
