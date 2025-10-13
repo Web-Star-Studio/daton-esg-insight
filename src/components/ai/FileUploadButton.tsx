@@ -26,37 +26,93 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
+    // Validar tipo de arquivo
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['.pdf', '.csv', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.webp'];
+    
+    if (!ALLOWED_TYPES.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      return {
+        valid: false,
+        error: `Tipo não suportado: ${file.type || fileExtension}. Use PDF, CSV, Excel ou imagens.`
+      };
+    }
+
+    // Validar tamanho
+    if (file.size === 0) {
+      return {
+        valid: false,
+        error: 'Arquivo vazio.'
+      };
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        valid: false,
+        error: `Tamanho ${(file.size / 1024 / 1024).toFixed(1)}MB excede o limite de 20MB.`
+      };
+    }
+
+    // Validar nome do arquivo
+    if (file.name.length > 255) {
+      return {
+        valid: false,
+        error: 'Nome do arquivo muito longo (máx: 255 caracteres).'
+      };
+    }
+
+    // Validar caracteres especiais problemáticos
+    const problematicChars = /[<>:"|?*\x00-\x1F]/;
+    if (problematicChars.test(file.name)) {
+      return {
+        valid: false,
+        error: 'Nome do arquivo contém caracteres inválidos.'
+      };
+    }
+
+    return { valid: true };
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
     if (files.length === 0) return;
 
-    // Validate files
-    const invalidFiles = files.filter(file => {
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        toast({
-          title: "Tipo de arquivo não permitido",
-          description: `${file.name} não é um tipo válido. Use PDF, CSV, Excel ou imagens.`,
-          variant: "destructive"
-        });
-        return true;
+    console.log(`Processing ${files.length} file(s) for upload`);
+
+    // Validar e separar arquivos
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    files.forEach(file => {
+      const validation = validateFile(file);
+      if (validation.valid) {
+        validFiles.push(file);
+      } else {
+        errors.push(`${file.name}: ${validation.error}`);
       }
-      
-      if (file.size > MAX_FILE_SIZE) {
-        toast({
-          title: "Arquivo muito grande",
-          description: `${file.name} excede o limite de 20MB.`,
-          variant: "destructive"
-        });
-        return true;
-      }
-      
-      return false;
     });
 
-    const validFiles = files.filter(file => !invalidFiles.includes(file));
-    
+    // Mostrar erros consolidados
+    if (errors.length > 0) {
+      toast({
+        title: `${errors.length} arquivo(s) inválido(s)`,
+        description: errors.slice(0, 3).join('\n') + (errors.length > 3 ? `\n...e mais ${errors.length - 3}` : ''),
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+
+    // Processar arquivos válidos
     if (validFiles.length > 0) {
+      console.log(`Uploading ${validFiles.length} valid file(s):`, validFiles.map(f => f.name));
+      
+      toast({
+        title: `Enviando ${validFiles.length} arquivo(s)`,
+        description: validFiles.map(f => `${f.name} (${(f.size / 1024).toFixed(1)} KB)`).join('\n'),
+        duration: 3000
+      });
+
       onFileSelect(validFiles);
     }
 
