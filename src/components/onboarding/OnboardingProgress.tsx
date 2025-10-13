@@ -36,65 +36,50 @@ export function OnboardingProgress({
   const tip = getTipForStep(currentStep);
 
   return (
-    <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 animate-slide-in-right">
-      <div className="container mx-auto px-4 py-6">
+    <div className="sticky top-0 z-40 bg-background border-b">
+      <div className="container mx-auto px-4 py-5">
         <div className="max-w-2xl mx-auto space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground animate-fade-in">
+            <h2 className="text-base font-medium text-foreground">
               {stepTitles[currentStep]}
             </h2>
-            <Badge variant="outline" className="text-sm animate-scale-in">
+            <span className="text-sm text-muted-foreground">
               {currentStep} de {totalSteps - 1}
-            </Badge>
+            </span>
           </div>
           
-          <div className="space-y-2">
-            <Progress value={progressValue} className="h-3 animate-fade-in" />
-            <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="space-y-3">
+            <Progress value={progressValue} className="h-2" />
+            <div className="flex justify-between items-center">
               {stepTitles.slice(0, -1).map((title, index) => (
                 <div 
                   key={title} 
-                  className={`flex items-center gap-1 transition-all duration-300 ${
-                    index <= currentStep ? 'text-primary animate-scale-in' : ''
+                  className={`flex items-center gap-1.5 transition-colors ${
+                    index <= currentStep ? 'text-primary' : 'text-muted-foreground'
                   }`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   {index < currentStep ? (
-                    <CheckCircle className="w-3 h-3 animate-scale-in" />
+                    <CheckCircle className="w-3.5 h-3.5" />
                   ) : (
-                    <div className={`w-3 h-3 rounded-full border-2 transition-all ${
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 ${
                       index === currentStep 
-                        ? 'border-primary bg-primary animate-pulse' 
-                        : 'border-muted-foreground'
+                        ? 'border-primary bg-primary' 
+                        : 'border-muted-foreground/30'
                     }`} />
                   )}
-                  <span className="hidden sm:inline">{title}</span>
+                  <span className="hidden sm:inline text-xs">{title}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Smart Tips */}
           {showTips && tip && (
-            <Card 
-              className={`${
-                tip.startsWith('✅') 
-                  ? 'bg-green-50/50 border-green-200/50' 
-                  : 'bg-blue-50/50 border-blue-200/50'
-              } animate-fade-in`} 
-              style={{ animationDelay: '0.5s' }}
-            >
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Lightbulb className={`w-4 h-4 ${
-                    tip.startsWith('✅') ? 'text-green-600' : 'text-blue-600'
-                  }`} />
-                  <span className={tip.startsWith('✅') ? 'text-green-800' : 'text-blue-800'}>
-                    {tip}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Lightbulb className="w-4 h-4" />
+                <span>{tip}</span>
+              </div>
+            </div>
           )}
         </div>
       </div>

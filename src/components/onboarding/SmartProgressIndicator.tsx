@@ -37,18 +37,16 @@ export function SmartProgressIndicator({
   const elapsedTime = (Date.now() - totalStartTime) / 1000;
 
   return (
-    <div className="border rounded-lg p-4 space-y-4">
-      {/* Progress Bar */}
-      <Progress value={progressPercentage} className="h-1" />
-      
-      {/* Info */}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-foreground font-medium">Etapa {currentStep + 1} de {totalSteps}</span>
+        <span className="text-muted-foreground">{Math.round(progressPercentage)}%</span>
+      </div>
+      <Progress value={progressPercentage} className="h-2" />
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <span>Etapa {currentStep + 1}/{totalSteps}</span>
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span>{formatTime(elapsedTime)}</span>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          <span>{formatTime(elapsedTime)}</span>
         </div>
         <span>{selectedModules.length} módulos</span>
       </div>
