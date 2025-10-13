@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { ActionSchema } from './validation.ts'
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,30 +15,64 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const authHeader = req.headers.get('Authorization')!
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response('Authorization header missing', { status: 401, headers: corsHeaders })
+      console.error('❌ Missing Authorization header')
+      return new Response(
+        JSON.stringify({ error: 'Authorization header is required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
     
     if (userError || !user) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      console.error('❌ Authentication failed:', userError?.message)
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    const { data: profile } = await supabaseClient
+    console.log('✅ User authenticated:', user.id)
+
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile) {
-      return new Response('Profile not found', { status: 404, headers: corsHeaders })
+    if (profileError || !profile?.company_id) {
+      console.error('❌ Profile not found:', profileError)
+      return new Response(
+        JSON.stringify({ error: 'Profile not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
+
+    console.log('✅ Company found:', profile.company_id)
 
     const company_id = profile.company_id
     const body = await req.json()
+    
+    // Validate request body with Zod
+    try {
+      const validatedData = ActionSchema.parse(body)
+      console.log('✅ Request validated:', validatedData.action)
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        console.error('❌ Validation failed:', validationError.errors)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Validation failed',
+            details: validationError.errors 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      throw validationError
+    }
     const { action } = body
 
     switch (action) {
@@ -66,9 +102,25 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error in custom-forms-management function:', error)
+    console.error('❌ Error in custom-forms-management function:', error)
+    
+    // Log structured error
+    const errorLog = {
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      } : 'Unknown error',
+      function: 'custom-forms-management'
+    }
+    console.error('Error details:', JSON.stringify(errorLog, null, 2))
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Internal server error',
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
