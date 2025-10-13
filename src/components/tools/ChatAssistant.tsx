@@ -59,7 +59,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     const message = inputMessage;
     setInputMessage('');
     setShowQuickActions(false);
-    await sendMessage(message, window.location.pathname.split('/')[1], attachments);
+    const currentPage = window.location.pathname.split('/')[1];
+    await sendMessage(message, currentPage, attachments);
   };
 
   const handleFileSelect = async (files: File[]) => {
@@ -92,6 +93,9 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       handleSendMessage();
     }
   };
+
+  // Get current page for context-aware quick actions
+  const currentPage = window.location.pathname.split('/')[1] || 'dashboard';
 
   return (
     <>
@@ -255,7 +259,10 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               {/* Quick Actions - Show only on first message */}
               {showQuickActions && messages.length === 1 && !isLoading && (
                 <div className="mt-6 px-2">
-                  <QuickActions onSelectAction={handleQuickAction} />
+                  <QuickActions 
+                    onSelectAction={handleQuickAction} 
+                    currentPage={currentPage}
+                  />
                 </div>
               )}
             </div>

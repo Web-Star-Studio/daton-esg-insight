@@ -18,6 +18,7 @@ import { TaskKanbanBoard } from '@/components/TaskKanbanBoard';
 import { DataImportZone } from '@/components/DataImportZone';
 import { ImportHistoryTable } from '@/components/ImportHistoryTable';
 import { RecurringTaskModal } from '@/components/RecurringTaskModal';
+import { ChatAssistant } from '@/components/tools/ChatAssistant';
 
 import { 
   ClipboardList, 
@@ -869,6 +870,9 @@ export default function ColetaDados() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Chat IA Assistant - Contexto de Coleta de Dados */}
+      <ChatAssistant embedded={false} />
       </div>
   );
 }

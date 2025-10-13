@@ -1,14 +1,45 @@
 import { Card } from "@/components/ui/card";
-import { Plus, Target, CheckSquare, FileText, AlertCircle, Users } from "lucide-react";
+import { Plus, Target, CheckSquare, FileText, AlertCircle, Users, Upload, Download, TrendingUp } from "lucide-react";
 
 interface QuickAction {
   icon: React.ReactNode;
   label: string;
   prompt: string;
   category: string;
+  page?: string; // Optional: specific page where this action is most relevant
 }
 
 const quickActions: QuickAction[] = [
+  // Data Collection specific actions
+  {
+    icon: <CheckSquare className="h-4 w-4" />,
+    label: "Minhas Tarefas Pendentes",
+    prompt: "Mostre minhas tarefas de coleta de dados pendentes e com vencimento próximo",
+    category: "Coleta de Dados",
+    page: "coleta-dados"
+  },
+  {
+    icon: <Upload className="h-4 w-4" />,
+    label: "Importar Emissões",
+    prompt: "Quero importar dados de emissões de GEE de uma planilha Excel ou CSV",
+    category: "Coleta de Dados",
+    page: "coleta-dados"
+  },
+  {
+    icon: <Download className="h-4 w-4" />,
+    label: "Template de Importação",
+    prompt: "Gere um template de planilha para importar dados de emissões com todos os campos necessários",
+    category: "Coleta de Dados",
+    page: "coleta-dados"
+  },
+  {
+    icon: <TrendingUp className="h-4 w-4" />,
+    label: "Análise de Progresso",
+    prompt: "Analise o progresso das minhas tarefas de coleta e me dê insights sobre atrasos e próximos vencimentos",
+    category: "Coleta de Dados",
+    page: "coleta-dados"
+  },
+  // General actions
   {
     icon: <Target className="h-4 w-4" />,
     label: "Criar Meta ESG",
@@ -49,19 +80,27 @@ const quickActions: QuickAction[] = [
 
 interface QuickActionsProps {
   onSelectAction: (prompt: string) => void;
+  currentPage?: string;
 }
 
-export function QuickActions({ onSelectAction }: QuickActionsProps) {
+export function QuickActions({ onSelectAction, currentPage }: QuickActionsProps) {
+  // Filter actions: show page-specific actions first, then general ones
+  const relevantActions = quickActions.filter(action => 
+    !action.page || action.page === currentPage || !currentPage
+  ).slice(0, 6); // Show up to 6 actions
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <div className="h-px bg-border flex-1" />
-        <p className="text-xs text-muted-foreground font-medium">Ações Rápidas</p>
+        <p className="text-xs text-muted-foreground font-medium">
+          {currentPage === 'coleta-dados' ? 'Ações Rápidas - Coleta de Dados' : 'Ações Rápidas'}
+        </p>
         <div className="h-px bg-border flex-1" />
       </div>
       
       <div className="grid grid-cols-2 gap-2">
-        {quickActions.map((action, index) => (
+        {relevantActions.map((action, index) => (
           <Card
             key={index}
             className="p-3 cursor-pointer hover:bg-accent hover:border-primary/50 transition-all group"
