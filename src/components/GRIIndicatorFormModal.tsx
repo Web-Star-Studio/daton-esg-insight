@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSuggestedValue } from "@/services/griIndicators";
+import { logFormSubmission, createPerformanceLogger } from '@/utils/formLogging';
 
 interface GRIIndicatorFormModalProps {
   isOpen: boolean;
@@ -96,11 +97,26 @@ export function GRIIndicatorFormModal({
   };
 
   const handleSave = async () => {
+    const perfLogger = createPerformanceLogger('GRIIndicatorFormSave');
     setIsSaving(true);
+    
     try {
-      // Here you would call the API to save the indicator data
-      // For now, we'll just simulate the save
+      // TODO: Implement actual API call to save indicator data
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      logFormSubmission('GRIIndicatorFormModal', {
+        indicator_id: indicator?.id,
+        code: indicator?.code,
+        value,
+        description,
+        isComplete,
+        notes
+      }, true, undefined, {
+        indicatorCode: indicator?.code,
+        dataType: indicator?.data_type
+      });
+      
+      perfLogger.end(true);
       
       toast({
         title: "Indicador Salvo",
@@ -109,6 +125,14 @@ export function GRIIndicatorFormModal({
       
       onClose();
     } catch (error) {
+      logFormSubmission('GRIIndicatorFormModal', {
+        indicator_id: indicator?.id,
+        value,
+        description
+      }, false, error);
+      
+      perfLogger.end(false, error);
+      
       toast({
         title: "Erro",
         description: "Erro ao salvar o indicador.",
