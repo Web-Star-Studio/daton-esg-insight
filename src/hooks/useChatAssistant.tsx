@@ -484,7 +484,48 @@ Converse naturalmente! Exemplos:
   const sendMessage = async (content: string, currentPage?: string, messageAttachments?: FileAttachmentData[]) => {
     if (!content.trim()) return;
 
-    // Add user message
+    // Wait for any ongoing uploads to complete
+    const attachmentsToSend = messageAttachments || attachments;
+    
+    // Check if any attachments are still uploading
+    const stillUploading = attachmentsToSend.some(att => 
+      att.status === 'uploading' || att.status === 'processing'
+    );
+    
+    if (stillUploading) {
+      toast.warning('Aguarde o upload dos anexos', {
+        description: 'Aguarde enquanto os arquivos são enviados antes de enviar a mensagem.'
+      });
+      return;
+    }
+
+    // Process attachments FIRST before adding user message
+    console.log('📎 Attachments to send:', attachmentsToSend.length);
+    console.log('📎 Attachment statuses:', attachmentsToSend.map(a => ({ 
+      name: a.name, 
+      status: a.status, 
+      hasPath: !!a.path 
+    })));
+
+    const processedAttachments = attachmentsToSend
+      .filter(att => att.status === 'uploaded' && att.path)
+      .map(att => ({
+        name: att.name,
+        type: att.type,
+        size: att.size,
+        path: att.path!
+      }));
+
+    console.log('✅ Processed attachments ready to send:', processedAttachments.length);
+
+    if (attachmentsToSend.length > 0 && processedAttachments.length === 0) {
+      toast.error('Erro nos anexos', {
+        description: 'Nenhum arquivo foi enviado com sucesso. Por favor, tente novamente.'
+      });
+      return;
+    }
+
+    // Add user message with attachment info
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -511,7 +552,9 @@ Converse naturalmente! Exemplos:
           content,
           metadata: {
             currentPage,
-            hasAttachments: (messageAttachments || attachments).length > 0
+            hasAttachments: processedAttachments.length > 0,
+            attachmentCount: processedAttachments.length,
+            attachmentNames: processedAttachments.map(a => a.name)
           }
         });
       }
@@ -528,18 +571,11 @@ Converse naturalmente! Exemplos:
         content
       });
 
-      console.log('Sending chat request to Daton AI...');
-
-      // Process attachments
-      const attachmentsToSend = messageAttachments || attachments;
-      const processedAttachments = attachmentsToSend
-        .filter(att => att.status === 'uploaded' && att.path)
-        .map(att => ({
-          name: att.name,
-          type: att.type,
-          size: att.size,
-          path: att.path!
-        }));
+      console.log('📤 Sending chat request to Daton AI...', {
+        hasAttachments: processedAttachments.length > 0,
+        attachmentCount: processedAttachments.length,
+        attachments: processedAttachments
+      });
 
       // Call Daton AI Chat edge function
       const { data, error } = await supabase.functions.invoke('daton-ai-chat', {
@@ -628,7 +664,8 @@ Converse naturalmente! Exemplos:
       }
 
       // Clear attachments after successful send
-      if (attachmentsToSend.length > 0) {
+      if (processedAttachments.length > 0) {
+        console.log('🧹 Clearing attachments after successful send');
         setAttachments([]);
       }
 

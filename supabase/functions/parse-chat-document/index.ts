@@ -12,16 +12,26 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('📄 parse-chat-document: Request received', {
+    method: req.method,
+    headers: Object.fromEntries(req.headers.entries()),
+    timestamp: new Date().toISOString()
+  });
+
   try {
     const body = await req.json();
     const { filePath, fileType, useVision = false } = body;
 
+    console.log('📄 Parsing request:', { filePath, fileType, useVision });
+
     // Validação de entrada
     if (!filePath || typeof filePath !== 'string') {
+      console.error('❌ Invalid filePath:', filePath);
       throw new Error('filePath é obrigatório e deve ser uma string');
     }
 
     if (!fileType || typeof fileType !== 'string') {
+      console.error('❌ Invalid fileType:', fileType);
       throw new Error('fileType é obrigatório e deve ser uma string');
     }
 

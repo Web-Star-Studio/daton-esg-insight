@@ -289,14 +289,15 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                disabled={isLoading}
+                disabled={isLoading || isUploading}
                 className="min-h-[60px] max-h-[120px] resize-none"
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={isLoading || !inputMessage.trim()}
+                disabled={isLoading || isUploading || !inputMessage.trim()}
                 size="icon"
                 className="h-[60px] w-[60px]"
+                title={isUploading ? 'Aguarde o upload dos anexos' : 'Enviar mensagem'}
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -306,7 +307,11 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Pressione Enter para enviar, Shift+Enter para nova linha
+              {isUploading ? (
+                <span className="text-orange-500 font-medium">⏳ Aguarde o upload dos anexos...</span>
+              ) : (
+                'Pressione Enter para enviar, Shift+Enter para nova linha'
+              )}
             </p>
           </div>
         </Card>
