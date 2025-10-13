@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
 import { Loader2 } from "lucide-react";
+import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
 
 const userFormSchema = z.object({
   full_name: z.string()
@@ -59,11 +60,29 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
   const roleValue = watch('role');
 
   const onSubmit = (data: UserFormData) => {
-    onSave({
-      ...data,
-      id: user?.id,
-    });
-    reset();
+    const perfLogger = createPerformanceLogger('UserFormSubmission');
+    
+    try {
+      const errorMessages = Object.entries(errors).reduce((acc, [key, error]) => {
+        if (error) acc[key] = error.message || 'Erro de validação';
+        return acc;
+      }, {} as Record<string, string>);
+      
+      logFormValidation('UserFormModal', Object.keys(errors).length === 0, errorMessages);
+      
+      onSave({
+        ...data,
+        id: user?.id,
+      });
+      
+      logFormSubmission('UserFormModal', data, true, undefined, { userId: user?.id });
+      perfLogger.end(true);
+      reset();
+    } catch (error) {
+      logFormSubmission('UserFormModal', data, false, error, { userId: user?.id });
+      perfLogger.end(false, error);
+      throw error;
+    }
   };
 
   const handleCancel = () => {

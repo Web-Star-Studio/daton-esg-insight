@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { logFormValidation } from '@/utils/formLogging';
 
 interface ValidationResult<T> {
   isValid: boolean;
@@ -8,7 +9,7 @@ interface ValidationResult<T> {
   errors: Record<string, string>;
 }
 
-export function useFormErrorValidation<T>(schema: z.ZodSchema<T>) {
+export function useFormErrorValidation<T>(schema: z.ZodSchema<T>, formName: string = 'UnnamedForm') {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -16,6 +17,9 @@ export function useFormErrorValidation<T>(schema: z.ZodSchema<T>) {
     try {
       const validatedData = schema.parse(data);
       setErrors({});
+      
+      logFormValidation(formName, true);
+      
       return {
         isValid: true,
         data: validatedData,
@@ -30,6 +34,8 @@ export function useFormErrorValidation<T>(schema: z.ZodSchema<T>) {
         });
         
         setErrors(fieldErrors);
+        logFormValidation(formName, false, fieldErrors);
+        
         toast.error("Erro de validação", {
           description: error.issues[0].message,
         });
@@ -40,7 +46,9 @@ export function useFormErrorValidation<T>(schema: z.ZodSchema<T>) {
         };
       }
       
+      logFormValidation(formName, false, { general: 'Erro inesperado na validação' });
       toast.error("Erro inesperado na validação");
+      
       return {
         isValid: false,
         errors: { general: 'Erro inesperado na validação' }

@@ -12,6 +12,8 @@ import { useEmployeesAsOptions } from "@/services/employees";
 import { useCreateCareerPlan, type CareerDevelopmentPlan } from "@/services/careerDevelopment";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logFormSubmission, createPerformanceLogger } from '@/utils/formLogging';
+import { sanitizeUUID } from '@/utils/formValidation';
 
 interface PDIFormModalProps {
   isOpen: boolean;
@@ -63,20 +65,27 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const perfLogger = createPerformanceLogger('PDIFormSubmission');
     
     if (!user?.company?.id) {
       toast.error("Erro: informações da empresa não encontradas.");
+      logFormSubmission('PDIFormModal', formData, false, new Error('Company ID not found'));
+      perfLogger.end(false, new Error('Company ID not found'));
       return;
     }
     
     if (!formData.employee_id) {
       toast.error("Por favor, selecione um funcionário.");
+      logFormSubmission('PDIFormModal', formData, false, new Error('Employee ID not provided'));
+      perfLogger.end(false, new Error('Employee ID not provided'));
       return;
     }
     
     try {
-      await createCareerPlan.mutateAsync({
+      const pdiData = {
         ...formData,
+        employee_id: sanitizeUUID(formData.employee_id) || '',
+        mentor_id: sanitizeUUID(formData.mentor_id),
         company_id: user.company.id,
         status: "Em Andamento",
         progress_percentage: 0,
@@ -84,7 +93,16 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
         skills_to_develop: skills,
         development_activities: activities,
         created_by_user_id: user.id,
-      } as Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>);
+      } as Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>;
+
+      await createCareerPlan.mutateAsync(pdiData);
+      
+      logFormSubmission('PDIFormModal', pdiData, true, undefined, { 
+        goalsCount: goals.length,
+        skillsCount: skills.length,
+        activitiesCount: activities.length 
+      });
+      perfLogger.end(true);
       
       toast.success("PDI criado com sucesso!");
       onSuccess?.();
@@ -92,6 +110,8 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       resetForm();
     } catch (error) {
       console.error("Erro ao criar PDI:", error);
+      logFormSubmission('PDIFormModal', formData, false, error);
+      perfLogger.end(false, error);
       toast.error("Erro ao criar PDI. Verifique os dados e tente novamente.");
     }
   };
