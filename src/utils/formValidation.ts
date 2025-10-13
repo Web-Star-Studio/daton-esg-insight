@@ -108,6 +108,35 @@ export const validateUrl = (url: string): boolean => {
   }
 };
 
+// Sanitize UUID helper - converts invalid UUID values to undefined
+export const sanitizeUUID = (value: string | undefined | null): string | undefined => {
+  if (!value || value === 'none' || value === 'undefined' || value === 'null' || value.trim() === '') {
+    return undefined;
+  }
+  return value;
+};
+
+// Validate company context for forms
+export const validateCompanyContext = async (supabase: any) => {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    throw new Error('Usuário não autenticado');
+  }
+  
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+    
+  if (profileError || !profile?.company_id) {
+    throw new Error('Company ID não encontrado. Por favor, complete seu perfil.');
+  }
+  
+  return { userId: user.id, companyId: profile.company_id };
+};
+
 // Common validation patterns
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

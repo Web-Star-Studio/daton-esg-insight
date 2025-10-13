@@ -181,9 +181,17 @@ export function AssetFormModal({ open, onClose, onSuccess, editingAsset }: Asset
   });
 
   const onSubmit = (data: AssetFormData) => {
+    // Helper para sanitizar UUIDs
+    const sanitizeUUID = (value: string | undefined): string | undefined => {
+      if (!value || value === 'none' || value === 'undefined' || value === 'null' || value.trim() === '') {
+        return undefined;
+      }
+      return value;
+    };
+
     const formattedData = {
       ...data,
-      parent_asset_id: data.parent_asset_id === "none" ? undefined : data.parent_asset_id || undefined,
+      parent_asset_id: sanitizeUUID(data.parent_asset_id),
       // Converter critical_parameters de string para array
       critical_parameters: data.critical_parameters 
         ? data.critical_parameters.split(',').map(param => param.trim()).filter(Boolean)

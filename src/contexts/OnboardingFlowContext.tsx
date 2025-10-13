@@ -106,41 +106,39 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
   };
 
   const saveOnboardingData = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.warn('⚠️ User ID not available for saving onboarding data');
+      return;
+    }
+
+    if (!user.company?.id) {
+      console.warn('⚠️ Company ID not available for saving onboarding data');
+      return;
+    }
 
     try {
-      // Primeiro tenta inserir, se falhar, faz update
       const { error } = await supabase
         .from('onboarding_selections')
         .upsert([{
           user_id: user.id,
-          company_id: user.company?.id!,
+          company_id: user.company.id,
           current_step: state.currentStep,
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
           is_completed: state.isCompleted,
           updated_at: new Date().toISOString()
-        }]);
+        }], {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        });
 
       if (error) {
-        console.error('Error saving to database:', error);
-        // Fallback para localStorage se der erro no banco
-        localStorage.setItem('daton_onboarding_progress', JSON.stringify({
-          currentStep: state.currentStep,
-          selectedModules: state.selectedModules,
-          moduleConfigurations: state.moduleConfigurations,
-          isCompleted: state.isCompleted
-        }));
+        console.error('❌ Error saving to database:', error);
+        throw error;
       }
     } catch (error) {
-      console.error('Error saving onboarding data:', error);
-      // Fallback para localStorage
-      localStorage.setItem('daton_onboarding_progress', JSON.stringify({
-        currentStep: state.currentStep,
-        selectedModules: state.selectedModules,
-        moduleConfigurations: state.moduleConfigurations,
-        isCompleted: state.isCompleted
-      }));
+      console.error('❌ Error saving onboarding data:', error);
+      throw error;
     }
   };
 
