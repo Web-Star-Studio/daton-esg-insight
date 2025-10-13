@@ -138,6 +138,45 @@ Converse naturalmente! Exemplos:
   };
 
   const addAttachment = async (file: File) => {
+    // Validação de tipo de arquivo
+    const allowedTypes = [
+      'application/pdf',
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp'
+    ];
+
+    const allowedExtensions = ['.pdf', '.csv', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.webp'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      toast.error('Tipo de arquivo não suportado', {
+        description: 'Apenas PDF, CSV, Excel e imagens (JPG, PNG, WEBP) são permitidos.'
+      });
+      return;
+    }
+
+    // Validação de tamanho (20MB)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Arquivo muito grande', {
+        description: 'O tamanho máximo permitido é 20MB.'
+      });
+      return;
+    }
+
+    // Validação de nome do arquivo
+    if (file.name.length > 255) {
+      toast.error('Nome do arquivo muito longo', {
+        description: 'O nome do arquivo deve ter no máximo 255 caracteres.'
+      });
+      return;
+    }
+
     const id = crypto.randomUUID();
     const newAttachment: FileAttachmentData = {
       id,
@@ -151,55 +190,107 @@ Converse naturalmente! Exemplos:
     setAttachments(prev => [...prev, newAttachment]);
     setIsUploading(true);
 
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) throw new Error('User not authenticated');
+    // Retry logic
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      // Upload to storage with sanitized filename
-      const sanitizedName = sanitizeFileName(file.name);
-      const filePath = `${authUser.id}/${Date.now()}_${sanitizedName}`;
-      const { error: uploadError } = await supabase.storage
-        .from('chat-attachments')
-        .upload(filePath, file);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) throw new Error('Usuário não autenticado');
 
-      if (uploadError) throw uploadError;
+        // Upload to storage with sanitized filename
+        const sanitizedName = sanitizeFileName(file.name);
+        const timestamp = Date.now();
+        const filePath = `${authUser.id}/${timestamp}_${sanitizedName}`;
 
-      // Log upload
-      await supabase.from('chat_file_uploads').insert({
-        company_id: user?.company.id,
-        user_id: authUser.id,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
-        file_path: filePath,
-        processing_status: 'uploaded'
-      });
+        console.log(`Upload attempt ${attempt}/${maxRetries}:`, { filePath, size: file.size });
 
-      // Update status
-      setAttachments(prev =>
-        prev.map(att => att.id === id ? { ...att, status: 'uploaded', path: filePath } : att)
-      );
+        const { error: uploadError } = await supabase.storage
+          .from('chat-attachments')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-      toast.success('Arquivo enviado', {
-        description: `${file.name} foi enviado com sucesso.`
-      });
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          throw new Error(`Erro no upload: ${uploadError.message}`);
+        }
 
-    } catch (error) {
-      console.error('Upload error:', error);
-      setAttachments(prev =>
-        prev.map(att => att.id === id ? { 
-          ...att, 
-          status: 'error', 
-          error: error instanceof Error ? error.message : 'Erro ao enviar arquivo' 
-        } : att)
-      );
-      
-      toast.error('Erro no upload', {
-        description: error instanceof Error ? error.message : 'Não foi possível enviar o arquivo.'
-      });
-    } finally {
-      setIsUploading(false);
+        // Verify upload
+        const { data: fileExists } = await supabase.storage
+          .from('chat-attachments')
+          .list(authUser.id, {
+            search: `${timestamp}_${sanitizedName}`
+          });
+
+        if (!fileExists || fileExists.length === 0) {
+          throw new Error('Falha na verificação do upload');
+        }
+
+        // Update status to processing
+        setAttachments(prev =>
+          prev.map(att => att.id === id ? { ...att, status: 'processing' } : att)
+        );
+
+        // Log upload
+        const { error: logError } = await supabase.from('chat_file_uploads').insert({
+          company_id: user?.company.id,
+          user_id: authUser.id,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          file_path: filePath,
+          processing_status: 'uploaded'
+        });
+
+        if (logError) {
+          console.error('Error logging upload:', logError);
+          // Non-critical error, continue
+        }
+
+        // Update status to uploaded
+        setAttachments(prev =>
+          prev.map(att => att.id === id ? { ...att, status: 'uploaded', path: filePath } : att)
+        );
+
+        toast.success('Arquivo enviado com sucesso', {
+          description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`
+        });
+
+        return; // Success, exit retry loop
+
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Erro desconhecido');
+        console.error(`Upload attempt ${attempt} failed:`, lastError);
+
+        if (attempt < maxRetries) {
+          // Wait before retry (exponential backoff)
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          
+          toast.info(`Tentando novamente (${attempt + 1}/${maxRetries})...`, {
+            duration: 2000
+          });
+        }
+      }
     }
+
+    // All retries failed
+    setAttachments(prev =>
+      prev.map(att => att.id === id ? { 
+        ...att, 
+        status: 'error', 
+        error: lastError?.message || 'Erro ao enviar arquivo após múltiplas tentativas' 
+      } : att)
+    );
+    
+    toast.error('Falha no upload', {
+      description: lastError?.message || 'Não foi possível enviar o arquivo. Tente novamente.'
+    });
+
+    setIsUploading(false);
   };
 
   const removeAttachment = (id: string) => {
