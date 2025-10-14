@@ -123,11 +123,53 @@ Fale naturalmente comigo:
   const [showHistory, setShowHistory] = useState(false);
 const { user } = useAuth();
   const hasInitializedRef = useRef(false);
+  const isEnsuring = useRef(false); // Prevent concurrent ensureConversationId calls
 
   // Storage keys for localStorage caching
   const CACHE_PREFIX = 'chat_messages_';
   const ATTACHMENTS_PREFIX = 'chat_attachments_';
   const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+  // Helper: Ensure conversation exists before operations
+  const ensureConversationId = async (): Promise<string> => {
+    if (conversationId) return conversationId;
+    
+    // Prevent concurrent calls
+    if (isEnsuring.current) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return conversationId || ensureConversationId();
+    }
+    
+    isEnsuring.current = true;
+    
+    try {
+      if (!user?.company.id || !user?.id) {
+        throw new Error('User not authenticated');
+      }
+      
+      console.log('🔄 ensureConversationId: Creating conversation...');
+      
+      const { data: newConv, error } = await supabase
+        .from('ai_chat_conversations')
+        .insert({
+          company_id: user.company.id,
+          user_id: user.id,
+          title: 'Nova Conversa'
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setConversationId(newConv.id);
+      localStorage.setItem('active_conversation_id', newConv.id);
+      console.log('✅ ensureConversationId: Created', newConv.id);
+      
+      return newConv.id;
+    } finally {
+      isEnsuring.current = false;
+    }
+  };
 
   // Persist attachments to localStorage
   const persistAttachments = (convId: string, atts: FileAttachmentData[]) => {
@@ -247,8 +289,9 @@ const { user } = useAuth();
 
           if (createError) throw createError;
           
-          console.log('✅ New conversation created:', newConv.id);
-          setConversationId(newConv.id);
+      console.log('✅ New conversation created:', newConv.id);
+      setConversationId(newConv.id);
+      localStorage.setItem('active_conversation_id', newConv.id);
           localStorage.setItem('active_conversation_id', newConv.id);
           
           // Salvar mensagem de boas-vindas no banco
@@ -407,6 +450,20 @@ const { user } = useAuth();
     // Prevent race condition: lock uploading state immediately
     setIsUploading(true);
     
+    // CRITICAL: Ensure conversation exists before upload
+    let activeConvId: string;
+    try {
+      activeConvId = await ensureConversationId();
+      console.log('📎 addAttachment: Using conversation', activeConvId);
+    } catch (error) {
+      console.error('❌ Failed to ensure conversation:', error);
+      toast.error('Erro ao preparar chat', {
+        description: 'Não foi possível iniciar a conversa para anexos'
+      });
+      setIsUploading(false);
+      return;
+    }
+    
     // Validação de tipo de arquivo
     const allowedTypes = [
       'application/pdf',
@@ -505,6 +562,7 @@ const { user } = useAuth();
           const { error: logError } = await supabase.from('chat_file_uploads').insert({
             company_id: companyId,
             user_id: authUser.id,
+            conversation_id: activeConvId,
             file_name: file.name,
             file_type: file.type,
             file_size: file.size,
@@ -526,9 +584,7 @@ const { user } = useAuth();
             att.id === id ? { ...att, status: 'uploaded' as const, path: filePath } : att
           );
           // Persist to localStorage after upload completes
-          if (conversationId) {
-            persistAttachments(conversationId, updated);
-          }
+          persistAttachments(activeConvId, updated);
           return updated;
         });
 
@@ -1040,6 +1096,7 @@ const { user } = useAuth();
       
       // Set new conversation
       setConversationId(newConv.id);
+      localStorage.setItem('active_conversation_id', newConv.id);
       setMessages([{
         id: 'welcome',
         role: 'assistant' as const,
@@ -1100,6 +1157,8 @@ Qual informação você precisa?`,
   const openConversation = async (convId: string) => {
     try {
       console.log('🔄 Opening conversation:', convId);
+      setConversationId(convId);
+      localStorage.setItem('active_conversation_id', convId);
       
       // Load messages for this conversation
       const { data: msgs, error } = await supabase

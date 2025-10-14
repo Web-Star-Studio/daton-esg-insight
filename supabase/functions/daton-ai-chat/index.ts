@@ -40,7 +40,7 @@ serve(async (req) => {
     console.log('   • Current Page:', currentPage);
     console.log('   • Messages:', messages?.length);
     console.log('   • Confirmed Action:', confirmed);
-    console.log('   • 📎 Attachment Count:', attachments?.length || 0);
+    console.log('   • 📎 Attachment Count (from request):', attachments?.length || 0);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
     if (attachments && attachments.length > 0) {
@@ -50,7 +50,6 @@ serve(async (req) => {
         size: `${(a.size / 1024).toFixed(1)} KB`,
         path: a.path
       })));
-      console.log('   ℹ️  Note: Client-side fallback should have already injected attachment content into messages');
     }
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -92,6 +91,35 @@ serve(async (req) => {
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    // FALLBACK: If attachments array is empty but conversationId exists, try to reconstruct
+    let reconstructedAttachments = attachments || [];
+    if ((!attachments || attachments.length === 0) && conversationId) {
+      console.log('⚠️ Attachments missing from request, attempting fallback...');
+      
+      // Try to get recent uploads from database
+      const { data: recentUploads } = await supabaseClient
+        .from('chat_file_uploads')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .eq('processing_status', 'uploaded')
+        .gte('created_at', new Date(Date.now() - 3600000).toISOString()) // Last hour
+        .order('created_at', { ascending: false });
+      
+      if (recentUploads && recentUploads.length > 0) {
+        console.log(`📎 Fallback: Reconstructed ${recentUploads.length} attachments from database`);
+        reconstructedAttachments = recentUploads.map(upload => ({
+          id: upload.id,
+          name: upload.file_name,
+          type: upload.file_type,
+          size: upload.file_size,
+          path: upload.file_path,
+          status: 'uploaded'
+        }));
+      } else {
+        console.log('   No attachments found in fallback');
+      }
     }
 
     // Get comprehensive company data and context

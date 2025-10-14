@@ -22,10 +22,16 @@ interface ChatAssistantProps {
 }
 
 export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
-  const [isOpen, setIsOpen] = useState(embedded); // Start open if embedded
+  // Persist open state in localStorage (only for non-embedded)
+  const [isOpen, setIsOpen] = useState(() => {
+    if (embedded) return true;
+    const stored = localStorage.getItem('ai_chat_open');
+    return stored === 'true';
+  });
   const [inputMessage, setInputMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   
   const { 
     messages, 
@@ -48,12 +54,17 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     conversationId
   } = useChatAssistant();
 
-  // Auto-scroll to bottom when new messages arrive
+  // Persist open state (non-embedded only)
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!embedded) {
+      localStorage.setItem('ai_chat_open', isOpen.toString());
     }
-  }, [messages]);
+  }, [isOpen, embedded]);
+
+  // Auto-scroll to bottom using anchor ref (more reliable)
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, isLoading]);
 
   // Hide quick actions after first user message
   useEffect(() => {
@@ -283,11 +294,33 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                   />
                 </div>
               )}
+              
+              {/* Bottom anchor for auto-scroll */}
+              <div ref={bottomRef} />
             </div>
           </ScrollArea>
 
           {/* Input */}
           <div className="p-4 border-t space-y-3">
+            {/* Auto-send prompt for attachments without message */}
+            {attachments.length > 0 && !inputMessage.trim() && !isLoading && !isUploading && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-center justify-between">
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  📎 Anexos prontos. Deseja que eu analise agora?
+                </span>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    setInputMessage('Por favor, analise os anexos que enviei.');
+                    setTimeout(handleSendMessage, 100);
+                  }}
+                  className="ml-2"
+                >
+                  Analisar
+                </Button>
+              </div>
+            )}
+            
             {/* File attachments preview */}
             {attachments.length > 0 && (
               <div className="space-y-2">
@@ -332,7 +365,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               <FileUploadButton
                 onFileSelect={handleFileSelect}
                 isUploading={isUploading}
-                disabled={isLoading}
+                disabled={isLoading || !conversationId}
               />
               
               <Textarea

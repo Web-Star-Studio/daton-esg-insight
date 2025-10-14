@@ -187,19 +187,77 @@ Deno.serve(async (req) => {
       }
 
     } else if (fileType.includes('spreadsheet') || fileType.includes('excel')) {
-      console.log('Parsing Excel/Spreadsheet...');
-      // For Excel files, we'll use Lovable AI Vision to extract data
-      const buffer = await fileData.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
-      parsedContent = {
-        type: 'excel',
-        text: 'Excel file - requires processing with AI',
-        structured: {
-          note: 'Use AI to extract structured data from this Excel file',
-          fileBase64: base64.substring(0, 100) + '...' // Just a preview
+      console.log('Parsing Excel/Spreadsheet...', { size: fileData.size });
+      
+      try {
+        const buffer = await fileData.arrayBuffer();
+        
+        if (!buffer || buffer.byteLength === 0) {
+          throw new Error('Arquivo Excel vazio');
         }
-      };
+        
+        // Parse Excel using XLSX
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+          throw new Error('Excel não contém planilhas');
+        }
+        
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        if (!worksheet) {
+          throw new Error('Não foi possível ler a primeira planilha');
+        }
+        
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        
+        if (!jsonData || jsonData.length === 0) {
+          throw new Error('Excel não contém dados');
+        }
+        
+        // Extract headers from first row
+        const headers = Object.keys(jsonData[0] as object);
+        const rows = jsonData;
+        
+        // Generate text summary (first 10 rows)
+        const previewRows = rows.slice(0, 10);
+        const textSummary = [
+          `📊 Excel: ${firstSheetName}`,
+          `Colunas (${headers.length}): ${headers.join(', ')}`,
+          `Total de linhas: ${rows.length}`,
+          '',
+          '📋 Primeiras linhas:',
+          ...previewRows.map((row: any, idx: number) => {
+            const values = headers.map(h => row[h] || '').join(' | ');
+            return `${idx + 1}. ${values}`;
+          })
+        ].join('\n');
+        
+        console.log('Excel parsed successfully:', {
+          sheets: workbook.SheetNames.length,
+          firstSheet: firstSheetName,
+          rows: rows.length,
+          columns: headers.length
+        });
+        
+        parsedContent = {
+          type: 'excel',
+          text: textSummary,
+          structured: {
+            sheetName: firstSheetName,
+            headers,
+            rows,
+            rowCount: rows.length,
+            columnCount: headers.length,
+            allSheets: workbook.SheetNames
+          }
+        };
+      } catch (error) {
+        console.error('Excel parsing error:', error);
+        throw new Error(`Erro ao processar Excel: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Verifique se o arquivo não está corrompido.`);
+      }
 
     } else if (fileType.includes('image')) {
       console.log('Parsing Image with Vision...', { size: fileData.size });
