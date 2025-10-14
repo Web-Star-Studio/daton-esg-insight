@@ -100,58 +100,77 @@ serve(async (req) => {
     if ((!attachmentsToUse || attachmentsToUse.length === 0) && conversationId) {
       console.log('⚠️ Attachments missing from request, attempting fallback...');
       
-      // Try to get recent uploads from database
+      // Try to get recent uploads from database - include 'uploaded' AND 'processed' status
+      // Extended window to 7 days for better reusability
       const { data: recentUploads } = await supabaseClient
         .from('chat_file_uploads')
         .select('*')
         .eq('conversation_id', conversationId)
-        .eq('processing_status', 'uploaded')
-        .gte('created_at', new Date(Date.now() - 3600000).toISOString()) // Last hour
-        .order('created_at', { ascending: false });
+        .in('processing_status', ['uploaded', 'processed'])
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 3600000).toISOString()) // Last 7 days
+        .order('created_at', { ascending: false })
+        .limit(10); // Get last 10 files
       
       if (recentUploads && recentUploads.length > 0) {
-        console.log(`📎 Fallback DB: Reconstructed ${recentUploads.length} attachments from database`);
+        console.log(`📎 Fallback DB: Reconstructed ${recentUploads.length} attachments from database (including processed files)`);
         attachmentsToUse = recentUploads.map(upload => ({
           id: upload.id,
           name: upload.file_name,
           type: upload.file_type,
           size: upload.file_size,
           path: upload.file_path,
-          status: 'uploaded'
+          status: upload.processing_status === 'processed' ? 'processed' : 'uploaded'
         }));
       }
     }
     
-    // FALLBACK 2: Try to reconstruct from message metadata
+    // FALLBACK 2: Try to reconstruct from message metadata (last 10 user messages)
     if ((!attachmentsToUse || attachmentsToUse.length === 0) && conversationId) {
       console.log('⚠️ Attempting secondary fallback from message metadata...');
       
-      const { data: lastUserMessage } = await supabaseClient
+      const { data: recentUserMessages } = await supabaseClient
         .from('ai_chat_messages')
-        .select('metadata')
+        .select('metadata, created_at')
         .eq('conversation_id', conversationId)
         .eq('role', 'user')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(10); // Check last 10 user messages
       
-      if (lastUserMessage?.metadata?.attachmentPaths?.length > 0) {
-        const paths = lastUserMessage.metadata.attachmentPaths;
-        const types = lastUserMessage.metadata.attachmentTypes || [];
-        const names = lastUserMessage.metadata.attachmentNames || [];
+      if (recentUserMessages && recentUserMessages.length > 0) {
+        // Aggregate all attachment paths from last 10 messages, avoiding duplicates
+        const seenPaths = new Set<string>();
+        const aggregatedAttachments: any[] = [];
         
-        attachmentsToUse = paths.map((path: string, idx: number) => ({
-          id: `metadata-${idx}`,
-          name: names[idx] || `Anexo ${idx + 1}`,
-          type: types[idx] || 'application/octet-stream',
-          size: 0,
-          path: path,
-          status: 'uploaded'
-        }));
+        for (const message of recentUserMessages) {
+          if (message.metadata?.attachmentPaths?.length > 0) {
+            const paths = message.metadata.attachmentPaths;
+            const types = message.metadata.attachmentTypes || [];
+            const names = message.metadata.attachmentNames || [];
+            
+            paths.forEach((path: string, idx: number) => {
+              if (!seenPaths.has(path)) {
+                seenPaths.add(path);
+                aggregatedAttachments.push({
+                  id: `metadata-${aggregatedAttachments.length}`,
+                  name: names[idx] || `Anexo ${idx + 1}`,
+                  type: types[idx] || 'application/octet-stream',
+                  size: 0,
+                  path: path,
+                  status: 'uploaded'
+                });
+              }
+            });
+          }
+        }
         
-        console.log(`📎 Fallback Metadata: Reconstructed ${attachmentsToUse.length} attachments from message metadata`);
+        if (aggregatedAttachments.length > 0) {
+          attachmentsToUse = aggregatedAttachments;
+          console.log(`📎 Fallback Metadata: Reconstructed ${attachmentsToUse.length} attachments from ${recentUserMessages.length} messages`);
+        } else {
+          console.log('   No attachments found in recent message metadata');
+        }
       } else {
-        console.log('   No attachments found in message metadata');
+        console.log('   No recent user messages found for metadata fallback');
       }
     }
 

@@ -394,6 +394,18 @@ const { user } = useAuth();
         if (savedMessages && savedMessages.length > 0) {
           const loadedMessages: ChatMessage[] = savedMessages.map(msg => {
             const metadata = msg.metadata as any || {};
+            
+            // Reconstruct attachments from metadata for history display
+            let reconstructedAttachments: Array<{name: string; size: number; type: string; path: string}> | undefined;
+            if (metadata.attachmentPaths && Array.isArray(metadata.attachmentPaths) && metadata.attachmentPaths.length > 0) {
+              reconstructedAttachments = metadata.attachmentPaths.map((path: string, idx: number) => ({
+                name: metadata.attachmentNames?.[idx] || `Anexo ${idx + 1}`,
+                type: metadata.attachmentTypes?.[idx] || 'application/octet-stream',
+                size: 0, // Size not stored in metadata, use 0 as placeholder
+                path: path
+              }));
+            }
+            
             return {
               id: msg.id,
               role: msg.role as 'user' | 'assistant',
@@ -403,7 +415,8 @@ const { user } = useAuth();
                 `Dados consultados: ${metadata.dataAccessed.join(', ')}` : 
                 undefined,
               insights: metadata.insights || [],
-              visualizations: metadata.visualizations || []
+              visualizations: metadata.visualizations || [],
+              attachments: reconstructedAttachments
             };
           });
           
@@ -1023,21 +1036,24 @@ const { user } = useAuth();
       // Mark attachments as sent (keep in state for history)
       if (processedAttachments.length > 0) {
         console.log('✅ Marking attachments as sent and preserving in history');
-        setAttachments(prev => prev.map(att => ({
-          ...att,
-          status: 'sent' as const
-        })));
-        
-        // Persist updated state
-        if (conversationId) {
-          persistAttachments(conversationId, attachments.map(att => ({
+        setAttachments(prev => {
+          const updated = prev.map(att => ({
             ...att,
             status: 'sent' as const
-          })));
+          }));
           
+          // Persist updated state immediately with the updated array (avoid race condition)
+          if (conversationId) {
+            persistAttachments(conversationId, updated);
+          }
+          
+          return updated;
+        });
+        
+        if (conversationId) {
           await supabase
             .from('ai_chat_conversations')
-            .update({ 
+            .update({
               last_message_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
