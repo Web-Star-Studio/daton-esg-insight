@@ -227,19 +227,23 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                       </ReactMarkdown>
                     </div>
                     
-                    {/* Show attachments in user messages */}
+                    {/* Show attachments in user messages - Visual style like normal chat apps */}
                     {message.role === 'user' && message.attachments && message.attachments.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-primary-foreground/20">
-                        <p className="text-xs font-medium mb-1.5 opacity-80">📎 Anexos enviados:</p>
-                        <div className="space-y-1">
-                          {message.attachments.map((att, idx) => (
-                            <div key={idx} className="text-xs bg-primary-foreground/10 rounded px-2 py-1 flex items-center gap-1.5">
-                              <span>📄</span>
-                              <span className="flex-1 truncate">{att.name}</span>
-                              <span className="opacity-70">({(att.size / 1024).toFixed(1)} KB)</span>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="mt-3 space-y-2">
+                        {message.attachments.map((att, idx) => (
+                          <FileAttachment
+                            key={idx}
+                            file={{
+                              id: `msg-${message.id}-att-${idx}`,
+                              name: att.name,
+                              size: att.size,
+                              type: att.type || '',
+                              status: 'sent',
+                              path: att.path
+                            }}
+                            canRemove={false}
+                          />
+                        ))}
                       </div>
                     )}
                     
