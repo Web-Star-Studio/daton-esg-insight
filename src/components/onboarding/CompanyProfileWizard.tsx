@@ -21,12 +21,28 @@ interface CompanyProfileWizardProps {
 
 const SECTORS = [
   { id: 'manufacturing', name: 'Indústria/Manufatura' },
-  { id: 'services', name: 'Serviços' },
-  { id: 'retail', name: 'Varejo/Comércio' },
-  { id: 'construction', name: 'Construção' },
+  { id: 'agro', name: 'Agronegócio' },
+  { id: 'food_beverage', name: 'Alimentos e Bebidas' },
+  { id: 'mining', name: 'Mineração' },
+  { id: 'oil_gas', name: 'Óleo e Gás' },
+  { id: 'energy', name: 'Energia' },
+  { id: 'chemical', name: 'Químico e Petroquímico' },
+  { id: 'pulp_paper', name: 'Papel e Celulose' },
+  { id: 'steel', name: 'Siderurgia' },
+  { id: 'logistics', name: 'Logística' },
+  { id: 'financial', name: 'Financeiro' },
+  { id: 'telecom', name: 'Telecom' },
+  { id: 'public', name: 'Setor Público' },
+  { id: 'pharma_cosmetics', name: 'Farmacêutico e Cosméticos' },
+  { id: 'automotive', name: 'Automotivo' },
   { id: 'technology', name: 'Tecnologia' },
+  { id: 'consumer_goods', name: 'Bens de Consumo' },
+  { id: 'utilities', name: 'Saneamento e Utilidades' },
   { id: 'healthcare', name: 'Saúde' },
   { id: 'education', name: 'Educação' },
+  { id: 'retail', name: 'Varejo/Comércio' },
+  { id: 'construction', name: 'Construção' },
+  { id: 'services', name: 'Serviços Profissionais' },
   { id: 'other', name: 'Outro' }
 ];
 
@@ -34,10 +50,18 @@ const COMPANY_SIZES = [
   { id: 'micro', name: 'Até 9 pessoas' },
   { id: 'small', name: '10-49 pessoas' },
   { id: 'medium', name: '50-249 pessoas' },
-  { id: 'large', name: '250+ pessoas' }
+  { id: 'large', name: '250-999 pessoas' },
+  { id: 'xlarge', name: '1000-4999 pessoas' },
+  { id: 'enterprise', name: '5000+ pessoas' }
 ];
 
 const BUSINESS_GOALS = [
+  { id: 'emissions_reduction', name: 'Redução de Emissões' },
+  { id: 'environmental_compliance', name: 'Conformidade Ambiental' },
+  { id: 'health_safety', name: 'Saúde e Segurança' },
+  { id: 'energy_efficiency', name: 'Eficiência Energética' },
+  { id: 'water_management', name: 'Gestão de Água' },
+  { id: 'waste_reduction', name: 'Redução de Resíduos' },
   { id: 'sustainability', name: 'Sustentabilidade e ESG' },
   { id: 'quality', name: 'Qualidade e Processos' },
   { id: 'compliance', name: 'Conformidade Regulatória' },

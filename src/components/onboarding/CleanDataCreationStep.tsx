@@ -1,16 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { 
-  Leaf, 
-  Shield, 
-  Users, 
-  BarChart3, 
-  FileCheck, 
-  TrendingUp, 
-  Award, 
-  Building
-} from "lucide-react";
+import { FileCheck } from "lucide-react";
+import { getModuleById, humanizeModuleId } from "./modulesCatalog";
 
 interface CleanDataCreationStepProps {
   selectedModules: string[];
@@ -20,33 +12,41 @@ interface CleanDataCreationStepProps {
   onPrev: () => void;
 }
 
-const MODULE_ICONS: Record<string, any> = {
-  inventario_gee: Leaf,
-  gestao_licencas: Shield,
-  gestao_pessoas: Users,
-  qualidade: Award,
-  performance: TrendingUp,
-  documentos: FileCheck,
-  analise_dados: BarChart3,
-  compliance: Building
-};
-
-const MODULE_NAMES: Record<string, string> = {
-  inventario_gee: 'Inventário GEE',
-  gestao_licencas: 'Licenças Ambientais',
-  gestao_pessoas: 'Gestão de Pessoas',
-  qualidade: 'Qualidade',
-  performance: 'Performance',
-  documentos: 'Documentos',
-  analise_dados: 'Análise de Dados',
-  compliance: 'Compliance'
-};
-
-const CONFIGURATION_OPTIONS = {
+const CONFIGURATION_OPTIONS: Record<string, Array<{ key: string; label: string }>> = {
   inventario_gee: [
     { key: 'auto_calculate', label: 'Cálculo automático' },
     { key: 'import_data', label: 'Importar histórico' },
     { key: 'notifications', label: 'Notificações' }
+  ],
+  energia: [
+    { key: 'medir_consumo', label: 'Medir consumo' },
+    { key: 'metas_reducao', label: 'Metas de redução' },
+    { key: 'alertas_pico', label: 'Alertas de pico' }
+  ],
+  agua: [
+    { key: 'monitorar_captacao', label: 'Monitorar captação' },
+    { key: 'efluentes_conformidade', label: 'Conformidade de efluentes' },
+    { key: 'alertas_consumo', label: 'Alertas de consumo' }
+  ],
+  residuos: [
+    { key: 'rastreio_coleta', label: 'Rastreio de coleta' },
+    { key: 'segregacao', label: 'Segregação' },
+    { key: 'manifestos_digitais', label: 'Manifestos digitais' }
+  ],
+  biodiversidade: [
+    { key: 'areas_protecao', label: 'Áreas de proteção' },
+    { key: 'monitoramento_fauna', label: 'Monitoramento de fauna' },
+    { key: 'planos_compensacao', label: 'Planos de compensação' }
+  ],
+  mudancas_climaticas: [
+    { key: 'cenarios_climaticos', label: 'Cenários climáticos' },
+    { key: 'riscos_transicao', label: 'Riscos de transição' },
+    { key: 'inventario_escopo3', label: 'Inventário escopo 3' }
+  ],
+  economia_circular: [
+    { key: 'rastrear_materiais', label: 'Rastrear materiais' },
+    { key: 'indicadores_circularidade', label: 'Indicadores de circularidade' },
+    { key: 'parceiros_reciclagem', label: 'Parceiros de reciclagem' }
   ],
   gestao_licencas: [
     { key: 'renewal_alerts', label: 'Alertas de renovação' },
@@ -58,10 +58,55 @@ const CONFIGURATION_OPTIONS = {
     { key: 'training_tracking', label: 'Treinamentos' },
     { key: 'goal_setting', label: 'Metas' }
   ],
+  saude_seguranca: [
+    { key: 'incidentes', label: 'Registro de incidentes' },
+    { key: 'inspecoes', label: 'Inspeções' },
+    { key: 'treinamentos_obrigatorios', label: 'Treinamentos obrigatórios' }
+  ],
+  stakeholders: [
+    { key: 'mapa_stakeholders', label: 'Mapa de stakeholders' },
+    { key: 'registro_interacoes', label: 'Registro de interações' },
+    { key: 'pesquisas_satisfacao', label: 'Pesquisas de satisfação' }
+  ],
+  riscos_esg: [
+    { key: 'matriz_riscos', label: 'Matriz de riscos' },
+    { key: 'controles_mitigacao', label: 'Controles de mitigação' },
+    { key: 'monitoramento_eventos', label: 'Monitoramento de eventos' }
+  ],
   qualidade: [
     { key: 'audit_scheduling', label: 'Auditorias' },
     { key: 'nonconformity_tracking', label: 'Não conformidades' },
     { key: 'procedure_management', label: 'Procedimentos' }
+  ],
+  performance: [
+    { key: 'kpi_tracking', label: 'Rastreamento de KPIs' },
+    { key: 'benchmarking', label: 'Benchmarking' },
+    { key: 'dashboards', label: 'Dashboards' }
+  ],
+  inovacao: [
+    { key: 'portfolio_ideias', label: 'Portfolio de ideias' },
+    { key: 'pipeline_poc', label: 'Pipeline de POCs' },
+    { key: 'indicadores_inovacao', label: 'Indicadores de inovação' }
+  ],
+  cadeia_suprimentos: [
+    { key: 'homologacao_fornecedores', label: 'Homologação de fornecedores' },
+    { key: 'due_diligence', label: 'Due diligence' },
+    { key: 'desempenho_fornecedores', label: 'Desempenho de fornecedores' }
+  ],
+  compliance: [
+    { key: 'regulatory_tracking', label: 'Rastreamento regulatório' },
+    { key: 'reporting', label: 'Relatórios' },
+    { key: 'certifications', label: 'Certificações' }
+  ],
+  documentos: [
+    { key: 'version_control', label: 'Controle de versão' },
+    { key: 'approval_workflow', label: 'Fluxo de aprovação' },
+    { key: 'search', label: 'Busca avançada' }
+  ],
+  analise_dados: [
+    { key: 'data_visualization', label: 'Visualização de dados' },
+    { key: 'custom_reports', label: 'Relatórios personalizados' },
+    { key: 'export', label: 'Exportação' }
   ]
 };
 
@@ -128,9 +173,10 @@ export function CleanDataCreationStep({
         {/* Module Configurations */}
         <div className="space-y-4">
           {selectedModules.map((moduleId) => {
-            const Icon = MODULE_ICONS[moduleId];
-            const moduleName = MODULE_NAMES[moduleId];
-            const options = CONFIGURATION_OPTIONS[moduleId as keyof typeof CONFIGURATION_OPTIONS] || [];
+            const module = getModuleById(moduleId);
+            const Icon = module?.icon ?? FileCheck;
+            const moduleName = module?.name ?? humanizeModuleId(moduleId);
+            const options = CONFIGURATION_OPTIONS[moduleId] || [];
             const config = moduleConfigurations[moduleId] || {};
 
             return (
@@ -140,20 +186,26 @@ export function CleanDataCreationStep({
                   <h3 className="text-sm font-medium">{moduleName}</h3>
                 </div>
 
-                <div className="space-y-1.5 pl-5">
-                  {options.map(option => (
-                    <div key={option.key} className="flex items-center justify-between">
-                      <Label htmlFor={`${moduleId}-${option.key}`} className="text-xs text-muted-foreground">
-                        {option.label}
-                      </Label>
-                      <Switch
-                        id={`${moduleId}-${option.key}`}
-                        checked={config[option.key] || false}
-                        onCheckedChange={(checked) => handleConfigToggle(moduleId, option.key, checked)}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {options.length > 0 ? (
+                  <div className="space-y-1.5 pl-5">
+                    {options.map(option => (
+                      <div key={option.key} className="flex items-center justify-between">
+                        <Label htmlFor={`${moduleId}-${option.key}`} className="text-xs text-muted-foreground">
+                          {option.label}
+                        </Label>
+                        <Switch
+                          id={`${moduleId}-${option.key}`}
+                          checked={config[option.key] || false}
+                          onCheckedChange={(checked) => handleConfigToggle(moduleId, option.key, checked)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground pl-5">
+                    Módulo pronto para uso. Você pode avançar.
+                  </p>
+                )}
               </div>
             );
           })}

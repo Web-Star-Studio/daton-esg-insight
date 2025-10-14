@@ -121,34 +121,34 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     const perfLogger = createPerformanceLogger('saveOnboardingData');
 
     try {
-      await retrySupabaseOperation(
-        async () => {
-          const result = await supabase
-            .from('onboarding_selections')
-            .upsert([{
-              user_id: user.id,
-              company_id: user.company.id,
-              current_step: state.currentStep,
-              selected_modules: state.selectedModules,
-              module_configurations: state.moduleConfigurations,
-              is_completed: state.isCompleted,
-              updated_at: new Date().toISOString()
-            }], {
-              onConflict: 'user_id',
-              ignoreDuplicates: false
-            });
+      const { data, error } = await supabase
+        .from('onboarding_selections')
+        .upsert([{
+          user_id: user.id,
+          company_id: user.company.id,
+          current_step: state.currentStep,
+          selected_modules: state.selectedModules,
+          module_configurations: state.moduleConfigurations,
+          is_completed: state.isCompleted,
+          updated_at: new Date().toISOString()
+        }], {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
 
-          logDatabaseOperation('upsert', 'onboarding_selections', !result.error, result.error);
-          return result;
-        },
-        { maxRetries: 3, initialDelay: 1000 }
-      );
+      if (error) {
+        console.error('❌ Error saving onboarding data:', error);
+        throw error;
+      }
 
+      logDatabaseOperation('upsert', 'onboarding_selections', true, null);
       perfLogger.end(true);
     } catch (error) {
       perfLogger.end(false, error);
-      console.error('❌ Error saving onboarding data after retries:', error);
-      throw error;
+      console.error('❌ Error saving onboarding data:', error);
+      // Don't throw - allow UI to continue
     }
   };
 
@@ -286,9 +286,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     switch (step) {
       case 0: return true; // Welcome step always completed
       case 1: return state.selectedModules.length > 0;
-      case 2: return state.selectedModules.every(moduleId => 
-        state.moduleConfigurations[moduleId] !== undefined
-      );
+      case 2: return true; // Configuration is optional
       case 3: return state.isCompleted;
       default: return false;
     }
