@@ -15,8 +15,72 @@ interface CompanyProfile {
 }
 
 interface CompanyProfileWizardProps {
-  onProfileComplete: (profile: CompanyProfile) => void;
+  onProfileComplete: (profile: CompanyProfile, recommendedModules: string[]) => void;
   onSkip: () => void;
+}
+
+/**
+ * Get intelligent module recommendations based on company profile
+ */
+function getRecommendedModules(profile: CompanyProfile): string[] {
+  const recommendations: string[] = [];
+  
+  // Sector-based recommendations
+  const sectorMap: Record<string, string[]> = {
+    'manufacturing': ['inventario_gee', 'energia', 'residuos', 'saude_seguranca'],
+    'agro': ['agua', 'biodiversidade', 'residuos', 'inventario_gee'],
+    'food_beverage': ['qualidade', 'residuos', 'agua', 'saude_seguranca'],
+    'mining': ['inventario_gee', 'agua', 'biodiversidade', 'gestao_licencas'],
+    'oil_gas': ['inventario_gee', 'energia', 'gestao_licencas', 'riscos_esg'],
+    'energy': ['inventario_gee', 'energia', 'mudancas_climaticas'],
+    'chemical': ['inventario_gee', 'residuos', 'saude_seguranca', 'gestao_licencas'],
+    'financial': ['riscos_esg', 'compliance', 'stakeholders', 'gestao_pessoas'],
+    'services': ['gestao_pessoas', 'qualidade', 'performance', 'stakeholders'],
+    'technology': ['energia', 'residuos', 'inovacao', 'gestao_pessoas']
+  };
+  
+  const sectorModules = sectorMap[profile.sector] || [];
+  recommendations.push(...sectorModules);
+  
+  // Goal-based recommendations
+  profile.goals.forEach(goal => {
+    switch (goal) {
+      case 'emissions_reduction':
+        recommendations.push('inventario_gee', 'energia');
+        break;
+      case 'environmental_compliance':
+        recommendations.push('gestao_licencas', 'compliance');
+        break;
+      case 'health_safety':
+        recommendations.push('saude_seguranca');
+        break;
+      case 'energy_efficiency':
+        recommendations.push('energia');
+        break;
+      case 'water_management':
+        recommendations.push('agua');
+        break;
+      case 'waste_reduction':
+        recommendations.push('residuos', 'economia_circular');
+        break;
+      case 'quality':
+        recommendations.push('qualidade');
+        break;
+      case 'compliance':
+        recommendations.push('compliance', 'gestao_licencas');
+        break;
+      case 'performance':
+        recommendations.push('performance', 'analise_dados');
+        break;
+    }
+  });
+  
+  // Size-based filtering (limit for smaller companies)
+  const maxModules = profile.size === 'micro' || profile.size === 'small' ? 4 : 8;
+  
+  // Remove duplicates and limit
+  const uniqueRecommendations = Array.from(new Set(recommendations));
+  return uniqueRecommendations.slice(0, maxModules);
 }
 
 const SECTORS = [
@@ -92,7 +156,9 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      onProfileComplete(profile);
+      const recommendedModules = getRecommendedModules(profile);
+      console.log('🎯 Recommended modules based on profile:', recommendedModules);
+      onProfileComplete(profile, recommendedModules);
     }
   };
 
@@ -252,7 +318,7 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
           </Button>
         )}
         <Button
-          onClick={currentStep === steps.length - 1 ? onProfileComplete.bind(null, profile) : handleNext}
+          onClick={handleNext}
           disabled={!canProceed()}
           className="flex-1 h-11"
         >

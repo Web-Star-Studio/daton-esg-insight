@@ -40,7 +40,7 @@ const OnboardingFlowContext = createContext<OnboardingFlowContextType | undefine
 const ONBOARDING_STEPS = [
   { id: 'welcome', title: 'Boas-vindas' },
   { id: 'modules', title: 'Seleção de Módulos' },
-  { id: 'shortcuts', title: 'Atalhos Guiados' },
+  { id: 'configuration', title: 'Configuração' },
   { id: 'completion', title: 'Finalização' }
 ];
 
@@ -157,6 +157,12 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
 
       logDatabaseOperation('upsert', 'onboarding_selections', true, null);
       perfLogger.end(true);
+      
+      toast({
+        title: 'Progresso salvo',
+        description: 'Suas seleções foram salvas automaticamente.',
+        duration: 2000
+      });
     } catch (error) {
       perfLogger.end(false, error);
       console.error('❌ Error saving onboarding data:', error);

@@ -49,12 +49,25 @@ export function CleanModuleSelectionStep({
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
-        <div className="space-y-2 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Etapa 2 de 4</p>
+        <div className="space-y-3 text-center">
           <h2 className="text-xl font-semibold tracking-tight">Selecione os Módulos</h2>
           <p className="text-sm text-muted-foreground">
             Escolha os módulos que melhor atendem às necessidades da sua empresa
           </p>
+          
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center gap-1.5">
+            {[0, 1, 2, 3].map((index) => (
+              <div 
+                key={index} 
+                className={`h-1 rounded-full transition-all ${
+                  index === 1 ? 'w-6 bg-primary' : 
+                  index < 1 ? 'w-4 bg-primary/40' : 
+                  'w-4 bg-muted'
+                }`} 
+              />
+            ))}
+          </div>
         </div>
 
         {/* Category Filter */}

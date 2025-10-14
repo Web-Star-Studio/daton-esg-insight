@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,10 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 export function OnboardingRedirectHandler() {
   const navigate = useNavigate();
   const { user, skipOnboarding } = useAuth();
+  const [hasRedirected, setHasRedirected] = React.useState(false);
 
   useEffect(() => {
     const checkAndRedirect = async () => {
-      if (!user?.id) return;
+      if (!user?.id || hasRedirected) return;
 
       try {
         console.log('🔍 Checking if user has already completed onboarding...');
@@ -43,6 +44,9 @@ export function OnboardingRedirectHandler() {
         if (hasCompletedProfile || hasCompletedOnboarding) {
           console.log('✅ User has completed onboarding, redirecting to dashboard...');
           
+          // Mark as redirected to prevent loops
+          setHasRedirected(true);
+          
           // Ensure auth context is updated
           await skipOnboarding();
           
@@ -58,7 +62,7 @@ export function OnboardingRedirectHandler() {
     };
 
     checkAndRedirect();
-  }, [user?.id, navigate, skipOnboarding]);
+  }, [user?.id, navigate, skipOnboarding, hasRedirected]);
 
   return null; // This component doesn't render anything
 }

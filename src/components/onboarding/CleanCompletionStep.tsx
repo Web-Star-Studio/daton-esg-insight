@@ -7,9 +7,6 @@ interface CleanCompletionStepProps {
   moduleConfigurations: Record<string, any>;
   onStartUsingPlatform: () => void;
   onTakeTour: () => void;
-  onSetupInitialData?: () => void;
-  onRunValidation?: () => void;
-  onEmergencyComplete?: () => void;
 }
 
 export function CleanCompletionStep({ 

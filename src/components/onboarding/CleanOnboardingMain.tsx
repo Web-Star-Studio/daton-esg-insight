@@ -47,10 +47,21 @@ function CleanOnboardingContent() {
     'Finalização'
   ];
 
-  const handleWelcomeNext = (profile?: any) => {
+  const handleWelcomeNext = (profile?: any, recommendedModules?: string[]) => {
     if (profile) {
       setCompanyProfile(profile);
+      console.log('📝 Company profile saved:', profile);
     }
+    
+    if (recommendedModules && recommendedModules.length > 0) {
+      console.log('🎯 Pre-selecting recommended modules:', recommendedModules);
+      setSelectedModules(recommendedModules);
+      toast({
+        title: 'Módulos Recomendados',
+        description: `${recommendedModules.length} módulos foram pré-selecionados com base no seu perfil.`,
+      });
+    }
+    
     nextStep();
   };
 
@@ -242,14 +253,7 @@ function CleanOnboardingContent() {
             selectedModules={state.selectedModules}
             moduleConfigurations={state.moduleConfigurations}
             onConfigurationChange={updateModuleConfiguration}
-            onNext={() => {
-              // Check if user wants to setup initial data
-              if (state.selectedModules.length > 0) {
-                setShowDataSetup(true);
-              } else {
-                nextStep();
-              }
-            }}
+            onNext={nextStep}
             onPrev={prevStep}
           />
         );
@@ -261,9 +265,6 @@ function CleanOnboardingContent() {
             moduleConfigurations={state.moduleConfigurations}
             onStartUsingPlatform={handleStartUsingPlatform}
             onTakeTour={handleTakeTour}
-            onSetupInitialData={handleSetupInitialData}
-            onRunValidation={handleRunValidation}
-            onEmergencyComplete={handleEmergencyComplete}
           />
         );
       

@@ -4,7 +4,7 @@ import { Leaf } from "lucide-react";
 import { CompanyProfileWizard } from "./CompanyProfileWizard";
 
 interface CleanWelcomeStepProps {
-  onNext: (profile?: any) => void;
+  onNext: (profile?: any, recommendedModules?: string[]) => void;
   onSkip?: () => void;
 }
 
@@ -15,8 +15,9 @@ export function CleanWelcomeStep({ onNext, onSkip }: CleanWelcomeStepProps) {
     setShowProfileWizard(true);
   };
 
-  const handleProfileComplete = (profile: any) => {
-    onNext(profile);
+  const handleProfileComplete = (profile: any, recommendedModules: string[]) => {
+    console.log('✨ Profile complete with recommendations:', { profile, recommendedModules });
+    onNext(profile, recommendedModules);
   };
 
   const handleSkipProfile = () => {

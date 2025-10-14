@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { FileCheck } from "lucide-react";
-import { getModuleById, humanizeModuleId } from "./modulesCatalog";
+import { getModuleById, humanizeModuleId, validateModuleCatalog } from "./modulesCatalog";
+import { useToast } from '@/hooks/use-toast';
 
 interface CleanDataCreationStepProps {
   selectedModules: string[];
@@ -117,6 +119,20 @@ export function CleanDataCreationStep({
   onNext, 
   onPrev 
 }: CleanDataCreationStepProps) {
+  const { toast } = useToast();
+
+  // Validate module catalog on mount
+  useEffect(() => {
+    const isValid = validateModuleCatalog();
+    if (!isValid) {
+      console.error('❌ Catálogo de módulos contém erros!');
+      toast({
+        title: 'Erro de Configuração',
+        description: 'Alguns módulos estão configurados incorretamente.',
+        variant: 'destructive'
+      });
+    }
+  }, [toast]);
 
   // Filter out invalid module IDs
   const validModules = selectedModules.filter(id => {
@@ -153,13 +169,28 @@ export function CleanDataCreationStep({
   if (validModules.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-md space-y-6 text-center">
+        <div className="w-full max-w-md space-y-6 text-center animate-fade-in">
           <div className="space-y-2">
             <h2 className="text-lg font-semibold tracking-tight">Nenhum módulo selecionado</h2>
             <p className="text-xs text-muted-foreground">
               Volte e selecione pelo menos um módulo para continuar.
             </p>
           </div>
+          
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center gap-1.5">
+            {[0, 1, 2, 3].map((index) => (
+              <div 
+                key={index} 
+                className={`h-1 rounded-full transition-all ${
+                  index === 2 ? 'w-6 bg-primary' : 
+                  index < 2 ? 'w-4 bg-primary/40' : 
+                  'w-4 bg-muted'
+                }`} 
+              />
+            ))}
+          </div>
+          
           <Button onClick={onPrev} variant="outline" className="w-full">
             Voltar para Seleção
           </Button>
