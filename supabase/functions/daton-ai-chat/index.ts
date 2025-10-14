@@ -1357,7 +1357,25 @@ Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferra
 ❌ Deixar de priorizar informações críticas
 ❌ Perder o foco na agenda ESG e sustentabilidade
 
-Lembre-se: Você é um PARCEIRO ESTRATÉGICO de ${company?.name || 'da empresa'} na jornada ESG. Seja excepcional! 🚀`;
+Lembre-se: Você é um PARCEIRO ESTRATÉGICO de ${company?.name || 'da empresa'} na jornada ESG. Seja excepcional! 🚀
+
+${attachmentContext}`;
+
+    // Debug: Log attachment context inclusion
+    if (attachmentContext) {
+      console.log('✅ Attachment context INCLUDED in system prompt');
+      console.log('📊 Context length:', attachmentContext.length, 'characters');
+      console.log('📎 Context preview (first 500 chars):', attachmentContext.substring(0, 500));
+    } else {
+      console.log('⚠️ No attachment context available');
+    }
+
+    console.log('📤 Sending to AI:', {
+      systemPromptLength: systemPrompt.length,
+      hasAttachmentContext: systemPrompt.includes('ANÁLISE COMPLETA DOS ARQUIVOS'),
+      messageCount: messages.length,
+      attachmentContextIncluded: !!attachmentContext
+    });
 
     // Call Lovable AI with tool calling
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
