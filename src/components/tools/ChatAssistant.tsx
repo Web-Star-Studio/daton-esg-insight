@@ -40,7 +40,12 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     confirmAction,
     cancelAction,
     showHistory,
-    setShowHistory
+    setShowHistory,
+    listConversations,
+    openConversation,
+    renameConversation,
+    deleteConversation,
+    conversationId
   } = useChatAssistant();
 
   // Auto-scroll to bottom when new messages arrive
@@ -374,6 +379,12 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       <ChatHistory 
         open={showHistory}
         onOpenChange={setShowHistory}
+        listConversations={listConversations}
+        openConversation={openConversation}
+        renameConversation={renameConversation}
+        deleteConversation={deleteConversation}
+        startNewConversation={startNewConversation}
+        conversationId={conversationId}
       />
     </>
   );

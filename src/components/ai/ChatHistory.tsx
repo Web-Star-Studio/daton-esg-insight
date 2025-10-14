@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, Trash2, Edit2, Check, X, Plus } from 'lucide-react';
-import { useChatAssistant } from '@/hooks/useChatAssistant';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -21,6 +20,13 @@ import {
 interface ChatHistoryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Methods and state passed from parent to avoid mounting a second chat hook
+  listConversations: () => Promise<any[]>;
+  openConversation: (convId: string) => Promise<void>;
+  renameConversation: (convId: string, newTitle: string) => Promise<void>;
+  deleteConversation: (convId: string) => Promise<void>;
+  startNewConversation: () => Promise<void>;
+  conversationId: string | null;
 }
 
 interface Conversation {
@@ -31,20 +37,12 @@ interface Conversation {
   last_message_at: string;
 }
 
-export function ChatHistory({ open, onOpenChange }: ChatHistoryProps) {
+export function ChatHistory({ open, onOpenChange, listConversations, openConversation, renameConversation, deleteConversation, startNewConversation, conversationId }: ChatHistoryProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  
-  const { 
-    listConversations, 
-    openConversation, 
-    renameConversation, 
-    deleteConversation,
-    startNewConversation,
-    conversationId 
-  } = useChatAssistant();
+
 
   // Load conversations when drawer opens
   useEffect(() => {

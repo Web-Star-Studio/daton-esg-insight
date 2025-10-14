@@ -191,13 +191,23 @@ const { user } = useAuth();
     }
   }, [conversationId]);
 
-  // Initialize or load conversation
+  // Initialize or load conversation (single-run with guard)
   useEffect(() => {
     const initConversation = async () => {
-      if (!user?.company.id) return;
+      if (!user?.company.id || !user?.id) return;
+      if (hasInitializedRef.current) return; // prevent duplicate init
+      hasInitializedRef.current = true;
 
       try {
         console.log('🔍 Looking for existing conversation...');
+
+        // Try to restore active conversation from localStorage first
+        const storedConvId = localStorage.getItem('active_conversation_id');
+        if (storedConvId) {
+          console.log('♻️ Restoring conversation from localStorage:', storedConvId);
+          setConversationId(storedConvId);
+          return;
+        }
         
         // Buscar conversação mais recente (últimas 24h)
         const oneDayAgo = new Date();
@@ -220,6 +230,7 @@ const { user } = useAuth();
         if (existingConv) {
           console.log('♻️ Reusing existing conversation:', existingConv.id);
           setConversationId(existingConv.id);
+          localStorage.setItem('active_conversation_id', existingConv.id);
         } else {
           console.log('🆕 Creating new conversation');
           
@@ -238,6 +249,7 @@ const { user } = useAuth();
           
           console.log('✅ New conversation created:', newConv.id);
           setConversationId(newConv.id);
+          localStorage.setItem('active_conversation_id', newConv.id);
           
           // Salvar mensagem de boas-vindas no banco
           const welcomeMessage = messages[0];
