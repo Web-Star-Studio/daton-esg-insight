@@ -40,14 +40,15 @@ serve(async (req) => {
     console.log('   • Current Page:', currentPage);
     console.log('   • Messages:', messages?.length);
     console.log('   • Confirmed Action:', confirmed);
-    console.log('   • Attachments:', attachments?.length || 0);
+    console.log('   • 📎 Attachment Count:', attachments?.length || 0);
     if (attachments && attachments.length > 0) {
-      console.log('   • Attachment details:', attachments.map((a: any) => ({
+      console.log('   • 📎 Attachment details:', attachments.map((a: any) => ({
         name: a.name,
         type: a.type,
         size: `${(a.size / 1024).toFixed(1)} KB`,
         path: a.path
       })));
+      console.log('   ℹ️  Note: Client-side fallback should have already injected attachment content into messages');
     }
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -756,7 +757,10 @@ serve(async (req) => {
     // Process attachments with advanced AI analysis
     let attachmentContext = '';
     if (attachments && attachments.length > 0) {
-      console.log('🔍 Processing', attachments.length, 'attachment(s) with advanced AI analysis...');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📎 Backend advanced processing for', attachments.length, 'attachment(s)...');
+      console.log('   ℹ️  Note: Client-side fallback already injected basic content');
+      console.log('   ⚙️  This backend pipeline adds: classification, extraction, suggestions');
       
       for (const attachment of attachments) {
         try {

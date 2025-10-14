@@ -322,6 +322,9 @@ Converse naturalmente! Exemplos:
   };
 
   const addAttachment = async (file: File) => {
+    // Prevent race condition: lock uploading state immediately
+    setIsUploading(true);
+    
     // Validação de tipo de arquivo
     const allowedTypes = [
       'application/pdf',
@@ -592,6 +595,123 @@ Converse naturalmente! Exemplos:
         content: m.content
       }));
 
+      // ============================================
+      // CLIENT-SIDE ATTACHMENT FALLBACK
+      // Parse attachments and inject content into conversation
+      // ============================================
+      if (processedAttachments.length > 0) {
+        console.log('🔍 Pre-processing attachments on client side for guaranteed context...');
+        
+        const attachmentSummaries: string[] = [];
+        let successCount = 0;
+        
+        for (const attachment of processedAttachments) {
+          try {
+            console.log(`📄 Parsing ${attachment.name} via parse-chat-document...`);
+            
+            const { data: parseResult, error: parseError } = await supabase.functions.invoke('parse-chat-document', {
+              body: {
+                filePath: attachment.path,
+                fileType: attachment.type,
+                useVision: attachment.type.startsWith('image/')
+              }
+            });
+
+            if (parseError) {
+              console.error(`❌ Parse error for ${attachment.name}:`, parseError);
+              attachmentSummaries.push(
+                `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `📎 **${attachment.name}** (${(attachment.size / 1024).toFixed(1)} KB)\n` +
+                `❌ Falha ao processar: ${parseError.message || 'Erro desconhecido'}\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+              );
+              continue;
+            }
+
+            if (!parseResult?.success || !parseResult?.content) {
+              console.warn(`⚠️ No content extracted from ${attachment.name}`);
+              attachmentSummaries.push(
+                `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `📎 **${attachment.name}** (${(attachment.size / 1024).toFixed(1)} KB)\n` +
+                `⚠️ Nenhum conteúdo foi extraído do arquivo\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+              );
+              continue;
+            }
+
+            // Build summary
+            let summary = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            summary += `📎 **ARQUIVO: ${attachment.name}**\n`;
+            summary += `📏 Tamanho: ${(attachment.size / 1024).toFixed(1)} KB\n`;
+            summary += `📋 Tipo: ${attachment.type}\n`;
+
+            // Structured data (CSV/Excel)
+            if (parseResult.structured?.headers && parseResult.structured?.rows) {
+              const headers = parseResult.structured.headers;
+              const rowCount = parseResult.structured.rows.length;
+              
+              summary += `\n📊 **Dados Estruturados:**\n`;
+              summary += `   • Colunas (${headers.length}): ${headers.slice(0, 15).join(', ')}${headers.length > 15 ? '...' : ''}\n`;
+              summary += `   • Total de linhas: ${rowCount}\n`;
+              
+              if (rowCount > 0) {
+                summary += `\n📝 **Amostra (primeiras 3 linhas):**\n`;
+                parseResult.structured.rows.slice(0, 3).forEach((row: any, idx: number) => {
+                  summary += `   ${idx + 1}. ${JSON.stringify(row).substring(0, 200)}${JSON.stringify(row).length > 200 ? '...' : ''}\n`;
+                });
+              }
+            }
+
+            // Text content
+            const contentLength = parseResult.content.length;
+            const contentPreview = parseResult.content.substring(0, 2500);
+            summary += `\n📄 **Conteúdo Extraído (${contentLength} caracteres):**\n`;
+            summary += `\`\`\`\n${contentPreview}${contentLength > 2500 ? '\n\n... (conteúdo truncado para exibição)' : ''}\n\`\`\`\n`;
+            summary += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+            attachmentSummaries.push(summary);
+            successCount++;
+            console.log(`✅ Successfully parsed ${attachment.name}`);
+
+          } catch (err) {
+            console.error(`❌ Critical error parsing ${attachment.name}:`, err);
+            attachmentSummaries.push(
+              `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📎 **${attachment.name}** (${(attachment.size / 1024).toFixed(1)} KB)\n` +
+              `❌ Erro crítico: ${err instanceof Error ? err.message : 'Erro desconhecido'}\n` +
+              `Por favor, tente enviar novamente ou use outro formato.\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+            );
+          }
+        }
+
+        // Inject summaries as context message before user's message
+        if (attachmentSummaries.length > 0) {
+          const contextContent = 
+            `\n${'='.repeat(60)}\n` +
+            `🔍 **CONTEXTO DOS ARQUIVOS ANEXADOS**\n` +
+            `${'='.repeat(60)}\n` +
+            `${attachmentSummaries.join('\n\n')}\n\n` +
+            `⚡ **Instruções:**\n` +
+            `• Os dados acima foram extraídos dos arquivos anexados pelo usuário\n` +
+            `• Use essas informações para responder perguntas e executar análises\n` +
+            `• ${successCount} de ${processedAttachments.length} arquivo(s) processado(s) com sucesso\n` +
+            `${'='.repeat(60)}\n`;
+
+          apiMessages.push({
+            role: 'user',
+            content: contextContent
+          });
+
+          console.log(`✅ Injected ${attachmentSummaries.length} attachment summaries into conversation context`);
+          
+          toast.success('Conteúdo dos anexos incluído na análise', {
+            description: `${successCount} de ${processedAttachments.length} arquivo(s) processado(s)`,
+            duration: 4000
+          });
+        }
+      }
+
       // Add current user message
       apiMessages.push({
         role: 'user',
@@ -602,7 +722,8 @@ Converse naturalmente! Exemplos:
         hasAttachments: processedAttachments.length > 0,
         attachmentCount: processedAttachments.length,
         attachments: processedAttachments,
-        messageLength: content.length
+        messageLength: content.length,
+        totalApiMessages: apiMessages.length
       });
 
       // Call Daton AI Chat edge function
