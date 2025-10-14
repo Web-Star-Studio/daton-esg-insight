@@ -31,6 +31,7 @@ export interface UseChatAssistantReturn {
   isLoadingMessages: boolean;
   sendMessage: (content: string, currentPage?: string, attachments?: FileAttachmentData[]) => Promise<void>;
   clearMessages: () => void;
+  startNewConversation: () => Promise<void>;
   pendingAction: PendingAction | null;
   confirmAction: (action: PendingAction) => Promise<void>;
   cancelAction: () => void;
@@ -38,6 +39,13 @@ export interface UseChatAssistantReturn {
   addAttachment: (file: File) => Promise<void>;
   removeAttachment: (id: string) => void;
   isUploading: boolean;
+  showHistory: boolean;
+  setShowHistory: (show: boolean) => void;
+  listConversations: () => Promise<any[]>;
+  openConversation: (convId: string) => Promise<void>;
+  renameConversation: (convId: string, newTitle: string) => Promise<void>;
+  deleteConversation: (convId: string) => Promise<void>;
+  conversationId: string | null;
 }
 
 export function useChatAssistant(): UseChatAssistantReturn {
@@ -99,7 +107,23 @@ Converse naturalmente! Exemplos:
   const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const { user } = useAuth();
+
+  // Storage keys for localStorage caching
+  const CACHE_PREFIX = 'chat_messages_';
+  const ATTACHMENTS_PREFIX = 'chat_attachments_';
+  const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+  // Persist attachments to localStorage
+  const persistAttachments = (convId: string, atts: FileAttachmentData[]) => {
+    const storageKey = `${ATTACHMENTS_PREFIX}${convId}`;
+    const serializable = atts.map(({ id, name, size, type, status, path, error }) => ({
+      id, name, size, type, status, path, error
+    }));
+    localStorage.setItem(storageKey, JSON.stringify(serializable));
+    console.log(`💾 Persisted ${serializable.length} attachments to localStorage`);
+  };
 
   // Backup de mensagens em localStorage para recuperação rápida
   useEffect(() => {
@@ -117,10 +141,41 @@ Converse naturalmente! Exemplos:
         lastUpdate: new Date().toISOString(),
         conversationId // Incluir conversationId para validação
       };
-      localStorage.setItem(`chat_messages_${conversationId}`, JSON.stringify(cacheData));
+      localStorage.setItem(`${CACHE_PREFIX}${conversationId}`, JSON.stringify(cacheData));
       console.log(`💾 Saved ${messages.length} messages to cache`);
     }
   }, [messages, conversationId]);
+
+  // Restore attachments from localStorage when conversationId changes
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    const storageKey = `${ATTACHMENTS_PREFIX}${conversationId}`;
+    const stored = localStorage.getItem(storageKey);
+    
+    if (stored) {
+      try {
+        const restoredAttachments: FileAttachmentData[] = JSON.parse(stored);
+        console.log(`📦 Restored ${restoredAttachments.length} attachments from localStorage for conversation ${conversationId}`);
+        
+        // Mark any "uploading" attachments as error (no File ref to resume)
+        const validatedAttachments = restoredAttachments.map(att => {
+          if (att.status === 'uploading' || att.status === 'processing') {
+            return {
+              ...att,
+              status: 'error' as const,
+              error: 'Upload interrompido. Por favor, reanexe o arquivo.'
+            };
+          }
+          return att;
+        });
+        
+        setAttachments(validatedAttachments);
+      } catch (error) {
+        console.error('Failed to restore attachments:', error);
+      }
+    }
+  }, [conversationId]);
 
   // Initialize or load conversation
   useEffect(() => {
@@ -440,9 +495,16 @@ Converse naturalmente! Exemplos:
         }
 
         // Update status to uploaded (skip processing status)
-        setAttachments(prev =>
-          prev.map(att => att.id === id ? { ...att, status: 'uploaded', path: filePath } : att)
-        );
+        setAttachments(prev => {
+          const updated = prev.map(att => 
+            att.id === id ? { ...att, status: 'uploaded' as const, path: filePath } : att
+          );
+          // Persist to localStorage after upload completes
+          if (conversationId) {
+            persistAttachments(conversationId, updated);
+          }
+          return updated;
+        });
 
         toast.success('Arquivo enviado com sucesso', {
           description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`
@@ -860,6 +922,18 @@ Converse naturalmente! Exemplos:
       if (processedAttachments.length > 0) {
         console.log('🧹 Clearing attachments after successful send');
         setAttachments([]);
+        
+        if (convId) {
+          localStorage.removeItem(`chat_attachments_${convId}`);
+          
+          await supabase
+            .from('ai_chat_conversations')
+            .update({ 
+              last_message_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', convId);
+        }
       }
 
     } catch (error) {
@@ -885,41 +959,211 @@ Converse naturalmente! Exemplos:
     }
   };
 
-  const clearMessages = () => {
+  // Start a completely new conversation
+  const startNewConversation = async () => {
     if (isSending) {
-      console.warn('⚠️ Cannot clear messages while sending - operation blocked');
-      toast.warning('Aguarde o envio da mensagem');
+      toast.warning('Aguarde o envio da mensagem atual');
       return;
     }
     
-    // Limpar localStorage
-    if (conversationId) {
-      localStorage.removeItem(`chat_messages_${conversationId}`);
-      console.log('🧹 Cleared localStorage cache for conversation:', conversationId);
-    }
-    
-    // Log the caller for debugging
-    console.log('🧹 Clearing messages - caller:', new Error().stack?.split('\n')[2]);
-    
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content: `👋 **Olá novamente!**
-
-Estou pronto para ajudar. Posso:
-• Consultar e analisar seus dados ESG
-• Criar e gerenciar registros (com sua confirmação)
-• Responder perguntas sobre o sistema
-
-**O que você gostaria de fazer?**`,
-        timestamp: new Date(),
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('User not authenticated');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (!profile?.company_id) throw new Error('Company not found');
+      
+      // Create new conversation
+      const { data: newConv, error } = await supabase
+        .from('ai_chat_conversations')
+        .insert({
+          company_id: profile.company_id,
+          user_id: authUser.id,
+          title: 'Nova Conversa',
+          last_message_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      console.log('✨ Created new conversation:', newConv.id);
+      
+      // Clear old conversation cache
+      if (conversationId) {
+        localStorage.removeItem(`chat_messages_${conversationId}`);
+        localStorage.removeItem(`chat_attachments_${conversationId}`);
       }
-    ]);
-    
-    toast.info('Conversa limpa', {
-      description: 'O histórico foi apagado'
-    });
+      
+      // Set new conversation
+      setConversationId(newConv.id);
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant' as const,
+        content: `Olá! Sou o assistente IA de ESG da sua empresa. Como posso ajudar você hoje?
+
+Posso auxiliar com:
+- 📊 Análise de dados e métricas ESG
+- 🎯 Gerenciamento de metas e progresso
+- 📋 Tarefas e coleta de dados
+- 📄 Licenciamento e conformidade
+- ♻️ Inventário de emissões e resíduos
+- 💡 Sugestões e insights proativos
+
+Qual informação você precisa?`,
+        timestamp: new Date()
+      }]);
+      setAttachments([]);
+      
+      toast.success('Nova conversa iniciada');
+    } catch (error) {
+      console.error('Failed to start new conversation:', error);
+      toast.error('Erro ao criar nova conversa');
+    }
+  };
+
+  const clearMessages = startNewConversation; // Alias for backwards compatibility
+  
+  // List all conversations for current user
+  const listConversations = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return [];
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', authUser.id)
+        .single();
+      
+      if (!profile?.company_id) return [];
+      
+      const { data, error } = await supabase
+        .from('ai_chat_conversations')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .eq('user_id', authUser.id)
+        .order('last_message_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to list conversations:', error);
+      return [];
+    }
+  };
+  
+  // Open existing conversation
+  const openConversation = async (convId: string) => {
+    try {
+      console.log('🔄 Opening conversation:', convId);
+      
+      // Load messages for this conversation
+      const { data: msgs, error } = await supabase
+        .from('ai_chat_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      const formattedMessages = (msgs || []).map(msg => {
+        const metadata = msg.metadata as any;
+        return {
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+          insights: metadata?.insights || [],
+          visualizations: metadata?.visualizations || []
+        };
+      });
+      
+      // Add welcome if no messages
+      if (formattedMessages.length === 0) {
+        formattedMessages.unshift({
+          id: 'welcome',
+          role: 'assistant' as const,
+          content: `Olá! Sou o assistente IA de ESG da sua empresa. Como posso ajudar você hoje?
+
+Posso auxiliar com:
+- 📊 Análise de dados e métricas ESG
+- 🎯 Gerenciamento de metas e progresso
+- 📋 Tarefas e coleta de dados
+- 📄 Licenciamento e conformidade
+- ♻️ Inventário de emissões e resíduos
+- 💡 Sugestões e insights proativos
+
+Qual informação você precisa?`,
+          timestamp: new Date(),
+          insights: [],
+          visualizations: []
+        });
+      }
+      
+      setConversationId(convId);
+      setMessages(formattedMessages);
+      
+      console.log(`✅ Opened conversation with ${formattedMessages.length} messages`);
+      toast.success('Conversa carregada');
+    } catch (error) {
+      console.error('Failed to open conversation:', error);
+      toast.error('Erro ao abrir conversa');
+    }
+  };
+  
+  // Rename conversation
+  const renameConversation = async (convId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from('ai_chat_conversations')
+        .update({ title: newTitle, updated_at: new Date().toISOString() })
+        .eq('id', convId);
+      
+      if (error) throw error;
+      toast.success('Conversa renomeada');
+    } catch (error) {
+      console.error('Failed to rename conversation:', error);
+      toast.error('Erro ao renomear conversa');
+    }
+  };
+  
+  // Delete conversation
+  const deleteConversation = async (convId: string) => {
+    try {
+      // Delete messages first
+      await supabase
+        .from('ai_chat_messages')
+        .delete()
+        .eq('conversation_id', convId);
+      
+      // Delete conversation
+      const { error } = await supabase
+        .from('ai_chat_conversations')
+        .delete()
+        .eq('id', convId);
+      
+      if (error) throw error;
+      
+      // Clear localStorage
+      localStorage.removeItem(`chat_messages_${convId}`);
+      localStorage.removeItem(`chat_attachments_${convId}`);
+      
+      // If deleting current conversation, start new one
+      if (convId === conversationId) {
+        await startNewConversation();
+      }
+      
+      toast.success('Conversa excluída');
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      toast.error('Erro ao excluir conversa');
+    }
   };
 
   const confirmAction = async (action: PendingAction) => {
@@ -1037,12 +1281,20 @@ Estou pronto para ajudar. Posso:
     isLoadingMessages,
     sendMessage,
     clearMessages,
+    startNewConversation,
     pendingAction,
     confirmAction,
     cancelAction,
     attachments,
     addAttachment,
     removeAttachment,
-    isUploading
+    isUploading,
+    showHistory,
+    setShowHistory,
+    listConversations,
+    openConversation,
+    renameConversation,
+    deleteConversation,
+    conversationId
   };
 }

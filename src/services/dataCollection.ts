@@ -38,13 +38,8 @@ export interface DataImportJob {
 
 export const dataCollectionService = {
   async getTasks(params?: { assignee?: 'me'; status?: string }): Promise<DataCollectionTask[]> {
-    const searchParams = new URLSearchParams();
-    if (params?.assignee) searchParams.set('assignee', params.assignee);
-    if (params?.status) searchParams.set('status', params.status);
-
     const { data, error } = await supabase.functions.invoke('data-collection-management', {
-      body: {},
-      method: 'GET'
+      body: { action: 'getTasks', ...params }
     });
 
     if (error) throw error;
@@ -53,8 +48,7 @@ export const dataCollectionService = {
 
   async completeTask(taskId: string): Promise<DataCollectionTask> {
     const { data, error } = await supabase.functions.invoke('data-collection-management', {
-      body: {},
-      method: 'PUT'
+      body: { action: 'completeTask', taskId }
     });
 
     if (error) throw error;
@@ -73,8 +67,7 @@ export const dataCollectionService = {
 
   async getImportJobs(): Promise<DataImportJob[]> {
     const { data, error } = await supabase.functions.invoke('data-import-processor', {
-      body: {},
-      method: 'GET'
+      body: { action: 'getJobs' }
     });
 
     if (error) throw error;

@@ -12,7 +12,9 @@ import { FileUploadButton } from '@/components/ai/FileUploadButton';
 import { FileAttachment } from '@/components/ai/FileAttachment';
 import { ProactiveInsights, ProactiveInsight } from '@/components/ai/ProactiveInsights';
 import { DataVisualization } from '@/components/ai/DataVisualization';
+import { ChatHistory } from '@/components/ai/ChatHistory';
 import ReactMarkdown from 'react-markdown';
+import { History, Plus } from 'lucide-react';
 
 // Chat assistant component with AI action confirmation support
 interface ChatAssistantProps {
@@ -29,14 +31,16 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     messages, 
     isLoading, 
     sendMessage, 
-    clearMessages,
+    startNewConversation,
     attachments,
     addAttachment,
     removeAttachment,
     isUploading,
     pendingAction,
     confirmAction,
-    cancelAction
+    cancelAction,
+    showHistory,
+    setShowHistory
   } = useChatAssistant();
 
   // Auto-scroll to bottom when new messages arrive
@@ -135,11 +139,20 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={clearMessages}
-                title="Limpar conversa"
+                onClick={() => setShowHistory(true)}
+                title="Histórico de conversas"
                 disabled={isLoading}
               >
-                <Trash2 className="h-4 w-4" />
+                <History className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={startNewConversation}
+                title="Nova conversa"
+                disabled={isLoading}
+              >
+                <Plus className="h-4 w-4" />
               </Button>
               {/* Close button - Only show when not embedded */}
               {!embedded && (
@@ -355,6 +368,12 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         action={pendingAction}
         onConfirm={confirmAction}
         onCancel={cancelAction}
+      />
+      
+      {/* Chat History Drawer */}
+      <ChatHistory 
+        open={showHistory}
+        onOpenChange={setShowHistory}
       />
     </>
   );
