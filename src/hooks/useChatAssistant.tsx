@@ -1,5 +1,5 @@
 // Chat assistant hook with AI action confirmation capabilities
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -121,7 +121,8 @@ Fale naturalmente comigo:
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const { user } = useAuth();
+const { user } = useAuth();
+  const hasInitializedRef = useRef(false);
 
   // Storage keys for localStorage caching
   const CACHE_PREFIX = 'chat_messages_';
