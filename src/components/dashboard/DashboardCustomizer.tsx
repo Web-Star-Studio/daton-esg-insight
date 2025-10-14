@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Settings, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export type WidgetType = 
   | "onboarding"
@@ -83,7 +84,7 @@ export function DashboardCustomizer({
       toast.success("Dashboard customizado com sucesso");
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving dashboard preferences:', error);
+      logger.error('Error saving dashboard preferences', error);
       toast.error("Erro ao salvar preferências");
     } finally {
       setSaving(false);

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface ActivityLog {
   id: string;
@@ -81,7 +82,7 @@ export interface AuditTrailFilters {
 
 class AuditService {
   async getAudits(): Promise<Audit[]> {
-    console.log('Fetching audits...');
+    logger.debug('Fetching audits');
     
     const { data, error } = await supabase
       .from('audits')
@@ -89,11 +90,11 @@ class AuditService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching audits:', error);
+      logger.error('Error fetching audits', error);
       throw new Error(`Erro ao buscar auditorias: ${error.message}`);
     }
 
-    console.log('Audits fetched successfully:', data?.length || 0);
+    logger.debug('Audits fetched successfully', { count: data?.length || 0 });
     return data || [];
   }
 

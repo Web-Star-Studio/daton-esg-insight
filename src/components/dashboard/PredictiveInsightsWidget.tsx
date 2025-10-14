@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import { getFullAnalysis, FullAnalysis } from '@/services/predictiveAnalytics';
 import { cn } from '@/lib/utils';
+import { logger } from '@/utils/logger';
 
 export function PredictiveInsightsWidget() {
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
@@ -18,7 +19,7 @@ export function PredictiveInsightsWidget() {
         const data = await getFullAnalysis(3);
         setAnalysis(data);
       } catch (error: any) {
-        console.error('Error fetching predictive analysis:', error);
+        logger.error('Error fetching predictive analysis', error);
         setError(error?.message || 'Erro ao carregar análise preditiva');
       } finally {
         setLoading(false);

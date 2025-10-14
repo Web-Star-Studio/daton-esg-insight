@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from '@supabase/supabase-js';
+import { logger } from '@/utils/logger';
 
 export interface AuthUser {
   id: string;
@@ -31,7 +32,7 @@ class AuthService {
    * Login - equivalente ao POST /auth/login
    */
   async loginUser(email: string, password: string) {
-    console.log('Tentando fazer login para:', email);
+    logger.info('Login attempt', { email });
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -39,11 +40,11 @@ class AuthService {
     });
 
     if (error) {
-      console.error('Erro no login:', error);
+      logger.error('Login error', error);
       throw new Error(error.message);
     }
 
-    console.log('Login realizado com sucesso');
+    logger.info('Login successful');
 
     // Buscar dados completos do usuário após login
     const user = await this.getCurrentUser();
@@ -59,7 +60,7 @@ class AuthService {
    */
   async registerCompany(data: RegisterCompanyData) {
     try {
-      console.log('Iniciando registro da empresa:', data.company_name);
+      logger.info('Starting company registration', { company: data.company_name });
 
       // Criar usuário primeiro com dados da empresa nos metadados
       // O trigger handle_new_user() criará empresa e profile automaticamente
@@ -79,18 +80,18 @@ class AuthService {
       });
 
       if (authError) {
-        console.error('Erro ao criar usuário:', authError);
+        logger.error('User creation error', authError);
         throw new Error(`Erro ao criar usuário: ${authError.message}`);
       }
 
-      console.log('Usuário criado com sucesso. Empresa e profile serão criados automaticamente pelo trigger.');
+      logger.info('User created successfully - trigger will create company and profile');
 
       return { 
         message: "Empresa e usuário criados com sucesso. Verifique seu email para ativar a conta.",
         user: authData.user
       };
     } catch (error: any) {
-      console.error('Erro no processo de registro:', error);
+      logger.error('Registration error', error);
       throw error;
     }
   }
@@ -106,7 +107,7 @@ class AuthService {
         return null;
       }
 
-      console.log('Getting profile for user:', session.user.id);
+      logger.info('Getting profile for user', { userId: session.user.id });
 
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -121,21 +122,21 @@ class AuthService {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        logger.error('Error fetching profile', error);
         return null;
       }
 
       if (!profile) {
-        console.error('No profile found for user:', session.user.id);
+        logger.error('No profile found for user', { userId: session.user.id });
         return null;
       }
 
       if (!profile.companies) {
-        console.error('No company found for profile:', profile.id);
+        logger.error('No company found for profile', { profileId: profile.id });
         return null;
       }
 
-      console.log('Profile found successfully:', profile.id);
+      logger.info('Profile found successfully', { profileId: profile.id });
 
       return {
         id: profile.id,
@@ -149,7 +150,7 @@ class AuthService {
         }
       };
     } catch (error) {
-      console.error('Error in getCurrentUser:', error);
+      logger.error('Error in getCurrentUser', error);
       return null;
     }
   }
