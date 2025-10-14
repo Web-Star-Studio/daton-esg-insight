@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Leaf, Building2, Sliders, Database, CheckCircle, Clock } from "lucide-react";
+import { Leaf } from "lucide-react";
 import { CompanyProfileWizard } from "./CompanyProfileWizard";
 
 interface CleanWelcomeStepProps {
@@ -37,50 +36,46 @@ export function CleanWelcomeStep({ onNext, onSkip }: CleanWelcomeStepProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-12 text-center">
+      <div className="w-full max-w-sm space-y-8 text-center animate-fade-in">
         {/* Header */}
-        <div className="space-y-4">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/5">
-            <Leaf className="h-7 w-7 text-primary" />
+        <div className="space-y-3">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+            <Leaf className="h-6 w-6 text-primary" />
           </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Configure sua plataforma</h1>
-            <p className="text-sm text-muted-foreground">4 etapas · 3 minutos</p>
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight">Bem-vindo à Daton</h1>
+            <p className="text-sm text-muted-foreground">Configure sua plataforma em minutos</p>
           </div>
         </div>
 
-        {/* Steps Preview */}
-        <div className="flex items-center justify-between px-4">
-          {[
-            { icon: Building2, label: "Perfil" },
-            { icon: Sliders, label: "Módulos" },
-            { icon: Database, label: "Dados" },
-            { icon: CheckCircle, label: "Pronto" }
-          ].map((step, index) => (
-            <div key={index} className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 rounded-full border flex items-center justify-center">
-                <step.icon className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <span className="text-xs text-muted-foreground">{step.label}</span>
-            </div>
+        {/* Simple Progress Indicator */}
+        <div className="flex items-center justify-center gap-1.5">
+          {[0, 1, 2, 3].map((index) => (
+            <div 
+              key={index} 
+              className={`h-1 rounded-full transition-all ${
+                index === 0 ? 'w-6 bg-primary' : 'w-4 bg-muted'
+              }`} 
+            />
           ))}
         </div>
 
         {/* Actions */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Button 
             onClick={handleStartConfiguration}
-            className="w-full h-11"
+            className="w-full h-10"
           >
-            Começar
+            Começar Configuração
           </Button>
           {onSkip && (
             <Button 
               onClick={onSkip}
               variant="ghost"
-              className="w-full h-11"
+              size="sm"
+              className="w-full text-xs text-muted-foreground"
             >
-              Fazer depois
+              Pular por enquanto
             </Button>
           )}
         </div>

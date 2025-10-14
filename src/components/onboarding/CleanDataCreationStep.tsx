@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -11,8 +10,7 @@ import {
   FileCheck, 
   TrendingUp, 
   Award, 
-  Building,
-  ArrowLeft
+  Building
 } from "lucide-react";
 
 interface CleanDataCreationStepProps {
@@ -99,23 +97,37 @@ export function CleanDataCreationStep({
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="space-y-4 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Etapa 3 de 4</p>
-          <h2 className="text-xl font-semibold tracking-tight">Configure os Módulos</h2>
+        <div className="space-y-2 text-center">
+          <div className="flex items-center justify-center gap-1.5 mb-3">
+            {[0, 1, 2, 3].map((index) => (
+              <div 
+                key={index} 
+                className={`h-1 rounded-full transition-all ${
+                  index === 2 ? 'w-6 bg-primary' : index < 2 ? 'w-4 bg-primary/40' : 'w-4 bg-muted'
+                }`} 
+              />
+            ))}
+          </div>
+          <h2 className="text-lg font-semibold tracking-tight">Configure os Módulos</h2>
+          <p className="text-xs text-muted-foreground">Ative as funcionalidades desejadas</p>
+        </div>
+
+        {/* Quick Action */}
+        <div className="flex justify-center">
           <Button
             onClick={handleQuickSetup}
             variant="outline"
             size="sm"
-            className="h-9"
+            className="h-8 text-xs"
           >
-            Ativar Tudo
+            Ativar Tudo Recomendado
           </Button>
         </div>
 
         {/* Module Configurations */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {selectedModules.map((moduleId) => {
             const Icon = MODULE_ICONS[moduleId];
             const moduleName = MODULE_NAMES[moduleId];
@@ -123,16 +135,16 @@ export function CleanDataCreationStep({
             const config = moduleConfigurations[moduleId] || {};
 
             return (
-              <div key={moduleId} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+              <div key={moduleId} className="space-y-2 p-3 rounded-lg border bg-card/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className="h-3.5 w-3.5 text-primary" />
                   <h3 className="text-sm font-medium">{moduleName}</h3>
                 </div>
 
-                <div className="space-y-2 pl-6">
+                <div className="space-y-1.5 pl-5">
                   {options.map(option => (
-                    <div key={option.key} className="flex items-center justify-between py-1">
-                      <Label htmlFor={`${moduleId}-${option.key}`} className="text-sm text-muted-foreground">
+                    <div key={option.key} className="flex items-center justify-between">
+                      <Label htmlFor={`${moduleId}-${option.key}`} className="text-xs text-muted-foreground">
                         {option.label}
                       </Label>
                       <Switch
@@ -149,19 +161,19 @@ export function CleanDataCreationStep({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 pt-2">
           <Button
             onClick={onPrev}
             variant="outline"
-            className="flex-1 h-11"
+            className="flex-1 h-10"
           >
             Voltar
           </Button>
           <Button
             onClick={onNext}
-            className="flex-1 h-11"
+            className="flex-1 h-10"
           >
-            Avançar
+            Continuar
           </Button>
         </div>
       </div>
