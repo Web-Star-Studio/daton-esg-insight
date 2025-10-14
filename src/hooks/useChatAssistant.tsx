@@ -98,6 +98,7 @@ Converse naturalmente! Exemplos:
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const { user } = useAuth();
 
   // Backup de mensagens em localStorage para recuperação rápida
@@ -482,8 +483,15 @@ Converse naturalmente! Exemplos:
   };
 
   const removeAttachment = (id: string) => {
+    if (isSending) {
+      console.warn('⚠️ Cannot remove attachments while sending - operation blocked');
+      toast.warning('Aguarde o envio da mensagem');
+      return;
+    }
+    
     setAttachments(prev => {
       const filtered = prev.filter(att => att.id !== id);
+      console.log('🗑️ Attachment removed:', id, '- Remaining:', filtered.length);
       // Se não há mais anexos em upload, desabilitar isUploading
       const anyUploading = filtered.some(att => att.status === 'uploading' || att.status === 'processing');
       if (!anyUploading && isUploading) {
@@ -495,6 +503,12 @@ Converse naturalmente! Exemplos:
 
   // Monitor attachment status changes to update isUploading
   useEffect(() => {
+    // Don't update isUploading state during message sending
+    if (isSending) {
+      console.log('🔒 Upload status check skipped - message is being sent');
+      return;
+    }
+    
     const anyUploading = attachments.some(att => 
       att.status === 'uploading' || att.status === 'processing'
     );
@@ -503,70 +517,78 @@ Converse naturalmente! Exemplos:
       setIsUploading(anyUploading);
       console.log('🔄 Upload status changed:', anyUploading ? 'uploading' : 'ready');
     }
-  }, [attachments]);
+  }, [attachments, isSending, isUploading]);
 
   const sendMessage = async (content: string, currentPage?: string, messageAttachments?: FileAttachmentData[]) => {
     if (!content.trim()) return;
 
-    // Wait for any ongoing uploads to complete
-    const attachmentsToSend = messageAttachments || attachments;
-    
-    // Check if any attachments are still uploading
-    const stillUploading = attachmentsToSend.some(att => 
-      att.status === 'uploading' || att.status === 'processing'
-    );
-    
-    if (stillUploading) {
-      toast.warning('Aguarde o upload dos anexos', {
-        description: 'Aguarde enquanto os arquivos são enviados antes de enviar a mensagem.'
-      });
-      return;
-    }
-
-    // Process attachments FIRST before adding user message
-    console.log('📎 Attachments to send:', attachmentsToSend.length);
-    if (attachmentsToSend.length > 0) {
-      console.log('📎 Attachment details:', attachmentsToSend.map(a => ({ 
-        name: a.name, 
-        status: a.status, 
-        hasPath: !!a.path,
-        path: a.path
-      })));
-    }
-
-    const processedAttachments = attachmentsToSend
-      .filter(att => att.status === 'uploaded' && att.path)
-      .map(att => ({
-        name: att.name,
-        type: att.type,
-        size: att.size,
-        path: att.path!
-      }));
-
-    console.log('✅ Processed attachments ready to send:', processedAttachments.length);
-    if (processedAttachments.length > 0) {
-      console.log('✅ Attachments being sent:', processedAttachments.map(a => ({ name: a.name, path: a.path })));
-    }
-
-    if (attachmentsToSend.length > 0 && processedAttachments.length === 0) {
-      toast.error('Erro nos anexos', {
-        description: 'Nenhum arquivo foi enviado com sucesso. Por favor, tente novamente.'
-      });
-      return;
-    }
-
-    // Add user message with attachment info
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
+    // Lock sending state to prevent race conditions
+    setIsSending(true);
+    console.log('🔒 Message sending started - attachments and state locked');
 
     try {
+      // Create snapshot of attachments to prevent race conditions
+      const attachmentsSnapshot = [...(messageAttachments || attachments)];
+      console.log('📸 Attachments snapshot created:', {
+        snapshotCount: attachmentsSnapshot.length,
+        files: attachmentsSnapshot.map(a => ({ name: a.name, status: a.status, hasPath: !!a.path }))
+      });
+      
+      // Check if any attachments are still uploading
+      const stillUploading = attachmentsSnapshot.some(att => 
+        att.status === 'uploading' || att.status === 'processing'
+      );
+      
+      if (stillUploading) {
+        toast.warning('Aguarde o upload dos anexos', {
+          description: 'Aguarde enquanto os arquivos são enviados antes de enviar a mensagem.'
+        });
+        return;
+      }
+
+      // Process attachments FIRST before adding user message
+      console.log('📎 Attachments to send:', attachmentsSnapshot.length);
+      if (attachmentsSnapshot.length > 0) {
+        console.log('📎 Attachment details:', attachmentsSnapshot.map(a => ({ 
+          name: a.name, 
+          status: a.status, 
+          hasPath: !!a.path,
+          path: a.path
+        })));
+      }
+
+      const processedAttachments = attachmentsSnapshot
+        .filter(att => att.status === 'uploaded' && att.path)
+        .map(att => ({
+          name: att.name,
+          type: att.type,
+          size: att.size,
+          path: att.path!
+        }));
+
+      console.log('✅ Processed attachments ready to send:', processedAttachments.length);
+      if (processedAttachments.length > 0) {
+        console.log('✅ Attachments being sent:', processedAttachments.map(a => ({ name: a.name, path: a.path })));
+      }
+
+      if (attachmentsSnapshot.length > 0 && processedAttachments.length === 0) {
+        toast.error('Erro nos anexos', {
+          description: 'Nenhum arquivo foi enviado com sucesso. Por favor, tente novamente.'
+        });
+        return;
+      }
+
+      // Add user message with attachment info
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      setIsLoading(true);
+
       const companyId = user?.company.id;
       if (!companyId) {
         throw new Error('Company ID not found');
@@ -858,15 +880,26 @@ Converse naturalmente! Exemplos:
       });
     } finally {
       setIsLoading(false);
+      setIsSending(false);
+      console.log('🔓 Message sending completed - state unlocked');
     }
   };
 
   const clearMessages = () => {
+    if (isSending) {
+      console.warn('⚠️ Cannot clear messages while sending - operation blocked');
+      toast.warning('Aguarde o envio da mensagem');
+      return;
+    }
+    
     // Limpar localStorage
     if (conversationId) {
       localStorage.removeItem(`chat_messages_${conversationId}`);
       console.log('🧹 Cleared localStorage cache for conversation:', conversationId);
     }
+    
+    // Log the caller for debugging
+    console.log('🧹 Clearing messages - caller:', new Error().stack?.split('\n')[2]);
     
     setMessages([
       {
