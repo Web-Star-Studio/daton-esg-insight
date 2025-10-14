@@ -928,14 +928,7 @@ serve(async (req) => {
             .from('chat_file_uploads')
             .update({ 
               processing_status: 'processed',
-              parsed_content: extractedData,
-              metadata: { 
-                classification, 
-                extraction_method: 'ai_enhanced',
-                content_length: parseData.content.length,
-                has_suggestions: !!suggestions,
-                processed_at: new Date().toISOString()
-              }
+              parsed_content: extractedData
             })
             .eq('file_path', attachment.path);
 

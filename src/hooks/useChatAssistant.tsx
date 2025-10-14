@@ -424,12 +424,7 @@ Converse naturalmente! Exemplos:
             file_type: file.type,
             file_size: file.size,
             file_path: filePath,
-            processing_status: 'uploaded',
-            metadata: {
-              upload_timestamp: new Date().toISOString(),
-              original_name: file.name,
-              sanitized_name: sanitizedName
-            }
+            processing_status: 'uploaded'
           });
 
           if (logError) {
