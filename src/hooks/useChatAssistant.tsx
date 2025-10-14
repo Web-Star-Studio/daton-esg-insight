@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { PendingAction } from '@/components/ai/AIActionConfirmation';
 import type { FileAttachmentData } from '@/components/ai/FileAttachment';
+import { logger } from '@/utils/logger';
 
 export interface ChatMessage {
   id: string;
@@ -154,7 +155,7 @@ const { user } = useAuth();
         throw new Error('User not authenticated');
       }
       
-      console.log('🔄 ensureConversationId: Creating conversation...');
+      logger.info('ensureConversationId: Creating conversation');
       
       const { data: newConv, error } = await supabase
         .from('ai_chat_conversations')
@@ -170,7 +171,7 @@ const { user } = useAuth();
       
       setConversationId(newConv.id);
       localStorage.setItem('active_conversation_id', newConv.id);
-      console.log('✅ ensureConversationId: Created', newConv.id);
+      logger.info('ensureConversationId: Created', newConv.id);
       
       return newConv.id;
     } finally {
@@ -185,7 +186,7 @@ const { user } = useAuth();
       id, name, size, type, status, path, error
     }));
     localStorage.setItem(storageKey, JSON.stringify(serializable));
-    console.log(`💾 Persisted ${serializable.length} attachments to localStorage`);
+    logger.debug(`Persisted ${serializable.length} attachments to localStorage`);
   };
 
   // Backup de mensagens em localStorage para recuperação rápida
@@ -235,7 +236,7 @@ const { user } = useAuth();
         
         setAttachments(validatedAttachments);
       } catch (error) {
-        console.error('Failed to restore attachments:', error);
+        logger.error('Failed to restore attachments', error);
       }
     }
   }, [conversationId]);
@@ -294,11 +295,11 @@ const { user } = useAuth();
             .select()
             .single();
 
-          if (createError) throw createError;
-          
-      console.log('✅ New conversation created:', newConv.id);
-      setConversationId(newConv.id);
-      localStorage.setItem('active_conversation_id', newConv.id);
+            if (createError) throw createError;
+            
+            logger.info('New conversation created', newConv.id);
+            setConversationId(newConv.id);
+            localStorage.setItem('active_conversation_id', newConv.id);
           localStorage.setItem('active_conversation_id', newConv.id);
           
           // Salvar mensagem de boas-vindas no banco

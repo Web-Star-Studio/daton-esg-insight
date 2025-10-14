@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Copy, RefreshCw, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 interface AIContentGeneratorModalProps {
   isOpen: boolean;
@@ -115,7 +116,7 @@ export function AIContentGeneratorModal({
       setGeneratedContent(data.content);
       toast.success('Conteúdo gerado com sucesso!');
     } catch (error) {
-      console.error('Erro ao gerar conteúdo:', error);
+      logger.error('Erro ao gerar conteúdo', error);
       toast.error('Erro ao gerar conteúdo. Tente novamente.');
     } finally {
       setIsGenerating(false);

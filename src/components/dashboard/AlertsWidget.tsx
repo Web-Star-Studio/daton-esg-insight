@@ -6,6 +6,7 @@ import { AlertTriangle, AlertCircle, TrendingUp, CheckCircle, X } from 'lucide-r
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { logger } from '@/utils/logger';
 
 interface IntelligentAlert {
   id: string;
@@ -47,7 +48,7 @@ export function AlertsWidget() {
       if (error) throw error;
       setAlerts((data || []) as unknown as IntelligentAlert[]);
     } catch (error) {
-      console.error('Error fetching alerts:', error);
+      logger.error('Error fetching alerts', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ export function AlertsWidget() {
         description: "O alerta foi marcado como resolvido com sucesso.",
       });
     } catch (error) {
-      console.error('Error resolving alert:', error);
+      logger.error('Error resolving alert', error);
       toast({
         title: "Erro ao resolver alerta",
         variant: "destructive",

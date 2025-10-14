@@ -11,6 +11,7 @@ import { Upload, X, File, Plus, Bot, Zap, FileText, Brain, CheckCircle } from 'l
 import { toast } from 'sonner';
 import { uploadDocument } from '@/services/documents';
 import { processDocumentWithAI } from '@/services/documentAI';
+import { logger } from '@/utils/logger';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -163,7 +164,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
             toast.success(`IA iniciou processamento: ${result.fileName}`);
             
           } catch (aiError) {
-            console.warn(`AI processing failed for ${result.fileName}:`, aiError);
+            logger.warn(`AI processing failed for ${result.fileName}`, aiError);
             toast.error(`Falha no processamento IA: ${result.fileName}`);
           }
         }
@@ -181,7 +182,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       }, 1500);
 
     } catch (error) {
-      console.error('Error uploading files:', error);
+      logger.error('Error uploading files', error);
       toast.error('Erro ao enviar arquivos');
     } finally {
       setUploading(false);

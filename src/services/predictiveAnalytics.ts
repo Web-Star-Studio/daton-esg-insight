@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 export interface EmissionPrediction {
   date: string;
@@ -49,13 +50,13 @@ export const getPredictiveAnalysis = async (
     });
 
     if (error) {
-      console.error('Error fetching predictive analysis:', error);
+      logger.error('Error fetching predictive analysis', error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Failed to get predictive analysis:', error);
+    logger.error('Failed to get predictive analysis', error);
     throw error;
   }
 };
