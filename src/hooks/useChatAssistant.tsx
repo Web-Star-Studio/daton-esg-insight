@@ -603,22 +603,27 @@ Fale naturalmente comigo:
 
     try {
       // Create snapshot of attachments to prevent race conditions
-      const attachmentsSnapshot = [...(messageAttachments || attachments)];
+      let attachmentsSnapshot = [...(messageAttachments || attachments)];
       console.log('📸 Attachments snapshot created:', {
         snapshotCount: attachmentsSnapshot.length,
         files: attachmentsSnapshot.map(a => ({ name: a.name, status: a.status, hasPath: !!a.path }))
       });
       
-      // Check if any attachments are still uploading
-      const stillUploading = attachmentsSnapshot.some(att => 
-        att.status === 'uploading' || att.status === 'processing'
-      );
-      
-      if (stillUploading) {
-        toast.warning('Aguarde o upload dos anexos', {
-          description: 'Aguarde enquanto os arquivos são enviados antes de enviar a mensagem.'
-        });
-        return;
+      // Wait for any uploads to finish (max 15s)
+      if (attachmentsSnapshot.length > 0) {
+        let waited = 0;
+        while (attachmentsSnapshot.some(att => att.status === 'uploading' || att.status === 'processing') && waited < 15000) {
+          await new Promise(r => setTimeout(r, 300));
+          waited += 300;
+          // refresh snapshot from latest state
+          attachmentsSnapshot = [...(messageAttachments || attachments)];
+        }
+        if (attachmentsSnapshot.some(att => att.status === 'uploading' || att.status === 'processing')) {
+          toast.error('Uploads não concluídos', {
+            description: 'Finalize os envios dos arquivos e tente novamente.'
+          });
+          return;
+        }
       }
 
       // Process attachments FIRST before adding user message
@@ -677,12 +682,14 @@ Fale naturalmente comigo:
           user_id: user.id,
           role: 'user',
           content,
-          metadata: {
-            currentPage,
-            hasAttachments: processedAttachments.length > 0,
-            attachmentCount: processedAttachments.length,
-            attachmentNames: processedAttachments.map(a => a.name)
-          }
+            metadata: {
+              currentPage,
+              hasAttachments: processedAttachments.length > 0,
+              attachmentCount: processedAttachments.length,
+              attachmentNames: processedAttachments.map(a => a.name),
+              attachmentPaths: processedAttachments.map(a => a.path),
+              attachmentTypes: processedAttachments.map(a => a.type)
+            }
         });
       }
 
