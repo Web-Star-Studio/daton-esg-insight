@@ -727,39 +727,9 @@ const { user } = useAuth();
         })));
       }
 
-      // ✅ FALLBACK LOCAL: Se não há anexos no estado, buscar no DB
-      let processedAttachments = attachmentsSnapshot
+      // ✅ Processar apenas anexos explicitamente adicionados pelo usuário
+      const processedAttachments = attachmentsSnapshot
         .filter(att => att.status === 'uploaded' && att.path);
-      
-      if (processedAttachments.length === 0 && conversationId) {
-        console.log('📎 No local attachments, querying DB for recent uploads...');
-        
-        const { data: recentUploads } = await supabase
-          .from('chat_file_uploads')
-          .select('file_path, file_type, file_name, file_size')
-          .eq('conversation_id', conversationId)
-          .in('processing_status', ['uploaded', 'processed'])
-          .gte('created_at', new Date(Date.now() - 7 * 24 * 3600000).toISOString())
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
-        if (recentUploads && recentUploads.length > 0) {
-          console.log(`📎 Client-side DB fallback pulled ${recentUploads.length} attachments`);
-          processedAttachments = recentUploads.map(u => ({
-            id: u.file_path,
-            name: u.file_name || 'arquivo',
-            type: u.file_type || '',
-            size: u.file_size || 0,
-            status: 'uploaded' as const,
-            path: u.file_path
-          }));
-          
-          toast.info('Usando anexos anteriores', {
-            description: `Estamos considerando ${recentUploads.length} anexo(s) enviado(s) anteriormente nesta conversa.`,
-            duration: 3000,
-          });
-        }
-      }
       
       const finalProcessedAttachments = processedAttachments
         .filter(att => att.path) // Ensure path exists
@@ -1065,23 +1035,19 @@ const { user } = useAuth();
         });
       }
 
-      // Mark attachments as sent (keep in state for history)
+      // Clear attachments after successful send
       if (processedAttachments.length > 0) {
-        console.log('✅ Marking attachments as sent and preserving in history');
-        setAttachments(prev => {
-          const updated = prev.map(att => ({
-            ...att,
-            status: 'sent' as const
-          }));
-          
-          // Persist updated state immediately with the updated array (avoid race condition)
-          if (conversationId) {
-            persistAttachments(conversationId, updated);
-          }
-          
-          return updated;
-        });
+        console.log('✅ Clearing attachments after successful send');
         
+        // Clear from state
+        setAttachments([]);
+        
+        // Clear from localStorage
+        if (conversationId) {
+          localStorage.removeItem(`${ATTACHMENTS_PREFIX}${conversationId}`);
+        }
+        
+        // Update conversation timestamp
         if (conversationId) {
           await supabase
             .from('ai_chat_conversations')
@@ -1092,7 +1058,7 @@ const { user } = useAuth();
             .eq('id', conversationId);
         }
         
-        console.log('💾 Attachments preserved in history with "sent" status');
+        console.log('💾 Attachments cleared - ready for next message');
       }
 
     } catch (error) {
