@@ -10,7 +10,6 @@ import { CleanWelcomeStep } from './CleanWelcomeStep';
 import { CleanModuleSelectionStep } from './CleanModuleSelectionStep';
 import { CleanDataCreationStep } from './CleanDataCreationStep';
 import { CleanCompletionStep } from './CleanCompletionStep';
-import { EnhancedOnboardingProgress } from './EnhancedOnboardingProgress';
 import { OnboardingAssistant } from './OnboardingAssistant';
 import { PostOnboardingValidation } from './PostOnboardingValidation';
 import { InitialDataSetup } from './InitialDataSetup';
@@ -278,8 +277,6 @@ function CleanOnboardingContent() {
     }
   };
 
-  const showProgress = state.currentStep > 0 && state.currentStep < 3;
-
   // Show validation or data setup modals
   if (showDataSetup) {
     return (
@@ -314,17 +311,6 @@ function CleanOnboardingContent() {
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Onboarding Redirect Handler */}
       <OnboardingRedirectHandler />
-      
-      {/* Enhanced Progress Header */}
-      {showProgress && (
-        <EnhancedOnboardingProgress
-          currentStep={state.currentStep}
-          totalSteps={stepTitles.length}
-          stepTitles={stepTitles}
-          selectedModules={state.selectedModules}
-          moduleConfigurations={state.moduleConfigurations}
-        />
-      )}
 
       {/* Smart Assistant */}
       {state.currentStep > 0 && state.currentStep < 3 && (
@@ -338,7 +324,7 @@ function CleanOnboardingContent() {
       )}
       
       {/* Main Content with enhanced animations */}
-      <div className={showProgress ? 'pt-8' : ''}>
+      <div>
         {renderCurrentStep()}
       </div>
       
