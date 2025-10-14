@@ -726,8 +726,42 @@ const { user } = useAuth();
         })));
       }
 
-      const processedAttachments = attachmentsSnapshot
-        .filter(att => att.status === 'uploaded' && att.path)
+      // ✅ FALLBACK LOCAL: Se não há anexos no estado, buscar no DB
+      let processedAttachments = attachmentsSnapshot
+        .filter(att => att.status === 'uploaded' && att.path);
+      
+      if (processedAttachments.length === 0 && conversationId) {
+        console.log('📎 No local attachments, querying DB for recent uploads...');
+        
+        const { data: recentUploads } = await supabase
+          .from('chat_file_uploads')
+          .select('file_path, file_type, file_name, file_size')
+          .eq('conversation_id', conversationId)
+          .in('processing_status', ['uploaded', 'processed'])
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 3600000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (recentUploads && recentUploads.length > 0) {
+          console.log(`📎 Client-side DB fallback pulled ${recentUploads.length} attachments`);
+          processedAttachments = recentUploads.map(u => ({
+            id: u.file_path,
+            name: u.file_name || 'arquivo',
+            type: u.file_type || '',
+            size: u.file_size || 0,
+            status: 'uploaded' as const,
+            path: u.file_path
+          }));
+          
+          toast.info('Usando anexos anteriores', {
+            description: `Estamos considerando ${recentUploads.length} anexo(s) enviado(s) anteriormente nesta conversa.`,
+            duration: 3000,
+          });
+        }
+      }
+      
+      const finalProcessedAttachments = processedAttachments
+        .filter(att => att.path) // Ensure path exists
         .map(att => ({
           name: att.name,
           type: att.type,
@@ -735,12 +769,9 @@ const { user } = useAuth();
           path: att.path!
         }));
 
-      console.log('✅ Processed attachments ready to send:', processedAttachments.length);
-      if (processedAttachments.length > 0) {
-        console.log('✅ Attachments being sent:', processedAttachments.map(a => ({ name: a.name, path: a.path })));
-      }
+      console.log('📎 Final processed attachments for message:', finalProcessedAttachments.length);
 
-      if (attachmentsSnapshot.length > 0 && processedAttachments.length === 0) {
+      if (attachmentsSnapshot.length > 0 && finalProcessedAttachments.length === 0) {
         toast.error('Erro nos anexos', {
           description: 'Nenhum arquivo foi enviado com sucesso. Por favor, tente novamente.'
         });
@@ -753,7 +784,7 @@ const { user } = useAuth();
         role: 'user',
         content,
         timestamp: new Date(),
-        attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
+        attachments: finalProcessedAttachments.length > 0 ? finalProcessedAttachments : undefined,
       };
 
       setMessages(prev => [...prev, userMessage]);
@@ -772,13 +803,13 @@ const { user } = useAuth();
           user_id: user.id,
           role: 'user',
           content,
-            metadata: {
+          metadata: {
               currentPage,
-              hasAttachments: processedAttachments.length > 0,
-              attachmentCount: processedAttachments.length,
-              attachmentNames: processedAttachments.map(a => a.name),
-              attachmentPaths: processedAttachments.map(a => a.path),
-              attachmentTypes: processedAttachments.map(a => a.type)
+              hasAttachments: finalProcessedAttachments.length > 0,
+              attachmentCount: finalProcessedAttachments.length,
+              attachmentNames: finalProcessedAttachments.map(a => a.name),
+              attachmentPaths: finalProcessedAttachments.map(a => a.path),
+              attachmentTypes: finalProcessedAttachments.map(a => a.type)
             }
         });
       }
@@ -793,13 +824,13 @@ const { user } = useAuth();
       // CLIENT-SIDE ATTACHMENT FALLBACK
       // Parse attachments and inject content into conversation
       // ============================================
-      if (processedAttachments.length > 0) {
+      if (finalProcessedAttachments.length > 0) {
         console.log('🔍 Pre-processing attachments on client side for guaranteed context...');
         
         const attachmentSummaries: string[] = [];
         let successCount = 0;
         
-        for (const attachment of processedAttachments) {
+        for (const attachment of finalProcessedAttachments) {
           try {
             console.log(`📄 Parsing ${attachment.name} via parse-chat-document...`);
             
@@ -905,7 +936,7 @@ const { user } = useAuth();
           console.log(`📄 Context preview:`, contextContent.substring(0, 300) + '...');
           
           toast.success('Conteúdo dos anexos incluído na análise', {
-            description: `${successCount} de ${processedAttachments.length} arquivo(s) processado(s)`,
+            description: `${successCount} de ${finalProcessedAttachments.length} arquivo(s) processado(s)`,
             duration: 4000
           });
         }
@@ -918,9 +949,9 @@ const { user } = useAuth();
       });
 
       console.log('📤 Sending chat request to Daton AI...', {
-        hasAttachments: processedAttachments.length > 0,
-        attachmentCount: processedAttachments.length,
-        attachments: processedAttachments,
+        hasAttachments: finalProcessedAttachments.length > 0,
+        attachmentCount: finalProcessedAttachments.length,
+        attachments: finalProcessedAttachments,
         messageLength: content.length,
         totalApiMessages: apiMessages.length
       });
@@ -932,7 +963,7 @@ const { user } = useAuth();
           companyId,
           conversationId,
           currentPage: currentPage || 'dashboard',
-          attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
+          attachments: finalProcessedAttachments.length > 0 ? finalProcessedAttachments : undefined,
           userContext: {
             userName: user.full_name,
             companyName: user.company.name,

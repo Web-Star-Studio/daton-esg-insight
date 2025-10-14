@@ -93,86 +93,103 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // FALLBACK SYSTEM: Ensure attachments are available even if missing from request
-    let attachmentsToUse = attachments || [];
+    // ✅ ROBUST FALLBACK SYSTEM: De-duplicate and merge all attachment sources
+    let attachmentsFromRequest = attachments || [];
+    let dbAttachments: any[] = [];
+    let metadataAttachments: any[] = [];
     
     // FALLBACK 1: Try to reconstruct from database (chat_file_uploads)
-    if ((!attachmentsToUse || attachmentsToUse.length === 0) && conversationId) {
-      console.log('⚠️ Attachments missing from request, attempting fallback...');
+    if (conversationId && (!attachmentsFromRequest || attachmentsFromRequest.length === 0)) {
+      console.log('⚠️ Attachments missing from request, attempting DB fallback...');
       
-      // Try to get recent uploads from database - include 'uploaded' AND 'processed' status
-      // Extended window to 7 days for better reusability
       const { data: recentUploads } = await supabaseClient
         .from('chat_file_uploads')
-        .select('*')
+        .select('file_path, file_type, file_name, file_size')
         .eq('conversation_id', conversationId)
         .in('processing_status', ['uploaded', 'processed'])
         .gte('created_at', new Date(Date.now() - 7 * 24 * 3600000).toISOString()) // Last 7 days
         .order('created_at', { ascending: false })
-        .limit(10); // Get last 10 files
+        .limit(10);
       
       if (recentUploads && recentUploads.length > 0) {
-        console.log(`📎 Fallback DB: Reconstructed ${recentUploads.length} attachments from database (including processed files)`);
-        attachmentsToUse = recentUploads.map(upload => ({
-          id: upload.id,
-          name: upload.file_name,
-          type: upload.file_type,
-          size: upload.file_size,
+        console.log(`📎 Fallback DB: Reconstructed ${recentUploads.length} attachments from database`);
+        dbAttachments = recentUploads.map(upload => ({
           path: upload.file_path,
-          status: upload.processing_status === 'processed' ? 'processed' : 'uploaded'
+          type: upload.file_type || 'application/octet-stream',
+          name: upload.file_name || 'arquivo',
+          size: upload.file_size || 0
         }));
       }
     }
     
     // FALLBACK 2: Try to reconstruct from message metadata (last 10 user messages)
-    if ((!attachmentsToUse || attachmentsToUse.length === 0) && conversationId) {
-      console.log('⚠️ Attempting secondary fallback from message metadata...');
+    if (conversationId && dbAttachments.length === 0 && (!attachmentsFromRequest || attachmentsFromRequest.length === 0)) {
+      console.log('⚠️ Attempting metadata fallback from last 10 user messages...');
       
       const { data: recentUserMessages } = await supabaseClient
         .from('ai_chat_messages')
-        .select('metadata, created_at')
+        .select('metadata')
         .eq('conversation_id', conversationId)
         .eq('role', 'user')
         .order('created_at', { ascending: false })
-        .limit(10); // Check last 10 user messages
+        .limit(10);
       
       if (recentUserMessages && recentUserMessages.length > 0) {
-        // Aggregate all attachment paths from last 10 messages, avoiding duplicates
-        const seenPaths = new Set<string>();
-        const aggregatedAttachments: any[] = [];
+        const pathsSet = new Set<string>();
+        const aggregated: any[] = [];
         
-        for (const message of recentUserMessages) {
-          if (message.metadata?.attachmentPaths?.length > 0) {
-            const paths = message.metadata.attachmentPaths;
-            const types = message.metadata.attachmentTypes || [];
-            const names = message.metadata.attachmentNames || [];
-            
-            paths.forEach((path: string, idx: number) => {
-              if (!seenPaths.has(path)) {
-                seenPaths.add(path);
-                aggregatedAttachments.push({
-                  id: `metadata-${aggregatedAttachments.length}`,
-                  name: names[idx] || `Anexo ${idx + 1}`,
-                  type: types[idx] || 'application/octet-stream',
-                  size: 0,
-                  path: path,
-                  status: 'uploaded'
+        for (const msg of recentUserMessages) {
+          const metadata = msg.metadata as any;
+          if (metadata?.attachmentPaths && Array.isArray(metadata.attachmentPaths)) {
+            metadata.attachmentPaths.forEach((path: string, idx: number) => {
+              if (!pathsSet.has(path)) {
+                pathsSet.add(path);
+                aggregated.push({
+                  path,
+                  type: metadata.attachmentTypes?.[idx] || 'application/octet-stream',
+                  name: metadata.attachmentNames?.[idx] || 'arquivo',
+                  size: 0
                 });
               }
             });
           }
         }
         
-        if (aggregatedAttachments.length > 0) {
-          attachmentsToUse = aggregatedAttachments;
-          console.log(`📎 Fallback Metadata: Reconstructed ${attachmentsToUse.length} attachments from ${recentUserMessages.length} messages`);
-        } else {
-          console.log('   No attachments found in recent message metadata');
+        if (aggregated.length > 0) {
+          console.log(`📎 Fallback Metadata: Reconstructed ${aggregated.length} attachments from ${recentUserMessages.length} messages`);
+          metadataAttachments = aggregated;
         }
-      } else {
-        console.log('   No recent user messages found for metadata fallback');
       }
     }
+    
+    // ✅ De-duplicate and merge all attachment sources
+    const allSources = [
+      ...(attachmentsFromRequest || []),
+      ...dbAttachments,
+      ...metadataAttachments
+    ];
+    
+    const pathsSet = new Set<string>();
+    let attachmentsToUse: any[] = [];
+    let attachmentSource = 'none';
+    
+    for (const att of allSources) {
+      if (att.path && !pathsSet.has(att.path)) {
+        pathsSet.add(att.path);
+        attachmentsToUse.push(att);
+      }
+    }
+    
+    // Determine source for logging
+    if (attachmentsFromRequest && attachmentsFromRequest.length > 0) {
+      attachmentSource = (dbAttachments.length > 0 || metadataAttachments.length > 0) ? 'mixed' : 'request';
+    } else if (dbAttachments.length > 0) {
+      attachmentSource = metadataAttachments.length > 0 ? 'mixed' : 'db';
+    } else if (metadataAttachments.length > 0) {
+      attachmentSource = 'metadata';
+    }
+    
+    console.log(`📦 Source: ${attachmentSource.toUpperCase()} (${attachmentsToUse.length} total after de-duplication)`);
 
     // Get comprehensive company data and context
     const { data: company } = await supabaseClient
