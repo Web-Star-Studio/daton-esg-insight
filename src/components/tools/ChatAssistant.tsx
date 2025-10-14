@@ -41,6 +41,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     attachments,
     addAttachment,
     removeAttachment,
+    clearSentAttachments,
     isUploading,
     pendingAction,
     confirmAction,
@@ -226,6 +227,22 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                       </ReactMarkdown>
                     </div>
                     
+                    {/* Show attachments in user messages */}
+                    {message.role === 'user' && message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-primary-foreground/20">
+                        <p className="text-xs font-medium mb-1.5 opacity-80">📎 Anexos enviados:</p>
+                        <div className="space-y-1">
+                          {message.attachments.map((att, idx) => (
+                            <div key={idx} className="text-xs bg-primary-foreground/10 rounded px-2 py-1 flex items-center gap-1.5">
+                              <span>📄</span>
+                              <span className="flex-1 truncate">{att.name}</span>
+                              <span className="opacity-70">({(att.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Render proactive insights if present */}
                     {message.insights && message.insights.length > 0 && (
                       <div className="mt-3">
@@ -328,23 +345,35 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                   <span className="text-xs font-medium text-muted-foreground">
                     📎 Anexos ({attachments.length})
                   </span>
-                  {!isLoading && !isUploading && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => attachments.forEach(att => removeAttachment(att.id))}
-                      className="h-6 text-xs hover:text-destructive"
-                    >
-                      Limpar
-                    </Button>
-                  )}
+                  <div className="flex gap-1">
+                    {!isLoading && !isUploading && attachments.some(att => att.status === 'sent') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSentAttachments}
+                        className="h-6 text-xs hover:text-primary"
+                      >
+                        Limpar Enviados
+                      </Button>
+                    )}
+                    {!isLoading && !isUploading && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => attachments.forEach(att => removeAttachment(att.id))}
+                        className="h-6 text-xs hover:text-destructive"
+                      >
+                        Limpar Todos
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {attachments.map(att => (
                   <FileAttachment
                     key={att.id}
                     file={att}
-                    onRemove={removeAttachment}
-                    canRemove={!isLoading}
+                    onRemove={att.status === 'sent' ? undefined : removeAttachment}
+                    canRemove={!isLoading && att.status !== 'sent'}
                   />
                 ))}
                 {isUploading && (

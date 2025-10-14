@@ -4,18 +4,18 @@ import { cn } from "@/lib/utils";
 
 export interface FileAttachmentData {
   id: string;
-  file: File;
+  file?: File;
   name: string;
   size: number;
   type: string;
-  status: 'uploading' | 'uploaded' | 'processing' | 'processed' | 'error';
+  status: 'uploading' | 'uploaded' | 'processing' | 'processed' | 'sent' | 'error';
   path?: string;
   error?: string;
 }
 
 interface FileAttachmentProps {
   file: FileAttachmentData;
-  onRemove: (id: string) => void;
+  onRemove?: (id: string) => void;
   canRemove?: boolean;
 }
 
@@ -40,6 +40,8 @@ function getStatusIcon(status: FileAttachmentData['status']) {
     case 'uploaded':
     case 'processed':
       return <CheckCircle2 className="h-3 w-3 text-green-600" />;
+    case 'sent':
+      return <CheckCircle2 className="h-3 w-3 text-muted-foreground" />;
     case 'error':
       return <AlertCircle className="h-3 w-3 text-destructive" />;
   }
@@ -55,6 +57,8 @@ function getStatusText(status: FileAttachmentData['status']) {
       return 'Analisando com IA...';
     case 'processed':
       return 'Pronto ✓';
+    case 'sent':
+      return 'Enviado à IA ✓';
     case 'error':
       return 'Erro';
   }
@@ -69,6 +73,7 @@ export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachm
       "flex items-center gap-2 p-2.5 rounded-lg border bg-card text-card-foreground transition-all",
       file.status === 'error' && "border-destructive/50 bg-destructive/5",
       file.status === 'processed' && "border-green-500/30 bg-green-500/5",
+      file.status === 'sent' && "border-border/50 bg-muted/30 opacity-70",
       isProcessing && "border-orange-500/30 bg-orange-500/5"
     )}>
       <div className="shrink-0">
@@ -76,6 +81,7 @@ export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachm
           "h-4 w-4",
           file.status === 'error' && "text-destructive",
           file.status === 'processed' && "text-green-600",
+          file.status === 'sent' && "text-muted-foreground",
           isProcessing && "text-orange-500"
         )} />
       </div>
@@ -93,6 +99,7 @@ export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachm
           <span>•</span>
           <span className={cn(
             file.status === 'processed' && "text-green-600 font-medium",
+            file.status === 'sent' && "text-muted-foreground font-medium",
             isProcessing && "text-orange-600 font-medium"
           )}>{getStatusText(file.status)}</span>
         </div>
@@ -105,7 +112,7 @@ export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachm
         )}
       </div>
       
-      {canRemove && !isProcessing && (
+      {canRemove && !isProcessing && onRemove && (
         <Button
           type="button"
           variant="ghost"

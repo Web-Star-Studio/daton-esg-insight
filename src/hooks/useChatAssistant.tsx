@@ -23,6 +23,12 @@ export interface ChatMessage {
     action?: () => void;
   }>;
   pendingAction?: PendingAction;
+  attachments?: Array<{
+    name: string;
+    size: number;
+    type: string;
+    path: string;
+  }>;
 }
 
 export interface UseChatAssistantReturn {
@@ -38,6 +44,7 @@ export interface UseChatAssistantReturn {
   attachments: FileAttachmentData[];
   addAttachment: (file: File) => Promise<void>;
   removeAttachment: (id: string) => void;
+  clearSentAttachments: () => void;
   isUploading: boolean;
   showHistory: boolean;
   setShowHistory: (show: boolean) => void;
@@ -733,6 +740,7 @@ const { user } = useAuth();
         role: 'user',
         content,
         timestamp: new Date(),
+        attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
       };
 
       setMessages(prev => [...prev, userMessage]);
@@ -1012,13 +1020,20 @@ const { user } = useAuth();
         });
       }
 
-      // Clear attachments after successful send
+      // Mark attachments as sent (keep in state for history)
       if (processedAttachments.length > 0) {
-        console.log('🧹 Clearing attachments after successful send');
-        setAttachments([]);
+        console.log('✅ Marking attachments as sent and preserving in history');
+        setAttachments(prev => prev.map(att => ({
+          ...att,
+          status: 'sent' as const
+        })));
         
+        // Persist updated state
         if (conversationId) {
-          localStorage.removeItem(`chat_attachments_${conversationId}`);
+          persistAttachments(conversationId, attachments.map(att => ({
+            ...att,
+            status: 'sent' as const
+          })));
           
           await supabase
             .from('ai_chat_conversations')
@@ -1028,6 +1043,8 @@ const { user } = useAuth();
             })
             .eq('id', conversationId);
         }
+        
+        console.log('💾 Attachments preserved in history with "sent" status');
       }
 
     } catch (error) {
@@ -1372,6 +1389,25 @@ Qual informação você precisa?`,
     });
   };
 
+  // Clear only attachments that have been sent
+  const clearSentAttachments = () => {
+    setAttachments(prev => {
+      const filtered = prev.filter(att => att.status !== 'sent');
+      
+      if (conversationId && filtered.length === 0) {
+        localStorage.removeItem(`${ATTACHMENTS_PREFIX}${conversationId}`);
+      } else if (conversationId) {
+        persistAttachments(conversationId, filtered);
+      }
+      
+      return filtered;
+    });
+    
+    toast.success('Anexos enviados removidos', {
+      description: 'Os arquivos já enviados foram limpos da lista'
+    });
+  };
+
   return {
     messages,
     isLoading,
@@ -1385,6 +1421,7 @@ Qual informação você precisa?`,
     attachments,
     addAttachment,
     removeAttachment,
+    clearSentAttachments,
     isUploading,
     showHistory,
     setShowHistory,
