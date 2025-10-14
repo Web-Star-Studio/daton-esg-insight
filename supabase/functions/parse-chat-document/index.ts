@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import pdfParse from 'npm:pdf-parse@1.1.1';
+import * as XLSX from 'npm:xlsx@0.18.5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
