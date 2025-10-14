@@ -82,6 +82,37 @@ export async function executeReadTool(
       case 'analyze_stakeholder_impact':
         return await analyzeStakeholderImpact(args, companyId, supabaseClient);
       
+      // New expanded tools
+      case 'global_search':
+        return await globalSearch(args, companyId, supabaseClient);
+      
+      case 'query_documents':
+        return await queryDocuments(args, companyId, supabaseClient);
+      
+      case 'query_gri_reports':
+        return await queryGriReports(args, companyId, supabaseClient);
+      
+      case 'query_suppliers':
+        return await querySuppliers(args, companyId, supabaseClient);
+      
+      case 'query_trainings':
+        return await queryTrainings(args, companyId, supabaseClient);
+      
+      case 'query_audits':
+        return await queryAudits(args, companyId, supabaseClient);
+      
+      case 'query_okrs':
+        return await queryOkrs(args, companyId, supabaseClient);
+      
+      case 'query_projects':
+        return await queryProjects(args, companyId, supabaseClient);
+      
+      case 'query_waste_data':
+        return await queryWasteData(args, companyId, supabaseClient);
+      
+      case 'query_indicators':
+        return await queryIndicators(args, companyId, supabaseClient);
+      
       default:
         return { error: `Unknown tool: ${toolName}` };
     }
@@ -454,5 +485,364 @@ async function reviewPendingExtractions(args: any, companyId: string, supabase: 
     data: formatted,
     count: formatted.length,
     message: `Encontradas ${formatted.length} extrações pendentes de aprovação. Acesse /extracoes-documentos para revisar.`
+  };
+}
+
+// ============ NEW EXPANDED QUERY FUNCTIONS ============
+
+async function globalSearch(args: any, companyId: string, supabase: any) {
+  const { query, limit = 20 } = args;
+  
+  try {
+    const { data, error } = await supabase
+      .rpc('search_across_tables', {
+        search_query: query,
+        user_company_id: companyId,
+        result_limit: limit
+      });
+    
+    if (error) throw error;
+    
+    return {
+      success: true,
+      results: data,
+      total: data?.length || 0,
+      query
+    };
+  } catch (error) {
+    console.error('Global search error:', error);
+    return { error: error.message };
+  }
+}
+
+async function queryDocuments(args: any, companyId: string, supabase: any) {
+  const { documentType, tags, searchTerm, recentOnly } = args;
+  
+  let query = supabase
+    .from('documents')
+    .select('*')
+    .eq('company_id', companyId);
+  
+  if (documentType && documentType !== 'all') {
+    query = query.eq('document_type', documentType);
+  }
+  
+  if (tags && tags.length > 0) {
+    query = query.contains('tags', tags);
+  }
+  
+  if (searchTerm) {
+    query = query.or(`file_name.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
+  }
+  
+  if (recentOnly) {
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    query = query.gte('upload_date', ninetyDaysAgo.toISOString());
+  }
+  
+  const { data, error } = await query.order('upload_date', { ascending: false }).limit(50);
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    documents: data,
+    total: data?.length || 0
+  };
+}
+
+async function queryGriReports(args: any, companyId: string, supabase: any) {
+  const { reportYear, status, includeIndicators } = args;
+  
+  let query = supabase
+    .from('gri_reports')
+    .select(includeIndicators ? '*, gri_indicator_data(*)' : '*')
+    .eq('company_id', companyId);
+  
+  if (reportYear) {
+    query = query.eq('report_year', reportYear);
+  }
+  
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+  
+  const { data, error } = await query.order('report_year', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    reports: data,
+    total: data?.length || 0
+  };
+}
+
+async function querySuppliers(args: any, companyId: string, supabase: any) {
+  const { status, category, minRating } = args;
+  
+  let query = supabase
+    .from('suppliers')
+    .select('*')
+    .eq('company_id', companyId);
+  
+  if (status && status !== 'all') {
+    if (status === 'qualified') {
+      query = query.eq('qualification_status', 'Qualificado');
+    } else if (status === 'not_qualified') {
+      query = query.eq('qualification_status', 'Não Qualificado');
+    } else {
+      query = query.eq('status', status === 'active' ? 'Ativo' : 'Inativo');
+    }
+  }
+  
+  if (category) {
+    query = query.eq('category', category);
+  }
+  
+  if (minRating) {
+    query = query.gte('rating', minRating);
+  }
+  
+  const { data, error } = await query.order('rating', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    suppliers: data,
+    total: data?.length || 0,
+    averageRating: data && data.length > 0 
+      ? (data.reduce((sum: number, s: any) => sum + (s.rating || 0), 0) / data.length).toFixed(2)
+      : 0
+  };
+}
+
+async function queryTrainings(args: any, companyId: string, supabase: any) {
+  const { status, category, mandatory } = args;
+  
+  let query = supabase
+    .from('training_programs')
+    .select(`
+      *,
+      course_enrollments(count)
+    `)
+    .eq('company_id', companyId);
+  
+  if (status && status !== 'all') {
+    query = query.eq('status', status === 'active' ? 'Ativo' : status === 'completed' ? 'Concluído' : 'Agendado');
+  }
+  
+  if (category) {
+    query = query.eq('category', category);
+  }
+  
+  if (mandatory !== undefined) {
+    query = query.eq('is_mandatory', mandatory);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    trainings: data,
+    total: data?.length || 0
+  };
+}
+
+async function queryAudits(args: any, companyId: string, supabase: any) {
+  const { auditType, status, year } = args;
+  
+  let query = supabase
+    .from('audits')
+    .select('*')
+    .eq('company_id', companyId);
+  
+  if (auditType && auditType !== 'all') {
+    query = query.eq('audit_type', auditType);
+  }
+  
+  if (status && status !== 'all') {
+    query = query.eq('status', status === 'planned' ? 'Planejada' : status === 'in_progress' ? 'Em Andamento' : 'Concluída');
+  }
+  
+  if (year) {
+    query = query.gte('start_date', `${year}-01-01`).lte('start_date', `${year}-12-31`);
+  }
+  
+  const { data, error } = await query.order('start_date', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    audits: data,
+    total: data?.length || 0
+  };
+}
+
+async function queryOkrs(args: any, companyId: string, supabase: any) {
+  const { timePeriod, objectiveType, minProgress } = args;
+  
+  let query = supabase
+    .from('okrs')
+    .select(`
+      *,
+      key_results(*)
+    `)
+    .eq('company_id', companyId);
+  
+  if (timePeriod) {
+    query = query.eq('time_period', timePeriod);
+  }
+  
+  if (objectiveType && objectiveType !== 'all') {
+    query = query.eq('objective_type', objectiveType);
+  }
+  
+  if (minProgress !== undefined) {
+    query = query.gte('progress_percentage', minProgress);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    okrs: data,
+    total: data?.length || 0,
+    averageProgress: data && data.length > 0
+      ? (data.reduce((sum: number, o: any) => sum + (o.progress_percentage || 0), 0) / data.length).toFixed(1)
+      : 0
+  };
+}
+
+async function queryProjects(args: any, companyId: string, supabase: any) {
+  const { status, category, budget } = args;
+  
+  let query = supabase
+    .from('projects')
+    .select(`
+      *,
+      project_tasks(count)
+    `)
+    .eq('company_id', companyId);
+  
+  if (status && status !== 'all') {
+    query = query.eq('status', status === 'planning' ? 'Planejamento' : status === 'in_progress' ? 'Em Andamento' : status === 'on_hold' ? 'Pausado' : 'Concluído');
+  }
+  
+  if (category && category !== 'all') {
+    query = query.eq('category', category === 'environmental' ? 'Ambiental' : category === 'social' ? 'Social' : 'Governança');
+  }
+  
+  if (budget) {
+    if (budget.min) query = query.gte('budget', budget.min);
+    if (budget.max) query = query.lte('budget', budget.max);
+  }
+  
+  const { data, error } = await query.order('start_date', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  return {
+    success: true,
+    projects: data,
+    total: data?.length || 0,
+    totalBudget: data ? data.reduce((sum: number, p: any) => sum + (p.budget || 0), 0) : 0
+  };
+}
+
+async function queryWasteData(args: any, companyId: string, supabase: any) {
+  const { wasteClass, year = new Date().getFullYear(), groupBy } = args;
+  
+  let query = supabase
+    .from('waste_logs')
+    .select('*')
+    .eq('company_id', companyId)
+    .gte('log_date', `${year}-01-01`)
+    .lte('log_date', `${year}-12-31`);
+  
+  if (wasteClass && wasteClass !== 'all') {
+    const classMap: any = {
+      'I': 'I - Perigoso',
+      'IIA': 'II A - Não Inerte',
+      'IIB': 'II B - Inerte'
+    };
+    query = query.eq('waste_class', classMap[wasteClass]);
+  }
+  
+  const { data, error } = await query.order('log_date', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  // Calculate aggregations
+  const totalQuantity = data ? data.reduce((sum: number, w: any) => sum + (w.quantity || 0), 0) : 0;
+  
+  let groupedData: any = {};
+  if (groupBy && data) {
+    data.forEach((item: any) => {
+      const key = groupBy === 'month' 
+        ? new Date(item.log_date).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
+        : item[groupBy === 'type' ? 'waste_type' : 'disposal_method'];
+      
+      if (!groupedData[key]) {
+        groupedData[key] = { quantity: 0, count: 0 };
+      }
+      groupedData[key].quantity += item.quantity || 0;
+      groupedData[key].count += 1;
+    });
+  }
+  
+  return {
+    success: true,
+    wasteData: data,
+    total: data?.length || 0,
+    totalQuantity,
+    unit: 'kg',
+    groupedData: groupBy ? groupedData : undefined
+  };
+}
+
+async function queryIndicators(args: any, companyId: string, supabase: any) {
+  const { category, frequency, withAlerts } = args;
+  
+  let query = supabase
+    .from('indicators')
+    .select(`
+      *,
+      indicator_measurements(*)
+    `)
+    .eq('company_id', companyId);
+  
+  if (category && category !== 'all') {
+    query = query.eq('category', category);
+  }
+  
+  if (frequency && frequency !== 'all') {
+    query = query.eq('measurement_frequency', frequency);
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false });
+  
+  if (error) return { error: error.message };
+  
+  // Filter indicators with alerts if requested
+  let filteredData = data;
+  if (withAlerts && data) {
+    filteredData = data.filter((ind: any) => {
+      const measurements = ind.indicator_measurements || [];
+      return measurements.some((m: any) => m.deviation_level === 'warning' || m.deviation_level === 'critical');
+    });
+  }
+  
+  return {
+    success: true,
+    indicators: filteredData,
+    total: filteredData?.length || 0
   };
 }

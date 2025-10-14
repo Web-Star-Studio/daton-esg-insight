@@ -54,48 +54,61 @@ export function useChatAssistant(): UseChatAssistantReturn {
     {
       id: 'welcome',
       role: 'assistant',
-      content: `👋 **Olá! Sou o Assistente IA do Daton**, seu parceiro inteligente em gestão ESG.
+      content: `👋 **Olá! Sou o Assistente IA Elite do Daton**, seu consultor ESG com inteligência avançada.
 
-**📎 AGORA COM UPLOAD DE ARQUIVOS!**
-Você pode anexar documentos (PDF, CSV, Excel, imagens) e eu posso:
-• Extrair dados automaticamente
-• Cadastrar licenças de PDFs
-• Importar planilhas de emissões, metas, funcionários
-• Ler medidores e formulários em fotos
-• Processar relatórios e notas fiscais
+**🎯 ACESSO TOTAL AO SISTEMA**
+Tenho acesso **completo e em tempo real** a TODOS os dados e módulos da sua empresa. Posso consultar, analisar e gerar insights sobre qualquer informação do sistema instantaneamente!
 
-Tenho acesso **completo e em tempo real** aos dados da sua empresa e posso ajudar de várias formas:
+**📎 ANÁLISE INTELIGENTE DE ARQUIVOS**
+Você pode anexar documentos (PDF, CSV, Excel, imagens, Word) e eu posso:
+✅ Extrair e classificar dados automaticamente com IA
+✅ Sugerir ações inteligentes baseadas no conteúdo
+✅ Cadastrar licenças, emissões, metas de PDFs/planilhas
+✅ Ler medidores, formulários e documentos em fotos
+✅ Processar relatórios, notas fiscais e certificados
+✅ Importar dados em massa com validação
 
-**📊 CONSULTAS E ANÁLISES**
-Posso consultar instantaneamente:
-• Emissões de GEE e inventário de carbono por escopo
-• Licenças ambientais e alertas de vencimento
-• Progresso de metas ESG e OKRs
-• Métricas de resíduos e destinação
-• Dados de colaboradores e indicadores sociais
-• Status de conformidade e auditorias
-• Tarefas pendentes e em atraso
-• Riscos ESG por categoria e nível
+**🔍 BUSCA E CONSULTA GLOBAL**
+Posso buscar e analisar instantaneamente:
+🌍 **Ambiental:** Emissões GEE, resíduos, licenças, água, energia
+👥 **Social:** Colaboradores, treinamentos, diversidade, segurança
+🏛️ **Governança:** Auditorias, compliance, políticas, certificações
+🎯 **Estratégia:** Metas ESG, OKRs, projetos, indicadores KPI
+📊 **Operacional:** Tarefas, fornecedores, documentos, relatórios GRI
+⚠️ **Riscos:** Riscos ESG, oportunidades, não conformidades
+
+**🧠 ANÁLISES AVANÇADAS**
+Capacidades de inteligência preditiva:
+📈 Análise de tendências e padrões temporais
+🔮 Previsão de métricas futuras com IA
+🔗 Descoberta de correlações entre indicadores
+⚖️ Comparação de períodos e benchmarking
+📋 Relatórios executivos com insights acionáveis
 
 **✏️ AÇÕES DE GERENCIAMENTO**
-Com sua confirmação, posso criar e atualizar:
-• Metas ESG, OKRs e projetos
-• Tarefas de coleta de dados
-• Licenças ambientais
-• Registros de emissões e resíduos
-• Não conformidades e riscos
-• Indicadores e medições
-• Funcionários, fornecedores e stakeholders
-• Programas de treinamento e auditorias
+Com sua confirmação, posso criar/atualizar:
+• Metas, OKRs, projetos e iniciativas estratégicas
+• Tarefas, cronogramas e agendamentos
+• Licenças, certificações e renovações
+• Emissões, resíduos, água e energia
+• Riscos, NCs, ações corretivas
+• Colaboradores, fornecedores, stakeholders
+• Indicadores, medições e relatórios
+• Auditorias, treinamentos e programas
 
-**💡 COMO USAR**
-Converse naturalmente! Exemplos:
-• "Quais licenças vencem nos próximos 30 dias?"
-• "Mostre o progresso das metas ambientais"
-• "Crie uma tarefa de coleta de emissões para próximo mês"
-• "Analise os riscos críticos da categoria ambiental"
+**💡 EXEMPLOS DE USO**
+Fale naturalmente comigo:
+🔍 "Busque tudo relacionado a 'carbono neutralidade'"
+📊 "Mostre o resumo executivo de todas as áreas ESG"
+📈 "Analise a tendência de emissões dos últimos 12 meses"
+⚠️ "Quais são os riscos críticos e o que recomendar?"
+🎯 "Como está o progresso das metas ambientais?"
+📋 "Liste os documentos de certificação ISO vencidos"
+👥 "Quantos colaboradores temos por departamento?"
+🔮 "Preveja nossas emissões para os próximos 6 meses"
 
-*Todas as ações de escrita requerem sua confirmação antes da execução.*
+*💡 Dica: Anexe arquivos para análise automática com IA!*
+*✅ Todas as ações de escrita requerem sua confirmação.*
 
 **Como posso ajudar você hoje?** 🚀`,
       timestamp: new Date(),

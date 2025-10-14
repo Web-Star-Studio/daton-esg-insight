@@ -442,5 +442,273 @@ export const readTools = [
         required: ["action"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "global_search",
+      description: "Busca global em todo o sistema (metas, tarefas, documentos, riscos, licenças, etc). Use quando o usuário faz uma pergunta genérica ou busca por um termo específico.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Termo de busca ou palavra-chave"
+          },
+          limit: {
+            type: "number",
+            description: "Número máximo de resultados (padrão: 20)"
+          }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_documents",
+      description: "Consulta documentos do sistema. Use para buscar relatórios, políticas, certificados, evidências.",
+      parameters: {
+        type: "object",
+        properties: {
+          documentType: {
+            type: "string",
+            enum: ["all", "policy", "report", "certificate", "evidence", "procedure"],
+            description: "Tipo de documento"
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description: "Tags para filtrar documentos"
+          },
+          searchTerm: {
+            type: "string",
+            description: "Termo de busca no nome ou conteúdo"
+          },
+          recentOnly: {
+            type: "boolean",
+            description: "Apenas documentos recentes (últimos 90 dias)"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_gri_reports",
+      description: "Consulta relatórios e indicadores GRI. Use para perguntas sobre relatórios de sustentabilidade, indicadores GRI, progresso de disclosure.",
+      parameters: {
+        type: "object",
+        properties: {
+          reportYear: {
+            type: "number",
+            description: "Ano do relatório"
+          },
+          status: {
+            type: "string",
+            enum: ["all", "draft", "in_progress", "completed"],
+            description: "Status do relatório"
+          },
+          includeIndicators: {
+            type: "boolean",
+            description: "Incluir detalhes dos indicadores"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_suppliers",
+      description: "Consulta fornecedores e avaliação de cadeia de suprimentos. Use para análise de riscos na cadeia, qualificação de fornecedores.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["all", "active", "inactive", "qualified", "not_qualified"],
+            description: "Status do fornecedor"
+          },
+          category: {
+            type: "string",
+            description: "Categoria do fornecedor"
+          },
+          minRating: {
+            type: "number",
+            description: "Avaliação mínima (0-5)"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_trainings",
+      description: "Consulta programas de treinamento e capacitação. Use para análise de desenvolvimento de colaboradores, compliance de treinamentos obrigatórios.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["all", "active", "completed", "scheduled"],
+            description: "Status do treinamento"
+          },
+          category: {
+            type: "string",
+            description: "Categoria do treinamento"
+          },
+          mandatory: {
+            type: "boolean",
+            description: "Apenas treinamentos obrigatórios"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_audits",
+      description: "Consulta auditorias e inspeções. Use para acompanhar auditorias internas, externas, achados, não conformidades.",
+      parameters: {
+        type: "object",
+        properties: {
+          auditType: {
+            type: "string",
+            enum: ["all", "internal", "external", "certification", "compliance"],
+            description: "Tipo de auditoria"
+          },
+          status: {
+            type: "string",
+            enum: ["all", "planned", "in_progress", "completed"],
+            description: "Status da auditoria"
+          },
+          year: {
+            type: "number",
+            description: "Ano da auditoria"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_okrs",
+      description: "Consulta OKRs (Objectives and Key Results). Use para acompanhar objetivos estratégicos e resultados-chave.",
+      parameters: {
+        type: "object",
+        properties: {
+          timePeriod: {
+            type: "string",
+            description: "Período (ex: Q1 2025, Anual 2025)"
+          },
+          objectiveType: {
+            type: "string",
+            enum: ["all", "strategic", "tactical", "operational"],
+            description: "Tipo de objetivo"
+          },
+          minProgress: {
+            type: "number",
+            description: "Progresso mínimo (0-100)"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_projects",
+      description: "Consulta projetos e iniciativas estratégicas. Use para acompanhar projetos ESG, status, orçamento, cronograma.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["all", "planning", "in_progress", "on_hold", "completed"],
+            description: "Status do projeto"
+          },
+          category: {
+            type: "string",
+            enum: ["all", "environmental", "social", "governance"],
+            description: "Categoria ESG do projeto"
+          },
+          budget: {
+            type: "object",
+            properties: {
+              min: { type: "number" },
+              max: { type: "number" }
+            },
+            description: "Faixa de orçamento"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_waste_data",
+      description: "Consulta dados de gestão de resíduos. Use para análise de geração, destinação, reciclagem de resíduos.",
+      parameters: {
+        type: "object",
+        properties: {
+          wasteClass: {
+            type: "string",
+            enum: ["all", "I", "IIA", "IIB"],
+            description: "Classe do resíduo (I=Perigoso, IIA=Não Inerte, IIB=Inerte)"
+          },
+          year: {
+            type: "number",
+            description: "Ano de referência"
+          },
+          groupBy: {
+            type: "string",
+            enum: ["type", "month", "destination"],
+            description: "Agrupar resultados"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_indicators",
+      description: "Consulta indicadores de desempenho personalizados. Use para análise de KPIs, métricas customizadas, painéis de controle.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: {
+            type: "string",
+            enum: ["all", "environmental", "social", "governance", "operational", "financial"],
+            description: "Categoria do indicador"
+          },
+          frequency: {
+            type: "string",
+            enum: ["all", "daily", "weekly", "monthly", "quarterly", "annual"],
+            description: "Frequência de medição"
+          },
+          withAlerts: {
+            type: "boolean",
+            description: "Apenas indicadores com alertas ativos"
+          }
+        },
+        required: []
+      }
+    }
   }
 ];

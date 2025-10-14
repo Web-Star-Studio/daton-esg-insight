@@ -92,12 +92,44 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Get company data for context
+    // Get comprehensive company data and context
     const { data: company } = await supabaseClient
       .from('companies')
       .select('name, sector, cnpj')
       .eq('id', companyId)
       .single();
+
+    // Get company statistics for rich context
+    const [goalsData, tasksData, risksData, emissionsData, employeesData] = await Promise.all([
+      supabaseClient.from('goals').select('id, status, category').eq('company_id', companyId),
+      supabaseClient.from('data_collection_tasks').select('id, status, task_type').eq('company_id', companyId),
+      supabaseClient.from('esg_risks').select('id, inherent_risk_level, category').eq('company_id', companyId),
+      supabaseClient.from('emission_sources').select('id, scope').eq('company_id', companyId),
+      supabaseClient.from('employees').select('id, status').eq('company_id', companyId)
+    ]);
+
+    const companyStats = {
+      totalGoals: goalsData.data?.length || 0,
+      activeGoals: goalsData.data?.filter((g: any) => g.status === 'Ativa').length || 0,
+      goalsByCategory: {
+        ambiental: goalsData.data?.filter((g: any) => g.category === 'Ambiental').length || 0,
+        social: goalsData.data?.filter((g: any) => g.category === 'Social').length || 0,
+        governanca: goalsData.data?.filter((g: any) => g.category === 'Governança').length || 0
+      },
+      totalTasks: tasksData.data?.length || 0,
+      pendingTasks: tasksData.data?.filter((t: any) => t.status === 'Pendente').length || 0,
+      overdueTasks: tasksData.data?.filter((t: any) => t.status === 'Em Atraso').length || 0,
+      totalRisks: risksData.data?.length || 0,
+      criticalRisks: risksData.data?.filter((r: any) => r.inherent_risk_level === 'Crítico').length || 0,
+      emissionSources: {
+        total: emissionsData.data?.length || 0,
+        scope1: emissionsData.data?.filter((e: any) => e.scope === 1).length || 0,
+        scope2: emissionsData.data?.filter((e: any) => e.scope === 2).length || 0,
+        scope3: emissionsData.data?.filter((e: any) => e.scope === 3).length || 0
+      },
+      totalEmployees: employeesData.data?.length || 0,
+      activeEmployees: employeesData.data?.filter((e: any) => e.status === 'Ativo').length || 0
+    };
 
     // Load conversation history if conversationId is provided
     let conversationHistory: any[] = [];
@@ -969,14 +1001,14 @@ Imagine que você é um consultor sênior com 15+ anos de experiência em ESG, t
 
 **🎯 SUA MISSÃO:**
 Ajudar ${company?.name || 'a empresa'} a alcançar excelência em gestão ESG através de:
-• Análises profundas e insights acionáveis
-• Recomendações estratégicas priorizadas por impacto
-• Identificação proativa de riscos e oportunidades
-• Suporte na tomada de decisões baseada em dados
-• Facilitação da jornada de sustentabilidade corporativa
+• Análises profundas e insights acionáveis baseados em DADOS REAIS
+• Recomendações estratégicas priorizadas por impacto e urgência
+• Identificação proativa de riscos, oportunidades e tendências
+• Suporte na tomada de decisões baseada em evidências
+• Facilitação da jornada de sustentabilidade corporativa com visão 360°
 
 ╔══════════════════════════════════════════════════════════════╗
-║  🏢 CONTEXTO EMPRESARIAL                                      ║
+║  🏢 CONTEXTO EMPRESARIAL COMPLETO                             ║
 ╚══════════════════════════════════════════════════════════════╝
 
 **Empresa:** ${company?.name || 'Organização'}
@@ -984,6 +1016,35 @@ Ajudar ${company?.name || 'a empresa'} a alcançar excelência em gestão ESG at
 **CNPJ:** ${company?.cnpj || 'Não informado'}
 ${userContextInfo}
 **📍 Módulo Atual:** ${getPageContext(currentPage)}
+
+**📊 VISÃO EXECUTIVA DO SISTEMA (Dados em Tempo Real):**
+
+🎯 **Metas ESG:**
+   • Total de metas: ${companyStats.totalGoals}
+   • Metas ativas: ${companyStats.activeGoals}
+   • Por categoria:
+     - 🌍 Ambiental: ${companyStats.goalsByCategory.ambiental}
+     - 👥 Social: ${companyStats.goalsByCategory.social}
+     - 🏛️ Governança: ${companyStats.goalsByCategory.governanca}
+
+✅ **Gestão de Tarefas:**
+   • Total de tarefas: ${companyStats.totalTasks}
+   • Pendentes: ${companyStats.pendingTasks}
+   • Em atraso: ${companyStats.overdueTasks} ${companyStats.overdueTasks > 0 ? '⚠️ ATENÇÃO!' : ''}
+
+⚠️ **Riscos ESG:**
+   • Total de riscos: ${companyStats.totalRisks}
+   • Riscos críticos: ${companyStats.criticalRisks} ${companyStats.criticalRisks > 0 ? '🔴 PRIORITÁRIO!' : ''}
+
+🌍 **Inventário GEE:**
+   • Total de fontes: ${companyStats.emissionSources.total}
+   • Escopo 1 (diretas): ${companyStats.emissionSources.scope1}
+   • Escopo 2 (energia): ${companyStats.emissionSources.scope2}
+   • Escopo 3 (cadeia): ${companyStats.emissionSources.scope3}
+
+👥 **Força de Trabalho:**
+   • Total de colaboradores: ${companyStats.totalEmployees}
+   • Ativos: ${companyStats.activeEmployees}
 
 ${attachmentContext ? `\n╔══════════════════════════════════════════════════════════════╗\n║  📎 ARQUIVOS ANEXADOS - ANÁLISE COMPLETA                     ║\n╚══════════════════════════════════════════════════════════════╝\n${attachmentContext}\n\n⚡ **COMO USAR OS ARQUIVOS:**\n• Analise profundamente as informações extraídas\n• Responda perguntas específicas com base nos dados\n• Sugira ações proativas com base nos insights\n• Se solicitado importar dados, use as ferramentas de escrita (sempre confirmando antes)\n• Priorize alertas e oportunidades identificadas\n` : ''}
 
@@ -994,6 +1055,11 @@ ${attachmentContext ? `\n╔═════════════════�
 **📊 ANÁLISE E CONSULTA DE DADOS (Execução Imediata - Sem Confirmação)**
 
 Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferramentas especializadas. Use-as PROATIVAMENTE para fornecer respostas precisas e insights valiosos:
+
+🔍 **Busca Global:**
+   • global_search - Buscar em TUDO: metas, tarefas, documentos, riscos, licenças, emissões, etc.
+   • Use quando o usuário faz uma pergunta genérica ou busca por termo específico
+   • Retorna resultados relevantes de todas as áreas do sistema
 
 🌍 **Emissões & Inventário GEE:**
    • query_emissions_data - Consultar emissões por escopo, período, fonte ou categoria
@@ -1036,6 +1102,60 @@ Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferra
    • Analisar diversidade e distribuição organizacional
    • Identificar necessidades de treinamento
    • Mapear gaps de competências ESG
+
+📄 **Documentos e Evidências:**
+   • query_documents - Buscar relatórios, políticas, certificados, evidências
+   • Filtrar por tipo, tags, período
+   • Verificar documentação de compliance
+   • Mapear evidências para auditorias
+
+📋 **Relatórios GRI:**
+   • query_gri_reports - Consultar relatórios e indicadores GRI
+   • Acompanhar progresso de disclosure
+   • Verificar completude de indicadores
+   • Identificar gaps de reporte
+
+🏢 **Fornecedores:**
+   • query_suppliers - Consultar e avaliar fornecedores
+   • Analisar qualificação e rating
+   • Identificar riscos na cadeia de suprimentos
+   • Mapear oportunidades de engajamento
+
+🎓 **Treinamentos:**
+   • query_trainings - Consultar programas de capacitação
+   • Acompanhar treinamentos obrigatórios
+   • Analisar horas de treinamento por colaborador
+   • Identificar gaps de desenvolvimento
+
+🔍 **Auditorias:**
+   • query_audits - Acompanhar auditorias e inspeções
+   • Verificar status e prazos
+   • Analisar achados e não conformidades
+   • Preparar para auditorias futuras
+
+🎯 **OKRs:**
+   • query_okrs - Consultar objetivos e resultados-chave
+   • Acompanhar progresso estratégico
+   • Identificar OKRs em risco
+   • Sugerir ajustes de rota
+
+📊 **Projetos:**
+   • query_projects - Consultar projetos e iniciativas
+   • Acompanhar orçamento e cronograma
+   • Identificar projetos atrasados
+   • Priorizar recursos e investimentos
+
+♻️ **Gestão de Resíduos:**
+   • query_waste_data - Consultar dados de resíduos
+   • Analisar por classe, tipo, destinação
+   • Calcular taxas de reciclagem
+   • Identificar oportunidades de economia circular
+
+📈 **Indicadores Personalizados:**
+   • query_indicators - Consultar KPIs customizados
+   • Verificar indicadores com alertas
+   • Analisar desempenho por categoria
+   • Acompanhar metas de performance
 
 📈 **Visão Executiva:**
    • get_dashboard_summary - Resumo executivo com KPIs principais e alertas
