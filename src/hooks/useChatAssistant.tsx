@@ -785,14 +785,18 @@ Fale naturalmente comigo:
         // Inject summaries as context message before user's message
         if (attachmentSummaries.length > 0) {
           const contextContent = 
-            `\n${'='.repeat(60)}\n` +
-            `🔍 **CONTEXTO DOS ARQUIVOS ANEXADOS**\n` +
+            `\n🤖 INSTRUÇÃO PARA IA: O usuário anexou arquivos. O conteúdo extraído está abaixo. VOCÊ DEVE ANALISAR E USAR ESSES DADOS.\n\n` +
+            `${'='.repeat(60)}\n` +
+            `🔍 CONTEXTO DOS ARQUIVOS ANEXADOS\n` +
             `${'='.repeat(60)}\n` +
             `${attachmentSummaries.join('\n\n')}\n\n` +
-            `⚡ **Instruções:**\n` +
-            `• Os dados acima foram extraídos dos arquivos anexados pelo usuário\n` +
-            `• Use essas informações para responder perguntas e executar análises\n` +
-            `• ${successCount} de ${processedAttachments.length} arquivo(s) processado(s) com sucesso\n` +
+            `${'='.repeat(60)}\n` +
+            `⚡ INSTRUÇÕES CRÍTICAS:\n` +
+            `• Os dados acima foram extraídos dos ${successCount} arquivo(s) anexado(s)\n` +
+            `• VOCÊ TEM ACESSO a esse conteúdo - use-o para responder perguntas\n` +
+            `• RESPONDA perguntas diretas sobre os dados (quantas linhas, totais, etc.)\n` +
+            `• NUNCA diga que não consegue ler arquivos - o conteúdo está AQUI\n` +
+            `• Se solicitado importar dados, use as ferramentas apropriadas\n` +
             `${'='.repeat(60)}\n`;
 
           apiMessages.push({
@@ -801,6 +805,7 @@ Fale naturalmente comigo:
           });
 
           console.log(`✅ Injected ${attachmentSummaries.length} attachment summaries into conversation context`);
+          console.log(`📄 Context preview:`, contextContent.substring(0, 300) + '...');
           
           toast.success('Conteúdo dos anexos incluído na análise', {
             description: `${successCount} de ${processedAttachments.length} arquivo(s) processado(s)`,

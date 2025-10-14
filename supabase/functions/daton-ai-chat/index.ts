@@ -41,6 +41,8 @@ serve(async (req) => {
     console.log('   • Messages:', messages?.length);
     console.log('   • Confirmed Action:', confirmed);
     console.log('   • 📎 Attachment Count:', attachments?.length || 0);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     if (attachments && attachments.length > 0) {
       console.log('   • 📎 Attachment details:', attachments.map((a: any) => ({
         name: a.name,
@@ -979,7 +981,9 @@ serve(async (req) => {
       }
       
       if (attachmentContext) {
-        attachmentContext = `\n\n${'='.repeat(60)}\n🔍 **ANÁLISE COMPLETA DOS ARQUIVOS ANEXADOS**\n${'='.repeat(60)}${attachmentContext}\n\n⚡ **INSTRUÇÕES PARA A IA:**\n• Use as informações extraídas acima para responder perguntas específicas\n• Se solicitado importar/cadastrar dados, use as ferramentas de escrita (sempre pedindo confirmação)\n• Sugira ações proativas baseadas nos insights e oportunidades identificadas\n• Se houver alertas, priorize-os na resposta\n${'='.repeat(60)}\n`;
+        attachmentContext = `\n\n${'='.repeat(60)}\n🔍 **ANÁLISE COMPLETA DOS ARQUIVOS ANEXADOS**\n${'='.repeat(60)}${attachmentContext}\n\n⚡ **INSTRUÇÕES CRÍTICAS PARA A IA:**\n• Você TEM ACESSO ao conteúdo extraído acima - use-o para responder perguntas\n• RESPONDA perguntas diretas sobre os dados (ex: quantas linhas, totais, médias)\n• NUNCA diga que não consegue ler arquivos - o conteúdo está AQUI\n• Se solicitado importar dados, use as ferramentas de escrita (sempre pedindo confirmação)\n• Sugira ações proativas baseadas nos insights identificados\n• Se houver alertas, priorize-os na resposta\n${'='.repeat(60)}\n`;
+        
+        console.log('📎 Attachment context injected into system prompt:', attachmentContext.substring(0, 500) + '...');
       }
     }
 
@@ -998,6 +1002,21 @@ serve(async (req) => {
 ╚══════════════════════════════════════════════════════════════╝
 
 Imagine que você é um consultor sênior com 15+ anos de experiência em ESG, trabalhando para as Big 4. Você não apenas apresenta dados - você INTERPRETA, CONTEXTUALIZA e ACONSELHA com sabedoria estratégica e visão de negócios.
+
+📎 **PROCESSAMENTO DE ANEXOS E ARQUIVOS - CAPACIDADE CRÍTICA:**
+
+Você TEM acesso total ao conteúdo de arquivos anexados pelos usuários. O conteúdo é extraído e fornecido nas mensagens de contexto que começam com "🔍" ou "CONTEXTO DOS ARQUIVOS".
+
+**Quando você receber mensagens com contexto de arquivos:**
+1. **Para dados estruturados (Excel/CSV)**: ANALISE colunas, identifique padrões, calcule totais/médias, responda perguntas específicas sobre os dados
+2. **Para documentos de texto (PDF/Word)**: EXTRAIA informações-chave, relacione com dados do sistema, identifique licenças/certificados
+3. **Para imagens**: USE as descrições extraídas por OCR/Vision, identifique gráficos e dados visuais
+
+**COMPORTAMENTO OBRIGATÓRIO:**
+✅ SEMPRE reconheça explicitamente quando receber arquivos: "Analisando o arquivo [nome]...", "Identifiquei [X] linhas no arquivo..."
+✅ RESPONDA perguntas diretas sobre os dados (ex: "quantas linhas tem?" → "O arquivo tem 150 linhas")
+✅ USE as ferramentas bulk_import_* quando apropriado (sempre pedindo confirmação)
+❌ NUNCA diga que não consegue ler arquivos - você TEM acesso ao conteúdo extraído!
 
 **🎯 SUA MISSÃO:**
 Ajudar ${company?.name || 'a empresa'} a alcançar excelência em gestão ESG através de:
@@ -1386,6 +1405,20 @@ Lembre-se: Você é um PARCEIRO ESTRATÉGICO de ${company?.name || 'da empresa'}
 
     const data = await response.json();
     console.log('AI response:', JSON.stringify(data, null, 2));
+    
+    // Debug: Check if AI acknowledged attachments in response
+    if (attachmentContext) {
+      const assistantResponse = data.choices[0]?.message?.content || '';
+      const mentionedAttachments = assistantResponse.toLowerCase().includes('arquivo') || 
+                                   assistantResponse.toLowerCase().includes('planilha') ||
+                                   assistantResponse.toLowerCase().includes('documento') ||
+                                   assistantResponse.toLowerCase().includes('anexo') ||
+                                   assistantResponse.toLowerCase().includes('analisando');
+      console.log('🔍 AI Acknowledged Attachments in Response:', mentionedAttachments);
+      if (!mentionedAttachments) {
+        console.warn('⚠️ AI did NOT explicitly acknowledge attachments in response - possible context issue');
+      }
+    }
 
     // Check if AI wants to call tools
     const choice = data.choices[0];
