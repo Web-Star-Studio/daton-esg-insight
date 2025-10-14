@@ -923,8 +923,8 @@ Converse naturalmente! Exemplos:
         console.log('🧹 Clearing attachments after successful send');
         setAttachments([]);
         
-        if (convId) {
-          localStorage.removeItem(`chat_attachments_${convId}`);
+        if (conversationId) {
+          localStorage.removeItem(`chat_attachments_${conversationId}`);
           
           await supabase
             .from('ai_chat_conversations')
@@ -932,7 +932,7 @@ Converse naturalmente! Exemplos:
               last_message_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
-            .eq('id', convId);
+            .eq('id', conversationId);
         }
       }
 
