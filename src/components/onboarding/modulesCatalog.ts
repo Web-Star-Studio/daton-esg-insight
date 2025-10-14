@@ -74,3 +74,17 @@ export function humanizeModuleId(id: string): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
+
+/**
+ * Validates that all modules in the catalog are properly configured
+ * @returns true if all modules are valid
+ */
+export function validateModuleCatalog(): boolean {
+  return MODULES.every(module => {
+    const isValid = module.id && module.name && module.icon && module.category;
+    if (!isValid) {
+      console.error('❌ Módulo inválido no catálogo:', module);
+    }
+    return isValid;
+  });
+}

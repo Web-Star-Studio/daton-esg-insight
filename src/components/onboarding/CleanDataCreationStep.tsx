@@ -118,6 +118,16 @@ export function CleanDataCreationStep({
   onPrev 
 }: CleanDataCreationStepProps) {
 
+  // Filter out invalid module IDs
+  const validModules = selectedModules.filter(id => {
+    const module = getModuleById(id);
+    if (!module) {
+      console.warn(`⚠️ Módulo inválido detectado no onboarding: ${id}`);
+      return false;
+    }
+    return true;
+  });
+
   const handleConfigToggle = (moduleId: string, configKey: string, enabled: boolean) => {
     const currentConfig = moduleConfigurations[moduleId] || {};
     onConfigurationChange(moduleId, {
@@ -127,7 +137,7 @@ export function CleanDataCreationStep({
   };
 
   const handleQuickSetup = () => {
-    selectedModules.forEach(moduleId => {
+    validModules.forEach(moduleId => {
       const options = CONFIGURATION_OPTIONS[moduleId as keyof typeof CONFIGURATION_OPTIONS];
       if (options) {
         const quickConfig: Record<string, boolean> = {};
@@ -138,6 +148,25 @@ export function CleanDataCreationStep({
       }
     });
   };
+
+  // If no valid modules, show empty state
+  if (validModules.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-6 text-center">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold tracking-tight">Nenhum módulo selecionado</h2>
+            <p className="text-xs text-muted-foreground">
+              Volte e selecione pelo menos um módulo para continuar.
+            </p>
+          </div>
+          <Button onClick={onPrev} variant="outline" className="w-full">
+            Voltar para Seleção
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
@@ -172,9 +201,20 @@ export function CleanDataCreationStep({
 
         {/* Module Configurations */}
         <div className="space-y-4">
-          {selectedModules.map((moduleId) => {
+          {validModules.map((moduleId) => {
             const module = getModuleById(moduleId);
-            const Icon = module?.icon ?? FileCheck;
+            
+            // Get icon with robust fallback
+            const IconComponent = (() => {
+              try {
+                const mod = getModuleById(moduleId);
+                return mod?.icon && typeof mod.icon === 'function' ? mod.icon : FileCheck;
+              } catch (error) {
+                console.error(`❌ Erro ao obter ícone para módulo ${moduleId}:`, error);
+                return FileCheck;
+              }
+            })();
+            
             const moduleName = module?.name ?? humanizeModuleId(moduleId);
             const options = CONFIGURATION_OPTIONS[moduleId] || [];
             const config = moduleConfigurations[moduleId] || {};
@@ -182,7 +222,7 @@ export function CleanDataCreationStep({
             return (
               <div key={moduleId} className="space-y-2 p-3 rounded-lg border bg-card/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon className="h-3.5 w-3.5 text-primary" />
+                  <IconComponent className="h-3.5 w-3.5 text-primary" />
                   <h3 className="text-sm font-medium">{moduleName}</h3>
                 </div>
 

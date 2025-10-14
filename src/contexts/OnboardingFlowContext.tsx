@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { retrySupabaseOperation } from '@/utils/retryOperation';
 import { logDatabaseOperation, createPerformanceLogger } from '@/utils/formLogging';
+import { getModuleById } from '@/components/onboarding/modulesCatalog';
 
 interface ModuleConfig {
   [key: string]: any;
@@ -86,10 +87,21 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
 
       if (data) {
         console.log('✅ Onboarding data loaded:', data);
+        
+        // Filter out invalid module IDs from saved data
+        const validModules = (data.selected_modules as string[] || []).filter(id => {
+          const module = getModuleById(id);
+          if (!module) {
+            console.warn(`⚠️ Removendo módulo inválido do histórico: ${id}`);
+            return false;
+          }
+          return true;
+        });
+        
         setState(prev => ({
           ...prev,
           currentStep: data.current_step || 0,
-          selectedModules: data.selected_modules || [],
+          selectedModules: validModules,
           moduleConfigurations: (data.module_configurations as ModuleConfig) || {},
           isCompleted: data.is_completed || false
         }));
