@@ -8,15 +8,18 @@ import { cn } from '@/lib/utils';
 export function PredictiveInsightsWidget() {
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await getFullAnalysis(3);
         setAnalysis(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching predictive analysis:', error);
+        setError(error?.message || 'Erro ao carregar análise preditiva');
       } finally {
         setLoading(false);
       }
@@ -32,6 +35,26 @@ export function PredictiveInsightsWidget() {
           <div className="h-4 bg-muted rounded w-1/3"></div>
           <div className="h-20 bg-muted rounded"></div>
           <div className="h-20 bg-muted rounded"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h3 className="font-semibold">Análise Preditiva & Score de Risco</h3>
+        </div>
+        <div className="text-center py-8">
+          <AlertTriangle className="h-12 w-12 mx-auto text-yellow-600 mb-2" />
+          <p className="text-sm text-muted-foreground mb-2">
+            Não foi possível carregar a análise preditiva
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {error}
+          </p>
         </div>
       </Card>
     );

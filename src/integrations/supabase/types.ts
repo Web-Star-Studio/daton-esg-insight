@@ -1660,7 +1660,7 @@ export type Database = {
       chat_file_uploads: {
         Row: {
           company_id: string
-          conversation_id: string | null
+          conversation_id: string
           created_at: string
           error_message: string | null
           file_name: string
@@ -1675,7 +1675,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
-          conversation_id?: string | null
+          conversation_id: string
           created_at?: string
           error_message?: string | null
           file_name: string
@@ -1690,7 +1690,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
-          conversation_id?: string | null
+          conversation_id?: string
           created_at?: string
           error_message?: string | null
           file_name?: string

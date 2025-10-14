@@ -37,7 +37,7 @@ export function AlertsWidget() {
   const fetchAlerts = async () => {
     try {
       const { data, error } = await supabase
-        .from('intelligent_alerts' as any)
+        .from('license_alerts')
         .select('*')
         .eq('is_resolved', false)
         .order('severity', { ascending: false })
@@ -56,7 +56,7 @@ export function AlertsWidget() {
   const resolveAlert = async (alertId: string) => {
     try {
       const { error } = await supabase
-        .from('intelligent_alerts' as any)
+        .from('license_alerts')
         .update({ 
           is_resolved: true, 
           resolved_at: new Date().toISOString() 
@@ -90,7 +90,7 @@ export function AlertsWidget() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'intelligent_alerts'
+          table: 'license_alerts'
         },
         () => {
           fetchAlerts();
