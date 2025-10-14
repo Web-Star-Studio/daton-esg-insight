@@ -129,3 +129,6 @@ verify_jwt = false
 
 [functions.advanced-document-extractor]
 verify_jwt = false
+
+[functions.document-insights-generator]
+verify_jwt = true
