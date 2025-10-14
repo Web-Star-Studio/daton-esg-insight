@@ -93,9 +93,11 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // FALLBACK: If attachments array is empty but conversationId exists, try to reconstruct
-    let reconstructedAttachments = attachments || [];
-    if ((!attachments || attachments.length === 0) && conversationId) {
+    // FALLBACK SYSTEM: Ensure attachments are available even if missing from request
+    let attachmentsToUse = attachments || [];
+    
+    // FALLBACK 1: Try to reconstruct from database (chat_file_uploads)
+    if ((!attachmentsToUse || attachmentsToUse.length === 0) && conversationId) {
       console.log('⚠️ Attachments missing from request, attempting fallback...');
       
       // Try to get recent uploads from database
@@ -108,8 +110,8 @@ serve(async (req) => {
         .order('created_at', { ascending: false });
       
       if (recentUploads && recentUploads.length > 0) {
-        console.log(`📎 Fallback: Reconstructed ${recentUploads.length} attachments from database`);
-        reconstructedAttachments = recentUploads.map(upload => ({
+        console.log(`📎 Fallback DB: Reconstructed ${recentUploads.length} attachments from database`);
+        attachmentsToUse = recentUploads.map(upload => ({
           id: upload.id,
           name: upload.file_name,
           type: upload.file_type,
@@ -117,8 +119,39 @@ serve(async (req) => {
           path: upload.file_path,
           status: 'uploaded'
         }));
+      }
+    }
+    
+    // FALLBACK 2: Try to reconstruct from message metadata
+    if ((!attachmentsToUse || attachmentsToUse.length === 0) && conversationId) {
+      console.log('⚠️ Attempting secondary fallback from message metadata...');
+      
+      const { data: lastUserMessage } = await supabaseClient
+        .from('ai_chat_messages')
+        .select('metadata')
+        .eq('conversation_id', conversationId)
+        .eq('role', 'user')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (lastUserMessage?.metadata?.attachmentPaths?.length > 0) {
+        const paths = lastUserMessage.metadata.attachmentPaths;
+        const types = lastUserMessage.metadata.attachmentTypes || [];
+        const names = lastUserMessage.metadata.attachmentNames || [];
+        
+        attachmentsToUse = paths.map((path: string, idx: number) => ({
+          id: `metadata-${idx}`,
+          name: names[idx] || `Anexo ${idx + 1}`,
+          type: types[idx] || 'application/octet-stream',
+          size: 0,
+          path: path,
+          status: 'uploaded'
+        }));
+        
+        console.log(`📎 Fallback Metadata: Reconstructed ${attachmentsToUse.length} attachments from message metadata`);
       } else {
-        console.log('   No attachments found in fallback');
+        console.log('   No attachments found in message metadata');
       }
     }
 
@@ -818,13 +851,14 @@ serve(async (req) => {
 
     // Process attachments with advanced AI analysis
     let attachmentContext = '';
-    if (attachments && attachments.length > 0) {
+    if (attachmentsToUse && attachmentsToUse.length > 0) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📎 Backend advanced processing for', attachments.length, 'attachment(s)...');
+      console.log('📎 Backend advanced processing for', attachmentsToUse.length, 'attachment(s)...');
       console.log('   ℹ️  Note: Client-side fallback already injected basic content');
       console.log('   ⚙️  This backend pipeline adds: classification, extraction, suggestions');
+      console.log('   📦 Source:', attachments?.length > 0 ? 'Request body' : 'Fallback reconstruction');
       
-      for (const attachment of attachments) {
+      for (const attachment of attachmentsToUse) {
         try {
           console.log('📄 Analyzing:', attachment.name, `(${(attachment.size / 1024).toFixed(1)} KB)`);
           
