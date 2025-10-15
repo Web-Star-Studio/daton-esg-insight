@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Upload, FileText, BarChart3, Database } from 'lucide-react';
 import { DocumentAIAnalysis } from '@/components/intelligence/DocumentAIAnalysis';
 import { ExtractedDataManager } from '@/components/intelligence/ExtractedDataManager';
+import { UnclassifiedDataManager } from '@/components/intelligence/UnclassifiedDataManager';
+import { AutomationRulesManager } from '@/components/intelligence/AutomationRulesManager';
+import { DocumentAnalyticsDashboard } from '@/components/intelligence/DocumentAnalyticsDashboard';
 
 export default function IntelligenceCenter() {
   const [activeTab, setActiveTab] = useState('analyze');
@@ -15,23 +18,35 @@ export default function IntelligenceCenter() {
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <Brain className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight">Centro de Inteligência</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Centro de Inteligência Universal</h1>
           </div>
           <p className="text-muted-foreground">
-            Análise inteligente de documentos com IA
+            Sistema inteligente de análise de documentos com IA avançada
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-4xl grid-cols-5">
           <TabsTrigger value="analyze" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            Analisar Documento
+            Analisar
           </TabsTrigger>
           <TabsTrigger value="extracted" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Dados Extraídos
+            Extraídos
+          </TabsTrigger>
+          <TabsTrigger value="unclassified" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Não Classificados
+          </TabsTrigger>
+          <TabsTrigger value="automation" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Automação
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
           </TabsTrigger>
         </TabsList>
 
@@ -41,6 +56,18 @@ export default function IntelligenceCenter() {
 
         <TabsContent value="extracted" className="space-y-6">
           <ExtractedDataManager />
+        </TabsContent>
+
+        <TabsContent value="unclassified" className="space-y-6">
+          <UnclassifiedDataManager />
+        </TabsContent>
+
+        <TabsContent value="automation" className="space-y-6">
+          <AutomationRulesManager />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <DocumentAnalyticsDashboard />
         </TabsContent>
       </Tabs>
     </div>

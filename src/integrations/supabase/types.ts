@@ -381,6 +381,62 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_performance_metrics: {
+        Row: {
+          accuracy_rate: number | null
+          auto_approved_count: number | null
+          avg_confidence: number | null
+          avg_processing_time_seconds: number | null
+          company_id: string
+          created_at: string | null
+          documents_processed: number | null
+          fields_corrected: number | null
+          id: string
+          manual_review_count: number | null
+          metric_date: string
+          rejected_count: number | null
+          total_fields_extracted: number | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          auto_approved_count?: number | null
+          avg_confidence?: number | null
+          avg_processing_time_seconds?: number | null
+          company_id: string
+          created_at?: string | null
+          documents_processed?: number | null
+          fields_corrected?: number | null
+          id?: string
+          manual_review_count?: number | null
+          metric_date?: string
+          rejected_count?: number | null
+          total_fields_extracted?: number | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          auto_approved_count?: number | null
+          avg_confidence?: number | null
+          avg_processing_time_seconds?: number | null
+          company_id?: string
+          created_at?: string | null
+          documents_processed?: number | null
+          fields_corrected?: number | null
+          id?: string
+          manual_review_count?: number | null
+          metric_date?: string
+          rejected_count?: number | null
+          total_fields_extracted?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_performance_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       airport_factors: {
         Row: {
           aircraft_category: string
@@ -1179,6 +1235,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      automation_rules: {
+        Row: {
+          action_parameters: Json | null
+          action_type: string
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string | null
+          description: string | null
+          execution_count: number | null
+          id: string
+          is_active: boolean | null
+          last_executed_at: string | null
+          priority: number | null
+          rule_name: string
+          trigger_condition: Json
+          updated_at: string | null
+        }
+        Insert: {
+          action_parameters?: Json | null
+          action_type: string
+          company_id: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          priority?: number | null
+          rule_name: string
+          trigger_condition?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          action_parameters?: Json | null
+          action_type?: string
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          priority?: number | null
+          rule_name?: string
+          trigger_condition?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rules_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       benefit_enrollments: {
         Row: {
@@ -3014,6 +3136,56 @@ export type Database = {
           },
         ]
       }
+      document_patterns: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          created_at: string | null
+          failure_count: number | null
+          id: string
+          last_used_at: string | null
+          pattern_data: Json
+          pattern_signature: string
+          pattern_type: string
+          success_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          failure_count?: number | null
+          id?: string
+          last_used_at?: string | null
+          pattern_data?: Json
+          pattern_signature: string
+          pattern_type: string
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          failure_count?: number | null
+          id?: string
+          last_used_at?: string | null
+          pattern_data?: Json
+          pattern_signature?: string
+          pattern_type?: string
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_patterns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_permissions: {
         Row: {
           document_id: string | null
@@ -4323,6 +4495,80 @@ export type Database = {
             columns: ["preview_id"]
             isOneToOne: false
             referencedRelation: "extracted_data_preview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extraction_feedback: {
+        Row: {
+          accuracy_score: number | null
+          company_id: string
+          created_at: string | null
+          document_id: string | null
+          feedback_type: string
+          fields_corrected: number | null
+          id: string
+          issues: Json | null
+          preview_id: string | null
+          suggestions: string | null
+          time_to_review_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          accuracy_score?: number | null
+          company_id: string
+          created_at?: string | null
+          document_id?: string | null
+          feedback_type: string
+          fields_corrected?: number | null
+          id?: string
+          issues?: Json | null
+          preview_id?: string | null
+          suggestions?: string | null
+          time_to_review_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          accuracy_score?: number | null
+          company_id?: string
+          created_at?: string | null
+          document_id?: string | null
+          feedback_type?: string
+          fields_corrected?: number | null
+          id?: string
+          issues?: Json | null
+          preview_id?: string | null
+          suggestions?: string | null
+          time_to_review_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extraction_feedback_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_feedback_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_feedback_preview_id_fkey"
+            columns: ["preview_id"]
+            isOneToOne: false
+            referencedRelation: "extracted_data_preview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extraction_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -11890,6 +12136,76 @@ export type Database = {
             columns: ["process_step_id"]
             isOneToOne: false
             referencedRelation: "process_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unclassified_data: {
+        Row: {
+          ai_confidence: number | null
+          ai_suggestions: Json | null
+          company_id: string
+          created_at: string | null
+          data_category: string | null
+          decided_at: string | null
+          decided_by_user_id: string | null
+          document_id: string | null
+          extracted_data: Json
+          id: string
+          potential_tables: string[] | null
+          updated_at: string | null
+          user_decision: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_suggestions?: Json | null
+          company_id: string
+          created_at?: string | null
+          data_category?: string | null
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          document_id?: string | null
+          extracted_data?: Json
+          id?: string
+          potential_tables?: string[] | null
+          updated_at?: string | null
+          user_decision?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_suggestions?: Json | null
+          company_id?: string
+          created_at?: string | null
+          data_category?: string | null
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          document_id?: string | null
+          extracted_data?: Json
+          id?: string
+          potential_tables?: string[] | null
+          updated_at?: string | null
+          user_decision?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unclassified_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unclassified_data_decided_by_user_id_fkey"
+            columns: ["decided_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unclassified_data_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
