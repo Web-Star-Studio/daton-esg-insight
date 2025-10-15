@@ -515,9 +515,11 @@ Qual informação você precisa?`,
       }));
 
       // ============================================
-      // CLIENT-SIDE ATTACHMENT FALLBACK
-      // Parse attachments and inject content into conversation
+      // INTELLIGENT ATTACHMENT ANALYSIS
+      // Parse attachments and run AI analysis
       // ============================================
+      let analysisResults: any[] = [];
+      
       if (finalProcessedAttachments.length > 0) {
         console.log('🔍 Pre-processing attachments on client side for guaranteed context...');
         
@@ -579,6 +581,25 @@ Qual informação você precisa?`,
                   summary += `   ${idx + 1}. ${JSON.stringify(row).substring(0, 200)}${JSON.stringify(row).length > 200 ? '...' : ''}\n`;
                 });
               }
+              
+              // Run intelligent analysis on structured data
+              try {
+                console.log(`🧠 Running intelligent analysis on ${attachment.name}...`);
+                // Create a temporary File object for analysis
+                const blob = new Blob([JSON.stringify(parseResult.structured.rows)], { type: 'application/json' });
+                const file = new File([blob], attachment.name, { type: attachment.type });
+                
+                const analysis = await analyzeFile(file, attachment.path);
+                if (analysis) {
+                  analysisResults.push({
+                    fileName: attachment.name,
+                    ...analysis
+                  });
+                  console.log(`✅ Intelligent analysis complete for ${attachment.name}`);
+                }
+              } catch (analysisError) {
+                console.error(`❌ Analysis error for ${attachment.name}:`, analysisError);
+              }
             }
 
             // Text content
@@ -629,8 +650,8 @@ Qual informação você precisa?`,
           console.log(`✅ Injected ${attachmentSummaries.length} attachment summaries into conversation context`);
           console.log(`📄 Context preview:`, contextContent.substring(0, 300) + '...');
           
-          toast.success('Conteúdo dos anexos incluído na análise', {
-            description: `${successCount} de ${finalProcessedAttachments.length} arquivo(s) processado(s)`,
+          toast.success('Análise inteligente concluída', {
+            description: `${successCount} de ${finalProcessedAttachments.length} arquivo(s) analisado(s)`,
             duration: 4000
           });
         }
@@ -826,6 +847,37 @@ Qual informação você precisa?`,
         return;
       }
 
+      // Combine analysis results from attachments
+      const combinedActionCards: ActionCardData[] = [];
+      let combinedDataQuality: any = undefined;
+      
+      if (analysisResults.length > 0) {
+        // Merge action cards from all analyzed files
+        analysisResults.forEach(result => {
+          if (result.actionCards) {
+            combinedActionCards.push(...result.actionCards);
+          }
+        });
+        
+        // Use the first data quality or create a combined one
+        const qualityScores = analysisResults
+          .filter(r => r.dataQuality)
+          .map(r => r.dataQuality);
+        
+        if (qualityScores.length > 0) {
+          // Average the scores and combine issues
+          const avgScore = qualityScores.reduce((sum, q) => sum + q.score, 0) / qualityScores.length;
+          const allIssues = qualityScores.flatMap(q => q.issues || []);
+          const allRecommendations = qualityScores.flatMap(q => q.recommendations || []);
+          
+          combinedDataQuality = {
+            score: Math.round(avgScore),
+            issues: [...new Set(allIssues)],
+            recommendations: [...new Set(allRecommendations)]
+          };
+        }
+      }
+
       // Add regular assistant message
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -835,14 +887,16 @@ Qual informação você precisa?`,
         context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
         companyName: user?.company.name,
         insights: data.insights || [],
-        visualizations: data.visualizations || []
+        visualizations: data.visualizations || [],
+        actionCards: combinedActionCards.length > 0 ? combinedActionCards : undefined,
+        dataQuality: combinedDataQuality
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
       // Save assistant message to database
       if (conversationId) {
-        await supabase.from('ai_chat_messages').insert({
+        const insertData: any = {
           conversation_id: conversationId,
           company_id: companyId,
           user_id: user.id,
@@ -854,9 +908,12 @@ Qual informação você precisa?`,
             hasInsights: (data.insights?.length || 0) > 0,
             hasVisualizations: (data.visualizations?.length || 0) > 0,
             insights: data.insights || [],
-            visualizations: data.visualizations || []
+            visualizations: data.visualizations || [],
+            actionCards: combinedActionCards.length > 0 ? combinedActionCards : undefined,
+            dataQuality: combinedDataQuality
           }
-        });
+        };
+        await supabase.from('ai_chat_messages').insert(insertData);
       }
 
       // Update conversation timestamp
