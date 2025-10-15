@@ -49,7 +49,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     openConversation,
     renameConversation,
     deleteConversation,
-    conversationId
+    conversationId,
+    executeAction
   } = useChatAssistant();
 
   // Persist open state (non-embedded only)
@@ -209,6 +210,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               messages={messages}
               isLoading={isLoading}
               onQuickAction={handleQuickAction}
+              onExecuteAction={executeAction}
               containerHeight={embedded ? 500 : 420}
             />
           </div>

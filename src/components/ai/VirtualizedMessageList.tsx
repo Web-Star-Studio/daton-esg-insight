@@ -5,11 +5,13 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { ChatMessage as ChatMessageComponent } from '@/components/ai/ChatMessage';
 import { ChatMessage } from '@/hooks/useChatAssistant';
 import { useVirtualizedList } from '@/hooks/useVirtualizedList';
+import { ActionCardData } from '@/components/ai/ActionCard';
 
 interface VirtualizedMessageListProps {
   messages: ChatMessage[];
   isLoading: boolean;
   onQuickAction?: (prompt: string) => void;
+  onExecuteAction?: (action: ActionCardData) => void;
   containerHeight?: number; // If undefined, auto-measure available height
 }
 
@@ -19,6 +21,7 @@ export function VirtualizedMessageList({
   messages,
   isLoading,
   onQuickAction,
+  onExecuteAction,
   containerHeight = 500
 }: VirtualizedMessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +70,10 @@ export function VirtualizedMessageList({
             className="min-h-[100px]"
             {...(shouldVirtualize ? itemProps(index) : {})}
           >
-            <ChatMessageComponent message={message} />
+            <ChatMessageComponent 
+              message={message} 
+              onExecuteAction={onExecuteAction}
+            />
           </div>
         ))}
 

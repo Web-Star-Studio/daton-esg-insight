@@ -70,6 +70,7 @@ export interface UseChatAssistantReturn {
   renameConversation: (convId: string, newTitle: string) => Promise<void>;
   deleteConversation: (convId: string) => Promise<void>;
   conversationId: string | null;
+  executeAction: (action: ActionCardData) => Promise<void>;
 }
 
 export function useChatAssistant(): UseChatAssistantReturn {
@@ -130,6 +131,32 @@ Qual informação você precisa?`,
 
   // Use intelligent analysis hook
   const { analyzeFile, isAnalyzing, analysisProgress } = useIntelligentAnalysis();
+
+  // Handle action card execution
+  const handleExecuteAction = async (action: ActionCardData) => {
+    console.log('🎯 Executing action:', action.title);
+    
+    try {
+      // If action has direct execution function
+      if (action.action.directAction) {
+        await action.action.directAction();
+        toast.success('Ação executada', {
+          description: action.title
+        });
+        return;
+      }
+      
+      // Otherwise, send action prompt to AI
+      if (action.action.prompt) {
+        await sendMessage(action.action.prompt);
+      }
+    } catch (error) {
+      console.error('❌ Error executing action:', error);
+      toast.error('Erro ao executar ação', {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  };
 
   // Helper: Ensure conversation exists before operations
   const ensureConversationId = async (): Promise<string> => {
@@ -1228,6 +1255,7 @@ Qual informação você precisa?`,
     openConversation,
     renameConversation,
     deleteConversation,
-    conversationId
+    conversationId,
+    executeAction: handleExecuteAction
   };
 }
