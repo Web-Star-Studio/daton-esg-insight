@@ -534,7 +534,12 @@ const { user } = useAuth();
       status: 'uploading'
     };
 
-    setAttachments(prev => [...prev, newAttachment]);
+    setAttachments(prev => {
+      const updated = [...prev, newAttachment];
+      // Persist immediately to avoid losing during restores
+      persistAttachments(activeConvId, updated);
+      return updated;
+    });
 
     // Retry logic
     const maxRetries = 3;
@@ -693,7 +698,7 @@ const { user } = useAuth();
 
     try {
       // Create snapshot of attachments to prevent race conditions
-      let attachmentsSnapshot = [...(messageAttachments || attachments)];
+      let attachmentsSnapshot = [...attachments];
       console.log('📸 Attachments snapshot created:', {
         snapshotCount: attachmentsSnapshot.length,
         files: attachmentsSnapshot.map(a => ({ name: a.name, status: a.status, hasPath: !!a.path }))
@@ -706,7 +711,7 @@ const { user } = useAuth();
           await new Promise(r => setTimeout(r, 300));
           waited += 300;
           // refresh snapshot from latest state
-          attachmentsSnapshot = [...(messageAttachments || attachments)];
+          attachmentsSnapshot = [...attachments];
         }
         if (attachmentsSnapshot.some(att => att.status === 'uploading' || att.status === 'processing')) {
           toast.error('Uploads não concluídos', {
