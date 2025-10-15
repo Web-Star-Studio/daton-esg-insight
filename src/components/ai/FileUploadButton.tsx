@@ -181,8 +181,11 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
         {previewFile && (
           <AttachmentPreview
             file={previewFile}
-            onClose={handlePreviewClose}
-            onAnalyze={handlePreviewAnalyze}
+            onConfirm={() => {
+              onFileSelect([previewFile]);
+              handlePreviewClose();
+            }}
+            onCancel={handlePreviewClose}
           />
         )}
       </AnimatePresence>
