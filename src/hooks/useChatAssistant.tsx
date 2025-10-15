@@ -727,12 +727,11 @@ const { user } = useAuth();
         })));
       }
 
-      // ✅ Processar apenas anexos explicitamente adicionados pelo usuário
+      // ✅ Processar apenas anexos que foram feitos upload com sucesso
       const processedAttachments = attachmentsSnapshot
         .filter(att => att.status === 'uploaded' && att.path);
       
       const finalProcessedAttachments = processedAttachments
-        .filter(att => att.path) // Ensure path exists
         .map(att => ({
           name: att.name,
           type: att.type,
@@ -1035,30 +1034,42 @@ const { user } = useAuth();
         });
       }
 
-      // Clear attachments after successful send
-      if (processedAttachments.length > 0) {
-        console.log('✅ Clearing attachments after successful send');
+      // Update conversation timestamp
+      if (conversationId) {
+        await supabase
+          .from('ai_chat_conversations')
+          .update({
+            last_message_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', conversationId);
+      }
+      
+      // Clear attachments after successful send - apenas os que foram enviados
+      if (finalProcessedAttachments.length > 0) {
+        console.log('✅ Clearing sent attachments');
         
-        // Clear from state
-        setAttachments([]);
+        // Marcar anexos como enviados ao invés de remover
+        setAttachments(prev => 
+          prev.map(att => {
+            const wasSent = finalProcessedAttachments.some(sent => sent.path === att.path);
+            if (wasSent) {
+              return { ...att, status: 'sent' as const };
+            }
+            return att;
+          })
+        );
         
-        // Clear from localStorage
+        // Persist updated state
         if (conversationId) {
-          localStorage.removeItem(`${ATTACHMENTS_PREFIX}${conversationId}`);
+          const updatedAttachments = attachments.map(att => {
+            const wasSent = finalProcessedAttachments.some(sent => sent.path === att.path);
+            return wasSent ? { ...att, status: 'sent' as const } : att;
+          });
+          persistAttachments(conversationId, updatedAttachments);
         }
         
-        // Update conversation timestamp
-        if (conversationId) {
-          await supabase
-            .from('ai_chat_conversations')
-            .update({
-              last_message_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', conversationId);
-        }
-        
-        console.log('💾 Attachments cleared - ready for next message');
+        console.log('💾 Attachments marked as sent - ready for next message');
       }
 
     } catch (error) {
