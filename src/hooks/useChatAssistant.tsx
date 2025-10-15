@@ -6,8 +6,11 @@ import { toast } from 'sonner';
 import { PendingAction } from '@/components/ai/AIActionConfirmation';
 import { FileAttachmentData } from '@/types/attachment';
 import { useAttachments } from '@/hooks/useAttachments';
+import { useIntelligentAnalysis } from '@/hooks/useIntelligentAnalysis';
 import { logger } from '@/utils/logger';
 import { setupAutomaticCleanup, cleanupStaleCache } from '@/utils/memoryCleanup';
+import { ActionCardData } from '@/components/ai/ActionCard';
+import { VisualizationData } from '@/components/ai/ContextualVisualization';
 
 export interface ChatMessage {
   id: string;
@@ -18,7 +21,18 @@ export interface ChatMessage {
   marketInfo?: string;
   companyName?: string;
   insights?: any[];
-  visualizations?: any[];
+  visualizations?: VisualizationData[];
+  actionCards?: ActionCardData[];
+  dataQuality?: {
+    score: number;
+    issues: Array<{
+      type: 'missing' | 'outlier' | 'format' | 'duplicate' | 'inconsistent';
+      field: string;
+      description: string;
+      severity: 'low' | 'medium' | 'high';
+    }>;
+    recommendations: string[];
+  };
   suggestedActions?: Array<{
     type: 'navigate' | 'action';
     label: string;
@@ -113,6 +127,9 @@ Qual informação você precisa?`,
     companyId: user?.company.id,
     userId: user?.id
   });
+
+  // Use intelligent analysis hook
+  const { analyzeFile, isAnalyzing, analysisProgress } = useIntelligentAnalysis();
 
   // Helper: Ensure conversation exists before operations
   const ensureConversationId = async (): Promise<string> => {
@@ -359,6 +376,8 @@ Qual informação você precisa?`,
                 undefined,
               insights: metadata.insights || [],
               visualizations: metadata.visualizations || [],
+              actionCards: metadata.actionCards || [],
+              dataQuality: metadata.dataQuality,
               attachments: reconstructedAttachments
             };
           });
