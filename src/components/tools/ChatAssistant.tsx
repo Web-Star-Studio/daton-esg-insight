@@ -143,7 +143,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           >
             <Card className={embedded 
               ? "w-full h-full flex flex-col border-0 rounded-none shadow-none" 
-              : "fixed bottom-6 right-6 w-[420px] h-[600px] flex flex-col shadow-2xl z-50 border-2"
+              : "fixed bottom-6 right-6 w-[440px] h-[680px] flex flex-col shadow-2xl z-50 border-2 overflow-hidden"
             }>
           {/* Header - Simplified without animations */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
@@ -204,12 +204,12 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           </div>
 
           {/* Virtualized Messages - Optimized for performance */}
-          <div className={embedded ? "flex-1 overflow-hidden" : ""}>
+          <div className={embedded ? "flex-1 overflow-hidden" : "flex-1 overflow-hidden"}>
             <VirtualizedMessageList
               messages={messages}
               isLoading={isLoading}
               onQuickAction={handleQuickAction}
-              containerHeight={embedded ? 450 : 380}
+              containerHeight={embedded ? 500 : 420}
             />
           </div>
 

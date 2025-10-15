@@ -64,63 +64,18 @@ export function useChatAssistant(): UseChatAssistantReturn {
     {
       id: 'welcome',
       role: 'assistant',
-      content: `👋 **Olá! Sou o Assistente IA Elite do Daton**, seu consultor ESG com inteligência avançada.
+      content: `Olá! Sou o assistente IA de ESG da sua empresa. Como posso ajudar você hoje?
 
-**🎯 ACESSO TOTAL AO SISTEMA**
-Tenho acesso **completo e em tempo real** a TODOS os dados e módulos da sua empresa. Posso consultar, analisar e gerar insights sobre qualquer informação do sistema instantaneamente!
+Posso auxiliar com:
 
-**📎 ANÁLISE INTELIGENTE DE ARQUIVOS**
-Você pode anexar documentos (PDF, CSV, Excel, imagens, Word) e eu posso:
-✅ Extrair e classificar dados automaticamente com IA
-✅ Sugerir ações inteligentes baseadas no conteúdo
-✅ Cadastrar licenças, emissões, metas de PDFs/planilhas
-✅ Ler medidores, formulários e documentos em fotos
-✅ Processar relatórios, notas fiscais e certificados
-✅ Importar dados em massa com validação
+• 📊 Análise de dados e métricas ESG
+• 🎯 Gerenciamento de metas e progresso
+• 📋 Tarefas e coleta de dados
+• 🔍 Licenciamento e conformidade
+• ♻️ Inventário de emissões e resíduos
+• 💡 Sugestões e insights proativos
 
-**🔍 BUSCA E CONSULTA GLOBAL**
-Posso buscar e analisar instantaneamente:
-🌍 **Ambiental:** Emissões GEE, resíduos, licenças, água, energia
-👥 **Social:** Colaboradores, treinamentos, diversidade, segurança
-🏛️ **Governança:** Auditorias, compliance, políticas, certificações
-🎯 **Estratégia:** Metas ESG, OKRs, projetos, indicadores KPI
-📊 **Operacional:** Tarefas, fornecedores, documentos, relatórios GRI
-⚠️ **Riscos:** Riscos ESG, oportunidades, não conformidades
-
-**🧠 ANÁLISES AVANÇADAS**
-Capacidades de inteligência preditiva:
-📈 Análise de tendências e padrões temporais
-🔮 Previsão de métricas futuras com IA
-🔗 Descoberta de correlações entre indicadores
-⚖️ Comparação de períodos e benchmarking
-📋 Relatórios executivos com insights acionáveis
-
-**✏️ AÇÕES DE GERENCIAMENTO**
-Com sua confirmação, posso criar/atualizar:
-• Metas, OKRs, projetos e iniciativas estratégicas
-• Tarefas, cronogramas e agendamentos
-• Licenças, certificações e renovações
-• Emissões, resíduos, água e energia
-• Riscos, NCs, ações corretivas
-• Colaboradores, fornecedores, stakeholders
-• Indicadores, medições e relatórios
-• Auditorias, treinamentos e programas
-
-**💡 EXEMPLOS DE USO**
-Fale naturalmente comigo:
-🔍 "Busque tudo relacionado a 'carbono neutralidade'"
-📊 "Mostre o resumo executivo de todas as áreas ESG"
-📈 "Analise a tendência de emissões dos últimos 12 meses"
-⚠️ "Quais são os riscos críticos e o que recomendar?"
-🎯 "Como está o progresso das metas ambientais?"
-📋 "Liste os documentos de certificação ISO vencidos"
-👥 "Quantos colaboradores temos por departamento?"
-🔮 "Preveja nossas emissões para os próximos 6 meses"
-
-*💡 Dica: Anexe arquivos para análise automática com IA!*
-*✅ Todas as ações de escrita requerem sua confirmação.*
-
-**Como posso ajudar você hoje?** 🚀`,
+Qual informação você precisa?`,
       timestamp: new Date(),
     }
   ]);
