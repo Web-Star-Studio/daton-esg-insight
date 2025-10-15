@@ -1,20 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Trash2, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
 import { AIActionConfirmation } from '@/components/ai/AIActionConfirmation';
 import { QuickActions } from '@/components/ai/QuickActions';
 import { FileUploadButton } from '@/components/ai/FileUploadButton';
 import { FileAttachment } from '@/components/ai/FileAttachment';
-import { ProactiveInsights, ProactiveInsight } from '@/components/ai/ProactiveInsights';
-import { DataVisualization } from '@/components/ai/DataVisualization';
 import { ChatHistory } from '@/components/ai/ChatHistory';
-import ReactMarkdown from 'react-markdown';
-import { History, Plus } from 'lucide-react';
+import { VirtualizedMessageList } from '@/components/ai/VirtualizedMessageList';
+import { History, Plus, Sparkles } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 // Chat assistant component with AI action confirmation support
 interface ChatAssistantProps {
@@ -30,8 +27,6 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   });
   const [inputMessage, setInputMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   
   const { 
     messages, 
@@ -61,11 +56,6 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       localStorage.setItem('ai_chat_open', isOpen.toString());
     }
   }, [isOpen, embedded]);
-
-  // Auto-scroll to bottom using anchor ref (more reliable)
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages, isLoading]);
 
   // Hide quick actions after first user message
   useEffect(() => {
@@ -184,143 +174,23 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             </div>
           </div>
 
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.role === 'assistant' && (
-                    <Avatar className="h-8 w-8 bg-primary">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        AI
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  
-                  <div
-                    className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
-                  >
-                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown
-                        components={{
-                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1">{children}</li>,
-                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                          em: ({ children }) => <em className="italic">{children}</em>,
-                          code: ({ children }) => (
-                            <code className="bg-background/50 px-1 py-0.5 rounded text-xs">{children}</code>
-                          ),
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                    
-                    {/* Show attachments in user messages - Visual style like normal chat apps */}
-                    {message.role === 'user' && message.attachments && message.attachments.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {message.attachments.map((att, idx) => (
-                          <FileAttachment
-                            key={idx}
-                            file={{
-                              id: `msg-${message.id}-att-${idx}`,
-                              name: att.name,
-                              size: att.size,
-                              type: att.type || '',
-                              status: 'sent',
-                              path: att.path,
-                              createdAt: Date.now()
-                            }}
-                            canRemove={false}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Render proactive insights if present */}
-                    {message.insights && message.insights.length > 0 && (
-                      <div className="mt-3">
-                        <ProactiveInsights 
-                          insights={message.insights as ProactiveInsight[]} 
-                          onActionClick={handleQuickAction}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Render data visualizations if present */}
-                    {message.visualizations && message.visualizations.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {message.visualizations.map((viz: any, idx: number) => (
-                          <DataVisualization key={idx} data={viz} />
-                        ))}
-                      </div>
-                    )}
-                    
-                    {message.context && (
-                      <p className="text-xs text-muted-foreground mt-2 italic">
-                        {message.context}
-                      </p>
-                    )}
-                    
-                    {message.timestamp && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {message.timestamp.toLocaleTimeString('pt-BR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
-                    )}
-                  </div>
+          {/* Virtualized Messages - Optimized for performance */}
+          <VirtualizedMessageList
+            messages={messages}
+            isLoading={isLoading}
+            onQuickAction={handleQuickAction}
+            containerHeight={embedded ? 500 : 400}
+          />
 
-                  {message.role === 'user' && (
-                    <Avatar className="h-8 w-8 bg-secondary">
-                      <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-                        EU
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
-
-              {isLoading && (
-                <div className="flex gap-3 justify-start">
-                  <Avatar className="h-8 w-8 bg-primary">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      <Sparkles className="h-3 w-3" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="bg-muted rounded-lg px-4 py-2 flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">Analisando dados...</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Actions - Show only on first message */}
-              {showQuickActions && messages.length === 1 && !isLoading && (
-                <div className="mt-6 px-2">
-                  <QuickActions 
-                    onSelectAction={handleQuickAction} 
-                    currentPage={currentPage}
-                  />
-                </div>
-              )}
-              
-              {/* Bottom anchor for auto-scroll */}
-              <div ref={bottomRef} />
+          {/* Quick Actions - Show only on first message */}
+          {showQuickActions && messages.length === 1 && !isLoading && (
+            <div className="px-6 py-4 border-t">
+              <QuickActions 
+                onSelectAction={handleQuickAction} 
+                currentPage={currentPage}
+              />
             </div>
-          </ScrollArea>
+          )}
 
           {/* Input */}
           <div className="p-4 border-t space-y-3">

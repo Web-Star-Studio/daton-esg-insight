@@ -7,6 +7,7 @@ import { PendingAction } from '@/components/ai/AIActionConfirmation';
 import { FileAttachmentData } from '@/types/attachment';
 import { useAttachments } from '@/hooks/useAttachments';
 import { logger } from '@/utils/logger';
+import { setupAutomaticCleanup, cleanupStaleCache } from '@/utils/memoryCleanup';
 
 export interface ChatMessage {
   id: string;
@@ -135,6 +136,12 @@ Fale naturalmente comigo:
   // Storage keys for localStorage caching
   const CACHE_PREFIX = 'chat_messages_';
   const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+  const MAX_CACHED_MESSAGES = 100; // Limit cached messages
+
+  // Setup automatic cleanup on mount
+  useEffect(() => {
+    setupAutomaticCleanup();
+  }, []);
 
   // Use dedicated attachments hook
   const {
@@ -195,11 +202,11 @@ Fale naturalmente comigo:
 
   // Removed - now handled by useAttachments hook
 
-  // Backup de mensagens em localStorage para recuperação rápida
+  // Debounced backup of messages to localStorage
   useEffect(() => {
-    if (messages.length > 1 && conversationId) { // Mais que apenas boas-vindas
+    if (messages.length > 1 && conversationId) {
       const cacheData = {
-        messages: messages.map(m => ({
+        messages: messages.slice(-100).map(m => ({ // Only cache last 100 messages
           id: m.id,
           role: m.role,
           content: m.content,
@@ -209,10 +216,13 @@ Fale naturalmente comigo:
           visualizations: m.visualizations
         })),
         lastUpdate: new Date().toISOString(),
-        conversationId // Incluir conversationId para validação
+        conversationId
       };
-      localStorage.setItem(`${CACHE_PREFIX}${conversationId}`, JSON.stringify(cacheData));
-      console.log(`💾 Saved ${messages.length} messages to cache`);
+      
+      // Use debounced persist instead of direct localStorage write
+      import('@/utils/debouncedPersist').then(({ debouncedPersist }) => {
+        debouncedPersist.save(`${CACHE_PREFIX}${conversationId}`, cacheData);
+      });
     }
   }, [messages, conversationId]);
 
@@ -1107,7 +1117,20 @@ Qual informação você precisa?`,
     });
   };
 
-  // clearSentAttachments now provided by useAttachments hook
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Flush any pending persistence
+      import('@/utils/debouncedPersist').then(({ debouncedPersist }) => {
+        debouncedPersist.flush();
+      });
+      
+      // Cleanup stale caches periodically
+      cleanupStaleCache(CACHE_PREFIX, 7 * 24 * 60 * 60 * 1000);
+      
+      logger.info('🧹 Chat hook cleanup complete');
+    };
+  }, []);
 
   return {
     messages,
