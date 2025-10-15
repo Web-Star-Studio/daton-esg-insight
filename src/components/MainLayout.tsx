@@ -6,7 +6,6 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { TutorialProvider } from "@/contexts/TutorialContext"
 import { UnifiedTourProvider } from "@/contexts/UnifiedTourContext"
 import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain"
-import { UnifiedToolHub } from "@/components/tools/UnifiedToolHub"
 import { UnifiedTourSystem } from "@/components/tutorial/unified/UnifiedTourSystem"
 import { ProfessionalModalProvider } from "@/components/ui/professional-modal-manager"
 import { ChatAssistant } from "@/components/tools/ChatAssistant"
@@ -57,9 +56,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </main>
                 </div>
               </div>
-              
-              {/* Unified Tool Hub - Single entry point for all tools */}
-              <UnifiedToolHub />
               
               {/* Unified Tour System - Sistema consolidado de tours */}
               <UnifiedTourSystem />
