@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { PendingAction } from '@/components/ai/AIActionConfirmation';
-import type { FileAttachmentData } from '@/components/ai/FileAttachment';
+import { FileAttachmentData } from '@/types/attachment';
+import { useAttachments } from '@/hooks/useAttachments';
 import { logger } from '@/utils/logger';
 
 export interface ChatMessage {
@@ -125,18 +126,31 @@ Fale naturalmente comigo:
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [attachments, setAttachments] = useState<FileAttachmentData[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-const { user } = useAuth();
+  const { user } = useAuth();
   const hasInitializedRef = useRef(false);
-  const isEnsuring = useRef(false); // Prevent concurrent ensureConversationId calls
+  const isEnsuring = useRef(false);
 
   // Storage keys for localStorage caching
   const CACHE_PREFIX = 'chat_messages_';
-  const ATTACHMENTS_PREFIX = 'chat_attachments_';
   const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+  // Use dedicated attachments hook
+  const {
+    attachments,
+    isUploading,
+    addAttachment,
+    removeAttachment,
+    clearSentAttachments,
+    getReadyAttachments,
+    markAsSending,
+    markAsSent
+  } = useAttachments({
+    conversationId,
+    companyId: user?.company.id,
+    userId: user?.id
+  });
 
   // Helper: Ensure conversation exists before operations
   const ensureConversationId = async (): Promise<string> => {
@@ -179,15 +193,7 @@ const { user } = useAuth();
     }
   };
 
-  // Persist attachments to localStorage
-  const persistAttachments = (convId: string, atts: FileAttachmentData[]) => {
-    const storageKey = `${ATTACHMENTS_PREFIX}${convId}`;
-    const serializable = atts.map(({ id, name, size, type, status, path, error }) => ({
-      id, name, size, type, status, path, error
-    }));
-    localStorage.setItem(storageKey, JSON.stringify(serializable));
-    logger.debug(`Persisted ${serializable.length} attachments to localStorage`);
-  };
+  // Removed - now handled by useAttachments hook
 
   // Backup de mensagens em localStorage para recuperação rápida
   useEffect(() => {
@@ -210,36 +216,7 @@ const { user } = useAuth();
     }
   }, [messages, conversationId]);
 
-  // Restore attachments from localStorage when conversationId changes
-  useEffect(() => {
-    if (!conversationId) return;
-    
-    const storageKey = `${ATTACHMENTS_PREFIX}${conversationId}`;
-    const stored = localStorage.getItem(storageKey);
-    
-    if (stored) {
-      try {
-        const restoredAttachments: FileAttachmentData[] = JSON.parse(stored);
-        console.log(`📦 Restored ${restoredAttachments.length} attachments from localStorage for conversation ${conversationId}`);
-        
-        // Mark any "uploading" attachments as error (no File ref to resume)
-        const validatedAttachments = restoredAttachments.map(att => {
-          if (att.status === 'uploading' || att.status === 'processing') {
-            return {
-              ...att,
-              status: 'error' as const,
-              error: 'Upload interrompido. Por favor, reanexe o arquivo.'
-            };
-          }
-          return att;
-        });
-        
-        setAttachments(validatedAttachments);
-      } catch (error) {
-        logger.error('Failed to restore attachments', error);
-      }
-    }
-  }, [conversationId]);
+  // Removed - now handled by useAttachments hook
 
   // Initialize or load conversation (single-run with guard)
   useEffect(() => {
@@ -455,239 +432,7 @@ const { user } = useAuth();
     loadMessages();
   }, [conversationId]);
 
-  // Sanitize file names to prevent storage errors with special characters
-  const sanitizeFileName = (fileName: string): string => {
-    // Normalize Unicode characters (remove accents)
-    const normalized = fileName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    
-    // Replace spaces and special characters with underscore
-    const sanitized = normalized.replace(/[^a-zA-Z0-9._-]/g, '_');
-    
-    // Remove duplicate underscores
-    return sanitized.replace(/_+/g, '_');
-  };
-
-  const addAttachment = async (file: File) => {
-    // Prevent race condition: lock uploading state immediately
-    setIsUploading(true);
-    
-    // CRITICAL: Ensure conversation exists before upload
-    let activeConvId: string;
-    try {
-      activeConvId = await ensureConversationId();
-      console.log('📎 addAttachment: Using conversation', activeConvId);
-    } catch (error) {
-      console.error('❌ Failed to ensure conversation:', error);
-      toast.error('Erro ao preparar chat', {
-        description: 'Não foi possível iniciar a conversa para anexos'
-      });
-      setIsUploading(false);
-      return;
-    }
-    
-    // Validação de tipo de arquivo
-    const allowedTypes = [
-      'application/pdf',
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/webp'
-    ];
-
-    const allowedExtensions = ['.pdf', '.csv', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.webp'];
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-
-    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-      toast.error('Tipo de arquivo não suportado', {
-        description: 'Apenas PDF, CSV, Excel e imagens (JPG, PNG, WEBP) são permitidos.'
-      });
-      return;
-    }
-
-    // Validação de tamanho (20MB)
-    const maxSize = 20 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error('Arquivo muito grande', {
-        description: 'O tamanho máximo permitido é 20MB.'
-      });
-      return;
-    }
-
-    // Validação de nome do arquivo
-    if (file.name.length > 255) {
-      toast.error('Nome do arquivo muito longo', {
-        description: 'O nome do arquivo deve ter no máximo 255 caracteres.'
-      });
-      return;
-    }
-
-    const id = crypto.randomUUID();
-    const newAttachment: FileAttachmentData = {
-      id,
-      file,
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      status: 'uploading'
-    };
-
-    setAttachments(prev => {
-      const updated = [...prev, newAttachment];
-      // Persist immediately to avoid losing during restores
-      persistAttachments(activeConvId, updated);
-      return updated;
-    });
-
-    // Retry logic
-    const maxRetries = 3;
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) throw new Error('Usuário não autenticado');
-
-        // Upload to storage with sanitized filename
-        const sanitizedName = sanitizeFileName(file.name);
-        const timestamp = Date.now();
-        const filePath = `${authUser.id}/${timestamp}_${sanitizedName}`;
-
-        console.log(`Upload attempt ${attempt}/${maxRetries}:`, { filePath, size: file.size });
-
-        const { error: uploadError } = await supabase.storage
-          .from('chat-attachments')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Storage upload error:', uploadError);
-          throw new Error(`Erro no upload: ${uploadError.message}`);
-        }
-
-        // Verify upload
-        const { data: fileExists } = await supabase.storage
-          .from('chat-attachments')
-          .list(authUser.id, {
-            search: `${timestamp}_${sanitizedName}`
-          });
-
-        if (!fileExists || fileExists.length === 0) {
-          throw new Error('Falha na verificação do upload');
-        }
-
-        console.log('✅ Upload verified successfully');
-
-        // Log upload to database
-        const companyId = user?.company.id;
-        if (companyId) {
-          const { error: logError } = await supabase.from('chat_file_uploads').insert({
-            company_id: companyId,
-            user_id: authUser.id,
-            conversation_id: activeConvId,
-            file_name: file.name,
-            file_type: file.type,
-            file_size: file.size,
-            file_path: filePath,
-            processing_status: 'uploaded'
-          });
-
-          if (logError) {
-            console.error('⚠️ Error logging upload:', logError);
-            // Non-critical error, continue
-          } else {
-            console.log('✅ Upload logged to database');
-          }
-        }
-
-        // Update status to uploaded (skip processing status)
-        setAttachments(prev => {
-          const updated = prev.map(att => 
-            att.id === id ? { ...att, status: 'uploaded' as const, path: filePath } : att
-          );
-          // Persist to localStorage after upload completes
-          persistAttachments(activeConvId, updated);
-          return updated;
-        });
-
-        toast.success('Arquivo enviado com sucesso', {
-          description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`
-        });
-
-        console.log('✅ File ready to send:', { name: file.name, path: filePath });
-
-        return; // Success, exit retry loop
-
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Erro desconhecido');
-        console.error(`Upload attempt ${attempt} failed:`, lastError);
-
-        if (attempt < maxRetries) {
-          // Wait before retry (exponential backoff)
-          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          
-          toast.info(`Tentando novamente (${attempt + 1}/${maxRetries})...`, {
-            duration: 2000
-          });
-        }
-      }
-    }
-
-    // All retries failed
-    setAttachments(prev =>
-      prev.map(att => att.id === id ? { 
-        ...att, 
-        status: 'error', 
-        error: lastError?.message || 'Erro ao enviar arquivo após múltiplas tentativas' 
-      } : att)
-    );
-    
-    toast.error('Falha no upload', {
-      description: lastError?.message || 'Não foi possível enviar o arquivo. Tente novamente.'
-    });
-  };
-
-  const removeAttachment = (id: string) => {
-    if (isSending) {
-      console.warn('⚠️ Cannot remove attachments while sending - operation blocked');
-      toast.warning('Aguarde o envio da mensagem');
-      return;
-    }
-    
-    setAttachments(prev => {
-      const filtered = prev.filter(att => att.id !== id);
-      console.log('🗑️ Attachment removed:', id, '- Remaining:', filtered.length);
-      // Se não há mais anexos em upload, desabilitar isUploading
-      const anyUploading = filtered.some(att => att.status === 'uploading' || att.status === 'processing');
-      if (!anyUploading && isUploading) {
-        setIsUploading(false);
-      }
-      return filtered;
-    });
-  };
-
-  // Monitor attachment status changes to update isUploading
-  useEffect(() => {
-    // Don't update isUploading state during message sending
-    if (isSending) {
-      console.log('🔒 Upload status check skipped - message is being sent');
-      return;
-    }
-    
-    const anyUploading = attachments.some(att => 
-      att.status === 'uploading' || att.status === 'processing'
-    );
-    
-    if (anyUploading !== isUploading) {
-      setIsUploading(anyUploading);
-      console.log('🔄 Upload status changed:', anyUploading ? 'uploading' : 'ready');
-    }
-  }, [attachments, isSending, isUploading]);
+  // All attachment logic now handled by useAttachments hook
 
   const sendMessage = async (content: string, currentPage?: string, messageAttachments?: FileAttachmentData[]) => {
     if (!content.trim()) return;
@@ -697,61 +442,24 @@ const { user } = useAuth();
     console.log('🔒 Message sending started - attachments and state locked');
 
     try {
-      // Create snapshot of attachments to prevent race conditions
-      let attachmentsSnapshot = [...attachments];
-      console.log('📸 Attachments snapshot created:', {
-        snapshotCount: attachmentsSnapshot.length,
-        files: attachmentsSnapshot.map(a => ({ name: a.name, status: a.status, hasPath: !!a.path }))
-      });
+      // Get ready attachments from hook
+      const readyAttachments = getReadyAttachments();
       
-      // Wait for any uploads to finish (max 15s)
-      if (attachmentsSnapshot.length > 0) {
-        let waited = 0;
-        while (attachmentsSnapshot.some(att => att.status === 'uploading' || att.status === 'processing') && waited < 15000) {
-          await new Promise(r => setTimeout(r, 300));
-          waited += 300;
-          // refresh snapshot from latest state
-          attachmentsSnapshot = [...attachments];
-        }
-        if (attachmentsSnapshot.some(att => att.status === 'uploading' || att.status === 'processing')) {
-          toast.error('Uploads não concluídos', {
-            description: 'Finalize os envios dos arquivos e tente novamente.'
-          });
-          return;
-        }
+      console.log('📎 Ready attachments:', readyAttachments.length);
+      
+      if (readyAttachments.length > 0) {
+        // Mark as sending to lock state
+        markAsSending(readyAttachments.map(a => a.id));
       }
 
-      // Process attachments FIRST before adding user message
-      console.log('📎 Attachments to send:', attachmentsSnapshot.length);
-      if (attachmentsSnapshot.length > 0) {
-        console.log('📎 Attachment details:', attachmentsSnapshot.map(a => ({ 
-          name: a.name, 
-          status: a.status, 
-          hasPath: !!a.path,
-          path: a.path
-        })));
-      }
-
-      // ✅ Processar apenas anexos que foram feitos upload com sucesso
-      const processedAttachments = attachmentsSnapshot
-        .filter(att => att.status === 'uploaded' && att.path);
-      
-      const finalProcessedAttachments = processedAttachments
-        .map(att => ({
-          name: att.name,
-          type: att.type,
-          size: att.size,
-          path: att.path!
-        }));
+      const finalProcessedAttachments = readyAttachments.map(att => ({
+        name: att.name,
+        type: att.type,
+        size: att.size,
+        path: att.path!
+      }));
 
       console.log('📎 Final processed attachments for message:', finalProcessedAttachments.length);
-
-      if (attachmentsSnapshot.length > 0 && finalProcessedAttachments.length === 0) {
-        toast.error('Erro nos anexos', {
-          description: 'Nenhum arquivo foi enviado com sucesso. Por favor, tente novamente.'
-        });
-        return;
-      }
 
       // Add user message with attachment info
       const userMessage: ChatMessage = {
@@ -1050,30 +758,10 @@ const { user } = useAuth();
           .eq('id', conversationId);
       }
       
-      // Clear attachments after successful send - apenas os que foram enviados
+      // Mark attachments as sent using hook
       if (finalProcessedAttachments.length > 0) {
-        console.log('✅ Clearing sent attachments');
-        
-        // Marcar anexos como enviados ao invés de remover
-        setAttachments(prev => 
-          prev.map(att => {
-            const wasSent = finalProcessedAttachments.some(sent => sent.path === att.path);
-            if (wasSent) {
-              return { ...att, status: 'sent' as const };
-            }
-            return att;
-          })
-        );
-        
-        // Persist updated state
-        if (conversationId) {
-          const updatedAttachments = attachments.map(att => {
-            const wasSent = finalProcessedAttachments.some(sent => sent.path === att.path);
-            return wasSent ? { ...att, status: 'sent' as const } : att;
-          });
-          persistAttachments(conversationId, updatedAttachments);
-        }
-        
+        const sentIds = readyAttachments.map(a => a.id);
+        markAsSent(sentIds);
         console.log('💾 Attachments marked as sent - ready for next message');
       }
 
@@ -1160,7 +848,7 @@ Posso auxiliar com:
 Qual informação você precisa?`,
         timestamp: new Date()
       }]);
-      setAttachments([]);
+      // Attachments cleared automatically by useAttachments hook when conversation changes
       
       toast.success('Nova conversa iniciada');
     } catch (error) {
@@ -1419,24 +1107,7 @@ Qual informação você precisa?`,
     });
   };
 
-  // Clear only attachments that have been sent
-  const clearSentAttachments = () => {
-    setAttachments(prev => {
-      const filtered = prev.filter(att => att.status !== 'sent');
-      
-      if (conversationId && filtered.length === 0) {
-        localStorage.removeItem(`${ATTACHMENTS_PREFIX}${conversationId}`);
-      } else if (conversationId) {
-        persistAttachments(conversationId, filtered);
-      }
-      
-      return filtered;
-    });
-    
-    toast.success('Anexos enviados removidos', {
-      description: 'Os arquivos já enviados foram limpos da lista'
-    });
-  };
+  // clearSentAttachments now provided by useAttachments hook
 
   return {
     messages,

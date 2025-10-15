@@ -239,7 +239,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                               size: att.size,
                               type: att.type || '',
                               status: 'sent',
-                              path: att.path
+                              path: att.path,
+                              createdAt: Date.now()
                             }}
                             canRemove={false}
                           />

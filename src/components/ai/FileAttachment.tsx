@@ -1,17 +1,10 @@
 import { X, FileText, FileSpreadsheet, Image as ImageIcon, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FileAttachmentData, AttachmentStatus } from "@/types/attachment";
 
-export interface FileAttachmentData {
-  id: string;
-  file?: File;
-  name: string;
-  size: number;
-  type: string;
-  status: 'uploading' | 'uploaded' | 'processing' | 'processed' | 'sent' | 'error';
-  path?: string;
-  error?: string;
-}
+// Re-export for backwards compatibility
+export type { FileAttachmentData };
 
 interface FileAttachmentProps {
   file: FileAttachmentData;
@@ -32,14 +25,16 @@ function getFileIcon(type: string) {
   return FileText;
 }
 
-function getStatusIcon(status: FileAttachmentData['status']) {
+function getStatusIcon(status: AttachmentStatus) {
   switch (status) {
+    case 'pending':
     case 'uploading':
     case 'processing':
       return <Loader2 className="h-3 w-3 animate-spin text-orange-500" />;
     case 'uploaded':
-    case 'processed':
       return <CheckCircle2 className="h-3 w-3 text-green-600" />;
+    case 'sending':
+      return <Loader2 className="h-3 w-3 animate-spin text-blue-500" />;
     case 'sent':
       return <CheckCircle2 className="h-3 w-3 text-muted-foreground" />;
     case 'error':
@@ -47,16 +42,18 @@ function getStatusIcon(status: FileAttachmentData['status']) {
   }
 }
 
-function getStatusText(status: FileAttachmentData['status']) {
+function getStatusText(status: AttachmentStatus) {
   switch (status) {
+    case 'pending':
+      return 'Aguardando...';
     case 'uploading':
       return 'Enviando...';
     case 'uploaded':
       return 'Enviado ✓';
     case 'processing':
       return 'Analisando com IA...';
-    case 'processed':
-      return 'Pronto ✓';
+    case 'sending':
+      return 'Enviando à IA...';
     case 'sent':
       return 'Enviado à IA ✓';
     case 'error':
@@ -66,13 +63,13 @@ function getStatusText(status: FileAttachmentData['status']) {
 
 export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachmentProps) {
   const Icon = getFileIcon(file.type);
-  const isProcessing = file.status === 'uploading' || file.status === 'processing';
+  const isProcessing = ['pending', 'uploading', 'processing', 'sending'].includes(file.status);
 
   return (
     <div className={cn(
       "flex items-center gap-2 p-2.5 rounded-lg border bg-card text-card-foreground transition-all",
       file.status === 'error' && "border-destructive/50 bg-destructive/5",
-      file.status === 'processed' && "border-green-500/30 bg-green-500/5",
+      file.status === 'uploaded' && "border-green-500/30 bg-green-500/5",
       file.status === 'sent' && "border-border/50 bg-muted/30 opacity-70",
       isProcessing && "border-orange-500/30 bg-orange-500/5"
     )}>
@@ -80,7 +77,7 @@ export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachm
         <Icon className={cn(
           "h-4 w-4",
           file.status === 'error' && "text-destructive",
-          file.status === 'processed' && "text-green-600",
+          file.status === 'uploaded' && "text-green-600",
           file.status === 'sent' && "text-muted-foreground",
           isProcessing && "text-orange-500"
         )} />
@@ -98,7 +95,7 @@ export function FileAttachment({ file, onRemove, canRemove = true }: FileAttachm
           <span>{formatFileSize(file.size)}</span>
           <span>•</span>
           <span className={cn(
-            file.status === 'processed' && "text-green-600 font-medium",
+            file.status === 'uploaded' && "text-green-600 font-medium",
             file.status === 'sent' && "text-muted-foreground font-medium",
             isProcessing && "text-orange-600 font-medium"
           )}>{getStatusText(file.status)}</span>
