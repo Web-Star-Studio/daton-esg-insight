@@ -24,7 +24,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   const [isOpen, setIsOpen] = useState(() => {
     if (embedded) return true;
     const stored = localStorage.getItem('ai_chat_open');
-    return stored === 'true';
+    // Default to open on first use if no value stored
+    return stored === null ? true : stored === 'true';
   });
   const [inputMessage, setInputMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
