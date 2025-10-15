@@ -145,33 +145,19 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               ? "w-full h-full flex flex-col border-0 rounded-none shadow-none" 
               : "fixed bottom-6 right-6 w-[420px] h-[600px] flex flex-col shadow-2xl z-50 border-2"
             }>
-          {/* Header with gradient animation */}
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent relative overflow-hidden">
-            <motion.div 
-              className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            />
-            <div className="flex items-center gap-3 relative z-10">
-              <motion.div
-                animate={isLoading ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Avatar className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                  <AvatarFallback className="bg-transparent text-primary-foreground">
-                    <Sparkles className="h-5 w-5" />
-                  </AvatarFallback>
-                </Avatar>
-              </motion.div>
+          {/* Header - Simplified without animations */}
+          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 shadow-lg">
+                <AvatarFallback className="bg-transparent text-primary-foreground">
+                  <Sparkles className="h-5 w-5" />
+                </AvatarFallback>
+              </Avatar>
               <div>
-                <h3 className="font-semibold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h3 className="font-semibold text-lg">
                   Assistente ESG IA
                 </h3>
-                <motion.p 
-                  className="text-xs text-muted-foreground flex items-center gap-1.5"
-                  animate={isLoading ? { opacity: [0.5, 1, 0.5] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                   {isLoading ? (
                     <>
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -179,15 +165,11 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                     </>
                   ) : (
                     <>
-                      <motion.span
-                        className="h-2 w-2 rounded-full bg-success"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
+                      <span className="h-2 w-2 rounded-full bg-success" />
                       <span>Online e pronto</span>
                     </>
                   )}
-                </motion.p>
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -209,7 +191,6 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               >
                 <Plus className="h-4 w-4" />
               </Button>
-              {/* Close button - Only show when not embedded */}
               {!embedded && (
                 <Button
                   variant="ghost"
@@ -247,21 +228,9 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             {/* Auto-send prompt for attachments */}
             <AnimatePresence>
               {attachments.length > 0 && !inputMessage.trim() && !isLoading && !isUploading && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-4 flex items-center justify-between shadow-sm"
-                >
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-3">
-                    <motion.span 
-                      className="text-2xl"
-                      animate={{ rotate: [0, 10, -10, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      📎
-                    </motion.span>
+                    <span className="text-2xl">📎</span>
                     <div>
                       <p className="text-sm font-semibold text-foreground">
                         Anexos prontos!
@@ -282,28 +251,19 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                     <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                     Analisar
                   </Button>
-                </motion.div>
+                </div>
               )}
             </AnimatePresence>
             
-            {/* File attachments preview with animations */}
+            {/* File attachments preview */}
             <AnimatePresence>
               {attachments.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-3"
-                >
+                <div className="space-y-3">
                   <div className="flex items-center justify-between px-1">
-                    <motion.span 
-                      className="text-xs font-semibold text-foreground flex items-center gap-2"
-                      initial={{ x: -10, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                    >
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-2">
                       <span className="text-base">📎</span>
                       Anexos ({attachments.length})
-                    </motion.span>
+                    </span>
                     <div className="flex gap-1">
                       {!isLoading && !isUploading && attachments.some(att => att.status === 'sent') && (
                         <Button
@@ -338,40 +298,26 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                     ))}
                   </AnimatePresence>
                   {isUploading && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-xs bg-gradient-to-br from-warning/10 to-warning/5 border border-warning/20 rounded-xl p-4 space-y-2"
-                    >
+                    <div className="text-xs bg-gradient-to-br from-warning/10 to-warning/5 border border-warning/20 rounded-xl p-4 space-y-2">
                       <p className="font-semibold text-warning flex items-center gap-2">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        >
-                          <Loader2 className="h-4 w-4" />
-                        </motion.div>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         Enviando e analisando arquivos...
                       </p>
                       <p className="text-warning/80">
                         A IA está processando os anexos para extrair informações relevantes.
                       </p>
-                    </motion.div>
+                    </div>
                   )}
-                </motion.div>
+                </div>
               )}
             </AnimatePresence>
             
             <div className="flex gap-2 items-end">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <FileUploadButton
-                  onFileSelect={handleFileSelect}
-                  isUploading={isUploading}
-                  disabled={isLoading || !conversationId}
-                />
-              </motion.div>
+              <FileUploadButton
+                onFileSelect={handleFileSelect}
+                isUploading={isUploading}
+                disabled={isLoading || !conversationId}
+              />
               
               <div className="flex-1 relative">
                 <Textarea
@@ -384,43 +330,34 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                 />
               </div>
               
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
+                onClick={handleSendMessage}
+                disabled={isLoading || isUploading || !inputMessage.trim()}
+                size="icon"
+                className="h-[60px] w-[60px] rounded-xl shadow-lg hover:shadow-xl bg-gradient-to-br from-primary to-primary/90 transition-all"
+                title={isUploading ? 'Aguarde o upload dos anexos' : 'Enviar mensagem'}
               >
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || isUploading || !inputMessage.trim()}
-                  size="icon"
-                  className="h-[60px] w-[60px] rounded-xl shadow-lg hover:shadow-xl bg-gradient-to-br from-primary to-primary/90 transition-all"
-                  title={isUploading ? 'Aguarde o upload dos anexos' : 'Enviar mensagem'}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
-              </motion.div>
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
+              </Button>
             </div>
             
-            <motion.p 
-              className="text-xs text-center mt-2"
-              animate={isUploading ? { opacity: [0.5, 1, 0.5] } : {}}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
+            <p className="text-xs text-center mt-2 text-muted-foreground">
               {isUploading ? (
                 <span className="text-warning font-semibold flex items-center justify-center gap-2">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Aguarde o upload dos anexos...
                 </span>
               ) : (
-                <span className="text-muted-foreground">
+                <span>
                   Pressione <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Enter</kbd> para enviar, 
                   <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono ml-1">Shift+Enter</kbd> para nova linha
                 </span>
               )}
-            </motion.p>
+            </p>
           </div>
             </Card>
           </motion.div>
