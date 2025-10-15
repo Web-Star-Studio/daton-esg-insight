@@ -1,7 +1,9 @@
-import { Paperclip, Loader2 } from "lucide-react";
+import { Paperclip, Loader2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { AttachmentPreview } from "./AttachmentPreview";
+import { AnimatePresence } from "framer-motion";
 
 interface FileUploadButtonProps {
   onFileSelect: (files: File[]) => void;
@@ -25,6 +27,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUploadButtonProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     // Validar tipo de arquivo
@@ -103,8 +106,11 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
       });
     }
 
-    // Processar arquivos válidos
-    if (validFiles.length > 0) {
+    // Se apenas um arquivo válido, mostrar preview
+    if (validFiles.length === 1 && canPreview(validFiles[0])) {
+      setPreviewFile(validFiles[0]);
+    } else if (validFiles.length > 0) {
+      // Múltiplos arquivos, processar diretamente
       console.log(`Uploading ${validFiles.length} valid file(s):`, validFiles.map(f => f.name));
       
       toast({
@@ -119,6 +125,26 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const canPreview = (file: File): boolean => {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    return ['csv', 'xlsx', 'xls', 'pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext || '');
+  };
+
+  const handlePreviewClose = () => {
+    setPreviewFile(null);
+  };
+
+  const handlePreviewAnalyze = (suggestions: string[]) => {
+    if (previewFile) {
+      onFileSelect([previewFile]);
+      toast({
+        title: "Arquivo enviado para análise",
+        description: `${suggestions.length} sugestões detectadas`,
+        duration: 3000
+      });
     }
   };
 
@@ -140,8 +166,8 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
         size="icon"
         onClick={() => fileInputRef.current?.click()}
         disabled={disabled || isUploading}
-        className="shrink-0"
-        title="Anexar arquivo"
+        className="shrink-0 hover:bg-primary/10 transition-colors"
+        title="Anexar arquivo (com preview inteligente)"
       >
         {isUploading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -149,6 +175,17 @@ export function FileUploadButton({ onFileSelect, isUploading, disabled }: FileUp
           <Paperclip className="h-4 w-4" />
         )}
       </Button>
+
+      {/* Intelligent Preview Modal */}
+      <AnimatePresence>
+        {previewFile && (
+          <AttachmentPreview
+            file={previewFile}
+            onClose={handlePreviewClose}
+            onAnalyze={handlePreviewAnalyze}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
