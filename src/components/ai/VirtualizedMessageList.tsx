@@ -1,5 +1,5 @@
 // Virtualized message list for optimized rendering of large chat histories
-import { useRef, useEffect, memo } from 'react';
+import { useRef, useEffect, memo, useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -13,7 +13,7 @@ interface VirtualizedMessageListProps {
   messages: ChatMessage[];
   isLoading: boolean;
   onQuickAction?: (prompt: string) => void;
-  containerHeight?: number;
+  containerHeight?: number; // If undefined, auto-measure available height
 }
 
 // Memoized message component for performance
@@ -144,12 +144,29 @@ export function VirtualizedMessageList({
   isLoading,
   onQuickAction,
   containerHeight = 500
-}: VirtualizedMessageListProps) {
+  }: VirtualizedMessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [measuredHeight, setMeasuredHeight] = useState<number>(containerHeight ?? 0);
+
+  // Measure available height when containerHeight is not provided
+  useEffect(() => {
+    if (containerHeight !== undefined) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => setMeasuredHeight(el.clientHeight);
+    update();
+
+    const ro = new ResizeObserver(() => update());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerHeight]);
+
+  const effectiveHeight = containerHeight ?? measuredHeight;
 
   // Use virtualization for large message lists (>20 messages)
-  const shouldVirtualize = messages.length > 20;
+  const shouldVirtualize = messages.length > 20 && effectiveHeight > 0;
   
   const {
     virtualItems,
@@ -160,7 +177,7 @@ export function VirtualizedMessageList({
   } = useVirtualizedList({
     items: messages,
     itemHeight: 150, // Approximate message height (increased for dynamic content)
-    containerHeight,
+    containerHeight: effectiveHeight || 0,
     overscan: 3,
     enabled: shouldVirtualize
   });

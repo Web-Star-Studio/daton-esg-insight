@@ -223,12 +223,14 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           </div>
 
           {/* Virtualized Messages - Optimized for performance */}
-          <VirtualizedMessageList
-            messages={messages}
-            isLoading={isLoading}
-            onQuickAction={handleQuickAction}
-            containerHeight={embedded ? 500 : 400}
-          />
+          <div className="flex-1 min-h-0">
+            <VirtualizedMessageList
+              messages={messages}
+              isLoading={isLoading}
+              onQuickAction={handleQuickAction}
+              containerHeight={embedded ? undefined : 400}
+            />
+          </div>
 
           {/* Quick Actions - Show only on first message */}
           {showQuickActions && messages.length === 1 && !isLoading && (
