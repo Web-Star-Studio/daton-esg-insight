@@ -204,7 +204,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           </div>
 
           {/* Virtualized Messages - Optimized for performance */}
-          <div className={embedded ? "flex-1 overflow-hidden" : "flex-1 overflow-hidden"}>
+          <div className="flex-1">
             <VirtualizedMessageList
               messages={messages}
               isLoading={isLoading}
