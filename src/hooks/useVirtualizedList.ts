@@ -39,16 +39,14 @@ export function useVirtualizedList<T>({
   if (!enabled) {
     return {
       virtualItems: items,
-      totalHeight: items.length * itemHeight,
+      totalHeight: 0,
       offsetY: 0,
       containerProps: {
         style: {},
         onScroll: () => {},
       },
-      itemProps: (index: number) => ({
-        style: {
-          height: `${itemHeight}px`,
-        },
+      itemProps: () => ({
+        style: {},
       }),
     };
   }

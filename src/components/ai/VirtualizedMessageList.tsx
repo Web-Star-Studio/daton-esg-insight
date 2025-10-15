@@ -159,7 +159,7 @@ export function VirtualizedMessageList({
     itemProps
   } = useVirtualizedList({
     items: messages,
-    itemHeight: 120, // Approximate message height
+    itemHeight: 150, // Approximate message height (increased for dynamic content)
     containerHeight,
     overscan: 3,
     enabled: shouldVirtualize
@@ -175,31 +175,28 @@ export function VirtualizedMessageList({
   return (
     <div 
       ref={containerRef}
-      className="flex-1 overflow-y-auto"
+      className="flex-1 overflow-y-auto p-4"
       {...(shouldVirtualize ? containerProps : {})}
     >
       <div 
-        className="space-y-4 p-4"
+        className="space-y-4"
         style={shouldVirtualize ? { 
           height: `${totalHeight}px`,
           position: 'relative'
         } : undefined}
       >
-        {shouldVirtualize && (
-          <div style={{ height: `${offsetY}px` }} />
-        )}
-        
-        {displayMessages.map((message) => (
+        {displayMessages.map((message, index) => (
           <div
             key={message.id}
-            {...(shouldVirtualize ? itemProps : {})}
+            className="min-h-[100px]"
+            {...(shouldVirtualize ? itemProps(index) : {})}
           >
             <MessageItem message={message} onQuickAction={onQuickAction} />
           </div>
         ))}
 
         {isLoading && (
-          <div className="flex gap-3 justify-start">
+          <div className="flex gap-3 justify-start animate-fade-in">
             <Avatar className="h-8 w-8 bg-primary">
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 <Sparkles className="h-3 w-3" />
