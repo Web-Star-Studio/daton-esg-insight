@@ -175,7 +175,7 @@ export function VirtualizedMessageList({
   return (
     <div 
       ref={containerRef}
-      className="flex-1 overflow-y-auto p-4"
+      className="h-full overflow-y-auto p-4"
       {...(shouldVirtualize ? containerProps : {})}
     >
       <div 
