@@ -31,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, companyId, conversationId, currentPage, confirmed, action, attachments, userContext } = await req.json();
+    const { messages, companyId, conversationId, currentPage, confirmed, action, attachments, userContext, stream } = await req.json();
     
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🚀 Daton AI Chat request received:');
@@ -40,6 +40,7 @@ serve(async (req) => {
     console.log('   • Current Page:', currentPage);
     console.log('   • Messages:', messages?.length);
     console.log('   • Confirmed Action:', confirmed);
+    console.log('   • Stream Mode:', stream);
     console.log('   • 📎 Attachment Count (from request):', attachments?.length || 0);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     
@@ -1472,10 +1473,11 @@ ${attachmentContext}`;
       systemPromptLength: systemPrompt.length,
       hasAttachmentContext: systemPrompt.includes('ANÁLISE COMPLETA DOS ARQUIVOS'),
       messageCount: messages.length,
-      attachmentContextIncluded: !!attachmentContext
+      attachmentContextIncluded: !!attachmentContext,
+      streamEnabled: stream
     });
 
-    // Call Lovable AI with tool calling
+    // Call Lovable AI with streaming support
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -1491,7 +1493,8 @@ ${attachmentContext}`;
         tools: tools,
         tool_choice: 'auto',
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 2000,
+        stream: stream || false
       }),
     });
 
@@ -1519,6 +1522,69 @@ ${attachmentContext}`;
       throw new Error(`AI API error: ${response.status}`);
     }
 
+    // Handle streaming response
+    if (stream && response.body) {
+      console.log('📡 Streaming mode enabled - forwarding SSE stream');
+      
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6);
+                  if (data === '[DONE]') {
+                    controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+                    continue;
+                  }
+                  
+                  try {
+                    const parsed = JSON.parse(data);
+                    const content = parsed.choices?.[0]?.delta?.content;
+                    
+                    if (content) {
+                      // Send token delta
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: content })}\n\n`));
+                    }
+                  } catch (e) {
+                    // Ignore parse errors in streaming
+                  }
+                }
+              }
+            }
+            
+            // Send completion marker
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ complete: true })}\n\n`));
+            controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+            controller.close();
+          } catch (error) {
+            console.error('Streaming error:', error);
+            controller.error(error);
+          }
+        }
+      });
+      
+      return new Response(readable, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // Non-streaming response (original logic)
     const data = await response.json();
     console.log('AI response:', JSON.stringify(data, null, 2));
     

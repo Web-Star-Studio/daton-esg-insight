@@ -641,7 +641,7 @@ Fale naturalmente comigo:
         content
       });
 
-      console.log('📤 Sending chat request to Daton AI...', {
+      console.log('📤 Sending chat request to Daton AI with streaming...', {
         hasAttachments: finalProcessedAttachments.length > 0,
         attachmentCount: finalProcessedAttachments.length,
         attachments: finalProcessedAttachments,
@@ -649,21 +649,122 @@ Fale naturalmente comigo:
         totalApiMessages: apiMessages.length
       });
 
-      // Call Daton AI Chat edge function
-      const { data, error } = await supabase.functions.invoke('daton-ai-chat', {
-        body: {
-          messages: apiMessages,
-          companyId,
-          conversationId,
-          currentPage: currentPage || 'dashboard',
-          attachments: finalProcessedAttachments.length > 0 ? finalProcessedAttachments : undefined,
-          userContext: {
-            userName: user.full_name,
-            companyName: user.company.name,
-            userRole: user.role
+      // Start placeholder assistant message for streaming
+      const assistantMessageId = `assistant-${Date.now()}`;
+      let accumulatedContent = '';
+      
+      const placeholderAssistantMessage: ChatMessage = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, placeholderAssistantMessage]);
+
+      // Call Daton AI Chat edge function with streaming
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/daton-ai-chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: apiMessages,
+            companyId,
+            conversationId,
+            currentPage: currentPage || 'dashboard',
+            attachments: finalProcessedAttachments.length > 0 ? finalProcessedAttachments : undefined,
+            userContext: {
+              userName: user.full_name,
+              companyName: user.company.name,
+              userRole: user.role
+            },
+            stream: true
+          })
+        }
+      );
+
+      if (!response.ok || !response.body) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Stream error:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to start stream');
+      }
+
+      // Process SSE stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = '';
+      let streamDone = false;
+      let data: any = null;
+      let error: any = null;
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        textBuffer += decoder.decode(value, { stream: true });
+
+        // Process line by line
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            
+            // Token content delta
+            if (parsed.delta) {
+              accumulatedContent += parsed.delta;
+              
+              // Update message in real-time
+              setMessages(prev => prev.map(msg => 
+                msg.id === assistantMessageId 
+                  ? { ...msg, content: accumulatedContent }
+                  : msg
+              ));
+            }
+            
+            // Final complete response with metadata
+            if (parsed.complete) {
+              data = parsed;
+            }
+          } catch {
+            // Incomplete JSON, buffer it
+            textBuffer = line + '\n' + textBuffer;
+            break;
           }
         }
-      });
+      }
+
+      // Flush remaining buffer
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split('\n')) {
+          if (!raw || raw.startsWith(':')) continue;
+          if (!raw.startsWith('data: ')) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.complete) {
+              data = parsed;
+            }
+          } catch { /* ignore */ }
+        }
+      }
 
       console.log('📨 Edge function response received:', { 
         hasData: !!data, 

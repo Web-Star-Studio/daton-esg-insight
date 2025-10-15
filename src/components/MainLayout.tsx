@@ -9,6 +9,7 @@ import { CleanOnboardingMain } from "@/components/onboarding/CleanOnboardingMain
 import { UnifiedToolHub } from "@/components/tools/UnifiedToolHub"
 import { UnifiedTourSystem } from "@/components/tutorial/unified/UnifiedTourSystem"
 import { ProfessionalModalProvider } from "@/components/ui/professional-modal-manager"
+import { ChatAssistant } from "@/components/tools/ChatAssistant"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -62,6 +63,9 @@ export function MainLayout({ children }: MainLayoutProps) {
               
               {/* Unified Tour System - Sistema consolidado de tours */}
               <UnifiedTourSystem />
+              
+              {/* AI Chat Assistant - Global floating chat */}
+              <ChatAssistant />
             </SidebarProvider>
           </ProfessionalModalProvider>
         )}
