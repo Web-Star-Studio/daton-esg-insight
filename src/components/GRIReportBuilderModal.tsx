@@ -22,11 +22,13 @@ import {
   Users, 
   Leaf, 
   Building2,
-  Eye
+  Eye,
+  Check
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { useGRIAutoSave } from "@/hooks/useGRIAutoSave";
 import { 
   GRIReport,
   GRIIndicatorData,
@@ -78,6 +80,44 @@ export function GRIReportBuilderModal({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<GRIReportSection | null>(null);
+
+  // Auto-save hook
+  const { 
+    scheduleAutoSave, 
+    forceSave, 
+    isSaving: isAutoSaving, 
+    lastSaveTime, 
+    saveStatus 
+  } = useGRIAutoSave({
+    report: {
+      ...report,
+      ceo_message: ceoMessage,
+      executive_summary: executiveSummary,
+      methodology: methodology,
+    },
+    onSaveSuccess: () => {
+      console.log('Auto-save successful');
+    },
+    onSaveError: (error) => {
+      console.error('Auto-save error:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Suas alterações não foram salvas automaticamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Trigger auto-save when metadata changes
+  useEffect(() => {
+    if (!isLoading) {
+      scheduleAutoSave({
+        ceo_message: ceoMessage,
+        executive_summary: executiveSummary,
+        methodology: methodology,
+      });
+    }
+  }, [ceoMessage, executiveSummary, methodology, isLoading, scheduleAutoSave]);
 
   useEffect(() => {
     if (isOpen && report.id) {
@@ -324,6 +364,32 @@ export function GRIReportBuilderModal({
 
   const renderOverview = () => (
     <div className="space-y-6">
+      {/* Auto-save status indicator */}
+      {saveStatus !== 'idle' && (
+        <Alert className={saveStatus === 'error' ? 'border-destructive' : 'border-success'}>
+          <AlertDescription className="flex items-center gap-2">
+            {saveStatus === 'saving' && (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Salvando automaticamente...
+              </>
+            )}
+            {saveStatus === 'saved' && (
+              <>
+                <Check className="h-4 w-4 text-success" />
+                Salvo automaticamente há {lastSaveTime ? new Date().getTime() - lastSaveTime.getTime() < 10000 ? 'poucos segundos' : 'alguns instantes' : ''}
+              </>
+            )}
+            {saveStatus === 'error' && (
+              <>
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                Erro ao salvar automaticamente
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

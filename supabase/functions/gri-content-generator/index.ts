@@ -8,8 +8,9 @@ const corsHeaders = {
 
 interface ContentRequest {
   reportId: string;
-  sectionKey: string;
-  contentType: string;
+  sectionKey?: string;
+  contentType?: string;
+  metadataType?: 'ceo_message' | 'executive_summary' | 'methodology';
   context?: string;
   regenerate?: boolean;
 }
@@ -46,9 +47,9 @@ Deno.serve(async (req) => {
     }
 
     const requestData: ContentRequest = await req.json();
-    const { reportId, sectionKey, contentType, context, regenerate } = requestData;
+    const { reportId, sectionKey, contentType, metadataType, context, regenerate } = requestData;
 
-    console.log('Generating content for:', { reportId, sectionKey, contentType, regenerate });
+    console.log('Generating content for:', { reportId, sectionKey, contentType, metadataType, regenerate });
 
     // Get company context
     const { data: profile } = await supabaseClient
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
     // Get company data for context
     const { data: company } = await supabaseClient
       .from('companies')
-      .select('name, cnpj')
+      .select('name, cnpj, sector, employees_count')
       .eq('id', profile.company_id)
       .single();
 
@@ -75,8 +76,33 @@ Deno.serve(async (req) => {
       .eq('id', reportId)
       .single();
 
-    // Generate content
-    const generatedContent = await generateContent(sectionKey, company?.name, report);
+    // Fetch comprehensive company data for context
+    const companyContext = await fetchCompanyData(supabaseClient, profile.company_id, report?.year);
+
+    // Generate content using AI
+    let generatedContent: string;
+    
+    if (metadataType) {
+      // Generate metadata content (CEO message, executive summary, methodology)
+      generatedContent = await generateMetadataContent(
+        metadataType,
+        company?.name || 'Organização',
+        report,
+        companyContext
+      );
+    } else if (sectionKey && contentType) {
+      // Generate section content
+      generatedContent = await generateContentWithAI(
+        sectionKey, 
+        contentType,
+        company?.name || 'Organização', 
+        report,
+        companyContext,
+        context
+      );
+    } else {
+      throw new Error('Either metadataType or sectionKey/contentType must be provided');
+    }
 
     // Log generation for analytics
     await supabaseClient
@@ -121,60 +147,438 @@ Deno.serve(async (req) => {
   }
 });
 
-async function generateContent(sectionKey: string, companyName?: string, report?: any): Promise<string> {
-  const templates: Record<string, string> = {
-    'organizational_profile': `${companyName || 'Nossa organização'} é uma empresa comprometida com práticas sustentáveis e responsabilidade corporativa. Fundada com o propósito de criar valor compartilhado, operamos em diversos setores mantendo sempre os mais altos padrões de ética e governança.
+// Fetch comprehensive company data for context
+async function fetchCompanyData(supabaseClient: any, companyId: string, year?: number) {
+  const currentYear = year || new Date().getFullYear();
+  
+  // Fetch emissions data
+  const { data: emissions } = await supabaseClient
+    .from('calculated_emissions')
+    .select('total_co2e, activity_data(emission_sources(scope, source_name))')
+    .gte('calculation_date', `${currentYear}-01-01`)
+    .lte('calculation_date', `${currentYear}-12-31`);
 
-Nossa estrutura organizacional é projetada para garantir eficiência operacional e transparência em todas as nossas atividades. Com sede no Brasil e operações distribuídas estrategicamente, atendemos clientes em múltiplos mercados, sempre com foco em sustentabilidade e inovação.
+  // Fetch employees data
+  const { data: employees } = await supabaseClient
+    .from('employees')
+    .select('id, gender, department, birth_date, status')
+    .eq('company_id', companyId)
+    .eq('status', 'Ativo');
 
-A cadeia de valor de ${companyName || 'nossa empresa'} engloba desde o relacionamento com fornecedores até a entrega final aos clientes, sempre buscando minimizar impactos ambientais e maximizar benefícios sociais em cada etapa do processo.`,
+  // Fetch goals
+  const { data: goals } = await supabaseClient
+    .from('goals')
+    .select('*')
+    .eq('company_id', companyId);
 
-    'strategy': `A estratégia de sustentabilidade de ${companyName || 'nossa organização'} está profundamente integrada ao nosso modelo de negócio e visão de longo prazo. Reconhecemos que o sucesso empresarial sustentável depende do equilíbrio entre performance econômica, responsabilidade ambiental e impacto social positivo.
+  // Fetch safety incidents
+  const { data: safetyIncidents } = await supabaseClient
+    .from('safety_incidents')
+    .select('*')
+    .eq('company_id', companyId)
+    .gte('incident_date', `${currentYear}-01-01`);
 
-Nossos objetivos estratégicos ESG para ${report?.year || new Date().getFullYear()} e anos subsequentes incluem a redução de emissões, o fortalecimento da governança corporativa, e o investimento contínuo em pessoas e comunidades. Estes objetivos não são apenas aspirações, mas compromissos concretos com metas mensuráveis e prazos definidos.
+  // Fetch training programs
+  const { data: trainingPrograms } = await supabaseClient
+    .from('training_programs')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('status', 'Ativo');
 
-Acreditamos que a sustentabilidade é um diferencial competitivo essencial no cenário empresarial atual. Por isso, investimos em inovação, tecnologia e capacitação para garantir que ${companyName || 'nossa empresa'} esteja preparada para os desafios e oportunidades do futuro sustentável.`,
+  // Fetch policies
+  const { data: policies } = await supabaseClient
+    .from('corporate_policies')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('status', 'Ativo');
 
-    'governance': `A governança corporativa de ${companyName || 'nossa organização'} é estruturada para garantir supervisão eficaz, tomada de decisões responsável e prestação de contas em todos os níveis. Nosso mais alto órgão de governança supervisiona ativamente questões de sustentabilidade, assegurando que estratégias ESG estejam alinhadas com objetivos de negócio.
+  // Calculate aggregated metrics
+  const totalEmissions = emissions?.reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0;
+  const employeeCount = employees?.length || 0;
+  const goalsCount = goals?.length || 0;
+  const activeGoals = goals?.filter(g => g.status === 'Em Andamento')?.length || 0;
+  const completedGoals = goals?.filter(g => g.status === 'Concluída')?.length || 0;
+  
+  return {
+    emissions: {
+      total: totalEmissions,
+      scope1: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 1).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
+      scope2: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 2).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
+      scope3: emissions?.filter(e => e.activity_data?.emission_sources?.scope === 3).reduce((sum, e) => sum + (e.total_co2e || 0), 0) || 0,
+    },
+    employees: {
+      total: employeeCount,
+      byGender: employees?.reduce((acc, e) => {
+        const gender = e.gender || 'Não informado';
+        acc[gender] = (acc[gender] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {},
+      byDepartment: employees?.reduce((acc, e) => {
+        const dept = e.department || 'Não informado';
+        acc[dept] = (acc[dept] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {},
+    },
+    goals: {
+      total: goalsCount,
+      active: activeGoals,
+      completed: completedGoals,
+      progressRate: goalsCount > 0 ? (completedGoals / goalsCount) * 100 : 0,
+    },
+    safety: {
+      incidents: safetyIncidents?.length || 0,
+      daysLost: safetyIncidents?.reduce((sum, i) => sum + (i.days_lost || 0), 0) || 0,
+    },
+    training: {
+      programs: trainingPrograms?.length || 0,
+    },
+    policies: {
+      total: policies?.length || 0,
+    },
+  };
+}
 
-A composição do nosso conselho reflete nosso compromisso com diversidade, independência e expertise em sustentabilidade. Contamos com membros que trazem perspectivas variadas e conhecimento especializado em questões ambientais, sociais e de governança, fortalecendo nossa capacidade de enfrentar desafios ESG complexos.
+// Generate metadata content (CEO message, executive summary, methodology)
+async function generateMetadataContent(
+  metadataType: 'ceo_message' | 'executive_summary' | 'methodology',
+  companyName: string,
+  report: any,
+  companyContext: any
+): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  const year = report?.year || new Date().getFullYear();
+  
+  if (!LOVABLE_API_KEY) {
+    console.warn('LOVABLE_API_KEY not configured, using metadata fallback');
+    return generateMetadataFallback(metadataType, companyName, year, companyContext);
+  }
 
-Processos formais de comunicação garantem que preocupações críticas, incluindo questões éticas e de sustentabilidade, sejam escaladas apropriadamente e tratadas com a devida urgência. A remuneração de executivos está parcialmente vinculada ao atingimento de metas ESG, demonstrando nosso compromisso com accountability em sustentabilidade.`,
+  const prompts: Record<string, { system: string; user: string }> = {
+    'ceo_message': {
+      system: 'Você é um especialista em comunicação corporativa de sustentabilidade. Gere uma mensagem do CEO/Presidente que seja inspiradora, autêntica e que demonstre comprometimento genuíno com sustentabilidade.',
+      user: `Gere uma mensagem do CEO/Presidente de ${companyName} para o relatório de sustentabilidade ${year}.
 
-    'stakeholder_engagement': `${companyName || 'Nossa organização'} reconhece a importância fundamental do engajamento contínuo com stakeholders para entender expectativas, identificar riscos e oportunidades, e construir relacionamentos de confiança de longo prazo. Identificamos e priorizamos stakeholders com base em sua influência e interesse em nossas operações e impactos.
+Dados da empresa:
+- ${companyContext.employees.total} funcionários
+- ${companyContext.goals.total} metas ESG (${companyContext.goals.completed} concluídas)
+- ${companyContext.emissions.total.toFixed(2)} tCO2e de emissões
+- ${companyContext.policies.total} políticas corporativas
 
-Nossos principais grupos de stakeholders incluem empregados, clientes, fornecedores, comunidades locais, investidores, órgãos reguladores e organizações da sociedade civil. Para cada grupo, desenvolvemos abordagens de engajamento adequadas, incluindo pesquisas, consultas, diálogos estruturados e canais de comunicação abertos.
+A mensagem deve:
+1. Ter tom pessoal e inspirador (2-3 parágrafos)
+2. Mencionar conquistas do ano
+3. Reconhecer desafios
+4. Reafirmar compromisso com sustentabilidade
+5. Integrar dados de forma natural`
+    },
+    'executive_summary': {
+      system: 'Você é um especialista em relatórios de sustentabilidade GRI. Gere um sumário executivo objetivo que apresente os principais destaques do relatório.',
+      user: `Gere um sumário executivo para o relatório GRI ${year} de ${companyName}.
 
-O feedback dos stakeholders influencia diretamente nossa estratégia de sustentabilidade e processos de tomada de decisão. Realizamos análise de materialidade anualmente, incorporando perspectivas de stakeholders para priorizar temas ESG mais relevantes. Mecanismos de reclamação e queixas estão disponíveis para garantir que preocupações sejam tratadas de forma justa e eficaz.`,
+Dados principais:
+- Funcionários: ${companyContext.employees.total}
+- Emissões totais: ${companyContext.emissions.total.toFixed(2)} tCO2e
+- Metas ESG: ${companyContext.goals.total} (${companyContext.goals.active} ativas)
+- Incidentes de segurança: ${companyContext.safety.incidents}
+- Programas de treinamento: ${companyContext.training.programs}
 
-    'material_topics': `A determinação de temas materiais de ${companyName || 'nossa organização'} segue uma abordagem rigorosa e inclusiva, considerando impactos econômicos, ambientais e sociais significativos e sua influência nas avaliações e decisões dos stakeholders. O processo inclui identificação de temas potenciais, avaliação de relevância e validação com stakeholders internos e externos.
+O sumário deve:
+1. Apresentar destaques principais (3-4 parágrafos)
+2. Incluir KPIs mais relevantes
+3. Mencionar conquistas e progressos
+4. Ser objetivo e factual
+5. Seguir estrutura clara`
+    },
+    'methodology': {
+      system: 'Você é um especialista em metodologias de relatório GRI Standards. Gere uma descrição clara e técnica da metodologia utilizada.',
+      user: `Gere uma seção de metodologia para o relatório GRI ${year} de ${companyName}.
 
-Nossa análise de materialidade para ${report?.year || new Date().getFullYear()} identificou temas prioritários que refletem onde a organização tem os maiores impactos e onde stakeholders expressam maior interesse. Estes temas incluem questões relacionadas a mudanças climáticas, gestão de recursos, diversidade e inclusão, governança ética e impactos na cadeia de valor.
+A seção deve explicar:
+1. Framework utilizado (GRI Standards)
+2. Processo de coleta de dados
+3. Período de reporte e limites
+4. Verificação e asseguração
+5. Princípios de qualidade aplicados
 
-A matriz de materialidade resultante demonstra a intersecção entre importância para stakeholders e significância dos impactos. Revisamos periodicamente nossos temas materiais para garantir que permaneçam relevantes à medida que contextos de negócio e expectativas de stakeholders evoluem. Cada tema material é reportado com transparência sobre limites, abordagens de gestão e indicadores de desempenho.`,
-
-    'economic_performance': `O desempenho econômico de ${companyName || 'nossa organização'} reflete nossa capacidade de gerar e distribuir valor de forma sustentável. No ano fiscal ${report?.year || new Date().getFullYear()}, geramos valor econômico direto através de receitas operacionais, distribuindo este valor entre stakeholders através de custos operacionais, salários e benefícios, pagamentos a provedores de capital, investimentos comunitários e impostos.
-
-Reconhecemos as implicações financeiras das mudanças climáticas e questões ambientais em nosso modelo de negócio. Identificamos riscos relacionados a regulamentações mais rígidas, mudanças nas preferências dos consumidores e impactos físicos de eventos climáticos extremos. Simultaneamente, identificamos oportunidades em eficiência energética, produtos e serviços sustentáveis e novos mercados verdes.
-
-Mantemos compromisso com práticas de remuneração justa, com salários iniciais acima do mínimo local e benefícios abrangentes para empregados. Priorizamos fornecedores locais quando possível, contribuindo para desenvolvimento econômico regional. Investimentos em infraestrutura e serviços de benefício público demonstram nosso compromisso com prosperidade compartilhada.`,
-
-    'environmental_performance': `${companyName || 'Nossa organização'} está comprometida com gestão ambiental responsável e redução contínua de nossos impactos. Monitoramos cuidadosamente o uso de materiais, priorizando insumos renováveis e reciclados quando viável. Nossa estratégia de economia circular busca minimizar resíduos e maximizar a vida útil de produtos e materiais.
-
-O consumo de energia e as emissões de gases de efeito estufa são áreas de foco prioritário. Quantificamos emissões de Escopo 1 (diretas), Escopo 2 (energia adquirida) e Escopo 3 (cadeia de valor), estabelecendo metas de redução ambiciosas mas realistas. Investimos em eficiência energética, energias renováveis e tecnologias limpas para descarbonizar nossas operações.
-
-A gestão da água é crítica para nossa operação e para o meio ambiente. Medimos consumo de água, avaliamos riscos hídricos e implementamos iniciativas de eficiência e reciclagem. Protegemos a biodiversidade em áreas onde operamos, realizando avaliações de impacto e implementando medidas de mitigação. Mantemos conformidade rigorosa com legislação ambiental e investimos continuamente em proteção ambiental.`,
-
-    'social_performance': `A força de trabalho de ${companyName || 'nossa organização'} é nosso ativo mais valioso. Promovemos diversidade, equidade e inclusão em todos os níveis organizacionais, reconhecendo que equipes diversas são mais inovadoras e eficazes. Monitoramos indicadores de diversidade por gênero, idade, etnia e outros fatores relevantes, estabelecendo metas progressivas de representatividade.
-
-A saúde e segurança dos empregados é prioridade absoluta. Mantemos programas robustos de segurança ocupacional, medimos taxas de lesões e doenças ocupacionais, e investimos continuamente em prevenção e cultura de segurança. Oferecemos benefícios abrangentes incluindo planos de saúde, aposentadoria, licenças parentais e programas de bem-estar.
-
-Investimos significativamente em desenvolvimento de pessoas através de treinamento e programas de capacitação. A média de horas de treinamento por empregado reflete nosso compromisso com crescimento profissional contínuo. Respeitamos rigorosamente direitos humanos, mantemos políticas de não discriminação e avaliamos fornecedores usando critérios sociais. Engajamos ativamente com comunidades locais, investindo em projetos de desenvolvimento social que geram valor compartilhado.`
+Use 3-4 parágrafos técnicos mas claros.`
+    }
   };
 
-  return templates[sectionKey] || `Conteúdo gerado para a seção ${sectionKey}. Este é um texto de demonstração que seria substituído por conteúdo gerado por IA em produção.
+  const prompt = prompts[metadataType];
+  if (!prompt) {
+    return generateMetadataFallback(metadataType, companyName, year, companyContext);
+  }
 
-${companyName || 'A empresa'} mantém compromisso com práticas sustentáveis e transparência em seus relatórios de sustentabilidade seguindo os padrões GRI Standards.
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: prompt.system },
+          { role: 'user', content: prompt.user }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500,
+      }),
+    });
 
-Para o ano de ${report?.year || new Date().getFullYear()}, continuamos desenvolvendo nossas práticas ESG e reportando nosso progresso de forma clara e mensurável.`;
+    if (!response.ok) {
+      throw new Error(`AI generation failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.choices?.[0]?.message?.content || generateMetadataFallback(metadataType, companyName, year, companyContext);
+
+  } catch (error) {
+    console.error('Error generating metadata with AI:', error);
+    return generateMetadataFallback(metadataType, companyName, year, companyContext);
+  }
+}
+
+// Fallback for metadata generation
+function generateMetadataFallback(
+  metadataType: string,
+  companyName: string,
+  year: number,
+  companyContext: any
+): string {
+  const templates: Record<string, string> = {
+    'ceo_message': `É com grande satisfação que apresento o Relatório de Sustentabilidade ${year} de ${companyName}. Este documento reflete nosso compromisso contínuo com práticas empresariais responsáveis e transparentes.
+
+No ano de ${year}, avançamos significativamente em nossas iniciativas ESG, com ${companyContext.goals.completed} metas concluídas e ${companyContext.employees.total} colaboradores engajados em nossa jornada sustentável. Reconhecemos os desafios que ainda temos pela frente, especialmente no que diz respeito à gestão de emissões (${companyContext.emissions.total.toFixed(2)} tCO2e) e à implementação de práticas cada vez mais sustentáveis.
+
+Seguiremos trabalhando incansavelmente para criar valor compartilhado, equilibrando crescimento econômico com responsabilidade ambiental e social. Este relatório é uma demonstração de nossa transparência e accountability perante todos os nossos stakeholders.`,
+
+    'executive_summary': `O Relatório de Sustentabilidade ${year} de ${companyName} apresenta nosso desempenho ESG de forma abrangente e transparente, seguindo os padrões GRI Standards.
+
+Principais destaques do período:
+• ${companyContext.employees.total} colaboradores em nossa força de trabalho
+• ${companyContext.emissions.total.toFixed(2)} tCO2e de emissões totais de GEE
+• ${companyContext.goals.total} metas ESG estabelecidas (${companyContext.goals.completed} concluídas)
+• ${companyContext.safety.incidents} incidentes de segurança registrados
+• ${companyContext.training.programs} programas de treinamento ativos
+
+Este relatório demonstra nosso compromisso com melhoria contínua e prestação de contas, fornecendo informações relevantes para tomada de decisão de nossos stakeholders.`,
+
+    'methodology': `Este relatório foi elaborado em conformidade com os GRI Standards, o framework mais amplamente utilizado globalmente para relatórios de sustentabilidade. O período de reporte compreende o ano calendário de ${year}.
+
+Os dados apresentados foram coletados através de sistemas internos de gestão, validados por responsáveis de área e consolidados pela equipe de sustentabilidade. Processos de controle de qualidade foram aplicados para garantir precisão e completude das informações. Quando dados precisos não estavam disponíveis, utilizamos estimativas conservadoras claramente identificadas no relatório.
+
+Os limites organizacionais do relatório incluem todas as operações de ${companyName}, abrangendo ${companyContext.employees.total} colaboradores. Dados de emissões de Escopo 3 podem incluir estimativas baseadas em fatores de emissão setoriais quando dados primários de terceiros não estão disponíveis.`,
+  };
+
+  return templates[metadataType] || `Conteúdo de ${metadataType} para ${companyName} - ${year}.`;
+}
+
+// Generate content using Lovable AI
+async function generateContentWithAI(
+  sectionKey: string,
+  contentType: string,
+  companyName: string,
+  report: any,
+  companyContext: any,
+  additionalContext?: string
+): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  
+  if (!LOVABLE_API_KEY) {
+    console.warn('LOVABLE_API_KEY not configured, using template fallback');
+    return generateFallbackContent(sectionKey, companyName, report, companyContext);
+  }
+
+  const systemPrompt = buildSystemPrompt(sectionKey, contentType);
+  const userPrompt = buildUserPrompt(sectionKey, companyName, report, companyContext, additionalContext);
+
+  console.log('Calling Lovable AI for content generation...');
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      if (response.status === 402) {
+        throw new Error('AI credits depleted. Please add credits to continue.');
+      }
+      
+      throw new Error(`AI generation failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const generatedText = result.choices?.[0]?.message?.content;
+    
+    if (!generatedText) {
+      console.warn('No content generated, using fallback');
+      return generateFallbackContent(sectionKey, companyName, report, companyContext);
+    }
+
+    console.log('Content generated successfully with AI');
+    return generatedText;
+
+  } catch (error) {
+    console.error('Error generating content with AI:', error);
+    return generateFallbackContent(sectionKey, companyName, report, companyContext);
+  }
+}
+
+// Build system prompt based on section and content type
+function buildSystemPrompt(sectionKey: string, contentType: string): string {
+  return `Você é um especialista em relatórios de sustentabilidade GRI Standards. 
+Sua tarefa é gerar conteúdo profissional, factual e bem estruturado para relatórios GRI.
+
+Diretrizes:
+- Use linguagem clara, objetiva e profissional
+- Integre dados quantitativos quando disponíveis
+- Siga as melhores práticas dos GRI Standards
+- Mantenha consistência com padrões de relatório de sustentabilidade
+- Foque em informação material e relevante
+- Use parágrafos bem estruturados
+- Evite jargão excessivo mas use terminologia técnica apropriada
+
+Tipo de conteúdo: ${contentType}
+Seção: ${sectionKey}`;
+}
+
+// Build user prompt with company data
+function buildUserPrompt(
+  sectionKey: string,
+  companyName: string,
+  report: any,
+  companyContext: any,
+  additionalContext?: string
+): string {
+  const year = report?.year || new Date().getFullYear();
+  
+  return `Gere conteúdo para a seção "${sectionKey}" do relatório GRI de sustentabilidade.
+
+Informações da Empresa:
+- Nome: ${companyName}
+- Ano do relatório: ${year}
+
+Dados disponíveis:
+- Emissões totais: ${companyContext.emissions.total.toFixed(2)} tCO2e
+  - Escopo 1: ${companyContext.emissions.scope1.toFixed(2)} tCO2e
+  - Escopo 2: ${companyContext.emissions.scope2.toFixed(2)} tCO2e
+  - Escopo 3: ${companyContext.emissions.scope3.toFixed(2)} tCO2e
+- Total de funcionários: ${companyContext.employees.total}
+- Metas ESG: ${companyContext.goals.total} (${companyContext.goals.active} ativas, ${companyContext.goals.completed} concluídas)
+- Incidentes de segurança: ${companyContext.safety.incidents}
+- Programas de treinamento: ${companyContext.training.programs}
+- Políticas corporativas: ${companyContext.policies.total}
+
+${additionalContext ? `Contexto adicional: ${additionalContext}` : ''}
+
+Gere um texto de 3-4 parágrafos bem estruturados que:
+1. Apresente a abordagem da empresa para este tema
+2. Integre os dados quantitativos fornecidos de forma natural
+3. Demonstre compromisso com melhoria contínua
+4. Seja específico e factual (baseado nos dados reais)
+5. Siga as diretrizes dos GRI Standards para esta seção
+
+Importante: Use apenas os dados fornecidos. Se um dado for zero ou ausente, mencione que está em fase de implementação ou desenvolvimento.`;
+}
+
+// Fallback content generation without AI
+function generateFallbackContent(
+  sectionKey: string,
+  companyName: string,
+  report: any,
+  companyContext: any
+): string {
+  const year = report?.year || new Date().getFullYear();
+  const templates: Record<string, string> = {
+    'organizational_profile': `${companyName} é uma organização comprometida com práticas sustentáveis e responsabilidade corporativa. Com ${companyContext.employees.total} funcionários, operamos mantendo os mais altos padrões de ética e governança.
+
+Nossa estrutura organizacional é projetada para garantir eficiência operacional e transparência em todas as nossas atividades. No ano de ${year}, fortalecemos nosso compromisso com sustentabilidade através de ${companyContext.policies.total} políticas corporativas ativas que guiam nossas operações diárias.
+
+A cadeia de valor engloba desde o relacionamento com fornecedores até a entrega final aos clientes, sempre buscando minimizar impactos ambientais e maximizar benefícios sociais em cada etapa do processo.`,
+
+    'strategy': `A estratégia de sustentabilidade de ${companyName} está profundamente integrada ao nosso modelo de negócio. Reconhecemos que o sucesso empresarial sustentável depende do equilíbrio entre performance econômica, responsabilidade ambiental e impacto social positivo.
+
+Com ${companyContext.goals.total} metas ESG estabelecidas (${companyContext.goals.active} ativas, ${companyContext.goals.completed} concluídas), demonstramos compromisso concreto com resultados mensuráveis. Estes objetivos não são apenas aspirações, mas compromissos com prazos definidos.
+
+Investimos em inovação, tecnologia e capacitação para garantir que ${companyName} esteja preparada para os desafios e oportunidades do futuro sustentável.`,
+
+    'governance': `A governança corporativa de ${companyName} é estruturada para garantir supervisão eficaz e prestação de contas. Com ${companyContext.policies.total} políticas corporativas ativas, nosso mais alto órgão de governança supervisiona ativamente questões de sustentabilidade.
+
+Processos formais de comunicação garantem que preocupações críticas, incluindo questões éticas e de sustentabilidade, sejam escaladas apropriadamente. A transparência e accountability são pilares fundamentais de nossa estrutura de governança.
+
+Mantemos conformidade rigorosa com regulamentações e padrões internacionais de governança, fortalecendo continuamente nossos mecanismos de controle e supervisão.`,
+
+    'stakeholder_engagement': `${companyName} reconhece a importância do engajamento contínuo com stakeholders. Identificamos e priorizamos stakeholders com base em sua influência e interesse em nossas operações e impactos.
+
+Nossos principais grupos incluem empregados (${companyContext.employees.total} colaboradores), clientes, fornecedores, comunidades locais, investidores e órgãos reguladores. Para cada grupo, desenvolvemos abordagens adequadas de engajamento.
+
+O feedback dos stakeholders influencia diretamente nossa estratégia. Realizamos análise de materialidade anualmente para priorizar temas ESG mais relevantes.`,
+
+    'material_topics': `A determinação de temas materiais de ${companyName} segue abordagem rigorosa e inclusiva, considerando impactos econômicos, ambientais e sociais significativos.
+
+Nossa análise para ${year} identificou temas prioritários que refletem onde temos maiores impactos e onde stakeholders expressam maior interesse. Estes incluem questões relacionadas a mudanças climáticas, gestão de recursos, diversidade e governança ética.
+
+Revisamos periodicamente nossos temas materiais para garantir relevância à medida que contextos e expectativas evoluem.`,
+
+    'economic_performance': `O desempenho econômico de ${companyName} reflete nossa capacidade de gerar e distribuir valor de forma sustentável. Em ${year}, geramos valor através de receitas operacionais e distribuímos entre stakeholders.
+
+Reconhecemos implicações financeiras das mudanças climáticas em nosso modelo de negócio. Identificamos riscos e oportunidades relacionados a regulamentações, preferências de consumidores e eficiência energética.
+
+Mantemos compromisso com práticas de remuneração justa e priorizamos fornecedores locais quando possível, contribuindo para desenvolvimento regional.`,
+
+    'environmental_performance': `${companyName} monitora rigorosamente seu desempenho ambiental. Em ${year}, nossas emissões totais foram de ${companyContext.emissions.total.toFixed(2)} tCO2e, distribuídas entre Escopo 1 (${companyContext.emissions.scope1.toFixed(2)} tCO2e), Escopo 2 (${companyContext.emissions.scope2.toFixed(2)} tCO2e) e Escopo 3 (${companyContext.emissions.scope3.toFixed(2)} tCO2e).
+
+Estamos implementando iniciativas de redução de emissões e eficiência energética como parte de nossa estratégia ambiental. Investimos em energias renováveis e tecnologias limpas para descarbonizar operações.
+
+Mantemos conformidade rigorosa com legislação ambiental e investimos continuamente em proteção ambiental e gestão responsável de recursos.`,
+
+    'social_performance': `A força de trabalho de ${companyName} conta com ${companyContext.employees.total} profissionais. Promovemos diversidade, equidade e inclusão em todos os níveis organizacionais.
+
+A saúde e segurança é prioridade absoluta, com ${companyContext.safety.incidents} incidentes registrados em ${year}. Investimos em desenvolvimento através de ${companyContext.training.programs} programas de treinamento ativos.
+
+Respeitamos rigorosamente direitos humanos, mantemos políticas de não discriminação e engajamos ativamente com comunidades locais em projetos de desenvolvimento social.`,
+
+    'ethics_integrity': `${companyName} mantém compromisso inabalável com ética e integridade em todas as operações. Com ${companyContext.policies.total} políticas corporativas ativas, estabelecemos padrões claros de conduta ética.
+
+Nosso código de ética e conduta é comunicado a todos os colaboradores e stakeholders. Mantemos mecanismos confidenciais para relato de preocupações éticas e irregularidades.
+
+Processos de due diligence garantem que parceiros e fornecedores compartilhem nossos valores éticos. Mantemos tolerância zero para corrupção, suborno e práticas antiéticas.`,
+
+    'reporting_practices': `Este relatório de sustentabilidade de ${companyName} para o ano de ${year} foi elaborado seguindo os GRI Standards, framework mais amplamente utilizado globalmente para relatórios de sustentabilidade.
+
+O período de reporte compreende ${year} e inclui dados consolidados de nossas operações. A verificação externa e asseguração de dados são práticas que estamos implementando progressivamente.
+
+Mantemos compromisso com transparência e melhoria contínua em nossas práticas de reporte, buscando sempre aumentar qualidade e completude das informações divulgadas.`,
+  };
+
+  return templates[sectionKey] || `${companyName} mantém compromisso com práticas sustentáveis na área de ${sectionKey}.
+
+No ano de ${year}, registramos os seguintes dados relevantes:
+- ${companyContext.employees.total} funcionários
+- ${companyContext.goals.total} metas ESG (${companyContext.goals.completed} concluídas)
+- ${companyContext.emissions.total.toFixed(2)} tCO2e de emissões totais
+- ${companyContext.policies.total} políticas corporativas ativas
+
+Continuamos desenvolvendo nossas práticas ESG e reportando nosso progresso de forma clara e mensurável conforme os padrões GRI.`;
 }
