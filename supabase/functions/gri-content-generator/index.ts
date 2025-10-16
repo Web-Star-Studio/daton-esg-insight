@@ -1,843 +1,180 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+interface ContentRequest {
+  reportId: string;
+  sectionKey: string;
+  contentType: string;
+  context?: string;
+  regenerate?: boolean;
+}
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    {
-      auth: {
-        persistSession: false,
-      },
-    }
-  );
-
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-
   try {
-    const { authorization } = Object.fromEntries(req.headers.entries());
-    
-    // Authenticate user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
-      authorization?.replace('Bearer ', '') || ''
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
     );
-    
-    if (authError || !user) {
-      console.error('Authentication error:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    // Verify user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    const requestData: ContentRequest = await req.json();
+    const { reportId, sectionKey, contentType, context, regenerate } = requestData;
+
+    console.log('Generating content for:', { reportId, sectionKey, contentType, regenerate });
+
+    // Get company context
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.company_id) {
+      throw new Error('Company not found');
+    }
+
+    // Get company data for context
+    const { data: company } = await supabaseClient
+      .from('companies')
+      .select('name, cnpj')
+      .eq('id', profile.company_id)
+      .single();
+
+    // Get report data
+    const { data: report } = await supabaseClient
+      .from('gri_reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+
+    // Generate content
+    const generatedContent = await generateContent(sectionKey, company?.name, report);
+
+    // Log generation for analytics
+    await supabaseClient
+      .from('ai_performance_metrics')
+      .insert({
+        company_id: profile.company_id,
+        metric_date: new Date().toISOString().split('T')[0],
+        documents_processed: 1,
+        auto_approved_count: 0,
+        manual_review_count: 1
       });
-    }
 
-    const { action, reportId, sectionKey, sectionType, regenerate, metadataType, format } = await req.json();
-    
-    console.log(`GRI content generator called with action: ${action}, reportId: ${reportId}`);
-
-    if (action === 'preview' || action === 'export') {
-      return await handleReportGeneration(supabaseClient, reportId, action, format);
-    } else if (metadataType) {
-      // Handle metadata generation
-      return await handleMetadataGeneration(supabaseClient, openaiApiKey!, reportId, metadataType!);
-    } else if (sectionKey && sectionType) {
-      return await handleSectionGeneration(supabaseClient, openaiApiKey!, reportId, sectionKey!, sectionType!, regenerate!);
-    } else {
-      // Legacy support for direct section generation
-      return await handleSectionGeneration(supabaseClient, openaiApiKey!, reportId, 'overview', 'Visão Geral', false);
-    }
+    return new Response(
+      JSON.stringify({ 
+        content: generatedContent,
+        metadata: {
+          sectionKey,
+          contentType,
+          generatedAt: new Date().toISOString(),
+          regenerated: regenerate || false
+        }
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
 
   } catch (error) {
-    console.error('Error in GRI content generator:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      details: error instanceof Error ? error.stack : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Error in gri-content-generator:', error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Internal server error',
+        details: error.toString()
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
   }
 });
 
-// Handle metadata generation (ceo_message, executive_summary, methodology)
-async function handleMetadataGeneration(supabaseClient: any, openaiApiKey: string, reportId: string, metadataType: string) {
-  console.log(`Generating metadata for type: ${metadataType}`);
-  
-  try {
-    // Fetch report data
-    const { data: report, error: reportError } = await supabaseClient
-      .from('gri_reports')
-      .select('*')
-      .eq('id', reportId)
-      .single();
-
-    if (reportError || !report) {
-      console.error('Error fetching report:', reportError);
-      return new Response(JSON.stringify({ error: 'Report not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Fetch company data separately
-    const { data: company, error: companyError } = await supabaseClient
-      .from('companies')
-      .select('name, sector')
-      .eq('id', report.company_id)
-      .single();
-
-    // Attach company data to report
-    report.companies = company;
-
-    // Generate content using AI
-    const content = await generateMetadataContent(openaiApiKey, report, metadataType);
-    
-    return new Response(JSON.stringify({ content }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Error in metadata generation:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-}
-
-async function handleSectionGeneration(supabaseClient: any, openaiApiKey: string, reportId: string, sectionKey: string, sectionType: string, regenerate: boolean) {
-  console.log(`Generating GRI content for section: ${sectionKey}, type: ${sectionType}`);
-  
-  try {
-    // Fetch report data
-    const { data: report, error: reportError } = await supabaseClient
-      .from('gri_reports')
-      .select('*')
-      .eq('id', reportId)
-      .single();
-
-    if (reportError || !report) {
-      console.error('Error fetching report:', reportError);
-      return new Response(JSON.stringify({ error: 'Report not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Fetch company data separately
-    const { data: company, error: companyError } = await supabaseClient
-      .from('companies')
-      .select('name, sector')
-      .eq('id', report.company_id)
-      .single();
-
-    // Attach company data to report
-    report.companies = company;
-
-    // Fetch relevant GRI indicators
-    const { data: indicators } = await supabaseClient
-      .from('gri_indicator_data')
-      .select(`
-        *,
-        gri_indicators_library (
-          code,
-          title,
-          description
-        )
-      `)
-      .eq('report_id', reportId);
-
-    // Fetch existing section content if not regenerating
-    let existingContent = null;
-    if (!regenerate) {
-      const { data: existingSection } = await supabaseClient
-        .from('gri_report_sections')
-        .select('content')
-        .eq('report_id', reportId)
-        .eq('section_key', sectionKey)
-        .single();
-      
-      existingContent = existingSection?.content;
-    }
-
-    // Generate content using AI
-    const content = await generateGRIContent(openaiApiKey, report, sectionKey, sectionType, indicators || [], existingContent);
-    
-    // Update the report section in the database
-    const { error: upsertError } = await supabaseClient
-      .from('gri_report_sections')
-      .upsert({
-        report_id: reportId,
-        section_key: sectionKey,
-        section_title: sectionType,
-        content: content,
-        is_complete: true,
-        updated_at: new Date().toISOString()
-      });
-
-    if (upsertError) {
-      console.error('Error updating section:', upsertError);
-      throw upsertError;
-    }
-
-    // Recalculate report completion
-    await supabaseClient.rpc('calculate_gri_report_completion', {
-      p_report_id: reportId
-    });
-
-    return new Response(JSON.stringify({ content }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Error in section generation:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-}
-
-async function handleReportGeneration(supabaseClient: any, reportId: string, action: string, format: string | null = null) {
-  console.log(`Generating full report for action: ${action}, format: ${format}`);
-  
-  try {
-    // Fetch complete report data
-    const { data: report, error: reportError } = await supabaseClient
-      .from('gri_reports')
-      .select('*')
-      .eq('id', reportId)
-      .single();
-
-    if (reportError || !report) {
-      throw new Error('Report not found');
-    }
-
-    // Fetch company data separately
-    const { data: company, error: companyError } = await supabaseClient
-      .from('companies')
-      .select('name, sector, cnpj')
-      .eq('id', report.company_id)
-      .single();
-
-    // Attach company data to report
-    report.companies = company;
-
-    // Fetch report sections
-    const { data: sections } = await supabaseClient
-      .from('gri_report_sections')
-      .select('*')
-      .eq('report_id', reportId)
-      .order('section_key');
-
-    // Fetch GRI indicators
-    const { data: indicators } = await supabaseClient
-      .from('gri_indicator_data')
-      .select(`
-        *,
-        gri_indicators_library (
-          code,
-          title,
-          description,
-          category
-        )
-      `)
-      .eq('report_id', reportId)
-      .order('indicator_id');
-
-    // Handle PDF export
-    if (action === 'export' && format === 'pdf') {
-      const pdfBuffer = await generatePDFReport(report, sections || [], indicators || []);
-      const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
-      
-      return new Response(JSON.stringify({ pdfBase64 }), {
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json'
-        },
-      });
-    }
-
-    // Generate HTML report (default)
-    const htmlContent = generateHTMLReport(report, sections || [], indicators || []);
-
-    return new Response(htmlContent, {
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'text/html; charset=utf-8'
-      },
-    });
-
-  } catch (error) {
-    console.error('Error in report generation:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-}
-
-async function generateGRIContent(openaiApiKey: string, report: any, sectionKey: string, sectionType: string, indicators: any[], existingContent: any = null) {
-  if (!openaiApiKey) {
-    console.log('OpenAI API key not found, using template content');
-    return generateTemplateContent(sectionKey, sectionType, report);
-  }
-
-  try {
-    const prompt = buildGRIPrompt(report, sectionKey, sectionType, indicators, existingContent);
-    
-    console.log(`Calling OpenAI API for section: ${sectionKey}`);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um especialista em relatórios de sustentabilidade GRI. Gere conteúdo abrangente e profissional para relatórios de sustentabilidade GRI em português. Foque em ser específico, baseado em dados e alinhado com os padrões GRI. Se encontrar informações em inglês nos indicadores, traduza-as para português de forma natural e profissional.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.7
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error response:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-
-  } catch (error) {
-    console.error('Error calling OpenAI API:', error);
-    return generateTemplateContent(sectionKey, sectionType, report);
-  }
-}
-
-// Generate metadata content (ceo_message, executive_summary, methodology)
-async function generateMetadataContent(openaiApiKey: string, report: any, metadataType: string) {
-  if (!openaiApiKey) {
-    return getDefaultMetadataContent(metadataType, report);
-  }
-
-  try {
-    const prompt = buildMetadataPrompt(report, metadataType);
-    
-    console.log(`Generating metadata content for: ${metadataType}`);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um especialista em relatórios de sustentabilidade GRI. Gere conteúdo profissional e executivo para relatórios de sustentabilidade GRI em português. Mantenha um tom formal e corporativo adequado para alta gestão.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 1500,
-        temperature: 0.7
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error response:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-
-  } catch (error) {
-    console.error('Error generating metadata content:', error);
-    return getDefaultMetadataContent(metadataType, report);
-  }
-}
-
-function buildMetadataPrompt(report: any, metadataType: string) {
-  const companyName = report.companies?.name || 'Nossa empresa';
-  const year = report.year;
-  
-  const baseContext = `
-Empresa: ${companyName}
-Ano do relatório: ${year}
-Versão GRI: ${report.gri_standard_version || 'GRI Standards'}
-`;
-
-  switch (metadataType) {
-    case 'ceo_message':
-      return `${baseContext}
-      
-Gere uma mensagem do CEO/Presidente para o relatório de sustentabilidade GRI ${year}. A mensagem deve:
-- Ser escrita em primeira pessoa
-- Demonstrar comprometimento com a sustentabilidade
-- Mencionar conquistas e desafios do ano
-- Destacar a importância da transparência e prestação de contas
-- Incluir uma visão para o futuro
-- Ser profissional mas humana
-- Ter aproximadamente 300-500 palavras
-
-Formato: Texto corrido, sem título, pronto para ser incluído no relatório.`;
-
-    case 'executive_summary':
-      return `${baseContext}
-      
-Gere um resumo executivo para o relatório de sustentabilidade GRI ${year}. O resumo deve:
-- Apresentar os principais pontos do relatório
-- Incluir destaques de performance ESG
-- Mencionar metodologia GRI utilizada
-- Destacar principais conquistas e desafios
-- Ser objetivo e direto
-- Usar linguagem executiva profissional
-- Ter aproximadamente 400-600 palavras
-
-Formato: Texto estruturado com parágrafos bem definidos, sem título, pronto para inclusão no relatório.`;
-
-    case 'methodology':
-      return `${baseContext}
-      
-Gere uma seção de metodologia para o relatório de sustentabilidade GRI ${year}. A seção deve:
-- Explicar a adoção dos padrões GRI
-- Descrever o processo de materialidade
-- Mencionar período e escopo do relatório
-- Explicar coleta e verificação de dados
-- Incluir limitações e premissas
-- Ser técnica mas acessível
-- Ter aproximadamente 300-450 palavras
-
-Formato: Texto técnico estruturado, sem título, pronto para inclusão no relatório.`;
-
-    default:
-      return `${baseContext}
-      
-Gere conteúdo relevante para o relatório de sustentabilidade GRI ${year}.`;
-  }
-}
-
-function getDefaultMetadataContent(metadataType: string, report: any) {
-  const companyName = report.companies?.name || 'Nossa empresa';
-  const year = report.year;
-  
-  switch (metadataType) {
-    case 'ceo_message':
-      return `É com satisfação que apresento o Relatório de Sustentabilidade ${year} da ${companyName}, elaborado de acordo com os padrões GRI.
-
-Este relatório reflete nosso compromisso contínuo com a transparência e a prestação de contas às partes interessadas. Durante ${year}, continuamos a integrar práticas sustentáveis em todas as nossas operações, reconhecendo que a sustentabilidade é fundamental para o sucesso a longo prazo de nosso negócio.
-
-Enfrentamos desafios significativos, mas também celebramos conquistas importantes que nos aproximam de nossos objetivos de sustentabilidade. Nosso foco permanece em criar valor compartilhado para todos os stakeholders, contribuindo para um futuro mais sustentável.
-
-A transparência é um pilar fundamental de nossa estratégia corporativa. Por meio deste relatório, compartilhamos nossos progressos, desafios e compromissos futuros, demonstrando nossa responsabilidade com o desenvolvimento sustentável.
-
-Continuaremos a trabalhar com determinação para alcançar nossas metas e contribuir positivamente para a sociedade e o meio ambiente.`;
-
-    case 'executive_summary':
-      return `Este Relatório de Sustentabilidade ${year} da ${companyName} foi elaborado em conformidade com os padrões GRI, demonstrando nosso compromisso com a transparência e a prestação de contas às partes interessadas.
-
-O relatório apresenta nosso desempenho em aspectos ambientais, sociais e de governança (ESG), destacando as principais iniciativas, conquistas e desafios enfrentados durante o período. A metodologia GRI foi aplicada para garantir a comparabilidade e a qualidade das informações divulgadas.
-
-Durante ${year}, focamos em fortalecer nossa gestão de sustentabilidade, implementando práticas que contribuem para o desenvolvimento sustentável e a criação de valor compartilhado. Nossos esforços concentram-se em áreas materiais identificadas através de processo estruturado de engajamento com stakeholders.
-
-Os dados e informações apresentados neste relatório refletem nosso compromisso com a melhoria contínua e a transparência em nossas práticas de sustentabilidade, servindo como base para o planejamento estratégico futuro.`;
-
-    case 'methodology':
-      return `Este relatório foi elaborado em conformidade com os padrões GRI (Global Reporting Initiative), seguindo a abordagem "de acordo com os padrões GRI". A metodologia adotada garante a qualidade, comparabilidade e transparência das informações divulgadas.
-
-O período de reporte compreende o ano de ${year}, com dados coletados sistematicamente através de nossos sistemas de gestão internos. O escopo do relatório abrange as principais operações da ${companyName}, incluindo aspectos ambientais, sociais e econômicos relevantes.
-
-A definição dos temas materiais foi realizada através de processo estruturado que considerou a relevância para o negócio e o impacto sobre as partes interessadas. Este processo orienta a seleção dos indicadores GRI reportados e garante o foco nos aspectos mais significativos.
-
-Os dados apresentados foram coletados e validados através de procedimentos internos de controle de qualidade, assegurando a confiabilidade das informações. Eventuais limitações ou estimativas utilizadas são devidamente indicadas no relatório.`;
-
-    default:
-      return `Conteúdo em desenvolvimento para o Relatório de Sustentabilidade ${year} da ${companyName}.`;
-  }
-}
-
-function buildGRIPrompt(report: any, sectionKey: string, sectionType: string, indicators: any[], existingContent: any) {
-  const companyName = report.companies?.name || 'Nossa empresa';
-  const year = report.year;
-  
-  let prompt = `
-Gere conteúdo para a seção "${sectionType}" do relatório de sustentabilidade GRI ${year} da empresa ${companyName}.
-
-Contexto do relatório:
-- Empresa: ${companyName}
-- Ano: ${year}
-- Setor: ${report.companies?.sector || 'Não especificado'}
-- Versão GRI: ${report.gri_standard_version || 'GRI Standards'}
-
-`;
-
-  if (indicators && indicators.length > 0) {
-    prompt += `
-Indicadores GRI disponíveis:
-${indicators.map(ind => `- ${ind.gri_indicators_library?.code}: ${ind.gri_indicators_library?.title} (Valor: ${ind.value || 'Não informado'})`).join('\n')}
-
-`;
-  }
-
-  if (existingContent) {
-    prompt += `
-Conteúdo existente para referência:
-${existingContent}
-
-`;
-  }
-
-  prompt += `
-Instruções:
-- Gere conteúdo em português brasileiro
-- Use linguagem profissional e técnica apropriada para relatórios GRI
-- Seja específico e baseado em dados quando possível
-- Mantenha foco na transparência e prestação de contas
-- O conteúdo deve ter entre 300-600 palavras
-- Não inclua títulos ou cabeçalhos, apenas o conteúdo da seção
-`;
-
-  return prompt;
-}
-
-function generateTemplateContent(sectionKey: string, sectionType: string, report: any) {
-  const companyName = report.companies?.name || 'Nossa empresa';
-  const year = report.year;
-  
-  const templates = {
-    overview: `Este relatório de sustentabilidade ${year} da ${companyName} apresenta nosso compromisso com práticas empresariais responsáveis e transparentes. Elaborado seguindo os padrões GRI, o documento demonstra nossa dedicação à prestação de contas junto às partes interessadas e ao desenvolvimento sustentável.`,
-    
-    methodology: `A metodologia deste relatório segue os padrões GRI (Global Reporting Initiative), garantindo comparabilidade e transparência nas informações divulgadas. O período de reporte abrange o ano de ${year}, com dados coletados através de nossos sistemas de gestão internos.`,
-    
-    governance: `Nossa estrutura de governança corporativa está alinhada com as melhores práticas de mercado, garantindo transparência, responsabilidade e prestação de contas. O Conselho de Administração e a alta gestão da ${companyName} são responsáveis pela supervisão das estratégias de sustentabilidade.`,
-    
-    environmental: `A ${companyName} reconhece a importância da gestão ambiental responsável para a sustentabilidade do negócio e da sociedade. Durante ${year}, implementamos diversas iniciativas para reduzir nosso impacto ambiental e promover a conservação dos recursos naturais.`,
-    
-    social: `Nosso compromisso social se reflete no investimento contínuo em nossos colaboradores, comunidades e stakeholders. A ${companyName} promove práticas inclusivas, desenvolvimento profissional e contribui para o bem-estar das comunidades onde atua.`,
-    
-    economic: `O desempenho econômico da ${companyName} está intrinsecamente ligado à criação de valor sustentável para todos os stakeholders. Durante ${year}, mantivemos nosso foco na geração de resultados financeiros sólidos while contributing to sustainable development.`
+async function generateContent(sectionKey: string, companyName?: string, report?: any): Promise<string> {
+  const templates: Record<string, string> = {
+    'organizational_profile': `${companyName || 'Nossa organização'} é uma empresa comprometida com práticas sustentáveis e responsabilidade corporativa. Fundada com o propósito de criar valor compartilhado, operamos em diversos setores mantendo sempre os mais altos padrões de ética e governança.
+
+Nossa estrutura organizacional é projetada para garantir eficiência operacional e transparência em todas as nossas atividades. Com sede no Brasil e operações distribuídas estrategicamente, atendemos clientes em múltiplos mercados, sempre com foco em sustentabilidade e inovação.
+
+A cadeia de valor de ${companyName || 'nossa empresa'} engloba desde o relacionamento com fornecedores até a entrega final aos clientes, sempre buscando minimizar impactos ambientais e maximizar benefícios sociais em cada etapa do processo.`,
+
+    'strategy': `A estratégia de sustentabilidade de ${companyName || 'nossa organização'} está profundamente integrada ao nosso modelo de negócio e visão de longo prazo. Reconhecemos que o sucesso empresarial sustentável depende do equilíbrio entre performance econômica, responsabilidade ambiental e impacto social positivo.
+
+Nossos objetivos estratégicos ESG para ${report?.year || new Date().getFullYear()} e anos subsequentes incluem a redução de emissões, o fortalecimento da governança corporativa, e o investimento contínuo em pessoas e comunidades. Estes objetivos não são apenas aspirações, mas compromissos concretos com metas mensuráveis e prazos definidos.
+
+Acreditamos que a sustentabilidade é um diferencial competitivo essencial no cenário empresarial atual. Por isso, investimos em inovação, tecnologia e capacitação para garantir que ${companyName || 'nossa empresa'} esteja preparada para os desafios e oportunidades do futuro sustentável.`,
+
+    'governance': `A governança corporativa de ${companyName || 'nossa organização'} é estruturada para garantir supervisão eficaz, tomada de decisões responsável e prestação de contas em todos os níveis. Nosso mais alto órgão de governança supervisiona ativamente questões de sustentabilidade, assegurando que estratégias ESG estejam alinhadas com objetivos de negócio.
+
+A composição do nosso conselho reflete nosso compromisso com diversidade, independência e expertise em sustentabilidade. Contamos com membros que trazem perspectivas variadas e conhecimento especializado em questões ambientais, sociais e de governança, fortalecendo nossa capacidade de enfrentar desafios ESG complexos.
+
+Processos formais de comunicação garantem que preocupações críticas, incluindo questões éticas e de sustentabilidade, sejam escaladas apropriadamente e tratadas com a devida urgência. A remuneração de executivos está parcialmente vinculada ao atingimento de metas ESG, demonstrando nosso compromisso com accountability em sustentabilidade.`,
+
+    'stakeholder_engagement': `${companyName || 'Nossa organização'} reconhece a importância fundamental do engajamento contínuo com stakeholders para entender expectativas, identificar riscos e oportunidades, e construir relacionamentos de confiança de longo prazo. Identificamos e priorizamos stakeholders com base em sua influência e interesse em nossas operações e impactos.
+
+Nossos principais grupos de stakeholders incluem empregados, clientes, fornecedores, comunidades locais, investidores, órgãos reguladores e organizações da sociedade civil. Para cada grupo, desenvolvemos abordagens de engajamento adequadas, incluindo pesquisas, consultas, diálogos estruturados e canais de comunicação abertos.
+
+O feedback dos stakeholders influencia diretamente nossa estratégia de sustentabilidade e processos de tomada de decisão. Realizamos análise de materialidade anualmente, incorporando perspectivas de stakeholders para priorizar temas ESG mais relevantes. Mecanismos de reclamação e queixas estão disponíveis para garantir que preocupações sejam tratadas de forma justa e eficaz.`,
+
+    'material_topics': `A determinação de temas materiais de ${companyName || 'nossa organização'} segue uma abordagem rigorosa e inclusiva, considerando impactos econômicos, ambientais e sociais significativos e sua influência nas avaliações e decisões dos stakeholders. O processo inclui identificação de temas potenciais, avaliação de relevância e validação com stakeholders internos e externos.
+
+Nossa análise de materialidade para ${report?.year || new Date().getFullYear()} identificou temas prioritários que refletem onde a organização tem os maiores impactos e onde stakeholders expressam maior interesse. Estes temas incluem questões relacionadas a mudanças climáticas, gestão de recursos, diversidade e inclusão, governança ética e impactos na cadeia de valor.
+
+A matriz de materialidade resultante demonstra a intersecção entre importância para stakeholders e significância dos impactos. Revisamos periodicamente nossos temas materiais para garantir que permaneçam relevantes à medida que contextos de negócio e expectativas de stakeholders evoluem. Cada tema material é reportado com transparência sobre limites, abordagens de gestão e indicadores de desempenho.`,
+
+    'economic_performance': `O desempenho econômico de ${companyName || 'nossa organização'} reflete nossa capacidade de gerar e distribuir valor de forma sustentável. No ano fiscal ${report?.year || new Date().getFullYear()}, geramos valor econômico direto através de receitas operacionais, distribuindo este valor entre stakeholders através de custos operacionais, salários e benefícios, pagamentos a provedores de capital, investimentos comunitários e impostos.
+
+Reconhecemos as implicações financeiras das mudanças climáticas e questões ambientais em nosso modelo de negócio. Identificamos riscos relacionados a regulamentações mais rígidas, mudanças nas preferências dos consumidores e impactos físicos de eventos climáticos extremos. Simultaneamente, identificamos oportunidades em eficiência energética, produtos e serviços sustentáveis e novos mercados verdes.
+
+Mantemos compromisso com práticas de remuneração justa, com salários iniciais acima do mínimo local e benefícios abrangentes para empregados. Priorizamos fornecedores locais quando possível, contribuindo para desenvolvimento econômico regional. Investimentos em infraestrutura e serviços de benefício público demonstram nosso compromisso com prosperidade compartilhada.`,
+
+    'environmental_performance': `${companyName || 'Nossa organização'} está comprometida com gestão ambiental responsável e redução contínua de nossos impactos. Monitoramos cuidadosamente o uso de materiais, priorizando insumos renováveis e reciclados quando viável. Nossa estratégia de economia circular busca minimizar resíduos e maximizar a vida útil de produtos e materiais.
+
+O consumo de energia e as emissões de gases de efeito estufa são áreas de foco prioritário. Quantificamos emissões de Escopo 1 (diretas), Escopo 2 (energia adquirida) e Escopo 3 (cadeia de valor), estabelecendo metas de redução ambiciosas mas realistas. Investimos em eficiência energética, energias renováveis e tecnologias limpas para descarbonizar nossas operações.
+
+A gestão da água é crítica para nossa operação e para o meio ambiente. Medimos consumo de água, avaliamos riscos hídricos e implementamos iniciativas de eficiência e reciclagem. Protegemos a biodiversidade em áreas onde operamos, realizando avaliações de impacto e implementando medidas de mitigação. Mantemos conformidade rigorosa com legislação ambiental e investimos continuamente em proteção ambiental.`,
+
+    'social_performance': `A força de trabalho de ${companyName || 'nossa organização'} é nosso ativo mais valioso. Promovemos diversidade, equidade e inclusão em todos os níveis organizacionais, reconhecendo que equipes diversas são mais inovadoras e eficazes. Monitoramos indicadores de diversidade por gênero, idade, etnia e outros fatores relevantes, estabelecendo metas progressivas de representatividade.
+
+A saúde e segurança dos empregados é prioridade absoluta. Mantemos programas robustos de segurança ocupacional, medimos taxas de lesões e doenças ocupacionais, e investimos continuamente em prevenção e cultura de segurança. Oferecemos benefícios abrangentes incluindo planos de saúde, aposentadoria, licenças parentais e programas de bem-estar.
+
+Investimos significativamente em desenvolvimento de pessoas através de treinamento e programas de capacitação. A média de horas de treinamento por empregado reflete nosso compromisso com crescimento profissional contínuo. Respeitamos rigorosamente direitos humanos, mantemos políticas de não discriminação e avaliamos fornecedores usando critérios sociais. Engajamos ativamente com comunidades locais, investindo em projetos de desenvolvimento social que geram valor compartilhado.`
   };
-  
-  return (templates as any)[sectionKey] || `Conteúdo da seção ${sectionType} em desenvolvimento para o relatório ${year} da ${companyName}.`;
-}
 
-async function generatePDFReport(report: any, sections: any[], indicators: any[]) {
-  const pdfDoc = await PDFDocument.create();
-  const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-  const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-  
-  const companyName = report.companies?.name || 'Empresa';
-  const year = report.year;
-  
-  // Cover page
-  let page = pdfDoc.addPage([595.28, 841.89]); // A4 size
-  const { width, height } = page.getSize();
-  
-  // Title
-  page.drawText('Relatório de Sustentabilidade GRI', {
-    x: 50,
-    y: height - 150,
-    size: 24,
-    font: timesRomanBold,
-    color: rgb(0.17, 0.24, 0.31),
-  });
-  
-  page.drawText(`${companyName} - ${year}`, {
-    x: 50,
-    y: height - 200,
-    size: 18,
-    font: timesRomanFont,
-    color: rgb(0.2, 0.28, 0.36),
-  });
-  
-  // Report info
-  const reportInfo = [
-    `Versão GRI: ${report.gri_standard_version || 'GRI Standards'}`,
-    `Período: ${report.reporting_period_start} a ${report.reporting_period_end}`,
-    `Conclusão: ${Math.round(report.completion_percentage || 0)}%`,
-    `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`
-  ];
-  
-  let yPosition = height - 280;
-  reportInfo.forEach(info => {
-    page.drawText(info, {
-      x: 50,
-      y: yPosition,
-      size: 12,
-      font: timesRomanFont,
-    });
-    yPosition -= 25;
-  });
-  
-  // Content pages
-  yPosition = height - 100;
-  const pageMargin = 50;
-  const lineHeight = 20;
-  const maxWidth = width - (pageMargin * 2);
-  
-  // Add CEO Message if available
-  if (report.ceo_message) {
-    if (yPosition < 150) {
-      page = pdfDoc.addPage([595.28, 841.89]);
-      yPosition = height - 100;
-    }
-    
-    page.drawText('Mensagem da Liderança', {
-      x: pageMargin,
-      y: yPosition,
-      size: 16,
-      font: timesRomanBold,
-      color: rgb(0.17, 0.24, 0.31),
-    });
-    yPosition -= 30;
-    
-    const messageLines = wrapText(report.ceo_message, maxWidth, 11, timesRomanFont);
-    for (const line of messageLines) {
-      if (yPosition < 50) {
-        page = pdfDoc.addPage([595.28, 841.89]);
-        yPosition = height - 50;
-      }
-      page.drawText(line, {
-        x: pageMargin,
-        y: yPosition,
-        size: 11,
-        font: timesRomanFont,
-      });
-      yPosition -= lineHeight;
-    }
-    yPosition -= 20;
-  }
-  
-  // Add sections
-  sections.forEach((section: any) => {
-    if (section.content && yPosition < 150) {
-      page = pdfDoc.addPage([595.28, 841.89]);
-      yPosition = height - 100;
-    }
-    
-    if (section.content) {
-      page.drawText(section.section_title, {
-        x: pageMargin,
-        y: yPosition,
-        size: 16,
-        font: timesRomanBold,
-        color: rgb(0.17, 0.24, 0.31),
-      });
-      yPosition -= 30;
-      
-      const contentLines = wrapText(section.content, maxWidth, 11, timesRomanFont);
-      for (const line of contentLines) {
-        if (yPosition < 50) {
-          page = pdfDoc.addPage([595.28, 841.89]);
-          yPosition = height - 50;
-        }
-        page.drawText(line, {
-          x: pageMargin,
-          y: yPosition,
-          size: 11,
-          font: timesRomanFont,
-        });
-        yPosition -= lineHeight;
-      }
-      yPosition -= 20;
-    }
-  });
-  
-  // Add indicators summary
-  if (indicators.length > 0) {
-    if (yPosition < 200) {
-      page = pdfDoc.addPage([595.28, 841.89]);
-      yPosition = height - 100;
-    }
-    
-    page.drawText('Indicadores GRI', {
-      x: pageMargin,
-      y: yPosition,
-      size: 16,
-      font: timesRomanBold,
-      color: rgb(0.17, 0.24, 0.31),
-    });
-    yPosition -= 30;
-    
-    indicators.slice(0, 10).forEach((indicator: any) => { // Limit to first 10 indicators
-      if (indicator.gri_indicators_library && yPosition > 50) {
-        page.drawText(`${indicator.gri_indicators_library.code}: ${indicator.value || 'Não informado'}`, {
-          x: pageMargin,
-          y: yPosition,
-          size: 10,
-          font: timesRomanFont,
-        });
-        yPosition -= 15;
-      }
-    });
-  }
-  
-  return await pdfDoc.save();
-}
+  return templates[sectionKey] || `Conteúdo gerado para a seção ${sectionKey}. Este é um texto de demonstração que seria substituído por conteúdo gerado por IA em produção.
 
-// Helper function to wrap text
-function wrapText(text: string, maxWidth: number, fontSize: number, font: any) {
-  const words = text.replace(/\n+/g, ' ').split(' ');
-  const lines = [];
-  let currentLine = '';
-  
-  for (const word of words) {
-    const testLine = currentLine + (currentLine ? ' ' : '') + word;
-    const textWidth = font.widthOfTextAtSize(testLine, fontSize);
-    
-    if (textWidth <= maxWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        lines.push(word); // Word is too long, add it anyway
-      }
-    }
-  }
-  
-  if (currentLine) {
-    lines.push(currentLine);
-  }
-  
-  return lines;
-}
+${companyName || 'A empresa'} mantém compromisso com práticas sustentáveis e transparência em seus relatórios de sustentabilidade seguindo os padrões GRI Standards.
 
-function generateHTMLReport(report: any, sections: any[], indicators: any[]) {
-  const companyName = report.companies?.name || 'Empresa';
-  const year = report.year;
-  
-  let html = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Sustentabilidade GRI ${year} - ${companyName}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #34495e; margin-top: 30px; }
-        .metadata { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
-        .section { margin: 30px 0; }
-        .indicators { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .indicator { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
-        .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; }
-    </style>
-</head>
-<body>
-    <h1>Relatório de Sustentabilidade GRI ${year}</h1>
-    <h2>${companyName}</h2>
-    
-    <div class="metadata">
-        <h3>Informações do Relatório</h3>
-        <p><strong>Empresa:</strong> ${companyName}</p>
-        <p><strong>Ano:</strong> ${year}</p>
-        <p><strong>Versão GRI:</strong> ${report.gri_standard_version || 'GRI Standards'}</p>
-        <p><strong>Período:</strong> ${report.reporting_period_start} a ${report.reporting_period_end}</p>
-        <p><strong>Conclusão:</strong> ${Math.round(report.completion_percentage || 0)}%</p>
-    </div>
-`;
-
-  // Add CEO Message if available
-  if (report.ceo_message) {
-    html += `
-    <div class="section">
-        <h2>Mensagem da Liderança</h2>
-        <div>${report.ceo_message.replace(/\n/g, '<br>')}</div>
-    </div>`;
-  }
-
-  // Add Executive Summary if available
-  if (report.executive_summary) {
-    html += `
-    <div class="section">
-        <h2>Resumo Executivo</h2>
-        <div>${report.executive_summary.replace(/\n/g, '<br>')}</div>
-    </div>`;
-  }
-
-  // Add sections
-  sections.forEach((section: any) => {
-    if (section.content) {
-      html += `
-    <div class="section">
-        <h2>${section.section_title}</h2>
-        <div>${section.content.replace(/\n/g, '<br>')}</div>
-    </div>`;
-    }
-  });
-
-  // Add methodology if available
-  if (report.methodology) {
-    html += `
-    <div class="section">
-        <h2>Metodologia</h2>
-        <div>${report.methodology.replace(/\n/g, '<br>')}</div>
-    </div>`;
-  }
-
-  // Add indicators
-  if (indicators.length > 0) {
-    html += `
-    <div class="section">
-        <h2>Indicadores GRI</h2>
-        <div class="indicators">`;
-    
-    indicators.forEach(indicator => {
-      if (indicator.gri_indicators_library) {
-        html += `
-            <div class="indicator">
-                <h4>${indicator.gri_indicators_library.code}</h4>
-                <p><strong>${indicator.gri_indicators_library.title}</strong></p>
-                <p>Valor: ${indicator.value || 'Não informado'}</p>
-                ${indicator.gri_indicators_library.description ? `<p><small>${indicator.gri_indicators_library.description}</small></p>` : ''}
-            </div>`;
-      }
-    });
-    
-    html += `
-        </div>
-    </div>`;
-  }
-
-  html += `
-    <div class="footer">
-        <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} pelo Sistema GRI</p>
-        <p>Este relatório segue os padrões GRI (Global Reporting Initiative)</p>
-    </div>
-</body>
-</html>`;
-
-  return html;
+Para o ano de ${report?.year || new Date().getFullYear()}, continuamos desenvolvendo nossas práticas ESG e reportando nosso progresso de forma clara e mensurável.`;
 }

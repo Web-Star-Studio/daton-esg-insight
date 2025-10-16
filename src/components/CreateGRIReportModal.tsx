@@ -100,7 +100,7 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
         <DialogHeader>
           <DialogTitle>Criar Novo Relatório GRI</DialogTitle>
           <DialogDescription>
-            Crie um novo relatório de sustentabilidade seguindo os padrões GRI. Preencha as informações básicas para começar.
+            Crie um novo relatório de sustentabilidade seguindo os padrões GRI Standards. Preencha as informações básicas abaixo para começar a construir seu relatório.
           </DialogDescription>
         </DialogHeader>
 

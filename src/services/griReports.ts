@@ -129,60 +129,66 @@ export async function getGRIReport(id: string): Promise<GRIReport | null> {
 }
 
 export async function createGRIReport(report: Partial<GRIReport>): Promise<GRIReport> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  let companyId: string | null = null;
-  
-  // Try to get company_id from profile first
   try {
-    const { data: profile, error: profileError } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    let companyId: string | null = null;
+    
+    // Try to get company_id from profile
+    const { data: profile } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .maybeSingle();
     
-    if (profileError) {
-      console.warn('Erro ao buscar company_id do perfil:', profileError);
-    } else {
-      companyId = profile?.company_id;
-    }
-  } catch (profileError) {
-    console.warn('Exceção ao buscar company_id do perfil:', profileError);
-  }
-  
-  // Fallback: try to get company_id using RPC function
-  if (!companyId) {
-    try {
+    companyId = profile?.company_id;
+    
+    // Fallback to RPC
+    if (!companyId) {
       const { data: rpcCompanyId } = await supabase.rpc('get_user_company_id');
       companyId = rpcCompanyId;
-    } catch (rpcError) {
-      console.error('Erro ao buscar company_id via RPC:', rpcError);
     }
-  }
-  
-  if (!companyId) {
-    throw new Error('Empresa não encontrada. Verifique se seu perfil está associado a uma empresa.');
-  }
+    
+    if (!companyId) {
+      throw new Error('Empresa não encontrada. Verifique se seu perfil está associado a uma empresa.');
+    }
 
-  const { data, error } = await supabase
-    .from('gri_reports')
-    .insert([{
-      ...report,
-      company_id: companyId,
-      reporting_period_start: report.reporting_period_start || '',
-      reporting_period_end: report.reporting_period_end || '',
-      year: report.year || new Date().getFullYear(),
-    } as any])
-    .select()
-    .maybeSingle();
+    // Validate dates
+    if (report.reporting_period_start && report.reporting_period_end) {
+      const start = new Date(report.reporting_period_start);
+      const end = new Date(report.reporting_period_end);
+      if (start >= end) {
+        throw new Error('A data de início deve ser anterior à data de fim');
+      }
+    }
 
-  if (error) {
-    console.error('Erro na inserção do relatório GRI:', error);
-    throw new Error(`Erro ao criar relatório GRI: ${error.message}`);
+    const { data, error } = await supabase
+      .from('gri_reports')
+      .insert([{
+        ...report,
+        company_id: companyId,
+        status: 'Rascunho',
+        completion_percentage: 0,
+        reporting_period_start: report.reporting_period_start || '',
+        reporting_period_end: report.reporting_period_end || '',
+        year: report.year || new Date().getFullYear(),
+      } as any])
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro ao criar relatório GRI:', error);
+      throw new Error(`Falha ao criar relatório: ${error.message}`);
+    }
+    
+    if (!data) throw new Error('Não foi possível criar relatório GRI');
+    
+    return data;
+  } catch (error: any) {
+    console.error('Erro em createGRIReport:', error);
+    throw error;
   }
-  if (!data) throw new Error('Não foi possível criar relatório GRI');
-  return data;
 }
 
 export async function updateGRIReport(id: string, updates: Partial<GRIReport>): Promise<GRIReport> {

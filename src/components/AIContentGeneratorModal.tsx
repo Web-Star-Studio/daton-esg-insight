@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -115,9 +115,21 @@ export function AIContentGeneratorModal({
 
       setGeneratedContent(data.content);
       toast.success('Conteúdo gerado com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Erro ao gerar conteúdo', error);
-      toast.error('Erro ao gerar conteúdo. Tente novamente.');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Erro ao gerar conteúdo. Tente novamente.';
+      
+      if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error?.message?.includes('timeout')) {
+        errorMessage = 'A geração está demorando muito. Tente com um prompt mais simples.';
+      } else if (error?.message?.includes('unauthorized') || error?.message?.includes('auth')) {
+        errorMessage = 'Sessão expirada. Faça login novamente.';
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -144,6 +156,9 @@ export function AIContentGeneratorModal({
             <Sparkles className="h-5 w-5 text-purple-600" />
             Gerador de Conteúdo IA - {sectionTitle}
           </DialogTitle>
+          <DialogDescription>
+            Configure as opções abaixo e clique em "Gerar Conteúdo com IA" para criar conteúdo profissional para esta seção do seu relatório GRI.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
