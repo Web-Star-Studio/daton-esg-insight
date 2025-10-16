@@ -109,16 +109,24 @@ export const POLLUTION_POTENTIAL_OPTIONS = ['Alto', 'Médio', 'Baixo'] as const;
 export const MONITORING_FREQUENCY_OPTIONS = ['Diária', 'Semanal', 'Mensal', 'Trimestral', 'Anual'] as const;
 
 export async function getAssetsHierarchy(): Promise<Asset[]> {
-  const { data, error } = await supabase.functions.invoke('assets-management', {
-    method: 'GET'
-  });
+  try {
+    const { data, error } = await supabase.functions.invoke('assets-management');
 
-  if (error) {
-    console.error('Error fetching assets hierarchy:', error);
-    throw error;
+    if (error) {
+      console.error('Error fetching assets hierarchy:', error);
+      throw new Error(`Failed to fetch assets: ${error.message || 'Unknown error'}`);
+    }
+
+    if (!data || !data.assets) {
+      console.warn('No assets data returned from function');
+      return [];
+    }
+
+    return data.assets;
+  } catch (err) {
+    console.error('Exception in getAssetsHierarchy:', err);
+    throw err;
   }
-
-  return data.assets || [];
 }
 
 export async function getAssetById(id: string): Promise<AssetWithLinkedData> {

@@ -29,6 +29,16 @@ export const retryOperation = async <T>(
     } catch (error) {
       lastError = error as Error;
       
+      // Don't retry on authentication or validation errors (4xx)
+      const errorMessage = lastError.message.toLowerCase();
+      if (errorMessage.includes('unauthorized') || 
+          errorMessage.includes('forbidden') ||
+          errorMessage.includes('not found') ||
+          errorMessage.includes('validation')) {
+        console.error(`❌ Non-retryable error:`, lastError);
+        throw lastError;
+      }
+      
       // Don't retry on last attempt
       if (attempt === maxRetries - 1) {
         console.error(`❌ Operation failed after ${maxRetries} attempts:`, lastError);

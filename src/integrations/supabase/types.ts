@@ -481,6 +481,7 @@ export type Database = {
           metric_date: string
           rejected_count: number | null
           total_fields_extracted: number | null
+          updated_at: string | null
         }
         Insert: {
           accuracy_rate?: number | null
@@ -496,6 +497,7 @@ export type Database = {
           metric_date?: string
           rejected_count?: number | null
           total_fields_extracted?: number | null
+          updated_at?: string | null
         }
         Update: {
           accuracy_rate?: number | null
@@ -511,6 +513,7 @@ export type Database = {
           metric_date?: string
           rejected_count?: number | null
           total_fields_extracted?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {

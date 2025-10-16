@@ -76,47 +76,62 @@ export const errorHandler = {
     let title = "Erro";
 
     // Map technical errors to user-friendly messages
-    switch (appError.code) {
-      case 'PGRST116': // Row Level Security violation
-        userMessage = "Você não tem permissão para realizar esta ação";
-        title = "Acesso Negado";
-        break;
-      case 'PGRST200': // Foreign key not found
-        userMessage = "Dados relacionados não encontrados. Verifique se os registros existem";
-        title = "Relacionamento Inválido";
-        break;
-      case '23505': // Unique constraint violation
-        userMessage = "Já existe um registro com essas informações";
-        title = "Duplicação";
-        break;
-      case '23503': // Foreign key constraint violation
-        userMessage = "Não é possível excluir este registro pois existem dados relacionados";
-        title = "Dependência";
-        break;
-      case 'FunctionsHttpError':
-        userMessage = "Erro interno do servidor. Tente novamente em alguns minutos";
-        title = "Erro do Servidor";
-        break;
-      default:
-        // Generic user-friendly messages based on keywords
-        if (appError.message.toLowerCase().includes('unauthorized')) {
-          userMessage = "Sessão expirada. Faça login novamente";
-          title = "Sessão Expirada";
-        } else if (appError.message.toLowerCase().includes('network')) {
-          userMessage = "Problema de conectividade. Verifique sua internet";
-          title = "Conexão";
-        } else if (appError.message.toLowerCase().includes('timeout')) {
-          userMessage = "Operação demorou muito. Tente novamente";
-          title = "Timeout";
-        } else {
-          userMessage = appError.message || "Ocorreu um erro inesperado";
-        }
+    const errorCode = appError.code?.toUpperCase() || '';
+    const errorMsg = appError.message?.toLowerCase() || '';
+
+    if (errorCode === 'PGRST116' || errorMsg.includes('rls') || errorMsg.includes('row level security')) {
+      userMessage = "Você não tem permissão para realizar esta ação";
+      title = "Acesso Negado";
+    } else if (errorCode === 'PGRST200' || errorMsg.includes('foreign key')) {
+      userMessage = "Dados relacionados não encontrados. Verifique se os registros existem";
+      title = "Relacionamento Inválido";
+    } else if (errorCode === '23505' || errorMsg.includes('duplicate') || errorMsg.includes('unique')) {
+      userMessage = "Já existe um registro com essas informações";
+      title = "Duplicação";
+    } else if (errorCode === '23503' || errorMsg.includes('violates foreign key')) {
+      userMessage = "Não é possível excluir este registro pois existem dados relacionados";
+      title = "Dependência";
+    } else if (errorCode === 'FUNCTIONSHTTPERROR' || errorMsg.includes('edge function')) {
+      userMessage = "Erro interno do servidor. Tente novamente em alguns minutos";
+      title = "Erro do Servidor";
+    } else if (errorMsg.includes('unauthorized') || errorMsg.includes('401')) {
+      userMessage = "Sua sessão expirou. Faça login novamente";
+      title = "Sessão Expirada";
+    } else if (errorMsg.includes('forbidden') || errorMsg.includes('403')) {
+      userMessage = "Você não tem permissão para acessar este recurso";
+      title = "Acesso Negado";
+    } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
+      userMessage = "Recurso não encontrado";
+      title = "Não Encontrado";
+    } else if (errorMsg.includes('rate limit') || errorMsg.includes('429')) {
+      userMessage = "Muitas requisições. Aguarde alguns instantes";
+      title = "Limite Excedido";
+    } else if (errorMsg.includes('timeout')) {
+      userMessage = "A operação demorou muito tempo. Tente novamente";
+      title = "Tempo Esgotado";
+    } else if (errorMsg.includes('network') || errorMsg.includes('connection')) {
+      userMessage = "Erro de conexão. Verifique sua internet";
+      title = "Sem Conexão";
+    } else {
+      userMessage = appError.message || "Ocorreu um erro inesperado";
     }
 
-    toast.error(title, {
-      description: userMessage,
+    // Show toast based on severity
+    const toastOptions = {
       duration: appError.severity === 'critical' ? 10000 : 5000,
-    });
+    };
+
+    if (appError.severity === 'critical' || appError.severity === 'high') {
+      toast.error(title, {
+        description: userMessage,
+        ...toastOptions
+      });
+    } else {
+      toast.warning(title, {
+        description: userMessage,
+        ...toastOptions
+      });
+    }
   },
 
   // Handle async operations with consistent error handling

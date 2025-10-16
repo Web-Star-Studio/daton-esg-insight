@@ -76,8 +76,14 @@ class Logger {
 
   error(message: string, error?: Error | unknown, ...args: any[]) {
     if (this.shouldLog('error')) {
-      this.createLogEntry('error', message, error);
-      console.error(`❌ ${message}`, error, ...args);
+      const entry = this.createLogEntry('error', message, error);
+      
+      // Format error message with stack trace if available
+      const errorDetails = error instanceof Error 
+        ? `${error.message}\n${error.stack || ''}`
+        : String(error);
+      
+      console.error(`❌ ${message}`, errorDetails, ...args);
       
       // In production, send to error reporting service
       if (isProduction() && PRODUCTION_CONFIG.LOGGING.ENABLE_ERROR_REPORTING) {

@@ -8,13 +8,20 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        }
+      }
     )
-
-    const authHeader = req.headers.get('Authorization')!
-    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
 
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
@@ -56,10 +63,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in assets-management function:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const statusCode = errorMessage.includes('not found') ? 404 : 500
+    
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
