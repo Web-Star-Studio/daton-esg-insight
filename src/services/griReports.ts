@@ -503,18 +503,11 @@ export async function initializeGRIReport(reportId: string): Promise<void> {
   await Promise.all(promises);
 
   // Create default sections
-  const defaultSections = [
-    { key: 'organizational_profile', title: 'Perfil Organizacional', order_index: 1 },
-    { key: 'strategy', title: 'Estratégia', order_index: 2 },
-    { key: 'ethics_integrity', title: 'Ética e Integridade', order_index: 3 },
-    { key: 'governance', title: 'Governança', order_index: 4 },
-    { key: 'stakeholder_engagement', title: 'Engajamento de Stakeholders', order_index: 5 },
-    { key: 'reporting_practices', title: 'Práticas de Relatório', order_index: 6 },
-    { key: 'material_topics', title: 'Temas Materiais', order_index: 7 },
-    { key: 'economic_performance', title: 'Performance Econômica', order_index: 8 },
-    { key: 'environmental_performance', title: 'Performance Ambiental', order_index: 9 },
-    { key: 'social_performance', title: 'Performance Social', order_index: 10 },
-  ];
+  const defaultSections = Object.entries(GRI_SECTION_METADATA).map(([key, metadata]) => ({
+    key: key as GRISectionKey,
+    title: metadata.title,
+    order_index: metadata.order,
+  }));
 
   const sectionPromises = defaultSections.map(section =>
     createOrUpdateGRIReportSection(reportId, section.key, {
