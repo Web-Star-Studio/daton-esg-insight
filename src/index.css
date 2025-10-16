@@ -405,4 +405,52 @@ All colors MUST be HSL.
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
   }
+
+  /* Chat Assistant - Responsive & Fixed Layout */
+  @media (max-width: 640px) {
+    /* Mobile: Full screen chat */
+    .ai-chat-container {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    /* Tablet: Slightly smaller fixed position */
+    .ai-chat-container {
+      max-width: min(440px, calc(100vw - 2rem)) !important;
+      max-height: min(680px, calc(100vh - 2rem)) !important;
+    }
+  }
+
+  @media (min-width: 1025px) {
+    /* Desktop: Normal fixed position */
+    .ai-chat-container {
+      max-width: 440px !important;
+      max-height: min(680px, calc(100vh - 3rem)) !important;
+    }
+  }
+
+  /* Ensure chat doesn't overflow or clip */
+  .ai-chat-messages {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Z-index hierarchy for chat */
+  .ai-chat-button {
+    z-index: 100 !important;
+  }
+
+  .ai-chat-window {
+    z-index: 100 !important;
+  }
 }
+

@@ -124,7 +124,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           >
             <Button
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-50 bg-gradient-to-br from-primary to-primary/90 hover:from-primary hover:to-primary animate-glow-pulse"
+              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90 hover:from-primary hover:to-primary animate-glow-pulse"
               size="icon"
             >
               <MessageCircle className="h-6 w-6" />
@@ -141,10 +141,11 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
+            className={embedded ? "" : "fixed inset-4 sm:bottom-6 sm:right-6 sm:inset-auto sm:w-[440px] sm:h-[680px] max-h-[calc(100vh-2rem)] z-[100]"}
           >
             <Card className={embedded 
               ? "w-full h-full flex flex-col border-0 rounded-none shadow-none" 
-              : "fixed bottom-6 right-6 w-[440px] h-[680px] flex flex-col shadow-2xl z-50 border-2 overflow-hidden"
+              : "w-full h-full flex flex-col shadow-2xl border-2 overflow-hidden bg-background"
             }>
           {/* Header - Simplified without animations */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
@@ -205,13 +206,13 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           </div>
 
           {/* Virtualized Messages - Optimized for performance */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <VirtualizedMessageList
               messages={messages}
               isLoading={isLoading}
               onQuickAction={handleQuickAction}
               onExecuteAction={executeAction}
-              containerHeight={embedded ? 500 : 420}
+              containerHeight={embedded ? 500 : undefined}
             />
           </div>
 

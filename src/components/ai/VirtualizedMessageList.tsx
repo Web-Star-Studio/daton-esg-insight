@@ -1,5 +1,5 @@
-// Virtualized message list for optimized rendering of large chat histories
 import { useRef, useEffect } from 'react';
+import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2, Sparkles } from 'lucide-react';
 import { ChatMessage as ChatMessageComponent } from '@/components/ai/ChatMessage';
@@ -22,10 +22,30 @@ export function VirtualizedMessageList({
   isLoading,
   onQuickAction,
   onExecuteAction,
-  containerHeight = 500
+  containerHeight
 }: VirtualizedMessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-calculate container height if not provided
+  const [measuredHeight, setMeasuredHeight] = React.useState<number>(500);
+  
+  React.useEffect(() => {
+    if (!containerHeight && containerRef.current) {
+      const updateHeight = () => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          setMeasuredHeight(rect.height);
+        }
+      };
+      
+      updateHeight();
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    }
+  }, [containerHeight]);
+  
+  const effectiveHeight = containerHeight || measuredHeight;
 
   // Use virtualization for large message lists (>20 messages)
   const shouldVirtualize = messages.length > 20;
@@ -39,7 +59,7 @@ export function VirtualizedMessageList({
   } = useVirtualizedList({
     items: messages,
     itemHeight: 150, // Approximate message height (increased for dynamic content)
-    containerHeight,
+    containerHeight: effectiveHeight,
     overscan: 3,
     enabled: shouldVirtualize
   });
@@ -54,7 +74,7 @@ export function VirtualizedMessageList({
   return (
     <div 
       ref={containerRef}
-      className="h-full overflow-y-auto p-4"
+      className="h-full w-full overflow-y-auto overflow-x-hidden p-4"
       {...(shouldVirtualize ? containerProps : {})}
     >
       <div 
