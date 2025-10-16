@@ -1,7 +1,6 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { updateGRIReport, type GRIReport } from '@/services/griReports';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
 
 interface UseGRIAutoSaveOptions {
   report: GRIReport;
@@ -19,23 +18,27 @@ export function useGRIAutoSave({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
   const isSavingRef = useRef<boolean>(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const save = useCallback(async (updates: Partial<GRIReport>) => {
     if (isSavingRef.current) {
-      logger.info('Save already in progress, skipping...');
+      console.log('Save already in progress, skipping...');
       return;
     }
 
     try {
       isSavingRef.current = true;
+      setSaveStatus('saving');
       
       const currentState = JSON.stringify(updates);
       if (currentState === lastSavedRef.current) {
-        logger.info('No changes detected, skipping save');
+        console.log('No changes detected, skipping save');
+        setSaveStatus('saved');
         return;
       }
 
-      logger.info('Auto-saving GRI report...', { reportId: report.id });
+      console.log('Auto-saving GRI report...', { reportId: report.id });
       
       await updateGRIReport(report.id, {
         ...updates,
@@ -43,20 +46,29 @@ export function useGRIAutoSave({
       });
 
       lastSavedRef.current = currentState;
+      setLastSaveTime(new Date());
+      setSaveStatus('saved');
       
       if (onSaveSuccess) {
         onSaveSuccess();
       }
       
-      logger.info('GRI report auto-saved successfully');
+      console.log('GRI report auto-saved successfully');
+      
+      // Reset status after 3 seconds
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error) {
-      logger.error('Failed to auto-save GRI report', error);
+      console.error('Failed to auto-save GRI report', error);
+      setSaveStatus('error');
       
       if (onSaveError) {
         onSaveError(error as Error);
       } else {
         toast.error('Falha ao salvar automaticamente. Suas alterações podem ser perdidas.');
       }
+      
+      // Reset error status after 5 seconds
+      setTimeout(() => setSaveStatus('idle'), 5000);
     } finally {
       isSavingRef.current = false;
     }
@@ -93,6 +105,8 @@ export function useGRIAutoSave({
   return {
     scheduleAutoSave,
     forceSave,
-    isSaving: isSavingRef.current
+    isSaving: isSavingRef.current,
+    lastSaveTime,
+    saveStatus,
   };
 }

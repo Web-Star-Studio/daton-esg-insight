@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { GRI_SECTION_KEYS, type GRISectionKey, GRI_SECTION_METADATA } from "@/types/gri";
 
 export interface GRIReport {
   id: string;
@@ -93,7 +94,7 @@ export interface SDGAlignment {
 export interface GRIReportSection {
   id: string;
   report_id: string;
-  section_key: string;
+  section_key: GRISectionKey;
   title: string;
   content?: string;
   order_index: number;
@@ -105,6 +106,9 @@ export interface GRIReportSection {
   created_at: string;
   updated_at: string;
 }
+
+// Re-export GRI types for convenience
+export { GRI_SECTION_KEYS, type GRISectionKey, GRI_SECTION_METADATA };
 
 // GRI Reports API
 export async function getGRIReports(): Promise<GRIReport[]> {
@@ -329,12 +333,12 @@ export async function getGRIReportSections(reportId: string): Promise<GRIReportS
     .order('order_index');
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as GRIReportSection[];
 }
 
 export async function createOrUpdateGRIReportSection(
   reportId: string,
-  sectionKey: string,
+  sectionKey: GRISectionKey,
   sectionData: Partial<GRIReportSection>
 ): Promise<GRIReportSection> {
   const { data: existing } = await supabase
@@ -355,7 +359,7 @@ export async function createOrUpdateGRIReportSection(
 
     if (error) throw new Error(`Erro ao atualizar seção do relatório: ${error.message}`);
     if (!updated) throw new Error('Seção do relatório não encontrada');
-    return updated;
+    return updated as GRIReportSection;
   } else {
     // Create new
     const { data: created, error } = await supabase
@@ -371,7 +375,7 @@ export async function createOrUpdateGRIReportSection(
 
     if (error) throw new Error(`Erro ao criar seção do relatório: ${error.message}`);
     if (!created) throw new Error('Não foi possível criar seção do relatório');
-    return created;
+    return created as GRIReportSection;
   }
 }
 
