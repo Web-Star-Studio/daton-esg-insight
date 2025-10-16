@@ -265,6 +265,11 @@ const App = () => (
                 <Residuos />
               </ProtectedLazyPageWrapper>
             } />
+            <Route path="/residuos/registrar-destinacao" element={
+              <ProtectedLazyPageWrapper>
+                <RegistrarDestinacao />
+              </ProtectedLazyPageWrapper>
+            } />
             <Route path="/fornecedores-residuos" element={
               <ProtectedLazyPageWrapper>
                 <FornecedoresResiduos />
@@ -341,10 +346,13 @@ const App = () => (
             <Route path="/mapeamento-processos" element={<ProtectedLazyPageWrapper><MapeamentoProcessos /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-riscos" element={<ProtectedLazyPageWrapper><GestaoRiscos /></ProtectedLazyPageWrapper>} />
             <Route path="/nao-conformidades" element={<ProtectedLazyPageWrapper><NaoConformidades /></ProtectedLazyPageWrapper>} />
+            <Route path="/acoes-corretivas" element={<ProtectedLazyPageWrapper><AcoesCorretivas /></ProtectedLazyPageWrapper>} />
             <Route path="/plano-acao-5w2h" element={<ProtectedLazyPageWrapper><PlanoAcao5W2H /></ProtectedLazyPageWrapper>} />
             <Route path="/base-conhecimento" element={<ProtectedLazyPageWrapper><BaseConhecimento /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-fornecedores" element={<ProtectedLazyPageWrapper><GestaoFornecedores /></ProtectedLazyPageWrapper>} />
             <Route path="/quality-dashboard" element={<ProtectedLazyPageWrapper><QualityDashboard /></ProtectedLazyPageWrapper>} />
+            <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
+            <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
             <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
