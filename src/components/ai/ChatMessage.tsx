@@ -8,6 +8,7 @@ import { DataQualityBadge } from '@/components/ai/DataQualityBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface ChatMessageProps {
   message: {
@@ -44,28 +45,39 @@ export const ChatMessage = memo(function ChatMessage({ message, onExecuteAction 
   
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+      transition={{ duration: 0.15 }}
+      className={cn(
+        "flex gap-3 group",
+        isUser ? "flex-row-reverse" : "flex-row"
+      )}
     >
-      {/* Avatar */}
-      <Avatar className={`h-8 w-8 shrink-0 ${isUser ? 'bg-muted' : 'bg-gradient-to-br from-primary to-primary/80'}`}>
-        <AvatarFallback className={isUser ? 'bg-transparent' : 'bg-transparent text-primary-foreground'}>
+      {/* Avatar - Simplified */}
+      <Avatar className={cn(
+        "h-8 w-8 flex-shrink-0 ring-2",
+        isUser 
+          ? "ring-muted bg-muted" 
+          : "ring-primary/20 bg-gradient-to-br from-primary to-primary/80"
+      )}>
+        <AvatarFallback className={isUser ? "bg-transparent" : "bg-transparent text-primary-foreground"}>
           {isUser ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
         </AvatarFallback>
       </Avatar>
 
       {/* Message Content */}
-      <div className={`flex-1 space-y-3 ${isUser ? 'items-end' : 'items-start'}`}>
-        {/* Main Message Bubble */}
-        <div
-          className={`rounded-2xl px-4 py-3 max-w-[85%] break-words whitespace-pre-wrap overflow-hidden ${
-            isUser
-              ? 'bg-primary text-primary-foreground ml-auto'
-              : 'bg-muted/50 border border-border/50'
-          }`}
-        >
+      <div className={cn(
+        "flex-1 min-w-0 space-y-2",
+        isUser ? "items-end" : "items-start"
+      )}>
+        {/* Message Bubble - Optimized */}
+        <div className={cn(
+          "rounded-2xl px-4 py-2.5 max-w-[90%] md:max-w-[85%] shadow-sm",
+          "break-words hyphens-auto",
+          isUser
+            ? "bg-primary text-primary-foreground ml-auto shadow-primary/20"
+            : "bg-card border shadow-sm"
+        )}>
           {/* Attachments Preview (for user messages) */}
           {isUser && message.attachments && message.attachments.length > 0 && (
             <div className="mb-3 space-y-2">
@@ -81,18 +93,24 @@ export const ChatMessage = memo(function ChatMessage({ message, onExecuteAction 
             </div>
           )}
 
-          {/* Message Text */}
-          <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert' : ''} break-words whitespace-pre-wrap [&_*]:break-words`}>
+          {/* Message Text - Improved Typography */}
+          <div className={cn(
+            "prose prose-sm max-w-none",
+            isUser ? "prose-invert" : "",
+            "[&_p]:leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0",
+            "[&_code]:text-xs [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded",
+            "[&_a]:underline [&_a]:underline-offset-2",
+            "break-words hyphens-auto"
+          )}>
             <ReactMarkdown
               components={{
-                // Custom rendering for better formatting
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                p: ({ children }) => <p>{children}</p>,
                 ul: ({ children }) => <ul className="my-2 space-y-1">{children}</ul>,
                 ol: ({ children }) => <ol className="my-2 space-y-1">{children}</ol>,
                 li: ({ children }) => <li className="ml-4">{children}</li>,
                 strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                 code: ({ children }) => (
-                  <code className="px-1.5 py-0.5 rounded bg-background/20 text-xs font-mono">
+                  <code className="px-1.5 py-0.5 rounded bg-background/20 font-mono">
                     {children}
                   </code>
                 ),
@@ -139,8 +157,11 @@ export const ChatMessage = memo(function ChatMessage({ message, onExecuteAction 
           </Card>
         )}
 
-        {/* Timestamp */}
-        <p className={`text-[10px] text-muted-foreground px-1 ${isUser ? 'text-right' : 'text-left'}`}>
+        {/* Timestamp - Discrete */}
+        <p className={cn(
+          "text-[10px] text-muted-foreground px-2 opacity-0 group-hover:opacity-100 transition-opacity",
+          isUser ? "text-right" : "text-left"
+        )}>
           {message.timestamp.toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit',

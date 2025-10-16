@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Maximize2, Minimize2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Maximize2, Minimize2, User, Sparkles, History, Plus, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -7,12 +7,12 @@ import { useChatAssistant } from '@/hooks/useChatAssistant';
 import { AIActionConfirmation } from '@/components/ai/AIActionConfirmation';
 import { QuickActions } from '@/components/ai/QuickActions';
 import { FileUploadButton } from '@/components/ai/FileUploadButton';
-import { FileAttachment } from '@/components/ai/FileAttachment';
+import { FileAttachmentCompact } from '@/components/ai/FileAttachmentCompact';
 import { ChatHistory } from '@/components/ai/ChatHistory';
 import { VirtualizedMessageList } from '@/components/ai/VirtualizedMessageList';
-import { History, Plus, Sparkles } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 // Chat assistant component with AI action confirmation support
 interface ChatAssistantProps {
@@ -160,8 +160,9 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           >
             <Button
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90 hover:from-primary hover:to-primary animate-glow-pulse"
+              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all z-[100] bg-gradient-to-br from-primary to-primary/90"
               size="icon"
+              aria-label="Abrir chat"
             >
               <MessageCircle className="h-6 w-6" />
             </Button>
@@ -177,85 +178,103 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className={
+            className={cn(
+              "flex flex-col bg-background",
               embedded 
-                ? "" 
-                : isExpanded
-                  ? "fixed inset-0 z-[120] ai-chat-window ai-chat-container w-screen h-screen p-0"
-                  : "fixed inset-y-4 right-4 z-[110] ai-chat-window ai-chat-container w-[min(520px,calc(100vw-2rem))]"
-            }
+                ? "w-full h-full border-0 rounded-none shadow-none" 
+                : cn(
+                    "ai-chat-container shadow-2xl border transition-all duration-300",
+                    isExpanded ? "fullscreen" : "fixed"
+                  )
+            )}
           >
-            <Card className={embedded 
-              ? "w-full h-full flex flex-col border-0 rounded-none shadow-none" 
-              : "w-full h-full flex flex-col shadow-2xl border-2 overflow-hidden bg-background"
-            }>
-          {/* Header - Simplified without animations */}
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                <AvatarFallback className="bg-transparent text-primary-foreground">
-                  <Sparkles className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="font-semibold text-lg">
-                  Assistente ESG IA
-                </h3>
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>Analisando dados...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="h-2 w-2 rounded-full bg-success" />
-                      <span>Online e pronto</span>
-                    </>
-                  )}
-                </p>
+            <Card className={cn(
+              "w-full h-full flex flex-col overflow-hidden",
+              embedded ? "border-0 shadow-none" : "border"
+            )}>
+              {/* Header - Professional Design */}
+              <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+                <div className="flex items-center justify-between px-4 py-3">
+                  {/* Left: Avatar + Info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative">
+                      <Avatar className="h-10 w-10 ring-2 ring-primary/20 bg-gradient-to-br from-primary to-primary/80">
+                        <AvatarFallback className="bg-transparent text-primary-foreground">
+                          <Sparkles className="h-5 w-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                      {isLoading && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary animate-pulse ring-2 ring-background" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-sm truncate">
+                        Assistente ESG IA
+                      </h3>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        {isLoading ? (
+                          <>
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span>Processando</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            <span>Online</span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={() => setShowHistory(true)}
+                      aria-label="Histórico"
+                      disabled={isLoading}
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={startNewConversation}
+                      aria-label="Nova conversa"
+                      disabled={isLoading}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    {!embedded && (
+                      <>
+                        <div className="h-4 w-px bg-border mx-1" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => setIsExpanded(v => !v)}
+                          aria-label={isExpanded ? "Restaurar" : "Tela cheia"}
+                        >
+                          {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => setIsOpen(false)}
+                          aria-label="Fechar"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowHistory(true)}
-                title="Histórico de conversas"
-                disabled={isLoading}
-              >
-                <History className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={startNewConversation}
-                title="Nova conversa"
-                disabled={isLoading}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              {!embedded && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsExpanded(v => !v)}
-                    title={isExpanded ? "Restaurar" : "Tela cheia"}
-                  >
-                    {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
 
           {/* Virtualized Messages - Optimized for performance */}
           <div className="flex-1 min-h-0 overflow-hidden">
@@ -278,142 +297,89 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             </div>
           )}
 
-          {/* Input */}
-          <div className="p-4 border-t space-y-3">
-            {/* Auto-send prompt for attachments */}
-            <AnimatePresence>
-              {attachments.length > 0 && !inputMessage.trim() && !isLoading && !isUploading && (
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">📎</span>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        Anexos prontos!
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Deseja que eu analise agora?
-                      </p>
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    onClick={() => {
-                      setInputMessage('Por favor, analise os anexos que enviei.');
-                      setTimeout(handleSendMessage, 100);
-                    }}
-                    className="shadow-md hover:shadow-lg transition-shadow"
-                  >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Analisar
-                  </Button>
-                </div>
-              )}
-            </AnimatePresence>
-            
-            {/* File attachments preview */}
-            <AnimatePresence>
-              {attachments.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-xs font-semibold text-foreground flex items-center gap-2">
-                      <span className="text-base">📎</span>
-                      Anexos ({attachments.length})
-                    </span>
-                    <div className="flex gap-1">
-                      {!isLoading && !isUploading && attachments.some(att => att.status === 'sent') && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={clearSentAttachments}
-                          className="h-7 text-xs hover:text-primary transition-colors"
-                        >
-                          Limpar Enviados
-                        </Button>
-                      )}
+              {/* Input Area - Redesigned */}
+              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur">
+                {/* Attachments Preview - Compact */}
+                {attachments.length > 0 && (
+                  <div className="px-4 pt-3 pb-2 border-b">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium">{attachments.length} arquivo(s)</span>
                       {!isLoading && !isUploading && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="ml-auto h-6 text-xs"
                           onClick={() => attachments.forEach(att => removeAttachment(att.id))}
-                          className="h-7 text-xs hover:text-destructive transition-colors"
                         >
-                          Limpar Todos
+                          Limpar
                         </Button>
                       )}
                     </div>
-                  </div>
-                  <AnimatePresence mode="popLayout">
-                    {attachments.map(att => (
-                      <FileAttachment
-                        key={att.id}
-                        file={att}
-                        onRemove={att.status === 'sent' ? undefined : removeAttachment}
-                        canRemove={!isLoading && att.status !== 'sent'}
-                      />
-                    ))}
-                  </AnimatePresence>
-                  {isUploading && (
-                    <div className="text-xs bg-gradient-to-br from-warning/10 to-warning/5 border border-warning/20 rounded-xl p-4 space-y-2">
-                      <p className="font-semibold text-warning flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Enviando e analisando arquivos...
-                      </p>
-                      <p className="text-warning/80">
-                        A IA está processando os anexos para extrair informações relevantes.
-                      </p>
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                      <AnimatePresence mode="popLayout">
+                        {attachments.map(att => (
+                          <FileAttachmentCompact 
+                            key={att.id} 
+                            file={att} 
+                            onRemove={att.status !== 'sent' && !isLoading ? removeAttachment : undefined} 
+                          />
+                        ))}
+                      </AnimatePresence>
                     </div>
-                  )}
-                </div>
-              )}
-            </AnimatePresence>
-            
-            <div className="flex gap-2 items-end">
-              <FileUploadButton
-                onFileSelect={handleFileSelect}
-                isUploading={isUploading}
-                disabled={isLoading || !conversationId}
-              />
-              
-              <div className="flex-1 relative">
-                <Textarea
-                  placeholder="Digite sua mensagem..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={isLoading || isUploading}
-                  className="min-h-[60px] max-h-[120px] resize-none pr-3 rounded-xl border-2 focus:border-primary/50 transition-colors"
-                />
-              </div>
-              
-              <Button
-                onClick={handleSendMessage}
-                disabled={isLoading || isUploading || !inputMessage.trim()}
-                size="icon"
-                className="h-[60px] w-[60px] rounded-xl shadow-lg hover:shadow-xl bg-gradient-to-br from-primary to-primary/90 transition-all"
-                title={isUploading ? 'Aguarde o upload dos anexos' : 'Enviar mensagem'}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
+                    {isUploading && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Processando arquivos...
+                      </p>
+                    )}
+                  </div>
                 )}
-              </Button>
-            </div>
-            
-            <p className="text-xs text-center mt-2 text-muted-foreground">
-              {isUploading ? (
-                <span className="text-warning font-semibold flex items-center justify-center gap-2">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Aguarde o upload dos anexos...
-                </span>
-              ) : (
-                <span>
-                  Pressione <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Enter</kbd> para enviar, 
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono ml-1">Shift+Enter</kbd> para nova linha
-                </span>
-              )}
-            </p>
-          </div>
+                
+                {/* Input Principal */}
+                <div className="p-4">
+                  <div className="flex items-end gap-2">
+                    <FileUploadButton
+                      onFileSelect={handleFileSelect}
+                      isUploading={isUploading}
+                      disabled={isLoading || !conversationId}
+                    />
+                    
+                    <div className="flex-1 relative">
+                      <Textarea
+                        placeholder="Digite sua mensagem..."
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        className="min-h-[56px] max-h-[200px] resize-none rounded-xl border-2 pr-12 text-sm focus:border-primary/50 transition-colors"
+                        disabled={isLoading || isUploading}
+                        aria-label="Campo de mensagem"
+                      />
+                      <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">
+                          {inputMessage.length}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={isLoading || !inputMessage.trim()}
+                      size="icon"
+                      className="h-[56px] w-[56px] flex-shrink-0 rounded-xl"
+                      aria-label="Enviar mensagem"
+                    >
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                    </Button>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">⏎</kbd> enviar
+                    <span className="mx-1">·</span>
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">⇧⏎</kbd> nova linha
+                  </p>
+                </div>
+              </div>
             </Card>
           </motion.div>
         )}

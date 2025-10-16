@@ -74,7 +74,10 @@ export function VirtualizedMessageList({
   return (
     <div 
       ref={containerRef}
-      className="h-full w-full overflow-y-auto overflow-x-hidden p-4"
+      className="h-full w-full overflow-y-auto overflow-x-hidden scroll-smooth p-4"
+      role="log"
+      aria-live="polite"
+      aria-label="Mensagens do chat"
       {...(shouldVirtualize ? containerProps : {})}
     >
       <div 
