@@ -381,6 +381,91 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_operation_feedback: {
+        Row: {
+          company_id: string
+          confidence_was: number | null
+          created_at: string
+          id: string
+          operation_proposed: Json
+          user_decision: string
+          user_edits: Json | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          confidence_was?: number | null
+          created_at?: string
+          id?: string
+          operation_proposed: Json
+          user_decision: string
+          user_edits?: Json | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          confidence_was?: number | null
+          created_at?: string
+          id?: string
+          operation_proposed?: Json
+          user_decision?: string
+          user_edits?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_operation_feedback_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_operation_history: {
+        Row: {
+          company_id: string
+          confidence: number | null
+          created_at: string
+          executed_at: string
+          id: string
+          operation_data: Json
+          operation_type: string
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          confidence?: number | null
+          created_at?: string
+          executed_at?: string
+          id?: string
+          operation_data?: Json
+          operation_type: string
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          confidence?: number | null
+          created_at?: string
+          executed_at?: string
+          id?: string
+          operation_data?: Json
+          operation_type?: string
+          table_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_operation_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_performance_metrics: {
         Row: {
           accuracy_rate: number | null

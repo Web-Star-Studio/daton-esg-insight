@@ -135,3 +135,6 @@ verify_jwt = true
 
 [functions.universal-document-processor]
 verify_jwt = true
+
+[functions.ai-chat-controller]
+verify_jwt = true

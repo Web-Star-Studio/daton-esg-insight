@@ -11,6 +11,8 @@ import { logger } from '@/utils/logger';
 import { setupAutomaticCleanup, cleanupStaleCache } from '@/utils/memoryCleanup';
 import { ActionCardData } from '@/components/ai/ActionCard';
 import { VisualizationData } from '@/components/ai/ContextualVisualization';
+import { usePageContext } from '@/hooks/usePageContext';
+import { Operation } from '@/components/ai/OperationCard';
 
 export interface ChatMessage {
   id: string;
@@ -71,6 +73,12 @@ export interface UseChatAssistantReturn {
   deleteConversation: (convId: string) => Promise<void>;
   conversationId: string | null;
   executeAction: (action: ActionCardData) => Promise<void>;
+  pendingOperations: Operation[];
+  showOperationsPreview: boolean;
+  setShowOperationsPreview: (show: boolean) => void;
+  executeOperations: (operations: Operation[]) => Promise<void>;
+  operationsValidations: any[];
+  operationsSummary: string;
 }
 
 export function useChatAssistant(): UseChatAssistantReturn {
@@ -99,9 +107,14 @@ Qual informação você precisa?`,
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [pendingOperations, setPendingOperations] = useState<Operation[]>([]);
+  const [showOperationsPreview, setShowOperationsPreview] = useState(false);
+  const [operationsValidations, setOperationsValidations] = useState<any[]>([]);
+  const [operationsSummary, setOperationsSummary] = useState('');
   const { user } = useAuth();
   const hasInitializedRef = useRef(false);
   const isEnsuring = useRef(false);
+  const pageContext = usePageContext();
 
   // Storage keys for localStorage caching
   const CACHE_PREFIX = 'chat_messages_';
@@ -1313,6 +1326,69 @@ Qual informação você precisa?`,
     renameConversation,
     deleteConversation,
     conversationId,
-    executeAction: handleExecuteAction
+    executeAction: handleExecuteAction,
+    pendingOperations,
+    showOperationsPreview,
+    setShowOperationsPreview,
+    executeOperations: async (operations: Operation[]) => {
+      console.log('🎯 Executing operations:', operations.length);
+      
+      const companyId = user?.company.id;
+      if (!companyId) throw new Error('Company ID not found');
+
+      // Insert/Update operations sequentially to maintain data integrity
+      for (const op of operations) {
+        try {
+          if (op.type === 'INSERT') {
+            const { error } = await supabase
+              .from(op.table as any)
+              .insert({ ...op.data, company_id: companyId });
+            if (error) throw error;
+          } else if (op.type === 'UPDATE') {
+            const { error } = await supabase
+              .from(op.table as any)
+              .update(op.data)
+              .match({ ...op.where_clause, company_id: companyId });
+            if (error) throw error;
+          } else if (op.type === 'DELETE') {
+            const { error } = await supabase
+              .from(op.table as any)
+              .delete()
+              .match({ ...op.where_clause, company_id: companyId });
+            if (error) throw error;
+          }
+          
+          // Log operation history
+          await supabase.from('ai_operation_history' as any).insert({
+            company_id: companyId,
+            user_id: user.id,
+            operation_type: op.type,
+            table_name: op.table,
+            operation_data: op.data,
+            confidence: op.confidence,
+            executed_at: new Date().toISOString()
+          });
+          
+        } catch (error) {
+          console.error(`Failed to execute ${op.type} on ${op.table}:`, error);
+          throw error;
+        }
+      }
+      
+      // Clear operations after successful execution
+      setPendingOperations([]);
+      setShowOperationsPreview(false);
+      
+      // Add success message
+      const successMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: `✅ Executei ${operations.length} operação(ões) com sucesso! Os dados foram inseridos/atualizados no sistema.`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, successMessage]);
+    },
+    operationsValidations,
+    operationsSummary
   };
 }
