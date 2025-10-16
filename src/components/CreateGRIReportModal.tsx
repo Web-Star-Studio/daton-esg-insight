@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, AlertTriangle, ExternalLink } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { createGRIReport, initializeGRIReport } from "@/services/griReports";
 import { toast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CreateGRIReportModalProps {
   isOpen: boolean;
@@ -30,34 +29,6 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [duplicateReport, setDuplicateReport] = useState<any>(null);
-  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
-
-  const checkForDuplicateYear = async (year: number) => {
-    if (!year || year < 2000 || year > 2100) {
-      setDuplicateReport(null);
-      return;
-    }
-
-    setIsCheckingDuplicate(true);
-    try {
-      // Import the service dynamically to avoid circular dependencies
-      const { getGRIReports } = await import("@/services/griReports");
-      const existingReports = await getGRIReports();
-      const duplicate = existingReports.find(report => report.year === year);
-      setDuplicateReport(duplicate || null);
-    } catch (error) {
-      console.error('Erro ao verificar duplicatas:', error);
-      setDuplicateReport(null);
-    } finally {
-      setIsCheckingDuplicate(false);
-    }
-  };
-
-  const handleYearChange = (newYear: number) => {
-    setYear(newYear);
-    checkForDuplicateYear(newYear);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,35 +81,18 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
         setStartDate(undefined);
         setEndDate(undefined);
         setGriVersion("GRI Standards");
-        setDuplicateReport(null);
       }
     } catch (error: any) {
-      
-      // Handle duplicate key error specifically
-      if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('já existe')) {
-        toast({
-          title: "Relatório Já Existe",
-          description: `Um relatório GRI para o ano ${year} já foi criado para sua empresa.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: error.message || "Erro ao criar relatório GRI. Tente novamente.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar relatório GRI. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleOpenExisting = () => {
-    if (duplicateReport) {
-      onSubmit(duplicateReport);
-      onClose();
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -172,7 +126,7 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
                   min="2000"
                   max="2100"
                   value={year}
-                  onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                  onChange={(e) => setYear(parseInt(e.target.value))}
                   required
                 />
               </div>
@@ -191,24 +145,6 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
                 </Select>
               </div>
             </div>
-
-          {duplicateReport && (
-            <Alert className="mb-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>Já existe um relatório GRI para o ano {year}: "{duplicateReport.title}"</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleOpenExisting}
-                  className="ml-2"
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Abrir Existente
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
 
             <div className="space-y-2">
               <Label>Período de Reporte *</Label>
@@ -274,9 +210,9 @@ export const CreateGRIReportModal: React.FC<CreateGRIReportModalProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={isSubmitting || isCheckingDuplicate || duplicateReport || !title || !year || !startDate || !endDate || !griVersion}
+              disabled={isSubmitting || !title || !year || !startDate || !endDate || !griVersion}
             >
-              {isSubmitting ? "Criando..." : isCheckingDuplicate ? "Verificando..." : "Criar Relatório"}
+              {isSubmitting ? "Criando..." : "Criar Relatório"}
             </Button>
           </div>
         </form>
