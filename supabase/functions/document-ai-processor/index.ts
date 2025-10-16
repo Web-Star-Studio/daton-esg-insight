@@ -123,35 +123,74 @@ async function processDocumentWithAI(supabaseClient: any, jobId: string, documen
     // 2. Extract content based on file type
     let extractedContent = '';
     let imageBase64 = '';
+    let structuredData: any = null;
 
-    if (document.file_type === 'application/pdf') {
-      // For PDFs, call parse-chat-document
-      const formData = new FormData();
-      formData.append('file', fileData, document.file_name);
+    // Determine if we need to parse the document
+    const needsParsing = 
+      document.file_type === 'application/pdf' ||
+      document.file_type.includes('spreadsheet') ||
+      document.file_type.includes('excel') ||
+      document.file_type.includes('csv') ||
+      document.file_type === 'text/csv' ||
+      document.file_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      document.file_type === 'application/vnd.ms-excel';
+
+    if (needsParsing) {
+      console.log('Parsing document with type:', document.file_type);
       
-      const parseResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/parse-chat-document`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
-        },
-        body: JSON.stringify({
-          filePath: document.file_path,
-          fileType: document.file_type
-        })
-      });
+      try {
+        const parseResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/parse-chat-document`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            filePath: document.file_path,
+            fileType: document.file_type
+          })
+        });
 
-      if (parseResponse.ok) {
-        const parseResult = await parseResponse.json();
-        extractedContent = parseResult.content || '';
+        if (parseResponse.ok) {
+          const parseResult = await parseResponse.json();
+          console.log('Parse result:', { 
+            success: parseResult.success, 
+            contentLength: parseResult.parsedContent?.length || 0,
+            tables: parseResult.tables,
+            rows: parseResult.rows
+          });
+          
+          extractedContent = parseResult.parsedContent || '';
+          structuredData = parseResult.structured || null;
+          
+          if (!extractedContent && parseResult.structured) {
+            // If no text content, create summary from structured data
+            extractedContent = JSON.stringify(parseResult.structured, null, 2);
+          }
+        } else {
+          console.error('Parse response not ok:', parseResponse.status, await parseResponse.text());
+        }
+      } catch (parseError) {
+        console.error('Error calling parse-chat-document:', parseError);
       }
     } else if (document.file_type.startsWith('image/')) {
-      // For images, convert to base64
+      // For images, convert to base64 for vision AI
+      console.log('Processing image for vision AI');
       const arrayBuffer = await fileData.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       imageBase64 = `data:${document.file_type};base64,${base64}`;
+    } else if (document.file_type.startsWith('text/')) {
+      // For plain text files, just read the content
+      console.log('Reading plain text file');
+      extractedContent = await fileData.text();
     }
 
-    console.log('Content extracted, length:', extractedContent.length, 'has image:', !!imageBase64);
+    console.log('Content extraction complete:', {
+      contentLength: extractedContent.length,
+      hasImage: !!imageBase64,
+      hasStructuredData: !!structuredData,
+      fileType: document.file_type
+    });
 
     // 3. Analyze with Lovable AI
     const analysisPrompt = buildAnalysisPrompt(document.file_name, extractedContent);

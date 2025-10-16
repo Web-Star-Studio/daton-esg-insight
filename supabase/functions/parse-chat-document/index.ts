@@ -30,11 +30,32 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Download file from storage
-    const { data: fileData, error: downloadError } = await supabaseClient
+    // Download file from storage - try different buckets
+    let fileData: Blob | null = null;
+    let downloadError: any = null;
+    
+    // Try chat-attachments first
+    const chatResult = await supabaseClient
       .storage
       .from('chat-attachments')
       .download(filePath);
+    
+    if (chatResult.data) {
+      fileData = chatResult.data;
+    } else {
+      // Try documents bucket
+      console.log('File not in chat-attachments, trying documents bucket...');
+      const docsResult = await supabaseClient
+        .storage
+        .from('documents')
+        .download(filePath);
+      
+      if (docsResult.data) {
+        fileData = docsResult.data;
+      } else {
+        downloadError = docsResult.error || chatResult.error;
+      }
+    }
 
     if (downloadError || !fileData) {
       throw new Error(`Erro ao baixar arquivo: ${downloadError?.message}`);
