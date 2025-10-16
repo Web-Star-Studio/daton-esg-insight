@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -27,6 +27,13 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     // Default to open on first use if no value stored
     return stored === null ? true : stored === 'true';
   });
+  
+  // Persist fullscreen state
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (embedded) return false;
+    return localStorage.getItem('ai_chat_fullscreen') === 'true';
+  });
+  
   const [inputMessage, setInputMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(true);
   
@@ -59,6 +66,35 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       localStorage.setItem('ai_chat_open', isOpen.toString());
     }
   }, [isOpen, embedded]);
+  
+  // Persist fullscreen state
+  useEffect(() => {
+    if (!embedded) {
+      localStorage.setItem('ai_chat_fullscreen', String(isExpanded));
+    }
+  }, [isExpanded, embedded]);
+  
+  // Block body scroll when fullscreen
+  useEffect(() => {
+    if (!embedded && isExpanded) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [isExpanded, embedded]);
+  
+  // Esc key to exit fullscreen
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isExpanded && !embedded) {
+        setIsExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isExpanded, embedded]);
 
   // Hide quick actions after first user message
   useEffect(() => {
@@ -141,7 +177,13 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className={embedded ? "" : "fixed inset-4 sm:bottom-6 sm:right-6 sm:inset-auto sm:w-[440px] sm:h-[680px] max-h-[calc(100vh-2rem)] z-[100]"}
+            className={
+              embedded 
+                ? "" 
+                : isExpanded
+                  ? "fixed inset-0 z-[120] ai-chat-window ai-chat-container w-screen h-screen p-0"
+                  : "fixed inset-y-4 right-4 z-[110] ai-chat-window ai-chat-container w-[min(520px,calc(100vw-2rem))]"
+            }
           >
             <Card className={embedded 
               ? "w-full h-full flex flex-col border-0 rounded-none shadow-none" 
@@ -194,13 +236,23 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                 <Plus className="h-4 w-4" />
               </Button>
               {!embedded && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsExpanded(v => !v)}
+                    title={isExpanded ? "Restaurar" : "Tela cheia"}
+                  >
+                    {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -212,7 +264,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               isLoading={isLoading}
               onQuickAction={handleQuickAction}
               onExecuteAction={executeAction}
-              containerHeight={embedded ? 500 : undefined}
+              containerHeight={undefined}
             />
           </div>
 

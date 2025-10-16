@@ -60,7 +60,7 @@ export const ChatMessage = memo(function ChatMessage({ message, onExecuteAction 
       <div className={`flex-1 space-y-3 ${isUser ? 'items-end' : 'items-start'}`}>
         {/* Main Message Bubble */}
         <div
-          className={`rounded-2xl px-4 py-3 max-w-[85%] ${
+          className={`rounded-2xl px-4 py-3 max-w-[85%] break-words whitespace-pre-wrap overflow-hidden ${
             isUser
               ? 'bg-primary text-primary-foreground ml-auto'
               : 'bg-muted/50 border border-border/50'
@@ -82,7 +82,7 @@ export const ChatMessage = memo(function ChatMessage({ message, onExecuteAction 
           )}
 
           {/* Message Text */}
-          <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert' : ''}`}>
+          <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert' : ''} break-words whitespace-pre-wrap [&_*]:break-words`}>
             <ReactMarkdown
               components={{
                 // Custom rendering for better formatting
