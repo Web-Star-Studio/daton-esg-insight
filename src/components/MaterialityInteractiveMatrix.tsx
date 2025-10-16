@@ -18,6 +18,29 @@ interface MaterialityInteractiveMatrixProps {
 }
 
 export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: MaterialityInteractiveMatrixProps) => {
+  // Validação de props
+  if (!themes || themes.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Nenhum tema disponível para exibir a matriz</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!matrix || Object.keys(matrix).length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Nenhum dado de matriz disponível</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [isFullscreen, setIsFullscreen] = useState(false);

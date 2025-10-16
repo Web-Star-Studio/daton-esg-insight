@@ -44,10 +44,12 @@ export default function AnaliseMaterialidade() {
     enabled: !!user,
   });
 
-  const { data: assessments = [], isLoading: loadingAssessments } = useQuery({
+  const { data: assessments = [], isLoading: loadingAssessments, error: assessmentsError } = useQuery({
     queryKey: ['materiality-assessments'],
     queryFn: () => getMaterialityAssessments(),
     enabled: !!user,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const createAssessmentMutation = useMutation({
@@ -92,6 +94,28 @@ export default function AnaliseMaterialidade() {
       ...latestAssessment,
       final_matrix: sampleMatrix
     }, themes) : null;
+
+  // Tratamento de erro para assessments
+  if (assessmentsError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Target className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar avaliações</h3>
+            <p className="text-muted-foreground mb-4">
+              {assessmentsError instanceof Error 
+                ? assessmentsError.message 
+                : 'Ocorreu um erro ao carregar as avaliações de materialidade'}
+            </p>
+            <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['materiality-assessments'] })}>
+              Tentar Novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loadingThemes || loadingAssessments) {
     return (

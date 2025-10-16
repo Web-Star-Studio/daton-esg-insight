@@ -118,19 +118,33 @@ export const getThemesByCategory = async () => {
 
 // Avaliações de Materialidade
 export const getMaterialityAssessments = async (companyId?: string) => {
-  const query = supabase
-    .from('materiality_assessments')
-    .select('*')
-    .order('assessment_year', { ascending: false });
-  
-  if (companyId) {
-    query.eq('company_id', companyId);
+  try {
+    const query = supabase
+      .from('materiality_assessments')
+      .select('*')
+      .order('assessment_year', { ascending: false });
+    
+    if (companyId) {
+      // Validar UUID antes de usar
+      if (!companyId || companyId.trim() === '') {
+        console.error('Invalid company ID provided to getMaterialityAssessments');
+        throw new Error('ID da empresa inválido');
+      }
+      query.eq('company_id', companyId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching materiality assessments:', error);
+      throw new Error(`Erro ao buscar avaliações: ${error.message}`);
+    }
+    
+    return data as MaterialityAssessment[];
+  } catch (error) {
+    console.error('getMaterialityAssessments error:', error);
+    throw error;
   }
-  
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return data as MaterialityAssessment[];
 };
 
 export const createMaterialityAssessment = async (assessment: Omit<MaterialityAssessment, 'id' | 'created_at' | 'updated_at'>) => {
