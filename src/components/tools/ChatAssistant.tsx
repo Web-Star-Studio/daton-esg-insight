@@ -5,12 +5,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useChatAssistant } from '@/hooks/useChatAssistant';
 import { AIActionConfirmation } from '@/components/ai/AIActionConfirmation';
+import { AIOperationsPreview } from '@/components/ai/AIOperationsPreview';
 import { QuickActions } from '@/components/ai/QuickActions';
 import { FileUploadButton } from '@/components/ai/FileUploadButton';
 import { FileAttachmentCompact } from '@/components/ai/FileAttachmentCompact';
 import { ChatHistory } from '@/components/ai/ChatHistory';
 import { VirtualizedMessageList } from '@/components/ai/VirtualizedMessageList';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -57,7 +59,15 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     renameConversation,
     deleteConversation,
     conversationId,
-    executeAction
+    executeAction,
+    pendingOperations,
+    showOperationsPreview,
+    setShowOperationsPreview,
+    executeOperations,
+    operationsValidations,
+    operationsSummary,
+    isProcessingAttachments,
+    processingProgress
   } = useChatAssistant();
 
   // Persist open state (non-embedded only)
@@ -276,6 +286,28 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                 </div>
               </div>
 
+          {/* Processing Indicator */}
+          {isProcessingAttachments && (
+            <div className="px-6 py-4 border-b bg-muted/30">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Processando anexos com IA...</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {processingProgress < 50 
+                        ? 'Extraindo dados dos arquivos' 
+                        : processingProgress < 90 
+                        ? 'Analisando conteúdo e identificando operações' 
+                        : 'Finalizando análise'}
+                    </p>
+                  </div>
+                </div>
+                <Progress value={processingProgress} className="h-1.5" />
+              </div>
+            </div>
+          )}
+
           {/* Virtualized Messages - Optimized for performance */}
           <div className="flex-1 min-h-0 overflow-hidden">
             <VirtualizedMessageList
@@ -390,6 +422,16 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         action={pendingAction}
         onConfirm={confirmAction}
         onCancel={cancelAction}
+      />
+      
+      {/* AI Operations Preview */}
+      <AIOperationsPreview
+        open={showOperationsPreview}
+        onClose={() => setShowOperationsPreview(false)}
+        operations={pendingOperations}
+        validations={operationsValidations}
+        summary={operationsSummary}
+        onExecute={executeOperations}
       />
       
       {/* Chat History Drawer */}

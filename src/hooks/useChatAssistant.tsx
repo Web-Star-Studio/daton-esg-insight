@@ -79,6 +79,8 @@ export interface UseChatAssistantReturn {
   executeOperations: (operations: Operation[]) => Promise<void>;
   operationsValidations: any[];
   operationsSummary: string;
+  isProcessingAttachments: boolean;
+  processingProgress: number;
 }
 
 export function useChatAssistant(): UseChatAssistantReturn {
@@ -144,6 +146,10 @@ Qual informação você precisa?`,
 
   // Use intelligent analysis hook
   const { analyzeFile, isAnalyzing, analysisProgress } = useIntelligentAnalysis();
+
+  // Processing states
+  const [isProcessingAttachments, setIsProcessingAttachments] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   // Handle action card execution
   const handleExecuteAction = async (action: ActionCardData) => {
@@ -528,21 +534,23 @@ Qual informação você precisa?`,
       }));
 
       // ============================================
-      // INTELLIGENT ATTACHMENT ANALYSIS
-      // Parse attachments and run AI analysis
+      // INTELLIGENT AI-POWERED DATA OPERATIONS
+      // Use ai-chat-controller when attachments present
       // ============================================
-      let analysisResults: any[] = [];
       
       if (finalProcessedAttachments.length > 0) {
-        console.log('🔍 Pre-processing attachments on client side for guaranteed context...');
+        console.log('🤖 Calling AI Chat Controller for intelligent data operations...');
+        setIsProcessingAttachments(true);
+        setProcessingProgress(10);
         
-        const attachmentSummaries: string[] = [];
-        let successCount = 0;
-        
-        for (const attachment of finalProcessedAttachments) {
-          try {
-            console.log(`📄 Parsing ${attachment.name} via parse-chat-document...`);
+        try {
+          // Process attachments through parse-chat-document first
+          const processedAttachments: any[] = [];
+          for (let i = 0; i < finalProcessedAttachments.length; i++) {
+            const attachment = finalProcessedAttachments[i];
+            setProcessingProgress(10 + (i / finalProcessedAttachments.length) * 40);
             
+            console.log(`📄 Parsing ${attachment.name}...`);
             const { data: parseResult, error: parseError } = await supabase.functions.invoke('parse-chat-document', {
               body: {
                 filePath: attachment.path,
@@ -550,123 +558,130 @@ Qual informação você precisa?`,
                 useVision: attachment.type.startsWith('image/')
               }
             });
-
-            if (parseError) {
-              console.error(`❌ Parse error for ${attachment.name}:`, parseError);
-              attachmentSummaries.push(
-                `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `📎 **${attachment.name}** (${(attachment.size / 1024).toFixed(1)} KB)\n` +
-                `❌ Falha ao processar: ${parseError.message || 'Erro desconhecido'}\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-              );
-              continue;
+            
+            if (!parseError && parseResult?.success) {
+              processedAttachments.push({
+                ...attachment,
+                parsedContent: parseResult.content,
+                structured: parseResult.structured
+              });
             }
-
-            if (!parseResult?.success || !parseResult?.content) {
-              console.warn(`⚠️ No content extracted from ${attachment.name}`);
-              attachmentSummaries.push(
-                `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `📎 **${attachment.name}** (${(attachment.size / 1024).toFixed(1)} KB)\n` +
-                `⚠️ Nenhum conteúdo foi extraído do arquivo\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-              );
-              continue;
-            }
-
-            // Build summary
-            let summary = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-            summary += `📎 **ARQUIVO: ${attachment.name}**\n`;
-            summary += `📏 Tamanho: ${(attachment.size / 1024).toFixed(1)} KB\n`;
-            summary += `📋 Tipo: ${attachment.type}\n`;
-
-            // Structured data (CSV/Excel)
-            if (parseResult.structured?.headers && parseResult.structured?.rows) {
-              const headers = parseResult.structured.headers;
-              const rowCount = parseResult.structured.rows.length;
-              
-              summary += `\n📊 **Dados Estruturados:**\n`;
-              summary += `   • Colunas (${headers.length}): ${headers.slice(0, 15).join(', ')}${headers.length > 15 ? '...' : ''}\n`;
-              summary += `   • Total de linhas: ${rowCount}\n`;
-              
-              if (rowCount > 0) {
-                summary += `\n📝 **Amostra (primeiras 3 linhas):**\n`;
-                parseResult.structured.rows.slice(0, 3).forEach((row: any, idx: number) => {
-                  summary += `   ${idx + 1}. ${JSON.stringify(row).substring(0, 200)}${JSON.stringify(row).length > 200 ? '...' : ''}\n`;
-                });
-              }
-              
-              // Run intelligent analysis on structured data
-              try {
-                console.log(`🧠 Running intelligent analysis on ${attachment.name}...`);
-                // Create a temporary File object for analysis
-                const blob = new Blob([JSON.stringify(parseResult.structured.rows)], { type: 'application/json' });
-                const file = new File([blob], attachment.name, { type: attachment.type });
-                
-                const analysis = await analyzeFile(file, attachment.path);
-                if (analysis) {
-                  analysisResults.push({
-                    fileName: attachment.name,
-                    ...analysis
-                  });
-                  console.log(`✅ Intelligent analysis complete for ${attachment.name}`);
-                }
-              } catch (analysisError) {
-                console.error(`❌ Analysis error for ${attachment.name}:`, analysisError);
-              }
-            }
-
-            // Text content
-            const contentLength = parseResult.content.length;
-            const contentPreview = parseResult.content.substring(0, 2500);
-            summary += `\n📄 **Conteúdo Extraído (${contentLength} caracteres):**\n`;
-            summary += `\`\`\`\n${contentPreview}${contentLength > 2500 ? '\n\n... (conteúdo truncado para exibição)' : ''}\n\`\`\`\n`;
-            summary += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-            attachmentSummaries.push(summary);
-            successCount++;
-            console.log(`✅ Successfully parsed ${attachment.name}`);
-
-          } catch (err) {
-            console.error(`❌ Critical error parsing ${attachment.name}:`, err);
-            attachmentSummaries.push(
-              `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `📎 **${attachment.name}** (${(attachment.size / 1024).toFixed(1)} KB)\n` +
-              `❌ Erro crítico: ${err instanceof Error ? err.message : 'Erro desconhecido'}\n` +
-              `Por favor, tente enviar novamente ou use outro formato.\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-            );
           }
-        }
-
-        // Inject summaries as context message before user's message
-        if (attachmentSummaries.length > 0) {
-          const contextContent = 
-            `\n🤖 INSTRUÇÃO PARA IA: O usuário anexou arquivos. O conteúdo extraído está abaixo. VOCÊ DEVE ANALISAR E USAR ESSES DADOS.\n\n` +
-            `${'='.repeat(60)}\n` +
-            `🔍 CONTEXTO DOS ARQUIVOS ANEXADOS\n` +
-            `${'='.repeat(60)}\n` +
-            `${attachmentSummaries.join('\n\n')}\n\n` +
-            `${'='.repeat(60)}\n` +
-            `⚡ INSTRUÇÕES CRÍTICAS:\n` +
-            `• Os dados acima foram extraídos dos ${successCount} arquivo(s) anexado(s)\n` +
-            `• VOCÊ TEM ACESSO a esse conteúdo - use-o para responder perguntas\n` +
-            `• RESPONDA perguntas diretas sobre os dados (quantas linhas, totais, etc.)\n` +
-            `• NUNCA diga que não consegue ler arquivos - o conteúdo está AQUI\n` +
-            `• Se solicitado importar dados, use as ferramentas apropriadas\n` +
-            `${'='.repeat(60)}\n`;
-
-          apiMessages.push({
-            role: 'user',
-            content: contextContent
-          });
-
-          console.log(`✅ Injected ${attachmentSummaries.length} attachment summaries into conversation context`);
-          console.log(`📄 Context preview:`, contextContent.substring(0, 300) + '...');
           
-          toast.success('Análise inteligente concluída', {
-            description: `${successCount} de ${finalProcessedAttachments.length} arquivo(s) analisado(s)`,
-            duration: 4000
+          setProcessingProgress(60);
+          
+          // Call AI Chat Controller
+          console.log('🧠 Invoking AI Chat Controller...');
+          const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-chat-controller', {
+            body: {
+              message: content,
+              attachments: processedAttachments,
+              pageContext: {
+                tables: pageContext.tables,
+                currentData: pageContext.currentData
+              },
+              conversationId,
+              companyId,
+              userId: user.id
+            }
           });
+          
+          setProcessingProgress(90);
+          
+          if (aiError) {
+            console.error('❌ AI Controller error:', aiError);
+            throw new Error(aiError.message || 'Erro ao processar com IA');
+          }
+          
+          // Check if AI proposed operations
+          if (aiResponse?.operations_proposed && aiResponse?.operations) {
+            console.log('🎯 AI proposed operations:', aiResponse.operations.length);
+            
+            // Set operations for preview
+            setPendingOperations(aiResponse.operations);
+            setOperationsValidations(aiResponse.validations || []);
+            setOperationsSummary(aiResponse.summary || '');
+            setShowOperationsPreview(true);
+            
+            // Add AI response message
+            const aiMessage: ChatMessage = {
+              id: `assistant-${Date.now()}`,
+              role: 'assistant',
+              content: aiResponse.response || 'Operações identificadas. Revise antes de executar.',
+              timestamp: new Date(),
+            };
+            
+            setMessages(prev => [...prev, aiMessage]);
+            
+            // Save to database
+            if (conversationId) {
+              await supabase.from('ai_chat_messages').insert({
+                conversation_id: conversationId,
+                company_id: companyId,
+                user_id: user.id,
+                role: 'assistant',
+                content: aiMessage.content,
+                metadata: {
+                  operations_proposed: true,
+                  operations_count: aiResponse.operations.length
+                }
+              });
+            }
+            
+            setProcessingProgress(100);
+            toast.success('Análise concluída', {
+              description: `${aiResponse.operations.length} operação(ões) identificada(s)`,
+              duration: 5000
+            });
+            
+            setIsLoading(false);
+            setIsProcessingAttachments(false);
+            
+            // Mark attachments as sent
+            if (readyAttachments.length > 0) {
+              markAsSent(readyAttachments.map(a => a.id));
+              clearSentAttachments();
+            }
+            
+            return; // Exit early - user will review operations
+          }
+          
+          // No operations - normal chat response
+          const aiMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: aiResponse?.response || 'Entendi. Como posso ajudar?',
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+          
+          if (conversationId) {
+            await supabase.from('ai_chat_messages').insert({
+              conversation_id: conversationId,
+              company_id: companyId,
+              user_id: user.id,
+              role: 'assistant',
+              content: aiMessage.content
+            });
+          }
+          
+          setProcessingProgress(100);
+          setIsLoading(false);
+          setIsProcessingAttachments(false);
+          
+          // Mark attachments as sent
+          if (readyAttachments.length > 0) {
+            markAsSent(readyAttachments.map(a => a.id));
+            clearSentAttachments();
+          }
+          
+          return;
+          
+        } catch (error) {
+          console.error('❌ AI Controller processing error:', error);
+          setIsProcessingAttachments(false);
+          throw error;
         }
       }
 
@@ -860,36 +875,9 @@ Qual informação você precisa?`,
         return;
       }
 
-      // Combine analysis results from attachments
+      // Combine analysis results from attachments - now handled by AI controller
       const combinedActionCards: ActionCardData[] = [];
       let combinedDataQuality: any = undefined;
-      
-      if (analysisResults.length > 0) {
-        // Merge action cards from all analyzed files
-        analysisResults.forEach(result => {
-          if (result.actionCards) {
-            combinedActionCards.push(...result.actionCards);
-          }
-        });
-        
-        // Use the first data quality or create a combined one
-        const qualityScores = analysisResults
-          .filter(r => r.dataQuality)
-          .map(r => r.dataQuality);
-        
-        if (qualityScores.length > 0) {
-          // Average the scores and combine issues
-          const avgScore = qualityScores.reduce((sum, q) => sum + q.score, 0) / qualityScores.length;
-          const allIssues = qualityScores.flatMap(q => q.issues || []);
-          const allRecommendations = qualityScores.flatMap(q => q.recommendations || []);
-          
-          combinedDataQuality = {
-            score: Math.round(avgScore),
-            issues: [...new Set(allIssues)],
-            recommendations: [...new Set(allRecommendations)]
-          };
-        }
-      }
 
       // Add regular assistant message
       const assistantMessage: ChatMessage = {
@@ -1333,62 +1321,72 @@ Qual informação você precisa?`,
     executeOperations: async (operations: Operation[]) => {
       console.log('🎯 Executing operations:', operations.length);
       
-      const companyId = user?.company.id;
-      if (!companyId) throw new Error('Company ID not found');
+      try {
+        const companyId = user?.company.id;
+        if (!companyId) throw new Error('Company ID not found');
 
-      // Insert/Update operations sequentially to maintain data integrity
-      for (const op of operations) {
-        try {
-          if (op.type === 'INSERT') {
-            const { error } = await supabase
-              .from(op.table as any)
-              .insert({ ...op.data, company_id: companyId });
-            if (error) throw error;
-          } else if (op.type === 'UPDATE') {
-            const { error } = await supabase
-              .from(op.table as any)
-              .update(op.data)
-              .match({ ...op.where_clause, company_id: companyId });
-            if (error) throw error;
-          } else if (op.type === 'DELETE') {
-            const { error } = await supabase
-              .from(op.table as any)
-              .delete()
-              .match({ ...op.where_clause, company_id: companyId });
-            if (error) throw error;
+        // Insert/Update operations sequentially to maintain data integrity
+        for (const op of operations) {
+          try {
+            if (op.type === 'INSERT') {
+              const { error } = await supabase
+                .from(op.table as any)
+                .insert({ ...op.data, company_id: companyId });
+              if (error) throw error;
+            } else if (op.type === 'UPDATE') {
+              const { error } = await supabase
+                .from(op.table as any)
+                .update(op.data)
+                .match({ ...op.where_clause, company_id: companyId });
+              if (error) throw error;
+            } else if (op.type === 'DELETE') {
+              const { error } = await supabase
+                .from(op.table as any)
+                .delete()
+                .match({ ...op.where_clause, company_id: companyId });
+              if (error) throw error;
+            }
+            
+            // Log operation history
+            await supabase.from('ai_operation_history' as any).insert({
+              company_id: companyId,
+              user_id: user.id,
+              operation_type: op.type,
+              table_name: op.table,
+              operation_data: op.data,
+              confidence: op.confidence,
+              executed_at: new Date().toISOString()
+            });
+            
+          } catch (error) {
+            console.error(`Failed to execute ${op.type} on ${op.table}:`, error);
+            throw error;
           }
-          
-          // Log operation history
-          await supabase.from('ai_operation_history' as any).insert({
-            company_id: companyId,
-            user_id: user.id,
-            operation_type: op.type,
-            table_name: op.table,
-            operation_data: op.data,
-            confidence: op.confidence,
-            executed_at: new Date().toISOString()
-          });
-          
-        } catch (error) {
-          console.error(`Failed to execute ${op.type} on ${op.table}:`, error);
-          throw error;
         }
+        
+        // Clear operations after successful execution
+        setPendingOperations([]);
+        setShowOperationsPreview(false);
+        
+        // Add success message
+        const successMessage: ChatMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: `✅ Executei ${operations.length} operação(ões) com sucesso! Os dados foram inseridos/atualizados no sistema.`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, successMessage]);
+      } catch (error) {
+        console.error('❌ Error executing operations:', error);
+        toast.error('Erro ao executar operações', {
+          description: error instanceof Error ? error.message : 'Erro desconhecido'
+        });
+        throw error;
       }
-      
-      // Clear operations after successful execution
-      setPendingOperations([]);
-      setShowOperationsPreview(false);
-      
-      // Add success message
-      const successMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: `✅ Executei ${operations.length} operação(ões) com sucesso! Os dados foram inseridos/atualizados no sistema.`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, successMessage]);
     },
     operationsValidations,
-    operationsSummary
+    operationsSummary,
+    isProcessingAttachments,
+    processingProgress
   };
 }
