@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Database, CheckCircle, XCircle, Lightbulb, Eye } from 'lucide-react';
+import { Loader2, Database, CheckCircle, XCircle, Lightbulb, Eye, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,8 @@ interface UnclassifiedData {
 export function UnclassifiedDataManager() {
   const [selectedData, setSelectedData] = useState<UnclassifiedData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [processingData, setProcessingData] = useState(false);
+  const [executionPlan, setExecutionPlan] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const { data: unclassifiedData, isLoading } = useQuery({
@@ -98,9 +101,70 @@ export function UnclassifiedDataManager() {
     setDialogOpen(true);
   };
 
-  const handleDecision = (decision: string) => {
+  const handleDecision = async (decision: string) => {
     if (!selectedData) return;
+    
+    // If auto-insert, first get execution plan
+    if (decision === 'approved_auto_insert') {
+      setProcessingData(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('intelligent-data-processor', {
+          body: {
+            unclassified_data_id: selectedData.id,
+            action: 'preview',
+          },
+        });
+
+        if (error) throw error;
+        setExecutionPlan(data.execution_plan);
+        setProcessingData(false);
+        return;
+      } catch (error) {
+        console.error('Error getting execution plan:', error);
+        toast.error('Erro ao processar dados');
+        setProcessingData(false);
+        return;
+      }
+    }
+
     decideMutation.mutate({ id: selectedData.id, decision });
+  };
+
+  const executeAutomaticInsertion = async () => {
+    if (!selectedData) return;
+    
+    setProcessingData(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('intelligent-data-processor', {
+        body: {
+          unclassified_data_id: selectedData.id,
+          action: 'auto_insert',
+        },
+      });
+
+      if (error) throw error;
+
+      const successCount = data.results?.successful_operations?.length || 0;
+      const failCount = data.results?.failed_operations?.length || 0;
+
+      toast.success(
+        `Dados inseridos! ${successCount} operações bem-sucedidas${failCount > 0 ? `, ${failCount} falharam` : ''}`
+      );
+
+      decideMutation.mutate({
+        id: selectedData.id,
+        decision: 'inserted',
+      });
+
+      setSelectedData(null);
+      setExecutionPlan(null);
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error executing insertion:', error);
+      toast.error('Erro ao inserir dados');
+    } finally {
+      setProcessingData(false);
+    }
   };
 
   if (isLoading) {
@@ -254,49 +318,169 @@ export function UnclassifiedDataManager() {
                 </TabsContent>
               </Tabs>
 
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  onClick={() => handleDecision('approved_auto_insert')}
-                  className="flex-1"
-                  disabled={decideMutation.isPending}
-                >
-                  {decideMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                  )}
-                  Inserir Automaticamente
-                </Button>
+              {!executionPlan ? (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    onClick={() => handleDecision('approved_auto_insert')}
+                    className="flex-1"
+                    disabled={decideMutation.isPending || processingData}
+                  >
+                    {processingData ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4 mr-2" />
+                    )}
+                    {processingData ? 'Analisando...' : 'Processar Automaticamente'}
+                  </Button>
 
-                <Button
-                  onClick={() => handleDecision('approved_manual_review')}
-                  variant="secondary"
-                  className="flex-1"
-                  disabled={decideMutation.isPending}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Revisar Manualmente
-                </Button>
+                  <Button
+                    onClick={() => handleDecision('approved_manual_review')}
+                    variant="secondary"
+                    disabled={decideMutation.isPending || processingData}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Revisar Manualmente
+                  </Button>
 
-                <Button
-                  onClick={() => handleDecision('create_new_metric')}
-                  variant="outline"
-                  className="flex-1"
-                  disabled={decideMutation.isPending}
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Criar Novo Indicador
-                </Button>
+                  <Button
+                    onClick={() => handleDecision('rejected')}
+                    variant="destructive"
+                    disabled={decideMutation.isPending || processingData}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Rejeitar
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Execution Plan Preview */}
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-5 w-5 text-primary" />
+                      <h4 className="font-semibold">Plano de Execução</h4>
+                      <Badge variant={executionPlan.data_quality_score >= 80 ? 'default' : 'secondary'}>
+                        Qualidade: {executionPlan.data_quality_score}%
+                      </Badge>
+                    </div>
 
-                <Button
-                  onClick={() => handleDecision('rejected')}
-                  variant="destructive"
-                  disabled={decideMutation.isPending}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Rejeitar
-                </Button>
-              </div>
+                    <ScrollArea className="h-[400px] pr-4">
+                      <div className="space-y-4">
+                        {/* Operations */}
+                        <div className="space-y-3">
+                          <h5 className="text-sm font-medium flex items-center gap-2">
+                            <Database className="h-4 w-4" />
+                            Operações ({executionPlan.operations?.length || 0})
+                          </h5>
+                          {executionPlan.operations?.map((op: any, idx: number) => (
+                            <Card key={idx} className="p-4 space-y-2">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <Badge variant={op.operation_type === 'INSERT' ? 'default' : 'secondary'}>
+                                  {op.operation_type}
+                                </Badge>
+                                <Badge variant="outline">{op.table_name}</Badge>
+                                <Badge variant={op.confidence >= 80 ? 'default' : 'secondary'}>
+                                  {op.confidence}% confiança
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{op.reasoning}</p>
+                              <details className="text-xs">
+                                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                                  Ver dados
+                                </summary>
+                                <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">
+                                  {JSON.stringify(op.data, null, 2)}
+                                </pre>
+                              </details>
+                            </Card>
+                          ))}
+                        </div>
+
+                        {/* Validation Notes */}
+                        {executionPlan.validation_notes?.length > 0 && (
+                          <div className="space-y-2">
+                            <h5 className="text-sm font-medium flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              Validações ({executionPlan.validation_notes.length})
+                            </h5>
+                            {executionPlan.validation_notes.map((note: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className={`flex items-start gap-2 text-sm p-2 rounded ${
+                                  note.severity === 'error'
+                                    ? 'bg-destructive/10 text-destructive'
+                                    : note.severity === 'warning'
+                                    ? 'bg-yellow-500/10 text-yellow-600'
+                                    : 'bg-blue-500/10 text-blue-600'
+                                }`}
+                              >
+                                {note.severity === 'error' ? (
+                                  <XCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                ) : note.severity === 'warning' ? (
+                                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                ) : (
+                                  <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                )}
+                                <div className="flex-1">
+                                  <p className="font-medium">{note.field}</p>
+                                  <p className="text-xs opacity-90">{note.message}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Relationships */}
+                        {executionPlan.relationships_detected?.length > 0 && (
+                          <div className="space-y-2">
+                            <h5 className="text-sm font-medium flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4" />
+                              Relações Detectadas
+                            </h5>
+                            {executionPlan.relationships_detected.map((rel: any, idx: number) => (
+                              <div key={idx} className="text-sm p-2 bg-muted rounded">
+                                <span className="font-mono text-xs">
+                                  {rel.from_table} → {rel.to_table}
+                                </span>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {rel.relationship_type} via {rel.foreign_key}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  {/* Action Buttons for Execution */}
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => setExecutionPlan(null)}
+                      disabled={processingData}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={executeAutomaticInsertion}
+                      disabled={processingData}
+                      className="flex-1"
+                    >
+                      {processingData ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Inserindo...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Confirmar e Inserir
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
