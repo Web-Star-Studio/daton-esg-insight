@@ -17,22 +17,29 @@ export const DocumentUploadCard = ({ onFileUploaded }: DocumentUploadCardProps) 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
-    // Validate file type
+    // Validate file type - expandido para máxima compatibilidade
     const allowedTypes = [
       'application/pdf',
       'text/csv', 
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'text/plain'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'application/json',
+      'application/xml',
+      'image/jpeg',
+      'image/png',
+      'image/webp'
     ];
     
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Tipo de arquivo não suportado. Use PDF, CSV, Excel ou TXT.');
+      toast.error('Tipo de arquivo não suportado');
       return;
     }
     
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 20MB.');
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 100MB.');
       return;
     }
 
@@ -134,13 +141,13 @@ export const DocumentUploadCard = ({ onFileUploaded }: DocumentUploadCardProps) 
             {isUploading ? "Aguarde..." : "Arraste e solte ou clique para selecionar"}
           </p>
           <p className="text-sm text-muted-foreground">
-            PDF, CSV, Excel, TXT até 20MB
+            PDF, Excel, Word, PPT, CSV, JSON, XML, Imagens até 100MB
           </p>
           <input
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.csv,.xlsx,.xls,.txt"
+            accept=".pdf,.csv,.xlsx,.xls,.txt,.docx,.doc,.pptx,.json,.xml,.jpg,.jpeg,.png,.webp"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFileUpload(file);

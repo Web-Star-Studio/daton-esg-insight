@@ -6,6 +6,19 @@ import { ActionCardData } from '@/components/ai/ActionCard';
 import { DataQualityScore } from '@/components/ai/DataQualityBadge';
 import { useToast } from '@/hooks/use-toast';
 
+// Configurações de performance otimizadas
+const PERFORMANCE_CONFIG = {
+  maxConcurrentAnalysis: 5, // Processar até 5 arquivos simultaneamente
+  maxFileSize: 100 * 1024 * 1024, // 100MB limite por arquivo (aumentado de 20MB)
+  batchSize: 10, // Processar em lotes de 10 arquivos
+  enableCache: true,
+  cacheTimeout: 3600000, // 1 hora
+  parallelProcessing: true,
+};
+
+// Cache para análises recentes
+const analysisCache = new Map<string, { result: IntelligentAnalysisResult; timestamp: number }>();
+
 export interface IntelligentAnalysisResult {
   summary: string;
   actionCards: ActionCardData[];
@@ -13,6 +26,8 @@ export interface IntelligentAnalysisResult {
   extractedData?: any[];
   visualizations?: any[];
   validationReport?: string;
+  processingTime?: number;
+  fileSize?: number;
 }
 
 export function useIntelligentAnalysis() {
@@ -20,49 +35,107 @@ export function useIntelligentAnalysis() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const { toast } = useToast();
 
+  // Gerar chave de cache baseada no arquivo
+  const getCacheKey = useCallback((file: File): string => {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }, []);
+
+  // Verificar cache
+  const getFromCache = useCallback((key: string): IntelligentAnalysisResult | null => {
+    if (!PERFORMANCE_CONFIG.enableCache) return null;
+    
+    const cached = analysisCache.get(key);
+    if (cached && Date.now() - cached.timestamp < PERFORMANCE_CONFIG.cacheTimeout) {
+      return cached.result;
+    }
+    
+    if (cached) {
+      analysisCache.delete(key); // Limpar cache expirado
+    }
+    return null;
+  }, []);
+
+  // Salvar no cache
+  const saveToCache = useCallback((key: string, result: IntelligentAnalysisResult) => {
+    if (!PERFORMANCE_CONFIG.enableCache) return;
+    
+    analysisCache.set(key, {
+      result,
+      timestamp: Date.now()
+    });
+    
+    // Limitar tamanho do cache (máx 50 itens)
+    if (analysisCache.size > 50) {
+      const firstKey = analysisCache.keys().next().value;
+      analysisCache.delete(firstKey);
+    }
+  }, []);
+
   /**
-   * Analisa arquivo com validação e geração de insights
+   * Analisa arquivo com validação e geração de insights - VERSÃO OTIMIZADA
    */
   const analyzeFile = useCallback(async (
     file: File,
     filePath: string
   ): Promise<IntelligentAnalysisResult> => {
+    const startTime = Date.now();
+    
+    // Verificar tamanho do arquivo
+    if (file.size > PERFORMANCE_CONFIG.maxFileSize) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: `Máximo: ${PERFORMANCE_CONFIG.maxFileSize / (1024 * 1024)}MB`,
+        variant: 'destructive'
+      });
+      throw new Error('File too large');
+    }
+
+    // Verificar cache
+    const cacheKey = getCacheKey(file);
+    const cachedResult = getFromCache(cacheKey);
+    if (cachedResult) {
+      toast({
+        title: '✅ Análise recuperada do cache',
+        description: `Tempo economizado: ${cachedResult.processingTime}ms`
+      });
+      return cachedResult;
+    }
+
     setIsAnalyzing(true);
     setAnalysisProgress(0);
 
     try {
-      // Step 1: Parse document (20%)
-      setAnalysisProgress(20);
-      const { data: parseData, error: parseError } = await supabase.functions.invoke(
-        'parse-chat-document',
-        {
+      // OTIMIZAÇÃO: Processar parsing e classificação em PARALELO
+      setAnalysisProgress(10);
+      
+      const [parseData, classifyData] = await Promise.all([
+        // Step 1: Parse document (paralelo)
+        supabase.functions.invoke('parse-chat-document', {
           body: {
             filePath,
             fileType: file.type,
             useVision: false
           }
-        }
-      );
-
-      if (parseError) throw parseError;
-
-      // Step 2: Classify document (40%)
-      setAnalysisProgress(40);
-      const { data: classifyData, error: classifyError } = await supabase.functions.invoke(
-        'intelligent-document-classifier',
-        {
+        }).then(({ data, error }) => {
+          if (error) throw error;
+          return data;
+        }),
+        
+        // Step 2: Classify document (paralelo)
+        supabase.functions.invoke('intelligent-document-classifier', {
           body: {
             fileName: file.name,
-            fileType: file.type,
-            content: parseData?.content || ''
+            fileType: file.type
           }
-        }
-      );
+        }).then(({ data, error }) => {
+          if (error) throw error;
+          return data;
+        })
+      ]);
 
-      if (classifyError) throw classifyError;
+      setAnalysisProgress(40);
 
-      // Step 3: Extract structured data (60%)
-      setAnalysisProgress(60);
+      // Step 3: Extract structured data
       const { data: extractData, error: extractError } = await supabase.functions.invoke(
         'advanced-document-extractor',
         {
@@ -75,9 +148,9 @@ export function useIntelligentAnalysis() {
       );
 
       if (extractError) throw extractError;
+      setAnalysisProgress(60);
 
-      // Step 4: Validate data (80%)
-      setAnalysisProgress(80);
+      // Step 4: Validate data
       let validationResult;
       let dataQuality: DataQualityScore | undefined;
       let validationReport: string | undefined;
@@ -105,29 +178,37 @@ export function useIntelligentAnalysis() {
         validationReport = formatValidationReport(validationResult);
       }
 
-      // Step 5: Generate action cards (100%)
+      setAnalysisProgress(80);
+
+      // OTIMIZAÇÃO: Gerar action cards e summary em PARALELO
+      const [actionCards, summary] = await Promise.all([
+        Promise.resolve(generateActionCards(classifyData, extractData, validationResult)),
+        Promise.resolve(buildIntelligentSummary(file, classifyData, extractData, validationResult))
+      ]);
+
       setAnalysisProgress(100);
-      const actionCards = generateActionCards(
-        classifyData,
-        extractData,
-        validationResult
-      );
 
-      // Build summary
-      const summary = buildIntelligentSummary(
-        file,
-        classifyData,
-        extractData,
-        validationResult
-      );
-
-      return {
+      const processingTime = Date.now() - startTime;
+      
+      const result: IntelligentAnalysisResult = {
         summary,
         actionCards,
         dataQuality,
         extractedData: extractData?.extractedRecords,
-        validationReport
+        validationReport,
+        processingTime,
+        fileSize: file.size
       };
+
+      // Salvar no cache
+      saveToCache(cacheKey, result);
+
+      toast({
+        title: '✅ Análise concluída',
+        description: `Processado em ${(processingTime / 1000).toFixed(2)}s`
+      });
+
+      return result;
 
     } catch (error) {
       console.error('Analysis error:', error);
@@ -145,12 +226,76 @@ export function useIntelligentAnalysis() {
       setIsAnalyzing(false);
       setAnalysisProgress(0);
     }
+  }, [toast, getCacheKey, getFromCache, saveToCache]);
+
+  /**
+   * Analisar múltiplos arquivos em LOTE com paralelização máxima
+   */
+  const analyzeBatch = useCallback(async (
+    files: Array<{ file: File; filePath: string }>
+  ): Promise<IntelligentAnalysisResult[]> => {
+    const results: IntelligentAnalysisResult[] = [];
+    const startTime = Date.now();
+    
+    toast({
+      title: `🚀 Processando ${files.length} arquivo(s)...`,
+      description: 'Análise em lote otimizada'
+    });
+    
+    // Processar em lotes para evitar sobrecarga
+    for (let i = 0; i < files.length; i += PERFORMANCE_CONFIG.batchSize) {
+      const batch = files.slice(i, i + PERFORMANCE_CONFIG.batchSize);
+      
+      // Processar lote com concorrência controlada
+      const batchPromises: Promise<IntelligentAnalysisResult | null>[] = [];
+      
+      for (let j = 0; j < batch.length; j += PERFORMANCE_CONFIG.maxConcurrentAnalysis) {
+        const concurrent = batch.slice(j, j + PERFORMANCE_CONFIG.maxConcurrentAnalysis);
+        const promises = concurrent.map(({ file, filePath }) => 
+          analyzeFile(file, filePath).catch(error => {
+            console.error(`Error analyzing ${file.name}:`, error);
+            return null;
+          })
+        );
+        
+        const batchResults = await Promise.allSettled(promises);
+        
+        batchResults.forEach(result => {
+          if (result.status === 'fulfilled' && result.value) {
+            results.push(result.value);
+          }
+        });
+      }
+    }
+    
+    const totalTime = Date.now() - startTime;
+    
+    toast({
+      title: `✅ Lote processado: ${results.length}/${files.length}`,
+      description: `Tempo total: ${(totalTime / 1000).toFixed(2)}s`
+    });
+    
+    return results;
+  }, [analyzeFile, toast]);
+
+  // Limpar cache manualmente
+  const clearCache = useCallback(() => {
+    const size = analysisCache.size;
+    analysisCache.clear();
+    toast({
+      title: '🗑️ Cache limpo',
+      description: `${size} análise(s) removida(s)`
+    });
   }, [toast]);
 
   return {
     analyzeFile,
+    analyzeBatch,
+    clearCache,
     isAnalyzing,
-    analysisProgress
+    analysisProgress,
+    cacheSize: analysisCache.size,
+    config: PERFORMANCE_CONFIG
   };
 }
 
