@@ -1393,14 +1393,20 @@ function ensureValidMessage(
     : 'Processando sua solicitação...';
 
   if (context.hasAttachments) {
-    return `📎 ${pageMsg}\n\nRecebi seus anexos e estou preparando a análise. Em alguns segundos você receberá insights detalhados.`;
+    return `📎 ${pageMsg}
+
+Recebi seus anexos e estou preparando a análise. Em alguns segundos você receberá insights detalhados.`;
   }
 
   if (context.hasToolCalls) {
-    return `🔍 ${pageMsg}\n\nConsultei os dados da empresa e estou preparando uma resposta completa para você.`;
+    return `🔍 ${pageMsg}
+
+Consultei os dados da empresa e estou preparando uma resposta completa para você.`;
   }
 
-  return `💭 ${pageMsg}\n\nEstou processando sua solicitação. Se demorar muito, por favor tente reformular sua pergunta.`;
+  return `💭 ${pageMsg}
+
+Estou processando sua solicitação. Se demorar muito, por favor tente reformular sua pergunta.`;
 }
 
 ╔══════════════════════════════════════════════════════════════╗
