@@ -115,6 +115,9 @@ verify_jwt = true
 [functions.daton-ai-chat]
 verify_jwt = true
 
+[functions.get-company-quick-stats]
+verify_jwt = true
+
 [functions.parse-chat-document]
 verify_jwt = false
 

@@ -240,14 +240,14 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
                         Assistente ESG IA
                       </h3>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      {isLoading ? (
+                        {isLoading ? (
                         <>
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                           <span className="animate-pulse">
                             {isProcessingAttachments ? (
-                              <>Processando anexos... {Math.round(processingProgress)}%</>
+                              <>Processando arquivos... {Math.round(processingProgress)}%</>
                             ) : (
-                              <>Analisando com IA...</>
+                              <>Consultando dados da empresa...</>
                             )}
                           </span>
                         </>

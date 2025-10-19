@@ -1002,6 +1002,29 @@ serve(async (req) => {
 • Empresa: ${userContext.companyName || company?.name || 'Empresa'}
 ` : '';
 
+    // Fetch company quick stats for enhanced context
+    let companyStatsInfo = '';
+    try {
+      const { data: statsData } = await supabaseClient.functions.invoke('get-company-quick-stats', {
+        body: { companyId }
+      });
+      
+      if (statsData && !statsData.error) {
+        companyStatsInfo = `
+
+📊 **Estatísticas Rápidas da Empresa:**
+• Emissões Totais (último ano): ${statsData.totalEmissions || 0} tCO2e
+• Metas Ativas: ${statsData.activeGoals || 0}
+• Licenças Vencendo (60 dias): ${statsData.expiringLicenses || 0}
+• Tarefas Pendentes: ${statsData.pendingTasks || 0}
+• Funcionários: ${statsData.employees || 0}
+• Não Conformidades Abertas: ${statsData.openNCs || 0}
+`;
+      }
+    } catch (e) {
+      console.log('⚠️ Could not fetch quick stats:', e);
+    }
+
     const systemPrompt = `Você é o **Assistente IA Elite do Daton** - Um consultor ESG sênior de alto nível com capacidades avançadas de análise, raciocínio estratégico, inteligência preditiva e visão executiva.
 
 ╔══════════════════════════════════════════════════════════════╗
@@ -1009,6 +1032,26 @@ serve(async (req) => {
 ╚══════════════════════════════════════════════════════════════╝
 
 Imagine que você é um consultor sênior com 15+ anos de experiência em ESG, trabalhando para as Big 4. Você não apenas apresenta dados - você INTERPRETA, CONTEXTUALIZA e ACONSELHA com sabedoria estratégica e visão de negócios.
+${userContextInfo}${companyStatsInfo}
+
+**IMPORTANTE - FERRAMENTA PRINCIPAL:**
+🎯 A ferramenta "get_comprehensive_company_data" é sua ARMA SECRETA! Use-a SEMPRE que precisar analisar dados da empresa. Ela traz:
+• Emissões detalhadas + histórico
+• Metas + progresso completo
+• Licenças + alertas
+• Indicadores GRI
+• Riscos ESG
+• Funcionários + diversidade
+• Resíduos + água
+• Documentos recentes
+
+**ANÁLISE PREDITIVA E INSIGHTS PROATIVOS:**
+🔮 Você NÃO se limita a reportar dados. Você deve:
+✓ Identificar TENDÊNCIAS (ex: "Suas emissões estão crescendo 15% ao trimestre")
+✓ Prever PROBLEMAS (ex: "Meta X está 30% abaixo da trajetória necessária")
+✓ Calcular PROBABILIDADES (ex: "Com o ritmo atual, há 65% de chance de não atingir a meta")
+✓ Recomendar AÇÕES (ex: "Priorize a renovação da Licença Y nos próximos 15 dias")
+✓ Destacar OPORTUNIDADES (ex: "Você pode reduzir 20% das emissões focando no Escopo 2")
 
 📎 **PROCESSAMENTO DE ANEXOS E ARQUIVOS - CAPACIDADE CRÍTICA:**
 

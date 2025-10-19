@@ -2,6 +2,7 @@
  * Comprehensive Company Data Fetcher
  * Provides massive data access for AI intelligence
  */
+import { getFromCache, setInCache } from './cache-manager.ts';
 
 export async function getComprehensiveCompanyData(
   companyId: string,
@@ -18,6 +19,14 @@ export async function getComprehensiveCompanyData(
     maxResults?: number;
   } = {}
 ) {
+  // Check cache first
+  const cacheKey = `comprehensive_data_${companyId}`;
+  const cached = getFromCache(cacheKey);
+  if (cached) {
+    console.log('📦 Returning cached comprehensive data');
+    return cached;
+  }
+
   const {
     includeEmissions = true,
     includeGoals = true,
@@ -345,6 +354,10 @@ export async function getComprehensiveCompanyData(
       risks: !!results.data.risks,
       employees: !!results.data.employees
     });
+
+    // Cache results for 5 minutes
+    const cacheKey = `comprehensive_data_${companyId}`;
+    setInCache(cacheKey, results, 5 * 60 * 1000);
 
     return results;
   } catch (error) {
