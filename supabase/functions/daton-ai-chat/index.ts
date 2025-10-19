@@ -26,6 +26,55 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ============================================
+// HELPER: ENSURE VALID MESSAGE
+// ============================================
+/**
+ * Ensures AI response has valid, non-empty content
+ * Returns intelligent fallback based on context if content is empty
+ */
+function ensureValidMessage(
+  content: string | undefined | null,
+  context: {
+    hasAttachments?: boolean;
+    hasToolCalls?: boolean;
+    currentPage?: string;
+    attachmentError?: boolean;
+  }
+): string {
+  if (content && content.trim().length > 0) {
+    return content;
+  }
+  console.warn('⚠️ AI returned empty content - using contextual fallback', context);
+  if (context.attachmentError) {
+    return '❌ Não foi possível processar os anexos enviados. Por favor, tente novamente com arquivos diferentes ou entre em contato com o suporte se o problema persistir.';
+  }
+  const pageContexts: Record<string, string> = {
+    '/dashboard': 'Analisando dados do dashboard da empresa...',
+    '/inventario-gee': 'Consultando inventário de emissões...',
+    '/metas': 'Verificando progresso das metas ESG...',
+    '/licenciamento': 'Analisando status de licenças...',
+    '/gestao-tarefas': 'Consultando tarefas pendentes...',
+    '/gestao-esg': 'Preparando análise ESG...'
+  };
+  const pageMsg = context.currentPage && pageContexts[context.currentPage]
+    ? pageContexts[context.currentPage]
+    : 'Processando sua solicitação...';
+  if (context.hasAttachments) {
+    return `📎 ${pageMsg}
+
+Recebi seus anexos e estou preparando a análise. Em alguns segundos você receberá insights detalhados.`;
+  }
+  if (context.hasToolCalls) {
+    return `🔍 ${pageMsg}
+
+Consultei os dados da empresa e estou preparando uma resposta completa para você.`;
+  }
+  return `💭 ${pageMsg}
+
+Estou processando sua solicitação. Se demorar muito, por favor tente reformular sua pergunta.`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -1348,70 +1397,6 @@ Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferra
 • SEMPRE forneça contexto e impacto das ações
 • SEMPRE ofereça alternativas quando apropriado
 
-// ============================================
-// HELPER: ENSURE VALID MESSAGE
-// ============================================
-
-/**
- * Ensures AI response has valid, non-empty content
- * Returns intelligent fallback based on context if content is empty
- */
-function ensureValidMessage(
-  content: string | undefined | null,
-  context: {
-    hasAttachments?: boolean;
-    hasToolCalls?: boolean;
-    currentPage?: string;
-    attachmentError?: boolean;
-  }
-): string {
-  // If content is valid, return it
-  if (content && content.trim().length > 0) {
-    return content;
-  }
-
-  // Log empty content for debugging
-  console.warn('⚠️ AI returned empty content - using contextual fallback', context);
-
-  // Special case: attachment processing failed
-  if (context.attachmentError) {
-    return '❌ Não foi possível processar os anexos enviados. Por favor, tente novamente com arquivos diferentes ou entre em contato com o suporte se o problema persistir.';
-  }
-
-  // Generate contextual fallback message
-  const pageContexts: Record<string, string> = {
-    '/dashboard': 'Analisando dados do dashboard da empresa...',
-    '/inventario-gee': 'Consultando inventário de emissões...',
-    '/metas': 'Verificando progresso das metas ESG...',
-    '/licenciamento': 'Analisando status de licenças...',
-    '/gestao-tarefas': 'Consultando tarefas pendentes...',
-    '/gestao-esg': 'Preparando análise ESG...',
-  };
-
-  const pageMsg = context.currentPage && pageContexts[context.currentPage] 
-    ? pageContexts[context.currentPage]
-    : 'Processando sua solicitação...';
-
-  if (context.hasAttachments) {
-    return `📎 ${pageMsg}
-
-Recebi seus anexos e estou preparando a análise. Em alguns segundos você receberá insights detalhados.`;
-  }
-
-  if (context.hasToolCalls) {
-    return `🔍 ${pageMsg}
-
-Consultei os dados da empresa e estou preparando uma resposta completa para você.`;
-  }
-
-  return `💭 ${pageMsg}
-
-Estou processando sua solicitação. Se demorar muito, por favor tente reformular sua pergunta.`;
-}
-
-╔══════════════════════════════════════════════════════════════╗
-║  🎯 FRAMEWORK DE RESPOSTA (Use em Todas as Interações)       ║
-╚══════════════════════════════════════════════════════════════╝
 
 **Para PERGUNTAS:**
 1. 🔍 Consulte dados relevantes (use ferramentas apropriadas)
