@@ -36,7 +36,7 @@ serve(async (req) => {
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['Admin', 'Editor'].includes(profile.role)) {
+    if (!profile || !['admin', 'manager', 'super_admin'].includes(profile.role)) {
       return new Response('Insufficient permissions', { status: 403, headers: corsHeaders })
     }
 

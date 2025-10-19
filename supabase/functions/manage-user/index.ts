@@ -34,7 +34,7 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Check if user is admin using profiles table
+    // Check if user is admin or super_admin using profiles table
     const { data: userProfile, error: roleError } = await supabaseClient
       .from('profiles')
       .select('role')
@@ -46,7 +46,7 @@ serve(async (req) => {
       throw new Error('Failed to verify user permissions');
     }
 
-    if (!userProfile || userProfile.role !== 'Admin') {
+    if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
       throw new Error('Only admins can manage users');
     }
 
