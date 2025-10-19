@@ -883,7 +883,25 @@ Qual informação você precisa?`,
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: data.message || 'Desculpe, não consegui gerar uma resposta adequada.',
+        content: data.message || (() => {
+          // Contextual fallback if message is empty
+          console.warn('⚠️ Using fallback message - data.message was empty');
+          const pageContext = currentPage || window.location.pathname;
+          const hasAttachments = finalProcessedAttachments.length > 0;
+          
+          if (hasAttachments) {
+            return '📎 Recebi seus anexos mas não consegui gerar uma análise completa. Por favor, tente novamente.';
+          }
+          
+          const pageMessages: Record<string, string> = {
+            '/dashboard': 'Não consegui processar os dados do dashboard. Por favor, reformule sua pergunta.',
+            '/inventario-gee': 'Não consegui analisar o inventário de emissões. Por favor, tente novamente.',
+            '/metas': 'Não consegui verificar as metas. Por favor, reformule sua solicitação.',
+            '/licenciamento': 'Não consegui analisar as licenças. Por favor, tente novamente.',
+          };
+          
+          return pageMessages[pageContext] || 'Desculpe, não consegui processar sua solicitação. Por favor, reformule sua pergunta ou tente novamente.';
+        })(),
         timestamp: new Date(),
         context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
         companyName: user?.company.name,

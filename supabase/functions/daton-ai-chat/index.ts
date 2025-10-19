@@ -1348,6 +1348,61 @@ Você tem acesso COMPLETO e em TEMPO REAL aos dados da empresa através de ferra
 • SEMPRE forneça contexto e impacto das ações
 • SEMPRE ofereça alternativas quando apropriado
 
+// ============================================
+// HELPER: ENSURE VALID MESSAGE
+// ============================================
+
+/**
+ * Ensures AI response has valid, non-empty content
+ * Returns intelligent fallback based on context if content is empty
+ */
+function ensureValidMessage(
+  content: string | undefined | null,
+  context: {
+    hasAttachments?: boolean;
+    hasToolCalls?: boolean;
+    currentPage?: string;
+    attachmentError?: boolean;
+  }
+): string {
+  // If content is valid, return it
+  if (content && content.trim().length > 0) {
+    return content;
+  }
+
+  // Log empty content for debugging
+  console.warn('⚠️ AI returned empty content - using contextual fallback', context);
+
+  // Special case: attachment processing failed
+  if (context.attachmentError) {
+    return '❌ Não foi possível processar os anexos enviados. Por favor, tente novamente com arquivos diferentes ou entre em contato com o suporte se o problema persistir.';
+  }
+
+  // Generate contextual fallback message
+  const pageContexts: Record<string, string> = {
+    '/dashboard': 'Analisando dados do dashboard da empresa...',
+    '/inventario-gee': 'Consultando inventário de emissões...',
+    '/metas': 'Verificando progresso das metas ESG...',
+    '/licenciamento': 'Analisando status de licenças...',
+    '/gestao-tarefas': 'Consultando tarefas pendentes...',
+    '/gestao-esg': 'Preparando análise ESG...',
+  };
+
+  const pageMsg = context.currentPage && pageContexts[context.currentPage] 
+    ? pageContexts[context.currentPage]
+    : 'Processando sua solicitação...';
+
+  if (context.hasAttachments) {
+    return `📎 ${pageMsg}\n\nRecebi seus anexos e estou preparando a análise. Em alguns segundos você receberá insights detalhados.`;
+  }
+
+  if (context.hasToolCalls) {
+    return `🔍 ${pageMsg}\n\nConsultei os dados da empresa e estou preparando uma resposta completa para você.`;
+  }
+
+  return `💭 ${pageMsg}\n\nEstou processando sua solicitação. Se demorar muito, por favor tente reformular sua pergunta.`;
+}
+
 ╔══════════════════════════════════════════════════════════════╗
 ║  🎯 FRAMEWORK DE RESPOSTA (Use em Todas as Interações)       ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -1613,9 +1668,18 @@ ${attachmentContext}`;
         
         const functionArgs = JSON.parse(writeCall.function.arguments);
         
+        // VALIDATION: Ensure message is valid for pending action
+        const validMessage = ensureValidMessage(
+          `📋 Preparei a seguinte ação para você confirmar:\n\n**${getActionDisplayName(writeCall.function.name)}**\n\nPor favor, confirme se deseja executar esta ação.`,
+          {
+            hasToolCalls: true,
+            currentPage
+          }
+        );
+        
         // Return pending action to frontend
         return new Response(JSON.stringify({
-          message: `📋 Preparei a seguinte ação para você confirmar:\n\n**${getActionDisplayName(writeCall.function.name)}**\n\nPor favor, confirme se deseja executar esta ação.`,
+          message: validMessage,
           pendingAction: {
             toolName: writeCall.function.name,
             displayName: getActionDisplayName(writeCall.function.name),
@@ -1695,6 +1759,17 @@ ${attachmentContext}`;
       const finalData = await finalResponse.json();
       const assistantMessage = finalData.choices[0].message.content;
       
+      // VALIDATION: Ensure message is valid after tool calls
+      const validMessage = ensureValidMessage(assistantMessage, {
+        hasAttachments: attachmentsContext.length > 0,
+        hasToolCalls: true,
+        currentPage
+      });
+      
+      if (!assistantMessage || assistantMessage.trim().length === 0) {
+        console.warn('⚠️ Empty content after tool calls - using fallback');
+      }
+      
       // Generate proactive insights based on current context and data
       const insights = await generateProactiveInsights(
         companyId, 
@@ -1713,7 +1788,7 @@ ${attachmentContext}`;
       }
       
       return new Response(JSON.stringify({ 
-        message: assistantMessage,
+        message: validMessage,
         dataAccessed: toolResults.map((r: any) => r.name),
         insights: insights.length > 0 ? insights : undefined,
         visualizations: visualizations.length > 0 ? visualizations : undefined
@@ -1725,6 +1800,17 @@ ${attachmentContext}`;
     // No tool calls, return direct response with proactive insights
     const assistantMessage = choice.message.content;
     
+    // VALIDATION: Ensure message is valid for direct response
+    const validMessage = ensureValidMessage(assistantMessage, {
+      hasAttachments: attachmentsContext.length > 0,
+      hasToolCalls: false,
+      currentPage
+    });
+    
+    if (!assistantMessage || assistantMessage.trim().length === 0) {
+      console.warn('⚠️ Empty content in direct response - using fallback');
+    }
+    
     // Generate proactive insights even without tool calls
     const insights = await generateProactiveInsights(
       companyId, 
@@ -1733,7 +1819,7 @@ ${attachmentContext}`;
     );
     
     return new Response(JSON.stringify({ 
-      message: assistantMessage,
+      message: validMessage,
       insights: insights.length > 0 ? insights : undefined
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
