@@ -417,6 +417,12 @@ All colors MUST be HSL.
 
   /* Chat assistant responsive styles - Mobile First */
   .ai-chat-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1.5rem;
+    top: auto;
+    left: auto;
+    z-index: 100;
     width: var(--chat-width-mobile);
     height: 100vh;
     max-height: 100vh;

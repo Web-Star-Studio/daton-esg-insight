@@ -26,8 +26,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   const [isOpen, setIsOpen] = useState(() => {
     if (embedded) return true;
     const stored = localStorage.getItem('ai_chat_open');
-    // Default to open on first use if no value stored
-    return stored === null ? true : stored === 'true';
+    // Default to CLOSED on first use
+    return stored === 'true';
   });
   
   // Persist fullscreen state
@@ -112,6 +112,24 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       setShowQuickActions(false);
     }
   }, [messages]);
+
+  // Clear corrupted localStorage state on mount
+  useEffect(() => {
+    if (!embedded) {
+      const stored = localStorage.getItem('ai_chat_open');
+      const fullscreen = localStorage.getItem('ai_chat_fullscreen');
+      
+      // Reset corrupted states
+      if (stored !== 'true' && stored !== 'false') {
+        localStorage.removeItem('ai_chat_open');
+        setIsOpen(false);
+      }
+      if (fullscreen !== 'true' && fullscreen !== 'false') {
+        localStorage.removeItem('ai_chat_fullscreen');
+        setIsExpanded(false);
+      }
+    }
+  }, [embedded]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
