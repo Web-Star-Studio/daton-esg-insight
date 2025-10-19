@@ -7,6 +7,51 @@ export const readTools = [
   {
     type: "function",
     function: {
+      name: "get_comprehensive_company_data",
+      description: "Obtém TODOS os dados relevantes da empresa de uma vez (emissões detalhadas, metas com histórico completo, riscos, funcionários, documentos, etc). Use esta ferramenta PRIMEIRO para ter contexto completo antes de responder perguntas.",
+      parameters: {
+        type: "object",
+        properties: {
+          includeEmissions: {
+            type: "boolean",
+            description: "Incluir dados detalhados de emissões (padrão: true)"
+          },
+          includeGoals: {
+            type: "boolean",
+            description: "Incluir metas e progresso histórico (padrão: true)"
+          },
+          includeMateriality: {
+            type: "boolean",
+            description: "Incluir análise de materialidade (padrão: false)"
+          },
+          includeGRI: {
+            type: "boolean",
+            description: "Incluir indicadores GRI (padrão: false)"
+          },
+          includeRisks: {
+            type: "boolean",
+            description: "Incluir riscos e oportunidades (padrão: true)"
+          },
+          includeEmployees: {
+            type: "boolean",
+            description: "Incluir dados de colaboradores (padrão: true)"
+          },
+          includeWaste: {
+            type: "boolean",
+            description: "Incluir logs de resíduos (padrão: false)"
+          },
+          includeDocuments: {
+            type: "boolean",
+            description: "Incluir documentos recentes (padrão: true)"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "query_emissions_data",
       description: "Consulta dados de emissões de GEE. Use para perguntas sobre emissões totais, por escopo, por período, ou comparações.",
       parameters: {

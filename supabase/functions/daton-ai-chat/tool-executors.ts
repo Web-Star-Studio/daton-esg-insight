@@ -27,6 +27,19 @@ export async function executeReadTool(
 
   try {
     switch (toolName) {
+      case 'get_comprehensive_company_data':
+        console.log('📊 Fetching comprehensive company data...');
+        const comprehensiveData = await getComprehensiveCompanyData(
+          companyId,
+          supabaseClient,
+          args
+        );
+        return {
+          success: true,
+          data: comprehensiveData,
+          message: `Dados completos carregados: ${Object.keys(comprehensiveData.data).length} categorias`
+        };
+        
       case 'query_emissions_data':
         return await queryEmissionsData(args, companyId, supabaseClient);
       

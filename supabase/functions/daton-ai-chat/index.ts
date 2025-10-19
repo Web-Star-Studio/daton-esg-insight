@@ -19,6 +19,7 @@ import {
   analyzeCorrelations, 
   generateExecutiveSummary 
 } from './advanced-analytics.ts';
+import { getComprehensiveCompanyData, getPageSpecificData } from './comprehensive-data.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -94,103 +95,17 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // ✅ ROBUST FALLBACK SYSTEM: De-duplicate and merge all attachment sources
-    let attachmentsFromRequest = attachments || [];
-    let dbAttachments: any[] = [];
-    let metadataAttachments: any[] = [];
+    // ✅ SIMPLIFIED: Use ONLY attachments from current request
+    const attachmentsToUse = attachments || [];
     
-    // FALLBACK 1: Try to reconstruct from database (chat_file_uploads)
-    if (conversationId && (!attachmentsFromRequest || attachmentsFromRequest.length === 0)) {
-      console.log('⚠️ Attachments missing from request, attempting DB fallback...');
-      
-      const { data: recentUploads } = await supabaseClient
-        .from('chat_file_uploads')
-        .select('file_path, file_type, file_name, file_size')
-        .eq('conversation_id', conversationId)
-        .in('processing_status', ['uploaded', 'processed'])
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 3600000).toISOString()) // Last 7 days
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (recentUploads && recentUploads.length > 0) {
-        console.log(`📎 Fallback DB: Reconstructed ${recentUploads.length} attachments from database`);
-        dbAttachments = recentUploads.map(upload => ({
-          path: upload.file_path,
-          type: upload.file_type || 'application/octet-stream',
-          name: upload.file_name || 'arquivo',
-          size: upload.file_size || 0
-        }));
-      }
+    console.log(`📎 Attachments in request: ${attachmentsToUse.length}`);
+    if (attachmentsToUse.length > 0) {
+      console.log('   Attachment details:', attachmentsToUse.map((a: any) => ({
+        name: a.name,
+        type: a.type,
+        size: `${(a.size / 1024).toFixed(1)} KB`
+      })));
     }
-    
-    // FALLBACK 2: Try to reconstruct from message metadata (last 10 user messages)
-    if (conversationId && dbAttachments.length === 0 && (!attachmentsFromRequest || attachmentsFromRequest.length === 0)) {
-      console.log('⚠️ Attempting metadata fallback from last 10 user messages...');
-      
-      const { data: recentUserMessages } = await supabaseClient
-        .from('ai_chat_messages')
-        .select('metadata')
-        .eq('conversation_id', conversationId)
-        .eq('role', 'user')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (recentUserMessages && recentUserMessages.length > 0) {
-        const pathsSet = new Set<string>();
-        const aggregated: any[] = [];
-        
-        for (const msg of recentUserMessages) {
-          const metadata = msg.metadata as any;
-          if (metadata?.attachmentPaths && Array.isArray(metadata.attachmentPaths)) {
-            metadata.attachmentPaths.forEach((path: string, idx: number) => {
-              if (!pathsSet.has(path)) {
-                pathsSet.add(path);
-                aggregated.push({
-                  path,
-                  type: metadata.attachmentTypes?.[idx] || 'application/octet-stream',
-                  name: metadata.attachmentNames?.[idx] || 'arquivo',
-                  size: 0
-                });
-              }
-            });
-          }
-        }
-        
-        if (aggregated.length > 0) {
-          console.log(`📎 Fallback Metadata: Reconstructed ${aggregated.length} attachments from ${recentUserMessages.length} messages`);
-          metadataAttachments = aggregated;
-        }
-      }
-    }
-    
-    // ✅ De-duplicate and merge all attachment sources
-    const allSources = [
-      ...(attachmentsFromRequest || []),
-      ...dbAttachments,
-      ...metadataAttachments
-    ];
-    
-    const pathsSet = new Set<string>();
-    let attachmentsToUse: any[] = [];
-    let attachmentSource = 'none';
-    
-    for (const att of allSources) {
-      if (att.path && !pathsSet.has(att.path)) {
-        pathsSet.add(att.path);
-        attachmentsToUse.push(att);
-      }
-    }
-    
-    // Determine source for logging
-    if (attachmentsFromRequest && attachmentsFromRequest.length > 0) {
-      attachmentSource = (dbAttachments.length > 0 || metadataAttachments.length > 0) ? 'mixed' : 'request';
-    } else if (dbAttachments.length > 0) {
-      attachmentSource = metadataAttachments.length > 0 ? 'mixed' : 'db';
-    } else if (metadataAttachments.length > 0) {
-      attachmentSource = 'metadata';
-    }
-    
-    console.log(`📦 Source: ${attachmentSource.toUpperCase()} (${attachmentsToUse.length} total after de-duplication)`);
 
     // Get comprehensive company data and context
     const { data: company } = await supabaseClient
@@ -886,28 +801,42 @@ serve(async (req) => {
       }
     ];
 
-    // Process attachments with advanced AI analysis
+    // Process attachments with timeout and retry logic
     let attachmentContext = '';
     if (attachmentsToUse && attachmentsToUse.length > 0) {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📎 Backend advanced processing for', attachmentsToUse.length, 'attachment(s)...');
-      console.log('   ℹ️  Note: Client-side fallback already injected basic content');
-      console.log('   ⚙️  This backend pipeline adds: classification, extraction, suggestions');
-      console.log('   📦 Source:', attachments?.length > 0 ? 'Request body' : 'Fallback reconstruction');
+      console.log('📎 Processing', attachmentsToUse.length, 'attachment(s) with timeouts...');
+      
+      const PARSE_TIMEOUT = 30000; // 30 seconds per file
+      const contextParts: string[] = [];
       
       for (const attachment of attachmentsToUse) {
         try {
-          console.log('📄 Analyzing:', attachment.name, `(${(attachment.size / 1024).toFixed(1)} KB)`);
+          console.log(`📄 Analyzing: ${attachment.name} (${(attachment.size / 1024).toFixed(1)} KB)`);
           
-          // Step 1: Parse document with retry logic
-          let parseData: any = null;
-          let parseError: any = null;
+          // Single parse attempt with timeout
+          const parsePromise = supabaseClient.functions.invoke('parse-chat-document', {
+            body: { 
+              filePath: attachment.path, 
+              fileType: attachment.type,
+              useVision: false
+            }
+          });
           
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            const { data, error } = await supabaseClient.functions.invoke('parse-chat-document', {
-              body: { 
-                filePath: attachment.path, 
-                fileType: attachment.type,
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Parse timeout')), PARSE_TIMEOUT)
+          );
+          
+          const { data: parseData, error: parseError } = await Promise.race([
+            parsePromise,
+            timeoutPromise
+          ]) as any;
+          
+          if (parseError) {
+            console.error(`❌ Parse error: ${attachment.name}`, parseError);
+            contextParts.push(`❌ **Falha ao processar: ${attachment.name}**\nMotivo: ${parseError.message}\n`);
+            continue;
+          }
                 useVision: attachment.type.startsWith('image/')
               }
             });
@@ -1477,26 +1406,43 @@ ${attachmentContext}`;
       streamEnabled: stream
     });
 
-    // Call Lovable AI with streaming support
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
-        tools: tools,
-        tool_choice: 'auto',
-        temperature: 0.7,
-        max_tokens: 2000,
-        stream: stream || false
-      }),
-    });
+    // Call Lovable AI with streaming support and 45s timeout
+    const AI_TIMEOUT = 45000; // 45 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT);
+
+    let response: Response;
+    try {
+      response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages
+          ],
+          tools: tools,
+          tool_choice: 'auto',
+          temperature: 0.7,
+          max_tokens: 2000,
+          stream: stream || false
+        }),
+        signal: controller.signal
+      });
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        console.error('⏱️ AI timeout after 45s');
+        throw new Error('IA timeout - a análise está demorando muito. Tente novamente com uma pergunta mais simples.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
