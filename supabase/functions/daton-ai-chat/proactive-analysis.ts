@@ -1,19 +1,25 @@
 /**
  * Proactive Analysis Engine
- * Analyzes company data and generates intelligent insights
+ * Generates intelligent insights and alerts based on company data
  */
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { predictGoalAchievement, calculateLicenseRiskScore } from './predictive-analytics.ts';
 
 export async function generateProactiveInsights(
   companyId: string,
   currentRoute: string,
-  supabaseClient: any
+  supabaseClient: SupabaseClient
 ): Promise<any[]> {
   const insights: any[] = [];
   
   try {
+    // Always check critical alerts first
+    const criticalAlerts = await checkCriticalAlerts(companyId, supabaseClient);
+    insights.push(...criticalAlerts);
+    
     // Analyze based on current page context
     if (currentRoute.includes('/metas')) {
-      const goalInsights = await analyzeGoals(companyId, supabaseClient);
+      const goalInsights = await analyzeGoalsAdvanced(companyId, supabaseClient);
       insights.push(...goalInsights);
     }
     
@@ -27,10 +33,12 @@ export async function generateProactiveInsights(
       insights.push(...dashboardInsights);
     }
     
-    // Always check for critical alerts
-    const criticalAlerts = await checkCriticalAlerts(companyId, supabaseClient);
-    insights.push(...criticalAlerts);
+    if (currentRoute.includes('/licenciamento')) {
+      const licenseInsights = await analyzeLicensesAdvanced(companyId, supabaseClient);
+      insights.push(...licenseInsights);
+    }
     
+    console.log(`✅ Generated ${insights.length} proactive insights`);
   } catch (error) {
     console.error('Error generating proactive insights:', error);
   }
@@ -38,7 +46,96 @@ export async function generateProactiveInsights(
   return insights;
 }
 
-async function analyzeGoals(companyId: string, supabase: any) {
+// Advanced goal analysis with predictive insights
+async function analyzeGoalsAdvanced(companyId: string, supabase: SupabaseClient) {
+  const insights: any[] = [];
+  
+  const { data: goals } = await supabase
+    .from('goals')
+    .select('*, goal_progress_updates(*)')
+    .eq('company_id', companyId)
+    .in('status', ['Ativo', 'Em Andamento']);
+  
+  if (!goals || goals.length === 0) return insights;
+  
+  // Use predictive analytics for each goal
+  for (const goal of goals) {
+    if (goal.goal_progress_updates && goal.goal_progress_updates.length >= 2) {
+      const prediction = await predictGoalAchievement(goal.id, supabase);
+      
+      if (prediction.probability < 50) {
+        insights.push({
+          id: `goal_risk_${goal.id}`,
+          type: 'alert',
+          title: `🚨 Meta em risco: ${goal.goal_name}`,
+          description: `Probabilidade de atingimento: ${prediction.probability}%. ${prediction.recommendation}`,
+          priority: 'high',
+          category: 'Metas ESG',
+          data: {
+            goalId: goal.id,
+            prediction
+          }
+        });
+      } else if (prediction.probability >= 80) {
+        insights.push({
+          id: `goal_success_${goal.id}`,
+          type: 'success',
+          title: `✅ Meta no caminho certo: ${goal.goal_name}`,
+          description: `Probabilidade de atingimento: ${prediction.probability}%. Continue assim!`,
+          priority: 'low',
+          category: 'Metas ESG',
+          data: {
+            goalId: goal.id,
+            prediction
+          }
+        });
+      }
+    }
+  }
+  
+  return insights;
+}
+
+// Advanced license analysis with risk scoring
+async function analyzeLicensesAdvanced(companyId: string, supabase: SupabaseClient) {
+  const insights: any[] = [];
+  
+  const { data: licenses } = await supabase
+    .from('licenses')
+    .select('*')
+    .eq('company_id', companyId);
+  
+  if (!licenses) return insights;
+  
+  // Calculate risk score for each license
+  const highRiskLicenses = licenses
+    .map((license: any) => ({
+      ...license,
+      riskAnalysis: calculateLicenseRiskScore(license)
+    }))
+    .filter((l: any) => l.riskAnalysis.level === 'high' || l.riskAnalysis.level === 'critical')
+    .sort((a: any, b: any) => b.riskAnalysis.score - a.riskAnalysis.score);
+  
+  if (highRiskLicenses.length > 0) {
+    const topRisk = highRiskLicenses[0];
+    insights.push({
+      id: `license_risk_${topRisk.id}`,
+      type: 'alert',
+      title: `⚠️ Licença de alto risco: ${topRisk.license_name}`,
+      description: `Score de risco: ${topRisk.riskAnalysis.score}/100. Fatores: ${topRisk.riskAnalysis.factors.join(', ')}`,
+      priority: topRisk.riskAnalysis.level === 'critical' ? 'critical' : 'high',
+      category: 'Licenciamento',
+      data: {
+        licenseId: topRisk.id,
+        riskAnalysis: topRisk.riskAnalysis
+      }
+    });
+  }
+  
+  return insights;
+}
+
+async function analyzeGoals(companyId: string, supabase: SupabaseClient) {
   const insights: any[] = [];
   
   const { data: goals } = await supabase

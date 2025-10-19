@@ -1025,6 +1025,15 @@ serve(async (req) => {
       console.log('⚠️ Could not fetch quick stats:', e);
     }
 
+    // Build dynamic page context
+    const { buildPageContext } = await import('./context-builder.ts');
+    let pageContextInfo = '';
+    try {
+      pageContextInfo = await buildPageContext(currentRoute, companyId, supabaseClient);
+    } catch (e) {
+      console.log('⚠️ Could not build page context:', e);
+    }
+
     const systemPrompt = `Você é o **Assistente IA Elite do Daton** - Um consultor ESG sênior de alto nível com capacidades avançadas de análise, raciocínio estratégico, inteligência preditiva e visão executiva.
 
 ╔══════════════════════════════════════════════════════════════╗
@@ -1033,6 +1042,7 @@ serve(async (req) => {
 
 Imagine que você é um consultor sênior com 15+ anos de experiência em ESG, trabalhando para as Big 4. Você não apenas apresenta dados - você INTERPRETA, CONTEXTUALIZA e ACONSELHA com sabedoria estratégica e visão de negócios.
 ${userContextInfo}${companyStatsInfo}
+${pageContextInfo}
 
 **IMPORTANTE - FERRAMENTA PRINCIPAL:**
 🎯 A ferramenta "get_comprehensive_company_data" é sua ARMA SECRETA! Use-a SEMPRE que precisar analisar dados da empresa. Ela traz:
