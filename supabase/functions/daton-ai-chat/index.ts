@@ -832,30 +832,9 @@ serve(async (req) => {
             timeoutPromise
           ]) as any;
           
-          if (parseError) {
-            console.error(`❌ Parse error: ${attachment.name}`, parseError);
-            contextParts.push(`❌ **Falha ao processar: ${attachment.name}**\nMotivo: ${parseError.message}\n`);
-            continue;
-          }
-                useVision: attachment.type.startsWith('image/')
-              }
-            });
-            
-            if (error || !data?.content) {
-              parseError = error;
-              console.warn(`Parse attempt ${attempt}/3 failed:`, error);
-              if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
-              continue;
-            }
-            
-            parseData = data;
-            break;
-          }
-
           if (parseError || !parseData?.content) {
             console.error('❌ Failed to parse:', attachment.name, parseError);
-            attachmentContext += `\n\n❌ **Falha ao processar: ${attachment.name}**`;
-            attachmentContext += `\nMotivo: ${parseError?.message || 'Não foi possível extrair conteúdo do arquivo'}`;
+            contextParts.push(`❌ **Falha ao processar: ${attachment.name}**\nMotivo: ${parseError?.message || 'Não foi possível extrair conteúdo do arquivo'}\n`);
             continue;
           }
 
