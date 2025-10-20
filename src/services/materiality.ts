@@ -119,21 +119,39 @@ export const getThemesByCategory = async () => {
 // Avaliações de Materialidade
 export const getMaterialityAssessments = async (companyId?: string) => {
   try {
-    const query = supabase
+    // Se company_id não foi fornecido, buscar do usuário atual
+    let targetCompanyId = companyId;
+    
+    if (!targetCompanyId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.company_id) {
+        throw new Error('Empresa não encontrada para o usuário');
+      }
+
+      targetCompanyId = profile.company_id;
+    }
+
+    // Validar UUID antes de usar
+    if (!targetCompanyId || targetCompanyId.trim() === '') {
+      console.error('Invalid company ID in getMaterialityAssessments');
+      throw new Error('ID da empresa inválido');
+    }
+
+    const { data, error } = await supabase
       .from('materiality_assessments')
       .select('*')
+      .eq('company_id', targetCompanyId)
       .order('assessment_year', { ascending: false });
-    
-    if (companyId) {
-      // Validar UUID antes de usar
-      if (!companyId || companyId.trim() === '') {
-        console.error('Invalid company ID provided to getMaterialityAssessments');
-        throw new Error('ID da empresa inválido');
-      }
-      query.eq('company_id', companyId);
-    }
-    
-    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching materiality assessments:', error);

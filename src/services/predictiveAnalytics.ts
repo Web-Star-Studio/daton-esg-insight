@@ -42,10 +42,20 @@ export const getPredictiveAnalysis = async (
   months: number = 3
 ): Promise<PredictionResult | ComplianceRiskScore | FullAnalysis> => {
   try {
+    // Get current session for authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado');
+    }
+
     const { data, error } = await supabase.functions.invoke('predictive-analytics', {
       body: {
         analysis_type: analysisType,
         months
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
       }
     });
 
