@@ -15,6 +15,7 @@ import { PostOnboardingValidation } from './PostOnboardingValidation';
 import { InitialDataSetup } from './InitialDataSetup';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 import { OnboardingRedirectHandler } from './OnboardingRedirectHandler';
+import { OnboardingErrorBoundary } from './OnboardingErrorBoundary';
 
 function CleanOnboardingContent() {
   const navigate = useNavigate();
@@ -202,7 +203,25 @@ function CleanOnboardingContent() {
     
     try {
       if (user?.id) {
-        // 1. Update profile first
+        // Get company_id with fallback
+        let companyId = user.company?.id;
+        
+        if (!companyId) {
+          console.warn('⚠️ Company ID not available, fetching from profile...');
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('id', user.id)
+            .single();
+            
+          if (profileError || !profileData?.company_id) {
+            console.error('❌ Cannot complete without company_id, will skip selections');
+          } else {
+            companyId = profileData.company_id;
+          }
+        }
+        
+        // 1. Update profile first (most critical)
         console.log('📝 Updating profile...');
         const { error: profileError } = await supabase
           .from('profiles')
@@ -215,25 +234,28 @@ function CleanOnboardingContent() {
         }
         console.log('✅ Profile updated successfully');
         
-        // 2. Complete onboarding selections
-        console.log('🏁 Completing onboarding selections...');
-        const { error: selectionsError } = await supabase
-          .from('onboarding_selections')
-          .upsert([{
-            user_id: user.id,
-            company_id: user.company?.id || '',
-            is_completed: true,
-            completed_at: new Date().toISOString(),
-            selected_modules: state.selectedModules || [],
-            module_configurations: state.moduleConfigurations || {}
-          }], {
-            onConflict: 'user_id'
-          });
-          
-        if (selectionsError && selectionsError.code !== '23505') {
-          console.error('❌ Selections error:', selectionsError);
-        } else {
-          console.log('✅ Selections marked complete');
+        // 2. Complete onboarding selections (only if we have company_id)
+        if (companyId) {
+          console.log('🏁 Completing onboarding selections...');
+          const { error: selectionsError } = await supabase
+            .from('onboarding_selections')
+            .upsert([{
+              user_id: user.id,
+              company_id: companyId,
+              is_completed: true,
+              completed_at: new Date().toISOString(),
+              selected_modules: state.selectedModules || [],
+              module_configurations: state.moduleConfigurations || {},
+              current_step: state.totalSteps - 1
+            }], {
+              onConflict: 'user_id'
+            });
+            
+          if (selectionsError && selectionsError.code !== '23505') {
+            console.warn('⚠️ Selections error (non-critical):', selectionsError);
+          } else {
+            console.log('✅ Selections marked complete');
+          }
         }
         
         // 3. Clear onboarding-related local storage
@@ -257,11 +279,11 @@ function CleanOnboardingContent() {
         navigate('/', { replace: true });
       }, 500);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Emergency completion error:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível concluir o onboarding. Redirecionando...",
+        description: error?.message || "Não foi possível concluir o onboarding. Redirecionando...",
         variant: "destructive"
       });
       
@@ -393,8 +415,10 @@ function CleanOnboardingContent() {
 
 export function CleanOnboardingMain() {
   return (
-    <OnboardingFlowProvider>
-      <CleanOnboardingContent />
-    </OnboardingFlowProvider>
+    <OnboardingErrorBoundary>
+      <OnboardingFlowProvider>
+        <CleanOnboardingContent />
+      </OnboardingFlowProvider>
+    </OnboardingErrorBoundary>
   );
 }

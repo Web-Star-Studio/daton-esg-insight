@@ -125,19 +125,38 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
       return;
     }
 
-    if (!user.company?.id) {
-      console.warn('⚠️ Company ID not available for saving onboarding data');
-      return;
-    }
-
     const perfLogger = createPerformanceLogger('saveOnboardingData');
 
     try {
+      // Get company_id with fallback
+      let companyId = user.company?.id;
+      
+      if (!companyId) {
+        console.warn('⚠️ Company ID not in user object, fetching from profile...');
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError || !profileData?.company_id) {
+          console.error('❌ Cannot save onboarding data without company_id');
+          toast({
+            title: 'Aviso',
+            description: 'Não foi possível salvar o progresso. Suas seleções serão mantidas localmente.',
+            variant: 'default'
+          });
+          return;
+        }
+        
+        companyId = profileData.company_id;
+      }
+
       const { data, error } = await supabase
         .from('onboarding_selections')
         .upsert([{
           user_id: user.id,
-          company_id: user.company.id,
+          company_id: companyId,
           current_step: state.currentStep,
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
@@ -158,11 +177,8 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
       logDatabaseOperation('upsert', 'onboarding_selections', true, null);
       perfLogger.end(true);
       
-      toast({
-        title: 'Progresso salvo',
-        description: 'Suas seleções foram salvas automaticamente.',
-        duration: 2000
-      });
+      // Silent save - don't spam user with toasts
+      console.log('✅ Onboarding progress saved silently');
     } catch (error) {
       perfLogger.end(false, error);
       console.error('❌ Error saving onboarding data:', error);
@@ -220,12 +236,31 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     try {
       console.log('📝 OnboardingFlowContext: Completing onboarding...');
       
+      // Get company_id with fallback
+      let companyId = user.company?.id;
+      
+      if (!companyId) {
+        console.warn('⚠️ Company ID not available, fetching from profile...');
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError || !profileData?.company_id) {
+          console.error('❌ Cannot complete onboarding without company_id');
+          throw new Error('Company ID not found');
+        }
+        
+        companyId = profileData.company_id;
+      }
+      
       // 1. Update onboarding selections
       const { error: updateError } = await supabase
         .from('onboarding_selections')
         .upsert([{ 
           user_id: user.id,
-          company_id: user.company?.id || '',
+          company_id: companyId,
           is_completed: true,
           completed_at: new Date().toISOString(),
           selected_modules: state.selectedModules,
@@ -272,13 +307,13 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
 
       console.log('✅ OnboardingFlowContext: Onboarding completed successfully');
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ OnboardingFlowContext: Error completing onboarding:', error);
       setState(prev => ({ ...prev, isLoading: false }));
       
       toast({
         title: 'Erro ao finalizar',
-        description: `Ocorreu um erro ao finalizar o onboarding: ${error.message || 'Erro desconhecido'}`,
+        description: error?.message || 'Ocorreu um erro ao finalizar o onboarding',
         variant: 'destructive'
       });
       
