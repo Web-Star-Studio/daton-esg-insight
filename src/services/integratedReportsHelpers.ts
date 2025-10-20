@@ -116,7 +116,7 @@ export const calculateDiversityMetrics = (employees: any[]) => {
   }, {} as Record<string, number>);
   
   // Simpson Diversity Index (simplified)
-  const genderDiversity = Object.values(genderCount).reduce((sum: number, count) => {
+  const genderDiversity = (Object.values(genderCount) as number[]).reduce((sum: number, count: number) => {
     return sum + ((count / total) * (count / total));
   }, 0);
   const diversityIndex = (1 - genderDiversity) * 10; // Scale to 0-10
@@ -124,13 +124,13 @@ export const calculateDiversityMetrics = (employees: any[]) => {
   return {
     gender_distribution: Object.entries(genderCount).map(([gender, count]) => ({
       gender,
-      count,
-      percentage: (count / total) * 100,
+      count: count as number,
+      percentage: ((count as number) / total) * 100,
     })),
     age_distribution: Object.entries(ageGroups).map(([group, count]) => ({
       group,
-      count,
-      percentage: (count / total) * 100,
+      count: count as number,
+      percentage: ((count as number) / total) * 100,
     })),
     diversity_index: Math.round(diversityIndex * 10) / 10,
   };
