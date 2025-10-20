@@ -38,6 +38,7 @@ import { FrameworkReportingTemplates } from "@/components/FrameworkReportingTemp
 import { CreateGRIReportModal } from "@/components/CreateGRIReportModal";
 import { GRIReportBuilderModal } from "@/components/GRIReportBuilderModal";
 import SGQReportsModal from "@/components/SGQReportsModal";
+import { CreateIntegratedReportModal } from "@/components/integrated-reports/CreateIntegratedReportModal";
 import { IntelligentReportingDashboard } from "@/components/reports/IntelligentReportingDashboard";
 import { ReportGeneratorConfiguration } from "@/components/reports/ReportGeneratorConfiguration";
 import { ReportGenerationMonitor } from "@/components/reports/ReportGenerationMonitor";
@@ -102,8 +103,9 @@ export default function RelatoriosIntegrados() {
   const [loading, setLoading] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCreateReportModalOpen, setIsCreateReportModalOpen] = useState(false);
 
-  const { data: reports } = useQuery({
+  const { data: reports, refetch: refetchReports } = useQuery({
     queryKey: ['integrated-reports'],
     queryFn: getIntegratedReports
   });
@@ -185,9 +187,11 @@ export default function RelatoriosIntegrados() {
   const canDownload = (status: string) => status === "Concluído" || status === "Publicado";
 
   const handleCreateReport = () => {
-    toast.success("Novo Relatório", {
-      description: "Funcionalidade será implementada em breve",
-    });
+    setIsCreateReportModalOpen(true);
+  };
+
+  const handleReportCreated = () => {
+    refetchReports();
   };
 
   const handleExportReport = (reportId: string) => {
@@ -588,6 +592,12 @@ export default function RelatoriosIntegrados() {
           onUpdate={() => loadGRIReports()}
         />
       )}
+
+      <CreateIntegratedReportModal
+        isOpen={isCreateReportModalOpen}
+        onClose={() => setIsCreateReportModalOpen(false)}
+        onSuccess={handleReportCreated}
+      />
     </div>
   );
 }
