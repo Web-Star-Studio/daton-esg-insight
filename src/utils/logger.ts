@@ -6,9 +6,11 @@
 import { PRODUCTION_CONFIG, isProduction } from './productionConfig';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+type LogCategory = 'auth' | 'api' | 'ui' | 'database' | 'service' | 'general';
 
 interface LogEntry {
   level: LogLevel;
+  category: LogCategory;
   message: string;
   timestamp: Date;
   context?: any;
@@ -35,9 +37,10 @@ class Logger {
     return levels[level] >= levels[configLevel];
   }
 
-  private createLogEntry(level: LogLevel, message: string, context?: any): LogEntry {
+  private createLogEntry(level: LogLevel, category: LogCategory, message: string, context?: any): LogEntry {
     const entry: LogEntry = {
       level,
+      category,
       message,
       timestamp: new Date(),
       context,
@@ -56,46 +59,55 @@ class Logger {
     return entry;
   }
 
-  info(message: string, ...args: any[]) {
+  info(message: string, categoryOrContext?: LogCategory | any, ...args: any[]) {
+    const category: LogCategory = typeof categoryOrContext === 'string' ? categoryOrContext as LogCategory : 'general';
+    const context = typeof categoryOrContext === 'string' ? args : [categoryOrContext, ...args];
+    
     if (this.shouldLog('info')) {
-      this.createLogEntry('info', message, args);
-      console.info(`ℹ️ ${message}`, ...args);
+      this.createLogEntry('info', category, message, context);
+      console.info(`ℹ️ [${category.toUpperCase()}] ${message}`, ...context);
     }
   }
 
-  warn(message: string, ...args: any[]) {
+  warn(message: string, categoryOrContext?: LogCategory | any, ...args: any[]) {
+    const category: LogCategory = typeof categoryOrContext === 'string' ? categoryOrContext as LogCategory : 'general';
+    const context = typeof categoryOrContext === 'string' ? args : [categoryOrContext, ...args];
+    
     if (this.shouldLog('warn')) {
-      const entry = this.createLogEntry('warn', message, args);
-      console.warn(`⚠️ ${message}`, ...args);
+      this.createLogEntry('warn', category, message, context);
+      console.warn(`⚠️ [${category.toUpperCase()}] ${message}`, ...context);
       
       if (isProduction() && PRODUCTION_CONFIG.LOGGING.ENABLE_ERROR_REPORTING) {
-        this.reportError(message, args[0]);
+        this.reportError(message, context[0]);
       }
     }
   }
 
-  error(message: string, error?: Error | unknown, ...args: any[]) {
+  error(message: string, error?: Error | unknown, categoryOrExtra?: LogCategory | any, ...args: any[]) {
+    const category: LogCategory = typeof categoryOrExtra === 'string' ? categoryOrExtra as LogCategory : 'general';
+    
     if (this.shouldLog('error')) {
-      const entry = this.createLogEntry('error', message, error);
+      this.createLogEntry('error', category, message, error);
       
-      // Format error message with stack trace if available
       const errorDetails = error instanceof Error 
         ? `${error.message}\n${error.stack || ''}`
         : String(error);
       
-      console.error(`❌ ${message}`, errorDetails, ...args);
+      console.error(`❌ [${category.toUpperCase()}] ${message}`, errorDetails, ...args);
       
-      // In production, send to error reporting service
       if (isProduction() && PRODUCTION_CONFIG.LOGGING.ENABLE_ERROR_REPORTING) {
         this.reportError(message, error);
       }
     }
   }
 
-  debug(message: string, ...args: any[]) {
+  debug(message: string, categoryOrContext?: LogCategory | any, ...args: any[]) {
+    const category: LogCategory = typeof categoryOrContext === 'string' ? categoryOrContext as LogCategory : 'general';
+    const context = typeof categoryOrContext === 'string' ? args : [categoryOrContext, ...args];
+    
     if (this.shouldLog('debug')) {
-      this.createLogEntry('debug', message, args);
-      console.debug(`🔍 ${message}`, ...args);
+      this.createLogEntry('debug', category, message, context);
+      console.debug(`🔍 [${category.toUpperCase()}] ${message}`, ...context);
     }
   }
 

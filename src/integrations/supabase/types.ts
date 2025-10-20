@@ -13267,7 +13267,9 @@ export type Database = {
         Returns: Json
       }
       get_conversion_factor: {
-        Args: { p_category?: string; p_from_unit: string; p_to_unit: string }
+        Args:
+          | { p_category?: string; p_from_unit: string; p_to_unit: string }
+          | { p_emission_source_id: string; p_unit: string }
         Returns: number
       }
       get_dashboard_analytics: {
@@ -13275,7 +13277,9 @@ export type Database = {
         Returns: Json
       }
       get_indicator_suggested_value: {
-        Args: { p_company_id: string; p_indicator_code: string }
+        Args:
+          | { p_company_id: string; p_indicator_code: string }
+          | { p_company_id: string; p_indicator_id: string }
         Returns: Json
       }
       get_user_company_id: {
@@ -13285,6 +13289,10 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
+      }
+      has_company_access: {
+        Args: { p_company_id: string; p_user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {

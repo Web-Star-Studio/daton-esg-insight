@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { authService, type AuthUser, type RegisterCompanyData } from '@/services/auth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -29,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check if user has completed onboarding
   const checkOnboardingStatus = async (userId: string) => {
     try {
-      console.log('🔍 Checking onboarding status for user:', userId);
+      logger.debug('Checking onboarding status', 'auth', { userId });
       
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('❌ Error fetching profile:', error);
+        logger.error('Error fetching profile for onboarding check', error, 'auth');
         setShouldShowOnboarding(false);
         return false;
       }
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const hasCompletedOnboarding = profile?.has_completed_onboarding ?? false;
       const shouldShow = !hasCompletedOnboarding;
       
-      console.log('📊 Onboarding check result:', {
+      logger.debug('Onboarding status checked', 'auth', {
         userId,
         hasCompletedOnboarding,
         shouldShow
@@ -55,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setShouldShowOnboarding(shouldShow);
       return shouldShow;
     } catch (error) {
-      console.error('❌ Error in onboarding check:', error);
+      logger.error('Error in onboarding check', error, 'auth');
       setShouldShowOnboarding(false);
       return false;
     }
@@ -66,78 +67,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    let isInitialized = false;
+    const isInitializing = useRef(false);
     
-    // Configurar listener de mudanças de auth PRIMEIRO
+    // Prevent duplicate initialization
+    if (isInitializing.current) return;
+    isInitializing.current = true;
+    
+    // Setup auth state listener
     const { data: { subscription } } = authService.onAuthStateChange(
       async (event, session) => {
-        // Skip duplicate calls during initialization
-        if (event === 'INITIAL_SESSION' && isInitialized) {
-          return;
-        }
+        logger.debug('Auth state changed', 'auth', { event });
         
         setSession(session);
         
         if (session?.user) {
-          // Avoid duplicate calls by debouncing
-          setTimeout(async () => {
-            try {
-              const userData = await authService.getCurrentUser();
-              if (userData) {
-                setUser(userData);
-                // Only check onboarding status once per session
-                if (!isInitialized) {
-                  await checkOnboardingStatus(userData.id);
-                }
-              } else {
-                setUser(null);
-              }
-            } catch (error) {
-              console.error('AuthContext: Erro ao buscar dados do usuário:', error);
+          try {
+            const userData = await authService.getCurrentUser();
+            if (userData) {
+              setUser(userData);
+              await checkOnboardingStatus(userData.id);
+            } else {
               setUser(null);
-            } finally {
-              setIsLoading(false);
-              isInitialized = true;
             }
-          }, 100); // Small delay to avoid race conditions
+          } catch (error) {
+            logger.error('Error fetching user data on auth change', error, 'auth');
+            setUser(null);
+          } finally {
+            setIsLoading(false);
+          }
         } else {
           setUser(null);
           setShouldShowOnboarding(false);
           setIsLoading(false);
-          isInitialized = true;
         }
       }
     );
 
-    // Verificar sessão inicial apenas uma vez
-    if (!isInitialized) {
-      console.log('AuthContext: Checking for existing session');
-      authService.getCurrentUser().then(async (userData) => {
-        if (userData && !isInitialized) {
-          console.log('AuthContext: Initial user data found:', userData.full_name);
+    // Check initial session
+    authService.getCurrentUser()
+      .then(async (userData) => {
+        if (userData) {
+          logger.info('Initial session found', 'auth', { userName: userData.full_name });
           setUser(userData);
           await checkOnboardingStatus(userData.id);
-        } else if (!isInitialized) {
+        } else {
           setUser(null);
           setShouldShowOnboarding(false);
         }
-        
-        if (!isInitialized) {
-          setIsLoading(false);
-          isInitialized = true;
-        }
-      }).catch((error) => {
-        if (!isInitialized) {
-          console.error('AuthContext: Error checking initial session:', error);
-          setUser(null);
-          setShouldShowOnboarding(false);
-          setIsLoading(false);
-          isInitialized = true;
-        }
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        logger.error('Error checking initial session', error, 'auth');
+        setUser(null);
+        setShouldShowOnboarding(false);
+        setIsLoading(false);
       });
-    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      isInitializing.current = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
