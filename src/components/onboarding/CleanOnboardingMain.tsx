@@ -95,55 +95,80 @@ function CleanOnboardingContent() {
   };
 
   const handleStartUsingPlatform = async () => {
-    console.log('🔄 Starting platform - button clicked');
+    console.log('🚀 Starting platform usage...');
+    
     try {
-      console.log('⏳ Completing onboarding...');
+      setState(prev => ({ ...prev, isLoading: true }));
+      
+      if (!user?.id) {
+        throw new Error('User not found');
+      }
+      
+      // 1. Complete onboarding in OnboardingFlowContext
+      console.log('📝 Completing onboarding in context...');
       await completeOnboarding();
-      // Ensure the layout stops rendering onboarding overlay
+      
+      // 2. Ensure profile is marked as complete
+      console.log('📝 Updating profile...');
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ has_completed_onboarding: true })
+        .eq('id', user.id);
+        
+      if (profileError) {
+        console.error('❌ Profile update error:', profileError);
+        throw profileError;
+      }
+      
+      // 3. Clear onboarding local storage
+      console.log('🧹 Clearing local storage...');
+      localStorage.removeItem('daton_onboarding_progress');
+      localStorage.removeItem('daton_onboarding_selections');
+      
+      // 4. Update auth context
       await skipOnboarding();
-      console.log('✅ Onboarding completed, navigating to dashboard... (from)', window.location.pathname);
-      navigate('/dashboard', { replace: true });
-      console.log('🏁 Navigation requested to /dashboard');
-      // Fallback in case routing is blocked
+      
+      console.log('✅ Onboarding completed successfully');
+      
+      toast({
+        title: "Configuração concluída! 🎉",
+        description: "Bem-vindo à plataforma Daton ESG!",
+      });
+      
+      // Small delay to ensure state updates
       setTimeout(() => {
-        if (window.location.pathname !== '/dashboard') {
-          console.warn('⚠️ Route did not change, forcing navigation to /dashboard');
-          window.location.href = '/dashboard';
-        }
-      }, 1200);
+        navigate('/', { replace: true });
+      }, 500);
+      
     } catch (error) {
-      console.error('❌ Error in handleStartUsingPlatform:', error);
-      // Force navigation even if onboarding fails
-      console.log('🚨 Forcing navigation despite error...');
-      await skipOnboarding();
-      navigate('/dashboard');
+      console.error('❌ Error starting platform:', error);
+      toast({
+        title: "Erro ao concluir",
+        description: "Tentando método alternativo...",
+        variant: "destructive"
+      });
+      
+      // Fallback to emergency complete
+      setState(prev => ({ ...prev, isLoading: false }));
+      await handleEmergencyComplete();
     }
   };
 
   const handleTakeTour = async () => {
-    console.log('🎯 Take tour - button clicked');
+    console.log('🎯 Taking guided tour...');
+    
     try {
-      console.log('⏳ Completing onboarding...');
-      await completeOnboarding();
-      // Ensure the layout stops rendering onboarding overlay
-      await skipOnboarding();
-      console.log('✅ Onboarding completed, navigating to dashboard... (from)', window.location.pathname);
-      navigate('/dashboard', { replace: true });
-      console.log('🏁 Navigation requested to /dashboard');
-      // Start tour shortly after navigation
+      // Complete onboarding first
+      await handleStartUsingPlatform();
+      
+      // Start tour after navigation
       setTimeout(() => {
         console.log('🎪 Starting dashboard tour...');
         startTour('dashboard-intro');
       }, 1000);
+      
     } catch (error) {
-      console.error('❌ Error in handleTakeTour:', error);
-      // Force navigation even if onboarding fails
-      console.log('🚨 Forcing navigation despite error...');
-      await skipOnboarding();
-      navigate('/dashboard');
-      setTimeout(() => {
-        startTour('dashboard-intro');
-      }, 1000);
+      console.error('❌ Error starting tour:', error);
     }
   };
 
@@ -176,53 +201,76 @@ function CleanOnboardingContent() {
   };
 
   const handleEmergencyComplete = async () => {
-    console.log('🚨 Emergency complete - forcing onboarding completion');
+    console.log('🚨 EMERGENCY COMPLETION TRIGGERED');
+    
     try {
-      // Clear all localStorage
-      localStorage.removeItem('daton_onboarding_progress');
-      localStorage.removeItem('daton_tutorial_completed');
-      localStorage.removeItem('daton_primeiros_passos_dismissed');
-      
-      // Force update profile
       if (user?.id) {
-        console.log('💾 Updating profile to mark onboarding as completed...');
-        await supabase
+        // 1. Update profile first
+        console.log('📝 Updating profile...');
+        const { error: profileError } = await supabase
           .from('profiles')
           .update({ has_completed_onboarding: true })
           .eq('id', user.id);
+          
+        if (profileError) {
+          console.error('❌ Profile update error:', profileError);
+          throw profileError;
+        }
         console.log('✅ Profile updated successfully');
+        
+        // 2. Complete onboarding selections
+        console.log('🏁 Completing onboarding selections...');
+        const { error: selectionsError } = await supabase
+          .from('onboarding_selections')
+          .upsert([{
+            user_id: user.id,
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+            selected_modules: state.selectedModules || [],
+            module_configurations: state.moduleConfigurations || {}
+          }], {
+            onConflict: 'user_id'
+          });
+          
+        if (selectionsError && selectionsError.code !== '23505') {
+          console.error('❌ Selections error:', selectionsError);
+        } else {
+          console.log('✅ Selections marked complete');
+        }
+        
+        // 3. Clear onboarding-related local storage
+        console.log('🧹 Clearing onboarding local storage...');
+        localStorage.removeItem('daton_onboarding_progress');
+        localStorage.removeItem('daton_onboarding_selections');
+        localStorage.removeItem('daton_onboarding_completed');
+        
+        // 4. Update auth context
+        await skipOnboarding();
       }
-
-      // Update layout state to hide onboarding
-      console.log('🔄 Calling skipOnboarding...');
-      await skipOnboarding();
-      console.log('✅ skipOnboarding completed');
       
-      // Force navigation
-      console.log('🚀 Forcing navigation to dashboard...');
-      navigate('/dashboard', { replace: true });
-      
+      // 5. Navigate to dashboard
+      console.log('🚀 Navigating to dashboard...');
       toast({
-        title: 'Onboarding Finalizado! 🎉',
-        description: 'Configuração concluída com sucesso. Redirecionando...',
+        title: "Onboarding concluído! 🎉",
+        description: "Bem-vindo à plataforma!",
       });
       
-      // Force page reload as backup
       setTimeout(() => {
-        console.log('🔄 Forcing page reload for clean state...');
-        window.location.reload();
-      }, 1500);
+        navigate('/', { replace: true });
+      }, 500);
       
     } catch (error) {
-      console.error('❌ Emergency complete failed:', error);
-      // Still force navigation
-      try {
-        await skipOnboarding();
-        navigate('/dashboard');
-      } catch (e) {
-        console.error('❌ Fallback also failed, forcing window redirect');
-        window.location.href = '/dashboard';
-      }
+      console.error('❌ Emergency completion error:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível concluir o onboarding. Redirecionando...",
+        variant: "destructive"
+      });
+      
+      // Force navigation on error
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1000);
     }
   };
 

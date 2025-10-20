@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,8 +8,12 @@ interface FirstLoginState {
   shouldShowOnboarding: boolean;
 }
 
+/**
+ * Hook consolidado para detecção de primeiro login
+ * Sincronizado com AuthContext para evitar duplicação de lógica
+ */
 export function useFirstLoginDetection() {
-  const { user } = useAuth();
+  const { user, shouldShowOnboarding: authShouldShowOnboarding } = useAuth();
   const [state, setState] = useState<FirstLoginState>({
     isFirstLogin: false,
     isLoading: true,
@@ -26,15 +30,25 @@ export function useFirstLoginDetection() {
         shouldShowOnboarding: false
       });
     }
-  }, [user?.id]);
+  }, [user?.id, authShouldShowOnboarding]);
 
-  const checkFirstLogin = async () => {
+  const checkFirstLogin = useCallback(async () => {
     if (!user?.id) return;
 
     try {
       setState(prev => ({ ...prev, isLoading: true }));
 
-      // Check if user has completed onboarding
+      // Sync with AuthContext state first
+      if (authShouldShowOnboarding !== undefined) {
+        setState({
+          isFirstLogin: authShouldShowOnboarding,
+          isLoading: false,
+          shouldShowOnboarding: authShouldShowOnboarding
+        });
+        return;
+      }
+
+      // Fallback: Check database directly
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('has_completed_onboarding')
@@ -42,15 +56,15 @@ export function useFirstLoginDetection() {
         .single();
 
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        setState(prev => ({ ...prev, isLoading: false }));
+        console.error('❌ useFirstLoginDetection: Error fetching profile:', profileError);
+        setState({ isFirstLogin: false, isLoading: false, shouldShowOnboarding: false });
         return;
       }
 
       const hasCompletedOnboarding = profile?.has_completed_onboarding ?? false;
       const isFirstLogin = !hasCompletedOnboarding;
 
-      // Check if there's an existing onboarding session
+      // Check onboarding progress
       let shouldShowOnboarding = false;
       if (isFirstLogin) {
         const { data: onboardingData, error: onboardingError } = await supabase
@@ -59,13 +73,18 @@ export function useFirstLoginDetection() {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (onboardingError) {
-          console.error('Error fetching onboarding data:', onboardingError);
+        if (onboardingError && onboardingError.code !== 'PGRST116') {
+          console.error('⚠️ useFirstLoginDetection: Error fetching onboarding data:', onboardingError);
         }
 
-        // Show onboarding if user hasn't completed it or doesn't have onboarding data
         shouldShowOnboarding = !onboardingData?.is_completed;
       }
+
+      console.log('✅ useFirstLoginDetection: Check complete', {
+        userId: user.id,
+        isFirstLogin,
+        shouldShowOnboarding
+      });
 
       setState({
         isFirstLogin,
@@ -74,33 +93,47 @@ export function useFirstLoginDetection() {
       });
 
     } catch (error) {
-      console.error('Error in first login detection:', error);
+      console.error('❌ useFirstLoginDetection: Unexpected error:', error);
       setState({
         isFirstLogin: false,
         isLoading: false,
         shouldShowOnboarding: false
       });
     }
-  };
+  }, [user?.id, authShouldShowOnboarding]);
 
-  const markOnboardingComplete = async () => {
-    if (!user?.id) return;
+  const markOnboardingComplete = useCallback(async () => {
+    if (!user?.id) {
+      console.warn('⚠️ useFirstLoginDetection: Cannot mark complete - no user');
+      return false;
+    }
 
     try {
-      await supabase
+      console.log('📝 useFirstLoginDetection: Marking onboarding complete...');
+      
+      const { error } = await supabase
         .from('profiles')
         .update({ has_completed_onboarding: true })
         .eq('id', user.id);
+
+      if (error) {
+        console.error('❌ useFirstLoginDetection: Error marking complete:', error);
+        throw error;
+      }
 
       setState(prev => ({
         ...prev,
         isFirstLogin: false,
         shouldShowOnboarding: false
       }));
+
+      console.log('✅ useFirstLoginDetection: Onboarding marked complete');
+      return true;
     } catch (error) {
-      console.error('Error marking onboarding complete:', error);
+      console.error('❌ useFirstLoginDetection: Error in markOnboardingComplete:', error);
+      return false;
     }
-  };
+  }, [user?.id]);
 
   return {
     ...state,

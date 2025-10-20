@@ -210,60 +210,55 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
   };
 
   const completeOnboarding = async () => {
-    console.log('🚀 Starting onboarding completion...');
+    if (!user?.id) {
+      console.error('❌ OnboardingFlowContext: Cannot complete - no user');
+      throw new Error('No user found');
+    }
+
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      if (!user?.id) {
-        throw new Error('User ID not found');
-      }
-
-      if (!user.company?.id) {
-        throw new Error('Company ID not found');
-      }
-
-      console.log('💾 Saving onboarding selections to database...');
+      console.log('📝 OnboardingFlowContext: Completing onboarding...');
       
-      // Salvar configurações finais no banco com upsert
-      const { error: upsertError } = await supabase
+      // 1. Update onboarding selections
+      const { error: updateError } = await supabase
         .from('onboarding_selections')
-        .upsert([{
+        .upsert([{ 
           user_id: user.id,
-          company_id: user.company.id,
-          current_step: state.currentStep,
+          company_id: user.company?.id,
+          is_completed: true,
+          completed_at: new Date().toISOString(),
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
-          is_completed: true,
-          updated_at: new Date().toISOString()
+          current_step: 'completed'
         }], {
           onConflict: 'user_id'
         });
 
-      if (upsertError) {
-        console.error('❌ Database upsert error:', upsertError);
-        throw upsertError;
+      if (updateError && updateError.code !== '23505') {
+        console.error('❌ OnboardingFlowContext: Error updating selections:', updateError);
+        throw updateError;
       }
+      console.log('✅ OnboardingFlowContext: Selections updated');
 
-      console.log('✅ Onboarding selections saved successfully');
-
-      // Mark user as completed onboarding
-      console.log('👤 Updating user profile...');
+      // 2. Update user profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ has_completed_onboarding: true })
         .eq('id', user.id);
 
       if (profileError) {
-        console.error('❌ Profile update error:', profileError);
+        console.error('❌ OnboardingFlowContext: Error updating profile:', profileError);
         throw profileError;
       }
+      console.log('✅ OnboardingFlowContext: Profile updated');
 
-      console.log('✅ User profile updated successfully');
-
-      // Clear onboarding progress from localStorage
+      // 3. Clear local storage
       localStorage.removeItem('daton_onboarding_progress');
-      console.log('🧹 localStorage cleared');
-
+      localStorage.removeItem('daton_onboarding_selections');
+      console.log('🧹 OnboardingFlowContext: Local storage cleared');
+      
+      // 4. Update internal state
       setState(prev => ({
         ...prev,
         isCompleted: true,
@@ -275,10 +270,10 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
         description: 'Sua configuração inicial foi salva com sucesso. Bem-vindo ao Daton!',
       });
 
-      console.log('🎉 Onboarding completed successfully!');
-
+      console.log('✅ OnboardingFlowContext: Onboarding completed successfully');
+      
     } catch (error) {
-      console.error('❌ Error completing onboarding:', error);
+      console.error('❌ OnboardingFlowContext: Error completing onboarding:', error);
       setState(prev => ({ ...prev, isLoading: false }));
       
       toast({
@@ -286,6 +281,8 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
         description: `Ocorreu um erro ao finalizar o onboarding: ${error.message || 'Erro desconhecido'}`,
         variant: 'destructive'
       });
+      
+      throw error;
     }
   };
 
