@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,12 +18,25 @@ import { getSafetyMetrics } from "@/services/safetyIncidents";
 import { getTrainingMetrics } from "@/services/trainingPrograms";
 import { getSocialImpactMetrics } from "@/services/socialProjects";
 import { ModuleSummaryCard } from "@/components/ModuleSummaryCard";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { SocialProjectModal } from "@/components/social/SocialProjectModal";
+import { QuickActionModal } from "@/components/social/QuickActionModal";
 
 
 export default function SocialESG() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isQuickActionModalOpen, setIsQuickActionModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Check for action parameter in URL
+  useEffect(() => {
+    if (searchParams.get("action") === "new-project") {
+      setIsProjectModalOpen(true);
+      setSearchParams({}); // Clear the param
+    }
+  }, [searchParams, setSearchParams]);
 
   // Only essential queries for dashboard KPIs
   const { data: employeesStats } = useQuery({
@@ -41,10 +54,14 @@ export default function SocialESG() {
     queryFn: getTrainingMetrics
   });
 
-  const { data: socialMetrics } = useQuery({
+  const { data: socialMetrics, refetch: refetchSocialMetrics } = useQuery({
     queryKey: ['social-metrics'],
     queryFn: getSocialImpactMetrics
   });
+
+  const handleProjectSuccess = () => {
+    refetchSocialMetrics();
+  };
 
   return (
     <div className="space-y-6">
@@ -56,7 +73,7 @@ export default function SocialESG() {
         </p>
         </div>
         <div className="flex gap-2">
-          <Button>
+          <Button onClick={() => setIsQuickActionModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Registro
           </Button>
@@ -226,7 +243,7 @@ export default function SocialESG() {
                   <CardTitle>Impacto Social</CardTitle>
                   <CardDescription>Projetos e iniciativas de responsabilidade social</CardDescription>
                 </div>
-                <Button>
+                <Button onClick={() => setIsProjectModalOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Novo Projeto
                 </Button>
@@ -247,6 +264,17 @@ export default function SocialESG() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <SocialProjectModal 
+        open={isProjectModalOpen}
+        onOpenChange={setIsProjectModalOpen}
+        onSuccess={handleProjectSuccess}
+      />
+
+      <QuickActionModal
+        open={isQuickActionModalOpen}
+        onOpenChange={setIsQuickActionModalOpen}
+      />
     </div>
   );
 }
