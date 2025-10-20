@@ -3591,6 +3591,53 @@ export type Database = {
           },
         ]
       }
+      emission_source_glossary: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          id: string
+          is_global: boolean | null
+          main_term: string
+          suggested_category: string | null
+          suggested_scope: number | null
+          synonyms: string[] | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          main_term: string
+          suggested_category?: string | null
+          suggested_scope?: number | null
+          synonyms?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_global?: boolean | null
+          main_term?: string
+          suggested_category?: string | null
+          suggested_scope?: number | null
+          synonyms?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emission_source_glossary_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emission_sources: {
         Row: {
           asset_id: string | null
@@ -12959,6 +13006,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_glossary_usage: {
+        Args: { term_id: string }
+        Returns: undefined
       }
       log_activity: {
         Args: {
