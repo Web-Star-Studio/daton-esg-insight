@@ -42,12 +42,41 @@ export const getPredictiveAnalysis = async (
   months: number = 3
 ): Promise<PredictionResult | ComplianceRiskScore | FullAnalysis> => {
   try {
-    // Get current session for authentication
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log('🔐 [PredictiveAnalytics] Starting authentication check...');
     
+    // Try to get current session
+    let { data: { session } } = await supabase.auth.getSession();
+    
+    console.log('🔐 [PredictiveAnalytics] Session status:', {
+      hasSession: !!session,
+      hasToken: !!session?.access_token,
+      expiresAt: session?.expires_at
+    });
+    
+    // If no session, try to refresh
     if (!session) {
-      throw new Error('Usuário não autenticado');
+      console.log('🔄 [PredictiveAnalytics] No session found, attempting refresh...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('❌ [PredictiveAnalytics] Session refresh failed:', refreshError);
+        throw new Error('Sessão expirada. Por favor, faça login novamente.');
+      }
+      
+      session = refreshData.session;
+      console.log('✅ [PredictiveAnalytics] Session refreshed successfully');
     }
+    
+    if (!session?.access_token) {
+      console.error('❌ [PredictiveAnalytics] No access token available');
+      throw new Error('Token de autenticação não disponível');
+    }
+
+    console.log('📡 [PredictiveAnalytics] Invoking edge function:', {
+      analysisType,
+      months,
+      tokenLength: session.access_token.length
+    });
 
     const { data, error } = await supabase.functions.invoke('predictive-analytics', {
       body: {
@@ -60,14 +89,23 @@ export const getPredictiveAnalysis = async (
     });
 
     if (error) {
+      console.error('❌ [PredictiveAnalytics] Edge function error:', error);
       logger.error('Error fetching predictive analysis', error);
-      throw error;
+      throw new Error(`Erro na análise preditiva: ${error.message || 'Erro desconhecido'}`);
     }
 
+    console.log('✅ [PredictiveAnalytics] Data received successfully');
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [PredictiveAnalytics] Fatal error:', error);
     logger.error('Failed to get predictive analysis', error);
-    throw error;
+    
+    // Rethrow with more context
+    if (error.message?.includes('sessão') || error.message?.includes('login')) {
+      throw error;
+    }
+    
+    throw new Error(error.message || 'Erro ao buscar análise preditiva');
   }
 };
 

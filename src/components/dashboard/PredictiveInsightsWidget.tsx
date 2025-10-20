@@ -1,31 +1,43 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Activity, RefreshCw } from 'lucide-react';
 import { getFullAnalysis, FullAnalysis } from '@/services/predictiveAnalytics';
 import { cn } from '@/lib/utils';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 export function PredictiveInsightsWidget() {
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchAnalysis = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getFullAnalysis(3);
-        setAnalysis(data);
-      } catch (error: any) {
-        logger.error('Error fetching predictive analysis', error);
-        setError(error?.message || 'Erro ao carregar análise preditiva');
-      } finally {
-        setLoading(false);
+  const fetchAnalysis = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Validate session before calling service
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Sessão expirada. Por favor, faça login novamente.');
       }
-    };
+      
+      console.log('🎯 [Widget] Fetching predictive analysis...');
+      const data = await getFullAnalysis(3);
+      setAnalysis(data);
+      console.log('✅ [Widget] Analysis loaded successfully');
+    } catch (error: any) {
+      console.error('❌ [Widget] Error:', error);
+      logger.error('Error fetching predictive analysis', error);
+      setError(error?.message || 'Erro ao carregar análise preditiva');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAnalysis();
   }, []);
 
@@ -49,13 +61,22 @@ export function PredictiveInsightsWidget() {
           <h3 className="font-semibold">Análise Preditiva & Score de Risco</h3>
         </div>
         <div className="text-center py-8">
-          <AlertTriangle className="h-12 w-12 mx-auto text-yellow-600 mb-2" />
-          <p className="text-sm text-muted-foreground mb-2">
+          <AlertTriangle className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
+          <p className="text-sm font-medium text-foreground mb-2">
             Não foi possível carregar a análise preditiva
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mb-4">
             {error}
           </p>
+          <Button 
+            onClick={fetchAnalysis} 
+            variant="outline" 
+            size="sm"
+            disabled={loading}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            Tentar novamente
+          </Button>
         </div>
       </Card>
     );
