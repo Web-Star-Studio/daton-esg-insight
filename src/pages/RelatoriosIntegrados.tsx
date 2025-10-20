@@ -38,9 +38,13 @@ import { FrameworkReportingTemplates } from "@/components/FrameworkReportingTemp
 import { CreateGRIReportModal } from "@/components/CreateGRIReportModal";
 import { GRIReportBuilderModal } from "@/components/GRIReportBuilderModal";
 import SGQReportsModal from "@/components/SGQReportsModal";
-import { IntelligentReportingDashboard } from "@/components/IntelligentReportingDashboard";
+import { IntelligentReportingDashboard } from "@/components/reports/IntelligentReportingDashboard";
+import { ReportGeneratorConfiguration } from "@/components/reports/ReportGeneratorConfiguration";
+import { ReportGenerationMonitor } from "@/components/reports/ReportGenerationMonitor";
+import { SmartTemplateSelector } from "@/components/reports/SmartTemplateSelector";
 import { getGRIReports, type GRIReport } from "@/services/griReports";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock data for traditional reports (migrated from Relatorios.tsx)
 const mockReports = [
@@ -96,6 +100,8 @@ export default function RelatoriosIntegrados() {
   const [selectedGRIReport, setSelectedGRIReport] = useState<GRIReport | null>(null);
   const [isGRIBuilderOpen, setIsGRIBuilderOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: reports } = useQuery({
     queryKey: ['integrated-reports'],
@@ -188,6 +194,26 @@ export default function RelatoriosIntegrados() {
     toast.success("Exportando Relatório", {
       description: "O relatório será exportado em PDF",
     });
+  };
+
+  const handleGenerateReport = async (config: any) => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-intelligent-report', {
+        body: { templateId: config.templateId, parameters: config }
+      });
+
+      if (error) throw error;
+
+      toast.success("Relatório em Geração", {
+        description: "Seu relatório está sendo processado. Você será notificado quando estiver pronto.",
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -289,7 +315,50 @@ export default function RelatoriosIntegrados() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
-          <IntelligentReportingDashboard />
+          {/* ESG Dashboard Metrics - Simplified */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Score ESG</p>
+                    <p className={`text-3xl font-bold ${getScoreColor(esgData?.overall_esg_score || 0)}`}>
+                      {esgData?.overall_esg_score || 0}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Score Ambiental</p>
+                    <p className={`text-3xl font-bold ${getScoreColor(esgData?.environmental?.score || 0)}`}>
+                      {esgData?.environmental?.score || 0}
+                    </p>
+                  </div>
+                  <Leaf className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Score Social</p>
+                    <p className={`text-3xl font-bold ${getScoreColor(esgData?.social?.score || 0)}`}>
+                      {esgData?.social?.score || 0}
+                    </p>
+                  </div>
+                  <Activity className="h-8 w-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">

@@ -10296,6 +10296,71 @@ export type Database = {
         }
         Relationships: []
       }
+      report_generation_jobs: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          estimated_completion: string | null
+          id: string
+          insights: Json | null
+          output_urls: Json | null
+          parameters: Json
+          progress: number | null
+          started_at: string | null
+          status: string
+          template_id: string
+          template_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_completion?: string | null
+          id?: string
+          insights?: Json | null
+          output_urls?: Json | null
+          parameters?: Json
+          progress?: number | null
+          started_at?: string | null
+          status: string
+          template_id: string
+          template_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_completion?: string | null
+          id?: string
+          insights?: Json | null
+          output_urls?: Json | null
+          parameters?: Json
+          progress?: number | null
+          started_at?: string | null
+          status?: string
+          template_id?: string
+          template_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_generation_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       risk_assessments: {
         Row: {
           category: string | null
