@@ -117,6 +117,9 @@ const InventarioGEE = () => {
     return filteredSources.filter(source => source.ultima_emissao > HIGH_EMISSION_THRESHOLD);
   }, [filteredSources]);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sourceToDelete, setSourceToDelete] = useState<string | null>(null);
+
   const handleBulkDelete = async () => {
     if (selectedSources.length === 0) return;
     
@@ -209,25 +212,33 @@ const InventarioGEE = () => {
     }
   }
 
-  const handleDeleteSource = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta fonte de emissão?')) {
-      try {
-        await deleteEmissionSource(id)
-        await loadData()
-        toast({
-          title: "Sucesso",
-          description: "Fonte de emissão excluída com sucesso!",
-        })
-      } catch (error) {
-        console.error('Erro ao excluir fonte:', error)
-        toast({
-          title: "Erro",
-          description: "Erro ao excluir fonte de emissão",
-          variant: "destructive",
-        })
-      }
+  const handleDeleteSource = (id: string) => {
+    setSourceToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!sourceToDelete) return;
+    
+    try {
+      await deleteEmissionSource(sourceToDelete);
+      await loadData();
+      toast({
+        title: "Sucesso",
+        description: "Fonte de emissão excluída com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir fonte:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir fonte de emissão",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setSourceToDelete(null);
     }
-  }
+  };
 
   const handleEditSource = (source: any) => {
     setSelectedSource(source)
@@ -369,15 +380,32 @@ const InventarioGEE = () => {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => handleDeleteSource(fonte.id)}
-                        title="Excluir fonte"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                            title="Excluir fonte"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir esta fonte de emissão? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteSource(fonte.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>

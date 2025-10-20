@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Edit, Eye, Search, Trash2 } from "lucide-react";
 import { CompetencyMatrix, deleteCompetency } from "@/services/competencyService";
 import { useToast } from "@/hooks/use-toast";
@@ -30,22 +31,20 @@ export function CompetencyTable({ competencies, onEdit }: CompetencyTableProps) 
     comp.competency_category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Tem certeza que deseja desativar a competência "${name}"?`)) {
-      try {
-        await deleteCompetency(id);
-        toast({
-          title: "Sucesso",
-          description: "Competência desativada com sucesso!",
-        });
-        queryClient.invalidateQueries({ queryKey: ["competency-matrix"] });
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao desativar competência. Tente novamente.",
-          variant: "destructive",
-        });
-      }
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCompetency(id);
+      toast({
+        title: "Sucesso",
+        description: "Competência desativada com sucesso!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["competency-matrix"] });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao desativar competência. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -131,14 +130,31 @@ export function CompetencyTable({ competencies, onEdit }: CompetencyTableProps) 
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(competency.id, competency.competency_name)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirmar desativação</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja desativar a competência "{competency.competency_name}"? Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(competency.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Desativar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>

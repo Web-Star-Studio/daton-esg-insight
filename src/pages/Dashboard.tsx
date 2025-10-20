@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getDashboardStats, formatEmissionValue, formatEmployeeCount, formatPercentage } from '@/services/dashboardStats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedCard } from '@/components/ui/enhanced-card';
 import { Button } from '@/components/ui/button';
@@ -65,13 +67,13 @@ interface RecentActivity {
   icon: any;
 }
 
-const KPI_CARDS: KPICard[] = [
+const getKPICards = (stats: any): KPICard[] => [
   {
     id: 'emissions',
     title: 'Emissões CO₂',
-    value: '1.247 tCO₂e',
-    change: -12.5,
-    changeType: 'positive',
+    value: formatEmissionValue(stats?.emissions.value || 0),
+    change: stats?.emissions.change || 0,
+    changeType: stats?.emissions.changeType || 'neutral',
     icon: Leaf,
     color: 'text-success',
     bgColor: 'bg-success/10',
@@ -80,9 +82,9 @@ const KPI_CARDS: KPICard[] = [
   {
     id: 'compliance',
     title: 'Conformidade',
-    value: '94%',
-    change: 3.2,
-    changeType: 'positive',
+    value: formatPercentage(stats?.compliance.value || 0),
+    change: stats?.compliance.change || 0,
+    changeType: stats?.compliance.changeType || 'neutral',
     icon: Shield,
     color: 'text-primary',
     bgColor: 'bg-primary/10',
@@ -91,9 +93,9 @@ const KPI_CARDS: KPICard[] = [
   {
     id: 'employees',
     title: 'Colaboradores',
-    value: '1.234',
-    change: 5.8,
-    changeType: 'positive',
+    value: formatEmployeeCount(stats?.employees.value || 0),
+    change: stats?.employees.change || 0,
+    changeType: stats?.employees.changeType || 'neutral',
     icon: Users,
     color: 'text-accent',
     bgColor: 'bg-accent/10',
@@ -102,9 +104,9 @@ const KPI_CARDS: KPICard[] = [
   {
     id: 'quality',
     title: 'Qualidade',
-    value: '98.5%',
-    change: -0.5,
-    changeType: 'negative',
+    value: formatPercentage(stats?.quality.value || 0),
+    change: stats?.quality.change || 0,
+    changeType: stats?.quality.changeType || 'neutral',
     icon: Award,
     color: 'text-warning',
     bgColor: 'bg-warning/10',
@@ -186,16 +188,14 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedTimeframe, setSelectedTimeframe] = useState('month');
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  const { data: dashboardStats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: getDashboardStats,
+    refetchInterval: 60000, // Refresh every minute
+  });
 
-    return () => clearTimeout(timer);
-  }, []);
+  const kpiCards = getKPICards(dashboardStats);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -294,7 +294,7 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="metrics">
-        {KPI_CARDS.map((kpi, index) => {
+        {kpiCards.map((kpi, index) => {
           const Icon = kpi.icon;
           const ChangeIcon = getChangeIcon(kpi.changeType);
           

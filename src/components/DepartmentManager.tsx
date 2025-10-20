@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -93,17 +94,28 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este departamento?')) return;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(null);
+
+  const openDeleteDialog = (id: string) => {
+    setDepartmentToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!departmentToDelete) return;
     
     try {
-      await deleteDepartment(id);
+      await deleteDepartment(departmentToDelete);
       toast.success('Departamento excluído com sucesso');
       loadData();
       onRefresh?.();
     } catch (error) {
       console.error('Error deleting department:', error);
       toast.error('Erro ao excluir departamento');
+    } finally {
+      setDeleteDialogOpen(false);
+      setDepartmentToDelete(null);
     }
   };
 
@@ -170,7 +182,7 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleDelete(department.id)}
+                onClick={() => openDeleteDialog(department.id)}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -406,6 +418,23 @@ export function DepartmentManager({ onRefresh }: DepartmentManagerProps) {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este departamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
