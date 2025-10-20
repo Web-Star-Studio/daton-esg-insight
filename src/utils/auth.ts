@@ -41,12 +41,28 @@ export const getUserAndCompany = async (): Promise<UserWithCompany | null> => {
 
     if (roleError) throw roleError;
 
+    // MIGRATION: If no role in user_roles, check profiles and migrate
+    let finalRole = userRole?.role || profile.role || 'viewer';
+    
+    if (!userRole && profile.role && profile.company_id) {
+      // Auto-migrate: insert role into user_roles
+      await supabase
+        .from('user_roles')
+        .insert({
+          user_id: user.id,
+          role: profile.role,
+          company_id: profile.company_id,
+          assigned_by_user_id: user.id
+        })
+        .then(() => console.log('✅ Role migrated for user:', user.id));
+    }
+
     return {
       id: profile.id,
       email: user.email || '',
       full_name: profile.full_name || '',
       company_id: profile.company_id,
-      role: userRole?.role || 'viewer',
+      role: finalRole,
       company: profile.companies ? {
         id: profile.companies.id,
         name: profile.companies.name,

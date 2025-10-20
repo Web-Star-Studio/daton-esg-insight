@@ -148,7 +148,31 @@ class AuthService {
         return null;
       }
 
-      if (!userRole) {
+      // MIGRATION: If no role in user_roles, check profiles and migrate
+      let finalRole = userRole?.role;
+      
+      if (!finalRole && profile.role) {
+        logger.warn('Migrating role from profiles to user_roles', { userId: session.user.id });
+        
+        // Auto-migrate: insert role into user_roles
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: session.user.id,
+            role: profile.role,
+            company_id: profile.company_id,
+            assigned_by_user_id: session.user.id
+          });
+
+        if (!insertError) {
+          finalRole = profile.role;
+          logger.info('Role migrated successfully', { userId: session.user.id, role: profile.role });
+        } else {
+          logger.error('Failed to migrate role', insertError);
+        }
+      }
+
+      if (!finalRole) {
         logger.error('No role found for user', { userId: session.user.id });
         return null;
       }
@@ -160,7 +184,7 @@ class AuthService {
         full_name: profile.full_name,
         email: session.user.email!,
         job_title: profile.job_title,
-        role: userRole.role,
+        role: finalRole,
         company: {
           id: profile.companies.id,
           name: profile.companies.name
