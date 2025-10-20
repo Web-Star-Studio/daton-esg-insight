@@ -33,6 +33,7 @@ import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 import { ProductionHealthWidget } from '@/components/production/ProductionHealthWidget';
 import { AlertsWidget } from '@/components/dashboard/AlertsWidget';
 import { PredictiveInsightsWidget } from '@/components/dashboard/PredictiveInsightsWidget';
+import { ESGScoreGauge } from '@/components/esg/ESGScoreGauge';
 
 interface KPICard {
   id: string;
@@ -325,7 +326,7 @@ export default function Dashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Performance Chart */}
+        {/* ESG Score Gauge - Phase 3 */}
         <EnhancedCard 
           className="lg:col-span-2 animate-fade-in" 
           style={{ animationDelay: '0.8s' }}
@@ -335,7 +336,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                Desempenho ESG
+                Score ESG Geral
               </CardTitle>
               <Badge variant="secondary" className="gap-1 text-xs">
                 <Sparkles className="w-3 h-3" />
@@ -346,8 +347,15 @@ export default function Dashboard() {
           
           <CardContent>
             <div className="space-y-6">
-              {/* Progress Indicators */}
-              <div className="space-y-4">
+              {/* Overall ESG Score */}
+              <ESGScoreGauge 
+                score={91}
+                label="Score ESG Geral"
+                showDetails={true}
+              />
+
+              {/* Individual Pillar Breakdown */}
+              <div className="space-y-4 pt-4 border-t border-border/30">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
@@ -370,16 +378,6 @@ export default function Dashboard() {
                     <span className="text-sm font-bold text-accent">95%</span>
                   </div>
                   <Progress value={95} className="h-2" />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Target className="w-4 h-4" />
-                    Meta geral: 90%
-                  </div>
-                  <span className="text-sm font-bold text-primary">91.3%</span>
                 </div>
               </div>
             </div>

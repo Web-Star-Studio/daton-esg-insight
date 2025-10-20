@@ -2377,6 +2377,56 @@ export type Database = {
         }
         Relationships: []
       }
+      correlation_analysis_results: {
+        Row: {
+          analysis_name: string
+          analysis_period_end: string
+          analysis_period_start: string
+          company_id: string
+          correlation_coefficient: number | null
+          created_at: string
+          data_points: Json | null
+          id: string
+          insights: string | null
+          metric_x: string
+          metric_y: string
+        }
+        Insert: {
+          analysis_name: string
+          analysis_period_end: string
+          analysis_period_start: string
+          company_id: string
+          correlation_coefficient?: number | null
+          created_at?: string
+          data_points?: Json | null
+          id?: string
+          insights?: string | null
+          metric_x: string
+          metric_y: string
+        }
+        Update: {
+          analysis_name?: string
+          analysis_period_end?: string
+          analysis_period_start?: string
+          company_id?: string
+          correlation_coefficient?: number | null
+          created_at?: string
+          data_points?: Json | null
+          id?: string
+          insights?: string | null
+          metric_x?: string
+          metric_y?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "correlation_analysis_results_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           assigned_by_user_id: string | null
@@ -2610,6 +2660,68 @@ export type Database = {
             columns: ["credit_purchase_id"]
             isOneToOne: false
             referencedRelation: "credit_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_esg_indicators: {
+        Row: {
+          calculation_method: string | null
+          category: string
+          company_id: string
+          created_at: string
+          current_value: number | null
+          data_sources: Json | null
+          id: string
+          indicator_code: string
+          indicator_name: string
+          is_active: boolean | null
+          measurement_frequency: string | null
+          responsible_user_id: string | null
+          target_value: number | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          calculation_method?: string | null
+          category: string
+          company_id: string
+          created_at?: string
+          current_value?: number | null
+          data_sources?: Json | null
+          id?: string
+          indicator_code: string
+          indicator_name: string
+          is_active?: boolean | null
+          measurement_frequency?: string | null
+          responsible_user_id?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          calculation_method?: string | null
+          category?: string
+          company_id?: string
+          created_at?: string
+          current_value?: number | null
+          data_sources?: Json | null
+          id?: string
+          indicator_code?: string
+          indicator_name?: string
+          is_active?: boolean | null
+          measurement_frequency?: string | null
+          responsible_user_id?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_esg_indicators_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -3511,6 +3623,65 @@ export type Database = {
           },
         ]
       }
+      double_materiality_matrix: {
+        Row: {
+          assessment_date: string
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          financial_materiality_score: number | null
+          id: string
+          impact_materiality_score: number | null
+          is_material: boolean | null
+          management_approach: string | null
+          related_gri_indicators: string[] | null
+          stakeholders_consulted: string[] | null
+          topic_name: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_date: string
+          category: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          financial_materiality_score?: number | null
+          id?: string
+          impact_materiality_score?: number | null
+          is_material?: boolean | null
+          management_approach?: string | null
+          related_gri_indicators?: string[] | null
+          stakeholders_consulted?: string[] | null
+          topic_name: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_date?: string
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          financial_materiality_score?: number | null
+          id?: string
+          impact_materiality_score?: number | null
+          is_material?: boolean | null
+          management_approach?: string | null
+          related_gri_indicators?: string[] | null
+          stakeholders_consulted?: string[] | null
+          topic_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "double_materiality_matrix_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emission_factors: {
         Row: {
           activity_unit: string
@@ -3694,6 +3865,71 @@ export type Database = {
           },
           {
             foreignKeyName: "emission_sources_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emission_suppliers: {
+        Row: {
+          annual_emissions_estimate: number | null
+          category: string
+          cnpj: string | null
+          company_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          data_quality_score: number | null
+          emission_data: Json | null
+          has_inventory: boolean | null
+          id: string
+          last_report_date: string | null
+          notes: string | null
+          scope_3_category: string | null
+          supplier_name: string
+          updated_at: string
+        }
+        Insert: {
+          annual_emissions_estimate?: number | null
+          category: string
+          cnpj?: string | null
+          company_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          emission_data?: Json | null
+          has_inventory?: boolean | null
+          id?: string
+          last_report_date?: string | null
+          notes?: string | null
+          scope_3_category?: string | null
+          supplier_name: string
+          updated_at?: string
+        }
+        Update: {
+          annual_emissions_estimate?: number | null
+          category?: string
+          cnpj?: string | null
+          company_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          data_quality_score?: number | null
+          emission_data?: Json | null
+          has_inventory?: boolean | null
+          id?: string
+          last_report_date?: string | null
+          notes?: string | null
+          scope_3_category?: string | null
+          supplier_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emission_suppliers_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -4054,6 +4290,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      esg_insights_log: {
+        Row: {
+          action_items: Json | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          insight_type: string
+          is_resolved: boolean | null
+          priority: string | null
+          related_module: string | null
+          resolved_at: string | null
+          title: string
+        }
+        Insert: {
+          action_items?: Json | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          insight_type: string
+          is_resolved?: boolean | null
+          priority?: string | null
+          related_module?: string | null
+          resolved_at?: string | null
+          title: string
+        }
+        Update: {
+          action_items?: Json | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          insight_type?: string
+          is_resolved?: boolean | null
+          priority?: string | null
+          related_module?: string | null
+          resolved_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esg_insights_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       esg_metrics: {
         Row: {

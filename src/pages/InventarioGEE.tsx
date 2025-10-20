@@ -42,6 +42,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { AddEmissionSourceModal } from "@/components/AddEmissionSourceModal";
 import EditEmissionSourceModal from "@/components/EditEmissionSourceModal";
 import { ActivityDataModal } from "@/components/ActivityDataModal";
+import { EmissionSourceWizard } from "@/components/emissions/EmissionSourceWizard";
 import { StationaryCombustionModal } from "@/components/StationaryCombustionModal";
 import { MobileCombustionModal } from "@/components/MobileCombustionModal";
 import { FugitiveEmissionsModal } from "@/components/FugitiveEmissionsModal";
@@ -63,6 +64,7 @@ import { ptBR } from "date-fns/locale";
 const InventarioGEE = () => {
   const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isWizardOpen, setIsWizardOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false)
   const [isMobileCombustionModalOpen, setIsMobileCombustionModalOpen] = useState(false)
@@ -407,9 +409,13 @@ const InventarioGEE = () => {
             {(stats.fontes_total > 0) && (
               <RecalculateEmissionsButton onSuccess={loadData} />
             )}
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Button onClick={() => setIsWizardOpen(true)} variant="default">
               <Plus className="mr-2 h-4 w-4" />
-              Adicionar Fonte de Emissão
+              Adicionar Fonte (Guiado)
+            </Button>
+            <Button onClick={() => setIsModalOpen(true)} variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Fonte (Rápido)
             </Button>
             <Button 
               onClick={() => setIsAnalyticsModalOpen(true)}
