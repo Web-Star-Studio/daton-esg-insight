@@ -27,6 +27,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
   
+  // CRITICAL: useRef MUST be at component level, not inside useEffect
+  const isInitializingRef = useRef(false);
+  
   // Check if user has completed onboarding
   const checkOnboardingStatus = async (userId: string) => {
     try {
@@ -67,11 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const isInitializing = useRef(false);
-    
     // Prevent duplicate initialization
-    if (isInitializing.current) return;
-    isInitializing.current = true;
+    if (isInitializingRef.current) return;
+    isInitializingRef.current = true;
     
     // Setup auth state listener
     const { data: { subscription } } = authService.onAuthStateChange(
@@ -125,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
-      isInitializing.current = false;
+      isInitializingRef.current = false;
     };
   }, []);
 
@@ -140,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: `Bem-vindo, ${response.user?.full_name}!`,
       });
     } catch (error: any) {
-      console.error('Erro no login:', error);
+      logger.error('Login failed', error, 'auth', { email });
       
       let errorMessage = "Credenciais inválidas.";
       
@@ -173,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: result.message || "Verifique seu email para ativar a conta.",
       });
     } catch (error: any) {
-      console.error('Erro no registro:', error);
+      logger.error('Registration failed', error, 'auth', { companyName: data.company_name });
       
       let errorMessage = "Erro ao criar conta.";
       
@@ -229,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch (error) {
-      console.error('Erro ao buscar usuário:', error);
+      logger.error('Failed to refresh user', error, 'auth');
       toast({
         title: "Erro",
         description: "Erro ao carregar dados do usuário. Verifique se seu profile foi criado corretamente.",
@@ -240,36 +241,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const restartOnboarding = async () => {
     try {
-      console.log('🔄 Restarting onboarding...');
+      logger.info('Restarting onboarding', 'onboarding', { userId: user?.id });
       
       // Reset onboarding status in database
       if (user?.id) {
-        console.log('📝 Updating profile to reset onboarding status...');
+        logger.debug('Updating profile to reset onboarding status', 'onboarding');
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ has_completed_onboarding: false })
           .eq('id', user.id);
           
         if (updateError) {
-          console.error('❌ Error updating profile:', updateError);
+          logger.error('Failed to update profile', updateError, 'onboarding');
           throw updateError;
         }
-        console.log('✅ Profile updated successfully');
+        logger.debug('Profile updated successfully', 'onboarding');
         
         // Also clear any onboarding selections
-        console.log('🗑️ Clearing onboarding selections...');
+        logger.debug('Clearing onboarding selections', 'onboarding');
         const { error: deleteError } = await supabase
           .from('onboarding_selections')
           .delete()
           .eq('user_id', user.id);
           
         if (deleteError && deleteError.code !== 'PGRST116') { // Ignore not found error
-          console.warn('⚠️ Error clearing onboarding selections:', deleteError);
+          logger.warn('Failed to clear onboarding selections', deleteError, 'onboarding');
         }
       }
       
       // Clear all local storage related to onboarding and tutorials
-      console.log('🧹 Clearing local storage...');
+      logger.debug('Clearing local storage', 'onboarding');
       localStorage.removeItem('daton_onboarding_progress');
       localStorage.removeItem('daton_onboarding_selections');
       localStorage.removeItem('daton_onboarding_completed');
@@ -280,7 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('unified_tour_progress');
       
       // Force show onboarding immediately
-      console.log('✨ Forcing onboarding to show...');
+      logger.debug('Forcing onboarding to show', 'onboarding');
       setShouldShowOnboarding(true);
       
       toast({
@@ -290,12 +291,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Reload page to ensure clean state
       setTimeout(() => {
-        console.log('🔄 Reloading page for clean state...');
+        logger.debug('Reloading page for clean state', 'onboarding');
         window.location.reload();
       }, 1500);
       
     } catch (error) {
-      console.error('❌ Error restarting onboarding:', error);
+      logger.error('Failed to restart onboarding', error, 'onboarding');
       toast({
         title: "Erro",
         description: "Não foi possível reiniciar o guia de configuração.",
@@ -320,7 +321,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Você pode acessar o guia de configuração a qualquer momento pelo menu lateral."
       });
     } catch (error) {
-      console.error('Error skipping onboarding:', error);
+      logger.error('Failed to skip onboarding', error, 'onboarding');
       toast({
         title: "Erro",
         description: "Não foi possível pular o onboarding.",

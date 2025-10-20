@@ -361,14 +361,11 @@ const App = () => (
             <Route path="/quality-dashboard" element={<ProtectedLazyPageWrapper><QualityDashboard /></ProtectedLazyPageWrapper>} />
             <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
+// Consolidar rotas duplicadas - removendo duplicações
             <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
-            
-            {/* SGQ - Quality Dashboard Redirects Consolidados */}
-            <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
-            <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />
-            <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
+            <Route path="/dashboard-sgq" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/auditorias-internas" element={<Navigate to="/auditoria" replace />} />
             <Route path="/avaliacao-fornecedores" element={<Navigate to="/gestao-fornecedores" replace />} />
             
@@ -405,11 +402,9 @@ const App = () => (
             <Route path="/painel-governanca" element={<Navigate to="/governanca-esg" replace />} />
             <Route path="/compliance-politicas" element={<Navigate to="/compliance" replace />} />
             <Route path="/auditorias" element={<Navigate to="/auditoria" replace />} />
-            <Route path="/sgq-dashboard" element={<Navigate to="/quality-dashboard" replace />} />
-            <Route path="/dashboard-sgq" element={<Navigate to="/quality-dashboard" replace />} />
-            <Route path="/gerador-relatorios" element={<Navigate to="/relatorios" replace />} />
+            <Route path="/gerador-relatorios" element={<Navigate to="/relatorios-integrados" replace />} />
             <Route path="/marketplace-esg" element={<Navigate to="/marketplace" replace />} />
-            <Route path="/reconciliacao-ia" element={<Navigate to="/reconciliacao-documentos" replace />} />
+            <Route path="/reconciliacao-ia" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
             
             {/* Formulário público */}
             <Route path="/form/:formId" element={
