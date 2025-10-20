@@ -32,12 +32,21 @@ export const getUserAndCompany = async (): Promise<UserWithCompany | null> => {
     if (profileError) throw profileError;
     if (!profile) return null;
 
+    // SECURE: Fetch role from user_roles table (CRITICAL SECURITY FIX)
+    const { data: userRole, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (roleError) throw roleError;
+
     return {
       id: profile.id,
       email: user.email || '',
       full_name: profile.full_name || '',
       company_id: profile.company_id,
-      role: profile.role || 'User',
+      role: userRole?.role || 'viewer',
       company: profile.companies ? {
         id: profile.companies.id,
         name: profile.companies.name,

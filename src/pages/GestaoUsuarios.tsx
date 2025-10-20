@@ -48,23 +48,40 @@ export default function GestaoUsuarios() {
 
       if (!profile?.company_id) return [];
 
-      const { data } = await supabase
+      // SECURE: Fetch roles from user_roles table (CRITICAL SECURITY FIX)
+      const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, role, company_id')
+        .select('id, full_name, company_id')
         .eq('company_id', profile.company_id)
         .order('full_name');
 
-      return (data || []) as UserProfileWithRole[];
+      if (!profiles) return [];
+
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', profiles.map(p => p.id));
+
+      const rolesMap = new Map(userRoles?.map(ur => [ur.user_id, ur.role]) || []);
+
+      return profiles.map(p => ({
+        ...p,
+        role: rolesMap.get(p.id) || 'viewer'
+      })) as UserProfileWithRole[];
     }
   });
 
   // Mutation to update user role
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
+      // SECURE: Update role in user_roles table (CRITICAL SECURITY FIX)
       const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole as any })
-        .eq('id', userId);
+        .from('user_roles')
+        .update({ 
+          role: newRole,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
 
       if (error) throw error;
     },

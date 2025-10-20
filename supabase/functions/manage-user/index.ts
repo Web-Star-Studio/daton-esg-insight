@@ -34,11 +34,11 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // Check if user is admin or super_admin using profiles table
-    const { data: userProfile, error: roleError } = await supabaseClient
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
+    // SECURE: Check admin role from user_roles table (CRITICAL SECURITY FIX)
+    const { data: userRole, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role, company_id')
+      .eq('user_id', user.id)
       .maybeSingle();
 
     if (roleError) {
@@ -46,14 +46,22 @@ serve(async (req) => {
       throw new Error('Failed to verify user permissions');
     }
 
-    if (!userProfile || !['admin', 'super_admin'].includes(userProfile.role)) {
+    if (!userRole || !['admin', 'super_admin'].includes(userRole.role)) {
       throw new Error('Only admins can manage users');
     }
+
+    const adminCompanyId = userRole.company_id;
+    const isSuper = userRole.role === 'super_admin';
 
     const { action, userData } = await req.json();
 
     switch (action) {
       case 'create': {
+        // SECURITY: Validate company_id matches admin's company
+        if (userData.company_id !== adminCompanyId && !isSuper) {
+          throw new Error('Cannot create user in different company');
+        }
+
         // Create user in auth
         const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
           email: userData.email,
@@ -65,24 +73,27 @@ serve(async (req) => {
 
         if (createError) throw createError;
 
-        // Create profile
+        // Create profile (without role)
         const { error: profileError } = await supabaseClient
           .from('profiles')
           .insert({
             id: newUser.user.id,
             full_name: userData.full_name,
+            job_title: userData.job_title,
             company_id: userData.company_id,
           });
 
         if (profileError) throw profileError;
 
-        // Update profile with role
+        // SECURE: Create role in user_roles table (CRITICAL SECURITY FIX)
         const { error: roleError } = await supabaseClient
-          .from('profiles')
-          .update({
+          .from('user_roles')
+          .insert({
+            user_id: newUser.user.id,
             role: userData.role,
-          })
-          .eq('id', newUser.user.id);
+            company_id: userData.company_id,
+            assigned_by_user_id: user.id,
+          });
 
         if (roleError) throw roleError;
 
@@ -92,15 +103,26 @@ serve(async (req) => {
       }
 
       case 'update': {
-        // Update profile
+        // SECURITY: Verify target user belongs to admin's company
+        const { data: targetUserRole } = await supabaseClient
+          .from('user_roles')
+          .select('company_id')
+          .eq('user_id', userData.id)
+          .single();
+
+        if (!targetUserRole) {
+          throw new Error('Target user not found');
+        }
+
+        if (targetUserRole.company_id !== adminCompanyId && !isSuper) {
+          throw new Error('Cannot update user from different company');
+        }
+
+        // Update profile (without role)
         const updateData: any = {
           full_name: userData.full_name,
-          job_title: userData.department,
+          job_title: userData.department || userData.job_title,
         };
-
-        if (userData.role) {
-          updateData.role = userData.role;
-        }
 
         const { error: updateError } = await supabaseClient
           .from('profiles')
@@ -109,13 +131,41 @@ serve(async (req) => {
 
         if (updateError) throw updateError;
 
+        // SECURE: Update role in user_roles table (CRITICAL SECURITY FIX)
+        if (userData.role) {
+          const { error: roleUpdateError } = await supabaseClient
+            .from('user_roles')
+            .update({ 
+              role: userData.role,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userData.id);
+
+          if (roleUpdateError) throw roleUpdateError;
+        }
+
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       case 'delete': {
-        // Delete user from auth (will cascade to profiles)
+        // SECURITY: Verify target user belongs to admin's company
+        const { data: deleteTargetRole } = await supabaseClient
+          .from('user_roles')
+          .select('company_id')
+          .eq('user_id', userData.id)
+          .single();
+
+        if (!deleteTargetRole) {
+          throw new Error('Target user not found');
+        }
+
+        if (deleteTargetRole.company_id !== adminCompanyId && !isSuper) {
+          throw new Error('Cannot delete user from different company');
+        }
+
+        // Delete user from auth (will cascade to profiles and user_roles)
         const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(userData.id);
 
         if (deleteError) throw deleteError;
@@ -126,7 +176,12 @@ serve(async (req) => {
       }
 
       case 'list': {
-        // Get company users with roles from profiles
+        // SECURITY: Validate company_id
+        if (userData.company_id !== adminCompanyId && !isSuper) {
+          throw new Error('Cannot list users from different company');
+        }
+
+        // Get company users profiles
         const { data: profiles, error: profilesError } = await supabaseClient
           .from('profiles')
           .select('*')
@@ -135,17 +190,28 @@ serve(async (req) => {
 
         if (profilesError) throw profilesError;
 
+        // SECURE: Get roles from user_roles table (CRITICAL SECURITY FIX)
+        const userIds = profiles.map(p => p.id);
+        const { data: userRolesList, error: rolesListError } = await supabaseClient
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', userIds);
+
+        if (rolesListError) throw rolesListError;
+
+        const rolesMap = new Map(userRolesList.map(ur => [ur.user_id, ur.role]));
+
         // Get auth users for emails
         const { data: authUsers } = await supabaseClient.auth.admin.listUsers();
 
-        // Merge data with role from profiles
+        // Merge data with role from user_roles table
         const users = profiles.map(profile => {
           const authUser = authUsers?.users.find(u => u.id === profile.id);
           return {
             id: profile.id,
             full_name: profile.full_name,
             email: authUser?.email || 'N/A',
-            role: profile.role || 'Colaborador',
+            role: rolesMap.get(profile.id) || 'viewer',
             company_id: profile.company_id,
             created_at: profile.created_at,
             avatar_url: profile.avatar_url,

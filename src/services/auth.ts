@@ -136,6 +136,23 @@ class AuthService {
         return null;
       }
 
+      // SECURE: Fetch role from user_roles table (CRITICAL SECURITY FIX)
+      const { data: userRole, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (roleError) {
+        logger.error('Error fetching user role', roleError);
+        return null;
+      }
+
+      if (!userRole) {
+        logger.error('No role found for user', { userId: session.user.id });
+        return null;
+      }
+
       logger.info('Profile found successfully', { profileId: profile.id });
 
       return {
@@ -143,7 +160,7 @@ class AuthService {
         full_name: profile.full_name,
         email: session.user.email!,
         job_title: profile.job_title,
-        role: profile.role,
+        role: userRole.role,
         company: {
           id: profile.companies.id,
           name: profile.companies.name
