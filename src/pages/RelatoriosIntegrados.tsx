@@ -527,27 +527,37 @@ export default function RelatoriosIntegrados() {
         </TabsContent>
 
         <TabsContent value="generator" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerador de Relatórios Inteligente</CardTitle>
-              <CardDescription>
-                Crie relatórios personalizados usando IA e dados do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Gerador Inteligente</h3>
-                <p className="text-muted-foreground mb-4">
-                  Sistema de geração automática de relatórios será implementado em breve
-                </p>
-                <Button variant="outline" onClick={handleCreateReport}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurar Gerador
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <IntelligentReportingDashboard />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <SmartTemplateSelector 
+                onSelectTemplate={setSelectedTemplateId}
+                selectedTemplateId={selectedTemplateId}
+              />
+              
+              {selectedTemplateId && (
+                <ReportGeneratorConfiguration 
+                  onGenerate={handleGenerateReport}
+                  isGenerating={isGenerating}
+                />
+              )}
+            </div>
+            
+            <div>
+              <ReportGenerationMonitor 
+                onDownload={(reportId) => {
+                  toast.success("Download iniciado");
+                }}
+                onCancel={(reportId) => {
+                  toast.info("Geração cancelada");
+                }}
+                onRetry={(reportId) => {
+                  toast.info("Tentando novamente...");
+                }}
+              />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-4">

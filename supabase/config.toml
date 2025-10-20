@@ -141,3 +141,6 @@ verify_jwt = true
 
 [functions.ai-chat-controller]
 verify_jwt = true
+
+[functions.generate-intelligent-report]
+verify_jwt = true
