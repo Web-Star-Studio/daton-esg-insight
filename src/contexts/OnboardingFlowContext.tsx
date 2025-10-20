@@ -225,12 +225,12 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
         .from('onboarding_selections')
         .upsert([{ 
           user_id: user.id,
-          company_id: user.company?.id,
+          company_id: user.company?.id || '',
           is_completed: true,
           completed_at: new Date().toISOString(),
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
-          current_step: 'completed'
+          current_step: state.totalSteps - 1
         }], {
           onConflict: 'user_id'
         });

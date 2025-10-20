@@ -98,8 +98,6 @@ function CleanOnboardingContent() {
     console.log('🚀 Starting platform usage...');
     
     try {
-      setState(prev => ({ ...prev, isLoading: true }));
-      
       if (!user?.id) {
         throw new Error('User not found');
       }
@@ -149,7 +147,6 @@ function CleanOnboardingContent() {
       });
       
       // Fallback to emergency complete
-      setState(prev => ({ ...prev, isLoading: false }));
       await handleEmergencyComplete();
     }
   };
@@ -224,6 +221,7 @@ function CleanOnboardingContent() {
           .from('onboarding_selections')
           .upsert([{
             user_id: user.id,
+            company_id: user.company?.id || '',
             is_completed: true,
             completed_at: new Date().toISOString(),
             selected_modules: state.selectedModules || [],
