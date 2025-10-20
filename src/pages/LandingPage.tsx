@@ -43,10 +43,10 @@ export default function LandingPage() {
     {
       icon: BarChart3,
       title: "Monitoramento GEE",
-      description: "Rastreamento automático e cálculo preciso de emissões de gases do efeito estufa",
+      description: "Rastreamento automático e cálculo preciso de emissões de gases do efeito estufa conforme GHG Protocol",
       benefits: [
         "Cálculos automáticos de Escopo 1, 2 e 3",
-        "Fatores de emissão atualizados",
+        "Fatores de emissão atualizados (GHG Protocol)",
         "Relatórios em tempo real"
       ]
     },
@@ -75,7 +75,7 @@ export default function LandingPage() {
       title: "Relatórios Automáticos",
       description: "Geração automática de relatórios ESG padronizados",
       benefits: [
-        "Formatos GRI, SASB, TCFD",
+        "Formatos GRI, SASB, TCFD e outros",
         "Exportação em múltiplos formatos",
         "Auditoria completa de dados"
       ]
@@ -128,7 +128,7 @@ export default function LandingPage() {
       company: "ThyssenKrupp",
       avatar: "C",
       color: "green",
-      quote: "A plataforma transformou nossa gestão de licenças ambientais. Zero multas no último ano graças aos alertas inteligentes e monitoramento automatizado do Daton.",
+      quote: "A plataforma transformou nossa gestão de licenças ambientais. Zero multas no último ano graças aos alertas inteligentes e ao monitoramento automatizado da Daton.",
       metrics: { compliance: "100%", fines: "Zero" }
     }
   ]
@@ -225,11 +225,11 @@ export default function LandingPage() {
                   🚀 Plataforma ESG mais avançada do Brasil
                 </Badge>
                 <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                  Lidere a transformação para uma <span className="text-primary">economia sustentável</span>
+                  Lidere a transição para um <span className="text-primary">economia sustentável</span>
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
                   Mais que eficiência operacional: torne-se um líder ESG com nossa plataforma completa. 
-                  Construa vantagem competitiva, gerencie riscos climáticos e prepare sua empresa para o futuro 
+                  Construa vantagem competitiva, gerencie riscos ambientais e prepare sua empresa para o futuro 
                   da economia sustentável.
                 </p>
               </div>
@@ -407,7 +407,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               ESG não é mais apenas conformidade - é diferenciação estratégica. Prepare-se para um futuro onde 
-              sustentabilidade define liderança de mercado, atrai os melhores talentos e conquista investidores conscientes.
+              sustentabilidade define liderança de mercado, atrai os melhores talentos e conquista investidores.
             </p>
             <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl p-8 mb-12 max-w-4xl mx-auto">
               <div className="grid md:grid-cols-3 gap-6 text-center">
@@ -420,8 +420,8 @@ export default function LandingPage() {
                   <p className="text-sm text-muted-foreground">Construa reputação e atraia stakeholders</p>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-primary mb-2">Investidores ESG</div>
-                  <p className="text-sm text-muted-foreground">Acesse capital e mercados sustentáveis</p>
+                  <div className="text-2xl font-bold text-primary mb-2">Investidores</div>
+                  <p className="text-sm text-muted-foreground">Acesse recursos financeiros e investidores</p>
                 </div>
               </div>
             </div>
@@ -459,9 +459,9 @@ export default function LandingPage() {
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              Por que Escolher o Daton como Parceiro Estratégico
-            </h2>
+              <h2 className="text-4xl font-bold text-foreground mb-4">
+                Por que escolher a Daton como Parceiro Estratégico
+              </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Mais que uma ferramenta, somos seu parceiro na construção de uma liderança sustentável que gera valor para todos os stakeholders.
             </p>
@@ -784,7 +784,7 @@ export default function LandingPage() {
                 <Target className="h-8 w-8 text-blue-600" />
               </div>
               <div className="text-3xl font-bold text-blue-600 mb-2">12</div>
-              <div className="text-lg font-semibold text-foreground mb-2">ODS impactados</div>
+              <div className="text-lg font-semibold text-foreground mb-2">ODS atendidos</div>
               <p className="text-muted-foreground text-sm">
                 Objetivos de Desenvolvimento Sustentável atendidos através das nossas soluções
               </p>
