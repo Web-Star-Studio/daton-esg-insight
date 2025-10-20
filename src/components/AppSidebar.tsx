@@ -2,6 +2,8 @@ import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Star, StarOff, ChevronRight, Search, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
+import { useNotificationCounts } from "@/hooks/useNotificationCounts"
 import {
   Sidebar,
   SidebarContent,
@@ -163,6 +165,7 @@ export function AppSidebar() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [isHovering, setIsHovering] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const { data: notificationCounts } = useNotificationCounts()
   
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path
@@ -182,6 +185,35 @@ export function AppSidebar() {
       ...prev,
       [sectionId]: !prev[sectionId]
     }))
+  }
+
+  // Get notification count for specific menu item
+  const getNotificationCount = (itemId: string): number => {
+    if (!notificationCounts) return 0;
+    
+    const countMap: Record<string, number> = {
+      'environmental-licensing': notificationCounts.licenses_expiring,
+      'audits': notificationCounts.pending_audits,
+      'non-conformities': notificationCounts.open_non_conformities,
+      'training-management': notificationCounts.pending_trainings,
+    };
+    
+    return countMap[itemId] || 0;
+  }
+
+  // Get status indicator for specific menu item
+  const getStatusIndicator = (itemId: string): 'active' | 'warning' | 'expired' | null => {
+    const count = getNotificationCount(itemId);
+    
+    if (itemId === 'environmental-licensing' && count > 0) {
+      return count > 5 ? 'expired' : 'warning';
+    }
+    
+    if (itemId === 'non-conformities' && count > 0) {
+      return 'warning';
+    }
+    
+    return null;
   }
 
   const renderSubMenuItem = (item: MenuItem, isParentActive: boolean) => {
@@ -224,6 +256,8 @@ export function AppSidebar() {
     const hasSubItems = item.subItems && item.subItems.length > 0
     const isExpanded = expandedSections[item.id] || false
     const hasActiveSubItem = item.subItems?.some(subItem => isActive(subItem.path)) || false
+    const notificationCount = getNotificationCount(item.id)
+    const statusIndicator = getStatusIndicator(item.id)
 
     if (hasSubItems) {
       return (
@@ -239,12 +273,28 @@ export function AppSidebar() {
                   disabled={!collapsed}
                 >
                   <div className="flex items-center gap-3 flex-1">
-                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    <div className="relative">
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      {statusIndicator && (
+                        <StatusIndicator 
+                          status={statusIndicator} 
+                          pulse={statusIndicator === 'warning'}
+                          className="absolute -top-0.5 -right-0.5"
+                        />
+                      )}
+                    </div>
                     {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
                   </div>
                 </NavigationTooltip>
                 
                 <div className="flex items-center gap-1">
+                  {!collapsed && notificationCount > 0 && (
+                    <BadgeNotification 
+                      count={notificationCount}
+                      variant={notificationCount > 5 ? 'destructive' : 'warning'}
+                      className="mr-1"
+                    />
+                  )}
                   {!collapsed && (
                     <div
                       className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
@@ -281,10 +331,27 @@ export function AppSidebar() {
             disabled={!collapsed}
           >
             <div className="flex items-center gap-3 flex-1">
-              <item.icon className="h-4 w-4 flex-shrink-0" />
+              <div className="relative">
+                <item.icon className="h-4 w-4 flex-shrink-0" />
+                {statusIndicator && (
+                  <StatusIndicator 
+                    status={statusIndicator} 
+                    pulse={statusIndicator === 'warning'}
+                    className="absolute -top-0.5 -right-0.5"
+                  />
+                )}
+              </div>
               {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
             </div>
           </NavigationTooltip>
+          
+          {!collapsed && notificationCount > 0 && (
+            <BadgeNotification 
+              count={notificationCount}
+              variant={notificationCount > 5 ? 'destructive' : 'warning'}
+              className="mr-1"
+            />
+          )}
           
           {!collapsed && (
             <div
