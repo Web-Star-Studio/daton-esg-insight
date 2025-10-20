@@ -36,3 +36,8 @@ export const Configuracao = lazyLoad(() => import('@/pages/Configuracao'));
 
 // Help and support
 export const FAQ = lazyLoad(() => import('@/pages/FAQ'));
+
+// Phase 5-8: New ESG pages
+export const Fornecedores = lazyLoad(() => import('@/pages/Fornecedores'));
+export const IndicadoresESG = lazyLoad(() => import('@/pages/IndicadoresESG'));
+export const Materialidade = lazyLoad(() => import('@/pages/Materialidade'));

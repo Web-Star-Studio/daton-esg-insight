@@ -88,6 +88,11 @@ const AcoesCorretivas = lazy(() => import("./pages/AcoesCorretivas"));
 const ControleDocumentos = lazy(() => import("./pages/ControleDocumentos"));
 const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
 
+// Phase 5-8: Novas páginas ESG
+const Fornecedores = lazy(() => import("./pages/Fornecedores"));
+const IndicadoresESG = lazy(() => import("./pages/IndicadoresESG"));
+const Materialidade = lazy(() => import("./pages/Materialidade"));
+
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
 const GestaoFuncionarios = lazy(() => import("./pages/GestaoFuncionarios"));
@@ -335,6 +340,9 @@ const App = () => (
             {/* ESG e stakeholders */}
             <Route path="/gestao-stakeholders" element={<ProtectedLazyPageWrapper><GestaoStakeholders /></ProtectedLazyPageWrapper>} />
             <Route path="/analise-materialidade" element={<ProtectedLazyPageWrapper><AnaliseMaterialidade /></ProtectedLazyPageWrapper>} />
+            <Route path="/materialidade" element={<ProtectedLazyPageWrapper><Materialidade /></ProtectedLazyPageWrapper>} />
+            <Route path="/indicadores-esg" element={<ProtectedLazyPageWrapper><IndicadoresESG /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores" element={<ProtectedLazyPageWrapper><Fornecedores /></ProtectedLazyPageWrapper>} />
             <Route path="/configuracao-organizacional" element={<ProtectedLazyPageWrapper><ConfiguracaoOrganizacional /></ProtectedLazyPageWrapper>} />
             <Route path="/social-esg" element={<ProtectedLazyPageWrapper><SocialESG /></ProtectedLazyPageWrapper>} />
             <Route path="/governanca-esg" element={<ProtectedLazyPageWrapper><GovernancaESG /></ProtectedLazyPageWrapper>} />
