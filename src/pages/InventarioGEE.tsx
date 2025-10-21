@@ -87,6 +87,9 @@ const InventarioGEE = () => {
   const [showCharts, setShowCharts] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState("6months")
   const [comparisonEnabled, setComparisonEnabled] = useState(false)
+  const [scopeFilter, setScopeFilter] = useState<string>("all")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
   
   // High emission threshold (configurable)
   const HIGH_EMISSION_THRESHOLD = 100; // tCO2e
@@ -102,15 +105,20 @@ const InventarioGEE = () => {
     { name: 'Escopo 3', value: stats.escopo3 || 0, color: '#eab308' },
   ], [stats]);
 
-  // Filter and search logic
+  // Filter and search logic with advanced filters
   const filteredSources = useMemo(() => {
     return emissionSources.filter(source => {
       const matchesSearch = searchTerm === "" || 
         source.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         source.category.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch;
+      
+      const matchesScope = scopeFilter === "all" || source.scope.toString() === scopeFilter;
+      const matchesCategory = categoryFilter === "all" || source.category === categoryFilter;
+      const matchesStatus = statusFilter === "all" || source.status === statusFilter;
+      
+      return matchesSearch && matchesScope && matchesCategory && matchesStatus;
     });
-  }, [emissionSources, searchTerm]);
+  }, [emissionSources, searchTerm, scopeFilter, categoryFilter, statusFilter]);
 
   // High emission sources alert
   const highEmissionSources = useMemo(() => {
@@ -157,22 +165,42 @@ const InventarioGEE = () => {
   };
 
   const exportData = (format: 'csv' | 'excel') => {
-    // Simple CSV export (in real app, use proper library)
     if (format === 'csv') {
-      const headers = ['Nome', 'Escopo', 'Categoria', 'Emissões (tCO2e)', 'Status'];
+      const headers = [
+        'Nome da Fonte',
+        'Escopo', 
+        'Categoria', 
+        'Emissões (tCO2e)', 
+        'Última Atualização',
+        'Status',
+        'Descrição'
+      ];
+      
       const rows = filteredSources.map(source => [
         source.name,
         `Escopo ${source.scope}`,
         source.category,
-        formatEmission(source.ultima_emissao),
-        source.status
+        source.ultima_emissao ? source.ultima_emissao.toFixed(3) : '0',
+        formatDate(source.ultima_atualizacao),
+        source.status,
+        source.description || ''
       ]);
+      
+      // Add summary row
+      rows.push([]);
+      rows.push(['RESUMO']);
+      rows.push(['Total de Emissões', '', '', stats.total ? stats.total.toFixed(3) : '0', '', '', '']);
+      rows.push(['Escopo 1', '', '', stats.escopo1 ? stats.escopo1.toFixed(3) : '0', '', '', '']);
+      rows.push(['Escopo 2', '', '', stats.escopo2 ? stats.escopo2.toFixed(3) : '0', '', '', '']);
+      rows.push(['Escopo 3', '', '', stats.escopo3 ? stats.escopo3.toFixed(3) : '0', '', '', '']);
+      rows.push(['Fontes Ativas', '', '', `${stats.ativas} de ${stats.fontes_total}`, '', '', '']);
       
       const csvContent = [headers, ...rows]
         .map(row => row.map(cell => `"${cell}"`).join(','))
         .join('\n');
       
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      // Add BOM for UTF-8 support in Excel
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -182,7 +210,7 @@ const InventarioGEE = () => {
       
       toast({
         title: "Sucesso",
-        description: "Relatório exportado com sucesso!",
+        description: "Relatório exportado com sucesso em formato CSV!",
       });
     }
   };
@@ -464,13 +492,26 @@ const InventarioGEE = () => {
           </div>
         </div>
 
-        {/* Alertas de alta emissão */}
+        {/* Alertas de alta emissão - Melhorado */}
         {highEmissionSources.length > 0 && (
-          <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800 dark:text-orange-200">
-              <strong>Atenção:</strong> {highEmissionSources.length} fonte(s) de emissão com valores altos (&gt;{HIGH_EMISSION_THRESHOLD} tCO₂e): {' '}
-              {highEmissionSources.map(s => s.name).join(', ')}
+          <Alert className="border-orange-500 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 dark:border-orange-700">
+            <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 animate-pulse" />
+            <AlertDescription className="text-orange-900 dark:text-orange-100">
+              <div className="flex flex-col gap-2">
+                <div className="font-semibold">
+                  ⚠️ Atenção: {highEmissionSources.length} fonte(s) de emissão com valores elevados
+                </div>
+                <div className="text-sm">
+                  Fontes acima de {HIGH_EMISSION_THRESHOLD} tCO₂e: {' '}
+                  <span className="font-medium">
+                    {highEmissionSources.slice(0, 3).map(s => s.name).join(', ')}
+                    {highEmissionSources.length > 3 && ` e mais ${highEmissionSources.length - 3}`}
+                  </span>
+                </div>
+                <div className="text-xs text-orange-700 dark:text-orange-300">
+                  Recomendação: Priorize ações de redução para estas fontes de maior impacto.
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -478,30 +519,56 @@ const InventarioGEE = () => {
         {/* Controles e filtros */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              <div className="flex flex-1 gap-4 items-center">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar fontes de emissão..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div className="flex flex-1 gap-4 items-center flex-wrap">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar fontes de emissão..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  <Select value={scopeFilter} onValueChange={setScopeFilter}>
+                    <SelectTrigger className="w-40">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Escopo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Escopos</SelectItem>
+                      <SelectItem value="1">Escopo 1</SelectItem>
+                      <SelectItem value="2">Escopo 2</SelectItem>
+                      <SelectItem value="3">Escopo 3</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Status</SelectItem>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger className="w-48">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3months">Últimos 3 meses</SelectItem>
+                      <SelectItem value="6months">Últimos 6 meses</SelectItem>
+                      <SelectItem value="12months">Último ano</SelectItem>
+                      <SelectItem value="24months">Últimos 2 anos</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger className="w-48">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3months">Últimos 3 meses</SelectItem>
-                    <SelectItem value="6months">Últimos 6 meses</SelectItem>
-                    <SelectItem value="12months">Último ano</SelectItem>
-                    <SelectItem value="24months">Últimos 2 anos</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               
               <div className="flex gap-2 items-center">
@@ -714,7 +781,7 @@ const InventarioGEE = () => {
 
         {/* KPIs Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="relative overflow-hidden">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -723,11 +790,20 @@ const InventarioGEE = () => {
                   {stats.total > 1000 && (
                     <div className="flex items-center gap-1 mt-1">
                       <TrendingUp className="h-3 w-3 text-red-500" />
-                      <span className="text-xs text-red-500">Alto volume</span>
+                      <span className="text-xs text-red-500 font-medium">Alto volume</span>
+                    </div>
+                  )}
+                  {stats.total <= 1000 && stats.total > 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendingDown className="h-3 w-3 text-green-500" />
+                      <span className="text-xs text-green-500 font-medium">Dentro da meta</span>
                     </div>
                   )}
                 </div>
-                <Building2 className="h-8 w-8 text-muted-foreground" />
+                <div className="relative">
+                  <Building2 className="h-8 w-8 text-primary" />
+                  <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-ping" />
+                </div>
               </div>
             </CardContent>
           </Card>
