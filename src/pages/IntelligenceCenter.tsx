@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Upload, FileText, BarChart3, Database } from 'lucide-react';
+import { Brain, Upload, FileText, BarChart3, Database, Zap } from 'lucide-react';
 import { DocumentAIAnalysis } from '@/components/intelligence/DocumentAIAnalysis';
 import { ExtractedDataManager } from '@/components/intelligence/ExtractedDataManager';
 import { UnclassifiedDataManager } from '@/components/intelligence/UnclassifiedDataManager';
 import { AutomationRulesManager } from '@/components/intelligence/AutomationRulesManager';
 import { DocumentAnalyticsDashboard } from '@/components/intelligence/DocumentAnalyticsDashboard';
+import { AIPerformanceDashboard } from '@/components/intelligence/AIPerformanceDashboard';
+import { DataQualityDashboard } from '@/components/intelligence/DataQualityDashboard';
+import { BatchProcessingManager } from '@/components/intelligence/BatchProcessingManager';
 
 export default function IntelligenceCenter() {
   const [activeTab, setActiveTab] = useState('analyze');
@@ -27,7 +30,7 @@ export default function IntelligenceCenter() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-4xl grid-cols-5">
+        <TabsList className="grid w-full max-w-5xl grid-cols-6">
           <TabsTrigger value="analyze" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Analisar
@@ -41,12 +44,16 @@ export default function IntelligenceCenter() {
             Não Classificados
           </TabsTrigger>
           <TabsTrigger value="automation" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
+            <Zap className="h-4 w-4" />
             Automação
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Performance IA
           </TabsTrigger>
         </TabsList>
 
@@ -68,6 +75,14 @@ export default function IntelligenceCenter() {
 
         <TabsContent value="analytics" className="space-y-6">
           <DocumentAnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid gap-6">
+            <AIPerformanceDashboard />
+            <DataQualityDashboard />
+            <BatchProcessingManager />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -54,7 +54,7 @@ export function DataQualityDashboard() {
       for (const tableName of tablesToAnalyze) {
         try {
           const { data, error } = await supabase
-            .from(tableName)
+            .from(tableName as any)
             .select('*')
             .eq('company_id', selectedCompany.id);
 
@@ -63,7 +63,7 @@ export function DataQualityDashboard() {
             continue;
           }
 
-          if (data && data.length > 0) {
+          if (data && Array.isArray(data) && data.length > 0) {
             // Calculate completeness score
             const records = data;
             const totalRecords = records.length;

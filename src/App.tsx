@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { LazyPageWrapper } from "@/components/LazyPageWrapper";
 import { ProtectedLazyPageWrapper } from "@/components/ProtectedLazyPageWrapper";
@@ -149,16 +150,17 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <SmartToastProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter 
-              future={{ 
-                v7_startTransition: true, 
-                v7_relativeSplatPath: true 
-              }}
-            >
+        <CompanyProvider>
+          <TooltipProvider>
+            <SmartToastProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter 
+                future={{ 
+                  v7_startTransition: true, 
+                  v7_relativeSplatPath: true 
+                }}
+              >
               <RouteValidator>
                 <PageTransition>
                   <Routes>
@@ -424,6 +426,7 @@ const App = () => (
             </BrowserRouter>
         </SmartToastProvider>
       </TooltipProvider>
+        </CompanyProvider>
     </AuthProvider>
   </QueryClientProvider>
   </ErrorBoundary>

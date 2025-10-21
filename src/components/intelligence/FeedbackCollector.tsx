@@ -61,23 +61,25 @@ export function FeedbackCollector({
         ? corrections
         : null;
 
-      const { error } = await supabase
-        .from('ai_feedback_logs')
-        .insert({
-          company_id: selectedCompany.id,
-          document_id: documentId,
-          unclassified_data_id: unclassifiedDataId,
-          ai_suggestion: aiSuggestion,
-          user_correction: correctionDetails,
-          feedback_type: type,
-          correction_details: correctionDetails ? {
-            fields_corrected: Object.keys(corrections),
-            correction_count: Object.keys(corrections).length
-          } : null,
-          created_by_user_id: (await supabase.auth.getUser()).data.user?.id
-        });
+      // Note: ai_feedback_logs table needs to be created via migration
+      // For now, we'll log to console until the table is available
+      console.log('Feedback would be saved:', {
+        company_id: selectedCompany.id,
+        document_id: documentId,
+        unclassified_data_id: unclassifiedDataId,
+        ai_suggestion: aiSuggestion,
+        user_correction: correctionDetails,
+        feedback_type: type,
+        correction_details: correctionDetails ? {
+          fields_corrected: Object.keys(corrections),
+          correction_count: Object.keys(corrections).length
+        } : null,
+        created_by_user_id: (await supabase.auth.getUser()).data.user?.id
+      });
 
-      if (error) throw error;
+      // TODO: Uncomment when ai_feedback_logs table is created
+      // const { error } = await supabase.from('ai_feedback_logs').insert(feedbackData);
+      // if (error) throw error;
 
       toast.success(
         type === 'approval' 

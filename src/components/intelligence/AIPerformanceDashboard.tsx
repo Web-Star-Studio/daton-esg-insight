@@ -12,22 +12,24 @@ import { ptBR } from 'date-fns/locale';
 
 interface AIMetrics {
   metric_date: string;
-  documents_processed: number;
-  auto_approved_count: number;
-  manual_review_count: number;
-  rejected_count: number;
-  average_confidence: number;
-  average_processing_time_ms: number;
-  success_rate: number;
+  documents_processed: number | null;
+  auto_approved_count: number | null;
+  manual_review_count: number | null;
+  rejected_count: number | null;
+  avg_confidence: number | null;
+  avg_processing_time_seconds: number | null;
+  accuracy_rate: number | null;
 }
 
 interface DocumentPattern {
   id: string;
-  pattern_name: string;
-  document_type: string;
-  success_rate: number;
-  usage_count: number;
-  last_used_at: string;
+  pattern_signature: string;
+  pattern_type: string;
+  confidence_score: number | null;
+  success_count: number | null;
+  failure_count: number | null;
+  last_used_at: string | null;
+  pattern_data: any;
 }
 
 export function AIPerformanceDashboard() {
@@ -73,8 +75,7 @@ export function AIPerformanceDashboard() {
         .from('document_patterns')
         .select('*')
         .eq('company_id', selectedCompany.id)
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
+        .order('success_count', { ascending: false })
         .limit(10);
 
       if (error) throw error;
@@ -96,20 +97,20 @@ export function AIPerformanceDashboard() {
     const latestWeek = metrics.slice(-7);
     const previousWeek = metrics.slice(-14, -7);
 
-    const totalProcessed = latestWeek.reduce((sum, m) => sum + m.documents_processed, 0);
-    const autoApproved = latestWeek.reduce((sum, m) => sum + m.auto_approved_count, 0);
-    const rejected = latestWeek.reduce((sum, m) => sum + m.rejected_count, 0);
+    const totalProcessed = latestWeek.reduce((sum, m) => sum + (m.documents_processed || 0), 0);
+    const autoApproved = latestWeek.reduce((sum, m) => sum + (m.auto_approved_count || 0), 0);
+    const rejected = latestWeek.reduce((sum, m) => sum + (m.rejected_count || 0), 0);
     
     const automationRate = totalProcessed > 0 ? (autoApproved / totalProcessed) * 100 : 0;
     const rejectionRate = totalProcessed > 0 ? (rejected / totalProcessed) * 100 : 0;
     
-    const avgConfidence = latestWeek.reduce((sum, m) => sum + (m.average_confidence || 0), 0) / latestWeek.length;
-    const avgProcessingTime = latestWeek.reduce((sum, m) => sum + (m.average_processing_time_ms || 0), 0) / latestWeek.length;
+    const avgConfidence = latestWeek.reduce((sum, m) => sum + (m.avg_confidence || 0), 0) / (latestWeek.length || 1);
+    const avgProcessingTime = latestWeek.reduce((sum, m) => sum + ((m.avg_processing_time_seconds || 0) * 1000), 0) / (latestWeek.length || 1);
 
     // Calculate trend
-    const prevAutomationRate = previousWeek.length > 0
-      ? (previousWeek.reduce((sum, m) => sum + m.auto_approved_count, 0) / 
-         previousWeek.reduce((sum, m) => sum + m.documents_processed, 0)) * 100
+    const prevTotal = previousWeek.reduce((sum, m) => sum + (m.documents_processed || 0), 0);
+    const prevAutomationRate = previousWeek.length > 0 && prevTotal > 0
+      ? (previousWeek.reduce((sum, m) => sum + (m.auto_approved_count || 0), 0) / prevTotal) * 100
       : 0;
     
     const trend = automationRate - prevAutomationRate;
@@ -126,19 +127,19 @@ export function AIPerformanceDashboard() {
   const prepareChartData = () => {
     return metrics.map(m => ({
       date: format(new Date(m.metric_date), 'dd/MMM', { locale: ptBR }),
-      confidence: m.average_confidence || 0,
-      processed: m.documents_processed,
-      autoApproved: m.auto_approved_count,
-      manualReview: m.manual_review_count,
-      rejected: m.rejected_count
+      confidence: m.avg_confidence || 0,
+      processed: m.documents_processed || 0,
+      autoApproved: m.auto_approved_count || 0,
+      manualReview: m.manual_review_count || 0,
+      rejected: m.rejected_count || 0
     }));
   };
 
   const prepareDistributionData = () => {
-    const totalProcessed = metrics.reduce((sum, m) => sum + m.documents_processed, 0);
-    const totalAuto = metrics.reduce((sum, m) => sum + m.auto_approved_count, 0);
-    const totalManual = metrics.reduce((sum, m) => sum + m.manual_review_count, 0);
-    const totalRejected = metrics.reduce((sum, m) => sum + m.rejected_count, 0);
+    const totalProcessed = metrics.reduce((sum, m) => sum + (m.documents_processed || 0), 0);
+    const totalAuto = metrics.reduce((sum, m) => sum + (m.auto_approved_count || 0), 0);
+    const totalManual = metrics.reduce((sum, m) => sum + (m.manual_review_count || 0), 0);
+    const totalRejected = metrics.reduce((sum, m) => sum + (m.rejected_count || 0), 0);
 
     return [
       { name: 'Auto-aprovado', value: totalAuto, color: 'hsl(var(--success))' },
@@ -332,36 +333,43 @@ export function AIPerformanceDashboard() {
                   <CardDescription>Padrões mais utilizados pela IA</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {patterns.length === 0 ? (
+                   {patterns.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p>Nenhum padrão identificado ainda</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {patterns.map((pattern, index) => (
-                        <div key={pattern.id} className="flex items-center justify-between p-3 rounded-lg border">
-                          <div className="flex items-center gap-3">
-                            <Badge variant="outline" className="min-w-[30px] justify-center">
-                              #{index + 1}
-                            </Badge>
-                            <div>
-                              <p className="font-medium">{pattern.pattern_name}</p>
-                              <p className="text-xs text-muted-foreground">{pattern.document_type}</p>
+                      {patterns.map((pattern, index) => {
+                        const totalAttempts = (pattern.success_count || 0) + (pattern.failure_count || 0);
+                        const successRate = totalAttempts > 0 
+                          ? Math.round(((pattern.success_count || 0) / totalAttempts) * 100) 
+                          : 0;
+                        
+                        return (
+                          <div key={pattern.id} className="flex items-center justify-between p-3 rounded-lg border">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline" className="min-w-[30px] justify-center">
+                                #{index + 1}
+                              </Badge>
+                              <div>
+                                <p className="font-medium">{pattern.pattern_signature.substring(0, 40)}...</p>
+                                <p className="text-xs text-muted-foreground">{pattern.pattern_type}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-sm font-medium">{successRate}%</p>
+                                <p className="text-xs text-muted-foreground">Sucesso</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium">{pattern.success_count || 0}</p>
+                                <p className="text-xs text-muted-foreground">Usos</p>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <p className="text-sm font-medium">{pattern.success_rate}%</p>
-                              <p className="text-xs text-muted-foreground">Sucesso</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium">{pattern.usage_count}</p>
-                              <p className="text-xs text-muted-foreground">Usos</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
