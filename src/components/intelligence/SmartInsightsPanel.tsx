@@ -209,7 +209,7 @@ export function SmartInsightsPanel({
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    {viz.type === 'bar' && (
+                    {viz.type === 'bar' ? (
                       <BarChart data={viz.data}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
@@ -218,8 +218,7 @@ export function SmartInsightsPanel({
                         <Legend />
                         <Bar dataKey="value" fill="hsl(var(--primary))" />
                       </BarChart>
-                    )}
-                    {viz.type === 'line' && (
+                    ) : viz.type === 'line' ? (
                       <LineChart data={viz.data}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
@@ -233,25 +232,23 @@ export function SmartInsightsPanel({
                           strokeWidth={2}
                         />
                       </LineChart>
-                    )}
-                    {viz.type === 'pie' && (
+                    ) : viz.type === 'pie' ? (
                       <PieChart>
                         <Pie
                           data={viz.data}
                           cx="50%"
                           cy="50%"
-                          labelLine={false}
-                          label={(entry) => `${entry.name}: ${entry.value}`}
                           outerRadius={100}
                           fill="hsl(var(--primary))"
                           dataKey="value"
+                          label
                         >
-                          {viz.data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          {viz.data.map((entry: any, idx: number) => (
+                            <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                           ))}
                         </Pie>
                       </PieChart>
-                    )}
+                    ) : null}
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
