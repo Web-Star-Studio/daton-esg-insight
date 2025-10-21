@@ -110,15 +110,10 @@ class AuthService {
 
       logger.info('Getting profile for user', 'auth', { userId: session.user.id });
 
+      // Fetch profile WITHOUT joining companies to avoid RLS issues
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          companies (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -143,9 +138,24 @@ class AuthService {
         };
       }
 
-      // TOLERANT APPROACH: If company doesn't exist, use fallback
-      if (!profile.companies) {
-        logger.warn('No company found for profile - using fallback', 'database', { profileId: profile.id });
+      // Fetch company separately with error tolerance
+      let company = null;
+      if (profile.company_id) {
+        try {
+          const { data: companyData } = await supabase
+            .from('companies')
+            .select('id, name')
+            .eq('id', profile.company_id)
+            .maybeSingle();
+          
+          company = companyData;
+          
+          if (!companyData) {
+            logger.warn('Company not found for profile', 'database', { companyId: profile.company_id });
+          }
+        } catch (companyError) {
+          logger.warn('Error fetching company - using fallback', companyError, 'database');
+        }
       }
 
       // SECURE: Fetch role from user_roles table (CRITICAL SECURITY FIX)
@@ -160,41 +170,23 @@ class AuthService {
         throw new Error(`Erro ao buscar permissões: ${roleError.message}`);
       }
 
-      // MIGRATION: If no role in user_roles, check profiles and migrate
+      // Get role from user_roles - DO NOT auto-migrate as it requires admin privileges
       let finalRole = userRole?.role;
       
-      if (!finalRole && profile.role) {
-        logger.warn('Migrating role from profiles to user_roles', null, 'database', { userId: session.user.id });
-        
-        // Auto-migrate: insert role into user_roles
-        const { error: insertError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: session.user.id,
-            role: profile.role,
-            company_id: profile.company_id,
-            assigned_by_user_id: session.user.id
-          });
-
-        if (!insertError) {
-          finalRole = profile.role;
-          logger.info('Role migrated successfully', 'database', { userId: session.user.id, role: profile.role });
-        } else {
-          logger.error('Failed to migrate role', insertError, 'database');
-          throw new Error('Erro ao configurar permissões do usuário.');
-        }
-      }
-
       // TOLERANT APPROACH: If no role found, default to viewer
       if (!finalRole) {
-        logger.warn('No role found for user - defaulting to viewer', 'database', { userId: session.user.id });
+        logger.warn('No role found for user - defaulting to viewer', 'database', { 
+          userId: session.user.id,
+          profileRole: profile.role 
+        });
         finalRole = 'viewer';
       }
 
       logger.info('Profile found successfully', 'auth', { 
         profileId: profile.id,
         role: finalRole,
-        companyId: profile.companies.id 
+        companyId: profile.company_id,
+        hasCompanyData: !!company
       });
 
       return {
@@ -204,8 +196,8 @@ class AuthService {
         job_title: profile.job_title,
         role: finalRole,
         company: {
-          id: profile.companies?.id || '',
-          name: profile.companies?.name || 'Empresa não configurada'
+          id: company?.id || profile.company_id || '',
+          name: company?.name || 'Empresa não configurada'
         }
       };
     } catch (error) {

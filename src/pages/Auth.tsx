@@ -110,6 +110,12 @@ export default function Auth() {
                   Entre com suas credenciais para acessar sua conta
                 </CardDescription>
 
+                {!isLoading && user && (
+                  <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-center">
+                    Você já está logado, redirecionando...
+                  </div>
+                )}
+
                 <form onSubmit={handleLogin} className="space-y-4 mt-6">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>

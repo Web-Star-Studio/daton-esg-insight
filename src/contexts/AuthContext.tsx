@@ -81,34 +81,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Safety timeout to ensure loading state is cleared
     const safetyTimeout = setTimeout(() => {
-      if (isLoading) {
-        logger.warn('Auth initialization timeout - forcing loading state to false', 'auth');
-        setIsLoading(false);
-      }
+      logger.warn('Auth initialization timeout - forcing loading state to false', 'auth');
+      setIsLoading(false);
     }, 5000); // 5 second timeout
     
-    // Setup auth state listener
+    // Setup auth state listener with SYNCHRONOUS callback to prevent deadlock
     const { data: { subscription } } = authService.onAuthStateChange(
-      async (event, session) => {
-        logger.debug('Auth state changed', 'auth', { event });
+      (event, session) => {
+        logger.info('Auth state changed', 'auth', { event, hasSession: !!session });
         
+        // Only synchronous updates in the callback
         setSession(session);
         
         if (session?.user) {
-          try {
-            const userData = await authService.getCurrentUser();
-            if (userData) {
-              setUser(userData);
-              await checkOnboardingStatus(userData.id);
-            } else {
-              setUser(null);
-            }
-          } catch (error) {
-            logger.error('Error fetching user data on auth change', error, 'auth');
-            setUser(null);
-          } finally {
-            setIsLoading(false);
-          }
+          // Defer async operations to prevent blocking
+          setTimeout(() => {
+            logger.info('Fetching user data after auth change', 'auth');
+            authService.getCurrentUser()
+              .then(user => {
+                logger.info('User data fetched successfully', 'auth', { userId: user?.id });
+                setUser(user);
+                if (user) {
+                  return checkOnboardingStatus(user.id);
+                }
+              })
+              .catch(error => {
+                logger.error('Error fetching user data', error, 'auth');
+                setUser(null);
+              })
+              .finally(() => {
+                setIsLoading(false);
+              });
+          }, 0);
         } else {
           setUser(null);
           setShouldShowOnboarding(false);
