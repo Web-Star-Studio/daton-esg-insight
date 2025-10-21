@@ -71,8 +71,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Prevent duplicate initialization
-    if (isInitializingRef.current) return;
+    if (isInitializingRef.current) {
+      logger.debug('Auth initialization already in progress, skipping', 'auth');
+      return;
+    }
     isInitializingRef.current = true;
+    
+    logger.info('Initializing auth context', 'auth');
+    
+    // Safety timeout to ensure loading state is cleared
+    const safetyTimeout = setTimeout(() => {
+      if (isLoading) {
+        logger.warn('Auth initialization timeout - forcing loading state to false', 'auth');
+        setIsLoading(false);
+      }
+    }, 5000); // 5 second timeout
     
     // Setup auth state listener
     const { data: { subscription } } = authService.onAuthStateChange(
@@ -112,19 +125,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userData);
           await checkOnboardingStatus(userData.id);
         } else {
+          logger.info('No initial session found', 'auth');
           setUser(null);
           setShouldShowOnboarding(false);
         }
-        setIsLoading(false);
       })
       .catch((error) => {
         logger.error('Error checking initial session', error, 'auth');
         setUser(null);
         setShouldShowOnboarding(false);
+      })
+      .finally(() => {
+        logger.info('Auth initialization complete', 'auth');
         setIsLoading(false);
+        clearTimeout(safetyTimeout);
       });
 
     return () => {
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
       isInitializingRef.current = false;
     };
