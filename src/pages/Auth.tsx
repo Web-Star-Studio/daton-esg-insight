@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,12 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Building2, Mail, Lock, User, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 export default function Auth() {
-  const { login, register, isLoading } = useAuth();
+  const { login, register, isLoading, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      logger.info('User already logged in, redirecting to dashboard', 'auth', { userId: user.id });
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isLoading, user, navigate]);
 
   // Estados para login
   const [loginData, setLoginData] = useState({
@@ -35,9 +44,12 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      logger.info('Submitting login form', 'auth', { email: loginData.email });
       await login(loginData.email, loginData.password);
-      navigate('/dashboard');
+      logger.info('Login successful, navigating to dashboard', 'auth');
+      navigate('/dashboard', { replace: true });
     } catch (error) {
+      logger.error('Login form submission failed', error, 'auth');
       // Erro já tratado no context com toast
     }
   };

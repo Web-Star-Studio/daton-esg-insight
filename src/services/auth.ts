@@ -127,14 +127,25 @@ class AuthService {
         throw new Error(`Erro ao buscar perfil: ${error.message}`);
       }
 
+      // TOLERANT APPROACH: If profile doesn't exist, return basic user with viewer role
       if (!profile) {
-        logger.error('No profile found for user', null, 'database', { userId: session.user.id });
-        throw new Error('Perfil não encontrado. Entre em contato com o suporte.');
+        logger.warn('No profile found - creating fallback user', 'database', { userId: session.user.id });
+        return {
+          id: session.user.id,
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuário',
+          email: session.user.email!,
+          job_title: undefined,
+          role: 'viewer' as const,
+          company: {
+            id: session.user.user_metadata?.company_id || '',
+            name: session.user.user_metadata?.company_name || 'Empresa não configurada'
+          }
+        };
       }
 
+      // TOLERANT APPROACH: If company doesn't exist, use fallback
       if (!profile.companies) {
-        logger.error('No company found for profile', null, 'database', { profileId: profile.id });
-        throw new Error('Empresa não encontrada. Entre em contato com o suporte.');
+        logger.warn('No company found for profile - using fallback', 'database', { profileId: profile.id });
       }
 
       // SECURE: Fetch role from user_roles table (CRITICAL SECURITY FIX)
@@ -174,9 +185,10 @@ class AuthService {
         }
       }
 
+      // TOLERANT APPROACH: If no role found, default to viewer
       if (!finalRole) {
-        logger.error('No role found for user', null, 'database', { userId: session.user.id });
-        throw new Error('Permissões não encontradas. Entre em contato com o suporte.');
+        logger.warn('No role found for user - defaulting to viewer', 'database', { userId: session.user.id });
+        finalRole = 'viewer';
       }
 
       logger.info('Profile found successfully', 'auth', { 
@@ -192,8 +204,8 @@ class AuthService {
         job_title: profile.job_title,
         role: finalRole,
         company: {
-          id: profile.companies.id,
-          name: profile.companies.name
+          id: profile.companies?.id || '',
+          name: profile.companies?.name || 'Empresa não configurada'
         }
       };
     } catch (error) {
