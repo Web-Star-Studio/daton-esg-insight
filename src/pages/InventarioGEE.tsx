@@ -356,7 +356,7 @@ const InventarioGEE = () => {
 
     return (
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -366,13 +366,13 @@ const InventarioGEE = () => {
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Nome da Fonte</TableHead>
-                <TableHead>Escopo</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead className="text-right">Emissões (tCO₂e)</TableHead>
-                <TableHead>Última Atualização</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-center">Ações</TableHead>
+                <TableHead className="min-w-[150px]">Nome da Fonte</TableHead>
+                <TableHead className="min-w-[100px]">Escopo</TableHead>
+                <TableHead className="min-w-[120px]">Categoria</TableHead>
+                <TableHead className="text-right min-w-[130px]">Emissões (tCO₂e)</TableHead>
+                <TableHead className="min-w-[140px]">Última Atualização</TableHead>
+                <TableHead className="min-w-[100px]">Status</TableHead>
+                <TableHead className="text-center min-w-[120px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -460,47 +460,65 @@ const InventarioGEE = () => {
 
   return (
     <div className="space-y-6">
-        {/* Cabeçalho da página */}
-        <div className="flex justify-between items-center" data-tour="inventario-gee-header">
+      {/* Cabeçalho da página */}
+        <div className="flex flex-col gap-4" data-tour="inventario-gee-header">
           <div>
-            <h1 className="text-3xl font-bold">Inventário GEE</h1>
-            <p className="text-muted-foreground">Gerencie e analise suas emissões de gases de efeito estufa</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Inventário GEE</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Gerencie e analise suas emissões de gases de efeito estufa</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => exportData('csv')}
               disabled={isLoading}
+              className="md:size-default"
             >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Exportar CSV
+              <FileSpreadsheet className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Exportar CSV</span>
             </Button>
             {(stats.fontes_total > 0) && (
               <RecalculateEmissionsButton onSuccess={loadData} />
             )}
-            <Button onClick={() => setIsWizardOpen(true)} variant="default">
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Fonte (Guiado)
+            <Button 
+              onClick={() => setIsWizardOpen(true)} 
+              variant="default"
+              size="sm"
+              className="md:size-default flex-1 sm:flex-none"
+            >
+              <Plus className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Adicionar Fonte (Guiado)</span>
+              <span className="sm:hidden">Guiado</span>
             </Button>
-            <Button onClick={() => setIsModalOpen(true)} variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Fonte (Rápido)
+            <Button 
+              onClick={() => setIsModalOpen(true)} 
+              variant="outline"
+              size="sm"
+              className="md:size-default flex-1 sm:flex-none"
+            >
+              <Plus className="h-4 w-4 md:mr-2" />
+              <span className="hidden sm:inline">Adicionar Fonte (Rápido)</span>
+              <span className="sm:hidden">Rápido</span>
             </Button>
             <Button 
               onClick={() => setIsAnalyticsModalOpen(true)}
               variant="outline"
-              className="ml-2"
+              size="sm"
+              className="md:size-default"
             >
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Analytics Avançado
+              <BarChart3 className="h-4 w-4 md:mr-2" />
+              <span className="hidden lg:inline">Analytics Avançado</span>
+              <span className="lg:hidden">Analytics</span>
             </Button>
             <Button 
               onClick={() => setIsGHGCompleteModalOpen(true)} 
-              variant="outline" 
-              className="ml-2"
+              variant="outline"
+              size="sm"
+              className="md:size-default"
             >
-              <FileText className="mr-2 h-4 w-4" />
-              GHG Protocol 2025
+              <FileText className="h-4 w-4 md:mr-2" />
+              <span className="hidden lg:inline">GHG Protocol 2025</span>
+              <span className="lg:hidden">GHG 2025</span>
             </Button>
           </div>
         </div>
@@ -533,24 +551,24 @@ const InventarioGEE = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-                <div className="flex flex-1 gap-4 items-center flex-wrap">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar fontes de emissão..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  
+              <div className="flex flex-col gap-4">
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar fontes de emissão..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <Select value={scopeFilter} onValueChange={setScopeFilter}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-full">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Escopo" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background z-50">
                       <SelectItem value="all">Todos Escopos</SelectItem>
                       <SelectItem value="1">Escopo 1</SelectItem>
                       <SelectItem value="2">Escopo 2</SelectItem>
@@ -559,10 +577,10 @@ const InventarioGEE = () => {
                   </Select>
 
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-36">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background z-50">
                       <SelectItem value="all">Todos Status</SelectItem>
                       <SelectItem value="Ativo">Ativo</SelectItem>
                       <SelectItem value="Inativo">Inativo</SelectItem>
@@ -570,11 +588,11 @@ const InventarioGEE = () => {
                   </Select>
                   
                   <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:col-span-2 lg:col-span-1">
                       <Calendar className="h-4 w-4 mr-2" />
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background z-50">
                       <SelectItem value="3months">Últimos 3 meses</SelectItem>
                       <SelectItem value="6months">Últimos 6 meses</SelectItem>
                       <SelectItem value="12months">Último ano</SelectItem>
@@ -584,14 +602,14 @@ const InventarioGEE = () => {
                 </div>
               </div>
               
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-wrap gap-2 items-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowCharts(!showCharts)}
                 >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  {showCharts ? 'Ocultar' : 'Mostrar'} Gráficos
+                  <BarChart3 className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">{showCharts ? 'Ocultar' : 'Mostrar'} Gráficos</span>
                 </Button>
                 
                 {selectedSources.length > 0 && (
@@ -602,16 +620,16 @@ const InventarioGEE = () => {
                         Excluir ({selectedSources.length})
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Confirmar exclusão em lote</AlertDialogTitle>
                         <AlertDialogDescription>
                           Tem certeza que deseja excluir {selectedSources.length} fonte(s) de emissão selecionada(s)? Esta ação não pode ser desfeita.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                        <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90">
                           Excluir Todas
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -800,7 +818,7 @@ const InventarioGEE = () => {
         )}
 
         {/* KPIs Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
