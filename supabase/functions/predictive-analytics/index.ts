@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -108,14 +108,14 @@ async function predictEmissions(supabase: any, companyId: string, months: number
     .from('calculated_emissions')
     .select(`
       total_co2e,
-      created_at,
+      calculation_date,
       activity_data!inner(
         emission_sources!inner(scope, company_id)
       )
     `)
     .eq('activity_data.emission_sources.company_id', companyId)
-    .gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: true });
+    .gte('calculation_date', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
+    .order('calculation_date', { ascending: true });
 
   if (error) {
     console.error('❌ Error fetching emission data:', error);
@@ -130,7 +130,7 @@ async function predictEmissions(supabase: any, companyId: string, months: number
   const monthlyData: { [key: string]: { total: number; count: number } } = {};
   
   emissionData.forEach((item: any) => {
-    const date = new Date(item.created_at);
+    const date = new Date(item.calculation_date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     
     if (!monthlyData[monthKey]) {
@@ -227,27 +227,46 @@ async function calculateComplianceRisk(supabase: any, companyId: string): Promis
     .eq('status', 'Ativa')
     .lte('expiration_date', thirtyDaysFromNow.toISOString());
 
-  // Count overdue tasks
+  // Count overdue tasks (multiple status possibilities)
   const { count: overdueTasks } = await supabase
     .from('data_collection_tasks')
     .select('*', { count: 'exact', head: true })
     .eq('company_id', companyId)
-    .eq('status', 'Pendente')
+    .in('status', ['Pendente', 'pending', 'Em atraso', 'overdue'])
     .lt('due_date', now.toISOString());
 
   // Count goals at risk
   const { data: goals } = await supabase
     .from('goals')
-    .select('progress_percentage, deadline')
-    .eq('company_id', companyId)
-    .eq('status', 'Em andamento');
+    .select('id, deadline_date, status')
+    .eq('company_id', companyId);
 
   let goalsAtRisk = 0;
-  if (goals) {
+  if (goals && goals.length > 0) {
+    const goalIds = goals.map(g => g.id);
+    
+    // Fetch progress updates for these goals
+    const { data: updates } = await supabase
+      .from('goal_progress_updates')
+      .select('goal_id, progress_percentage, update_date')
+      .in('goal_id', goalIds);
+
+    // Get latest progress for each goal
+    const latestByGoal = new Map<string, { progress: number; date: Date }>();
+    (updates || []).forEach((u: any) => {
+      const d = new Date(u.update_date);
+      const prev = latestByGoal.get(u.goal_id);
+      if (!prev || d > prev.date) {
+        latestByGoal.set(u.goal_id, { progress: u.progress_percentage ?? 0, date: d });
+      }
+    });
+
+    // Count goals with < 50% progress and deadline within 90 days
     const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
     goalsAtRisk = goals.filter((g: any) => {
-      const deadline = new Date(g.deadline);
-      return g.progress_percentage < 50 && deadline <= ninetyDaysFromNow;
+      const latest = latestByGoal.get(g.id);
+      const deadline = new Date(g.deadline_date);
+      return latest && latest.progress < 50 && deadline <= ninetyDaysFromNow;
     }).length;
   }
 
@@ -322,7 +341,7 @@ serve(async (req) => {
     if (!authHeader) {
       console.error('❌ Missing Authorization header');
       return new Response(
-        JSON.stringify({ error: 'Authorization header is required' }),
+        JSON.stringify({ error: 'Cabeçalho de autorização ausente' }),
         {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -330,22 +349,22 @@ serve(async (req) => {
       );
     }
 
+    // Extract token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create client with SERVICE_ROLE_KEY for bypassing RLS (we'll filter by company_id)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Validate user with the token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     if (authError || !user) {
       console.error('❌ Authentication failed:', {
         error: authError?.message,
         hasAuthHeader: !!authHeader,
-        authHeaderPreview: authHeader?.substring(0, 20) + '...'
+        tokenPreview: token.substring(0, 20) + '...'
       });
       return new Response(
         JSON.stringify({ error: 'Não autorizado. Por favor, faça login novamente.' }),
@@ -368,7 +387,7 @@ serve(async (req) => {
     if (profileError || !profile?.company_id) {
       console.error('❌ Company not found for user:', user.id, profileError);
       return new Response(
-        JSON.stringify({ error: 'Company not found for user' }),
+        JSON.stringify({ error: 'Empresa não encontrada para o usuário' }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -379,6 +398,7 @@ serve(async (req) => {
     console.log('✅ Company found:', profile.company_id);
 
     const { analysis_type, months } = await req.json();
+    console.log('📊 Analysis requested:', { analysis_type, months, company_id: profile.company_id });
 
     let result;
 
@@ -408,9 +428,21 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in predictive-analytics:', error);
+    console.error('❌ Error in predictive-analytics:', error);
+    
+    // Check if it's an insufficient data error
+    if (error.message && error.message.includes('Dados insuficientes')) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Erro ao processar análise preditiva' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
