@@ -18,12 +18,6 @@ export function PredictiveInsightsWidget() {
       setLoading(true);
       setError(null);
       
-      // Validate session before calling service
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Sessão expirada. Por favor, faça login novamente.');
-      }
-      
       console.log('🎯 [Widget] Fetching predictive analysis...');
       const data = await getFullAnalysis(3);
       setAnalysis(data);
@@ -54,6 +48,9 @@ export function PredictiveInsightsWidget() {
   }
 
   if (error) {
+    const isInsufficientData = error.includes('insuficientes') || error.includes('pelo menos');
+    const isAuthError = error.includes('login') || error.includes('Sessão') || error.includes('autorizado');
+    
     return (
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -61,22 +58,32 @@ export function PredictiveInsightsWidget() {
           <h3 className="font-semibold">Análise Preditiva & Score de Risco</h3>
         </div>
         <div className="text-center py-8">
-          <AlertTriangle className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
+          {isInsufficientData ? (
+            <Activity className="h-12 w-12 mx-auto text-blue-600 mb-4" />
+          ) : (
+            <AlertTriangle className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
+          )}
           <p className="text-sm font-medium text-foreground mb-2">
-            Não foi possível carregar a análise preditiva
+            {isInsufficientData 
+              ? 'Dados insuficientes para análise' 
+              : isAuthError
+              ? 'Erro de autenticação'
+              : 'Não foi possível carregar a análise'}
           </p>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
             {error}
           </p>
-          <Button 
-            onClick={fetchAnalysis} 
-            variant="outline" 
-            size="sm"
-            disabled={loading}
-          >
-            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-            Tentar novamente
-          </Button>
+          {!isAuthError && (
+            <Button 
+              onClick={fetchAnalysis} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+              Tentar novamente
+            </Button>
+          )}
         </div>
       </Card>
     );

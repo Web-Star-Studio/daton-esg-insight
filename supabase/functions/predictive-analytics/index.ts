@@ -117,8 +117,13 @@ async function predictEmissions(supabase: any, companyId: string, months: number
     .gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: true });
 
-  if (error || !emissionData || emissionData.length === 0) {
-    throw new Error('Insufficient emission data for prediction');
+  if (error) {
+    console.error('❌ Error fetching emission data:', error);
+    throw new Error('Erro ao buscar dados de emissões');
+  }
+  
+  if (!emissionData || emissionData.length === 0) {
+    throw new Error('Dados insuficientes: nenhum registro de emissões encontrado');
   }
 
   // Aggregate by month
@@ -145,7 +150,7 @@ async function predictEmissions(supabase: any, companyId: string, months: number
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (historicalData.length < 3) {
-    throw new Error('Need at least 3 months of data for prediction');
+    throw new Error(`Dados insuficientes: encontrados apenas ${historicalData.length} mês(es) de dados. São necessários pelo menos 3 meses para gerar previsões confiáveis.`);
   }
 
   // Calculate trend
@@ -337,9 +342,13 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
-      console.error('❌ Authentication failed:', authError?.message);
+      console.error('❌ Authentication failed:', {
+        error: authError?.message,
+        hasAuthHeader: !!authHeader,
+        authHeaderPreview: authHeader?.substring(0, 20) + '...'
+      });
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - Invalid or expired token' }),
+        JSON.stringify({ error: 'Não autorizado. Por favor, faça login novamente.' }),
         {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
