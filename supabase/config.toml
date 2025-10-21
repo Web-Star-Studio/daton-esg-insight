@@ -147,3 +147,9 @@ verify_jwt = true
 
 [functions.smart-content-analyzer]
 verify_jwt = false
+
+[functions.intelligent-pipeline-orchestrator]
+verify_jwt = true
+
+[functions.intelligent-data-processor]
+verify_jwt = true

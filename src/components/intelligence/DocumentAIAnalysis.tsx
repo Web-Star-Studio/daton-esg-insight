@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, FileText, Brain, Sparkles, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { DocumentInsights } from './DocumentInsights';
+import { toast } from 'sonner';
+import { MultiFileUploadZone } from './MultiFileUploadZone';
 
 interface AnalysisResult {
   insights: {
@@ -31,11 +31,67 @@ interface AnalysisResult {
 }
 
 export function DocumentAIAnalysis() {
-  const [file, setFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [currentStep, setCurrentStep] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const handleAnalyze = async () => {
+    if (uploadedFiles.length === 0) return;
+    setIsAnalyzing(true);
+    setProgress(0);
+    
+    try {
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const file = uploadedFiles[i].file;
+        setCurrentStep(`${i+1}/${uploadedFiles.length}: ${file.name}`);
+        setProgress(Math.floor((i / uploadedFiles.length) * 100));
+        
+        const path = `${Date.now()}-${file.name}`;
+        await supabase.storage.from('documents').upload(path, file);
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user?.id).single();
+        
+        const { data: doc } = await supabase.from('documents').insert({
+          company_id: profile?.company_id, uploader_user_id: user?.id,
+          file_name: file.name, file_path: path, file_type: file.type, file_size: file.size
+        }).select().single();
+        
+        await supabase.functions.invoke('intelligent-pipeline-orchestrator', {
+          body: { document_id: doc?.id, auto_insert_threshold: 0.8 }
+        });
+      }
+      setProgress(100);
+      toast.success('Processamento concluído!');
+      setUploadedFiles([]);
+    } catch (err) {
+      toast.error('Erro no processamento');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />Análise com IA
+        </CardTitle>
+        <CardDescription>Suporte para PDF, Excel, CSV, imagens e mais</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <MultiFileUploadZone onFilesSelected={setUploadedFiles} maxFiles={10} />
+        {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4"/><AlertDescription>{error}</AlertDescription></Alert>}
+        {isAnalyzing && <><Progress value={progress}/><p className="text-sm text-center">{currentStep}</p></>}
+        <Button onClick={handleAnalyze} disabled={!uploadedFiles.length || isAnalyzing} className="w-full" size="lg">
+          {isAnalyzing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Processando...</> : <><Sparkles className="mr-2 h-4 w-4"/>Processar</>}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
