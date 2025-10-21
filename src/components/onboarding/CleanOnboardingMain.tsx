@@ -6,6 +6,7 @@ import { useUnifiedTour } from '@/contexts/UnifiedTourContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 import { CleanWelcomeStep } from './CleanWelcomeStep';
 import { CleanModuleSelectionStep } from './CleanModuleSelectionStep';
 import { CleanDataCreationStep } from './CleanDataCreationStep';
@@ -51,11 +52,11 @@ function CleanOnboardingContent() {
   const handleWelcomeNext = (profile?: any, recommendedModules?: string[]) => {
     if (profile) {
       setCompanyProfile(profile);
-      console.log('📝 Company profile saved:', profile);
+      logger.debug('Company profile saved', 'ui', profile);
     }
     
     if (recommendedModules && recommendedModules.length > 0) {
-      console.log('🎯 Pre-selecting recommended modules:', recommendedModules);
+      logger.debug('Pre-selecting recommended modules', 'ui', recommendedModules);
       setSelectedModules(recommendedModules);
       toast({
         title: 'Módulos Recomendados',
@@ -91,12 +92,12 @@ function CleanOnboardingContent() {
       await skipOnboarding();
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error skipping onboarding:', error);
+      logger.error('Error skipping onboarding', error, 'ui');
     }
   };
 
   const handleStartUsingPlatform = async () => {
-    console.log('🚀 Starting platform usage...');
+    logger.info('Starting platform usage', 'ui');
     
     try {
       if (!user?.id) {
@@ -104,30 +105,30 @@ function CleanOnboardingContent() {
       }
       
       // 1. Complete onboarding in OnboardingFlowContext
-      console.log('📝 Completing onboarding in context...');
+      logger.debug('Completing onboarding in context', 'ui');
       await completeOnboarding();
       
       // 2. Ensure profile is marked as complete
-      console.log('📝 Updating profile...');
+      logger.debug('Updating profile', 'database');
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ has_completed_onboarding: true })
         .eq('id', user.id);
         
       if (profileError) {
-        console.error('❌ Profile update error:', profileError);
+        logger.error('Profile update error', profileError, 'database');
         throw profileError;
       }
       
       // 3. Clear onboarding local storage
-      console.log('🧹 Clearing local storage...');
+      logger.debug('Clearing local storage', 'ui');
       localStorage.removeItem('daton_onboarding_progress');
       localStorage.removeItem('daton_onboarding_selections');
       
       // 4. Update auth context
       await skipOnboarding();
       
-      console.log('✅ Onboarding completed successfully');
+      logger.info('Onboarding completed successfully', 'ui');
       
       toast({
         title: "Configuração concluída! 🎉",
@@ -140,7 +141,7 @@ function CleanOnboardingContent() {
       }, 500);
       
     } catch (error) {
-      console.error('❌ Error starting platform:', error);
+      logger.error('Error starting platform', error, 'ui');
       toast({
         title: "Erro ao concluir",
         description: "Tentando método alternativo...",
@@ -153,7 +154,7 @@ function CleanOnboardingContent() {
   };
 
   const handleTakeTour = async () => {
-    console.log('🎯 Taking guided tour...');
+    logger.info('Taking guided tour', 'ui');
     
     try {
       // Complete onboarding first
@@ -161,17 +162,17 @@ function CleanOnboardingContent() {
       
       // Start tour after navigation
       setTimeout(() => {
-        console.log('🎪 Starting dashboard tour...');
+        logger.debug('Starting dashboard tour', 'ui');
         startTour('dashboard-intro');
       }, 1000);
       
     } catch (error) {
-      console.error('❌ Error starting tour:', error);
+      logger.error('Error starting tour', error, 'ui');
     }
   };
 
   const handleSuggestionAccept = (suggestionId: string) => {
-    console.log('🎯 Accepting suggestion:', suggestionId);
+    logger.debug('Accepting suggestion', 'ui', suggestionId);
     
     switch (suggestionId) {
       case 'gee-industrial':
@@ -194,12 +195,12 @@ function CleanOnboardingContent() {
         });
         break;
       default:
-        console.log('Unknown suggestion:', suggestionId);
+        logger.debug('Unknown suggestion', 'ui', suggestionId);
     }
   };
 
   const handleEmergencyComplete = async () => {
-    console.log('🚨 EMERGENCY COMPLETION TRIGGERED');
+    logger.warn('EMERGENCY COMPLETION TRIGGERED', 'ui');
     
     try {
       if (user?.id) {
@@ -207,7 +208,7 @@ function CleanOnboardingContent() {
         let companyId = user.company?.id;
         
         if (!companyId) {
-          console.warn('⚠️ Company ID not available, fetching from profile...');
+          logger.warn('Company ID not available, fetching from profile', 'database');
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('company_id')
@@ -215,28 +216,28 @@ function CleanOnboardingContent() {
             .single();
             
           if (profileError || !profileData?.company_id) {
-            console.error('❌ Cannot complete without company_id, will skip selections');
+            logger.error('Cannot complete without company_id, will skip selections', profileError, 'database');
           } else {
             companyId = profileData.company_id;
           }
         }
         
         // 1. Update profile first (most critical)
-        console.log('📝 Updating profile...');
+        logger.debug('Updating profile', 'database');
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ has_completed_onboarding: true })
           .eq('id', user.id);
           
         if (profileError) {
-          console.error('❌ Profile update error:', profileError);
+          logger.error('Profile update error', profileError, 'database');
           throw profileError;
         }
-        console.log('✅ Profile updated successfully');
+        logger.info('Profile updated successfully', 'database');
         
         // 2. Complete onboarding selections (only if we have company_id)
         if (companyId) {
-          console.log('🏁 Completing onboarding selections...');
+          logger.debug('Completing onboarding selections', 'database');
           const { error: selectionsError } = await supabase
             .from('onboarding_selections')
             .upsert([{
@@ -252,14 +253,14 @@ function CleanOnboardingContent() {
             });
             
           if (selectionsError && selectionsError.code !== '23505') {
-            console.warn('⚠️ Selections error (non-critical):', selectionsError);
+            logger.warn('Selections error (non-critical)', 'database', selectionsError);
           } else {
-            console.log('✅ Selections marked complete');
+            logger.info('Selections marked complete', 'database');
           }
         }
         
         // 3. Clear onboarding-related local storage
-        console.log('🧹 Clearing onboarding local storage...');
+        logger.debug('Clearing onboarding local storage', 'ui');
         localStorage.removeItem('daton_onboarding_progress');
         localStorage.removeItem('daton_onboarding_selections');
         localStorage.removeItem('daton_onboarding_completed');
@@ -269,7 +270,7 @@ function CleanOnboardingContent() {
       }
       
       // 5. Navigate to dashboard
-      console.log('🚀 Navigating to dashboard...');
+      logger.info('Navigating to dashboard', 'ui');
       toast({
         title: "Onboarding concluído! 🎉",
         description: "Bem-vindo à plataforma!",
@@ -280,7 +281,7 @@ function CleanOnboardingContent() {
       }, 500);
       
     } catch (error: any) {
-      console.error('❌ Emergency completion error:', error);
+      logger.error('Emergency completion error', error, 'ui');
       toast({
         title: "Erro",
         description: error?.message || "Não foi possível concluir o onboarding. Redirecionando...",

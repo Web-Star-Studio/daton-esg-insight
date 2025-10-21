@@ -2,12 +2,13 @@ import { Navigate } from 'react-router-dom';
 import { CleanOnboardingMain } from '@/components/onboarding/CleanOnboardingMain';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
+import { logger } from '@/utils/logger';
 
 export function OnboardingRoute() {
   const { shouldShowOnboarding, isLoading, user } = useAuth();
   
   useEffect(() => {
-    console.log('🔍 OnboardingRoute: Status check', {
+    logger.debug('OnboardingRoute status check', 'ui', {
       shouldShowOnboarding,
       isLoading,
       hasUser: !!user
@@ -28,16 +29,16 @@ export function OnboardingRoute() {
 
   // Redirect to dashboard if user is not logged in
   if (!user) {
-    console.log('⚠️ OnboardingRoute: No user - redirecting to login');
+    logger.warn('OnboardingRoute: No user - redirecting to login', 'auth');
     return <Navigate to="/login" replace />;
   }
 
   // Redirect to dashboard if onboarding is already complete
   if (!shouldShowOnboarding) {
-    console.log('✅ OnboardingRoute: Onboarding complete - redirecting to dashboard');
+    logger.info('OnboardingRoute: Onboarding complete - redirecting to dashboard', 'ui');
     return <Navigate to="/" replace />;
   }
 
-  console.log('🎯 OnboardingRoute: Showing onboarding flow');
+  logger.info('OnboardingRoute: Showing onboarding flow', 'ui');
   return <CleanOnboardingMain />;
 }

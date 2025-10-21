@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Rocket, ArrowRight } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 export function OnboardingComplete() {
   const { skipOnboarding } = useAuth();
@@ -13,11 +14,11 @@ export function OnboardingComplete() {
     // Auto-complete onboarding after component mounts
     const completeOnboarding = async () => {
       try {
-        console.log('🎉 OnboardingComplete component mounted - completing onboarding');
+        logger.info('OnboardingComplete component mounted - completing onboarding', 'ui');
         await skipOnboarding();
-        console.log('✅ Onboarding marked as completed');
+        logger.info('Onboarding marked as completed', 'ui');
       } catch (error) {
-        console.error('❌ Error completing onboarding:', error);
+        logger.error('Error completing onboarding', error, 'ui');
       }
     };
 

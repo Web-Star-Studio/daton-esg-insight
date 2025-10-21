@@ -1,6 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -22,7 +23,7 @@ export class OnboardingErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('🚨 Onboarding Error Boundary caught:', error, errorInfo);
+    logger.error('Onboarding Error Boundary caught error', error, 'ui', errorInfo);
   }
 
   handleReset = () => {

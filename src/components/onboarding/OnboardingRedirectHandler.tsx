@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export function OnboardingRedirectHandler() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export function OnboardingRedirectHandler() {
       if (!user?.id || hasRedirected) return;
 
       try {
-        console.log('🔍 Checking if user has already completed onboarding...');
+        logger.debug('Checking if user has already completed onboarding', 'ui');
         
         // Check both profile and onboarding_selections tables
         const [profileCheck, onboardingCheck] = await Promise.all([
@@ -33,7 +34,7 @@ export function OnboardingRedirectHandler() {
         const hasCompletedProfile = profileCheck.data?.has_completed_onboarding ?? false;
         const hasCompletedOnboarding = !!onboardingCheck.data;
 
-        console.log('📊 Onboarding status check:', {
+        logger.debug('Onboarding status check', 'ui', {
           userId: user.id,
           hasCompletedProfile,
           hasCompletedOnboarding,
@@ -42,7 +43,7 @@ export function OnboardingRedirectHandler() {
 
         // If user has completed onboarding, redirect to dashboard
         if (hasCompletedProfile || hasCompletedOnboarding) {
-          console.log('✅ User has completed onboarding, redirecting to dashboard...');
+          logger.info('User has completed onboarding, redirecting to dashboard', 'ui');
           
           // Mark as redirected to prevent loops
           setHasRedirected(true);
@@ -57,7 +58,7 @@ export function OnboardingRedirectHandler() {
           }
         }
       } catch (error) {
-        console.error('❌ Error checking onboarding status:', error);
+        logger.error('Error checking onboarding status', error, 'ui');
       }
     };
 
