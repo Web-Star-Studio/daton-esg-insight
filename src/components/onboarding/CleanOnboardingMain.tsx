@@ -137,7 +137,7 @@ function CleanOnboardingContent() {
       
       // Small delay to ensure state updates
       setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }, 500);
       
     } catch (error) {
@@ -277,7 +277,7 @@ function CleanOnboardingContent() {
       });
       
       setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }, 500);
       
     } catch (error: any) {
@@ -290,7 +290,7 @@ function CleanOnboardingContent() {
       
       // Force navigation on error
       setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }, 1000);
     }
   };

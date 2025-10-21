@@ -57,10 +57,14 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     isLoading: false
   });
 
-  // Load existing onboarding data
+  // Load existing onboarding data only once on mount
   useEffect(() => {
     if (user?.id) {
-      loadOnboardingData();
+      const hasLoadedRef = { current: false };
+      if (!hasLoadedRef.current) {
+        hasLoadedRef.current = true;
+        loadOnboardingData();
+      }
     }
   }, [user?.id]);
 
@@ -85,8 +89,8 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
         throw error;
       }
 
-      if (data) {
-        console.log('✅ Onboarding data loaded:', data);
+      if (data && !data.is_completed) {
+        console.log('✅ Onboarding data loaded (in progress):', data);
         
         // Filter out invalid module IDs from saved data
         const validModules = (data.selected_modules as string[] || []).filter(id => {
@@ -98,13 +102,18 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
           return true;
         });
         
-        setState(prev => ({
-          ...prev,
-          currentStep: data.current_step || 0,
-          selectedModules: validModules,
-          moduleConfigurations: (data.module_configurations as ModuleConfig) || {},
-          isCompleted: data.is_completed || false
-        }));
+        // Only restore state if it makes sense (step > 0 or has selections)
+        if (data.current_step > 0 || validModules.length > 0) {
+          setState(prev => ({
+            ...prev,
+            currentStep: data.current_step || 0,
+            selectedModules: validModules,
+            moduleConfigurations: (data.module_configurations as ModuleConfig) || {},
+            isCompleted: false
+          }));
+        }
+      } else if (data?.is_completed) {
+        console.log('⚠️ Onboarding already completed, not restoring state');
       }
     } catch (error) {
       console.error('❌ Error loading onboarding data:', error);
