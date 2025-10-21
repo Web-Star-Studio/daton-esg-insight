@@ -151,7 +151,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      logger.info('Starting login process', 'auth', { email });
+      
       const response = await authService.loginUser(email, password);
+      
+      if (!response.user) {
+        logger.error('Login succeeded but user data not found', null, 'auth', { email });
+        throw new Error('Seu perfil não foi encontrado. Entre em contato com o suporte.');
+      }
+      
+      logger.info('Login successful, setting user data', 'auth', { 
+        userId: response.user.id,
+        userName: response.user.full_name 
+      });
+      
       setUser(response.user);
       
       toast({
@@ -167,6 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         errorMessage = "Verifique seu email e clique no link de confirmação antes de fazer login.";
       } else if (error.message?.includes('Invalid login credentials')) {
         errorMessage = "Email ou senha incorretos.";
+      } else if (error.message?.includes('perfil não foi encontrado') || error.message?.includes('profile')) {
+        errorMessage = "Seu perfil não está configurado corretamente. Entre em contato com o suporte.";
       } else if (error.message) {
         errorMessage = error.message;
       }

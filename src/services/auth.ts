@@ -104,10 +104,11 @@ class AuthService {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
+        logger.debug('No active session found', 'auth');
         return null;
       }
 
-      logger.info('Getting profile for user', { userId: session.user.id });
+      logger.info('Getting profile for user', 'auth', { userId: session.user.id });
 
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -122,18 +123,18 @@ class AuthService {
         .maybeSingle();
 
       if (error) {
-        logger.error('Error fetching profile', error);
-        return null;
+        logger.error('Error fetching profile', error, 'database');
+        throw new Error(`Erro ao buscar perfil: ${error.message}`);
       }
 
       if (!profile) {
-        logger.error('No profile found for user', { userId: session.user.id });
-        return null;
+        logger.error('No profile found for user', null, 'database', { userId: session.user.id });
+        throw new Error('Perfil não encontrado. Entre em contato com o suporte.');
       }
 
       if (!profile.companies) {
-        logger.error('No company found for profile', { profileId: profile.id });
-        return null;
+        logger.error('No company found for profile', null, 'database', { profileId: profile.id });
+        throw new Error('Empresa não encontrada. Entre em contato com o suporte.');
       }
 
       // SECURE: Fetch role from user_roles table (CRITICAL SECURITY FIX)
@@ -144,15 +145,15 @@ class AuthService {
         .maybeSingle();
 
       if (roleError) {
-        logger.error('Error fetching user role', roleError);
-        return null;
+        logger.error('Error fetching user role', roleError, 'database');
+        throw new Error(`Erro ao buscar permissões: ${roleError.message}`);
       }
 
       // MIGRATION: If no role in user_roles, check profiles and migrate
       let finalRole = userRole?.role;
       
       if (!finalRole && profile.role) {
-        logger.warn('Migrating role from profiles to user_roles', { userId: session.user.id });
+        logger.warn('Migrating role from profiles to user_roles', null, 'database', { userId: session.user.id });
         
         // Auto-migrate: insert role into user_roles
         const { error: insertError } = await supabase
@@ -166,18 +167,23 @@ class AuthService {
 
         if (!insertError) {
           finalRole = profile.role;
-          logger.info('Role migrated successfully', { userId: session.user.id, role: profile.role });
+          logger.info('Role migrated successfully', 'database', { userId: session.user.id, role: profile.role });
         } else {
-          logger.error('Failed to migrate role', insertError);
+          logger.error('Failed to migrate role', insertError, 'database');
+          throw new Error('Erro ao configurar permissões do usuário.');
         }
       }
 
       if (!finalRole) {
-        logger.error('No role found for user', { userId: session.user.id });
-        return null;
+        logger.error('No role found for user', null, 'database', { userId: session.user.id });
+        throw new Error('Permissões não encontradas. Entre em contato com o suporte.');
       }
 
-      logger.info('Profile found successfully', { profileId: profile.id });
+      logger.info('Profile found successfully', 'auth', { 
+        profileId: profile.id,
+        role: finalRole,
+        companyId: profile.companies.id 
+      });
 
       return {
         id: profile.id,
@@ -191,8 +197,8 @@ class AuthService {
         }
       };
     } catch (error) {
-      logger.error('Error in getCurrentUser', error);
-      return null;
+      logger.error('Error in getCurrentUser', error, 'auth');
+      throw error;
     }
   }
 
