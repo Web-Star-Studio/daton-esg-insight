@@ -165,52 +165,65 @@ const InventarioGEE = () => {
   };
 
   const exportData = (format: 'csv' | 'excel') => {
-    if (format === 'csv') {
-      const headers = [
-        'Nome da Fonte',
-        'Escopo', 
-        'Categoria', 
-        'Emissões (tCO2e)', 
-        'Última Atualização',
-        'Status',
-        'Descrição'
-      ];
-      
-      const rows = filteredSources.map(source => [
-        source.name,
-        `Escopo ${source.scope}`,
-        source.category,
-        source.ultima_emissao ? source.ultima_emissao.toFixed(3) : '0',
-        formatDate(source.ultima_atualizacao),
-        source.status,
-        source.description || ''
-      ]);
-      
-      // Add summary row
-      rows.push([]);
-      rows.push(['RESUMO']);
-      rows.push(['Total de Emissões', '', '', stats.total ? stats.total.toFixed(3) : '0', '', '', '']);
-      rows.push(['Escopo 1', '', '', stats.escopo1 ? stats.escopo1.toFixed(3) : '0', '', '', '']);
-      rows.push(['Escopo 2', '', '', stats.escopo2 ? stats.escopo2.toFixed(3) : '0', '', '', '']);
-      rows.push(['Escopo 3', '', '', stats.escopo3 ? stats.escopo3.toFixed(3) : '0', '', '', '']);
-      rows.push(['Fontes Ativas', '', '', `${stats.ativas} de ${stats.fontes_total}`, '', '', '']);
-      
-      const csvContent = [headers, ...rows]
-        .map(row => row.map(cell => `"${cell}"`).join(','))
-        .join('\n');
-      
-      // Add BOM for UTF-8 support in Excel
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `inventario-gee-${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
+    try {
+      if (format === 'csv') {
+        const headers = [
+          'Nome da Fonte',
+          'Escopo', 
+          'Categoria', 
+          'Emissões (tCO2e)', 
+          'Última Atualização',
+          'Status',
+          'Descrição'
+        ];
+        
+        const rows = filteredSources.map(source => [
+          source.name || '',
+          source.scope ? `Escopo ${source.scope}` : '',
+          source.category || '',
+          source.ultima_emissao ? source.ultima_emissao.toFixed(3) : '0.000',
+          source.ultima_atualizacao ? formatDate(source.ultima_atualizacao) : '',
+          source.status || 'Inativo',
+          source.description || ''
+        ]);
+        
+        // Add summary rows
+        rows.push([]);
+        rows.push(['RESUMO']);
+        rows.push(['Total de Emissões', '', '', stats.total ? stats.total.toFixed(3) : '0.000', '', '', '']);
+        rows.push(['Escopo 1', '', '', stats.escopo1 ? stats.escopo1.toFixed(3) : '0.000', '', '', '']);
+        rows.push(['Escopo 2', '', '', stats.escopo2 ? stats.escopo2.toFixed(3) : '0.000', '', '', '']);
+        rows.push(['Escopo 3', '', '', stats.escopo3 ? stats.escopo3.toFixed(3) : '0.000', '', '', '']);
+        rows.push(['Fontes Ativas', '', '', `${stats.ativas || 0} de ${stats.fontes_total || 0}`, '', '', '']);
+        
+        const csvContent = [headers, ...rows]
+          .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+          .join('\n');
+        
+        // Add BOM for UTF-8 support in Excel
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventario-gee-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Sucesso",
+          description: filteredSources.length === 0 
+            ? "Relatório vazio exportado com sucesso!"
+            : `Relatório exportado com sucesso! ${filteredSources.length} fonte(s) incluída(s).`,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
       toast({
-        title: "Sucesso",
-        description: "Relatório exportado com sucesso em formato CSV!",
+        title: "Erro",
+        description: "Erro ao exportar relatório. Tente novamente.",
+        variant: "destructive",
       });
     }
   };
@@ -457,7 +470,7 @@ const InventarioGEE = () => {
             <Button
               variant="outline"
               onClick={() => exportData('csv')}
-              disabled={filteredSources.length === 0}
+              disabled={isLoading}
             >
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Exportar CSV
@@ -614,6 +627,13 @@ const InventarioGEE = () => {
         <AddEmissionSourceModal 
           open={isModalOpen} 
           onOpenChange={setIsModalOpen}
+          onSuccess={loadData}
+        />
+
+        {/* Modal para adicionar fonte (Guiado) */}
+        <EmissionSourceWizard 
+          open={isWizardOpen} 
+          onOpenChange={setIsWizardOpen}
           onSuccess={loadData}
         />
 
