@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { buildCompanyContext } from '../_shared/company-context-builder.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,6 +82,15 @@ serve(async (req) => {
 
     console.log(`Content extracted, length: ${extractedContent.length}, hasImage: ${hasImage}`);
 
+    // Build comprehensive company context
+    const context = await buildCompanyContext(supabaseClient, document.company_id);
+    
+    console.log('Company context built:', {
+      company: context.company.name,
+      sources: context.current_data.emission_sources.length,
+      total_emissions: context.current_data.total_emissions,
+    });
+
     // Call Lovable AI for intelligent analysis
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -90,21 +100,51 @@ serve(async (req) => {
     const aiMessages = [
       {
         role: 'system',
-        content: `Você é um especialista em análise de documentos ESG e sustentabilidade.
-Sua missão é analisar documentos de QUALQUER formato e estrutura, mesmo que não estejam formatados corretamente.
+        content: `Você é um especialista sênior em análise de documentos ESG e sustentabilidade com conhecimento profundo do sistema Daton.
 
-MODO EXPLORATÓRIO ATIVADO:
-1. EXTRAIA TODOS os dados estruturados encontrados, mesmo que não saiba para qual tabela vão
-2. IDENTIFIQUE padrões, categorias, tipos de dados
-3. SUGIRA múltiplas formas de usar os dados:
-   - Tabelas existentes no Daton onde poderiam ser inseridos
-   - Novos indicadores que poderiam ser criados
-   - Exportação para análise externa
-   - Relações com dados existentes
-4. AVALIE a relevância para ESG/sustentabilidade
-5. DETECTE anomalias ou inconsistências nos dados
+CONTEXTO COMPLETO DA EMPRESA:
+${JSON.stringify(context, null, 2)}
 
-Empresa: ${document.companies?.name || 'Não especificada'}
+MODO EXPLORATÓRIO INTELIGENTE ATIVADO:
+
+1. **EXTRAÇÃO CONTEXTUALIZADA**
+   - Extraia TODOS os dados estruturados
+   - Compare valores com dados históricos da empresa
+   - Identifique se valores estão dentro do esperado (±30% da média)
+   - Detecte anomalias críticas (valores > 2x ou < 0.5x média histórica)
+
+2. **CLASSIFICAÇÃO INTELIGENTE**
+   - Use dados históricos para inferir categoria do documento
+   - Identifique padrões recorrentes nos tipos de documentos processados
+   - Calcule score de relevância ESG baseado no contexto empresarial
+
+3. **MAPEAMENTO CONTEXTUAL**
+   - Sugira tabelas considerando dados já existentes
+   - Identifique relações com fontes de emissão existentes
+   - Detecte potenciais duplicatas
+   - Valide se dados complementam metas ESG ativas
+
+4. **INSIGHTS PREDITIVOS**
+   - Projete impacto nos totais de emissões
+   - Estime impacto no atingimento de metas
+   - Identifique riscos ou oportunidades
+
+5. **RECOMENDAÇÕES ESTRATÉGICAS**
+   - Ações baseadas em gaps identificados
+   - Priorização por impacto vs esforço
+   - Alertas para licenças próximas do vencimento
+
+DADOS HISTÓRICOS PARA COMPARAÇÃO:
+- Emissões médias/mês: ${context.historical_patterns.average_emissions_per_month.toFixed(2)} tCO2e
+- Total de fontes: ${context.current_data.emission_sources.length}
+- Taxa de processamento automático: ${context.historical_patterns.processing_stats.total_documents > 0 
+  ? ((context.historical_patterns.processing_stats.auto_approved / context.historical_patterns.processing_stats.total_documents) * 100).toFixed(1)
+  : 0}%
+
+TABELAS DISPONÍVEIS NO SISTEMA:
+${context.schema_information.available_tables.join(', ')}
+
+Empresa: ${context.company.name}
 Tipo de documento: ${document.file_type}
 Nome do arquivo: ${document.file_name}
 
@@ -125,7 +165,7 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: aiMessages,
         tools: [
           {

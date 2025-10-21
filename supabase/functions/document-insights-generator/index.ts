@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { buildCompanyContext } from '../_shared/company-context-builder.ts'
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
@@ -89,24 +90,72 @@ serve(async (req) => {
       }
     }
 
-    console.log('Content extracted, calling AI for insights...');
+    // Build company context for contextual analysis
+    const context = await buildCompanyContext(supabaseClient, document.company_id);
+    
+    console.log('Company context built, calling AI for insights...');
 
-    // Call AI for comprehensive analysis
+    // Enhanced analysis prompt with company context
     const analysisPrompt = `
-Você é um analista de dados especializado em ESG e sustentabilidade.
+Você é um analista ESG sênior especializado em sustentabilidade corporativa com conhecimento profundo do sistema Daton.
 
-Analise o seguinte documento e forneça:
-1. Um resumo executivo (2-3 frases)
-2. Principais descobertas e insights (lista de 3-5 pontos)
-3. Recomendações acionáveis (lista de 3-5 pontos)
-4. Score de qualidade dos dados (0-100) com lista de problemas encontrados
-5. ${generate_visualizations ? 'Sugestões de visualizações (gráficos) com dados processados' : ''}
+CONTEXTO DA EMPRESA:
+Nome: ${context.company.name}
+Emissões Totais (histórico): ${context.current_data.total_emissions.toFixed(2)} tCO2e
+Emissões Médias/Mês: ${context.historical_patterns.average_emissions_per_month.toFixed(2)} tCO2e
+Fontes de Emissão Ativas: ${context.current_data.emission_sources.length}
+Metas ESG Ativas: ${context.current_data.esg_goals.length}
+Licenças Ativas: ${context.current_data.active_licenses.length}
+Fornecedores: ${context.current_data.suppliers.length}
+Funcionários: ${context.current_data.employees_count}
 
-Documento: ${document.file_name}
+HISTÓRICO DE PROCESSAMENTO:
+Total de documentos: ${context.historical_patterns.processing_stats.total_documents}
+Taxa de aprovação automática: ${context.historical_patterns.processing_stats.total_documents > 0 
+  ? ((context.historical_patterns.processing_stats.auto_approved / context.historical_patterns.processing_stats.total_documents) * 100).toFixed(1)
+  : 0}%
 
-Conteúdo:
+DOCUMENTO ATUAL:
+Tipo: ${document.file_type}
+Nome: ${document.file_name}
+
+MISSÃO:
+Analise o documento no CONTEXTO dos dados históricos da empresa e forneça:
+
+1. **Resumo Executivo** (2-3 frases contextualizadas)
+   - Compare com dados históricos
+   - Identifique desvios significativos
+
+2. **Principais Descobertas** (3-5 insights acionáveis)
+   - Relacione com metas ESG existentes
+   - Compare com médias históricas
+   - Identifique tendências
+
+3. **Análise Comparativa**
+   - Compare valores com benchmarks internos
+   - Identifique anomalias (valores > 2x média ou < 0.5x média)
+   - Calcule desvios percentuais
+
+4. **Insights Preditivos**
+   - Projete impacto futuro baseado em tendências
+   - Estime atingimento de metas
+   - Preveja riscos potenciais
+
+5. **Recomendações Estratégicas** (3-5 ações priorizadas)
+   - Quick wins (curto prazo)
+   - Ações estratégicas (médio/longo prazo)
+   - Ações urgentes (se anomalias críticas)
+
+6. **Score de Qualidade dos Dados** (0-100)
+   - Completude, precisão, consistência
+   - Lista de problemas encontrados
+
+${generate_visualizations ? '7. **Visualizações Sugeridas** com dados processados' : ''}
+
+CONTEÚDO DO DOCUMENTO:
 ${extractedContent.substring(0, 15000)}
-`;
+
+Seja ESPECÍFICO, CONTEXTUALIZADO e ACIONÁVEL. Use números reais da empresa para comparações.`;
 
     const aiMessages: any[] = [
       { role: "system", content: "Você é um analista de dados ESG especializado em gerar insights acionáveis." },
@@ -204,7 +253,7 @@ ${extractedContent.substring(0, 15000)}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: aiMessages,
         tools: [toolDefinition],
         tool_choice: { type: "function", function: { name: "generate_document_insights" } }

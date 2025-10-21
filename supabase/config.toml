@@ -144,3 +144,6 @@ verify_jwt = true
 
 [functions.generate-intelligent-report]
 verify_jwt = true
+
+[functions.smart-content-analyzer]
+verify_jwt = false
