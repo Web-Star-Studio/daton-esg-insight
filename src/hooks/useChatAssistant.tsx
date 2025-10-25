@@ -702,6 +702,7 @@ Qual informação você precisa?`,
       // Start placeholder assistant message for streaming
       const assistantMessageId = `assistant-${Date.now()}`;
       let accumulatedContent = '';
+      let fullContentFromComplete = ''; // Store content from complete event
       
       const placeholderAssistantMessage: ChatMessage = {
         id: assistantMessageId,
@@ -790,6 +791,7 @@ Qual informação você precisa?`,
             
             // Final complete response with metadata
             if (parsed.complete) {
+              fullContentFromComplete = parsed.message || accumulatedContent;
               data = parsed;
             }
           } catch {
@@ -879,28 +881,35 @@ Qual informação você precisa?`,
       const combinedActionCards: ActionCardData[] = [];
       let combinedDataQuality: any = undefined;
 
-      // Add regular assistant message
+      // Add regular assistant message - use accumulated content if data.message is empty
+      const finalContent = data.message || fullContentFromComplete || accumulatedContent;
+      
       const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
+        id: assistantMessageId, // Use the same ID from streaming
         role: 'assistant',
-        content: data.message || (() => {
-          // Contextual fallback if message is empty
-          console.warn('⚠️ Using fallback message - data.message was empty');
-          const pageContext = currentPage || window.location.pathname;
-          const hasAttachments = finalProcessedAttachments.length > 0;
-          
-          if (hasAttachments) {
-            return '📎 Recebi seus anexos mas não consegui gerar uma análise completa. Por favor, tente novamente.';
+        content: finalContent || (() => {
+          // Only use fallback if we truly have no content
+          if (!accumulatedContent || accumulatedContent.trim().length === 0) {
+            console.warn('⚠️ Using fallback - no content accumulated during streaming');
+            const pageContext = currentPage || window.location.pathname;
+            const hasAttachments = finalProcessedAttachments.length > 0;
+            
+            if (hasAttachments) {
+              return '📎 Recebi seus anexos mas não consegui gerar uma análise completa. Por favor, tente novamente.';
+            }
+            
+            const pageMessages: Record<string, string> = {
+              '/dashboard': 'Não consegui processar os dados do dashboard. Por favor, reformule sua pergunta.',
+              '/inventario-gee': 'Não consegui analisar o inventário de emissões. Por favor, tente novamente.',
+              '/metas': 'Não consegui verificar as metas. Por favor, reformule sua solicitação.',
+              '/licenciamento': 'Não consegui analisar as licenças. Por favor, tente novamente.',
+              '/gestao-tarefas': 'Não consegui consultar as tarefas. Por favor, tente novamente.',
+              '/gestao-esg': 'Não consegui preparar a análise ESG. Por favor, reformule sua pergunta.'
+            };
+            
+            return pageMessages[pageContext] || 'Desculpe, não consegui processar sua solicitação. Por favor, reformule sua pergunta ou tente novamente.';
           }
-          
-          const pageMessages: Record<string, string> = {
-            '/dashboard': 'Não consegui processar os dados do dashboard. Por favor, reformule sua pergunta.',
-            '/inventario-gee': 'Não consegui analisar o inventário de emissões. Por favor, tente novamente.',
-            '/metas': 'Não consegui verificar as metas. Por favor, reformule sua solicitação.',
-            '/licenciamento': 'Não consegui analisar as licenças. Por favor, tente novamente.',
-          };
-          
-          return pageMessages[pageContext] || 'Desculpe, não consegui processar sua solicitação. Por favor, reformule sua pergunta ou tente novamente.';
+          return accumulatedContent;
         })(),
         timestamp: new Date(),
         context: data.dataAccessed ? `Dados consultados: ${data.dataAccessed.join(', ')}` : undefined,
@@ -911,7 +920,12 @@ Qual informação você precisa?`,
         dataQuality: combinedDataQuality
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      // Update the streaming message with final data (don't add duplicate)
+      setMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? assistantMessage 
+          : msg
+      ));
 
       // Save assistant message to database
       if (conversationId) {
