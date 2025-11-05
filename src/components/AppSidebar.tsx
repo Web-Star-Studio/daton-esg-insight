@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Star, StarOff, ChevronRight, Search, X } from "lucide-react"
+import * as icons from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
 import { useNotificationCounts } from "@/hooks/useNotificationCounts"
@@ -470,31 +471,38 @@ export function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {favorites.slice(0, 5).map((fav) => (
-                  <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
-                    <SidebarMenuButton 
-                      onClick={() => navigate(fav.path)}
-                      className="group transition-all duration-200 hover-scale"
-                    >
-                      <Star className="h-4 w-4 fill-current text-yellow-500" />
-                      <span className="text-sm">{fav.title}</span>
-                      <div
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center ml-auto"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleFavorite({
-                            id: fav.id,
-                            title: fav.title,
-                            path: fav.path,
-                            icon: fav.icon
-                          })
-                        }}
+                {favorites.slice(0, 5).map((fav) => {
+                  // Renderizar ícone original do módulo (não estrela)
+                  const IconComponent = icons[fav.icon as keyof typeof icons] as React.ComponentType<{ className?: string }> || FileText
+                  
+                  return (
+                    <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
+                      <SidebarMenuButton 
+                        onClick={() => navigate(fav.path)}
+                        className="group transition-all duration-200 hover-scale"
                       >
-                        <Star className="h-3 w-3 fill-current text-yellow-500 hover:text-yellow-600" />
-                      </div>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                        <IconComponent className="h-4 w-4" />
+                        <span className="text-sm">{fav.title}</span>
+                        {!collapsed && (
+                          <div
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center ml-auto"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleFavorite({
+                                id: fav.id,
+                                title: fav.title,
+                                path: fav.path,
+                                icon: fav.icon
+                              })
+                            }}
+                          >
+                            <Star className="h-3 w-3 fill-current text-yellow-500 hover:text-yellow-600" />
+                          </div>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
