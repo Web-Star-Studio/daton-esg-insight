@@ -15,6 +15,7 @@ interface OnboardingFlowState {
   totalSteps: number;
   selectedModules: string[];
   moduleConfigurations: ModuleConfig;
+  companyProfile: any;
   isCompleted: boolean;
   isLoading: boolean;
 }
@@ -26,6 +27,7 @@ interface OnboardingFlowContextType {
   nextStep: () => void;
   prevStep: () => void;
   setSelectedModules: (modules: string[]) => void;
+  setCompanyProfile: (profile: any) => void;
   updateModuleConfiguration: (moduleId: string, config: any) => void;
   completeOnboarding: () => Promise<void>;
   restartOnboarding: () => void;
@@ -53,6 +55,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     totalSteps: ONBOARDING_STEPS.length,
     selectedModules: [],
     moduleConfigurations: {},
+    companyProfile: null,
     isCompleted: false,
     isLoading: false
   });
@@ -109,6 +112,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
             currentStep: data.current_step || 0,
             selectedModules: validModules,
             moduleConfigurations: (data.module_configurations as ModuleConfig) || {},
+            companyProfile: data.company_profile || null,
             isCompleted: false
           }));
         }
@@ -169,6 +173,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
           current_step: state.currentStep,
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
+          company_profile: state.companyProfile || {},
           is_completed: state.isCompleted,
           updated_at: new Date().toISOString()
         }], {
@@ -224,6 +229,13 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     }));
   };
 
+  const setCompanyProfile = (profile: any) => {
+    setState(prev => ({
+      ...prev,
+      companyProfile: profile
+    }));
+  };
+
   const updateModuleConfiguration = (moduleId: string, config: any) => {
     setState(prev => ({
       ...prev,
@@ -274,6 +286,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
           completed_at: new Date().toISOString(),
           selected_modules: state.selectedModules,
           module_configurations: state.moduleConfigurations,
+          company_profile: state.companyProfile || {},
           current_step: state.totalSteps - 1
         }], {
           onConflict: 'user_id'
@@ -336,6 +349,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
       totalSteps: ONBOARDING_STEPS.length,
       selectedModules: [],
       moduleConfigurations: {},
+      companyProfile: null,
       isCompleted: false,
       isLoading: false
     });
@@ -360,6 +374,7 @@ export function OnboardingFlowProvider({ children }: { children: React.ReactNode
     nextStep,
     prevStep,
     setSelectedModules,
+    setCompanyProfile,
     updateModuleConfiguration,
     completeOnboarding,
     restartOnboarding,

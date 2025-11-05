@@ -3108,7 +3108,7 @@ export type Database = {
           old_values: Json | null
           timestamp: string
           user_id: string
-          user_ip_address: unknown | null
+          user_ip_address: unknown
         }
         Insert: {
           action: string
@@ -3119,7 +3119,7 @@ export type Database = {
           old_values?: Json | null
           timestamp?: string
           user_id: string
-          user_ip_address?: unknown | null
+          user_ip_address?: unknown
         }
         Update: {
           action?: string
@@ -3130,7 +3130,7 @@ export type Database = {
           old_values?: Json | null
           timestamp?: string
           user_id?: string
-          user_ip_address?: unknown | null
+          user_ip_address?: unknown
         }
         Relationships: [
           {
@@ -3521,7 +3521,7 @@ export type Database = {
           related_model: string
           requires_approval: boolean | null
           responsible_department: string | null
-          retention_period: unknown | null
+          retention_period: unknown
           review_frequency:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -3556,7 +3556,7 @@ export type Database = {
           related_model: string
           requires_approval?: boolean | null
           responsible_department?: string | null
-          retention_period?: unknown | null
+          retention_period?: unknown
           review_frequency?:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -3591,7 +3591,7 @@ export type Database = {
           related_model?: string
           requires_approval?: boolean | null
           responsible_department?: string | null
-          retention_period?: unknown | null
+          retention_period?: unknown
           review_frequency?:
             | Database["public"]["Enums"]["review_frequency_enum"]
             | null
@@ -9024,6 +9024,7 @@ export type Database = {
       onboarding_selections: {
         Row: {
           company_id: string
+          company_profile: Json | null
           completed_at: string | null
           created_at: string
           current_step: number
@@ -9037,6 +9038,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          company_profile?: Json | null
           completed_at?: string | null
           created_at?: string
           current_step?: number
@@ -9050,6 +9052,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          company_profile?: Json | null
           completed_at?: string | null
           created_at?: string
           current_step?: number
@@ -12109,7 +12112,7 @@ export type Database = {
           completion_percentage: number | null
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           response_data: Json
           stakeholder_category: string | null
           stakeholder_id: string | null
@@ -12125,7 +12128,7 @@ export type Database = {
           completion_percentage?: number | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           response_data?: Json
           stakeholder_category?: string | null
           stakeholder_id?: string | null
@@ -12141,7 +12144,7 @@ export type Database = {
           completion_percentage?: number | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           response_data?: Json
           stakeholder_category?: string | null
           stakeholder_id?: string | null
@@ -12233,7 +12236,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           request_id: string | null
@@ -12248,7 +12251,7 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           request_id?: string | null
@@ -12263,7 +12266,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           request_id?: string | null
@@ -13254,38 +13257,33 @@ export type Database = {
         }
         Returns: Json
       }
-      cleanup_old_rate_limits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      debug_auth_status: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      exec_sql: {
-        Args: { query: string }
-        Returns: Json
-      }
-      get_conversion_factor: {
-        Args:
-          | { p_category?: string; p_from_unit: string; p_to_unit: string }
-          | { p_emission_source_id: string; p_unit: string }
-        Returns: number
-      }
-      get_dashboard_analytics: {
-        Args: { p_company_id: string }
-        Returns: Json
-      }
-      get_indicator_suggested_value: {
-        Args:
-          | { p_company_id: string; p_indicator_code: string }
-          | { p_company_id: string; p_indicator_id: string }
-        Returns: Json
-      }
-      get_user_company_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      debug_auth_status: { Args: never; Returns: Json }
+      exec_sql: { Args: { query: string }; Returns: Json }
+      get_conversion_factor:
+        | {
+            Args: {
+              p_category?: string
+              p_from_unit: string
+              p_to_unit: string
+            }
+            Returns: number
+          }
+        | {
+            Args: { p_emission_source_id: string; p_unit: string }
+            Returns: number
+          }
+      get_dashboard_analytics: { Args: { p_company_id: string }; Returns: Json }
+      get_indicator_suggested_value:
+        | {
+            Args: { p_company_id: string; p_indicator_code: string }
+            Returns: Json
+          }
+        | {
+            Args: { p_company_id: string; p_indicator_id: string }
+            Returns: Json
+          }
+      get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role_type"]
@@ -13350,10 +13348,7 @@ export type Database = {
           url: string
         }[]
       }
-      update_overdue_tasks: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_overdue_tasks: { Args: never; Returns: undefined }
       user_has_company_access: {
         Args: { p_company_id: string }
         Returns: boolean

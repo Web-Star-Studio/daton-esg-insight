@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { ArrowLeft } from 'lucide-react';
 
 interface CompanyProfile {
@@ -142,6 +143,7 @@ const MATURITY_LEVELS = [
 
 export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfileWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [customSector, setCustomSector] = useState('');
   const [profile, setProfile] = useState<CompanyProfile>({
     sector: '',
     size: '',
@@ -156,9 +158,14 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
+      const profileData = {
+        ...profile,
+        customSector: profile.sector === 'other' ? customSector : undefined
+      };
       const recommendedModules = getRecommendedModules(profile);
       console.log('🎯 Recommended modules based on profile:', recommendedModules);
-      onProfileComplete(profile, recommendedModules);
+      console.log('📋 Complete profile data:', profileData);
+      onProfileComplete(profileData, recommendedModules);
     }
   };
 
@@ -170,7 +177,7 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
 
   const canProceed = () => {
     switch (currentStep) {
-      case 0: return profile.sector !== '';
+      case 0: return profile.sector !== '' && (profile.sector !== 'other' || customSector.trim() !== '');
       case 1: return profile.size !== '';
       case 2: return profile.goals.length > 0;
       case 3: return profile.maturityLevel !== '';
@@ -195,13 +202,34 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
                     name="sector"
                     value={sector.id}
                     checked={profile.sector === sector.id}
-                    onChange={(e) => setProfile({ ...profile, sector: e.target.value })}
+                    onChange={(e) => {
+                      setProfile({ ...profile, sector: e.target.value });
+                      if (e.target.value !== 'other') {
+                        setCustomSector('');
+                      }
+                    }}
                     className="w-4 h-4"
                   />
                   <span className="text-sm">{sector.name}</span>
                 </label>
               ))}
             </div>
+            
+            {profile.sector === 'other' && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="customSector" className="text-sm font-medium">
+                  Especifique o setor
+                </Label>
+                <Input
+                  id="customSector"
+                  placeholder="Digite o setor da sua empresa"
+                  value={customSector}
+                  onChange={(e) => setCustomSector(e.target.value)}
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+            )}
           </div>
         );
 

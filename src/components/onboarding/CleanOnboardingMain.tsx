@@ -24,7 +24,6 @@ function CleanOnboardingContent() {
   const { restartOnboarding } = useTutorial();
   const { skipOnboarding, user } = useAuth();
   const { toast } = useToast();
-  const [companyProfile, setCompanyProfile] = useState<any>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [showDataSetup, setShowDataSetup] = useState(false);
   const [validationResults, setValidationResults] = useState<any>(null);
@@ -35,6 +34,7 @@ function CleanOnboardingContent() {
     nextStep,
     prevStep,
     setSelectedModules,
+    setCompanyProfile,
     updateModuleConfiguration,
     completeOnboarding,
   } = useOnboardingFlow();
@@ -51,8 +51,8 @@ function CleanOnboardingContent() {
 
   const handleWelcomeNext = (profile?: any, recommendedModules?: string[]) => {
     if (profile) {
-      setCompanyProfile(profile);
-      logger.debug('Company profile saved', 'ui', profile);
+      setCompanyProfile(profile); // Save to context (persisted to database)
+      logger.debug('Company profile saved to context', 'ui', profile);
     }
     
     if (recommendedModules && recommendedModules.length > 0) {
@@ -247,6 +247,7 @@ function CleanOnboardingContent() {
               completed_at: new Date().toISOString(),
               selected_modules: state.selectedModules || [],
               module_configurations: state.moduleConfigurations || {},
+              company_profile: state.companyProfile || {},
               current_step: state.totalSteps - 1
             }], {
               onConflict: 'user_id'
@@ -312,7 +313,7 @@ function CleanOnboardingContent() {
             onModulesChange={setSelectedModules}
             onNext={nextStep}
             onPrev={prevStep}
-            companyProfile={companyProfile}
+            companyProfile={state.companyProfile}
           />
         );
       
@@ -388,7 +389,7 @@ function CleanOnboardingContent() {
           currentStep={state.currentStep}
           selectedModules={selectedModules}
           moduleConfigurations={moduleConfigurations}
-          companyProfile={companyProfile}
+          companyProfile={state.companyProfile}
           onSuggestionAccept={handleSuggestionAccept}
         />
       )}
