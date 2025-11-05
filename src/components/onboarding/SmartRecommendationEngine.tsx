@@ -51,7 +51,7 @@ export function SmartRecommendationEngine({
           implementationTime: '2-3 semanas'
         },
         {
-          moduleId: 'sistema_qualidade',
+          moduleId: 'qualidade',
           confidence: 90,
           reasons: ['Certificações ISO necessárias', 'Melhoria de processos', 'Redução de defeitos'],
           priority: 'high',
@@ -69,7 +69,7 @@ export function SmartRecommendationEngine({
       ],
       services: [
         {
-          moduleId: 'gestao_desempenho',
+          moduleId: 'performance',
           confidence: 90,
           reasons: ['Capital humano crítico', 'Retenção de talentos', 'Produtividade da equipe'],
           priority: 'high',
@@ -77,7 +77,7 @@ export function SmartRecommendationEngine({
           implementationTime: '2-3 semanas'
         },
         {
-          moduleId: 'treinamentos',
+          moduleId: 'gestao_pessoas',
           confidence: 85,
           reasons: ['Capacitação contínua', 'Inovação necessária', 'Competitividade'],
           priority: 'high',
@@ -95,7 +95,7 @@ export function SmartRecommendationEngine({
       ],
       default: [
         {
-          moduleId: 'gestao_desempenho',
+          moduleId: 'performance',
           confidence: 80,
           reasons: ['Gestão de pessoas essencial', 'Melhoria da produtividade', 'Desenvolvimento organizacional'],
           priority: 'high',
@@ -111,7 +111,7 @@ export function SmartRecommendationEngine({
           implementationTime: '2-3 semanas'
         },
         {
-          moduleId: 'sistema_qualidade',
+          moduleId: 'qualidade',
           confidence: 70,
           reasons: ['Melhoria contínua', 'Padronização de processos', 'Certificações'],
           priority: 'medium',

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft } from 'lucide-react';
+import { MODULE_MAP_BY_ID } from './modulesCatalog';
 
 interface CompanyProfile {
   sector: string;
@@ -35,9 +36,23 @@ function getRecommendedModules(profile: CompanyProfile): string[] {
     'oil_gas': ['inventario_gee', 'energia', 'gestao_licencas', 'riscos_esg'],
     'energy': ['inventario_gee', 'energia', 'mudancas_climaticas'],
     'chemical': ['inventario_gee', 'residuos', 'saude_seguranca', 'gestao_licencas'],
+    'pulp_paper': ['inventario_gee', 'agua', 'residuos', 'biodiversidade'],
+    'steel': ['inventario_gee', 'energia', 'residuos', 'saude_seguranca'],
+    'logistics': ['inventario_gee', 'energia', 'gestao_pessoas', 'cadeia_suprimentos'],
     'financial': ['riscos_esg', 'compliance', 'stakeholders', 'gestao_pessoas'],
+    'telecom': ['energia', 'gestao_pessoas', 'inovacao', 'compliance'],
+    'public': ['compliance', 'gestao_pessoas', 'stakeholders', 'riscos_esg'],
+    'pharma_cosmetics': ['qualidade', 'saude_seguranca', 'compliance', 'residuos'],
+    'automotive': ['inventario_gee', 'qualidade', 'cadeia_suprimentos', 'inovacao'],
+    'technology': ['energia', 'residuos', 'inovacao', 'gestao_pessoas'],
+    'consumer_goods': ['qualidade', 'cadeia_suprimentos', 'economia_circular', 'residuos'],
+    'utilities': ['agua', 'energia', 'gestao_licencas', 'inventario_gee'],
+    'healthcare': ['saude_seguranca', 'qualidade', 'residuos', 'gestao_pessoas'],
+    'education': ['gestao_pessoas', 'stakeholders', 'energia', 'compliance'],
+    'retail': ['energia', 'residuos', 'gestao_pessoas', 'economia_circular'],
+    'construction': ['saude_seguranca', 'gestao_licencas', 'residuos', 'biodiversidade'],
     'services': ['gestao_pessoas', 'qualidade', 'performance', 'stakeholders'],
-    'technology': ['energia', 'residuos', 'inovacao', 'gestao_pessoas']
+    'other': ['inventario_gee', 'compliance', 'gestao_pessoas', 'qualidade']
   };
   
   const sectorModules = sectorMap[profile.sector] || [];
@@ -72,6 +87,15 @@ function getRecommendedModules(profile: CompanyProfile): string[] {
         break;
       case 'performance':
         recommendations.push('performance', 'analise_dados');
+        break;
+      case 'sustainability':
+        recommendations.push('inventario_gee', 'compliance', 'riscos_esg');
+        break;
+      case 'innovation':
+        recommendations.push('inovacao', 'analise_dados');
+        break;
+      case 'cost_reduction':
+        recommendations.push('energia', 'residuos', 'performance');
         break;
     }
   });
@@ -162,10 +186,21 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
         ...profile,
         customSector: profile.sector === 'other' ? customSector : undefined
       };
+      
       const recommendedModules = getRecommendedModules(profile);
-      console.log('🎯 Recommended modules based on profile:', recommendedModules);
+      
+      // Validate modules - filter only modules that exist in catalog
+      const validModules = recommendedModules.filter(moduleId => {
+        const exists = MODULE_MAP_BY_ID[moduleId];
+        if (!exists) {
+          console.warn(`⚠️ Módulo recomendado não existe no catálogo: ${moduleId}`);
+        }
+        return exists;
+      });
+      
+      console.log('🎯 Recommended modules (validated):', validModules);
       console.log('📋 Complete profile data:', profileData);
-      onProfileComplete(profileData, recommendedModules);
+      onProfileComplete(profileData, validModules);
     }
   };
 

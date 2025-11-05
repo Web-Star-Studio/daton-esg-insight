@@ -17,6 +17,7 @@ import { InitialDataSetup } from './InitialDataSetup';
 import { EnhancedLoading } from '@/components/ui/enhanced-loading';
 import { OnboardingRedirectHandler } from './OnboardingRedirectHandler';
 import { OnboardingErrorBoundary } from './OnboardingErrorBoundary';
+import { MODULE_MAP_BY_ID } from './modulesCatalog';
 
 function CleanOnboardingContent() {
   const navigate = useNavigate();
@@ -57,10 +58,21 @@ function CleanOnboardingContent() {
     
     if (recommendedModules && recommendedModules.length > 0) {
       logger.debug('Pre-selecting recommended modules', 'ui', recommendedModules);
-      setSelectedModules(recommendedModules);
+      
+      // Validate modules - filter only modules that exist in catalog
+      const validModules = recommendedModules.filter(moduleId => {
+        const exists = MODULE_MAP_BY_ID[moduleId];
+        if (!exists) {
+          logger.warn(`Module ${moduleId} recommended but not in catalog`, 'ui');
+        }
+        return exists;
+      });
+      
+      setSelectedModules(validModules);
+      
       toast({
         title: 'Módulos Recomendados',
-        description: `${recommendedModules.length} módulos foram pré-selecionados com base no seu perfil.`,
+        description: `${validModules.length} módulos foram pré-selecionados com base no seu perfil.`,
       });
     }
     
