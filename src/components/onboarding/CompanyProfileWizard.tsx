@@ -7,6 +7,90 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft } from 'lucide-react';
 import { MODULE_MAP_BY_ID } from './modulesCatalog';
+import { logger } from '@/utils/logger';
+
+// Keyword to module mapping for custom sector analysis
+const KEYWORD_MODULE_MAP: Record<string, string[]> = {
+  // Ambiental
+  'ambiental|sustent|verde|eco|ecologic': ['inventario_gee', 'mudancas_climaticas', 'biodiversidade'],
+  'energia|solar|renovavel|eletric|eolica': ['energia', 'inventario_gee'],
+  'agua|hidric|hidro|saneamento': ['agua', 'biodiversidade'],
+  'residuo|lixo|recicl|aterro': ['residuos', 'economia_circular'],
+  
+  // Industrial
+  'manufatura|industria|fabric|producao|montagem': ['qualidade', 'saude_seguranca', 'inventario_gee'],
+  'quimic|petroquimic|petroleo': ['gestao_licencas', 'residuos', 'saude_seguranca'],
+  'naval|maritim|portuar|portuaria': ['agua', 'biodiversidade', 'gestao_licencas'],
+  'mineracao|minera|extracao': ['inventario_gee', 'agua', 'biodiversidade', 'gestao_licencas'],
+  'siderurg|metalurg|aco': ['inventario_gee', 'energia', 'residuos', 'saude_seguranca'],
+  
+  // Serviços
+  'tecnologia|software|digital|ti|informatica': ['inovacao', 'gestao_pessoas', 'energia'],
+  'consultoria|servico|profission|assessoria': ['performance', 'gestao_pessoas', 'stakeholders'],
+  'saude|hospital|clinic|medic|farmaceutic': ['saude_seguranca', 'qualidade', 'residuos'],
+  'educacao|escola|universidade|ensino': ['gestao_pessoas', 'stakeholders', 'energia'],
+  'financeiro|banco|seguradora|investimento': ['riscos_esg', 'compliance', 'stakeholders', 'gestao_pessoas'],
+  
+  // Comercial e Logística
+  'comercio|varejo|loja|e-commerce|ecommerce': ['energia', 'residuos', 'economia_circular'],
+  'logistica|transporte|entrega|distribuicao': ['inventario_gee', 'energia', 'cadeia_suprimentos'],
+  'construcao|engenharia|obra|construtora': ['saude_seguranca', 'gestao_licencas', 'residuos'],
+  
+  // Agro e Alimentos
+  'agro|agricola|pecuar|rural|fazenda': ['agua', 'biodiversidade', 'residuos', 'inventario_gee'],
+  'alimento|bebida|food|restaurante': ['qualidade', 'residuos', 'agua', 'saude_seguranca'],
+  
+  // Telecom e Utilities
+  'telecom|comunicacao|telefonia': ['energia', 'gestao_pessoas', 'inovacao'],
+  'utilidade|concession|saneamento|eletric': ['agua', 'energia', 'gestao_licencas', 'inventario_gee']
+};
+
+/**
+ * Analyzes custom sector text to identify relevant modules based on keywords
+ */
+function analyzeCustomSector(text: string): string[] {
+  if (!text || text.trim().length === 0) {
+    return [];
+  }
+
+  // Normalize text: lowercase, remove accents
+  const normalized = text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  
+  const recommendations: string[] = [];
+  let matchedKeywords: string[] = [];
+  
+  Object.entries(KEYWORD_MODULE_MAP).forEach(([pattern, modules]) => {
+    const regex = new RegExp(pattern, 'i');
+    if (regex.test(normalized)) {
+      recommendations.push(...modules);
+      matchedKeywords.push(pattern.split('|')[0]); // Get first keyword as representative
+    }
+  });
+  
+  // Log analysis results
+  if (recommendations.length > 0) {
+    logger.info(
+      `Custom sector analysis found ${recommendations.length} module matches`,
+      'onboarding',
+      { 
+        customSector: text,
+        matchedKeywords,
+        recommendedModules: Array.from(new Set(recommendations))
+      }
+    );
+  } else {
+    logger.warn(
+      'No keyword matches found for custom sector',
+      'onboarding',
+      { customSector: text }
+    );
+  }
+  
+  return Array.from(new Set(recommendations));
+}
 
 interface CompanyProfile {
   sector: string;
@@ -24,10 +108,10 @@ interface CompanyProfileWizardProps {
 /**
  * Get intelligent module recommendations based on company profile
  */
-function getRecommendedModules(profile: CompanyProfile): string[] {
+function getRecommendedModules(profile: CompanyProfile, customSector?: string): string[] {
   const recommendations: string[] = [];
   
-  // Sector-based recommendations
+  // Sector-based recommendations mapping
   const sectorMap: Record<string, string[]> = {
     'manufacturing': ['inventario_gee', 'energia', 'residuos', 'saude_seguranca'],
     'agro': ['agua', 'biodiversidade', 'residuos', 'inventario_gee'],
@@ -55,8 +139,38 @@ function getRecommendedModules(profile: CompanyProfile): string[] {
     'other': ['inventario_gee', 'compliance', 'gestao_pessoas', 'qualidade']
   };
   
-  const sectorModules = sectorMap[profile.sector] || [];
-  recommendations.push(...sectorModules);
+  // Special handling for custom sectors
+  if (profile.sector === 'other' && customSector) {
+    logger.debug('Analyzing custom sector', 'onboarding', { customSector });
+    
+    const keywordMatches = analyzeCustomSector(customSector);
+    
+    if (keywordMatches.length > 0) {
+      // Use keyword-based recommendations
+      recommendations.push(...keywordMatches);
+      logger.info(
+        `Using keyword-based recommendations for custom sector`,
+        'onboarding',
+        { 
+          customSector,
+          modulesFound: keywordMatches.length,
+          modules: keywordMatches
+        }
+      );
+    } else {
+      // Fallback to default recommendations
+      logger.info(
+        'No keyword matches, using default recommendations',
+        'onboarding',
+        { customSector }
+      );
+      recommendations.push(...sectorMap['other']);
+    }
+  } else {
+    // Standard sector-based recommendations
+    const sectorModules = sectorMap[profile.sector] || sectorMap['other'];
+    recommendations.push(...sectorModules);
+  }
   
   // Goal-based recommendations
   profile.goals.forEach(goal => {
@@ -187,19 +301,32 @@ export function CompanyProfileWizard({ onProfileComplete, onSkip }: CompanyProfi
         customSector: profile.sector === 'other' ? customSector : undefined
       };
       
-      const recommendedModules = getRecommendedModules(profile);
+      const recommendedModules = getRecommendedModules(profile, customSector);
       
-      // Validate modules - filter only modules that exist in catalog
+      // Validate that all recommended modules exist in catalog
       const validModules = recommendedModules.filter(moduleId => {
         const exists = MODULE_MAP_BY_ID[moduleId];
         if (!exists) {
-          console.warn(`⚠️ Módulo recomendado não existe no catálogo: ${moduleId}`);
+          logger.warn(
+            `Recommended module not found in catalog: ${moduleId}`,
+            'onboarding',
+            { moduleId, profile }
+          );
         }
         return exists;
       });
       
-      console.log('🎯 Recommended modules (validated):', validModules);
-      console.log('📋 Complete profile data:', profileData);
+      logger.info(
+        'Profile completed with validated recommendations',
+        'onboarding',
+        { 
+          totalRecommended: recommendedModules.length,
+          validModules: validModules.length,
+          modules: validModules,
+          customSector: profile.sector === 'other' ? customSector : undefined
+        }
+      );
+      
       onProfileComplete(profileData, validModules);
     }
   };
