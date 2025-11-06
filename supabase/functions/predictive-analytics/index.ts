@@ -412,10 +412,28 @@ serve(async (req) => {
         break;
       
       case 'full_analysis':
-        const [predictions, risk] = await Promise.all([
-          predictEmissions(supabaseClient, profile.company_id, months || 3),
-          calculateComplianceRisk(supabaseClient, profile.company_id)
-        ]);
+        // Try to get predictions, but don't fail if there's no emission data
+        let predictions = null;
+        try {
+          predictions = await predictEmissions(supabaseClient, profile.company_id, months || 3);
+        } catch (error) {
+          console.log('⚠️ Could not generate emission predictions:', error.message);
+          // Return empty prediction structure if no data
+          if (error.message?.includes('Dados insuficientes')) {
+            predictions = {
+              predictions: [],
+              trend: 'stable' as const,
+              trend_percentage: 0,
+              anomalies: [],
+              forecast_accuracy: 0,
+              error: error.message
+            };
+          } else {
+            throw error; // Re-throw if it's not a data issue
+          }
+        }
+        
+        const risk = await calculateComplianceRisk(supabaseClient, profile.company_id);
         result = { predictions, risk };
         break;
       

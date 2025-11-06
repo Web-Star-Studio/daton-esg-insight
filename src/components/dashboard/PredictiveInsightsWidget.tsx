@@ -143,44 +143,60 @@ export function PredictiveInsightsWidget() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">Previsão de Emissões (3 meses)</h4>
-            <div className="flex items-center gap-2">
-              {getTrendIcon()}
-              <span className={cn(
-                "text-sm font-semibold",
-                predictions.trend === 'increasing' ? 'text-red-600' : 
-                predictions.trend === 'decreasing' ? 'text-green-600' : 
-                'text-gray-600'
-              )}>
-                {predictions.trend === 'increasing' ? '+' : predictions.trend === 'decreasing' ? '-' : ''}
-                {Math.abs(predictions.trend_percentage)}%
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {predictions.predictions.map((pred, idx) => (
-              <div key={idx} className="p-3 rounded-lg bg-muted/50 border">
-                <p className="text-xs text-muted-foreground mb-1">{pred.date}</p>
-                <p className="text-sm font-semibold">{pred.predicted_value.toFixed(2)} tCO2e</p>
-                <p className="text-xs text-muted-foreground">
-                  ±{((pred.confidence_interval.upper - pred.confidence_interval.lower) / 2).toFixed(1)}
-                </p>
+            {predictions.predictions.length > 0 ? (
+              <div className="flex items-center gap-2">
+                {getTrendIcon()}
+                <span className={cn(
+                  "text-sm font-semibold",
+                  predictions.trend === 'increasing' ? 'text-red-600' : 
+                  predictions.trend === 'decreasing' ? 'text-green-600' : 
+                  'text-gray-600'
+                )}>
+                  {predictions.trend === 'increasing' ? '+' : predictions.trend === 'decreasing' ? '-' : ''}
+                  {Math.abs(predictions.trend_percentage)}%
+                </span>
               </div>
-            ))}
+            ) : null}
           </div>
 
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Acurácia da previsão</span>
-            <Badge variant="outline">{predictions.forecast_accuracy}%</Badge>
-          </div>
+          {predictions.predictions.length > 0 ? (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                {predictions.predictions.map((pred, idx) => (
+                  <div key={idx} className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-xs text-muted-foreground mb-1">{pred.date}</p>
+                    <p className="text-sm font-semibold">{pred.predicted_value.toFixed(2)} tCO2e</p>
+                    <p className="text-xs text-muted-foreground">
+                      ±{((pred.confidence_interval.upper - pred.confidence_interval.lower) / 2).toFixed(1)}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-          {predictions.anomalies.length > 0 && (
-            <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-              <p className="text-xs font-medium text-yellow-800 mb-1">
-                ⚠️ {predictions.anomalies.length} anomalia(s) detectada(s)
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Acurácia da previsão</span>
+                <Badge variant="outline">{predictions.forecast_accuracy}%</Badge>
+              </div>
+
+              {predictions.anomalies.length > 0 && (
+                <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                  <p className="text-xs font-medium text-yellow-800 mb-1">
+                    ⚠️ {predictions.anomalies.length} anomalia(s) detectada(s)
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    Valores fora do padrão esperado identificados nos últimos meses
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 text-center">
+              <Activity className="h-8 w-8 mx-auto text-blue-600 mb-2" />
+              <p className="text-xs font-medium text-blue-800 mb-1">
+                Dados insuficientes para previsão
               </p>
-              <p className="text-xs text-yellow-700">
-                Valores fora do padrão esperado identificados nos últimos meses
+              <p className="text-xs text-blue-700">
+                Registre pelo menos 3 meses de dados de emissões para gerar previsões
               </p>
             </div>
           )}
