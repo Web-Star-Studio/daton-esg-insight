@@ -32,11 +32,22 @@ serve(async (req) => {
 
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('company_id, role')
+      .select('company_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin', 'manager', 'super_admin'].includes(profile.role)) {
+    if (!profile) {
+      return new Response('User profile not found', { status: 404, headers: corsHeaders })
+    }
+
+    // Verificar role da tabela user_roles (fonte de verdade)
+    const { data: userRole } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!userRole || !['admin', 'manager', 'super_admin'].includes(userRole.role)) {
       return new Response('Insufficient permissions', { status: 403, headers: corsHeaders })
     }
 
@@ -52,7 +63,8 @@ serve(async (req) => {
         id,
         quantity,
         unit,
-        emission_source:emission_sources(
+        emission_source_id,
+        emission_sources!inner(
           id,
           name,
           category,
@@ -60,7 +72,7 @@ serve(async (req) => {
           company_id
         )
       `)
-      .eq('emission_source.company_id', profile.company_id)
+      .eq('emission_sources.company_id', profile.company_id)
       .gte('period_start_date', period_start)
       .lte('period_end_date', period_end)
 
@@ -71,6 +83,12 @@ serve(async (req) => {
 
     console.log(`Found ${activityData?.length || 0} activity records to recalculate`)
 
+    if (activityData && activityData.length > 0) {
+      console.log('Sample activity record:', JSON.stringify(activityData[0], null, 2))
+    } else {
+      console.log('No activity data found for the specified period')
+    }
+
     let processedRecords = 0
     let successfulCalculations = 0
 
@@ -78,23 +96,29 @@ serve(async (req) => {
     for (const activity of activityData || []) {
       try {
         processedRecords++
-        console.log(`Processing activity ${activity.id} - ${(activity.emission_source as any).name}`)
+        console.log(`Processing activity ${activity.id} - ${activity.emission_sources.name}`)
 
         // Get compatible emission factors
         const { data: factors } = await supabaseClient
           .from('emission_factors')
           .select('*')
-          .eq('category', (activity.emission_source as any).category)
+          .eq('category', activity.emission_sources.category)
           .eq('type', 'system')
           .limit(5)
 
         if (!factors || factors.length === 0) {
-          console.log(`No emission factors found for category: ${(activity.emission_source as any).category}`)
+          console.log(`No emission factors found for category: ${activity.emission_sources.category}, activity: ${activity.id}`)
           continue
         }
 
         // Find compatible factor by unit or use the first one
         const factor = factors.find(f => f.activity_unit === activity.unit) || factors[0]
+
+        console.log(`Using emission factor: ${factor.name} (${factor.activity_unit}) for activity ${activity.id}`)
+
+        if (!factor.co2_factor && !factor.ch4_factor && !factor.n2o_factor) {
+          console.log(`Warning: Emission factor ${factor.id} has no CO2, CH4, or N2O factors`)
+        }
 
         // Use database function for calculation
         const { data: result, error: calcError } = await supabaseClient
@@ -109,6 +133,11 @@ serve(async (req) => {
 
         if (calcError) {
           console.error(`Calculation error for activity ${activity.id}:`, calcError)
+          continue
+        }
+
+        if (!result) {
+          console.error(`No result returned from calculate_simple_emissions for activity ${activity.id}`)
           continue
         }
 
