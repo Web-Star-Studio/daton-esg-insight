@@ -81,32 +81,65 @@ const menuSections: MenuSection[] = [
     defaultOpen: true,
     items: [
       { id: "esg-management", title: "Painel de Gestão ESG", icon: Leaf, path: "/gestao-esg", description: "Central de gestão ESG" },
-      { id: "materiality-analysis", title: "Análise de Materialidade", icon: Eye, path: "/analise-materialidade", description: "Identificação de temas ESG relevantes" },
-      { id: "stakeholder-management", title: "Gestão de Stakeholders", icon: Handshake, path: "/gestao-stakeholders", description: "Gestão de partes interessadas" },
-      { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" },
+      
+      // CATEGORIA: AMBIENTAL (E)
       {
-        id: "emissions",
-        title: "Emissões de GEE",
+        id: "environmental-category",
+        title: "🌱 Ambiental",
         icon: CloudRain,
-        path: "/inventario-gee",
-        description: "Gestão de gases de efeito estufa",
+        path: "#",
+        description: "Gestão ambiental, emissões e licenciamento",
         subItems: [
-          { id: "ghg-dashboard", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg", description: "Painel de monitoramento de emissões" },
-          { id: "ghg-inventory", title: "Inventário de Emissões", icon: FileBarChart, path: "/inventario-gee", description: "Controle completo do inventário GEE" },
-          { id: "carbon-projects", title: "Projetos de Carbono", icon: Leaf, path: "/projetos-carbono", description: "Gestão de projetos de redução" }
+          {
+            id: "emissions",
+            title: "Emissões de GEE",
+            icon: CloudRain,
+            path: "/inventario-gee",
+            description: "Gestão de gases de efeito estufa",
+            subItems: [
+              { id: "ghg-dashboard", title: "Dashboard GHG", icon: BarChart3, path: "/dashboard-ghg", description: "Painel de monitoramento de emissões" },
+              { id: "ghg-inventory", title: "Inventário de Emissões", icon: FileBarChart, path: "/inventario-gee", description: "Controle completo do inventário GEE" },
+              { id: "carbon-projects", title: "Projetos de Carbono", icon: Leaf, path: "/projetos-carbono", description: "Gestão de projetos de redução" }
+            ]
+          },
+          { id: "waste-management", title: "Gestão de Resíduos", icon: Recycle, path: "/residuos", description: "Controle e destinação de resíduos" },
+          { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" },
+          { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" }
         ]
       },
-      { id: "waste-management", title: "Gestão de Resíduos", icon: Recycle, path: "/residuos", description: "Controle e destinação de resíduos" },
-      { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" },
-      { id: "social-dashboard", title: "Dashboard Social", icon: Users, path: "/social-esg", description: "Visão geral consolidada dos aspectos sociais" },
-      { id: "employee-management", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão completa de recursos humanos" },
-      { id: "health-safety", title: "Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
-      { id: "training-management", title: "Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos", description: "Gestão de capacitação e treinamentos" },
-      { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" },
-      { id: "governance-panel", title: "Painel de Governança", icon: Shield, path: "/governanca-esg", description: "Visão geral da governança corporativa" },
-      { id: "risk-management", title: "Gestão de Riscos", icon: AlertTriangle, path: "/gestao-riscos", description: "Identificação e mitigação de riscos" },
-      { id: "compliance-policies", title: "Compliance e Políticas", icon: Scale, path: "/compliance", description: "Conformidade regulatória e políticas" },
-      { id: "audits", title: "Auditorias", icon: CheckCircle, path: "/auditoria", description: "Gestão de auditorias internas e externas" }
+      
+      // CATEGORIA: SOCIAL (S)
+      {
+        id: "social-category",
+        title: "👥 Social",
+        icon: Users,
+        path: "#",
+        description: "Gestão de pessoas, saúde e desenvolvimento",
+        subItems: [
+          { id: "social-dashboard", title: "Dashboard Social", icon: Users, path: "/social-esg", description: "Visão geral consolidada dos aspectos sociais" },
+          { id: "employee-management", title: "Gestão de Funcionários", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão completa de recursos humanos" },
+          { id: "health-safety", title: "Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
+          { id: "training-management", title: "Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos", description: "Gestão de capacitação e treinamentos" },
+          { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" }
+        ]
+      },
+      
+      // CATEGORIA: GOVERNANÇA (G)
+      {
+        id: "governance-category",
+        title: "🛡️ Governança",
+        icon: Shield,
+        path: "#",
+        description: "Compliance, riscos, auditorias e ética",
+        subItems: [
+          { id: "governance-panel", title: "Painel de Governança", icon: Shield, path: "/governanca-esg", description: "Visão geral da governança corporativa" },
+          { id: "risk-management", title: "Gestão de Riscos", icon: AlertTriangle, path: "/gestao-riscos", description: "Identificação e mitigação de riscos" },
+          { id: "compliance-policies", title: "Compliance e Políticas", icon: Scale, path: "/compliance", description: "Conformidade regulatória e políticas" },
+          { id: "audits", title: "Auditorias", icon: CheckCircle, path: "/auditoria", description: "Gestão de auditorias internas e externas" },
+          { id: "stakeholder-management", title: "Gestão de Stakeholders", icon: Handshake, path: "/gestao-stakeholders", description: "Gestão de partes interessadas" },
+          { id: "materiality-analysis", title: "Análise de Materialidade", icon: Eye, path: "/analise-materialidade", description: "Identificação de temas ESG relevantes" }
+        ]
+      }
     ]
   },
   {
@@ -163,13 +196,32 @@ export function AppSidebar() {
   const { user, restartOnboarding } = useAuth()
   const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    'environmental-category': true,
+    'social-category': false,
+    'governance-category': false
+  })
   const [isHovering, setIsHovering] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { data: notificationCounts } = useNotificationCounts()
   
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path
+  
+  // Auto-expand category if active page belongs to it
+  useState(() => {
+    const environmentalPaths = ['/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/licenciamento', '/metas-sustentabilidade']
+    const socialPaths = ['/social-esg', '/gestao-funcionarios', '/seguranca-trabalho', '/gestao-treinamentos', '/desenvolvimento-carreira']
+    const governancePaths = ['/governanca-esg', '/gestao-riscos', '/compliance', '/auditoria', '/gestao-stakeholders', '/analise-materialidade']
+    
+    if (environmentalPaths.some(p => currentPath.startsWith(p))) {
+      setExpandedSections(prev => ({ ...prev, 'environmental-category': true }))
+    } else if (socialPaths.some(p => currentPath.startsWith(p))) {
+      setExpandedSections(prev => ({ ...prev, 'social-category': true }))
+    } else if (governancePaths.some(p => currentPath.startsWith(p))) {
+      setExpandedSections(prev => ({ ...prev, 'governance-category': true }))
+    }
+  })
 
   const handleFavoriteToggle = (item: MenuItem, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -256,9 +308,13 @@ export function AppSidebar() {
     const isFav = isFavorite(item.id)
     const hasSubItems = item.subItems && item.subItems.length > 0
     const isExpanded = expandedSections[item.id] || false
-    const hasActiveSubItem = item.subItems?.some(subItem => isActive(subItem.path)) || false
+    const hasActiveSubItem = item.subItems?.some(subItem => {
+      if (isActive(subItem.path)) return true
+      return subItem.subItems?.some(deepSubItem => isActive(deepSubItem.path))
+    }) || false
     const notificationCount = getNotificationCount(item.id)
     const statusIndicator = getStatusIndicator(item.id)
+    const isCategory = item.path === "#"
 
     if (hasSubItems) {
       return (
@@ -266,7 +322,13 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
-                className={`group ${active || hasActiveSubItem ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
+                className={`group ${
+                  isCategory 
+                    ? "font-semibold text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                    : active || hasActiveSubItem 
+                      ? "bg-primary/10 text-primary font-medium" 
+                      : "hover:bg-muted/50"
+                }`}
               >
                 <NavigationTooltip
                   title={item.title}
@@ -311,8 +373,12 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <SidebarMenuSub>
-                {item.subItems?.map(subItem => renderSubMenuItem(subItem, active || hasActiveSubItem))}
+              <SidebarMenuSub className={isCategory ? "border-l-2 border-muted ml-3 pl-2" : ""}>
+                {item.subItems?.map(subItem => 
+                  subItem.subItems && subItem.subItems.length > 0 
+                    ? renderMenuItem(subItem)
+                    : renderSubMenuItem(subItem, active || hasActiveSubItem)
+                )}
               </SidebarMenuSub>
             </CollapsibleContent>
           </SidebarMenuItem>
