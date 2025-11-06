@@ -14,12 +14,13 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format, differenceInYears, differenceInMonths, differenceInDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, ArrowLeft, Save } from "lucide-react"
+import { CalendarIcon, ArrowLeft, Save, Loader2, AlertCircle } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createLicense, updateLicense, getLicenseById, type CreateLicenseData, type UpdateLicenseData } from "@/services/licenses"
 import { toast } from "sonner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -135,7 +136,15 @@ const LicenseForm = () => {
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (isSubmitting) return
+    console.log('=== FORM SUBMISSION STARTED ===');
+    console.log('Form values:', values);
+    console.log('Form errors:', form.formState.errors);
+    console.log('Is submitting:', isSubmitting);
+    
+    if (isSubmitting) {
+      console.log('Already submitting, skipping...');
+      return;
+    }
     
     setIsSubmitting(true)
     
@@ -194,6 +203,9 @@ const LicenseForm = () => {
             <p className="text-muted-foreground">
               {isEditing ? 'Atualize as informações da licença' : 'Preencha os dados da nova licença ambiental'}
             </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Campos marcados com * são obrigatórios
+            </p>
           </div>
           <Button variant="outline" onClick={() => navigate('/licenciamento')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -208,7 +220,51 @@ const LicenseForm = () => {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form id="licenca-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form 
+                id="licenca-form" 
+                onSubmit={form.handleSubmit(
+                  onSubmit,
+                  (errors) => {
+                    console.error('Validation errors:', errors);
+                    toast.error('Preencha todos os campos obrigatórios corretamente', {
+                      description: 'Verifique os campos destacados em vermelho'
+                    });
+                  }
+                )} 
+                className="space-y-6"
+              >
+                {/* Error Summary */}
+                {Object.keys(form.formState.errors).length > 0 && (
+                  <Alert variant="destructive" className="mb-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Corrija os seguintes erros:</AlertTitle>
+                    <AlertDescription>
+                      <ul className="list-disc list-inside space-y-1 mt-2">
+                        {form.formState.errors.nome && (
+                          <li>Nome da Licença: {form.formState.errors.nome.message}</li>
+                        )}
+                        {form.formState.errors.tipo && (
+                          <li>Tipo: {form.formState.errors.tipo.message}</li>
+                        )}
+                        {form.formState.errors.orgaoEmissor && (
+                          <li>Órgão Emissor: {form.formState.errors.orgaoEmissor.message}</li>
+                        )}
+                        {form.formState.errors.numeroProcesso && (
+                          <li>Número do Processo: {form.formState.errors.numeroProcesso.message}</li>
+                        )}
+                        {form.formState.errors.dataEmissao && (
+                          <li>Data de Emissão: {form.formState.errors.dataEmissao.message}</li>
+                        )}
+                        {form.formState.errors.dataVencimento && (
+                          <li>Data de Vencimento: {form.formState.errors.dataVencimento.message}</li>
+                        )}
+                        {form.formState.errors.status && (
+                          <li>Status: {form.formState.errors.status.message}</li>
+                        )}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Nome */}
                   <FormField
@@ -216,7 +272,7 @@ const LicenseForm = () => {
                     name="nome"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nome da Licença</FormLabel>
+                        <FormLabel>Nome da Licença *</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Licença de Operação - Unidade 1" {...field} />
                         </FormControl>
@@ -231,7 +287,7 @@ const LicenseForm = () => {
                     name="tipo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo</FormLabel>
+                        <FormLabel>Tipo *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -259,7 +315,7 @@ const LicenseForm = () => {
                     name="orgaoEmissor"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Órgão Emissor</FormLabel>
+                        <FormLabel>Órgão Emissor *</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: IBAMA, CETESB, FEAM" {...field} />
                         </FormControl>
@@ -274,7 +330,7 @@ const LicenseForm = () => {
                     name="numeroProcesso"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número do Processo</FormLabel>
+                        <FormLabel>Número do Processo *</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: 02001.123456/2023-89" {...field} />
                         </FormControl>
@@ -289,7 +345,7 @@ const LicenseForm = () => {
                     name="dataEmissao"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Data de Emissão</FormLabel>
+                        <FormLabel>Data de Emissão *</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -297,7 +353,8 @@ const LicenseForm = () => {
                                 variant={"outline"}
                                 className={cn(
                                   "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
+                                  !field.value && "text-muted-foreground",
+                                  form.formState.errors.dataEmissao && "border-destructive"
                                 )}
                               >
                                 {field.value ? (
@@ -333,7 +390,7 @@ const LicenseForm = () => {
                     name="dataVencimento"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Data de Vencimento</FormLabel>
+                        <FormLabel>Data de Vencimento *</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -341,7 +398,8 @@ const LicenseForm = () => {
                                 variant={"outline"}
                                 className={cn(
                                   "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
+                                  !field.value && "text-muted-foreground",
+                                  form.formState.errors.dataVencimento && "border-destructive"
                                 )}
                               >
                                 {field.value ? (
@@ -375,7 +433,7 @@ const LicenseForm = () => {
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>Status *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -452,12 +510,19 @@ const LicenseForm = () => {
                   <Button 
                     type="submit" 
                     disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
+                    className="min-w-[150px]"
                   >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending 
-                      ? (isEditing ? 'Atualizando...' : 'Salvando...')
-                      : (isEditing ? 'Atualizar Licença' : 'Criar Licença')
-                    }
+                    {isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {isEditing ? 'Atualizando...' : 'Salvando...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        {isEditing ? 'Atualizar Licença' : 'Criar Licença'}
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
