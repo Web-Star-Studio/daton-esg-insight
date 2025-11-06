@@ -193,7 +193,7 @@ export default function Licenciamento() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between" data-tour="licenciamento-header">
           <div>
@@ -250,7 +250,7 @@ export default function Licenciamento() {
             {/* Predictive Dashboard */}
             <PredictiveDashboard />
           {/* KPI Cards with AI */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <CardWithAI
                 cardType="license_total"
                 cardData={{ 
@@ -307,15 +307,15 @@ export default function Licenciamento() {
             {/* Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {workflows.map((workflow) => (
-                <Card key={workflow.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+                <Card key={workflow.id} className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${workflow.color} text-white`}>
+                      <div className={`p-2 rounded-lg ${workflow.color} text-white flex-shrink-0`}>
                         <workflow.icon className="w-5 h-5" />
                       </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{workflow.title}</CardTitle>
-                        <CardDescription>{workflow.description}</CardDescription>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg break-words">{workflow.title}</CardTitle>
+                        <CardDescription className="break-words">{workflow.description}</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -366,14 +366,19 @@ export default function Licenciamento() {
                 ) : licenses && licenses.length > 0 ? (
                   <div className="space-y-4">
                     {licenses.map((license) => (
-                      <div key={license.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{license.name}</h4>
+                      <div key={license.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors overflow-hidden">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h4 className="font-medium truncate">{license.name}</h4>
                             {getStatusBadge(license.status)}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {license.type} • {license.issuing_body} • Vencimento: {new Date(license.expiration_date).toLocaleDateString('pt-BR')}
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="truncate">{license.type}</span>
+                              <span>•</span>
+                              <span className="truncate">{license.issuing_body}</span>
+                            </div>
+                            <div>Vencimento: {new Date(license.expiration_date).toLocaleDateString('pt-BR')}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

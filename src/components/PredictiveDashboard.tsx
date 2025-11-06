@@ -257,13 +257,13 @@ export function PredictiveDashboard() {
           </div>
         ) : (
           predictions.map((prediction) => (
-            <div key={prediction.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {getTypeIcon(prediction.type)}
-                  <h4 className="font-medium">{prediction.title}</h4>
+            <div key={prediction.id} className="border rounded-lg p-4 space-y-3 overflow-hidden">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="flex-shrink-0">{getTypeIcon(prediction.type)}</div>
+                  <h4 className="font-medium truncate">{prediction.title}</h4>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {getTrendIcon(prediction.trend)}
                   <Badge className={getImpactColor(prediction.impact)}>
                     {prediction.impact}
@@ -271,21 +271,21 @@ export function PredictiveDashboard() {
                 </div>
               </div>
               
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground break-words">
                 {prediction.prediction}
               </p>
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Prazo: {prediction.timeframe}</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                  <span className="whitespace-nowrap">Prazo: {prediction.timeframe}</span>
                   {prediction.dueDate && (
-                    <span>Vencimento: {prediction.dueDate.toLocaleDateString('pt-BR')}</span>
+                    <span className="whitespace-nowrap">Vencimento: {prediction.dueDate.toLocaleDateString('pt-BR')}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Confiança:</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">Confiança:</span>
                   <Progress value={prediction.confidence} className="w-20 h-2" />
-                  <span className="text-xs font-medium">{prediction.confidence}%</span>
+                  <span className="text-xs font-medium whitespace-nowrap">{prediction.confidence}%</span>
                 </div>
               </div>
               

@@ -224,8 +224,8 @@ export function IntelligentAlertsSystem() {
       </div>
 
       {/* Resumo de Alertas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <Card className="overflow-hidden">
           <CardContent className="p-4">
              <div className="flex items-center justify-between">
                <div>
@@ -242,7 +242,7 @@ export function IntelligentAlertsSystem() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-4">
              <div className="flex items-center justify-between">
                <div>
@@ -259,7 +259,7 @@ export function IntelligentAlertsSystem() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-4">
              <div className="flex items-center justify-between">
                <div>
@@ -276,7 +276,7 @@ export function IntelligentAlertsSystem() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -304,21 +304,21 @@ export function IntelligentAlertsSystem() {
           <CardContent>
             <div className="space-y-4">
               {criticalAlerts.map((alert, index) => (
-                <Alert key={index} className={getSeverityColor(alert.severity)}>
-                  <div className="flex items-start justify-between w-full">
-                    <div className="flex items-start gap-3">
-                      {getAlertIcon(alert.alert_type)}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">{alert.title}</h4>
+                <Alert key={index} className={`${getSeverityColor(alert.severity)} overflow-hidden`}>
+                  <div className="flex items-start justify-between w-full gap-2">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="flex-shrink-0">{getAlertIcon(alert.alert_type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h4 className="font-semibold break-words">{alert.title}</h4>
                           {getUrgencyBadge(alert.severity)}
                           {alert.action_required && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs flex-shrink-0">
                               Ação Requerida
                             </Badge>
                           )}
                         </div>
-                        <AlertDescription>
+                        <AlertDescription className="break-words">
                           {alert.message}
                         </AlertDescription>
                         {alert.due_date && (
@@ -328,12 +328,13 @@ export function IntelligentAlertsSystem() {
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => resolveAlertMutation.mutate(alert.id)}
                         disabled={resolveAlertMutation.isPending}
+                        className="flex-shrink-0"
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Resolver
@@ -418,7 +419,7 @@ export function IntelligentAlertsSystem() {
                   const isUrgent = daysUntilDue <= 7;
                   
                   return (
-                    <div key={index} className={`flex items-center gap-4 p-3 border rounded-lg ${isUrgent ? 'border-warning bg-warning/5' : ''}`}>
+                    <div key={index} className={`flex items-center gap-4 p-3 border rounded-lg overflow-hidden ${isUrgent ? 'border-warning bg-warning/5' : ''}`}>
                       <div className="flex-shrink-0">
                         <div className={`w-2 h-2 rounded-full ${isUrgent ? 'bg-warning' : 'bg-primary'}`}></div>
                       </div>
@@ -426,22 +427,22 @@ export function IntelligentAlertsSystem() {
                         <p className="font-medium text-sm truncate">
                           {condition.condition_text.substring(0, 60)}...
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
                             {condition.priority}
                           </Badge>
                           {condition.frequency && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs flex-shrink-0">
                               {condition.frequency}
                             </Badge>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-medium whitespace-nowrap">
                           {format(new Date(condition.due_date!), "dd/MM", { locale: ptBR })}
                         </p>
-                        <p className={`text-xs ${isUrgent ? 'text-warning' : 'text-muted-foreground'}`}>
+                        <p className={`text-xs whitespace-nowrap ${isUrgent ? 'text-warning' : 'text-muted-foreground'}`}>
                           {daysUntilDue > 0 ? `${daysUntilDue} dias` : 'Vencido'}
                         </p>
                       </div>
