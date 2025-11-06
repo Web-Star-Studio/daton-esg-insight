@@ -45,6 +45,7 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
     resolver: zodResolver(wizardSchema),
     defaultValues: {
       ownershipType: "own",
+      thirdPartyType: undefined,
     }
   });
 
@@ -56,11 +57,19 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       if (step === 1 && watchSourceName) {
         nextStep();
       }
     }
   };
+
+  // Focar no textarea quando entrar na etapa 3
+  useEffect(() => {
+    if (step === 3) {
+      setTimeout(() => document.getElementById('description')?.focus(), 100);
+    }
+  }, [step]);
 
   // Buscar no glossário enquanto digita
   useEffect(() => {
@@ -159,7 +168,11 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent 
+        className="sm:max-w-[600px]"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Assistente de Fonte de Emissão</DialogTitle>
           <DialogDescription>
@@ -167,7 +180,19 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={handleSubmit(onSubmit)} 
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const target = e.target as HTMLElement;
+              if (!(target.tagName === 'BUTTON' && (target as HTMLButtonElement).type === 'submit')) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }
+          }}
+          className="space-y-6"
+        >
           {/* Progress Indicator */}
           <div className="flex items-center justify-between mb-6">
             {[1, 2, 3].map((s) => (
@@ -338,8 +363,8 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
                   {...register("description")}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
-                      // Permite quebra de linha apenas com Shift+Enter
                       e.preventDefault();
+                      e.stopPropagation();
                     }
                   }}
                   className="w-full mt-2 p-2 border rounded-md"
@@ -363,7 +388,12 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
                         id="supplierCNPJ"
                         placeholder="00.123.456/0001-89"
                         {...register("supplierCNPJ")}
-                        onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
                         className="mt-2"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
