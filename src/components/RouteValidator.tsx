@@ -6,7 +6,7 @@ import { NavigationMonitor } from '@/components/NavigationMonitor';
 const VALID_ROUTES = [
   '/', '/auth', '/onboarding', '/dashboard', 
   '/inventario-gee', '/dashboard-ghg', '/licenciamento',
-  '/residuos', '/metas', '/relatorios', '/biblioteca-fatores',
+  '/residuos', '/residuos/relatorios', '/metas', '/relatorios', '/biblioteca-fatores',
   '/projetos-carbono', '/ativos', '/desempenho', '/configuracao',
   '/ia-insights', '/marketplace', '/coleta-dados',
   '/formularios-customizados', '/documentos', '/auditoria',

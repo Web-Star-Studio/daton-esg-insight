@@ -37,6 +37,7 @@ const LicenseMonitoring = lazy(() => import("./pages/LicenseMonitoring"));
 const ProcessarLicenca = lazy(() => import("./pages/ProcessarLicenca"));
 const Residuos = lazy(() => import("./pages/Residuos"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
+const RelatoriosPGRS = lazy(() => import("./pages/RelatoriosPGRS"));
 const Metas = lazy(() => import("./pages/Metas"));
 const CriarMeta = lazy(() => import("./pages/CriarMeta"));
 
@@ -278,6 +279,11 @@ const App = () => (
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/residuos/novo" element={<Navigate to="/residuos/registrar-destinacao" replace />} />
+            <Route path="/residuos/relatorios" element={
+              <ProtectedLazyPageWrapper>
+                <RelatoriosPGRS />
+              </ProtectedLazyPageWrapper>
+            } />
             <Route path="/fornecedores-residuos" element={
               <ProtectedLazyPageWrapper>
                 <FornecedoresResiduos />

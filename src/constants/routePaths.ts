@@ -30,6 +30,7 @@ export const ROUTE_PATHS = {
     EMISSIONS: '/inventario-gee', // Canonical
     WASTE: '/residuos',
     WASTE_DISPOSAL: '/residuos/registrar-destinacao',
+    WASTE_REPORTS: '/residuos/relatorios',
     WASTE_SUPPLIERS: '/fornecedores-residuos',
     LICENSES: '/licenciamento',
     LICENSE_NEW: '/licenciamento/novo',
