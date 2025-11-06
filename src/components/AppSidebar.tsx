@@ -85,7 +85,7 @@ const menuSections: MenuSection[] = [
       // CATEGORIA: AMBIENTAL (E)
       {
         id: "environmental-category",
-        title: "🌱 Ambiental",
+        title: "Ambiental",
         icon: CloudRain,
         path: "#",
         description: "Gestão ambiental, emissões e licenciamento",
@@ -111,7 +111,7 @@ const menuSections: MenuSection[] = [
       // CATEGORIA: SOCIAL (S)
       {
         id: "social-category",
-        title: "👥 Social",
+        title: "Social",
         icon: Users,
         path: "#",
         description: "Gestão de pessoas, saúde e desenvolvimento",
@@ -127,7 +127,7 @@ const menuSections: MenuSection[] = [
       // CATEGORIA: GOVERNANÇA (G)
       {
         id: "governance-category",
-        title: "🛡️ Governança",
+        title: "Governança",
         icon: Shield,
         path: "#",
         description: "Compliance, riscos, auditorias e ética",
