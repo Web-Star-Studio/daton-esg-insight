@@ -277,6 +277,7 @@ const App = () => (
                 <RegistrarDestinacao />
               </ProtectedLazyPageWrapper>
             } />
+            <Route path="/residuos/novo" element={<Navigate to="/residuos/registrar-destinacao" replace />} />
             <Route path="/fornecedores-residuos" element={
               <ProtectedLazyPageWrapper>
                 <FornecedoresResiduos />
