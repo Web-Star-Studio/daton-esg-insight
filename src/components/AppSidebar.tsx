@@ -438,30 +438,6 @@ export function AppSidebar() {
           </div>
         )}
 
-        {/* Configuração Inicial */}
-        <SidebarGroup className="animate-fade-in">
-          <SidebarGroupLabel>Configuração Inicial</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <button
-                    onClick={async () => {
-                      const shouldRestart = confirm('Deseja reiniciar o guia de configuração inicial? Isso permitirá que você passe novamente pelo processo de setup.');
-                      if (shouldRestart) {
-                        await restartOnboarding();
-                      }
-                    }}
-                    className="flex items-center gap-2 w-full text-left transition-all duration-200 hover-scale"
-                  >
-                    <Settings className="h-4 w-4" />
-                    {!collapsed && <span>Guia de Configuração</span>}
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         {/* Favoritos */}
         {favorites.length > 0 && !collapsed && !searchQuery && (

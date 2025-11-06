@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 import { getUserAndCompany, type UserWithCompany } from "@/utils/auth"
 import { sanitizeFormData } from "@/utils/inputSanitizer"
+import { useAuth } from "@/contexts/AuthContext"
 
 const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -74,6 +75,7 @@ export default function Configuracao() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { restartOnboarding } = useAuth();
 
   const perfilForm = useForm<z.infer<typeof perfilSchema>>({
     resolver: zodResolver(perfilSchema),
@@ -312,6 +314,49 @@ export default function Configuracao() {
                     </Button>
                   </form>
                 </Form>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === "perfil" && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Guia de Configuração Inicial
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Quer explorar novamente as funcionalidades principais da plataforma? 
+                  Reinicie o guia de configuração para ver o tour interativo.
+                </p>
+                
+                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                  <p className="text-sm font-medium">O guia irá reiniciar:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                    <li>Tour interativo pelas principais páginas</li>
+                    <li>Dicas de primeiro uso</li>
+                    <li>Configurações básicas recomendadas</li>
+                  </ul>
+                </div>
+
+                <Button 
+                  onClick={() => {
+                    if (window.confirm("Tem certeza que deseja reiniciar o guia de configuração? Você será redirecionado para o início do processo.")) {
+                      restartOnboarding();
+                      toast({
+                        title: "Guia reiniciado",
+                        description: "Você será redirecionado para o guia de configuração.",
+                      });
+                    }
+                  }}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Reiniciar Guia de Configuração
+                </Button>
               </CardContent>
             </Card>
           )}
