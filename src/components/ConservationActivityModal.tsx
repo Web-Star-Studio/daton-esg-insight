@@ -315,7 +315,16 @@ export function ConservationActivityModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form 
+          onSubmit={handleSubmit} 
+          onKeyDown={(e) => {
+            // Previne submit quando Enter é pressionado em inputs (mas permite em textareas e no botão submit)
+            if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+              e.preventDefault();
+            }
+          }}
+          className="space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="activity_type" className={!formData.activity_type && formReady ? "text-destructive" : ""}>
