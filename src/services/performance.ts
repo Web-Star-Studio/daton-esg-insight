@@ -89,16 +89,20 @@ export async function getWasteClassesForComparison() {
   const { data, error } = await supabase
     .from('waste_logs')
     .select('waste_class')
-    .not('waste_class', 'eq', 'null') // Excluir string "null"
-    .neq('waste_class', null); // Excluir NULL real
+    .not('waste_class', 'is', null)
+    .order('waste_class');
 
   if (error) {
     console.error('Erro ao carregar classes de resíduo:', error);
-    throw error;
+    return [];
   }
 
-  // Obter valores únicos e filtrar vazios
-  const uniqueClasses = [...new Set(data?.map(item => item.waste_class))].filter(Boolean);
+  // Filtrar string "null" e valores vazios APÓS a query
+  const validClasses = data
+    ?.map(item => item.waste_class)
+    .filter(wc => wc && wc.toLowerCase() !== 'null' && wc.trim() !== '');
+  
+  const uniqueClasses = [...new Set(validClasses)];
   
   return uniqueClasses.map(waste_class => ({
     id: waste_class,
