@@ -333,8 +333,18 @@ export function ConservationActivityModal({
               <Select 
                 value={formData.activity_type} 
                 onValueChange={(value) => {
-                  console.log('[ConservationActivityModal] Tipo selecionado:', value);
-                  setFormData(prev => ({ ...prev, activity_type: value }));
+                  console.log('[ConservationActivityModal] Tipo selecionado:', value, {
+                    hasActivity: !!activity,
+                    activityTypesLoaded: activityTypes.length,
+                    currentValue: formData.activity_type
+                  });
+                  // Só atualiza se o valor for válido (não vazio) ou se for uma nova atividade
+                  // Previne que o Select resete o valor automaticamente quando as opções ainda não estão carregadas
+                  if (value || !activity) {
+                    setFormData(prev => ({ ...prev, activity_type: value }));
+                  } else {
+                    console.warn('[ConservationActivityModal] Ignorando tentativa de resetar tipo durante carregamento');
+                  }
                 }}
                 disabled={loadingTypes}
               >
