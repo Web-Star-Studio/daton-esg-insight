@@ -76,13 +76,51 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
     }
   }, [supplier, open]);
 
+  const validateForm = (): { isValid: boolean; error?: string } => {
+    if (!formData.company_name.trim()) {
+      return { isValid: false, error: 'Nome da empresa é obrigatório' };
+    }
+    
+    if (!formData.supplier_type) {
+      return { isValid: false, error: 'Tipo de fornecedor é obrigatório' };
+    }
+    
+    // Validar email se fornecido
+    if (formData.contact_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.contact_email)) {
+        return { isValid: false, error: 'Email inválido' };
+      }
+    }
+    
+    // Validar CNPJ se fornecido
+    if (formData.cnpj) {
+      const cnpjDigits = formData.cnpj.replace(/\D/g, '');
+      if (cnpjDigits.length !== 14 && cnpjDigits.length !== 0) {
+        return { isValid: false, error: 'CNPJ inválido. Deve ter 14 dígitos.' };
+      }
+    }
+    
+    // Validar data de expiração se fornecida
+    if (formData.license_expiry) {
+      const expiryDate = new Date(formData.license_expiry);
+      if (isNaN(expiryDate.getTime())) {
+        return { isValid: false, error: 'Data de vencimento da licença inválida' };
+      }
+    }
+    
+    return { isValid: true };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.company_name || !formData.supplier_type) {
+    // Validar formulário
+    const validation = validateForm();
+    if (!validation.isValid) {
       toast({
-        title: "Erro",
-        description: "Nome da empresa e tipo são obrigatórios",
+        title: "Erro de Validação",
+        description: validation.error,
         variant: "destructive"
       });
       return;
@@ -108,10 +146,34 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
       
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao salvar fornecedor:', error);
+      
+      // Extrair mensagem de erro apropriada
+      let errorMessage = 'Erro desconhecido ao salvar fornecedor';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.error_description) {
+        errorMessage = error.error_description;
+      }
+      
+      // Mensagens de erro mais amigáveis
+      if (errorMessage.includes('duplicate key')) {
+        errorMessage = 'Já existe um fornecedor com este CNPJ';
+      } else if (errorMessage.includes('not authenticated')) {
+        errorMessage = 'Você precisa estar autenticado para realizar esta ação';
+      } else if (errorMessage.includes('company_id')) {
+        errorMessage = 'Erro ao identificar sua empresa. Faça login novamente.';
+      } else if (errorMessage.includes('permission denied') || errorMessage.includes('policy')) {
+        errorMessage = 'Você não tem permissão para realizar esta ação';
+      }
+      
       toast({
-        title: "Erro",
-        description: `Erro ao ${supplier ? 'atualizar' : 'criar'} fornecedor: ${error}`,
+        title: "Erro ao " + (supplier ? 'atualizar' : 'criar') + " fornecedor",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -171,6 +233,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     value={formData.company_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
                     placeholder="Nome da empresa"
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -182,6 +245,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     onChange={handleCNPJChange}
                     placeholder="00.000.000/0000-00"
                     maxLength={18}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -193,6 +257,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                   onValueChange={(value) => 
                     setFormData(prev => ({ ...prev, supplier_type: value }))
                   }
+                  disabled={isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -213,6 +278,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                   onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="Endereço completo da empresa"
                   rows={2}
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>
@@ -232,6 +298,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     value={formData.contact_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, contact_name: e.target.value }))}
                     placeholder="Nome da pessoa de contato"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -241,6 +308,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     value={formData.contact_phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, contact_phone: e.target.value }))}
                     placeholder="(11) 99999-9999"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -253,6 +321,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                   value={formData.contact_email}
                   onChange={(e) => setFormData(prev => ({ ...prev, contact_email: e.target.value }))}
                   placeholder="contato@empresa.com"
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>
@@ -288,6 +357,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     value={formData.license_number}
                     onChange={(e) => setFormData(prev => ({ ...prev, license_number: e.target.value }))}
                     placeholder="Número da licença"
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -297,6 +367,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     value={formData.license_type}
                     onChange={(e) => setFormData(prev => ({ ...prev, license_type: e.target.value }))}
                     placeholder="Ex: LO, LP, LI"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -309,6 +380,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     type="date"
                     value={formData.license_expiry}
                     onChange={(e) => setFormData(prev => ({ ...prev, license_expiry: e.target.value }))}
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -318,6 +390,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                     value={formData.license_issuing_body}
                     onChange={(e) => setFormData(prev => ({ ...prev, license_issuing_body: e.target.value }))}
                     placeholder="Ex: CETESB, IBAMA"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -338,6 +411,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Informações adicionais sobre o fornecedor..."
                   rows={3}
+                  disabled={isLoading}
                 />
               </div>
             </CardContent>
@@ -349,6 +423,7 @@ export function WasteSupplierModal({ open, onOpenChange, supplier, onSuccess }: 
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isLoading}
             >
               Cancelar
             </Button>

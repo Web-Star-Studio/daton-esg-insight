@@ -61,16 +61,39 @@ export interface WasteSuppliersStats {
 
 // Helper function to get current user's company ID
 const getCurrentUserCompanyId = async (): Promise<string> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
+  console.log('[getCurrentUserCompanyId] Buscando usuário autenticado...');
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError) {
+    console.error('[getCurrentUserCompanyId] Erro de autenticação:', authError);
+    throw new Error('Erro de autenticação: ' + authError.message);
+  }
+  
+  if (!user) {
+    console.error('[getCurrentUserCompanyId] Usuário não autenticado');
+    throw new Error('Usuário não autenticado. Faça login novamente.');
+  }
+  
+  console.log('[getCurrentUserCompanyId] Usuário encontrado:', user.id);
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single();
 
-  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  if (profileError) {
+    console.error('[getCurrentUserCompanyId] Erro ao buscar perfil:', profileError);
+    throw new Error('Erro ao buscar perfil: ' + profileError.message);
+  }
+  
+  if (!profile?.company_id) {
+    console.error('[getCurrentUserCompanyId] Company ID não encontrado no perfil');
+    throw new Error('Empresa não encontrada no perfil do usuário');
+  }
+  
+  console.log('[getCurrentUserCompanyId] Company ID encontrado:', profile.company_id);
   return profile.company_id;
 };
 
@@ -113,21 +136,38 @@ export const getWasteSupplierById = async (id: string): Promise<WasteSupplier | 
 
 // Create new waste supplier
 export const createWasteSupplier = async (supplierData: CreateWasteSupplierData): Promise<WasteSupplier> => {
-  const companyId = await getCurrentUserCompanyId();
+  console.log('[createWasteSupplier] Iniciando criação de fornecedor:', supplierData);
   
-  const { data, error } = await supabase
-    .from('waste_suppliers')
-    .insert({ 
+  try {
+    const companyId = await getCurrentUserCompanyId();
+    console.log('[createWasteSupplier] Company ID obtido:', companyId);
+    
+    const dataToInsert = { 
       ...supplierData, 
       company_id: companyId,
       status: 'Ativo',
       rating: 0
-    })
-    .select()
-    .single();
+    };
+    
+    console.log('[createWasteSupplier] Dados para inserção:', dataToInsert);
+    
+    const { data, error } = await supabase
+      .from('waste_suppliers')
+      .insert(dataToInsert)
+      .select()
+      .single();
 
-  if (error) throw new Error(`Erro ao criar fornecedor: ${error.message}`);
-  return data;
+    if (error) {
+      console.error('[createWasteSupplier] Erro do Supabase:', error);
+      throw new Error(`Erro ao criar fornecedor: ${error.message}`);
+    }
+    
+    console.log('[createWasteSupplier] Fornecedor criado com sucesso:', data);
+    return data;
+  } catch (err: any) {
+    console.error('[createWasteSupplier] Exceção capturada:', err);
+    throw err;
+  }
 };
 
 // Update waste supplier
