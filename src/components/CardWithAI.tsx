@@ -42,29 +42,31 @@ export function CardWithAI({
   return (
     <>
       <Card className={className}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            {icon}
-            {title}
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 overflow-hidden min-w-0 gap-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 min-w-0 flex-1">
+            {icon && <span className="flex-shrink-0">{icon}</span>}
+            <span className="truncate">{title}</span>
           </CardTitle>
           
           {/* AI Insight Badge */}
           {contextualMessage && !insightsLoading && (
-            <AIInsightBadge
-              type={primaryInsight?.insight_type || 'contextual'}
-              message={contextualMessage}
-              severity={severity}
-              trend={trend}
-              onClick={() => setInsightModalOpen(true)}
-            />
+            <div className="flex-shrink-0">
+              <AIInsightBadge
+                type={primaryInsight?.insight_type || 'contextual'}
+                message={contextualMessage}
+                severity={severity}
+                trend={trend}
+                onClick={() => setInsightModalOpen(true)}
+              />
+            </div>
           )}
           
           {insightsLoading && (
-            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-5 w-20 flex-shrink-0" />
           )}
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="overflow-hidden">
           {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-8 w-24" />
@@ -72,9 +74,9 @@ export function CardWithAI({
             </div>
           ) : (
             <>
-              <div className="text-2xl font-bold text-foreground">{value}</div>
+              <div className="text-2xl font-bold text-foreground truncate">{value}</div>
               {subtitle && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground truncate">
                   {subtitle}
                 </div>
               )}

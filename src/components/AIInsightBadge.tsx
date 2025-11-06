@@ -62,7 +62,7 @@ export function AIInsightBadge({
     <Badge
       variant="outline"
       className={cn(
-        "cursor-pointer transition-colors text-xs font-medium flex items-center gap-1 px-2 py-1",
+        "cursor-pointer transition-colors text-xs font-medium flex items-center gap-1 px-2 py-1 flex-shrink-0",
         getColorClass(),
         onClick && "hover:scale-105 transition-transform",
         className
@@ -70,7 +70,7 @@ export function AIInsightBadge({
       onClick={onClick}
     >
       {getIcon()}
-      <span className="truncate max-w-32">{message}</span>
+      <span className="truncate max-w-20">{message}</span>
     </Badge>
   )
 }
