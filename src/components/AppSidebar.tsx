@@ -282,11 +282,11 @@ export function AppSidebar() {
           <NavigationTooltip
             title={item.title}
             description={item.description}
-            disabled={!collapsed}
+            disabled={false}
           >
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <item.icon className="h-3 w-3 flex-shrink-0" />
-              {!collapsed && <span className="text-xs truncate">{item.title}</span>}
+              {!collapsed && <span className="text-xs truncate flex-1 min-w-0">{item.title}</span>}
             </div>
           </NavigationTooltip>
           
@@ -373,7 +373,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <SidebarMenuSub className={isCategory ? "border-l-2 border-muted ml-3 pl-2" : ""}>
+              <SidebarMenuSub className={isCategory ? "border-l-2 border-muted ml-2 pl-1.5" : ""}>
                 {item.subItems?.map(subItem => 
                   subItem.subItems && subItem.subItems.length > 0 
                     ? renderMenuItem(subItem)
