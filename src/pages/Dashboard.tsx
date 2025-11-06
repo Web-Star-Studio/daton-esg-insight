@@ -190,8 +190,8 @@ export default function Dashboard() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('month');
 
   const { data: dashboardStats, isLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: getDashboardStats,
+    queryKey: ['dashboard-stats', selectedTimeframe],
+    queryFn: () => getDashboardStats(selectedTimeframe as any),
     refetchInterval: 60000, // Refresh every minute
   });
 
@@ -255,10 +255,12 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <Button variant="minimal" size="sm" className="gap-2 focus-ring">
-              <Filter className="w-4 h-4" />
-              Filtros
-            </Button>
+            {selectedTimeframe !== 'month' && (
+              <Badge variant="secondary" className="gap-1">
+                <Filter className="w-3 h-3" />
+                Filtro ativo
+              </Badge>
+            )}
             <select 
               value={selectedTimeframe}
               onChange={(e) => setSelectedTimeframe(e.target.value)}

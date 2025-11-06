@@ -23,29 +23,82 @@ export interface DashboardStats {
   };
 }
 
-export async function getDashboardStats(): Promise<DashboardStats> {
+const getDateRange = (timeframe: 'week' | 'month' | 'quarter' | 'year') => {
+  const now = new Date();
+  const startDate = new Date();
+  const previousStartDate = new Date();
+  
+  switch (timeframe) {
+    case 'week':
+      startDate.setDate(now.getDate() - 7);
+      previousStartDate.setDate(now.getDate() - 14);
+      break;
+    case 'month':
+      startDate.setMonth(now.getMonth() - 1);
+      previousStartDate.setMonth(now.getMonth() - 2);
+      break;
+    case 'quarter':
+      startDate.setMonth(now.getMonth() - 3);
+      previousStartDate.setMonth(now.getMonth() - 6);
+      break;
+    case 'year':
+      startDate.setFullYear(now.getFullYear() - 1);
+      previousStartDate.setFullYear(now.getFullYear() - 2);
+      break;
+  }
+  
+  return { 
+    startDate: startDate.toISOString(), 
+    endDate: now.toISOString(),
+    previousStartDate: previousStartDate.toISOString(),
+    previousEndDate: startDate.toISOString()
+  };
+};
+
+export async function getDashboardStats(timeframe: 'week' | 'month' | 'quarter' | 'year' = 'month'): Promise<DashboardStats> {
   try {
-    const currentYear = new Date().getFullYear();
+    const { startDate, endDate, previousStartDate, previousEndDate } = getDateRange(timeframe);
     
-    // Get emissions
-    const { data: ghgReport } = await supabase
-      .from('ghg_reports')
-      .select('scope_1_total, scope_2_location_total, scope_3_total')
-      .eq('report_year', currentYear)
-      .maybeSingle();
+    // Get emissions for current period
+    const { data: currentEmissions } = await supabase
+      .from('calculated_emissions')
+      .select('total_co2e, activity_data!inner(period_start_date)')
+      .gte('activity_data.period_start_date', startDate)
+      .lte('activity_data.period_start_date', endDate);
 
-    const currentTotal = ghgReport 
-      ? (Number(ghgReport.scope_1_total) || 0) + (Number(ghgReport.scope_2_location_total) || 0) + (Number(ghgReport.scope_3_total) || 0)
-      : 0;
+    // Get emissions for previous period
+    const { data: previousEmissions } = await supabase
+      .from('calculated_emissions')
+      .select('total_co2e')
+      .gte('activity_data.period_start_date', previousStartDate)
+      .lte('activity_data.period_start_date', previousEndDate);
 
-    // Get compliance
-    const { data: nonConformities } = await supabase
+    const currentTotal = currentEmissions?.reduce((sum, e) => sum + (Number(e.total_co2e) || 0), 0) || 0;
+    const previousTotal = previousEmissions?.reduce((sum, e) => sum + (Number(e.total_co2e) || 0), 0) || 0;
+    const emissionsChange = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
+
+    // Get compliance for current period
+    const { data: currentNCs } = await supabase
       .from('non_conformities')
-      .select('status');
+      .select('status, created_at')
+      .gte('created_at', startDate)
+      .lte('created_at', endDate);
 
-    const totalNCs = nonConformities?.length || 0;
-    const resolvedNCs = nonConformities?.filter(nc => nc.status === 'Resolvida').length || 0;
-    const complianceRate = totalNCs > 0 ? (resolvedNCs / totalNCs) * 100 : 94;
+    // Get compliance for previous period
+    const { data: previousNCs } = await supabase
+      .from('non_conformities')
+      .select('status')
+      .gte('created_at', previousStartDate)
+      .lte('created_at', previousEndDate);
+
+    const totalCurrentNCs = currentNCs?.length || 0;
+    const resolvedCurrentNCs = currentNCs?.filter(nc => nc.status === 'Resolvida').length || 0;
+    const currentComplianceRate = totalCurrentNCs > 0 ? (resolvedCurrentNCs / totalCurrentNCs) * 100 : 94;
+
+    const totalPreviousNCs = previousNCs?.length || 0;
+    const resolvedPreviousNCs = previousNCs?.filter(nc => nc.status === 'Resolvida').length || 0;
+    const previousComplianceRate = totalPreviousNCs > 0 ? (resolvedPreviousNCs / totalPreviousNCs) * 100 : 94;
+    const complianceChange = previousComplianceRate > 0 ? currentComplianceRate - previousComplianceRate : 0;
 
     // Get employees
     const employeesResult = await supabase
@@ -58,13 +111,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     return {
       emissions: {
         value: currentTotal,
-        change: -12.5,
-        changeType: 'positive'
+        change: emissionsChange,
+        changeType: emissionsChange <= 0 ? 'positive' : 'negative'
       },
       compliance: {
-        value: complianceRate,
-        change: 3.2,
-        changeType: 'positive'
+        value: currentComplianceRate,
+        change: complianceChange,
+        changeType: complianceChange >= 0 ? 'positive' : 'negative'
       },
       employees: {
         value: employeesCount,
