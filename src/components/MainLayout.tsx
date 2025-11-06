@@ -28,6 +28,25 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
   }, [user?.id, isLoading, shouldShowOnboarding]);
 
+  // Failsafe: Previne body scroll bloqueado permanentemente
+  useEffect(() => {
+    const checkScroll = () => {
+      const bodyOverflow = document.body.style.overflow;
+      const isChatExpanded = document.querySelector('[data-chat-expanded="true"]');
+      
+      // Se body está bloqueado mas chat não está expandido, corrige
+      if (bodyOverflow === 'hidden' && !isChatExpanded) {
+        console.warn('⚠️ Body scroll was blocked, fixing...');
+        document.body.style.overflow = '';
+      }
+    };
+    
+    // Verifica a cada 2 segundos
+    const interval = setInterval(checkScroll, 2000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <TutorialProvider>
       <UnifiedTourProvider>

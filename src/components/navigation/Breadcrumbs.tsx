@@ -100,7 +100,7 @@ export function Breadcrumbs({ className }: BreadcrumbsProps) {
         const isFirst = index === 0;
 
         return (
-          <div key={item.path} className="flex items-center">
+          <div key={`${item.path}-${index}`} className="flex items-center">
             {index > 0 && (
               <ChevronRight className="w-4 h-4 mx-1 flex-shrink-0" />
             )}

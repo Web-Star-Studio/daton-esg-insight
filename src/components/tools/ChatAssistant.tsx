@@ -87,11 +87,23 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   // Block body scroll when fullscreen
   useEffect(() => {
     if (!embedded && isExpanded) {
-      const original = document.body.style.overflow;
+      const original = document.body.style.overflow || '';
       document.body.style.overflow = 'hidden';
+      
+      // Failsafe: garante restauração após 100ms se algo der errado
+      const failsafe = setTimeout(() => {
+        if (!isExpanded) {
+          document.body.style.overflow = original;
+        }
+      }, 100);
+      
       return () => {
+        clearTimeout(failsafe);
         document.body.style.overflow = original;
       };
+    } else {
+      // Garante que overflow está limpo quando não expandido
+      document.body.style.overflow = '';
     }
   }, [isExpanded, embedded]);
   
