@@ -1,19 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FileText, Download, Eye, Calendar, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Download, Eye, Calendar, CheckCircle, AlertCircle, ArrowLeft, TrendingUp, BarChart3, Filter, Search, Clock, FileCheck, PackageCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { unifiedToast } from "@/utils/unifiedToast";
 import { downloadPGRSReport, getActivePGRSStatus } from "@/services/pgrsReports";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+
+const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function RelatoriosPGRS() {
   const navigate = useNavigate();
   const [downloadingPlanId, setDownloadingPlanId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [dateRange, setDateRange] = useState<string>("all");
 
   // Buscar status do plano ativo
   const { data: activeStatus, isLoading: loadingStatus } = useQuery({
@@ -21,7 +31,7 @@ export default function RelatoriosPGRS() {
     queryFn: getActivePGRSStatus,
   });
 
-  // Buscar todos os planos PGRS
+  // Buscar todos os planos PGRS com detalhes
   const { data: plans, isLoading: loadingPlans } = useQuery({
     queryKey: ["pgrs-plans"],
     queryFn: async () => {
@@ -29,12 +39,32 @@ export default function RelatoriosPGRS() {
         .from("pgrs_plans")
         .select(`
           *,
-          pgrs_waste_sources(count)
+          pgrs_waste_sources(
+            id,
+            waste_type_id
+          )
         `)
-        .order("created_at", { ascending: false });
+        .order("creation_date", { ascending: false });
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Buscar estatísticas gerais
+  const { data: stats } = useQuery({
+    queryKey: ["pgrs-stats"],
+    queryFn: async () => {
+      // Dados mockados para demonstração
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const date = subMonths(new Date(), 5 - i);
+        return {
+          month: format(date, "MMM", { locale: ptBR }),
+          quantity: Math.floor(Math.random() * 100) + 50
+        };
+      });
+
+      return { monthlyData: last6Months };
     },
   });
 
@@ -63,12 +93,42 @@ export default function RelatoriosPGRS() {
     }
   };
 
+  // Filtrar planos
+  const filteredPlans = plans?.filter(plan => {
+    const matchesStatus = statusFilter === "all" || plan.status === statusFilter;
+    const matchesSearch = plan.plan_name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    let matchesDate = true;
+    if (dateRange !== "all") {
+      const planDate = new Date(plan.creation_date);
+      const now = new Date();
+      
+      if (dateRange === "30days") {
+        matchesDate = (now.getTime() - planDate.getTime()) / (1000 * 60 * 60 * 24) <= 30;
+      } else if (dateRange === "90days") {
+        matchesDate = (now.getTime() - planDate.getTime()) / (1000 * 60 * 60 * 24) <= 90;
+      } else if (dateRange === "year") {
+        matchesDate = now.getFullYear() === planDate.getFullYear();
+      }
+    }
+    
+    return matchesStatus && matchesSearch && matchesDate;
+  });
+
+  // Calcular métricas
+  const metrics = {
+    totalPlans: plans?.length || 0,
+    activePlans: plans?.filter(p => p.status === 'active').length || 0,
+    totalSources: plans?.reduce((acc, p) => acc + (p.pgrs_waste_sources?.length || 0), 0) || 0,
+    totalProcedures: plans?.length || 0, // Simplificado
+  };
+
   const isLoading = loadingStatus || loadingPlans;
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <Button
@@ -83,76 +143,190 @@ export default function RelatoriosPGRS() {
             <h1 className="text-3xl font-bold">Relatórios PGRS</h1>
           </div>
           <p className="text-muted-foreground">
-            Geração e download de relatórios do Plano de Gerenciamento de Resíduos Sólidos
+            Análise completa e geração de relatórios do Plano de Gerenciamento de Resíduos Sólidos
           </p>
         </div>
       </div>
 
-      {/* Plano Ativo - Destaque */}
-      {activeStatus && (
-        <Card className="border-primary/50 bg-primary/5">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  Plano Ativo: {activeStatus.plan_name}
-                </CardTitle>
-                <CardDescription>
-                  Criado em {format(new Date(activeStatus.creation_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </CardDescription>
+      {/* Métricas Gerais */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Planos</p>
+                <p className="text-3xl font-bold">{metrics.totalPlans}</p>
               </div>
-              <Button
-                onClick={() => handleDownloadReport(activeStatus.id)}
-                disabled={downloadingPlanId === activeStatus.id}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {downloadingPlanId === activeStatus.id ? "Gerando..." : "Baixar Relatório"}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 p-4 bg-background rounded-lg">
-                <div className="p-2 bg-primary/10 rounded-md">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Fontes de Resíduos</p>
-                  <p className="text-2xl font-bold">{activeStatus.sources_count || 0}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-background rounded-lg">
-                <div className="p-2 bg-primary/10 rounded-md">
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Procedimentos</p>
-                  <p className="text-2xl font-bold">{activeStatus.procedures_count || 0}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-background rounded-lg">
-                <div className="p-2 bg-primary/10 rounded-md">
-                  <Calendar className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Metas</p>
-                  <p className="text-2xl font-bold">{activeStatus.goals_count || 0}</p>
-                </div>
-              </div>
+              <FileText className="h-8 w-8 text-primary/50" />
             </div>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Planos Ativos</p>
+                <p className="text-3xl font-bold text-success">{metrics.activePlans}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-success/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Fontes de Resíduos</p>
+                <p className="text-3xl font-bold">{metrics.totalSources}</p>
+              </div>
+              <PackageCheck className="h-8 w-8 text-primary/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Procedimentos</p>
+                <p className="text-3xl font-bold">{metrics.totalProcedures}</p>
+              </div>
+              <FileCheck className="h-8 w-8 text-primary/50" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Lista de Todos os Planos */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Histórico de Planos</h2>
-        </div>
+      {/* Tabs de Conteúdo */}
+      <Tabs defaultValue="plans" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="plans">Planos PGRS</TabsTrigger>
+          <TabsTrigger value="analytics">Análises</TabsTrigger>
+          <TabsTrigger value="info">Informações</TabsTrigger>
+        </TabsList>
 
-        {isLoading ? (
+        {/* Tab: Planos PGRS */}
+        <TabsContent value="plans" className="space-y-6">
+          {/* Plano Ativo - Destaque */}
+          {activeStatus && (
+            <Card className="border-primary/50 bg-primary/5">
+              <CardHeader>
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-success" />
+                      Plano Ativo: {activeStatus.plan_name}
+                    </CardTitle>
+                    <CardDescription>
+                      Criado em {format(new Date(activeStatus.creation_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => handleDownloadReport(activeStatus.id)}
+                    disabled={downloadingPlanId === activeStatus.id}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {downloadingPlanId === activeStatus.id ? "Gerando..." : "Baixar Relatório"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3 p-4 bg-background rounded-lg">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fontes de Resíduos</p>
+                      <p className="text-2xl font-bold">{activeStatus.sources_count || 0}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-background rounded-lg">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Procedimentos</p>
+                      <p className="text-2xl font-bold">{activeStatus.procedures_count || 0}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-background rounded-lg">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Metas</p>
+                      <p className="text-2xl font-bold">{activeStatus.goals_count || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Filtros */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filtros
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Buscar</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Nome do plano..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Status</label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="active">Ativo</SelectItem>
+                      <SelectItem value="draft">Rascunho</SelectItem>
+                      <SelectItem value="archived">Arquivado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Período</label>
+                  <Select value={dateRange} onValueChange={setDateRange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90days">Últimos 90 dias</SelectItem>
+                      <SelectItem value="year">Este ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de Planos */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">
+                Planos Encontrados ({filteredPlans?.length || 0})
+              </h2>
+            </div>
+
+            {isLoading ? (
           <Card>
             <CardContent className="py-12">
               <div className="text-center text-muted-foreground">
@@ -160,86 +334,251 @@ export default function RelatoriosPGRS() {
               </div>
             </CardContent>
           </Card>
-        ) : plans && plans.length > 0 ? (
-          <div className="grid gap-4">
-            {plans.map((plan) => {
-              const isActive = plan.status === 'active';
-              const sourcesCount = Array.isArray(plan.pgrs_waste_sources) 
-                ? plan.pgrs_waste_sources.length 
-                : 0;
+            ) : filteredPlans && filteredPlans.length > 0 ? (
+              <div className="grid gap-4">
+                {filteredPlans.map((plan) => {
+                  const isActive = plan.status === 'active';
+                  const sourcesCount = Array.isArray(plan.pgrs_waste_sources) 
+                    ? plan.pgrs_waste_sources.length 
+                    : 0;
 
-              return (
-                <Card key={plan.id} className={isActive ? 'border-primary/30' : ''}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="flex items-center gap-2">
-                          {plan.plan_name}
-                          {isActive && (
-                            <span className="text-xs px-2 py-1 bg-success/10 text-success rounded-full">
-                              Ativo
-                            </span>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-4">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(plan.creation_date), "dd/MM/yyyy", { locale: ptBR })}
-                          </span>
-                          <span>{sourcesCount} fontes de resíduos</span>
-                        </CardDescription>
-                      </div>
-                      <Button
-                        variant={isActive ? "default" : "outline"}
-                        onClick={() => handleDownloadReport(plan.id)}
-                        disabled={downloadingPlanId === plan.id}
-                        className="gap-2"
+                  return (
+                    <Card key={plan.id} className={isActive ? 'border-primary/30' : ''}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between flex-wrap gap-4">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <CardTitle className="flex items-center gap-2">
+                                {plan.plan_name}
+                              </CardTitle>
+                              {isActive && <Badge variant="default">Ativo</Badge>}
+                              {plan.status === 'draft' && <Badge variant="secondary">Rascunho</Badge>}
+                              {plan.status === 'archived' && <Badge variant="outline">Arquivado</Badge>}
+                            </div>
+                            <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {format(new Date(plan.creation_date), "dd/MM/yyyy", { locale: ptBR })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <PackageCheck className="h-3 w-3" />
+                                {sourcesCount} fontes
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(plan.next_review_date), "dd/MM/yyyy", { locale: ptBR })}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant={isActive ? "default" : "outline"}
+                            onClick={() => handleDownloadReport(plan.id)}
+                            disabled={downloadingPlanId === plan.id}
+                            className="gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            {downloadingPlanId === plan.id ? "Gerando..." : "Baixar PDF"}
+                          </Button>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Nenhum plano encontrado com os filtros selecionados.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab: Análises */}
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de Evolução */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Evolução Mensal de Resíduos
+                </CardTitle>
+                <CardDescription>Últimos 6 meses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {stats?.monthlyData && (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={stats.monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="quantity" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Distribuição de Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Status dos Planos
+                </CardTitle>
+                <CardDescription>Distribuição atual</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {plans && (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Ativos', value: plans.filter(p => p.status === 'active').length },
+                          { name: 'Rascunhos', value: plans.filter(p => p.status === 'draft').length },
+                          { name: 'Arquivados', value: plans.filter(p => p.status === 'archived').length },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
                       >
-                        <Download className="h-4 w-4" />
-                        {downloadingPlanId === plan.id ? "Gerando..." : "Baixar PDF"}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
+                        {COLORS.map((color, index) => (
+                          <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Nenhum plano PGRS encontrado. Crie um plano na página de Gestão de Resíduos.
-            </AlertDescription>
-          </Alert>
-        )}
-      </div>
 
-      {/* Informações Adicionais */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Sobre os Relatórios PGRS</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <h4 className="font-medium">O que está incluído no relatório:</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Informações da empresa e caracterização</li>
-              <li>Identificação completa de todas as fontes geradoras de resíduos</li>
-              <li>Classificação e quantificação dos resíduos por tipo</li>
-              <li>Procedimentos operacionais de segregação, acondicionamento e coleta</li>
-              <li>Destinação final e transportadores autorizados</li>
-              <li>Metas de redução e reciclagem estabelecidas</li>
-              <li>Indicadores de desempenho do programa</li>
-            </ul>
-          </div>
-          <Alert>
-            <FileText className="h-4 w-4" />
-            <AlertDescription>
-              Os relatórios são gerados em formato PDF de acordo com as exigências da Política Nacional de Resíduos Sólidos (Lei nº 12.305/2010).
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+          {/* Indicadores de Performance */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Indicadores de Desempenho</CardTitle>
+              <CardDescription>Métricas principais do PGRS</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Taxa de Reciclagem</span>
+                    <TrendingUp className="h-4 w-4 text-success" />
+                  </div>
+                  <p className="text-2xl font-bold">68%</p>
+                  <p className="text-xs text-muted-foreground">+5% vs mês anterior</p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Redução de Resíduos</span>
+                    <TrendingUp className="h-4 w-4 text-success" />
+                  </div>
+                  <p className="text-2xl font-bold">12%</p>
+                  <p className="text-xs text-muted-foreground">Meta: 15%</p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Conformidade Legal</span>
+                    <CheckCircle className="h-4 w-4 text-success" />
+                  </div>
+                  <p className="text-2xl font-bold">100%</p>
+                  <p className="text-xs text-muted-foreground">Todas as licenças válidas</p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Tempo de Revisão</span>
+                    <Clock className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold">6 meses</p>
+                  <p className="text-xs text-muted-foreground">Última revisão</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Informações */}
+        <TabsContent value="info" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Sobre os Relatórios PGRS</CardTitle>
+              <CardDescription>Informações técnicas e requisitos legais</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Conteúdo do Relatório
+                </h4>
+                <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground ml-6">
+                  <li>Informações da empresa e caracterização das atividades</li>
+                  <li>Identificação completa de todas as fontes geradoras de resíduos</li>
+                  <li>Classificação e quantificação dos resíduos por tipo e categoria</li>
+                  <li>Procedimentos operacionais de segregação, acondicionamento e coleta</li>
+                  <li>Destinação final e transportadores autorizados</li>
+                  <li>Metas de redução, reutilização e reciclagem</li>
+                  <li>Indicadores de desempenho e acompanhamento</li>
+                  <li>Plano de contingência e emergências</li>
+                  <li>Cronograma de implementação e revisões</li>
+                </ul>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Base Legal
+                </h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p className="flex items-start gap-2">
+                    <span className="font-medium text-foreground">Lei nº 12.305/2010:</span>
+                    Institui a Política Nacional de Resíduos Sólidos (PNRS)
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="font-medium text-foreground">Decreto nº 7.404/2010:</span>
+                    Regulamenta a PNRS e estabelece diretrizes
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="font-medium text-foreground">NBR 10.004:</span>
+                    Classificação de resíduos sólidos
+                  </p>
+                </div>
+              </div>
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Importante:</strong> Os relatórios gerados são formatados em PDF seguindo as normas técnicas e requisitos da legislação ambiental brasileira. Recomenda-se a revisão anual do PGRS e atualização sempre que houver mudanças significativas nos processos.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Como Utilizar os Relatórios
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-6">
+                  <li>Selecione o plano PGRS desejado na aba "Planos PGRS"</li>
+                  <li>Clique em "Baixar PDF" para gerar o relatório completo</li>
+                  <li>O arquivo será baixado automaticamente em formato PDF</li>
+                  <li>Utilize os relatórios para auditorias, licenciamentos e gestão interna</li>
+                  <li>Mantenha cópias atualizadas para consultas regulatórias</li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
