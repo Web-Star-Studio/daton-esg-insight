@@ -71,6 +71,32 @@ export function SupplierEditModal({ supplier, isOpen, onClose, onSuccess }: Supp
     }
   }, [supplier]);
 
+  const formatCNPJ = (value: string): string => {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, '');
+    
+    // Limita a 14 dígitos
+    const limitedDigits = digits.slice(0, 14);
+    
+    // Aplica a formatação progressivamente
+    if (limitedDigits.length <= 2) {
+      return limitedDigits;
+    } else if (limitedDigits.length <= 5) {
+      return limitedDigits.replace(/(\d{2})(\d{0,3})/, '$1.$2');
+    } else if (limitedDigits.length <= 8) {
+      return limitedDigits.replace(/(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    } else if (limitedDigits.length <= 12) {
+      return limitedDigits.replace(/(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+    } else {
+      return limitedDigits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+    }
+  };
+
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCNPJ(e.target.value);
+    setFormData({ ...formData, cnpj: formatted });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -138,8 +164,9 @@ export function SupplierEditModal({ supplier, isOpen, onClose, onSuccess }: Supp
               <Input
                 id="cnpj"
                 value={formData.cnpj}
-                onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                onChange={handleCNPJChange}
                 placeholder="00.000.000/0000-00"
+                maxLength={18}
               />
             </div>
           </div>
