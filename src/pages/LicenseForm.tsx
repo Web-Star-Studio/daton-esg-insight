@@ -88,7 +88,7 @@ const LicenseForm = () => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    mode: "onChange",
+    mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
       nome: "",
@@ -149,6 +149,7 @@ const LicenseForm = () => {
     console.log('=== FORM SUBMISSION STARTED ===');
     console.log('Form values:', values);
     console.log('Form errors:', form.formState.errors);
+    console.log('Is form valid:', form.formState.isValid);
     console.log('Is submitting:', isSubmitting);
     
     if (isSubmitting) {
