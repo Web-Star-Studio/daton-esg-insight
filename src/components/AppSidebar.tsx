@@ -277,7 +277,7 @@ export function AppSidebar() {
       <SidebarMenuSubItem key={item.id}>
         <SidebarMenuSubButton
           onClick={() => navigate(item.path)}
-          className={`group ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
+          className={`group cursor-pointer ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
         >
           <NavigationTooltip
             title={item.title}
