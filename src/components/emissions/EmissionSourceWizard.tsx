@@ -52,6 +52,16 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
   const watchOwnership = watch("ownershipType");
   const watchThirdParty = watch("thirdPartyType");
 
+  // Handler para Enter nos inputs
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (step === 1 && watchSourceName) {
+        nextStep();
+      }
+    }
+  };
+
   // Buscar no glossário enquanto digita
   useEffect(() => {
     const searchTimeout = setTimeout(async () => {
@@ -97,6 +107,12 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
       toast.error("Digite o nome da fonte de emissão");
       return;
     }
+    
+    if (step === 2 && watchOwnership === "third-party" && !watchThirdParty) {
+      toast.error("Selecione o tipo de terceiro");
+      return;
+    }
+    
     setStep(step + 1);
   };
 
@@ -177,10 +193,16 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
                   id="sourceName"
                   placeholder="Ex: Transporte, Caldeira, Energia Elétrica"
                   {...register("sourceName")}
+                  onKeyDown={handleKeyDown}
                   className="mt-2"
                 />
                 {errors.sourceName && (
                   <p className="text-sm text-destructive mt-1">{errors.sourceName.message}</p>
+                )}
+                {!errors.sourceName && watchSourceName && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pressione Enter para avançar ou clique em "Próximo"
+                  </p>
                 )}
               </div>
 
@@ -314,9 +336,15 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
                 <textarea
                   id="description"
                   {...register("description")}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      // Permite quebra de linha apenas com Shift+Enter
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full mt-2 p-2 border rounded-md"
                   rows={3}
-                  placeholder="Adicione detalhes sobre esta fonte de emissão..."
+                  placeholder="Adicione detalhes sobre esta fonte de emissão... (Shift+Enter para quebra de linha)"
                 />
               </div>
 
@@ -335,6 +363,7 @@ export function EmissionSourceWizard({ open, onOpenChange, onSuccess }: Emission
                         id="supplierCNPJ"
                         placeholder="00.123.456/0001-89"
                         {...register("supplierCNPJ")}
+                        onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                         className="mt-2"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
