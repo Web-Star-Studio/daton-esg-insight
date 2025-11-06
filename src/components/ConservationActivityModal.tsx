@@ -28,6 +28,7 @@ export function ConservationActivityModal({
   activity 
 }: ConservationActivityModalProps) {
   const [activityTypes, setActivityTypes] = useState<ConservationActivityType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
   const [formData, setFormData] = useState({
     activity_type: "",
     title: "",
@@ -44,38 +45,71 @@ export function ConservationActivityModal({
   });
   const [loading, setLoading] = useState(false);
   const [calculatingImpact, setCalculatingImpact] = useState(false);
+  const [formReady, setFormReady] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
-      loadActivityTypes();
-      if (activity) {
-        setFormData({
-          activity_type: activity.activity_type,
-          title: activity.title,
-          description: activity.description || "",
-          location: activity.location || "",
-          area_size: activity.area_size || 0,
-          start_date: new Date(activity.start_date),
-          end_date: activity.end_date ? new Date(activity.end_date) : undefined,
-          status: activity.status as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa',
-          investment_amount: activity.investment_amount,
-          carbon_impact_estimate: activity.carbon_impact_estimate,
-          methodology: activity.methodology || "",
-          monitoring_plan: activity.monitoring_plan || "",
-        });
-      } else {
-        resetForm();
-      }
+      const initializeForm = async () => {
+        setFormReady(false);
+        console.log('[ConservationActivityModal] Inicializando formulário', { isEdit: !!activity });
+        
+        // Carregar tipos primeiro
+        await loadActivityTypes();
+        
+        // Depois preencher o formulário
+        if (activity) {
+          console.log('[ConservationActivityModal] Preenchendo formulário com atividade:', {
+            id: activity.id,
+            activity_type: activity.activity_type,
+            title: activity.title
+          });
+          
+          setFormData({
+            activity_type: activity.activity_type,
+            title: activity.title,
+            description: activity.description || "",
+            location: activity.location || "",
+            area_size: activity.area_size || 0,
+            start_date: new Date(activity.start_date),
+            end_date: activity.end_date ? new Date(activity.end_date) : undefined,
+            status: activity.status as 'Planejada' | 'Em Andamento' | 'Concluída' | 'Suspensa',
+            investment_amount: activity.investment_amount,
+            carbon_impact_estimate: activity.carbon_impact_estimate,
+            methodology: activity.methodology || "",
+            monitoring_plan: activity.monitoring_plan || "",
+          });
+        } else {
+          console.log('[ConservationActivityModal] Resetando formulário para nova atividade');
+          resetForm();
+        }
+        
+        setFormReady(true);
+        console.log('[ConservationActivityModal] Formulário pronto');
+      };
+      
+      initializeForm();
+    } else {
+      setFormReady(false);
     }
   }, [open, activity]);
 
   const loadActivityTypes = async () => {
     try {
+      setLoadingTypes(true);
+      console.log('[ConservationActivityModal] Carregando tipos de atividade...');
       const types = await carbonCompensationService.getActivityTypes();
       setActivityTypes(types);
+      console.log('[ConservationActivityModal] Tipos de atividade carregados:', types.length);
     } catch (error) {
-      console.error('Erro ao carregar tipos de atividade:', error);
+      console.error('[ConservationActivityModal] Erro ao carregar tipos de atividade:', error);
+      toast({
+        title: "Erro ao carregar tipos",
+        description: "Não foi possível carregar os tipos de atividade. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTypes(false);
     }
   };
 
@@ -139,6 +173,32 @@ export function ConservationActivityModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('[ConservationActivityModal] Iniciando submit', {
+      formData,
+      activityTypesLoaded: activityTypes.length,
+      loadingTypes,
+      formReady
+    });
+
+    // Verificar se os tipos foram carregados
+    if (loadingTypes || !formReady) {
+      toast({
+        title: "Aguarde",
+        description: "Aguarde o carregamento dos tipos de atividade.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (activityTypes.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Nenhum tipo de atividade disponível. Reabra o formulário.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validação e sanitização
     const trimmedTitle = formData.title.trim();
     const trimmedDescription = formData.description.trim();
@@ -146,10 +206,29 @@ export function ConservationActivityModal({
     const trimmedMethodology = formData.methodology.trim();
     const trimmedMonitoringPlan = formData.monitoring_plan.trim();
 
-    if (!trimmedTitle || !formData.activity_type || !formData.start_date) {
+    // Validação de campos obrigatórios com mensagens específicas
+    if (!trimmedTitle) {
       toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios (título, tipo de atividade e data de início).",
+        title: "Campo obrigatório",
+        description: "O título da atividade é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.activity_type) {
+      toast({
+        title: "Campo obrigatório",
+        description: "O tipo de atividade é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.start_date) {
+      toast({
+        title: "Campo obrigatório",
+        description: "A data de início é obrigatória.",
         variant: "destructive",
       });
       return;
@@ -239,15 +318,21 @@ export function ConservationActivityModal({
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="activity_type">Tipo de Atividade *</Label>
+              <Label htmlFor="activity_type" className={!formData.activity_type && formReady ? "text-destructive" : ""}>
+                Tipo de Atividade *
+              </Label>
               <Select 
                 value={formData.activity_type} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, activity_type: value }))}
+                onValueChange={(value) => {
+                  console.log('[ConservationActivityModal] Tipo selecionado:', value);
+                  setFormData(prev => ({ ...prev, activity_type: value }));
+                }}
+                disabled={loadingTypes}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                <SelectTrigger className={!formData.activity_type && formReady ? "border-destructive" : ""}>
+                  <SelectValue placeholder={loadingTypes ? "Carregando tipos..." : "Selecione o tipo"} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   {activityTypes.map((type) => (
                     <SelectItem key={type.id} value={type.name}>
                       <div className="flex flex-col">
@@ -260,6 +345,9 @@ export function ConservationActivityModal({
                   ))}
                 </SelectContent>
               </Select>
+              {loadingTypes && (
+                <p className="text-xs text-muted-foreground">Carregando opções...</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -282,12 +370,15 @@ export function ConservationActivityModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Título da Atividade *</Label>
+            <Label htmlFor="title" className={!formData.title.trim() && formReady ? "text-destructive" : ""}>
+              Título da Atividade *
+            </Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               placeholder="Ex: Reflorestamento da Área Norte"
+              className={!formData.title.trim() && formReady ? "border-destructive" : ""}
             />
           </div>
 
@@ -444,11 +535,14 @@ export function ConservationActivityModal({
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : activity ? "Atualizar" : "Criar Atividade"}
+            <Button 
+              type="submit" 
+              disabled={loading || loadingTypes || !formReady}
+            >
+              {loading ? "Salvando..." : loadingTypes ? "Carregando..." : activity ? "Atualizar" : "Criar Atividade"}
             </Button>
           </div>
         </form>
