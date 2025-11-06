@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -94,16 +95,18 @@ const InventarioGEE = () => {
   // High emission threshold (configurable)
   const HIGH_EMISSION_THRESHOLD = 100; // tCO2e
 
-  // Real chart data will come from API calculations
-  const trendData = useMemo(() => {
-    return [];
-  }, []);
+  // Trend data state
+  const [trendData, setTrendData] = useState<any[]>([]);
 
-  const pieData = useMemo(() => [
-    { name: 'Escopo 1', value: stats.escopo1 || 0, color: '#ef4444' },
-    { name: 'Escopo 2', value: stats.escopo2 || 0, color: '#f97316' },
-    { name: 'Escopo 3', value: stats.escopo3 || 0, color: '#eab308' },
-  ], [stats]);
+  const pieData = useMemo(() => {
+    const data = [
+      { name: 'Escopo 1', value: stats.escopo1 || 0, color: '#ef4444' },
+      { name: 'Escopo 2', value: stats.escopo2 || 0, color: '#f97316' },
+      { name: 'Escopo 3', value: stats.escopo3 || 0, color: '#eab308' },
+    ];
+    // Filtrar valores zerados para melhor visualização
+    return data.filter(item => item.value > 0);
+  }, [stats]);
 
   // Filter and search logic with advanced filters
   const filteredSources = useMemo(() => {
@@ -230,6 +233,7 @@ const InventarioGEE = () => {
 
   useEffect(() => {
     loadData()
+    loadTrendData()
   }, [])
 
   const loadData = async () => {
@@ -250,6 +254,64 @@ const InventarioGEE = () => {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadTrendData = async () => {
+    try {
+      const startDate = subMonths(new Date(), 12);
+      
+      const { data: emissions, error } = await supabase
+        .from('calculated_emissions')
+        .select(`
+          total_co2e,
+          activity_data!inner (
+            period_start_date,
+            emission_sources!inner (
+              scope
+            )
+          )
+        `)
+        .gte('activity_data.period_start_date', format(startDate, 'yyyy-MM-dd'))
+        .order('activity_data(period_start_date)', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Agrupar por mês e escopo
+      const grouped = (emissions || []).reduce((acc: any, emission: any) => {
+        if (!emission.activity_data?.period_start_date) return acc;
+        
+        const month = format(
+          new Date(emission.activity_data.period_start_date), 
+          'yyyy-MM'
+        );
+        
+        if (!acc[month]) {
+          acc[month] = { month, total: 0, escopo1: 0, escopo2: 0, escopo3: 0 };
+        }
+        
+        const scope = emission.activity_data?.emission_sources?.scope;
+        const value = emission.total_co2e || 0;
+        
+        acc[month].total += value;
+        if (scope === 1) acc[month].escopo1 += value;
+        if (scope === 2) acc[month].escopo2 += value;
+        if (scope === 3) acc[month].escopo3 += value;
+        
+        return acc;
+      }, {});
+      
+      // Converter para array e formatar
+      const formattedData = Object.values(grouped)
+        .sort((a: any, b: any) => a.month.localeCompare(b.month))
+        .map((item: any) => ({
+          ...item,
+          month: format(new Date(item.month + '-01'), 'MMM/yy', { locale: ptBR })
+        }));
+      
+      setTrendData(formattedData);
+    } catch (error) {
+      console.error('Erro ao carregar tendência:', error);
     }
   }
 
@@ -758,63 +820,93 @@ const InventarioGEE = () => {
 
         {/* Gráficos e Análises */}
         {showCharts && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Tendência de Emissões */}
+          trendData.length === 0 && pieData.length === 0 ? (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Tendência de Emissões
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip formatter={(value: any) => [`${value.toFixed(1)} tCO₂e`, '']} />
-                    <Legend />
-                    <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} name="Total" />
-                    <Line type="monotone" dataKey="escopo1" stroke="#ef4444" name="Escopo 1" />
-                    <Line type="monotone" dataKey="escopo2" stroke="#f97316" name="Escopo 2" />
-                    <Line type="monotone" dataKey="escopo3" stroke="#eab308" name="Escopo 3" />
-                  </LineChart>
-                </ResponsiveContainer>
+              <CardContent className="p-8 text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-lg font-semibold mb-2">Sem dados de emissões</h3>
+                <p className="text-muted-foreground">
+                  Adicione dados de atividade às suas fontes de emissão para visualizar os gráficos.
+                </p>
               </CardContent>
             </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Tendência de Emissões */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Tendência de Emissões
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {trendData.length === 0 ? (
+                    <div className="h-[300px] flex items-center justify-center text-center">
+                      <div>
+                        <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-sm text-muted-foreground">Sem histórico de emissões</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={trendData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip formatter={(value: any) => [`${value.toFixed(1)} tCO₂e`, '']} />
+                        <Legend />
+                        <Line type="monotone" dataKey="total" stroke="#8884d8" strokeWidth={2} name="Total" />
+                        <Line type="monotone" dataKey="escopo1" stroke="#ef4444" name="Escopo 1" />
+                        <Line type="monotone" dataKey="escopo2" stroke="#f97316" name="Escopo 2" />
+                        <Line type="monotone" dataKey="escopo3" stroke="#eab308" name="Escopo 3" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* Distribuição por Escopo */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Distribuição por Escopo
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: any) => [`${value.toFixed(1)} tCO₂e`, '']} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+              {/* Distribuição por Escopo */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Distribuição por Escopo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pieData.length === 0 ? (
+                    <div className="h-[300px] flex items-center justify-center text-center">
+                      <div>
+                        <BarChart3 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-sm text-muted-foreground">Sem dados de distribuição</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: any) => [`${value.toFixed(1)} tCO₂e`, '']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )
         )}
 
         {/* KPIs Dashboard */}
