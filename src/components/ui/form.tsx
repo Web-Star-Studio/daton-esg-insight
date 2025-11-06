@@ -2,6 +2,7 @@ import * as React from "react";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import { Controller, ControllerProps, FieldPath, FieldValues, FormProvider, useFormContext } from "react-hook-form";
+import { AlertCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -118,8 +119,9 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
     }
 
     return (
-      <p ref={ref} id={formMessageId} className={cn("text-sm font-medium text-destructive", className)} {...props}>
-        {body}
+      <p ref={ref} id={formMessageId} className={cn("text-sm font-medium text-destructive mt-1.5 flex items-center gap-1", className)} {...props}>
+        <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+        <span>{body}</span>
       </p>
     );
   },

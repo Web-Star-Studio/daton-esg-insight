@@ -16,7 +16,7 @@ import { format, differenceInYears, differenceInMonths, differenceInDays } from 
 import { ptBR } from "date-fns/locale"
 import { CalendarIcon, ArrowLeft, Save, Loader2, AlertCircle } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createLicense, updateLicense, getLicenseById, type CreateLicenseData, type UpdateLicenseData } from "@/services/licenses"
 import { toast } from "sonner"
@@ -42,6 +42,7 @@ const LicenseForm = () => {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const errorAlertRef = useRef<HTMLDivElement>(null)
   
   const isEditing = !!id
 
@@ -87,6 +88,8 @@ const LicenseForm = () => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: "onChange",
+    reValidateMode: "onChange",
     defaultValues: {
       nome: "",
       tipo: "",
@@ -97,6 +100,13 @@ const LicenseForm = () => {
       condicionantes: "",
     },
   })
+
+  // Scroll automático para o alert de erros
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length > 0 && errorAlertRef.current) {
+      errorAlertRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [form.formState.errors])
 
   // Populate form when editing
   useEffect(() => {
@@ -234,8 +244,8 @@ const LicenseForm = () => {
                 className="space-y-6"
               >
                 {/* Error Summary */}
-                {Object.keys(form.formState.errors).length > 0 && (
-                  <Alert variant="destructive" className="mb-6">
+        {Object.keys(form.formState.errors).length > 0 && (
+          <Alert ref={errorAlertRef} variant="destructive" className="mb-6">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Corrija os seguintes erros:</AlertTitle>
                     <AlertDescription>
@@ -274,7 +284,11 @@ const LicenseForm = () => {
                       <FormItem>
                         <FormLabel>Nome da Licença *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ex: Licença de Operação - Unidade 1" {...field} />
+                          <Input 
+                            placeholder="Ex: Licença de Operação - Unidade 1" 
+                            className={cn(form.formState.errors.nome && "border-destructive focus-visible:ring-destructive shake-error")}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -288,12 +302,12 @@ const LicenseForm = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                          </FormControl>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className={cn(form.formState.errors.tipo && "border-destructive focus:ring-destructive shake-error")}>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                </FormControl>
                           <SelectContent>
                             <SelectItem value="Licença Prévia">Licença Prévia (LP)</SelectItem>
                             <SelectItem value="Licença de Instalação">Licença de Instalação (LI)</SelectItem>
@@ -317,7 +331,11 @@ const LicenseForm = () => {
                       <FormItem>
                         <FormLabel>Órgão Emissor *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ex: IBAMA, CETESB, FEAM" {...field} />
+                          <Input 
+                            placeholder="Ex: IBAMA, CETESB, FEAM" 
+                            className={cn(form.formState.errors.orgaoEmissor && "border-destructive focus-visible:ring-destructive shake-error")}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -332,7 +350,11 @@ const LicenseForm = () => {
                       <FormItem>
                         <FormLabel>Número do Processo *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ex: 02001.123456/2023-89" {...field} />
+                          <Input 
+                            placeholder="Ex: 02001.123456/2023-89" 
+                            className={cn(form.formState.errors.numeroProcesso && "border-destructive focus-visible:ring-destructive shake-error")}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -434,12 +456,12 @@ const LicenseForm = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o status" />
-                            </SelectTrigger>
-                          </FormControl>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className={cn(form.formState.errors.status && "border-destructive focus:ring-destructive shake-error")}>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                </FormControl>
                           <SelectContent>
                             <SelectItem value="Ativa">Ativa</SelectItem>
                             <SelectItem value="Vencida">Vencida</SelectItem>
@@ -461,7 +483,11 @@ const LicenseForm = () => {
                       <FormItem>
                         <FormLabel>Responsável (Opcional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nome do responsável" {...field} />
+                          <Input 
+                            placeholder="Nome do responsável" 
+                            className={cn(form.formState.errors.responsavel && "border-destructive focus-visible:ring-destructive shake-error")}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -507,11 +533,14 @@ const LicenseForm = () => {
                   >
                     Cancelar
                   </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
-                    className="min-w-[150px]"
-                  >
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending}
+            className={cn(
+              "min-w-[150px]",
+              Object.keys(form.formState.errors).length > 0 && "ring-2 ring-destructive ring-offset-2"
+            )}
+          >
                     {isSubmitting || createLicenseMutation.isPending || updateLicenseMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />

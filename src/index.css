@@ -167,6 +167,16 @@ All colors MUST be HSL.
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+
+  .shake-error {
+    animation: shake 0.5s;
+  }
+
   /* Slideshow automático para logos dos clientes */
   @keyframes slide-left {
     0% {
