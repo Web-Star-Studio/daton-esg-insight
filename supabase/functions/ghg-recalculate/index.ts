@@ -9,7 +9,15 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('No authorization header provided')
+      return new Response('Unauthorized: No authorization header', { status: 401, headers: corsHeaders })
+    }
+
+    // Create supabase client with service role for admin operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
@@ -20,15 +28,31 @@ serve(async (req) => {
       }
     )
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization')!
-    supabaseClient.auth.setSession({ access_token: authHeader.replace('Bearer ', ''), refresh_token: '' })
+    // Create client with user's token for auth verification
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
-    // Get user and company
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    // Get user from the token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      console.error('Auth error:', authError)
+      return new Response('Unauthorized: Invalid token', { status: 401, headers: corsHeaders })
     }
+
+    console.log(`User authenticated: ${user.id}`)
 
     const { data: profile } = await supabaseClient
       .from('profiles')
@@ -37,8 +61,11 @@ serve(async (req) => {
       .single()
 
     if (!profile) {
+      console.error('User profile not found')
       return new Response('User profile not found', { status: 404, headers: corsHeaders })
     }
+
+    console.log(`Profile found for user ${user.id}, company: ${profile.company_id}`)
 
     // Verificar role da tabela user_roles (fonte de verdade)
     const { data: userRole } = await supabaseClient
@@ -48,16 +75,19 @@ serve(async (req) => {
       .single()
 
     if (!userRole || !['admin', 'manager', 'super_admin'].includes(userRole.role)) {
+      console.error('Insufficient permissions for user:', user.id, 'role:', userRole?.role)
       return new Response('Insufficient permissions', { status: 403, headers: corsHeaders })
     }
+
+    console.log(`User ${user.id} has role: ${userRole.role}`)
 
     // Get request data
     const { period_start, period_end } = await req.json()
 
     console.log(`Starting simplified GHG recalculation for company ${profile.company_id}`)
 
-    // Get activity data for the period
-    const { data: activityData, error: activityError } = await supabaseClient
+    // Get activity data for the period (use admin client for data operations)
+    const { data: activityData, error: activityError } = await supabaseAdmin
       .from('activity_data')
       .select(`
         id,
@@ -120,8 +150,8 @@ serve(async (req) => {
           console.log(`Warning: Emission factor ${factor.id} has no CO2, CH4, or N2O factors`)
         }
 
-        // Use database function for calculation
-        const { data: result, error: calcError } = await supabaseClient
+        // Use database function for calculation (use admin client)
+        const { data: result, error: calcError } = await supabaseAdmin
           .rpc('calculate_simple_emissions', {
             p_activity_quantity: activity.quantity,
             p_activity_unit: activity.unit,
@@ -151,8 +181,8 @@ serve(async (req) => {
           calculation_method: string;
         };
 
-        // Save calculation result
-        const { error: calculationError } = await supabaseClient
+        // Save calculation result (use admin client)
+        const { error: calculationError } = await supabaseAdmin
           .from('calculated_emissions')
           .upsert({
             activity_data_id: activity.id,
