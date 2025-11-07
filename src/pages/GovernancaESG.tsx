@@ -27,6 +27,7 @@ import { CorporatePolicyModal } from "@/components/CorporatePolicyModal";
 import { WhistleblowerModal } from "@/components/WhistleblowerModal";
 import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
 import { EmployeeModal } from "@/components/EmployeeModal";
+import { EmployeeDetailModal } from "@/components/EmployeeDetailModal";
 import { GovernanceDashboard } from "@/components/GovernanceDashboard";
 import { UnifiedDashboardWidget } from "@/components/UnifiedDashboardWidget";
 import { GovernanceStructure } from "@/components/GovernanceStructure";
@@ -53,6 +54,8 @@ export default function GovernancaESG() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modalMode, setModalMode] = useState('create');
+  const [isEmployeeDetailModalOpen, setIsEmployeeDetailModalOpen] = useState(false);
+  const [viewingEmployee, setViewingEmployee] = useState(null);
 
   // Optimized queries with caching and error handling
   const { data: governanceMetrics, isLoading: loadingGovernance, error: governanceError } = useOptimizedQuery({
@@ -134,6 +137,22 @@ export default function GovernancaESG() {
     setIsEmployeeModalOpen(true);
   };
 
+  const handleViewEmployee = (employee: any) => {
+    setViewingEmployee(employee);
+    setIsEmployeeDetailModalOpen(true);
+  };
+
+  const handleEditFromDetail = () => {
+    setSelectedEmployee(viewingEmployee);
+    setIsEmployeeDetailModalOpen(false);
+    setIsEmployeeModalOpen(true);
+  };
+
+  const handleDetailModalClose = () => {
+    setIsEmployeeDetailModalOpen(false);
+    setViewingEmployee(null);
+  };
+
   return (
     <ErrorBoundary>
       <div className="space-y-6">
@@ -209,7 +228,7 @@ export default function GovernancaESG() {
                   setModalMode('create');
                   setIsEmployeeModalOpen(true);
                 }}
-                onViewEmployee={() => {}} // Placeholder for view functionality
+                onViewEmployee={handleViewEmployee}
               />
             </TabsContent>
 
@@ -268,6 +287,13 @@ export default function GovernancaESG() {
             }}
             employee={selectedEmployee}
             onSuccess={refetchData}
+          />
+
+          <EmployeeDetailModal
+            isOpen={isEmployeeDetailModalOpen}
+            onClose={handleDetailModalClose}
+            onEdit={handleEditFromDetail}
+            employee={viewingEmployee}
           />
 
           <GovernanceReportsModal
