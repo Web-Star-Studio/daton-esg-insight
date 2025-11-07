@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,28 @@ export function BoardMemberModal({ isOpen, onClose, member, onUpdate }: BoardMem
 
   const [newExpertise, setNewExpertise] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.company_id) {
+          setCompanyId(profile.company_id);
+        }
+      }
+    };
+    
+    if (isOpen) {
+      fetchCompanyId();
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +92,17 @@ export function BoardMemberModal({ isOpen, onClose, member, onUpdate }: BoardMem
       return;
     }
 
+    // Validar company_id para novos conselheiros
+    if (!member && !companyId) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Não foi possível identificar sua empresa. Faça login novamente.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const sanitizedData = {
         ...formData,
@@ -80,6 +114,7 @@ export function BoardMemberModal({ isOpen, onClose, member, onUpdate }: BoardMem
         experience_years: formData.experience_years ? parseInt(formData.experience_years) : undefined,
         appointment_date: format(formData.appointment_date, 'yyyy-MM-dd'),
         term_end_date: formData.term_end_date ? format(formData.term_end_date, 'yyyy-MM-dd') : undefined,
+        ...((!member && companyId) && { company_id: companyId }),
       };
 
       if (member) {
