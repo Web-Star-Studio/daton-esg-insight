@@ -485,7 +485,12 @@ export default function SeguracaTrabalho() {
                           </Badge>
                         </td>
                         <td className="p-4">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setEditingIncident(incident)}
+                            title="Visualizar detalhes do incidente"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                         </td>
