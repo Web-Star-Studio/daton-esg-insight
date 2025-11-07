@@ -16,7 +16,8 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format, differenceInDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Target, Users, TrendingUp, Info, ArrowLeft } from "lucide-react"
+import { CalendarIcon, Target, Users, TrendingUp, Info, ArrowLeft, AlertCircle } from "lucide-react"
+import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -52,6 +53,7 @@ const formSchema = z.object({
 const CriarMeta = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const errorAlertRef = useRef<HTMLDivElement>(null)
 
   // Fetch company users for responsible assignment
   const { data: companyUsers = [] } = useQuery({
@@ -141,6 +143,8 @@ const CriarMeta = () => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
       nome: "",
       descricao: "",
@@ -153,7 +157,18 @@ const CriarMeta = () => {
     },
   });
 
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length > 0 && errorAlertRef.current) {
+      errorAlertRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [form.formState.errors])
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log('=== META SUBMISSION STARTED ===');
+    console.log('Form values:', values);
+    console.log('Form errors:', form.formState.errors);
+    console.log('Is form valid:', form.formState.isValid);
+    
     const goalData: CreateGoalData = {
       name: values.nome,
       description: values.descricao,
@@ -195,7 +210,10 @@ const CriarMeta = () => {
               type="submit" 
               form="meta-form"
               disabled={createGoalMutation.isPending}
-              className="gap-2"
+              className={cn(
+                "gap-2",
+                Object.keys(form.formState.errors).length > 0 && "ring-2 ring-destructive ring-offset-2"
+              )}
             >
               <Target className="h-4 w-4" />
               {createGoalMutation.isPending ? "Salvando..." : "Salvar Meta"}
@@ -204,7 +222,38 @@ const CriarMeta = () => {
         </div>
 
         <Form {...form}>
-          <form id="meta-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            id="meta-form" 
+            onSubmit={form.handleSubmit(
+              onSubmit,
+              (errors) => {
+                console.error('Validation errors:', errors);
+                toast({
+                  title: "Preencha todos os campos obrigatórios",
+                  description: "Verifique os campos destacados e tente novamente.",
+                  variant: "destructive",
+                });
+              }
+            )} 
+            className="space-y-6"
+          >
+            {/* Error Summary Alert */}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <Alert ref={errorAlertRef} variant="destructive" className="animate-shake-error">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <p className="font-medium mb-2">Corrija os seguintes erros antes de salvar:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {form.formState.errors.nome && <li>Nome da meta é obrigatório (mínimo 3 caracteres)</li>}
+                    {form.formState.errors.metrica && <li>Métrica é obrigatória</li>}
+                    {form.formState.errors.valorAlvo && <li>Valor alvo deve ser maior que zero e diferente do valor base</li>}
+                    {form.formState.errors.prazoFinal && <li>Prazo final deve ser uma data futura</li>}
+                    {form.formState.errors.responsavel && <li>Responsável é obrigatório</li>}
+                    {form.formState.errors.frequencia && <li>Frequência de acompanhamento é obrigatória</li>}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Seção 1: Definição da Meta */}
             <Card className="shadow-card">
               <CardHeader>
@@ -216,9 +265,13 @@ const CriarMeta = () => {
                   name="nome"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Dê um título para a sua meta</FormLabel>
+                      <FormLabel>Dê um título para a sua meta *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: Reduzir as emissões de GEE da frota em 15%" {...field} />
+                        <Input 
+                          placeholder="Ex: Reduzir as emissões de GEE da frota em 15%" 
+                          className={cn(form.formState.errors.nome && "border-destructive focus-visible:ring-destructive shake-error")}
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -256,10 +309,10 @@ const CriarMeta = () => {
                   name="metrica"
                   render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Selecione a Métrica que será acompanhada</FormLabel>
+                    <FormLabel>Selecione a Métrica que será acompanhada *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={cn(form.formState.errors.metrica && "border-destructive focus:ring-destructive shake-error")}>
                           <SelectValue placeholder="Escolha a métrica chave (KPI)" />
                         </SelectTrigger>
                       </FormControl>
@@ -341,11 +394,12 @@ const CriarMeta = () => {
                       name="valorAlvo"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Valor Alvo</FormLabel>
+                          <FormLabel>Valor Alvo *</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
                               placeholder="425"
+                              className={cn(form.formState.errors.valorAlvo && "border-destructive focus-visible:ring-destructive shake-error")}
                               {...field}
                               onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             />
@@ -360,7 +414,7 @@ const CriarMeta = () => {
                       name="prazoFinal"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Prazo Final</FormLabel>
+                          <FormLabel>Prazo Final *</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -368,7 +422,8 @@ const CriarMeta = () => {
                                   variant={"outline"}
                                   className={cn(
                                     "pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
+                                    !field.value && "text-muted-foreground",
+                                    form.formState.errors.prazoFinal && "border-destructive shake-error"
                                   )}
                                 >
                                   {field.value ? (
@@ -418,10 +473,10 @@ const CriarMeta = () => {
                     name="responsavel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Atribuir a um responsável</FormLabel>
+                        <FormLabel>Atribuir a um responsável *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className={cn(form.formState.errors.responsavel && "border-destructive focus:ring-destructive shake-error")}>
                               <SelectValue placeholder="Selecione o responsável" />
                             </SelectTrigger>
                           </FormControl>
@@ -443,10 +498,10 @@ const CriarMeta = () => {
                     name="frequencia"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Frequência de Reporte do Progresso</FormLabel>
+                        <FormLabel>Frequência de Reporte do Progresso *</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className={cn(form.formState.errors.frequencia && "border-destructive focus:ring-destructive shake-error")}>
                               <SelectValue placeholder="Selecione a frequência" />
                             </SelectTrigger>
                           </FormControl>
