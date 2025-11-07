@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCreateSafetyIncident, useUpdateSafetyIncident } from '@/hooks/useSafetyIncidents';
 import { useEmployeesAsOptions } from '@/services/employees';
 import { SafetyIncident } from '@/services/safetyIncidents';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface SafetyIncidentModalProps {
   isOpen: boolean;
@@ -17,6 +19,9 @@ interface SafetyIncidentModalProps {
 }
 
 export default function SafetyIncidentModal({ isOpen, onClose, incident }: SafetyIncidentModalProps) {
+  const [userId, setUserId] = useState<string>('');
+  const [companyId, setCompanyId] = useState<string>('');
+  
   const [formData, setFormData] = useState({
     incident_type: incident?.incident_type || '',
     severity: incident?.severity || '',
@@ -37,13 +42,52 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
   const updateMutation = useUpdateSafetyIncident();
   const { data: employeeOptions = [] } = useEmployeesAsOptions();
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          setUserId(user.id);
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('company_id')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile) {
+            setCompanyId(profile.company_id);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do usuário:', error);
+        toast.error('Erro ao carregar dados do usuário');
+      }
+    };
+    
+    if (isOpen) {
+      fetchUserData();
+    }
+  }, [isOpen]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!userId || !companyId) {
+      toast.error('Erro: Dados do usuário não carregados');
+      return;
+    }
+
+    if (!formData.incident_type || !formData.severity || !formData.incident_date || !formData.description) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
     const submitData = {
       ...formData,
-      company_id: 'current-company', // This should be set automatically by RLS
-      reported_by_user_id: 'current-user', // This should be set automatically
+      company_id: companyId,
+      reported_by_user_id: userId,
     };
 
     if (incident) {
@@ -58,6 +102,7 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoadingUserData = !userId || !companyId;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -74,7 +119,7 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Tipo de Incidente</Label>
+              <Label>Tipo de Incidente *</Label>
               <Select
                 value={formData.incident_type}
                 onValueChange={(value) => setFormData({ ...formData, incident_type: value })}
@@ -91,7 +136,7 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
             </div>
 
             <div className="space-y-2">
-              <Label>Severidade</Label>
+              <Label>Severidade *</Label>
               <Select
                 value={formData.severity}
                 onValueChange={(value) => setFormData({ ...formData, severity: value })}
@@ -144,7 +189,7 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
             </div>
 
             <div className="space-y-2">
-              <Label>Data do Incidente</Label>
+              <Label>Data do Incidente *</Label>
               <Input
                 type="date"
                 value={formData.incident_date}
@@ -182,7 +227,7 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
           </div>
 
           <div className="space-y-2">
-            <Label>Descrição do Incidente</Label>
+            <Label>Descrição do Incidente *</Label>
             <Textarea
               placeholder="Descreva detalhadamente o que aconteceu..."
               value={formData.description}
@@ -236,8 +281,8 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Salvando...' : incident ? 'Atualizar' : 'Registrar'}
+            <Button type="submit" disabled={isLoading || isLoadingUserData}>
+              {isLoading ? 'Salvando...' : isLoadingUserData ? 'Carregando...' : incident ? 'Atualizar' : 'Registrar'}
             </Button>
           </div>
         </form>
