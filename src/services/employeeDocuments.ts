@@ -58,7 +58,7 @@ export async function uploadEmployeeDocument(
       const randomStr = Math.random().toString(36).substring(2, 8);
       const fileExt = file.name.split('.').pop();
       const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = `employees/${employeeId}/${timestamp}-${randomStr}.${fileExt}`;
+      const filePath = `${profile.company_id}/employees/${employeeId}/${timestamp}-${randomStr}.${fileExt}`;
 
       // Upload para storage
       const { error: storageError } = await supabase.storage
