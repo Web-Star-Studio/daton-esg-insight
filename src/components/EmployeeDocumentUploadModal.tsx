@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ScrollArea } from './ui/scroll-area';
 import { MultiFileUploadZone } from './intelligence/MultiFileUploadZone';
 import { uploadEmployeeDocument } from '@/services/employeeDocuments';
 import { unifiedToast } from '@/utils/unifiedToast';
@@ -109,7 +110,7 @@ export function EmployeeDocumentUploadModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Adicionar Documentos</DialogTitle>
           <DialogDescription>
@@ -117,40 +118,42 @@ export function EmployeeDocumentUploadModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Category Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria do Documento</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* File Upload Zone */}
-          <MultiFileUploadZone
-            onFilesSelected={setSelectedFiles}
-            maxFiles={5}
-            acceptedTypes={['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp', '.xlsx', '.xls', '.csv']}
-            showPreview={true}
-          />
-
-          {selectedFiles.length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              {selectedFiles.length} arquivo{selectedFiles.length > 1 ? 's' : ''} selecionado{selectedFiles.length > 1 ? 's' : ''}
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-4">
+            {/* Category Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria do Documento</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </div>
 
-        <DialogFooter>
+            {/* File Upload Zone */}
+            <MultiFileUploadZone
+              onFilesSelected={setSelectedFiles}
+              maxFiles={5}
+              acceptedTypes={['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp', '.xlsx', '.xls', '.csv']}
+              showPreview={true}
+            />
+
+            {selectedFiles.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                {selectedFiles.length} arquivo{selectedFiles.length > 1 ? 's' : ''} selecionado{selectedFiles.length > 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="mt-4">
           <Button variant="outline" onClick={handleClose} disabled={isUploading}>
             Cancelar
           </Button>
