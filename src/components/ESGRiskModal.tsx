@@ -15,6 +15,12 @@ import { CalendarIcon, Save, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// Função para validar se uma string é um UUID válido
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 interface ESGRiskModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -215,7 +221,7 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
       status: formData.status,
       control_measures: formData.control_measures.trim() || null,
       mitigation_actions: formData.mitigation_actions.trim() || null,
-      owner_user_id: trimmedOwner || null,
+      owner_user_id: (trimmedOwner && isValidUUID(trimmedOwner)) ? trimmedOwner : null,
       review_frequency: formData.review_frequency || null,
       next_review_date: nextReviewDate ? format(nextReviewDate, 'yyyy-MM-dd') : null
     };
@@ -410,13 +416,20 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="risk_owner">Proprietário do Risco</Label>
+                <Label htmlFor="risk_owner">
+                  Proprietário do Risco
+                  <span className="text-xs text-muted-foreground ml-2">(UUID do usuário)</span>
+                </Label>
                 <Input
                   id="risk_owner"
                   value={formData.risk_owner}
                   onChange={(e) => handleInputChange('risk_owner', e.target.value)}
                   readOnly={isReadOnly}
+                  placeholder="UUID do usuário (ex: 550e8400-e29b-41d4-a716-446655440000)"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Insira o UUID do usuário responsável pelo risco
+                </p>
               </div>
               
               <div>
