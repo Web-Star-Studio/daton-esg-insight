@@ -25,6 +25,8 @@ const pdiSchema = z.object({
   target_position: z.string().trim().min(1, "Cargo alvo é obrigatório").max(200, "Cargo alvo muito longo"),
   start_date: z.string().min(1, "Data de início é obrigatória"),
   target_date: z.string().min(1, "Data meta é obrigatória"),
+  status: z.string().min(1, "Status é obrigatório"),
+  progress_percentage: z.number().min(0).max(100),
   mentor_id: z.string().uuid("ID do mentor inválido").nullable(),
   notes: z.string().max(2000, "Observações muito longas").nullable(),
   goals: z.array(z.any()),
