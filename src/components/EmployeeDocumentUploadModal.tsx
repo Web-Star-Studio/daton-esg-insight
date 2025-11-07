@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ScrollArea } from './ui/scroll-area';
 import { MultiFileUploadZone } from './intelligence/MultiFileUploadZone';
 import { uploadEmployeeDocument } from '@/services/employeeDocuments';
 import { unifiedToast } from '@/utils/unifiedToast';
@@ -110,16 +109,16 @@ export function EmployeeDocumentUploadModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Adicionar Documentos</DialogTitle>
           <DialogDescription>
             Enviar documentos para {employeeName}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 py-4">
+          <div className="space-y-4 pr-2">
             {/* Category Selection */}
             <div className="space-y-2">
               <Label htmlFor="category">Categoria do Documento</Label>
@@ -151,9 +150,9 @@ export function EmployeeDocumentUploadModal({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="mt-4">
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button variant="outline" onClick={handleClose} disabled={isUploading}>
             Cancelar
           </Button>
