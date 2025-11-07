@@ -39,6 +39,7 @@ import {
 import { PDIFormModal } from "@/components/PDIFormModal";
 import { PDIDetailsModal } from "@/components/PDIDetailsModal";
 import { MentorshipProgramModal } from "@/components/MentorshipProgramModal";
+import { CompetencyMatrixModal } from "@/components/CompetencyMatrixModal";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -80,6 +81,7 @@ export default function DesenvolvimentoCarreira() {
   const [isMentorshipModalOpen, setIsMentorshipModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<CareerDevelopmentPlan | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isCompetencyMatrixModalOpen, setIsCompetencyMatrixModalOpen] = useState(false);
 
   const { data: careerStats, isLoading: statsLoading } = useCareerStatistics();
   const { data: careerPlans, isLoading: plansLoading } = useCareerDevelopmentPlans();
@@ -166,7 +168,7 @@ export default function DesenvolvimentoCarreira() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.info("Matriz de Competências em desenvolvimento")}>
+          <Button variant="outline" onClick={() => setIsCompetencyMatrixModalOpen(true)}>
             <BookOpen className="w-4 h-4 mr-2" />
             Matriz de Competências
           </Button>
@@ -478,6 +480,11 @@ export default function DesenvolvimentoCarreira() {
       <MentorshipProgramModal
         isOpen={isMentorshipModalOpen}
         onClose={() => setIsMentorshipModalOpen(false)}
+      />
+
+      <CompetencyMatrixModal
+        open={isCompetencyMatrixModalOpen}
+        onOpenChange={setIsCompetencyMatrixModalOpen}
       />
     </div>
   );
