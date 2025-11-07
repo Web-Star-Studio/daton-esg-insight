@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
 
 interface UploadedFile {
   file: File;
@@ -49,10 +50,33 @@ export function MultiFileUploadZone({
 
       const newFiles: UploadedFile[] = [];
       const fileArray = Array.from(files).slice(0, maxFiles - uploadedFiles.length);
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+      // Normalizar acceptedTypes removendo pontos e convertendo para minúsculas
+      const normalizedTypes = acceptedTypes.map(type => 
+        type.startsWith('.') ? type.slice(1).toLowerCase() : type.toLowerCase()
+      );
+
+      let rejectedFiles: { name: string; reason: string }[] = [];
 
       for (const file of fileArray) {
         const fileExtension = file.name.split('.').pop()?.toLowerCase();
-        if (!acceptedTypes.includes(fileExtension || '')) {
+        
+        // Validação de tipo
+        if (!fileExtension || !normalizedTypes.includes(fileExtension)) {
+          rejectedFiles.push({ 
+            name: file.name, 
+            reason: `Formato não aceito (apenas ${normalizedTypes.join(', ').toUpperCase()})` 
+          });
+          continue;
+        }
+
+        // Validação de tamanho
+        if (file.size > MAX_FILE_SIZE) {
+          rejectedFiles.push({ 
+            name: file.name, 
+            reason: `Tamanho excede 10MB (${formatFileSize(file.size)})` 
+          });
           continue;
         }
 
@@ -73,9 +97,20 @@ export function MultiFileUploadZone({
         });
       }
 
-      const updated = [...uploadedFiles, ...newFiles];
-      setUploadedFiles(updated);
-      onFilesSelected(updated);
+      // Feedback visual para arquivos rejeitados
+      if (rejectedFiles.length > 0) {
+        toast({
+          title: `${rejectedFiles.length} arquivo(s) rejeitado(s)`,
+          description: rejectedFiles.map(f => `• ${f.name}: ${f.reason}`).join('\n'),
+          variant: 'destructive',
+        });
+      }
+
+      if (newFiles.length > 0) {
+        const updated = [...uploadedFiles, ...newFiles];
+        setUploadedFiles(updated);
+        onFilesSelected(updated);
+      }
     },
     [uploadedFiles, maxFiles, acceptedTypes, showPreview, onFilesSelected]
   );
@@ -137,7 +172,7 @@ export function MultiFileUploadZone({
                 Arraste arquivos aqui ou clique para selecionar
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Máximo {maxFiles} arquivos • Formatos: {acceptedTypes.join(', ').toUpperCase()}
+                Máximo {maxFiles} arquivos • Formatos: {acceptedTypes.map(t => t.startsWith('.') ? t.slice(1) : t).join(', ').toUpperCase()} • Até 10MB por arquivo
               </p>
             </div>
             <Button
