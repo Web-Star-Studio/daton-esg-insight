@@ -71,6 +71,46 @@ export default function SafetyIncidentModal({ isOpen, onClose, incident }: Safet
     }
   }, [isOpen]);
 
+  // Atualizar formData quando incident mudar
+  useEffect(() => {
+    if (incident) {
+      setFormData({
+        incident_type: incident.incident_type || '',
+        severity: incident.severity || '',
+        employee_id: incident.employee_id || '',
+        incident_date: incident.incident_date 
+          ? new Date(incident.incident_date).toISOString().split('T')[0] 
+          : '',
+        incident_time: incident.incident_time || '',
+        location: incident.location || '',
+        description: incident.description || '',
+        immediate_cause: incident.immediate_cause || '',
+        root_cause: incident.root_cause || '',
+        corrective_actions: incident.corrective_actions || '',
+        days_lost: incident.days_lost || 0,
+        medical_treatment_required: incident.medical_treatment_required || false,
+        status: incident.status || 'Aberto',
+      });
+    } else {
+      // Resetar formulário quando não houver incident (modo criar)
+      setFormData({
+        incident_type: '',
+        severity: '',
+        employee_id: '',
+        incident_date: '',
+        incident_time: '',
+        location: '',
+        description: '',
+        immediate_cause: '',
+        root_cause: '',
+        corrective_actions: '',
+        days_lost: 0,
+        medical_treatment_required: false,
+        status: 'Aberto',
+      });
+    }
+  }, [incident]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
