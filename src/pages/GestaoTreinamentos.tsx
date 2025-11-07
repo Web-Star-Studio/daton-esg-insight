@@ -175,6 +175,11 @@ export default function GestaoTreinamentos() {
     setIsEmployeeTrainingModalOpen(true);
   };
 
+  const handleViewTraining = (training: EmployeeTraining) => {
+    setSelectedTraining(training);
+    setIsEmployeeTrainingModalOpen(true);
+  };
+
   const handleViewCertification = (training: any) => {
     const certificationData = {
       id: training.id,
@@ -598,7 +603,11 @@ export default function GestaoTreinamentos() {
                           Certificado
                         </Button>
                       )}
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewTraining(training)}
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
                     </div>
