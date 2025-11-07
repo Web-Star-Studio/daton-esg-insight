@@ -36,8 +36,9 @@ serve(async (req) => {
       }
     );
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user using the bearer token
+    const token = authHeader.replace('Bearer ', '').trim();
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError) {
       console.error('Auth error:', authError);
