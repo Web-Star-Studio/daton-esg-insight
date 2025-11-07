@@ -175,13 +175,28 @@ export const useDeleteEmployee = () => {
   });
 };
 
-// Helper function to get employees as options
+// Helper function to get employees as options (filtered by user's company)
 export const getEmployeesAsOptions = async (): Promise<Array<{value: string; label: string}>> => {
-  const employees = await getEmployees();
-  return employees.map(employee => ({
-    value: employee.id,
-    label: employee.full_name
-  }));
+  try {
+    // Get authenticated user's company
+    const { profile } = await formErrorHandler.checkAuth();
+    
+    const { data: employees, error } = await supabase
+      .from('employees')
+      .select('id, full_name')
+      .eq('company_id', profile.company_id)
+      .order('full_name');
+    
+    if (error) throw error;
+    
+    return employees?.map(employee => ({
+      value: employee.id,
+      label: employee.full_name
+    })) || [];
+  } catch (error) {
+    console.error('Error loading employees as options:', error);
+    return [];
+  }
 };
 
 // React Query hook for employee options

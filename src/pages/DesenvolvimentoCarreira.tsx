@@ -77,11 +77,16 @@ export default function DesenvolvimentoCarreira() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [isNewPDIModalOpen, setIsNewPDIModalOpen] = useState(false);
   const [isMentorshipModalOpen, setIsMentorshipModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<CareerDevelopmentPlan | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCompetencyMatrixModalOpen, setIsCompetencyMatrixModalOpen] = useState(false);
+  
+  const handlePDISuccess = () => {
+    setActiveTab("pdi");
+  };
 
   const { data: careerStats, isLoading: statsLoading } = useCareerStatistics();
   const { data: careerPlans, isLoading: plansLoading } = useCareerDevelopmentPlans();
@@ -183,7 +188,7 @@ export default function DesenvolvimentoCarreira() {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="pdi">PDIs</TabsTrigger>
@@ -464,10 +469,7 @@ export default function DesenvolvimentoCarreira() {
       <PDIFormModal
         isOpen={isNewPDIModalOpen}
         onClose={() => setIsNewPDIModalOpen(false)}
-        onSuccess={() => {
-          setIsNewPDIModalOpen(false);
-          toast.success("PDI criado com sucesso!");
-        }}
+        onSuccess={handlePDISuccess}
       />
 
       <PDIDetailsModal

@@ -14,6 +14,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logFormSubmission, createPerformanceLogger } from '@/utils/formLogging';
 import { sanitizeUUID } from '@/utils/formValidation';
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Schema de validação do formulário PDI
+const pdiSchema = z.object({
+  employee_id: z.string().uuid("ID do funcionário inválido"),
+  company_id: z.string().uuid("ID da empresa inválido"),
+  current_position: z.string().trim().min(1, "Cargo atual é obrigatório").max(200, "Cargo atual muito longo"),
+  target_position: z.string().trim().min(1, "Cargo alvo é obrigatório").max(200, "Cargo alvo muito longo"),
+  start_date: z.string().min(1, "Data de início é obrigatória"),
+  target_date: z.string().min(1, "Data meta é obrigatória"),
+  mentor_id: z.string().uuid("ID do mentor inválido").nullable(),
+  notes: z.string().max(2000, "Observações muito longas").nullable(),
+  goals: z.array(z.any()),
+  skills_to_develop: z.array(z.any()),
+  development_activities: z.array(z.any()),
+  created_by_user_id: z.string().uuid("ID do usuário inválido"),
+}).refine(data => new Date(data.target_date) > new Date(data.start_date), {
+  message: "A data meta deve ser posterior à data de início",
+  path: ["target_date"]
+});
 
 interface PDIFormModalProps {
   isOpen: boolean;
@@ -67,92 +88,98 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
     e.preventDefault();
     const perfLogger = createPerformanceLogger('PDIFormSubmission');
     
-    if (!user?.company?.id) {
-      toast.error("Erro: informações da empresa não encontradas.");
-      logFormSubmission('PDIFormModal', formData, false, new Error('Company ID not found'));
-      perfLogger.end(false, new Error('Company ID not found'));
-      return;
-    }
-    
-    if (!formData.employee_id) {
-      toast.error("Por favor, selecione um funcionário.");
-      logFormSubmission('PDIFormModal', formData, false, new Error('Employee ID not provided'));
-      perfLogger.end(false, new Error('Employee ID not provided'));
-      return;
-    }
-    
-    // Validar campos obrigatórios
-    if (!formData.current_position.trim() || !formData.target_position.trim()) {
-      toast.error("Por favor, preencha o cargo atual e o cargo alvo.");
-      perfLogger.end(false, new Error('Required fields missing'));
-      return;
-    }
-    
-    if (!formData.start_date || !formData.target_date) {
-      toast.error("Por favor, preencha as datas de início e meta.");
-      perfLogger.end(false, new Error('Dates missing'));
-      return;
-    }
-    
-    // Validar que target_date > start_date
-    if (new Date(formData.target_date) <= new Date(formData.start_date)) {
-      toast.error("A data meta deve ser posterior à data de início.");
-      perfLogger.end(false, new Error('Invalid date range'));
-      return;
-    }
-    
-    // Validar sessão do usuário
-    if (!user?.id) {
+    if (!user?.company?.id || !user?.id) {
       toast.error("Sessão inválida. Faça login novamente.");
-      perfLogger.end(false, new Error('User ID not found'));
+      perfLogger.end(false, new Error('User session invalid'));
       return;
     }
     
-    // Validar e normalizar employee_id
+    // Validar e normalizar UUIDs
     const employeeId = sanitizeUUID(formData.employee_id);
+    const companyId = sanitizeUUID(user.company.id);
+    const mentorId = sanitizeUUID(formData.mentor_id) || null;
+    const userId = sanitizeUUID(user.id);
+    
     if (!employeeId) {
-      toast.error("Funcionário inválido. Selecione novamente.");
+      toast.error("Por favor, selecione um funcionário.");
       perfLogger.end(false, new Error('Invalid employee_id'));
       return;
     }
     
-    // Validar e normalizar company_id e mentor_id
-    const companyId = sanitizeUUID(user.company.id);
     if (!companyId) {
       toast.error("Empresa inválida. Faça login novamente.");
       perfLogger.end(false, new Error('Invalid company_id'));
       return;
     }
-    const mentorId = sanitizeUUID(formData.mentor_id) || null;
+    
+    if (!userId) {
+      toast.error("Sessão inválida. Faça login novamente.");
+      perfLogger.end(false, new Error('Invalid user_id'));
+      return;
+    }
+    
+    // Preparar dados para validação
+    const pdiData = {
+      company_id: companyId,
+      employee_id: employeeId,
+      current_position: formData.current_position.trim(),
+      target_position: formData.target_position.trim(),
+      start_date: formData.start_date,
+      target_date: formData.target_date,
+      status: "Em Andamento",
+      progress_percentage: 0,
+      mentor_id: mentorId,
+      goals: goals.length ? goals : [],
+      skills_to_develop: skills.length ? skills : [],
+      development_activities: activities.length ? activities : [],
+      notes: formData.notes?.trim() ? formData.notes.trim() : null,
+      created_by_user_id: userId,
+    } satisfies Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>;
+    
+    // Validar com schema Zod
+    try {
+      pdiSchema.parse(pdiData);
+    } catch (validationError: any) {
+      const firstError = validationError.errors?.[0];
+      toast.error(firstError?.message || "Dados inválidos. Verifique o formulário.");
+      perfLogger.end(false, validationError);
+      return;
+    }
     
     try {
-      console.log('📝 Criando PDI com dados (UUIDs):', {
+      // Verificar se o funcionário pertence à empresa do usuário
+      const { data: employeeData, error: employeeCheckError } = await supabase
+        .from('employees')
+        .select('company_id')
+        .eq('id', employeeId)
+        .maybeSingle();
+      
+      if (employeeCheckError) {
+        throw new Error("Erro ao verificar funcionário.");
+      }
+      
+      if (!employeeData) {
+        toast.error("Funcionário não encontrado.");
+        perfLogger.end(false, new Error('Employee not found'));
+        return;
+      }
+      
+      if (employeeData.company_id !== companyId) {
+        toast.error("Funcionário selecionado não pertence à sua empresa.");
+        perfLogger.end(false, new Error('Employee company mismatch'));
+        return;
+      }
+      
+      console.log('📝 Criando PDI validado:', {
         employee_id: employeeId,
         mentor_id: mentorId,
         company_id: companyId,
-        created_by_user_id: user.id,
+        created_by_user_id: userId,
         goalsCount: goals.length,
         skillsCount: skills.length,
         activitiesCount: activities.length
       });
       
-      const pdiData = {
-        company_id: companyId,
-        employee_id: employeeId,
-        current_position: formData.current_position.trim(),
-        target_position: formData.target_position.trim(),
-        start_date: formData.start_date,
-        target_date: formData.target_date,
-        status: "Em Andamento",
-        progress_percentage: 0,
-        mentor_id: mentorId,
-        goals: goals.length ? goals : [],
-        skills_to_develop: skills.length ? skills : [],
-        development_activities: activities.length ? activities : [],
-        notes: formData.notes?.trim() ? formData.notes.trim() : null,
-        created_by_user_id: user.id,
-      } satisfies Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>;
-
       console.log('🧾 PDI payload final:', pdiData);
       await createCareerPlan.mutateAsync(pdiData);
       
@@ -168,23 +195,24 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       onClose();
       resetForm();
     } catch (error: any) {
-      console.error("Erro ao criar PDI:", error);
+      console.error("❌ Erro ao criar PDI:", error);
       
       let errorMessage = "Erro ao criar PDI. ";
       
-      if (error.message?.includes('foreign key')) {
-        errorMessage += "O funcionário ou mentor selecionado não existe.";
-      } else if (error.message?.includes('violates row-level security')) {
-        errorMessage += "Você não tem permissão para criar PDIs.";
-      } else if (error.message?.includes('company_id')) {
-        errorMessage += "Erro ao identificar sua empresa. Faça login novamente.";
+      // Decodificar erros do Supabase
+      if (error.code === '23503') {
+        errorMessage = "Funcionário ou mentor inválido ou não pertence à sua empresa.";
+      } else if (error.code === 'PGRST116' || error.message?.includes('row-level security')) {
+        errorMessage = "Você não tem permissão para criar PDIs.";
+      } else if (error.message?.includes('invalid input syntax for type uuid')) {
+        errorMessage = "Dados inválidos. Verifique os campos e tente novamente.";
       } else if (error.message) {
         errorMessage += error.message;
       } else {
         errorMessage += "Verifique os dados e tente novamente.";
       }
       
-      logFormSubmission('PDIFormModal', formData, false, error);
+      logFormSubmission('PDIFormModal', pdiData, false, error);
       perfLogger.end(false, error);
       toast.error(errorMessage);
     }
