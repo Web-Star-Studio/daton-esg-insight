@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export const getEmployees = async () => {
   const { data, error } = await supabase
@@ -9,4 +10,11 @@ export const getEmployees = async () => {
 
   if (error) throw error;
   return data || [];
+};
+
+export const useEmployees = () => {
+  return useQuery({
+    queryKey: ['employees'],
+    queryFn: getEmployees,
+  });
 };

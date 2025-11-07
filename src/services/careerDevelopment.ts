@@ -382,3 +382,29 @@ export const useCreateJobPosting = () => {
     },
   });
 };
+
+// Create succession candidate
+export const createSuccessionCandidate = async (
+  candidate: Omit<SuccessionCandidate, 'id' | 'created_at' | 'updated_at'>
+) => {
+  const { data, error } = await supabase
+    .from('succession_candidates')
+    .insert([candidate])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Hook for creating succession candidates
+export const useCreateSuccessionCandidate = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createSuccessionCandidate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['succession-plans'] });
+    },
+  });
+};

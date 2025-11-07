@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   TrendingUp, 
   Users, 
@@ -40,6 +41,8 @@ import { PDIFormModal } from "@/components/PDIFormModal";
 import { PDIDetailsModal } from "@/components/PDIDetailsModal";
 import { MentorshipProgramModal } from "@/components/MentorshipProgramModal";
 import { CompetencyMatrixModal } from "@/components/CompetencyMatrixModal";
+import { SuccessionPlanModal } from "@/components/SuccessionPlanModal";
+import { SuccessionCandidateModal } from "@/components/SuccessionCandidateModal";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -83,6 +86,9 @@ export default function DesenvolvimentoCarreira() {
   const [selectedPlan, setSelectedPlan] = useState<CareerDevelopmentPlan | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCompetencyMatrixModalOpen, setIsCompetencyMatrixModalOpen] = useState(false);
+  const [isNewSuccessionPlanOpen, setIsNewSuccessionPlanOpen] = useState(false);
+  const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
+  const [selectedSuccessionPlan, setSelectedSuccessionPlan] = useState<any>(null);
   
   const handlePDISuccess = () => {
     setActiveTab("pdi");
@@ -383,13 +389,205 @@ export default function DesenvolvimentoCarreira() {
         </TabsContent>
 
         <TabsContent value="sucessao" className="space-y-6">
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Planejamento de Sucessão</h3>
-            <p className="text-muted-foreground mb-4">
-              Funcionalidade em desenvolvimento
-            </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Planejamento de Sucessão</h3>
+              <p className="text-sm text-muted-foreground">
+                Identificação e preparação de sucessores para posições críticas
+              </p>
+            </div>
+            <Button onClick={() => setIsNewSuccessionPlanOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Plano de Sucessão
+            </Button>
           </div>
+
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Posições Críticas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{successionPlans?.length || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Planos ativos
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Candidatos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {successionPlans?.reduce((acc, plan) => acc + (plan.candidates?.length || 0), 0) || 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Em desenvolvimento
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Prontidão Média
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(() => {
+                    const allCandidates = successionPlans?.flatMap(p => p.candidates || []) || [];
+                    const avgScore = allCandidates.length > 0
+                      ? Math.round(
+                          allCandidates.reduce((acc, c) => acc + (c.readiness_score || 0), 0) /
+                            allCandidates.length
+                        )
+                      : 0;
+                    return `${avgScore}%`;
+                  })()}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Score geral
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Succession Plans List */}
+          {successionPlans && successionPlans.length > 0 ? (
+            <div className="space-y-4">
+              {successionPlans.map((plan) => {
+                const getReadinessColor = (level: string) => {
+                  switch (level) {
+                    case "Pronto Agora":
+                      return "default";
+                    case "1-2 Anos":
+                      return "secondary";
+                    case "3+ Anos":
+                      return "outline";
+                    default:
+                      return "outline";
+                  }
+                };
+
+                return (
+                  <Card key={plan.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="flex items-center gap-2">
+                            {plan.position_title}
+                            <Badge variant={getCriticalColor(plan.critical_level)}>
+                              {plan.critical_level}
+                            </Badge>
+                          </CardTitle>
+                          <CardDescription>
+                            {plan.department}
+                            {plan.current_holder && (
+                              <span className="ml-2">
+                                • Atual: {plan.current_holder.full_name}
+                              </span>
+                            )}
+                          </CardDescription>
+                          {plan.expected_retirement_date && (
+                            <p className="text-xs text-muted-foreground">
+                              Desocupação prevista: {new Date(plan.expected_retirement_date).toLocaleDateString('pt-BR')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent>
+                      {/* Candidates List */}
+                      {plan.candidates && plan.candidates.length > 0 ? (
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold">Candidatos à Sucessão</h4>
+                          <div className="space-y-3">
+                            {plan.candidates.map((candidate: any) => (
+                              <div
+                                key={candidate.id}
+                                className="flex items-center gap-4 p-3 rounded-lg border bg-card"
+                              >
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback>
+                                    {candidate.employee?.full_name
+                                      ?.split(" ")
+                                      .map((n: string) => n[0])
+                                      .join("")
+                                      .toUpperCase() || "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="font-medium text-sm">
+                                      {candidate.employee?.full_name}
+                                    </p>
+                                    <Badge variant={getReadinessColor(candidate.readiness_level)} className="text-xs">
+                                      {candidate.readiness_level}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    {candidate.employee?.position}
+                                  </p>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-muted-foreground">Prontidão</span>
+                                      <span className="font-medium">{candidate.readiness_score}%</span>
+                                    </div>
+                                    <Progress value={candidate.readiness_score} />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Nenhum candidato identificado</p>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="w-full mt-4"
+                        onClick={() => {
+                          setSelectedSuccessionPlan(plan);
+                          setIsAddCandidateOpen(true);
+                        }}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Adicionar Candidato
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Users className="h-12 w-12 mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum plano de sucessão</h3>
+                <p className="text-sm text-muted-foreground mb-4 text-center max-w-md">
+                  Crie planos de sucessão para identificar e preparar candidatos para posições críticas
+                </p>
+                <Button onClick={() => setIsNewSuccessionPlanOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Primeiro Plano
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="vagas" className="space-y-6">
@@ -487,6 +685,27 @@ export default function DesenvolvimentoCarreira() {
       <CompetencyMatrixModal
         open={isCompetencyMatrixModalOpen}
         onOpenChange={setIsCompetencyMatrixModalOpen}
+      />
+
+      <SuccessionPlanModal
+        isOpen={isNewSuccessionPlanOpen}
+        onClose={() => setIsNewSuccessionPlanOpen(false)}
+        onSuccess={() => {
+          // Plans will be automatically refetched via query invalidation
+        }}
+      />
+
+      <SuccessionCandidateModal
+        isOpen={isAddCandidateOpen}
+        onClose={() => {
+          setIsAddCandidateOpen(false);
+          setSelectedSuccessionPlan(null);
+        }}
+        successionPlanId={selectedSuccessionPlan?.id || ""}
+        existingCandidateIds={selectedSuccessionPlan?.candidates?.map((c: any) => c.employee_id) || []}
+        onSuccess={() => {
+          // Candidates will be automatically refetched via query invalidation
+        }}
       />
     </div>
   );
