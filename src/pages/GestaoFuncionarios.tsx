@@ -16,6 +16,7 @@ export default function GestaoFuncionarios() {
   const [isEmployeeDetailModalOpen, setIsEmployeeDetailModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
+  const [reportType, setReportType] = useState<string>('employees');
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const queryClient = useQueryClient();
@@ -251,28 +252,66 @@ export default function GestaoFuncionarios() {
                 <Button 
                   variant="outline" 
                   className="h-24 flex flex-col items-center justify-center space-y-2"
-                  onClick={() => setIsReportsModalOpen(true)}
+                  onClick={() => {
+                    setReportType('employees');
+                    setIsReportsModalOpen(true);
+                  }}
                 >
                   <FileText className="w-6 h-6" />
                   <span>Gerar Relatórios</span>
                 </Button>
-                <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center space-y-2"
+                  onClick={() => {
+                    setReportType('turnover');
+                    setIsReportsModalOpen(true);
+                  }}
+                >
                   <TrendingUp className="w-6 h-6" />
                   <span>Análise de Performance</span>
                 </Button>
-                <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center space-y-2"
+                  onClick={() => {
+                    setReportType('departments');
+                    setIsReportsModalOpen(true);
+                  }}
+                >
                   <Building2 className="w-6 h-6" />
                   <span>Análise por Departamento</span>
                 </Button>
-                <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center space-y-2"
+                  onClick={() => {
+                    setReportType('diversity');
+                    setIsReportsModalOpen(true);
+                  }}
+                >
                   <Calendar className="w-6 h-6" />
                   <span>Controle de Ponto</span>
                 </Button>
-                <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center space-y-2"
+                  onClick={() => {
+                    setReportType('salaries');
+                    setIsReportsModalOpen(true);
+                  }}
+                >
                   <Briefcase className="w-6 h-6" />
                   <span>Análise Salarial</span>
                 </Button>
-                <Button variant="outline" className="h-24 flex flex-col items-center justify-center space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="h-24 flex flex-col items-center justify-center space-y-2"
+                  onClick={() => {
+                    setReportType('turnover');
+                    setIsReportsModalOpen(true);
+                  }}
+                >
                   <UserPlus className="w-6 h-6" />
                   <span>Turnover Analysis</span>
                 </Button>
@@ -299,6 +338,7 @@ export default function GestaoFuncionarios() {
       <EmployeeReportsModal
         isOpen={isReportsModalOpen}
         onClose={() => setIsReportsModalOpen(false)}
+        initialReportType={reportType}
       />
 
       <BenefitManagementModal

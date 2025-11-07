@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -26,9 +26,10 @@ import { toast } from 'sonner';
 interface EmployeeReportsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialReportType?: string;
 }
 
-export function EmployeeReportsModal({ isOpen, onClose }: EmployeeReportsModalProps) {
+export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: EmployeeReportsModalProps) {
   const [selectedReportType, setSelectedReportType] = useState('');
   const [filters, setFilters] = useState({
     department: 'all',
@@ -36,6 +37,13 @@ export function EmployeeReportsModal({ isOpen, onClose }: EmployeeReportsModalPr
     startDate: '',
     endDate: '',
   });
+
+  // Set initial report type when modal opens
+  useEffect(() => {
+    if (isOpen && initialReportType) {
+      setSelectedReportType(initialReportType);
+    }
+  }, [isOpen, initialReportType]);
 
   // Fetch employees data
   const { data: employees = [] } = useQuery({
