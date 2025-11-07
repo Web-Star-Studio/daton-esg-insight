@@ -16,9 +16,15 @@ import SafetyIncidentModal from "@/components/SafetyIncidentModal";
 import { AuditModal } from "@/components/AuditModal";
 import { SafetyIncident } from "@/services/safetyIncidents";
 import { toast } from "sonner";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { startOfYear, endOfYear } from "date-fns";
 
 export default function SeguracaTrabalho() {
-  const [selectedPeriod, setSelectedPeriod] = useState("2024");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfYear(new Date()),
+    to: endOfYear(new Date()),
+  });
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<SafetyIncident | null>(null);
   const [newAuditOpen, setNewAuditOpen] = useState(false);
@@ -33,32 +39,43 @@ export default function SeguracaTrabalho() {
   
   const deleteMutation = useDeleteSafetyIncident();
 
+  // Filter incidents by selected date range
+  const filteredIncidents = incidents.filter(incident => {
+    if (!dateRange?.from) return true;
+    
+    const incidentDate = new Date(incident.incident_date);
+    const fromDate = dateRange.from;
+    const toDate = dateRange.to || dateRange.from;
+    
+    return incidentDate >= fromDate && incidentDate <= toDate;
+  });
+
   // Calculate real-time stats
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  const thisMonthIncidents = incidents.filter(incident => {
+  const thisMonthIncidents = filteredIncidents.filter(incident => {
     const incidentDate = new Date(incident.incident_date);
     return incidentDate.getMonth() === currentMonth && incidentDate.getFullYear() === currentYear;
   }).length;
 
-  const lastMonthIncidents = incidents.filter(incident => {
+  const lastMonthIncidents = filteredIncidents.filter(incident => {
     const incidentDate = new Date(incident.incident_date);
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     return incidentDate.getMonth() === lastMonth && incidentDate.getFullYear() === lastMonthYear;
   }).length;
 
-  const resolvedIncidents = incidents.filter(incident => incident.status === 'Resolvido').length;
+  const resolvedIncidents = filteredIncidents.filter(incident => incident.status === 'Resolvido').length;
   
   // Calculate days without incidents
-  const sortedIncidents = incidents
+  const sortedFilteredIncidents = filteredIncidents
     .filter(incident => incident.status !== 'Resolvido')
     .sort((a, b) => new Date(b.incident_date).getTime() - new Date(a.incident_date).getTime());
   
-  const daysSinceLastIncident = sortedIncidents.length > 0 
-    ? Math.floor((currentDate.getTime() - new Date(sortedIncidents[0].incident_date).getTime()) / (1000 * 60 * 60 * 24))
+  const daysSinceLastIncident = sortedFilteredIncidents.length > 0 
+    ? Math.floor((currentDate.getTime() - new Date(sortedFilteredIncidents[0].incident_date).getTime()) / (1000 * 60 * 60 * 24))
     : 365; // Default if no incidents
 
   const safetyStats = {
@@ -122,16 +139,11 @@ export default function SeguracaTrabalho() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2023">2023</SelectItem>
-              <SelectItem value="2022">2022</SelectItem>
-            </SelectContent>
-          </Select>
+          <DatePickerWithRange
+            date={dateRange}
+            onDateChange={setDateRange}
+            className="w-auto"
+          />
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -331,7 +343,7 @@ export default function SeguracaTrabalho() {
                     </tr>
                   </thead>
                   <tbody>
-                    {incidents.map((incident) => (
+                    {filteredIncidents.map((incident) => (
                       <tr key={incident.id} className="border-b">
                         <td className="p-4 font-mono text-sm">{incident.id}</td>
                          <td className="p-4">{incident.incident_type}</td>
