@@ -28,6 +28,13 @@ export default function SeguracaTrabalho() {
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<SafetyIncident | null>(null);
   const [newAuditOpen, setNewAuditOpen] = useState(false);
+  
+  // Estados para filtros de incidentes
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Real data from API
   const { data: incidents = [], isLoading: incidentsLoading } = useSafetyIncidents();
@@ -39,15 +46,52 @@ export default function SeguracaTrabalho() {
   
   const deleteMutation = useDeleteSafetyIncident();
 
-  // Filter incidents by selected date range
+  // Filter incidents by selected date range and all filters
   const filteredIncidents = incidents.filter(incident => {
-    if (!dateRange?.from) return true;
+    // Filtro por data range
+    if (dateRange?.from) {
+      const incidentDate = new Date(incident.incident_date);
+      const fromDate = dateRange.from;
+      const toDate = dateRange.to || dateRange.from;
+      
+      if (incidentDate < fromDate || incidentDate > toDate) {
+        return false;
+      }
+    }
     
-    const incidentDate = new Date(incident.incident_date);
-    const fromDate = dateRange.from;
-    const toDate = dateRange.to || dateRange.from;
+    // Filtro por busca de texto
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        incident.id.toLowerCase().includes(searchLower) ||
+        incident.incident_type.toLowerCase().includes(searchLower) ||
+        incident.description.toLowerCase().includes(searchLower) ||
+        (incident.location && incident.location.toLowerCase().includes(searchLower));
+      
+      if (!matchesSearch) return false;
+    }
     
-    return incidentDate >= fromDate && incidentDate <= toDate;
+    // Filtro por tipo
+    if (typeFilter !== "all") {
+      const typeMap: Record<string, string> = {
+        "accident": "Acidente",
+        "near-miss": "Quase Acidente",
+        "unsafe": "Condição Insegura",
+      };
+      if (incident.incident_type !== typeMap[typeFilter]) return false;
+    }
+    
+    // Filtro por severidade
+    if (severityFilter !== "all" && incident.severity !== severityFilter) {
+      return false;
+    }
+    
+    // Filtro por status
+    if (statusFilter !== "all" && incident.status !== statusFilter) {
+      return false;
+    }
+    
+    return true;
   });
 
   // Calculate real-time stats
@@ -302,28 +346,94 @@ export default function SeguracaTrabalho() {
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar incidentes..." className="pl-8 w-64" />
+                <Input 
+                  placeholder="Buscar incidentes..." 
+                  className="pl-8 w-64"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
                   <SelectItem value="accident">Acidente</SelectItem>
                   <SelectItem value="near-miss">Quase Acidente</SelectItem>
                   <SelectItem value="unsafe">Condição Insegura</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+              >
                 <Filter className="h-4 w-4 mr-2" />
                 Filtros
+                {showFilters ? <span className="ml-2">▲</span> : <span className="ml-2">▼</span>}
               </Button>
             </div>
             <Button onClick={() => setNewIncidentOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Registrar Incidente
             </Button>
+          </div>
+
+          {showFilters && (
+            <Card className="p-4">
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <Label>Severidade</Label>
+                  <Select value={severityFilter} onValueChange={setSeverityFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as severidades" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="Alta">Alta</SelectItem>
+                      <SelectItem value="Média">Média</SelectItem>
+                      <SelectItem value="Baixa">Baixa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex-1 min-w-[200px]">
+                  <Label>Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Aberto">Aberto</SelectItem>
+                      <SelectItem value="Em Investigação">Em Investigação</SelectItem>
+                      <SelectItem value="Resolvido">Resolvido</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchTerm("");
+                    setTypeFilter("all");
+                    setSeverityFilter("all");
+                    setStatusFilter("all");
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          <div className="text-sm text-muted-foreground">
+            Mostrando {filteredIncidents.length} de {incidents.length} incidentes
+            {(searchTerm || typeFilter !== "all" || severityFilter !== "all" || statusFilter !== "all") && (
+              <span className="ml-2 text-primary font-medium">
+                (filtros ativos)
+              </span>
+            )}
           </div>
 
           <Card>
@@ -343,7 +453,17 @@ export default function SeguracaTrabalho() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredIncidents.map((incident) => (
+                    {filteredIncidents.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                          {incidents.length === 0 
+                            ? "Nenhum incidente registrado ainda"
+                            : "Nenhum incidente encontrado com os filtros aplicados"
+                          }
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredIncidents.map((incident) => (
                       <tr key={incident.id} className="border-b">
                         <td className="p-4 font-mono text-sm">{incident.id}</td>
                          <td className="p-4">{incident.incident_type}</td>
@@ -370,7 +490,8 @@ export default function SeguracaTrabalho() {
                           </Button>
                         </td>
                       </tr>
-                    ))}
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
