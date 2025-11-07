@@ -28,6 +28,7 @@ export default function SeguracaTrabalho() {
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<SafetyIncident | null>(null);
   const [newAuditOpen, setNewAuditOpen] = useState(false);
+  const [editingAudit, setEditingAudit] = useState<any>(null);
   
   // Estados para filtros de incidentes
   const [showFilters, setShowFilters] = useState(false);
@@ -617,7 +618,15 @@ export default function SeguracaTrabalho() {
                         </td>
                         <td className="p-4">-</td>
                         <td className="p-4">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingAudit(audit);
+                            }}
+                            title="Visualizar/Editar auditoria"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                         </td>
@@ -740,9 +749,16 @@ export default function SeguracaTrabalho() {
       />
 
       <AuditModal
-        isOpen={newAuditOpen}
-        onClose={() => setNewAuditOpen(false)}
-        onSuccess={handleAuditSuccess}
+        isOpen={newAuditOpen || editingAudit !== null}
+        onClose={() => {
+          setNewAuditOpen(false);
+          setEditingAudit(null);
+        }}
+        onSuccess={() => {
+          handleAuditSuccess();
+          setEditingAudit(null);
+        }}
+        audit={editingAudit || undefined}
       />
     </div>
   );
