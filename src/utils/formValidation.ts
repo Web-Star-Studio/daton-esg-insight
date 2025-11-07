@@ -108,12 +108,12 @@ export const validateUrl = (url: string): boolean => {
   }
 };
 
-// Sanitize UUID helper - converts invalid UUID values to undefined
+// Sanitize UUID helper - converts invalid/placeholder values to undefined and ensures valid UUID format
 export const sanitizeUUID = (value: string | undefined | null): string | undefined => {
-  if (!value || value === 'none' || value === 'undefined' || value === 'null' || value.trim() === '') {
-    return undefined;
-  }
-  return value;
+  const v = (value ?? '').toString().trim();
+  if (!v || v === 'none' || v === 'undefined' || v === 'null') return undefined;
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return uuidRegex.test(v) ? v : undefined;
 };
 
 // Validate company context for forms

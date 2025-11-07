@@ -116,11 +116,20 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       return;
     }
     
+    // Validar e normalizar company_id e mentor_id
+    const companyId = sanitizeUUID(user.company.id);
+    if (!companyId) {
+      toast.error("Empresa inválida. Faça login novamente.");
+      perfLogger.end(false, new Error('Invalid company_id'));
+      return;
+    }
+    const mentorId = sanitizeUUID(formData.mentor_id) || null;
+    
     try {
       console.log('📝 Criando PDI com dados (UUIDs):', {
         employee_id: employeeId,
-        mentor_id: sanitizeUUID(formData.mentor_id) || null,
-        company_id: user.company.id,
+        mentor_id: mentorId,
+        company_id: companyId,
         created_by_user_id: user.id,
         goalsCount: goals.length,
         skillsCount: skills.length,
@@ -128,19 +137,23 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       });
       
       const pdiData = {
-        ...formData,
+        company_id: companyId,
         employee_id: employeeId,
-        mentor_id: sanitizeUUID(formData.mentor_id) || null,
-        company_id: user.company.id,
+        current_position: formData.current_position.trim(),
+        target_position: formData.target_position.trim(),
+        start_date: formData.start_date,
+        target_date: formData.target_date,
         status: "Em Andamento",
         progress_percentage: 0,
-        goals: goals.length > 0 ? goals : [],
-        skills_to_develop: skills.length > 0 ? skills : [],
-        development_activities: activities.length > 0 ? activities : [],
-        notes: formData.notes || null,
+        mentor_id: mentorId,
+        goals: goals.length ? goals : [],
+        skills_to_develop: skills.length ? skills : [],
+        development_activities: activities.length ? activities : [],
+        notes: formData.notes?.trim() ? formData.notes.trim() : null,
         created_by_user_id: user.id,
-      };
+      } satisfies Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>;
 
+      console.log('🧾 PDI payload final:', pdiData);
       await createCareerPlan.mutateAsync(pdiData);
       
       logFormSubmission('PDIFormModal', pdiData, true, undefined, { 

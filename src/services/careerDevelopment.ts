@@ -131,9 +131,15 @@ export const getCareerDevelopmentPlans = async () => {
 };
 
 export const createCareerDevelopmentPlan = async (plan: Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>) => {
+  const normalized = {
+    ...plan,
+    mentor_id: plan.mentor_id ? plan.mentor_id : null,
+    notes: plan.notes && plan.notes.trim() !== '' ? plan.notes : null,
+  } as typeof plan;
+
   const { data, error } = await supabase
     .from('career_development_plans')
-    .insert(plan)
+    .insert(normalized)
     .select()
     .maybeSingle();
 
