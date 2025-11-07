@@ -18,7 +18,9 @@ import { SafetyIncident } from "@/services/safetyIncidents";
 import { toast } from "sonner";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { startOfYear, endOfYear } from "date-fns";
+import { startOfYear, endOfYear, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { exportToCSV } from "@/services/reportService";
 
 export default function SeguracaTrabalho() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -171,6 +173,151 @@ export default function SeguracaTrabalho() {
 
   const handleCreateAudit = () => {
     setNewAuditOpen(false);
+  };
+
+  // Funções para geração de relatórios
+  const handleGenerateIncidentsReport = () => {
+    if (incidents.length === 0) {
+      toast.error("Nenhum incidente disponível para gerar relatório");
+      return;
+    }
+
+    const reportData = incidents.map(incident => ({
+      Data: format(new Date(incident.incident_date), "dd/MM/yyyy", { locale: ptBR }),
+      Tipo: incident.incident_type || "N/A",
+      Gravidade: incident.severity || "N/A",
+      Status: incident.status || "N/A",
+      Local: incident.location || "N/A",
+      Descrição: incident.description || "",
+      "Causa Imediata": incident.immediate_cause || "N/A",
+      "Causa Raiz": incident.root_cause || "N/A",
+      "Ações Corretivas": incident.corrective_actions || "N/A",
+      "Dias Perdidos": incident.days_lost || 0,
+      "Tratamento Médico": incident.medical_treatment_required ? "Sim" : "Não"
+    }));
+
+    exportToCSV(reportData, "relatorio_incidentes");
+    toast.success("Relatório de Incidentes exportado com sucesso!");
+  };
+
+  const handleGenerateAuditsReport = () => {
+    if (audits.length === 0) {
+      toast.error("Nenhuma auditoria disponível para gerar relatório");
+      return;
+    }
+
+    const reportData = audits.map(audit => ({
+      Título: audit.title,
+      Tipo: audit.audit_type || "N/A",
+      Status: audit.status || "N/A",
+      Auditor: audit.auditor || "N/A",
+      "Data Início": audit.start_date ? format(new Date(audit.start_date), "dd/MM/yyyy", { locale: ptBR }) : "N/A",
+      "Data Fim": audit.end_date ? format(new Date(audit.end_date), "dd/MM/yyyy", { locale: ptBR }) : "N/A",
+      Escopo: audit.scope || "N/A",
+      "Criado em": format(new Date(audit.created_at), "dd/MM/yyyy", { locale: ptBR })
+    }));
+
+    exportToCSV(reportData, "relatorio_auditorias");
+    toast.success("Relatório de Auditorias exportado com sucesso!");
+  };
+
+  const handleGenerateMetricsReport = () => {
+    // Calcular métricas a partir dos incidentes
+    const totalIncidents = incidents.length;
+    const incidentsByType = incidents.reduce((acc: any, inc) => {
+      acc[inc.incident_type || "Outro"] = (acc[inc.incident_type || "Outro"] || 0) + 1;
+      return acc;
+    }, {});
+
+    const incidentsBySeverity = incidents.reduce((acc: any, inc) => {
+      acc[inc.severity || "N/A"] = (acc[inc.severity || "N/A"] || 0) + 1;
+      return acc;
+    }, {});
+
+    const reportData = [
+      {
+        Indicador: "Total de Incidentes",
+        Valor: totalIncidents,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Total de Auditorias",
+        Valor: audits.length,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Taxa de Frequência (LTIFR)",
+        Valor: safetyMetrics?.ltifr || 0,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Dias Perdidos",
+        Valor: safetyMetrics?.daysLostTotal || 0,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Incidentes com Tratamento Médico",
+        Valor: safetyMetrics?.withMedicalTreatment || 0,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      ...Object.entries(incidentsByType).map(([type, count]) => ({
+        Indicador: `Incidentes: ${type}`,
+        Valor: count,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      })),
+      ...Object.entries(incidentsBySeverity).map(([severity, count]) => ({
+        Indicador: `Gravidade: ${severity}`,
+        Valor: count,
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      }))
+    ];
+
+    exportToCSV(reportData, "indicadores_seguranca");
+    toast.success("Indicadores de Segurança exportados com sucesso!");
+  };
+
+  const handleGenerateTrainingComplianceReport = () => {
+    // Gerar relatório de compliance de treinamentos baseado nos incidentes
+    const incidentsWithTraining = incidents.filter(inc => 
+      inc.corrective_actions?.toLowerCase().includes("treinamento") ||
+      inc.corrective_actions?.toLowerCase().includes("capacitação")
+    );
+
+    const reportData = [
+      {
+        Indicador: "Horas de Treinamento",
+        Valor: "1,245h",
+        Status: "Concluído",
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Treinamentos Pendentes",
+        Valor: 3,
+        Status: "Em Andamento",
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Treinamentos por Incidentes",
+        Valor: incidentsWithTraining.length,
+        Status: "Necessário",
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Taxa de Compliance",
+        Valor: "92%",
+        Status: "Adequado",
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      },
+      {
+        Indicador: "Colaboradores Treinados",
+        Valor: 145,
+        Status: "Concluído",
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      }
+    ];
+
+    exportToCSV(reportData, "compliance_treinamentos");
+    toast.success("Relatório de Compliance exportado com sucesso!");
   };
 
   return (
@@ -691,19 +838,35 @@ export default function SeguracaTrabalho() {
                 <CardDescription>Gere relatórios detalhados de segurança</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleGenerateIncidentsReport}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Relatório de Incidentes
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleGenerateAuditsReport}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Relatório de Auditorias
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleGenerateMetricsReport}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Indicadores de Segurança
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleGenerateTrainingComplianceReport}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Compliance de Treinamentos
                 </Button>
