@@ -408,3 +408,65 @@ export const useCreateSuccessionCandidate = () => {
     },
   });
 };
+
+// Job Applications
+export const getInternalJobApplications = async (jobPostingId?: string) => {
+  let query = supabase
+    .from('job_applications')
+    .select(`
+      *,
+      job_posting:internal_job_postings(title, department),
+      employee:employees(id, full_name, employee_code, position)
+    `)
+    .order('application_date', { ascending: false });
+  
+  if (jobPostingId) {
+    query = query.eq('job_posting_id', jobPostingId);
+  }
+  
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+};
+
+export const createInternalJobApplication = async (application: any) => {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .insert(application)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  return data;
+};
+
+export const checkUserApplication = async (jobPostingId: string, employeeId: string) => {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('id')
+    .eq('job_posting_id', jobPostingId)
+    .eq('employee_id', employeeId)
+    .maybeSingle();
+  
+  if (error) throw error;
+  return !!data;
+};
+
+export const useInternalJobApplications = (jobPostingId?: string) => {
+  return useQuery({
+    queryKey: ['internal-job-applications', jobPostingId],
+    queryFn: () => getInternalJobApplications(jobPostingId),
+  });
+};
+
+export const useCreateInternalJobApplication = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createInternalJobApplication,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['internal-job-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['internal-job-postings'] });
+    },
+  });
+};

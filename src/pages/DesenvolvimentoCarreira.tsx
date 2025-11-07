@@ -43,6 +43,9 @@ import { MentorshipProgramModal } from "@/components/MentorshipProgramModal";
 import { CompetencyMatrixModal } from "@/components/CompetencyMatrixModal";
 import { SuccessionPlanModal } from "@/components/SuccessionPlanModal";
 import { SuccessionCandidateModal } from "@/components/SuccessionCandidateModal";
+import { InternalJobPostingModal } from "@/components/InternalJobPostingModal";
+import { InternalJobDetailsModal } from "@/components/InternalJobDetailsModal";
+import { InternalJobApplicationModal } from "@/components/InternalJobApplicationModal";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -89,6 +92,15 @@ export default function DesenvolvimentoCarreira() {
   const [isNewSuccessionPlanOpen, setIsNewSuccessionPlanOpen] = useState(false);
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
   const [selectedSuccessionPlan, setSelectedSuccessionPlan] = useState<any>(null);
+  
+  // Internal Job Postings states
+  const [isNewJobModalOpen, setIsNewJobModalOpen] = useState(false);
+  const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [jobSearchTerm, setJobSearchTerm] = useState("");
+  const [jobFilterDepartment, setJobFilterDepartment] = useState("all");
+  const [jobFilterStatus, setJobFilterStatus] = useState("all");
   
   const handlePDISuccess = () => {
     setActiveTab("pdi");
@@ -591,13 +603,199 @@ export default function DesenvolvimentoCarreira() {
         </TabsContent>
 
         <TabsContent value="vagas" className="space-y-6">
-          <div className="text-center py-12">
-            <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Vagas Internas</h3>
-            <p className="text-muted-foreground mb-4">
-              Funcionalidade em desenvolvimento
-            </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Vagas Internas</h3>
+              <p className="text-sm text-muted-foreground">
+                Oportunidades de crescimento e mobilidade interna
+              </p>
+            </div>
+            <Button onClick={() => setIsNewJobModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Vaga Interna
+            </Button>
           </div>
+
+          {/* Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {internalJobs?.filter(j => j.status === "Aberto").length || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Vagas Abertas</p>
+                  </div>
+                  <Briefcase className="w-8 h-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">{internalJobs?.length || 0}</p>
+                    <p className="text-sm text-muted-foreground">Total de Vagas</p>
+                  </div>
+                  <Target className="w-8 h-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {internalJobs?.filter(j => j.status === "Preenchido").length || 0}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Vagas Preenchidas</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-4 flex-wrap">
+            <Input
+              placeholder="Buscar por título ou departamento..."
+              value={jobSearchTerm}
+              onChange={(e) => setJobSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            <Select value={jobFilterDepartment} onValueChange={setJobFilterDepartment}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por departamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Departamentos</SelectItem>
+                <SelectItem value="Recursos Humanos">Recursos Humanos</SelectItem>
+                <SelectItem value="TI">TI</SelectItem>
+                <SelectItem value="Vendas">Vendas</SelectItem>
+                <SelectItem value="Financeiro">Financeiro</SelectItem>
+                <SelectItem value="Marketing">Marketing</SelectItem>
+                <SelectItem value="Operações">Operações</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={jobFilterStatus} onValueChange={setJobFilterStatus}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Status</SelectItem>
+                <SelectItem value="Aberto">Aberto</SelectItem>
+                <SelectItem value="Fechado">Fechado</SelectItem>
+                <SelectItem value="Preenchido">Preenchido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Job Postings Grid */}
+          {internalJobs?.filter(job => {
+            const matchesSearch = job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+                                 job.department.toLowerCase().includes(jobSearchTerm.toLowerCase());
+            const matchesDepartment = jobFilterDepartment === "all" || job.department === jobFilterDepartment;
+            const matchesStatus = jobFilterStatus === "all" || job.status === jobFilterStatus;
+            
+            return matchesSearch && matchesDepartment && matchesStatus;
+          }).length === 0 ? (
+            <div className="text-center py-12">
+              <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Nenhuma vaga encontrada</h3>
+              <p className="text-muted-foreground mb-4">
+                {jobSearchTerm || jobFilterDepartment !== "all" || jobFilterStatus !== "all"
+                  ? "Tente ajustar os filtros de busca"
+                  : "Comece criando vagas internas para mobilidade de funcionários"}
+              </p>
+              {!jobSearchTerm && jobFilterDepartment === "all" && jobFilterStatus === "all" && (
+                <Button onClick={() => setIsNewJobModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeira Vaga
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {internalJobs
+                ?.filter(job => {
+                  const matchesSearch = job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+                                       job.department.toLowerCase().includes(jobSearchTerm.toLowerCase());
+                  const matchesDepartment = jobFilterDepartment === "all" || job.department === jobFilterDepartment;
+                  const matchesStatus = jobFilterStatus === "all" || job.status === jobFilterStatus;
+                  
+                  return matchesSearch && matchesDepartment && matchesStatus;
+                })
+                .map((job) => {
+                  const isDeadlinePassed = new Date(job.application_deadline) < new Date();
+                  
+                  return (
+                    <Card key={job.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-lg">{job.title}</CardTitle>
+                          <Badge variant={getStatusColor(job.status)}>{job.status}</Badge>
+                        </div>
+                        <CardDescription>{job.department}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          {job.level && <Badge variant="outline">{job.level}</Badge>}
+                          {job.employment_type && <Badge variant="outline">{job.employment_type}</Badge>}
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {job.description}
+                        </p>
+                        
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            Prazo: {format(new Date(job.application_deadline), "dd/MM/yyyy", { locale: ptBR })}
+                          </span>
+                        </div>
+                        
+                        {isDeadlinePassed && (
+                          <Badge variant="secondary" className="text-xs">
+                            Prazo encerrado
+                          </Badge>
+                        )}
+                        
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              setSelectedJob(job);
+                              setIsJobDetailsModalOpen(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Ver Detalhes
+                          </Button>
+                          {job.status === "Aberto" && !isDeadlinePassed && (
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => {
+                                setSelectedJob(job);
+                                setIsApplyModalOpen(true);
+                              }}
+                            >
+                              Candidatar-se
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="mentoria" className="space-y-6">
@@ -705,6 +903,39 @@ export default function DesenvolvimentoCarreira() {
         existingCandidateIds={selectedSuccessionPlan?.candidates?.map((c: any) => c.employee_id) || []}
         onSuccess={() => {
           // Candidates will be automatically refetched via query invalidation
+        }}
+      />
+
+      <InternalJobPostingModal
+        isOpen={isNewJobModalOpen}
+        onClose={() => setIsNewJobModalOpen(false)}
+      />
+
+      <InternalJobDetailsModal
+        isOpen={isJobDetailsModalOpen}
+        onClose={() => {
+          setIsJobDetailsModalOpen(false);
+          setSelectedJob(null);
+        }}
+        job={selectedJob}
+        onApply={() => {
+          setIsJobDetailsModalOpen(false);
+          setIsApplyModalOpen(true);
+        }}
+        hasApplied={false}
+      />
+
+      <InternalJobApplicationModal
+        isOpen={isApplyModalOpen}
+        onClose={() => {
+          setIsApplyModalOpen(false);
+          setSelectedJob(null);
+        }}
+        job={selectedJob}
+        employeeId="mock-employee-id"
+        onSuccess={() => {
+          setIsJobDetailsModalOpen(false);
+          setSelectedJob(null);
         }}
       />
     </div>
