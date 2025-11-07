@@ -81,19 +81,49 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       return;
     }
     
+    // Validar campos obrigatórios
+    if (!formData.current_position.trim() || !formData.target_position.trim()) {
+      toast.error("Por favor, preencha o cargo atual e o cargo alvo.");
+      perfLogger.end(false, new Error('Required fields missing'));
+      return;
+    }
+    
+    if (!formData.start_date || !formData.target_date) {
+      toast.error("Por favor, preencha as datas de início e meta.");
+      perfLogger.end(false, new Error('Dates missing'));
+      return;
+    }
+    
+    // Validar que target_date > start_date
+    if (new Date(formData.target_date) <= new Date(formData.start_date)) {
+      toast.error("A data meta deve ser posterior à data de início.");
+      perfLogger.end(false, new Error('Invalid date range'));
+      return;
+    }
+    
     try {
+      console.log('📝 Criando PDI com dados:', {
+        employee_id: formData.employee_id,
+        mentor_id: formData.mentor_id || null,
+        company_id: user.company.id,
+        goalsCount: goals.length,
+        skillsCount: skills.length,
+        activitiesCount: activities.length
+      });
+      
       const pdiData = {
         ...formData,
         employee_id: sanitizeUUID(formData.employee_id) || '',
-        mentor_id: sanitizeUUID(formData.mentor_id),
+        mentor_id: sanitizeUUID(formData.mentor_id) || null,
         company_id: user.company.id,
         status: "Em Andamento",
         progress_percentage: 0,
-        goals,
-        skills_to_develop: skills,
-        development_activities: activities,
+        goals: goals.length > 0 ? goals : [],
+        skills_to_develop: skills.length > 0 ? skills : [],
+        development_activities: activities.length > 0 ? activities : [],
+        notes: formData.notes || null,
         created_by_user_id: user.id,
-      } as Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>;
+      };
 
       await createCareerPlan.mutateAsync(pdiData);
       
@@ -108,11 +138,26 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       onSuccess?.();
       onClose();
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar PDI:", error);
+      
+      let errorMessage = "Erro ao criar PDI. ";
+      
+      if (error.message?.includes('foreign key')) {
+        errorMessage += "O funcionário ou mentor selecionado não existe.";
+      } else if (error.message?.includes('violates row-level security')) {
+        errorMessage += "Você não tem permissão para criar PDIs.";
+      } else if (error.message?.includes('company_id')) {
+        errorMessage += "Erro ao identificar sua empresa. Faça login novamente.";
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += "Verifique os dados e tente novamente.";
+      }
+      
       logFormSubmission('PDIFormModal', formData, false, error);
       perfLogger.end(false, error);
-      toast.error("Erro ao criar PDI. Verifique os dados e tente novamente.");
+      toast.error(errorMessage);
     }
   };
 
