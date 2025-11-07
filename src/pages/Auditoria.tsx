@@ -40,6 +40,7 @@ export default function Auditoria() {
   const { toast } = useToast();
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+  const [editingAudit, setEditingAudit] = useState<Audit | null>(null);
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
   const [filters, setFilters] = useState({
     type: 'all',
@@ -187,6 +188,7 @@ export default function Auditoria() {
   const handleAuditCreated = () => {
     refetchAudits();
     setIsAuditModalOpen(false);
+    setEditingAudit(null);
   };
 
   const handleAuditSelected = (audit: Audit) => {
@@ -370,7 +372,15 @@ export default function Auditoria() {
                           {format(new Date(audit.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingAudit(audit);
+                            }}
+                            title="Editar auditoria"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -637,9 +647,13 @@ export default function Auditoria() {
 
       {/* Modals */}
       <AuditModal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
+        isOpen={isAuditModalOpen || editingAudit !== null}
+        onClose={() => {
+          setIsAuditModalOpen(false);
+          setEditingAudit(null);
+        }}
         onSuccess={handleAuditCreated}
+        audit={editingAudit || undefined}
       />
 
       {selectedAudit && (

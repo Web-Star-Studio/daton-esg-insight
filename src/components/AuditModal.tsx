@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,15 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { unifiedToast } from "@/utils/unifiedToast";
-import { auditService, type CreateAuditData } from "@/services/audit";
+import { auditService, type CreateAuditData, type Audit } from "@/services/audit";
 
 interface AuditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  audit?: Audit;
 }
 
-export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
+export function AuditModal({ isOpen, onClose, onSuccess, audit }: AuditModalProps) {
   
   const [formData, setFormData] = useState<CreateAuditData>({
     title: "",
@@ -43,6 +44,23 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
     }
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (data: CreateAuditData & { id: string }) => 
+      auditService.updateAudit(data.id, data),
+    onSuccess: (data) => {
+      unifiedToast.success("Auditoria atualizada com sucesso", {
+        description: `A auditoria "${data.title}" foi atualizada.`
+      });
+      onSuccess();
+      resetForm();
+    },
+    onError: (error: any) => {
+      unifiedToast.error("Erro ao atualizar auditoria", {
+        description: error.message || "Ocorreu um erro inesperado."
+      });
+    }
+  });
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -54,6 +72,27 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       status: "Planejada"
     });
   };
+
+  // Atualizar formData quando audit mudar
+  useEffect(() => {
+    if (audit) {
+      setFormData({
+        title: audit.title || '',
+        audit_type: audit.audit_type || '',
+        auditor: audit.auditor || '',
+        start_date: audit.start_date 
+          ? new Date(audit.start_date).toISOString().split('T')[0]
+          : '',
+        end_date: audit.end_date
+          ? new Date(audit.end_date).toISOString().split('T')[0]
+          : '',
+        scope: audit.scope || '',
+        status: audit.status || 'Planejada',
+      });
+    } else {
+      resetForm();
+    }
+  }, [audit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +129,11 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
       scope: trimmedScope
     };
     
-    createMutation.mutate(sanitizedData);
+    if (audit?.id) {
+      updateMutation.mutate({ ...sanitizedData, id: audit.id });
+    } else {
+      createMutation.mutate(sanitizedData);
+    }
   };
 
   const handleClose = () => {
@@ -102,9 +145,14 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Planejar Nova Auditoria</DialogTitle>
+          <DialogTitle>
+            {audit ? 'Editar Auditoria' : 'Planejar Nova Auditoria'}
+          </DialogTitle>
           <DialogDescription>
-            Crie uma nova auditoria para acompanhar achados e planos de ação.
+            {audit 
+              ? 'Atualize as informações da auditoria.'
+              : 'Crie uma nova auditoria para acompanhar achados e planos de ação.'
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -206,8 +254,11 @@ export function AuditModal({ isOpen, onClose, onSuccess }: AuditModalProps) {
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Criando..." : "Criar Auditoria"}
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+              {createMutation.isPending || updateMutation.isPending
+                ? (audit ? "Atualizando..." : "Criando...")
+                : (audit ? "Atualizar Auditoria" : "Criar Auditoria")
+              }
             </Button>
           </DialogFooter>
         </form>

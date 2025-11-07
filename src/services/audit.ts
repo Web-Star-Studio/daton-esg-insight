@@ -225,6 +225,48 @@ class AuditService {
     }
   }
 
+  async updateAudit(auditId: string, auditData: CreateAuditData): Promise<Audit> {
+    console.log('Updating audit:', auditId, auditData);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id, id')
+      .single();
+
+    if (!profile?.company_id) {
+      throw new Error('Company ID não encontrado');
+    }
+
+    const { data: session } = await supabase.auth.getSession();
+    
+    const response = await fetch(
+      `https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/audit-management?action=update-audit&audit_id=${auditId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.session?.access_token}`
+        },
+        body: JSON.stringify(auditData)
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Erro ao atualizar auditoria');
+    }
+
+    const data = await response.json();
+    
+    // Log the activity
+    await this.logActivity('audit_updated', `Auditoria atualizada: ${data.title}`, {
+      audit_id: data.id,
+      audit_type: data.audit_type
+    });
+
+    return data;
+  }
+
   async updateAuditFinding(findingId: string, updateData: UpdateFindingData): Promise<AuditFinding> {
     console.log('Updating audit finding:', findingId, updateData);
     

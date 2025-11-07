@@ -60,9 +60,15 @@ serve(async (req) => {
         return await createFinding(supabaseClient, company_id, user.id, body)
       }
     } else if (req.method === 'PUT') {
-      const action = body?.action
+      const action = url.searchParams.get('action') || body?.action
       
-      if (action === 'update-finding') {
+      if (action === 'update-audit') {
+        const auditId = url.searchParams.get('audit_id')
+        if (!auditId) {
+          return new Response('Missing audit_id', { status: 400, headers: corsHeaders })
+        }
+        return await updateAudit(supabaseClient, company_id, auditId, body)
+      } else if (action === 'update-finding') {
         return await updateFinding(supabaseClient, company_id, body.finding_id, body)
       }
     }
@@ -138,6 +144,46 @@ async function createAudit(supabase: any, company_id: string, user_id: string, a
 
   if (error) {
     throw new Error(`Failed to create audit: ${error.message}`)
+  }
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function updateAudit(supabase: any, company_id: string, audit_id: string, auditData: any) {
+  // Verificar se a auditoria pertence à empresa do usuário
+  const { data: existingAudit, error: checkError } = await supabase
+    .from('audits')
+    .select('id')
+    .eq('id', audit_id)
+    .eq('company_id', company_id)
+    .single()
+
+  if (checkError || !existingAudit) {
+    throw new Error('Auditoria não encontrada ou acesso negado')
+  }
+
+  const { data, error } = await supabase
+    .from('audits')
+    .update({
+      title: auditData.title,
+      audit_type: auditData.audit_type,
+      auditor: auditData.auditor,
+      start_date: auditData.start_date || null,
+      end_date: auditData.end_date || null,
+      scope: auditData.scope,
+      status: auditData.status,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', audit_id)
+    .eq('company_id', company_id)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update audit: ${error.message}`)
   }
 
   return new Response(
