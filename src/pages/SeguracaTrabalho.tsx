@@ -28,12 +28,6 @@ export default function SeguracaTrabalho() {
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<SafetyIncident | null>(null);
   const [newAuditOpen, setNewAuditOpen] = useState(false);
-  
-  // Estados para filtros de incidentes
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [severityFilter, setSeverityFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
 
   // Real data from API
   const { data: incidents = [], isLoading: incidentsLoading } = useSafetyIncidents();
@@ -45,52 +39,15 @@ export default function SeguracaTrabalho() {
   
   const deleteMutation = useDeleteSafetyIncident();
 
-  // Filtrar incidentes por todos os critérios
+  // Filter incidents by selected date range
   const filteredIncidents = incidents.filter(incident => {
-    // Filtro por data range
-    if (dateRange?.from) {
-      const incidentDate = new Date(incident.incident_date);
-      const fromDate = dateRange.from;
-      const toDate = dateRange.to || dateRange.from;
-      
-      if (incidentDate < fromDate || incidentDate > toDate) {
-        return false;
-      }
-    }
+    if (!dateRange?.from) return true;
     
-    // Filtro por busca de texto (ID, tipo, descrição, localização)
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        incident.id.toLowerCase().includes(searchLower) ||
-        incident.incident_type.toLowerCase().includes(searchLower) ||
-        incident.description.toLowerCase().includes(searchLower) ||
-        (incident.location && incident.location.toLowerCase().includes(searchLower));
-      
-      if (!matchesSearch) return false;
-    }
+    const incidentDate = new Date(incident.incident_date);
+    const fromDate = dateRange.from;
+    const toDate = dateRange.to || dateRange.from;
     
-    // Filtro por tipo
-    if (typeFilter !== "all") {
-      const typeMap: Record<string, string> = {
-        "accident": "Acidente",
-        "near-miss": "Quase Acidente",
-        "unsafe": "Condição Insegura",
-      };
-      if (incident.incident_type !== typeMap[typeFilter]) return false;
-    }
-    
-    // Filtro por severidade
-    if (severityFilter !== "all" && incident.severity !== severityFilter) {
-      return false;
-    }
-    
-    // Filtro por status
-    if (statusFilter !== "all" && incident.status !== statusFilter) {
-      return false;
-    }
-    
-    return true;
+    return incidentDate >= fromDate && incidentDate <= toDate;
   });
 
   // Calculate real-time stats
@@ -169,13 +126,6 @@ export default function SeguracaTrabalho() {
 
   const handleCreateAudit = () => {
     setNewAuditOpen(false);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setTypeFilter("all");
-    setSeverityFilter("all");
-    setStatusFilter("all");
   };
 
   return (
@@ -352,65 +302,28 @@ export default function SeguracaTrabalho() {
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar incidentes..." 
-                  className="pl-8 w-64"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                <Input placeholder="Buscar incidentes..." className="pl-8 w-64" />
               </div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="accident">Acidente</SelectItem>
                   <SelectItem value="near-miss">Quase Acidente</SelectItem>
                   <SelectItem value="unsafe">Condição Insegura</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Severidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="Alta">Alta</SelectItem>
-                  <SelectItem value="Média">Média</SelectItem>
-                  <SelectItem value="Baixa">Baixa</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Aberto">Aberto</SelectItem>
-                  <SelectItem value="Em Investigação">Em Investigação</SelectItem>
-                  <SelectItem value="Resolvido">Resolvido</SelectItem>
-                </SelectContent>
-              </Select>
-              {(searchTerm || typeFilter !== "all" || severityFilter !== "all" || statusFilter !== "all") && (
-                <Button variant="outline" onClick={clearFilters}>
-                  Limpar Filtros
-                </Button>
-              )}
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
             </div>
             <Button onClick={() => setNewIncidentOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Registrar Incidente
             </Button>
-          </div>
-
-          <div className="text-sm text-muted-foreground">
-            Mostrando {filteredIncidents.length} de {incidents.length} incidentes
-            {(searchTerm || typeFilter !== "all" || severityFilter !== "all" || statusFilter !== "all") && (
-              <span className="ml-2 text-primary">
-                (filtros ativos)
-              </span>
-            )}
           </div>
 
           <Card>
@@ -430,45 +343,34 @@ export default function SeguracaTrabalho() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredIncidents.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                          {incidents.length === 0 
-                            ? "Nenhum incidente registrado ainda"
-                            : "Nenhum incidente encontrado com os filtros aplicados"
-                          }
+                    {filteredIncidents.map((incident) => (
+                      <tr key={incident.id} className="border-b">
+                        <td className="p-4 font-mono text-sm">{incident.id}</td>
+                         <td className="p-4">{incident.incident_type}</td>
+                        <td className="p-4">
+                          <Badge className={getSeverityColor(incident.severity)}>
+                            {incident.severity}
+                          </Badge>
+                        </td>
+                         <td className="p-4">
+                          {incident.employee_id ? `Funcionário ID: ${incident.employee_id}` : 'N/A'}
+                         </td>
+                         <td className="p-4">
+                          {incident.location || 'N/A'}
+                         </td>
+                        <td className="p-4">{new Date(incident.incident_date).toLocaleDateString('pt-BR')}</td>
+                        <td className="p-4">
+                          <Badge className={getStatusColor(incident.status)}>
+                            {incident.status}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </td>
                       </tr>
-                    ) : (
-                      filteredIncidents.map((incident) => (
-                        <tr key={incident.id} className="border-b">
-                          <td className="p-4 font-mono text-sm">{incident.id}</td>
-                          <td className="p-4">{incident.incident_type}</td>
-                          <td className="p-4">
-                            <Badge className={getSeverityColor(incident.severity)}>
-                              {incident.severity}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            {incident.employee_id ? `Funcionário ID: ${incident.employee_id}` : 'N/A'}
-                          </td>
-                          <td className="p-4">
-                            {incident.location || 'N/A'}
-                          </td>
-                          <td className="p-4">{new Date(incident.incident_date).toLocaleDateString('pt-BR')}</td>
-                          <td className="p-4">
-                            <Badge className={getStatusColor(incident.status)}>
-                              {incident.status}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
