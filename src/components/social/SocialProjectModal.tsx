@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createSocialProject, updateSocialProject, SocialProject } from "@/services/socialProjects";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { formErrorHandler } from "@/utils/formErrorHandler";
 
 const projectSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -39,9 +41,12 @@ interface SocialProjectModalProps {
 
 export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: SocialProjectModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: project ? {
       name: project.name,
       description: project.description || "",
@@ -65,13 +70,41 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
     }
   });
 
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      try {
+        const { user, profile } = await formErrorHandler.checkAuth();
+        setCompanyId(profile.company_id);
+      } catch (error) {
+        console.error('Error fetching company_id:', error);
+        toast.error('Erro ao carregar informações do usuário');
+        onOpenChange(false);
+      }
+    };
+
+    if (open) {
+      fetchCompanyId();
+    }
+  }, [open, onOpenChange]);
+
   const onSubmit = async (data: ProjectFormData) => {
+    console.log('=== SOCIAL PROJECT SUBMISSION ===');
+    console.log('Form data:', data);
+    console.log('Company ID:', companyId);
+    
+    if (!companyId) {
+      toast.error('Erro ao identificar empresa. Tente novamente.');
+      return;
+    }
+
     setIsSubmitting(true);
+    
     try {
       const { beneficiaries_target, beneficiaries_reached, category, ...projectData } = data;
       
       const projectPayload = {
         ...projectData,
+        company_id: companyId,
         impact_metrics: {
           beneficiaries_target,
           beneficiaries_reached,
@@ -79,17 +112,34 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
         }
       };
 
+      console.log('Final payload:', projectPayload);
+
       if (project) {
-        await updateSocialProject(project.id, projectPayload);
-        toast.success("Projeto atualizado com sucesso!");
+        await formErrorHandler.updateRecord(
+          () => updateSocialProject(project.id, projectPayload),
+          {
+            formType: 'Projeto Social',
+            successMessage: 'Projeto atualizado com sucesso!'
+          }
+        );
       } else {
-        await createSocialProject(projectPayload as any);
-        toast.success("Projeto criado com sucesso!");
+        await formErrorHandler.createRecord(
+          () => createSocialProject(projectPayload as any),
+          {
+            formType: 'Projeto Social',
+            successMessage: 'Projeto criado com sucesso!'
+          }
+        );
       }
+      
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar projeto");
+      console.error('Error submitting project:', error);
+      formErrorHandler.handleError(error, {
+        formType: 'Projeto Social',
+        operation: project ? 'update' : 'create'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -103,13 +153,16 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
           <DialogDescription>
             {project ? "Atualize as informações" : "Preencha os dados"} do projeto de impacto social
           </DialogDescription>
+          <p className="text-xs text-muted-foreground mt-2">
+            Campos marcados com * são obrigatórios
+          </p>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="name">Nome do Projeto *</Label>
-              <Input id="name" {...register("name")} />
+              <Input id="name" {...register("name")} className={errors.name ? "border-destructive" : ""} />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
             </div>
 
@@ -171,14 +224,15 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
                 id="invested_amount" 
                 type="number" 
                 step="0.01"
-                {...register("invested_amount", { valueAsNumber: true })} 
+                {...register("invested_amount", { valueAsNumber: true })}
+                className={errors.invested_amount ? "border-destructive" : ""}
               />
               {errors.invested_amount && <p className="text-sm text-destructive mt-1">{errors.invested_amount.message}</p>}
             </div>
 
             <div>
               <Label htmlFor="start_date">Data de Início *</Label>
-              <Input id="start_date" type="date" {...register("start_date")} />
+              <Input id="start_date" type="date" {...register("start_date")} className={errors.start_date ? "border-destructive" : ""} />
               {errors.start_date && <p className="text-sm text-destructive mt-1">{errors.start_date.message}</p>}
             </div>
 
