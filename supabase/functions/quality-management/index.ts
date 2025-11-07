@@ -51,7 +51,39 @@ serve(async (req) => {
     const path = url.pathname.replace('/quality-management', '');
     const method = req.method;
 
-    // Route handling
+    // Handle POST requests with action in body
+    if (method === 'POST') {
+      const body = await req.json();
+      const action = body.action;
+
+      switch (action) {
+        case 'dashboard':
+          return await getQualityDashboard(supabase, profile.company_id);
+        
+        case 'nc-stats':
+          return await getNonConformityStats(supabase, profile.company_id);
+        
+        case 'action-plans':
+          return await getActionPlansProgress(supabase, profile.company_id);
+        
+        case 'risk-matrix':
+          return await getRiskMatrix(supabase, profile.company_id, body.matrix_id);
+        
+        case 'process-efficiency':
+          return await getProcessEfficiency(supabase, profile.company_id);
+
+        case 'indicators':
+          return await getQualityIndicators(supabase, profile.company_id);
+
+        default:
+          return new Response(JSON.stringify({ error: 'Unknown action' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+      }
+    }
+
+    // Handle GET requests for backward compatibility
     switch (true) {
       case (path === '/dashboard' || path === '') && method === 'GET':
         return await getQualityDashboard(supabase, profile.company_id);
