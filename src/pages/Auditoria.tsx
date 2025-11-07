@@ -47,6 +47,7 @@ export default function Auditoria() {
     status: 'all',
     search: ''
   });
+  const [showFilters, setShowFilters] = useState(false);
 
   // SGQ Audits state (migrated from AuditoriaInternas.tsx)
   const [sgqAudits, setSgqAudits] = useState<SGQAudit[]>([]);
@@ -287,38 +288,87 @@ export default function Auditoria() {
 
         <TabsContent value="audits" className="space-y-4">
           {/* Filters */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar auditorias..."
-                value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="pl-10"
-              />
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar auditorias..." 
+                  className="pl-8 w-64"
+                  value={filters.search}
+                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                />
+              </div>
+              <Select value={filters.type} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="Interna">Interna</SelectItem>
+                  <SelectItem value="Externa">Externa</SelectItem>
+                  <SelectItem value="Certificação">Certificação</SelectItem>
+                  <SelectItem value="Compliance">Compliance</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+                {showFilters ? <span className="ml-2">▲</span> : <span className="ml-2">▼</span>}
+              </Button>
             </div>
-            <Select value={filters.type} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="internal">Interna</SelectItem>
-                <SelectItem value="external">Externa</SelectItem>
-                <SelectItem value="compliance">Compliance</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="planned">Planejada</SelectItem>
-                <SelectItem value="in_progress">Em Andamento</SelectItem>
-                <SelectItem value="completed">Concluída</SelectItem>
-              </SelectContent>
-            </Select>
+            <Button onClick={() => setIsAuditModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Auditoria
+            </Button>
+          </div>
+
+          {/* Filtros Expandidos */}
+          {showFilters && (
+            <Card className="p-4">
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <Label>Status</Label>
+                  <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Planejada">Planejada</SelectItem>
+                      <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                      <SelectItem value="Concluída">Concluída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setFilters({
+                      type: 'all',
+                      status: 'all',
+                      search: ''
+                    });
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Contador de Resultados */}
+          <div className="text-sm text-muted-foreground">
+            Mostrando {filteredAudits.length} de {audits.length} auditorias
+            {(filters.search || filters.type !== "all" || filters.status !== "all") && (
+              <span className="ml-2 text-primary font-medium">
+                (filtros ativos)
+              </span>
+            )}
           </div>
 
           <Card>
