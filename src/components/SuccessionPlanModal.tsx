@@ -15,11 +15,9 @@ import { useAuth } from "@/contexts/AuthContext";
 const successionPlanSchema = z.object({
   position_title: z.string().trim().min(1, "Cargo/posição é obrigatório").max(200, "Título muito longo"),
   department: z.string().min(1, "Departamento é obrigatório"),
-  current_holder_id: z.string().uuid("ID do ocupante inválido").nullable(),
-  critical_level: z.string().refine((val) => ["Alto", "Médio", "Baixo"].includes(val), {
-    message: "Nível crítico deve ser Alto, Médio ou Baixo",
-  }),
-  expected_retirement_date: z.string().nullable(),
+  current_holder_id: z.string().uuid("ID do ocupante inválido").nullable().optional(),
+  critical_level: z.string().min(1, "Nível crítico é obrigatório"),
+  expected_retirement_date: z.string().nullable().optional(),
   company_id: z.string().uuid("ID da empresa inválido"),
   created_by_user_id: z.string().uuid("ID do usuário inválido"),
 });
@@ -45,9 +43,13 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
     reset,
     setValue,
     watch,
+    trigger,
   } = useForm<SuccessionPlanFormData>({
     resolver: zodResolver(successionPlanSchema),
     defaultValues: {
+      position_title: "",
+      department: "",
+      critical_level: "",
       current_holder_id: null,
       expected_retirement_date: null,
       company_id: user?.company?.id || "",
@@ -57,7 +59,16 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
 
   const onSubmit = async (data: SuccessionPlanFormData) => {
     try {
-      await createSuccessionPlan.mutateAsync(data);
+      // Normalizar dados
+      const normalizedData = {
+        ...data,
+        current_holder_id: data.current_holder_id || null,
+        expected_retirement_date: data.expected_retirement_date?.trim() || null,
+      };
+      
+      console.log("Enviando plano de sucessão:", normalizedData);
+      await createSuccessionPlan.mutateAsync(normalizedData);
+      
       toast({
         title: "Sucesso!",
         description: "Plano de sucessão criado com sucesso.",
@@ -66,6 +77,7 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
       onClose();
       onSuccess?.();
     } catch (error) {
+      console.error("Erro ao criar plano:", error);
       toast({
         title: "Erro",
         description: "Erro ao criar plano de sucessão. Tente novamente.",
@@ -101,8 +113,11 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
             <div>
               <Label htmlFor="department">Departamento *</Label>
               <Select
-                onValueChange={(value) => setValue("department", value)}
-                defaultValue={watch("department")}
+                onValueChange={(value) => {
+                  setValue("department", value);
+                  trigger("department");
+                }}
+                value={watch("department")}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o departamento" />
@@ -126,8 +141,11 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
             <div>
               <Label htmlFor="critical_level">Nível Crítico *</Label>
               <Select
-                onValueChange={(value) => setValue("critical_level", value as "Alto" | "Médio" | "Baixo")}
-                defaultValue={watch("critical_level")}
+                onValueChange={(value) => {
+                  setValue("critical_level", value);
+                  trigger("critical_level");
+                }}
+                value={watch("critical_level")}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o nível crítico" />
@@ -146,8 +164,11 @@ export const SuccessionPlanModal = ({ isOpen, onClose, onSuccess }: SuccessionPl
             <div>
               <Label htmlFor="current_holder_id">Ocupante Atual (Opcional)</Label>
               <Select
-                onValueChange={(value) => setValue("current_holder_id", value || null)}
-                defaultValue={watch("current_holder_id") || undefined}
+                onValueChange={(value) => {
+                  setValue("current_holder_id", value === "none" ? null : value);
+                  trigger("current_holder_id");
+                }}
+                value={watch("current_holder_id") || "none"}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o ocupante atual" />
