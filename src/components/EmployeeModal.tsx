@@ -5,12 +5,14 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Plus } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
 import { getDepartments, getPositions, createDepartment, createPosition, type Department, type Position } from '@/services/organizationalStructure';
 import { formErrorHandler } from '@/utils/formErrorHandler';
+import { supabase } from '@/integrations/supabase/client';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -54,9 +56,61 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [creatingDepartment, setCreatingDepartment] = useState(false);
   const [creatingPosition, setCreatingPosition] = useState(false);
 
+  // Code validation state
+  const [codeValidation, setCodeValidation] = useState<{
+    checking: boolean;
+    exists: boolean;
+    message?: string;
+  }>({ checking: false, exists: false });
+
+  // Debounce employee code for validation
+  const debouncedEmployeeCode = useDebounce(formData.employee_code, 500);
+
+  // Check if employee code exists
+  useEffect(() => {
+    const checkEmployeeCodeExists = async () => {
+      if (!debouncedEmployeeCode.trim() || employee) {
+        setCodeValidation({ checking: false, exists: false });
+        return;
+      }
+
+      setCodeValidation({ checking: true, exists: false });
+
+      try {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('id, employee_code')
+          .eq('employee_code', debouncedEmployeeCode.trim())
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking code:', error);
+          setCodeValidation({ checking: false, exists: false });
+          return;
+        }
+
+        if (data) {
+          setCodeValidation({
+            checking: false,
+            exists: true,
+            message: 'Este código já está em uso'
+          });
+        } else {
+          setCodeValidation({ checking: false, exists: false });
+        }
+      } catch (error) {
+        console.error('Error checking code:', error);
+        setCodeValidation({ checking: false, exists: false });
+      }
+    };
+
+    checkEmployeeCodeExists();
+  }, [debouncedEmployeeCode, employee]);
+
   useEffect(() => {
     if (isOpen) {
       loadDepartmentsAndPositions();
+      setCodeValidation({ checking: false, exists: false });
       if (employee) {
         setFormData({
           employee_code: employee.employee_code || '',
@@ -228,6 +282,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       return;
     }
 
+    // Check for duplicate code before submission
+    if (codeValidation.exists) {
+      toast.error('Código do funcionário já está em uso. Use um código diferente.');
+      return;
+    }
+
     setLoading(true);
     try {
       if (employee) {
@@ -269,13 +329,26 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="employee_code">Código do Funcionário*</Label>
-              <Input
-                id="employee_code"
-                value={formData.employee_code}
-                onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
-                placeholder="Ex: EMP001"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="employee_code"
+                  value={formData.employee_code}
+                  onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
+                  placeholder="Ex: EMP001"
+                  className={codeValidation.exists ? "border-destructive focus-visible:ring-destructive" : ""}
+                  required
+                  disabled={!!employee}
+                />
+                {codeValidation.checking && (
+                  <p className="text-xs text-muted-foreground mt-1">Verificando disponibilidade...</p>
+                )}
+                {codeValidation.exists && (
+                  <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>{codeValidation.message}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -555,7 +628,10 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading || codeValidation.exists || codeValidation.checking}
+            >
               {loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Criar')}
             </Button>
           </div>

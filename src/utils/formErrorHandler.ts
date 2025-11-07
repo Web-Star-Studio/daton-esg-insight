@@ -158,9 +158,16 @@ export const formErrorHandler = {
     if (error instanceof FormError) {
       formError = error;
     } else if (error instanceof Error) {
-      formError = new FormError(error.message, undefined, context);
+      // Extract code from Supabase error
+      const errorCode = (error as any).code || undefined;
+      formError = new FormError(error.message, errorCode, context);
     } else if (typeof error === 'string') {
       formError = new FormError(error, undefined, context);
+    } else if (typeof error === 'object' && error !== null) {
+      // Handle Supabase error objects
+      const errorCode = (error as any).code || undefined;
+      const errorMessage = (error as any).message || 'Erro desconhecido';
+      formError = new FormError(errorMessage, errorCode, context);
     } else {
       formError = new FormError('Erro desconhecido', undefined, context);
     }
@@ -207,8 +214,10 @@ export const formErrorHandler = {
         title = "Relacionamento Inválido";
         break;
       case '23505': // Unique constraint violation
-        if (error.message?.includes('employee_code') || error.message?.includes('employees_company_id_employee_code_key')) {
-          userMessage = "Código do funcionário já existe. Use um código diferente ou gere automaticamente.";
+        if (error.message?.includes('employee_code') || 
+            error.message?.includes('employees_employee_code_key') ||
+            error.message?.includes('employees_company_id_employee_code_key')) {
+          userMessage = "Este código de funcionário já está em uso. Por favor, utilize um código diferente.";
           title = "Código Duplicado";
         } else {
           userMessage = "Já existe um registro com essas informações.";
