@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +48,28 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
   });
 
   const [nextReviewDate, setNextReviewDate] = useState<Date | undefined>();
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.company_id) {
+          setCompanyId(profile.company_id);
+        }
+      }
+    };
+    
+    if (isOpen) {
+      fetchCompanyId();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (risk && (mode === 'edit' || mode === 'view')) {
@@ -148,6 +171,16 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação company_id
+    if (!companyId) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Não foi possível identificar sua empresa. Faça login novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Validação e sanitização
     const trimmedTitle = formData.risk_title.trim();
     const trimmedDescription = formData.risk_description.trim();
@@ -171,25 +204,35 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
       return;
     }
 
-    const sanitizedData = {
-      ...formData,
+    // APENAS os campos que EXISTEM na tabela esg_risks
+    const sanitizedData: any = {
+      company_id: companyId,
       risk_title: trimmedTitle,
       risk_description: trimmedDescription,
-      risk_owner: trimmedOwner,
-      control_measures: formData.control_measures.trim(),
-      mitigation_actions: formData.mitigation_actions.trim(),
-      treatment_plan: formData.treatment_plan.trim(),
-      business_impact: formData.business_impact.trim(),
-      regulatory_impact: formData.regulatory_impact.trim(),
-      reputation_impact: formData.reputation_impact.trim(),
       esg_category: formData.esg_category as 'Environmental' | 'Social' | 'Governance',
-      next_review_date: nextReviewDate ? format(nextReviewDate, 'yyyy-MM-dd') : ''
-    } as any;
+      probability: formData.probability,
+      impact: formData.impact,
+      status: formData.status,
+      control_measures: formData.control_measures.trim() || null,
+      mitigation_actions: formData.mitigation_actions.trim() || null,
+      owner_user_id: trimmedOwner || null,
+      review_frequency: formData.review_frequency || null,
+      next_review_date: nextReviewDate ? format(nextReviewDate, 'yyyy-MM-dd') : null
+    };
+
+    // Remover campos nulos/vazios para evitar sobrescrever valores default
+    Object.keys(sanitizedData).forEach(key => {
+      if (sanitizedData[key] === null || sanitizedData[key] === '') {
+        delete sanitizedData[key];
+      }
+    });
 
     if (mode === 'create') {
       createRiskMutation.mutate(sanitizedData);
     } else if (mode === 'edit' && risk) {
-      updateRiskMutation.mutate({ id: risk.id, updates: sanitizedData });
+      // Para edição, não incluir company_id (não deve ser alterado)
+      const { company_id, ...updateData } = sanitizedData;
+      updateRiskMutation.mutate({ id: risk.id, updates: updateData });
     }
   };
 
