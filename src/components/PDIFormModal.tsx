@@ -101,11 +101,27 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       return;
     }
     
+    // Validar sessão do usuário
+    if (!user?.id) {
+      toast.error("Sessão inválida. Faça login novamente.");
+      perfLogger.end(false, new Error('User ID not found'));
+      return;
+    }
+    
+    // Validar e normalizar employee_id
+    const employeeId = sanitizeUUID(formData.employee_id);
+    if (!employeeId) {
+      toast.error("Funcionário inválido. Selecione novamente.");
+      perfLogger.end(false, new Error('Invalid employee_id'));
+      return;
+    }
+    
     try {
-      console.log('📝 Criando PDI com dados:', {
-        employee_id: formData.employee_id,
-        mentor_id: formData.mentor_id || null,
+      console.log('📝 Criando PDI com dados (UUIDs):', {
+        employee_id: employeeId,
+        mentor_id: sanitizeUUID(formData.mentor_id) || null,
         company_id: user.company.id,
+        created_by_user_id: user.id,
         goalsCount: goals.length,
         skillsCount: skills.length,
         activitiesCount: activities.length
@@ -113,7 +129,7 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       
       const pdiData = {
         ...formData,
-        employee_id: sanitizeUUID(formData.employee_id) || '',
+        employee_id: employeeId,
         mentor_id: sanitizeUUID(formData.mentor_id) || null,
         company_id: user.company.id,
         status: "Em Andamento",
