@@ -22,6 +22,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeBenefitsModal } from './EmployeeBenefitsModal';
+import { EmployeeDocumentsTab } from './EmployeeDocumentsTab';
 
 interface EmployeeDetailModalProps {
   isOpen: boolean;
@@ -367,26 +368,10 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Documentos
-                  </CardTitle>
-                  <CardDescription>
-                    Documentos e arquivos relacionados ao funcionário
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Nenhum documento</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Funcionalidade de documentos será implementada em breve
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <EmployeeDocumentsTab 
+                employeeId={employee.id}
+                employeeName={employee.full_name}
+              />
             </TabsContent>
 
             <TabsContent value="history" className="space-y-6">
