@@ -401,6 +401,7 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    type="button"
                     variant="outline"
                     className="w-full justify-start text-left font-normal"
                     disabled={isReadOnly}
