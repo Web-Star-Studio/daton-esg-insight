@@ -416,20 +416,14 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="risk_owner">
-                  Proprietário do Risco
-                  <span className="text-xs text-muted-foreground ml-2">(UUID do usuário)</span>
-                </Label>
+                <Label htmlFor="risk_owner">Proprietário do Risco</Label>
                 <Input
                   id="risk_owner"
                   value={formData.risk_owner}
                   onChange={(e) => handleInputChange('risk_owner', e.target.value)}
                   readOnly={isReadOnly}
-                  placeholder="UUID do usuário (ex: 550e8400-e29b-41d4-a716-446655440000)"
+                  placeholder="Nome do responsável pelo risco"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Insira o UUID do usuário responsável pelo risco
-                </p>
               </div>
               
               <div>
