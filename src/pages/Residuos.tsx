@@ -334,6 +334,42 @@ const Residuos = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Modais */}
+        {selectedWasteLog && (
+          <>
+            <WasteLogDetailModal
+              open={detailModalOpen}
+              onOpenChange={(open) => {
+                setDetailModalOpen(open)
+                if (!open) setSelectedWasteLog(null)
+              }}
+              wasteLogId={selectedWasteLog}
+            />
+
+            <WasteLogDocumentsModal
+              open={documentsModalOpen}
+              onOpenChange={(open) => {
+                setDocumentsModalOpen(open)
+                if (!open) setSelectedWasteLog(null)
+              }}
+              wasteLogId={selectedWasteLog}
+            />
+
+            <WasteLogEditModal
+              open={editModalOpen}
+              onOpenChange={(open) => {
+                setEditModalOpen(open)
+                if (!open) setSelectedWasteLog(null)
+              }}
+              wasteLogId={selectedWasteLog}
+              onSuccess={() => {
+                queryClient.invalidateQueries({ queryKey: ['waste-logs'] })
+                queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] })
+              }}
+            />
+          </>
+        )}
       </div>
   )
 }
