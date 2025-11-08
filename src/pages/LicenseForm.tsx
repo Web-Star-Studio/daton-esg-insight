@@ -310,13 +310,12 @@ const LicenseForm = () => {
                   </SelectTrigger>
                 </FormControl>
                           <SelectContent>
-                            <SelectItem value="Licença Prévia">Licença Prévia (LP)</SelectItem>
-                            <SelectItem value="Licença de Instalação">Licença de Instalação (LI)</SelectItem>
-                            <SelectItem value="Licença de Operação">Licença de Operação (LO)</SelectItem>
-                            <SelectItem value="Licença de Operação Corretiva">Licença de Operação Corretiva (LOC)</SelectItem>
-                            <SelectItem value="Licença Única">Licença Única (LU)</SelectItem>
-                            <SelectItem value="Autorização Ambiental">Autorização Ambiental (AA)</SelectItem>
-                            <SelectItem value="Outorga">Outorga</SelectItem>
+                            <SelectItem value="LP">Licença Prévia (LP)</SelectItem>
+                            <SelectItem value="LI">Licença de Instalação (LI)</SelectItem>
+                            <SelectItem value="LO">Licença de Operação (LO)</SelectItem>
+                            <SelectItem value="LOC">Licença de Operação Corretiva (LOC)</SelectItem>
+                            <SelectItem value="LAS">Licença Ambiental Simplificada (LAS)</SelectItem>
+                            <SelectItem value="Outra">Outra</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -468,7 +467,6 @@ const LicenseForm = () => {
                             <SelectItem value="Vencida">Vencida</SelectItem>
                             <SelectItem value="Em Renovação">Em Renovação</SelectItem>
                             <SelectItem value="Suspensa">Suspensa</SelectItem>
-                            <SelectItem value="Cancelada">Cancelada</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
