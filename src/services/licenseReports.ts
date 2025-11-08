@@ -218,7 +218,7 @@ async function generatePDFReport(
   const filePath = `reports/licenses/${license.id}/${fileName}`;
 
   const { error: uploadError } = await supabase.storage
-    .from('documents')
+    .from('reports')
     .upload(filePath, pdfBlob, {
       contentType: 'application/pdf',
       upsert: false,
@@ -287,7 +287,7 @@ async function generateExcelReport(
   const filePath = `reports/licenses/${license.id}/${fileName}`;
 
   const { error: uploadError } = await supabase.storage
-    .from('documents')
+    .from('reports')
     .upload(filePath, blob, {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       upsert: false,
@@ -301,7 +301,7 @@ async function generateExcelReport(
 export async function downloadReport(filePath: string, fileName: string): Promise<void> {
   try {
     const { data, error } = await supabase.storage
-      .from('license-reports')
+      .from('reports')
       .createSignedUrl(filePath, 3600);
 
     if (error) {
