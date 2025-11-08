@@ -266,6 +266,7 @@ const App = () => (
                 <LicenseForm />
               </ProtectedLazyPageWrapper>
             } />
+            <Route path="/licenciamento/reconciliacao" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
 
             {/* Resíduos */}
             <Route path="/residuos" element={
