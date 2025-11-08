@@ -42,7 +42,9 @@ export default function RelatoriosPGRS() {
           pgrs_waste_sources(
             id,
             waste_type_id
-          )
+          ),
+          pgrs_procedures(id),
+          pgrs_goals(id)
         `)
         .order("creation_date", { ascending: false });
 
@@ -55,8 +57,8 @@ export default function RelatoriosPGRS() {
   const { data: stats } = useQuery({
     queryKey: ["pgrs-stats"],
     queryFn: async () => {
-      // Dados mockados para demonstração
-      const last6Months = Array.from({ length: 6 }, (_, i) => {
+      // Dados simulados para demonstração - aguardando implementação de coleta de dados reais
+      const monthlyData = Array.from({ length: 6 }, (_, i) => {
         const date = subMonths(new Date(), 5 - i);
         return {
           month: format(date, "MMM", { locale: ptBR }),
@@ -64,8 +66,52 @@ export default function RelatoriosPGRS() {
         };
       });
 
-      return { monthlyData: last6Months };
+      return { monthlyData };
     },
+  });
+
+  // Buscar indicadores de performance reais
+  const { data: performanceData } = useQuery({
+    queryKey: ["pgrs-performance"],
+    queryFn: async () => {
+      // Buscar metas de reciclagem
+      const { data: goals } = await supabase
+        .from('pgrs_goals')
+        .select('*')
+        .ilike('goal_type', '%recicla%');
+      
+      // Calcular taxa média de reciclagem baseada nas metas
+      const recyclingRate = goals?.length > 0
+        ? Math.round(goals.reduce((sum, g) => sum + (g.progress_percentage || 0), 0) / goals.length)
+        : 0;
+      
+      // Buscar meta de redução
+      const { data: reductionGoals } = await supabase
+        .from('pgrs_goals')
+        .select('*')
+        .ilike('goal_type', '%redu%');
+      
+      const reductionRate = reductionGoals?.[0]?.progress_percentage || 0;
+      
+      // Buscar data da última revisão do plano ativo
+      const { data: activePlan } = await supabase
+        .from('pgrs_plans')
+        .select('updated_at')
+        .eq('status', 'Ativo')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const monthsSinceReview = activePlan?.updated_at
+        ? Math.floor((new Date().getTime() - new Date(activePlan.updated_at).getTime()) / (1000 * 60 * 60 * 24 * 30))
+        : 0;
+      
+      return {
+        recyclingRate,
+        reductionRate,
+        monthsSinceReview
+      };
+    }
   });
 
   const handleDownloadReport = async (planId: string) => {
@@ -118,9 +164,9 @@ export default function RelatoriosPGRS() {
   // Calcular métricas
   const metrics = {
     totalPlans: plans?.length || 0,
-    activePlans: plans?.filter(p => p.status === 'active').length || 0,
+    activePlans: plans?.filter(p => p.status === 'Ativo').length || 0,
     totalSources: plans?.reduce((acc, p) => acc + (p.pgrs_waste_sources?.length || 0), 0) || 0,
-    totalProcedures: plans?.length || 0, // Simplificado
+    totalProcedures: plans?.reduce((acc, p) => acc + (p.pgrs_procedures?.length || 0), 0) || 0,
   };
 
   const isLoading = loadingStatus || loadingPlans;
@@ -294,9 +340,9 @@ export default function RelatoriosPGRS() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="active">Ativo</SelectItem>
-                      <SelectItem value="draft">Rascunho</SelectItem>
-                      <SelectItem value="archived">Arquivado</SelectItem>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Rascunho">Rascunho</SelectItem>
+                      <SelectItem value="Arquivado">Arquivado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -337,7 +383,7 @@ export default function RelatoriosPGRS() {
             ) : filteredPlans && filteredPlans.length > 0 ? (
               <div className="grid gap-4">
                 {filteredPlans.map((plan) => {
-                  const isActive = plan.status === 'active';
+                  const isActive = plan.status === 'Ativo';
                   const sourcesCount = Array.isArray(plan.pgrs_waste_sources) 
                     ? plan.pgrs_waste_sources.length 
                     : 0;
@@ -352,8 +398,8 @@ export default function RelatoriosPGRS() {
                                 {plan.plan_name}
                               </CardTitle>
                               {isActive && <Badge variant="default">Ativo</Badge>}
-                              {plan.status === 'draft' && <Badge variant="secondary">Rascunho</Badge>}
-                              {plan.status === 'archived' && <Badge variant="outline">Arquivado</Badge>}
+                              {plan.status === 'Rascunho' && <Badge variant="secondary">Rascunho</Badge>}
+                              {plan.status === 'Arquivado' && <Badge variant="outline">Arquivado</Badge>}
                             </div>
                             <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -438,9 +484,9 @@ export default function RelatoriosPGRS() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Ativos', value: plans.filter(p => p.status === 'active').length },
-                          { name: 'Rascunhos', value: plans.filter(p => p.status === 'draft').length },
-                          { name: 'Arquivados', value: plans.filter(p => p.status === 'archived').length },
+                          { name: 'Ativos', value: plans.filter(p => p.status === 'Ativo').length },
+                          { name: 'Rascunhos', value: plans.filter(p => p.status === 'Rascunho').length },
+                          { name: 'Arquivados', value: plans.filter(p => p.status === 'Arquivado').length },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -476,16 +522,16 @@ export default function RelatoriosPGRS() {
                     <span className="text-sm text-muted-foreground">Taxa de Reciclagem</span>
                     <TrendingUp className="h-4 w-4 text-success" />
                   </div>
-                  <p className="text-2xl font-bold">68%</p>
-                  <p className="text-xs text-muted-foreground">+5% vs mês anterior</p>
+                  <p className="text-2xl font-bold">{performanceData?.recyclingRate || 0}%</p>
+                  <p className="text-xs text-muted-foreground">Baseado nas metas</p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Redução de Resíduos</span>
                     <TrendingUp className="h-4 w-4 text-success" />
                   </div>
-                  <p className="text-2xl font-bold">12%</p>
-                  <p className="text-xs text-muted-foreground">Meta: 15%</p>
+                  <p className="text-2xl font-bold">{performanceData?.reductionRate || 0}%</p>
+                  <p className="text-xs text-muted-foreground">Progresso da meta</p>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -500,7 +546,7 @@ export default function RelatoriosPGRS() {
                     <span className="text-sm text-muted-foreground">Tempo de Revisão</span>
                     <Clock className="h-4 w-4 text-primary" />
                   </div>
-                  <p className="text-2xl font-bold">6 meses</p>
+                  <p className="text-2xl font-bold">{performanceData?.monthsSinceReview || 0} meses</p>
                   <p className="text-xs text-muted-foreground">Última revisão</p>
                 </div>
               </div>
