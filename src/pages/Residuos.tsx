@@ -1,4 +1,4 @@
-
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,16 +17,26 @@ import {
   BarChart3
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { getWasteLogs, getWasteDashboard } from "@/services/waste"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import PGRSStatusCard from "@/components/PGRSStatusCard"
 import { PGRSGoalsProgressChart } from "@/components/PGRSGoalsProgressChart"
+import { WasteLogDetailModal } from "@/components/WasteLogDetailModal"
+import { WasteLogDocumentsModal } from "@/components/WasteLogDocumentsModal"
+import { WasteLogEditModal } from "@/components/WasteLogEditModal"
 import { getActivePGRSStatus, getActivePGRSPlan } from "@/services/pgrsReports"
 
 const Residuos = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  
+  // Modal states
+  const [selectedWasteLog, setSelectedWasteLog] = useState<string | null>(null)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [documentsModalOpen, setDocumentsModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const { toast } = useToast()
 
   // Fetch waste logs
@@ -277,30 +287,42 @@ const Residuos = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                title="Ver Detalhes/CDF"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                title="Ver Detalhes"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                title="Editar"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          title="Ver Detalhes/CDF"
+                          onClick={() => {
+                            setSelectedWasteLog(item.id)
+                            setDocumentsModalOpen(true)
+                          }}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          title="Ver Detalhes"
+                          onClick={() => {
+                            setSelectedWasteLog(item.id)
+                            setDetailModalOpen(true)
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          title="Editar"
+                          onClick={() => {
+                            setSelectedWasteLog(item.id)
+                            setEditModalOpen(true)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                             </div>
                           </TableCell>
                         </TableRow>

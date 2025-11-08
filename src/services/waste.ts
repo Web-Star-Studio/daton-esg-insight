@@ -45,11 +45,19 @@ export interface CreateWasteLogData {
 }
 
 export interface UpdateWasteLogData {
-  status?: WasteStatusEnum;
-  final_treatment_type?: string;
-  cost?: number;
+  mtr_number?: string;
+  waste_description?: string;
+  waste_class?: WasteClassEnum;
+  collection_date?: string;
+  quantity?: number;
+  unit?: string;
+  transporter_name?: string;
+  transporter_cnpj?: string;
   destination_name?: string;
   destination_cnpj?: string;
+  final_treatment_type?: string;
+  cost?: number;
+  status?: WasteStatusEnum;
 }
 
 export interface WasteDashboard {
@@ -375,4 +383,53 @@ export const uploadWasteDocument = async (wasteLogId: string, file: File): Promi
   }
 
   return filePath;
+};
+
+// GET documents for waste log
+export const getWasteLogDocuments = async (wasteLogId: string) => {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('related_model', 'waste_logs')
+    .eq('related_id', wasteLogId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching documents:', error);
+    throw new Error('Erro ao buscar documentos');
+  }
+
+  return data || [];
+};
+
+// DELETE document
+export const deleteWasteDocument = async (documentId: string) => {
+  const { data: doc, error: fetchError } = await supabase
+    .from('documents')
+    .select('file_path')
+    .eq('id', documentId)
+    .maybeSingle();
+
+  if (fetchError || !doc) {
+    throw new Error('Documento não encontrado');
+  }
+
+  // Delete from storage
+  const { error: storageError } = await supabase.storage
+    .from('documents')
+    .remove([doc.file_path]);
+
+  if (storageError) {
+    console.error('Error deleting from storage:', storageError);
+  }
+
+  // Delete from database
+  const { error: dbError } = await supabase
+    .from('documents')
+    .delete()
+    .eq('id', documentId);
+
+  if (dbError) {
+    throw new Error('Erro ao excluir documento');
+  }
 };
