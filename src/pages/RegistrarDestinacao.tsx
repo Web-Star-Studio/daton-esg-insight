@@ -25,6 +25,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MTROCRModal } from "@/components/MTROCRModal"
 import { supabase } from "@/integrations/supabase/client"
 
+// Helper functions for CNPJ formatting
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
+
+const formatCNPJ = (value: string) => {
+  const d = onlyDigits(value).slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0,2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`;
+  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12,14)}`;
+};
+
+const CNPJ_REGEX = /^(\d{14}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/;
+
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
   dataColeta: z.date({ message: "Data da coleta é obrigatória" }),
@@ -33,9 +47,11 @@ const formSchema = z.object({
   quantidade: z.number().min(0.01, "Quantidade deve ser maior que zero"),
   unidade: z.string().min(1, "Unidade é obrigatória"),
   transportador: z.string().min(1, "Transportador é obrigatório"),
-  cnpjTransportador: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ inválido").optional().or(z.literal("")),
+  cnpjTransportador: z.string().optional().transform(v => (v ?? "").trim())
+    .refine(v => v === "" || CNPJ_REGEX.test(v), { message: "CNPJ inválido" }),
   destinador: z.string().min(1, "Destinador é obrigatório"),
-  cnpjDestinador: z.string().regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, "CNPJ inválido").optional().or(z.literal("")),
+  cnpjDestinador: z.string().optional().transform(v => (v ?? "").trim())
+    .refine(v => v === "" || CNPJ_REGEX.test(v), { message: "CNPJ inválido" }),
   tipoDestinacao: z.string().min(1, "Tipo de destinação é obrigatório"),
   custo: z.number().min(0, "Custo deve ser positivo").optional(),
   pgrsSourceId: z.string().optional(),
@@ -95,6 +111,7 @@ const RegistrarDestinacao = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       mtr: "",
+      dataColeta: new Date(),
       descricaoResiduo: "",
       classe: "",
       quantidade: 0,
@@ -214,6 +231,8 @@ const RegistrarDestinacao = () => {
     }
   })
 
+  const sanitizeCNPJ = (v?: string) => (v ? onlyDigits(v) : undefined);
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("🚀 [SUBMIT] Formulário submetido com valores:", values);
     
@@ -225,9 +244,9 @@ const RegistrarDestinacao = () => {
       quantity: values.quantidade,
       unit: values.unidade,
       transporter_name: values.transportador || undefined,
-      transporter_cnpj: values.cnpjTransportador || undefined,
+      transporter_cnpj: sanitizeCNPJ(values.cnpjTransportador),
       destination_name: values.destinador || undefined,
-      destination_cnpj: values.cnpjDestinador || undefined,
+      destination_cnpj: sanitizeCNPJ(values.cnpjDestinador),
       final_treatment_type: values.tipoDestinacao || undefined,
       cost: values.custo || undefined,
       status: 'Coletado' as const
@@ -298,7 +317,15 @@ const RegistrarDestinacao = () => {
                 errors: form.formState.errors,
                 isDirty: form.formState.isDirty
               });
-              form.handleSubmit(onSubmit)(e);
+              form.handleSubmit(onSubmit, (errors) => {
+                console.error("❌ [FORM] Erros de validação:", errors);
+                const firstError = Object.values(errors)[0] as any;
+                toast({
+                  title: "Corrija os campos",
+                  description: firstError?.message || "Verifique os campos destacados no formulário.",
+                  variant: "destructive",
+                });
+              })(e);
             }} 
             className="space-y-6"
           >
@@ -542,7 +569,11 @@ const RegistrarDestinacao = () => {
                         <FormItem>
                           <FormLabel>CNPJ do Transportador</FormLabel>
                           <FormControl>
-                            <Input placeholder="00.000.000/0000-00" {...field} />
+                            <Input 
+                              placeholder="00.000.000/0000-00" 
+                              {...field} 
+                              onChange={(e) => field.onChange(formatCNPJ(e.target.value))}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -571,7 +602,11 @@ const RegistrarDestinacao = () => {
                         <FormItem>
                           <FormLabel>CNPJ do Destinador</FormLabel>
                           <FormControl>
-                            <Input placeholder="00.000.000/0000-00" {...field} />
+                            <Input 
+                              placeholder="00.000.000/0000-00" 
+                              {...field} 
+                              onChange={(e) => field.onChange(formatCNPJ(e.target.value))}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
