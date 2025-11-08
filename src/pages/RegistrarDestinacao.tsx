@@ -23,6 +23,7 @@ import { getActivePGRSPlan } from "@/services/pgrsReports"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MTROCRModal } from "@/components/MTROCRModal"
+import { supabase } from "@/integrations/supabase/client"
 
 const formSchema = z.object({
   mtr: z.string().min(1, "Nº MTR/Controle é obrigatório"),
@@ -47,6 +48,41 @@ const RegistrarDestinacao = () => {
   const [showMTROCR, setShowMTROCR] = useState(false)
   const { toast } = useToast()
   const queryClient = useQueryClient()
+
+  // Verificar autenticação
+  const { data: authUser } = useQuery({
+    queryKey: ['auth-check'],
+    queryFn: async () => {
+      console.log("🔐 [AUTH] Verificando autenticação...");
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error("❌ [AUTH] Erro ao verificar autenticação:", error);
+        toast({
+          title: "Erro de Autenticação",
+          description: "Não foi possível verificar sua sessão. Faça login novamente.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return null;
+      }
+      
+      if (!user) {
+        console.warn("⚠️ [AUTH] Nenhum usuário autenticado");
+        toast({
+          title: "Sessão Expirada",
+          description: "Sua sessão expirou. Por favor, faça login novamente.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return null;
+      }
+      
+      console.log("✅ [AUTH] Usuário autenticado:", user.id);
+      return user;
+    },
+    retry: false
+  });
 
   // Fetch active PGRS plan
   const { data: activePGRS } = useQuery({
@@ -124,45 +160,63 @@ const RegistrarDestinacao = () => {
   // Create waste log mutation
   const createWasteLogMutation = useMutation({
     mutationFn: createWasteLog,
+    onMutate: () => {
+      console.log("⏳ [MUTATION] Iniciando mutation...");
+    },
     onSuccess: async (data) => {
+      console.log("✅ [MUTATION] Registro criado com sucesso:", data);
+      
       // If there's a file, upload it
       if (uploadedFile) {
+        console.log("📎 [MUTATION] Fazendo upload do documento...");
         try {
-          await uploadWasteDocument(data.id, uploadedFile)
+          await uploadWasteDocument(data.id, uploadedFile);
+          console.log("✅ [MUTATION] Documento salvo com sucesso");
           toast({
             title: "Sucesso!",
-            description: "Registro de resíduo e documento salvos com sucesso.",
-          })
+            description: `Registro ${data.mtr_number} e documento salvos com sucesso.`,
+          });
         } catch (error) {
+          console.error("❌ [MUTATION] Erro no upload:", error);
           toast({
-            title: "Aviso",
-            description: "Registro salvo, mas houve erro no upload do documento.",
+            title: "Parcialmente Salvo",
+            description: `Registro ${data.mtr_number} salvo, mas erro ao fazer upload do documento.`,
             variant: "destructive",
-          })
+          });
         }
       } else {
         toast({
           title: "Sucesso!",
-          description: "Registro de resíduo salvo com sucesso.",
-        })
+          description: `Registro ${data.mtr_number} salvo com sucesso.`,
+        });
       }
       
       // Invalidate and refetch waste logs
-      queryClient.invalidateQueries({ queryKey: ['waste-logs'] })
-      queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] })
+      console.log("🔄 [MUTATION] Invalidando queries...");
+      queryClient.invalidateQueries({ queryKey: ['waste-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['waste-dashboard'] });
       
-      navigate("/residuos")
+      // Small delay to ensure queries are refetched
+      console.log("⏱️ [MUTATION] Aguardando antes de redirecionar...");
+      setTimeout(() => {
+        console.log("🔀 [MUTATION] Redirecionando para /residuos");
+        navigate("/residuos");
+      }, 500);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error("❌ [MUTATION] Erro na mutation:", error);
+      console.error("❌ [MUTATION] Stack trace:", error.stack);
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao salvar registro de resíduo.",
+        title: "Erro ao Salvar",
+        description: error.message || "Ocorreu um erro inesperado ao salvar o registro.",
         variant: "destructive",
-      })
+      });
     }
   })
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log("🚀 [SUBMIT] Formulário submetido com valores:", values);
+    
     const wasteData = {
       mtr_number: values.mtr,
       waste_description: values.descricaoResiduo,
@@ -177,9 +231,11 @@ const RegistrarDestinacao = () => {
       final_treatment_type: values.tipoDestinacao || undefined,
       cost: values.custo || undefined,
       status: 'Coletado' as const
-    }
+    };
 
-    createWasteLogMutation.mutate(wasteData)
+    console.log("📦 [SUBMIT] Dados formatados para API:", wasteData);
+    console.log("🔄 [SUBMIT] Chamando mutation...");
+    createWasteLogMutation.mutate(wasteData);
   }
 
   const handleCancel = () => {
@@ -217,15 +273,35 @@ const RegistrarDestinacao = () => {
             <Button 
               type="submit" 
               form="residuo-form"
-              disabled={createWasteLogMutation.isPending}
+              disabled={createWasteLogMutation.isPending || !authUser}
+              onClick={() => console.log("🖱️ [BUTTON] Botão Salvar clicado")}
             >
-              {createWasteLogMutation.isPending ? "Salvando..." : "Salvar Registro"}
+              {createWasteLogMutation.isPending ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Registro"
+              )}
             </Button>
           </div>
         </div>
 
         <Form {...form}>
-          <form id="residuo-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            id="residuo-form" 
+            onSubmit={(e) => {
+              console.log("📝 [FORM] Submit event disparado");
+              console.log("📝 [FORM] Estado do formulário:", {
+                isValid: form.formState.isValid,
+                errors: form.formState.errors,
+                isDirty: form.formState.isDirty
+              });
+              form.handleSubmit(onSubmit)(e);
+            }} 
+            className="space-y-6"
+          >
             {/* Seção 1: Identificação */}
             <Card className="shadow-card">
               <CardHeader>

@@ -148,22 +148,52 @@ export const getWasteLogById = async (id: string): Promise<WasteLogDetail> => {
 
 // POST /api/v1/waste-logs
 export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<WasteLogDetail> => {
+  console.log("🔍 [API] Iniciando createWasteLog...");
+  console.log("📥 [API] Dados recebidos:", wasteData);
+  
+  // Get user first
+  console.log("👤 [API] Buscando usuário autenticado...");
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  
+  if (userError) {
+    console.error("❌ [API] Erro ao obter usuário:", userError);
+    throw new Error('Erro de autenticação. Por favor, faça login novamente.');
+  }
+  
+  if (!user) {
+    console.error("❌ [API] Nenhum usuário autenticado");
+    throw new Error('Você precisa estar autenticado para registrar resíduos.');
+  }
+  
+  console.log("✅ [API] Usuário autenticado:", user.id);
+  
   // Get user's company ID
+  console.log("🏢 [API] Buscando company_id do usuário...");
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .eq('id', user.id)
     .maybeSingle();
 
-  if (profileError || !profile) {
-    throw new Error('Erro ao obter dados da empresa');
+  if (profileError) {
+    console.error("❌ [API] Erro ao buscar profile:", profileError);
+    throw new Error('Erro ao obter dados da empresa. Contate o suporte.');
   }
+  
+  if (!profile || !profile.company_id) {
+    console.error("❌ [API] Profile não encontrado ou sem company_id:", profile);
+    throw new Error('Sua conta não está vinculada a uma empresa. Contate o administrador.');
+  }
+
+  console.log("✅ [API] Company ID encontrado:", profile.company_id);
 
   const insertData = {
     ...wasteData,
     company_id: profile.company_id,
     status: (wasteData.status || 'Coletado') as WasteStatusEnum
   };
+
+  console.log("📤 [API] Inserindo dados no banco:", insertData);
 
   const { data, error } = await supabase
     .from('waste_logs')
@@ -172,13 +202,32 @@ export const createWasteLog = async (wasteData: CreateWasteLogData): Promise<Was
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating waste log:', error);
-    throw new Error('Erro ao criar registro de resíduo');
+    console.error('❌ [API] Erro ao inserir waste log:', error);
+    console.error('❌ [API] Detalhes do erro:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    
+    // Mensagens específicas por tipo de erro
+    if (error.code === '42501') {
+      throw new Error('Você não tem permissão para registrar resíduos. Verifique suas permissões de acesso.');
+    } else if (error.code === '23505') {
+      throw new Error('Já existe um registro com este número MTR. Use um número diferente.');
+    } else if (error.message.includes('company_id')) {
+      throw new Error('Erro ao vincular registro à empresa. Contate o suporte.');
+    }
+    
+    throw new Error(`Erro ao criar registro: ${error.message}`);
   }
 
   if (!data) {
-    throw new Error('Erro ao criar registro de resíduo');
+    console.error('❌ [API] Nenhum dado retornado após insert');
+    throw new Error('Erro ao criar registro de resíduo. Nenhum dado foi retornado.');
   }
+
+  console.log("✅ [API] Registro criado com sucesso:", data);
 
   return {
     ...data,
