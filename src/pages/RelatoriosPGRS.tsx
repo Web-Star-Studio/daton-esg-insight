@@ -25,6 +25,27 @@ export default function RelatoriosPGRS() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [dateRange, setDateRange] = useState<string>("all");
 
+  // Buscar company_id do usuário atual
+  const { data: profile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) throw error;
+      console.log("🔍 Company ID do usuário:", data?.company_id);
+      return data;
+    },
+  });
+
+  const companyId = profile?.company_id;
+
   // Buscar status do plano ativo
   const { data: activeStatus, isLoading: loadingStatus } = useQuery({
     queryKey: ["pgrs-active-status"],
@@ -33,22 +54,28 @@ export default function RelatoriosPGRS() {
 
   // Buscar todos os planos PGRS com detalhes
   const { data: plans, isLoading: loadingPlans } = useQuery({
-    queryKey: ["pgrs-plans"],
+    queryKey: ["pgrs-plans", companyId],
+    enabled: !!companyId,
     queryFn: async () => {
+      console.log("🔍 Buscando planos PGRS para company_id:", companyId);
+      
       const { data, error } = await supabase
         .from("pgrs_plans")
         .select(`
           *,
-          pgrs_waste_sources(
-            id,
-            waste_type_id
-          ),
-          pgrs_procedures(id),
-          pgrs_goals(id)
+          pgrs_waste_sources!inner(id),
+          pgrs_procedures!inner(id),
+          pgrs_goals!inner(id)
         `)
+        .eq('company_id', companyId)
         .order("creation_date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro ao buscar planos:", error);
+        throw error;
+      }
+      
+      console.log("✅ Planos encontrados:", data?.length, data);
       return data;
     },
   });
@@ -168,6 +195,9 @@ export default function RelatoriosPGRS() {
     totalSources: plans?.reduce((acc, p) => acc + (p.pgrs_waste_sources?.length || 0), 0) || 0,
     totalProcedures: plans?.reduce((acc, p) => acc + (p.pgrs_procedures?.length || 0), 0) || 0,
   };
+
+  console.log("📊 KPIs calculados:", metrics);
+  console.log("📦 Plans data:", plans);
 
   const isLoading = loadingStatus || loadingPlans;
 
