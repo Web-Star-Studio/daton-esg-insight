@@ -92,7 +92,7 @@ export default function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizard
   const { toast } = useToast();
   
   const [wizardData, setWizardData] = useState<WizardData>({
-    plan: { plan_name: '', responsible_user_id: '' },
+    plan: { plan_name: '' },
     sources: [],
     procedures: [],
     goals: []
@@ -274,7 +274,7 @@ export default function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizard
       
       // Reset form
       setWizardData({
-        plan: { plan_name: '', responsible_user_id: '' },
+        plan: { plan_name: '' },
         sources: [],
         procedures: [],
         goals: []
