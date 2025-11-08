@@ -248,7 +248,7 @@ export async function getActivePGRSStatus() {
         goals:pgrs_goals(id)
       `)
       .eq('company_id', profile.company_id)
-      .eq('status', 'Ativo')
+      .in('status', ['Ativo', 'Rascunho'])
       .order('created_at', { ascending: false })
       .limit(1)
 

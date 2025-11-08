@@ -210,7 +210,10 @@ export default function PGRSWizard({ open, onOpenChange, onSuccess }: PGRSWizard
     setIsSubmitting(true);
     try {
       // Create PGRS Plan
-      const plan = await createPGRSPlan(wizardData.plan);
+      const plan = await createPGRSPlan({
+        ...wizardData.plan,
+        status: 'Ativo'
+      });
       
       // Create sources and their waste types
       for (const sourceData of wizardData.sources) {
