@@ -83,15 +83,15 @@ export default function SocialESG() {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'Planejado':
-        return 'outline border-blue-500 text-blue-700';
+        return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
       case 'Em Andamento':
-        return 'outline border-yellow-500 text-yellow-700';
+        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
       case 'Concluído':
-        return 'outline border-green-500 text-green-700';
+        return 'bg-green-100 text-green-800 hover:bg-green-100';
       case 'Cancelado':
-        return 'outline border-gray-500 text-gray-700';
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
       default:
-        return 'outline';
+        return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
     }
   };
 

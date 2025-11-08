@@ -43,7 +43,7 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProjectFormData>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     mode: "onSubmit",
     reValidateMode: "onChange",
@@ -86,6 +86,42 @@ export function SocialProjectModal({ open, onOpenChange, onSuccess, project }: S
       fetchCompanyId();
     }
   }, [open, onOpenChange]);
+
+  useEffect(() => {
+    if (open && project) {
+      reset({
+        name: project.name,
+        description: project.description || "",
+        objective: project.objective || "",
+        target_audience: project.target_audience || "",
+        location: project.location || "",
+        budget: project.budget || 0,
+        invested_amount: project.invested_amount,
+        status: project.status,
+        start_date: project.start_date,
+        end_date: project.end_date || "",
+        beneficiaries_target: (project.impact_metrics as any)?.beneficiaries_target || 0,
+        beneficiaries_reached: (project.impact_metrics as any)?.beneficiaries_reached || 0,
+        category: (project.impact_metrics as any)?.category || "",
+      });
+    } else if (open && !project) {
+      reset({
+        name: "",
+        description: "",
+        objective: "",
+        target_audience: "",
+        location: "",
+        status: "Planejado",
+        invested_amount: 0,
+        budget: 0,
+        start_date: "",
+        end_date: "",
+        beneficiaries_target: 0,
+        beneficiaries_reached: 0,
+        category: "",
+      });
+    }
+  }, [open, project, reset]);
 
   const onSubmit = async (data: ProjectFormData) => {
     console.log('=== SOCIAL PROJECT SUBMISSION ===');
