@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { FileText, Plus, Calendar, Target, AlertTriangle } from "lucide-react"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import PGRSWizard from "./PGRSWizard"
 
 interface PGRSStatus {
@@ -25,6 +26,7 @@ interface PGRSStatusCardProps {
 
 export default function PGRSStatusCard({ pgrsStatus, onUpdate }: PGRSStatusCardProps) {
   const [showWizard, setShowWizard] = useState(false)
+  const navigate = useNavigate()
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -168,7 +170,7 @@ export default function PGRSStatusCard({ pgrsStatus, onUpdate }: PGRSStatusCardP
 
           {/* Ações */}
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => navigate('/residuos/relatorios')}>
               <FileText className="w-3 h-3 mr-1" />
               Ver Relatório
             </Button>
