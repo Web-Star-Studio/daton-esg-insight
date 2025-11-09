@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuditReportsTab } from "@/components/AuditReportsTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -635,23 +636,7 @@ export default function Auditoria() {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatórios de Auditoria</CardTitle>
-              <CardDescription>
-                Análises e relatórios consolidados de auditorias
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Relatórios em Breve</h3>
-                <p className="text-muted-foreground">
-                  Sistema de relatórios de auditoria será implementado em breve
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <AuditReportsTab />
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">

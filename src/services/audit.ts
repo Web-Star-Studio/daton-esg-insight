@@ -374,6 +374,26 @@ class AuditService {
     console.log('Audit trail fetched successfully:', data?.length || 0);
     return data || [];
   }
+
+  async getAllFindings(): Promise<AuditFinding[]> {
+    console.log('Fetching all audit findings');
+    
+    const { data, error } = await supabase
+      .from('audit_findings')
+      .select(`
+        *,
+        profiles!audit_findings_responsible_user_id_fkey(full_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all findings:', error);
+      throw new Error(`Erro ao buscar achados de auditoria: ${error.message}`);
+    }
+
+    console.log('All findings fetched successfully:', data?.length || 0);
+    return data || [];
+  }
 }
 
 export const auditService = new AuditService();
