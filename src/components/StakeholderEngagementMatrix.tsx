@@ -53,7 +53,10 @@ const StakeholderEngagementMatrix = () => {
       const { data, error } = await supabase
         .from('stakeholders')
         .select('*')
-        .order('priority_level', { ascending: false });
+        .eq('is_active', true)
+        .order('influence_level', { ascending: false })
+        .order('interest_level', { ascending: false })
+        .order('name', { ascending: true });
       
       if (error) throw error;
       return data as Stakeholder[];
