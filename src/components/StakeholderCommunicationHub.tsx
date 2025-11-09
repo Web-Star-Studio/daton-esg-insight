@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { 
   Send, 
@@ -22,6 +23,7 @@ import {
   CheckCircle,
   AlertCircle,
   Users,
+  User,
   Plus,
   Search,
   Filter,
@@ -32,11 +34,17 @@ import {
   Paperclip
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface Communication {
   id: string;
   stakeholder_id: string;
   stakeholder_name: string;
+  stakeholder?: {
+    name: string;
+  };
   type: 'email' | 'meeting' | 'phone' | 'survey' | 'document';
   subject: string;
   content: string;
@@ -127,6 +135,7 @@ const StakeholderCommunicationHub = () => {
         id: comm.id,
         stakeholder_id: comm.stakeholder_id,
         stakeholder_name: comm.stakeholder?.name || 'Stakeholder desconhecido',
+        stakeholder: comm.stakeholder,
         type: comm.type,
         subject: comm.subject,
         content: comm.content,
@@ -651,6 +660,275 @@ const StakeholderCommunicationHub = () => {
                       Selecione uma comunicação para ver os detalhes
                     </p>
                   </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sent" className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2">
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-2 pr-4">
+                  {filteredCommunications?.filter(c => c.direction === 'outbound' && c.status !== 'scheduled').length === 0 ? (
+                    <Card className="p-8">
+                      <div className="flex flex-col items-center justify-center text-center space-y-3">
+                        <div className="rounded-full bg-muted p-4">
+                          <Send className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">Nenhuma comunicação enviada</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Comunicações enviadas aparecerão aqui
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  ) : (
+                    filteredCommunications
+                      ?.filter(c => c.direction === 'outbound' && c.status !== 'scheduled')
+                      .map((comm) => (
+                        <Card
+                          key={comm.id}
+                          className={cn(
+                            "p-4 cursor-pointer transition-colors hover:bg-accent/50",
+                            selectedCommunication?.id === comm.id && "bg-accent"
+                          )}
+                          onClick={() => setSelectedCommunication(comm)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={comm.priority === 'high' ? 'destructive' : 'secondary'}>
+                                {comm.type}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(comm.sent_date || comm.created_at), { 
+                                  addSuffix: true,
+                                  locale: ptBR 
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <h4 className="font-semibold mb-1">{comm.subject}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {comm.content}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <User className="h-3 w-3" />
+                              {comm.stakeholder?.name}
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="col-span-1">
+              {selectedCommunication ? (
+                <Card className="p-6">
+                  <ScrollArea className="h-[600px]">
+                    <div className="space-y-4 pr-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <Badge variant={selectedCommunication.priority === 'high' ? 'destructive' : 'secondary'}>
+                            {selectedCommunication.type}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(selectedCommunication.sent_date || selectedCommunication.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">{selectedCommunication.subject}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                          <User className="h-4 w-4" />
+                          <span>Para: {selectedCommunication.stakeholder?.name}</span>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="prose prose-sm max-w-none">
+                        <p className="whitespace-pre-wrap">{selectedCommunication.content}</p>
+                      </div>
+
+                      {selectedCommunication.attachments && selectedCommunication.attachments.length > 0 && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Anexos</h4>
+                            <div className="space-y-2">
+                              {selectedCommunication.attachments.map((attachment: string, index: number) => (
+                                <div key={index} className="flex items-center gap-2 text-sm p-2 bg-muted rounded">
+                                  <FileText className="h-4 w-4" />
+                                  <span>{attachment}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {selectedCommunication.tags && selectedCommunication.tags.length > 0 && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Tags</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedCommunication.tags.map((tag: string) => (
+                                <Badge key={tag} variant="outline" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </Card>
+              ) : (
+                <Card className="p-6 h-[600px] flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Mail className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Selecione uma comunicação para ver os detalhes</p>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scheduled" className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2">
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-2 pr-4">
+                  {filteredCommunications?.filter(c => c.status === 'scheduled').length === 0 ? (
+                    <Card className="p-8">
+                      <div className="flex flex-col items-center justify-center text-center space-y-3">
+                        <div className="rounded-full bg-muted p-4">
+                          <Clock className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">Nenhuma comunicação agendada</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Comunicações agendadas aparecerão aqui
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  ) : (
+                    filteredCommunications
+                      ?.filter(c => c.status === 'scheduled')
+                      .map((comm) => (
+                        <Card
+                          key={comm.id}
+                          className={cn(
+                            "p-4 cursor-pointer transition-colors hover:bg-accent/50",
+                            selectedCommunication?.id === comm.id && "bg-accent"
+                          )}
+                          onClick={() => setSelectedCommunication(comm)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={comm.priority === 'high' ? 'destructive' : 'secondary'}>
+                                {comm.type}
+                              </Badge>
+                              <Badge variant="outline" className="gap-1">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(comm.scheduled_date!), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              </Badge>
+                            </div>
+                          </div>
+                          <h4 className="font-semibold mb-1">{comm.subject}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {comm.content}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <User className="h-3 w-3" />
+                              {comm.stakeholder?.name}
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="col-span-1">
+              {selectedCommunication ? (
+                <Card className="p-6">
+                  <ScrollArea className="h-[600px]">
+                    <div className="space-y-4 pr-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <Badge variant={selectedCommunication.priority === 'high' ? 'destructive' : 'secondary'}>
+                            {selectedCommunication.type}
+                          </Badge>
+                          <Badge variant="outline" className="gap-1">
+                            <Clock className="h-3 w-3" />
+                            Agendado para {format(new Date(selectedCommunication.scheduled_date!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </Badge>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">{selectedCommunication.subject}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                          <User className="h-4 w-4" />
+                          <span>Para: {selectedCommunication.stakeholder?.name}</span>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="prose prose-sm max-w-none">
+                        <p className="whitespace-pre-wrap">{selectedCommunication.content}</p>
+                      </div>
+
+                      {selectedCommunication.attachments && selectedCommunication.attachments.length > 0 && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Anexos</h4>
+                            <div className="space-y-2">
+                              {selectedCommunication.attachments.map((attachment: string, index: number) => (
+                                <div key={index} className="flex items-center gap-2 text-sm p-2 bg-muted rounded">
+                                  <FileText className="h-4 w-4" />
+                                  <span>{attachment}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {selectedCommunication.tags && selectedCommunication.tags.length > 0 && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Tags</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedCommunication.tags.map((tag: string) => (
+                                <Badge key={tag} variant="outline" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </Card>
+              ) : (
+                <Card className="p-6 h-[600px] flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Mail className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Selecione uma comunicação para ver os detalhes</p>
+                  </div>
                 </Card>
               )}
             </div>
