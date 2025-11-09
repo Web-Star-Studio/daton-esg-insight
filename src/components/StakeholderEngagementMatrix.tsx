@@ -266,7 +266,7 @@ const StakeholderEngagementMatrix = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
+          <div className="relative pl-24 pb-12 pt-2">
             {/* Matrix Grid */}
             <div className="grid grid-cols-3 gap-4 min-h-[400px]">
               {/* Y-axis labels */}
