@@ -22,6 +22,7 @@ import {
   Filter
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Stakeholder {
   id: string;
@@ -171,9 +172,10 @@ const StakeholderEngagementMatrix = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header and Filters */}
-      <div className="flex items-center justify-between">
+    <ScrollArea className="h-[calc(100vh-12rem)]">
+      <div className="space-y-6 pr-4">
+        {/* Header and Filters */}
+        <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Matriz de Stakeholders</h2>
           <p className="text-muted-foreground">
@@ -479,7 +481,8 @@ const StakeholderEngagementMatrix = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ScrollArea>
   );
 };
 
