@@ -72,7 +72,7 @@ export function ComplianceProvider({ children }: { children: React.ReactNode }) 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['compliance-stats'],
     queryFn: complianceService.getStats,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 30, // 30 seconds - keep stats fresh
   });
 
   const { data: users } = useQuery({
@@ -85,8 +85,8 @@ export function ComplianceProvider({ children }: { children: React.ReactNode }) 
   const createTaskMutation = useMutation({
     mutationFn: complianceService.createTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['compliance-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['compliance-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['compliance-tasks'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['compliance-stats'], refetchType: 'active' });
       toast.success('Tarefa criada com sucesso!');
       setShowTaskModal(false);
       setSelectedTask(null);
@@ -100,8 +100,8 @@ export function ComplianceProvider({ children }: { children: React.ReactNode }) 
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       complianceService.updateTask(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['compliance-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['compliance-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['compliance-tasks'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['compliance-stats'], refetchType: 'active' });
       toast.success('Tarefa atualizada com sucesso!');
       setShowTaskModal(false);
       setSelectedTask(null);

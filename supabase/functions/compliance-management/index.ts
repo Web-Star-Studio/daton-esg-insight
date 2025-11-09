@@ -293,6 +293,8 @@ serve(async (req) => {
     }
 
     if (path === '/compliance-management/stats' && method === 'GET') {
+      console.log(`Service request: GET /compliance-management/stats for company ${profile.company_id}`);
+      
       const today = new Date().toISOString().split('T')[0];
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
