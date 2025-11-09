@@ -260,7 +260,7 @@ const StakeholderEngagementMatrix = () => {
       </div>
 
       {/* Stakeholder Matrix */}
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
           <CardTitle>Matriz Influência x Interesse</CardTitle>
           <CardDescription>
@@ -268,9 +268,9 @@ const StakeholderEngagementMatrix = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative pl-24 pb-12 pt-2">
+          <div className="relative pl-24 pb-20 pt-2">
             {/* Matrix Grid */}
-            <div className="grid grid-cols-3 gap-4 min-h-[400px]">
+            <div className="grid grid-cols-3 gap-4 min-h-[450px]">
               {/* Y-axis labels */}
               <div className="absolute -left-20 top-0 h-full flex flex-col justify-between text-sm font-medium">
                 <span>Alto</span>
@@ -295,7 +295,7 @@ const StakeholderEngagementMatrix = () => {
                   return (
                     <div
                       key={key}
-                      className={`border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[120px] ${
+                      className={`border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[120px] max-h-[200px] overflow-y-auto ${
                         strategy === 'Gerenciar de Perto' ? 'bg-red-50' :
                         strategy === 'Manter Satisfeito' ? 'bg-orange-50' :
                         strategy === 'Manter Informado' ? 'bg-blue-50' : 'bg-gray-50'
