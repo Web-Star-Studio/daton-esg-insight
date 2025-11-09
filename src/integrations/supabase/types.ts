@@ -2153,6 +2153,13 @@ export type Database = {
             referencedRelation: "regulatory_requirements"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "compliance_tasks_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       conservation_activities: {
