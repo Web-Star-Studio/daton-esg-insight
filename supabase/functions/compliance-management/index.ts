@@ -82,7 +82,7 @@ serve(async (req) => {
         .select(`
           *,
           requirement:regulatory_requirements(title, reference_code, jurisdiction),
-          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name, email)
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
         `)
         .eq('company_id', profile.company_id)
         .order('due_date', { ascending: true });
@@ -140,7 +140,7 @@ serve(async (req) => {
         .select(`
           *,
           requirement:regulatory_requirements(title, reference_code, jurisdiction),
-          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name, email)
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
         `)
         .single();
 
@@ -194,7 +194,7 @@ serve(async (req) => {
         .select(`
           *,
           requirement:regulatory_requirements(title, reference_code, jurisdiction),
-          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name, email)
+          responsible:profiles!compliance_tasks_responsible_user_id_fkey(full_name)
         `)
         .single();
 
