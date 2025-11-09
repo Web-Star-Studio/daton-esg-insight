@@ -11538,6 +11538,81 @@ export type Database = {
           },
         ]
       }
+      stakeholder_communications: {
+        Row: {
+          attachments: Json | null
+          company_id: string
+          content: string
+          created_at: string
+          created_by_user_id: string
+          direction: string
+          id: string
+          priority: string
+          scheduled_date: string | null
+          sent_date: string | null
+          stakeholder_id: string
+          status: string
+          subject: string
+          tags: string[] | null
+          template_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          company_id: string
+          content: string
+          created_at?: string
+          created_by_user_id: string
+          direction?: string
+          id?: string
+          priority?: string
+          scheduled_date?: string | null
+          sent_date?: string | null
+          stakeholder_id: string
+          status?: string
+          subject: string
+          tags?: string[] | null
+          template_id?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          company_id?: string
+          content?: string
+          created_at?: string
+          created_by_user_id?: string
+          direction?: string
+          id?: string
+          priority?: string
+          scheduled_date?: string | null
+          sent_date?: string | null
+          stakeholder_id?: string
+          status?: string
+          subject?: string
+          tags?: string[] | null
+          template_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stakeholder_communications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stakeholder_communications_stakeholder_id_fkey"
+            columns: ["stakeholder_id"]
+            isOneToOne: false
+            referencedRelation: "stakeholders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stakeholder_surveys: {
         Row: {
           assessment_id: string

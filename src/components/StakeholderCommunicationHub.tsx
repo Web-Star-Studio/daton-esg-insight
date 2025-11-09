@@ -47,6 +47,7 @@ interface Communication {
   sent_date?: string;
   attachments?: string[];
   tags?: string[];
+  template_id?: string;
   created_at: string;
   created_by: string;
 }
@@ -88,55 +89,57 @@ const StakeholderCommunicationHub = () => {
   const { data: communications, isLoading } = useQuery({
     queryKey: ['communications', filterType, filterStatus, searchTerm],
     queryFn: async () => {
-      // Mock data - in production, this would come from your API
-      return [
-        {
-          id: '1',
-          stakeholder_id: 'st1',
-          stakeholder_name: 'Associação de Investidores',
-          type: 'email' as const,
-          subject: 'Relatório Trimestral Q4 2024',
-          content: 'Prezados investidores, segue em anexo o relatório de performance do último trimestre...',
-          direction: 'outbound' as const,
-          status: 'delivered' as const,
-          priority: 'high' as const,
-          sent_date: '2025-01-15T10:00:00Z',
-          attachments: ['relatorio-q4-2024.pdf'],
-          tags: ['relatório', 'investidores', 'trimestral'],
-          created_at: '2025-01-15T09:30:00Z',
-          created_by: 'Felipe Antunes'
-        },
-        {
-          id: '2',
-          stakeholder_id: 'st2',
-          stakeholder_name: 'Sindicato dos Trabalhadores',
-          type: 'meeting' as const,
-          subject: 'Reunião - Negociação Coletiva 2025',
-          content: 'Reunião agendada para discussão dos termos da negociação coletiva para o ano de 2025.',
-          direction: 'inbound' as const,
-          status: 'scheduled' as const,
-          priority: 'high' as const,
-          scheduled_date: '2025-02-20T14:00:00Z',
-          tags: ['negociação', 'trabalhadores', 'reunião'],
-          created_at: '2025-01-10T11:00:00Z',
-          created_by: 'Sistema'
-        },
-        {
-          id: '3',
-          stakeholder_id: 'st3',
-          stakeholder_name: 'ONG Ambiental Local',
-          type: 'survey' as const,
-          subject: 'Pesquisa de Satisfação - Programas Ambientais',
-          content: 'Gostaríamos de obter seu feedback sobre nossos programas de sustentabilidade...',
-          direction: 'outbound' as const,
-          status: 'sent' as const,
-          priority: 'medium' as const,
-          sent_date: '2025-01-12T16:00:00Z',
-          tags: ['pesquisa', 'sustentabilidade', 'feedback'],
-          created_at: '2025-01-12T15:30:00Z',
-          created_by: 'Felipe Antunes'
-        }
-      ] as Communication[];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('Empresa não encontrada');
+
+      let query = supabase
+        .from('stakeholder_communications')
+        .select(`
+          *,
+          stakeholder:stakeholders(name)
+        `)
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
+
+      if (filterType !== 'all') {
+        query = query.eq('type', filterType);
+      }
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro ao buscar comunicações:', error);
+        throw error;
+      }
+
+      return (data || []).map(comm => ({
+        id: comm.id,
+        stakeholder_id: comm.stakeholder_id,
+        stakeholder_name: comm.stakeholder?.name || 'Stakeholder desconhecido',
+        type: comm.type,
+        subject: comm.subject,
+        content: comm.content,
+        direction: comm.direction,
+        status: comm.status,
+        priority: comm.priority,
+        scheduled_date: comm.scheduled_date,
+        sent_date: comm.sent_date,
+        attachments: comm.attachments || [],
+        tags: comm.tags || [],
+        created_at: comm.created_at,
+        created_by: 'Usuário'
+      })) as Communication[];
     },
   });
 
@@ -164,10 +167,77 @@ const StakeholderCommunicationHub = () => {
     },
   });
 
+  const { data: stakeholders } = useQuery({
+    queryKey: ['stakeholders-for-communication'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) return [];
+
+      const { data, error } = await supabase
+        .from('stakeholders')
+        .select('id, name, category')
+        .eq('company_id', profile.company_id)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Erro ao buscar stakeholders:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+  });
+
   const sendCommunicationMutation = useMutation({
     mutationFn: async (communication: Partial<Communication>) => {
-      // Real API call will be implemented
-      throw new Error('Comunicação com stakeholders não configurada ainda');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile?.company_id) throw new Error('Empresa não encontrada');
+
+      const communicationData = {
+        company_id: profile.company_id,
+        stakeholder_id: communication.stakeholder_id!,
+        type: communication.type!,
+        subject: communication.subject!,
+        content: communication.content!,
+        direction: communication.direction!,
+        status: communication.status!,
+        priority: communication.priority || 'medium',
+        template_id: communication.template_id || null,
+        sent_date: communication.direction === 'outbound' ? new Date().toISOString() : null,
+        created_by_user_id: user.id,
+        attachments: communication.attachments || [],
+        tags: communication.tags || []
+      };
+
+      const { data, error } = await supabase
+        .from('stakeholder_communications')
+        .insert(communicationData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao salvar comunicação:', error);
+        throw new Error(error.message);
+      }
+
+      return data;
     },
     onSuccess: () => {
       toast.success('Comunicação enviada com sucesso!');
@@ -175,8 +245,9 @@ const StakeholderCommunicationHub = () => {
       resetNewMessage();
       queryClient.invalidateQueries({ queryKey: ['communications'] });
     },
-    onError: () => {
-      toast.error('Erro ao enviar comunicação.');
+    onError: (error: Error) => {
+      console.error('Erro ao enviar comunicação:', error);
+      toast.error(`Erro ao enviar comunicação: ${error.message}`);
     },
   });
 
@@ -329,11 +400,11 @@ const StakeholderCommunicationHub = () => {
                   <SelectValue placeholder="Selecione os stakeholders" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="st1">Associação de Investidores</SelectItem>
-                  <SelectItem value="st2">Sindicato dos Trabalhadores</SelectItem>
-                  <SelectItem value="st3">ONG Ambiental Local</SelectItem>
-                  <SelectItem value="all_investors">Todos os Investidores</SelectItem>
-                  <SelectItem value="all_employees">Todos os Funcionários</SelectItem>
+                  {stakeholders?.map((stakeholder) => (
+                    <SelectItem key={stakeholder.id} value={stakeholder.id}>
+                      {stakeholder.name} ({stakeholder.category})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
