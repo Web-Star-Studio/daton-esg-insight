@@ -81,12 +81,12 @@ export function ComplianceTaskModal({ open, onOpenChange, task }: ComplianceTask
 
   const { data: requirements } = useQuery({
     queryKey: ['regulatory-requirements'],
-    queryFn: complianceService.getRequirements,
+    queryFn: () => complianceService.getRequirements(),
   });
 
   const { data: users } = useQuery({
     queryKey: ['users'],
-    queryFn: complianceService.getUsers,
+    queryFn: () => complianceService.getUsers(),
   });
 
   const createTask = useMutation({

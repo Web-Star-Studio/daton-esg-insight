@@ -65,25 +65,25 @@ export function ComplianceProvider({ children }: { children: React.ReactNode }) 
 
   const { data: requirements, isLoading: requirementsLoading } = useQuery({
     queryKey: ['regulatory-requirements'],
-    queryFn: complianceService.getRequirements,
+    queryFn: () => complianceService.getRequirements(),
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['compliance-stats'],
-    queryFn: complianceService.getStats,
+    queryFn: () => complianceService.getStats(),
     staleTime: 1000 * 30, // 30 seconds - keep stats fresh
   });
 
   const { data: users } = useQuery({
     queryKey: ['users'],
-    queryFn: complianceService.getUsers,
+    queryFn: () => complianceService.getUsers(),
     staleTime: 1000 * 60 * 15, // 15 minutes
   });
 
   // Mutations
   const createTaskMutation = useMutation({
-    mutationFn: complianceService.createTask,
+    mutationFn: (data: CreateComplianceTaskData) => complianceService.createTask(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compliance-tasks'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['compliance-stats'], refetchType: 'active' });

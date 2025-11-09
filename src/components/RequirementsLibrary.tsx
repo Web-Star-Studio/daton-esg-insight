@@ -32,7 +32,7 @@ export function RequirementsLibrary() {
 
   const { data: requirements, isLoading } = useQuery({
     queryKey: ['regulatory-requirements'],
-    queryFn: complianceService.getRequirements,
+    queryFn: () => complianceService.getRequirements(),
   });
 
   const filteredRequirements = requirements?.filter(requirement => 
