@@ -13,6 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface KPI {
+  id: string;
+  indicator: string;
+  baseline: number;
+  target: number;
+  current: number;
+  unit: string;
+}
+
 interface SDGDetails {
   sdg_number: number;
   selected_targets: string[];
@@ -21,13 +30,7 @@ interface SDGDetails {
   results_achieved?: string;
   future_commitments?: string;
   evidence_documents?: string[];
-  kpis?: Array<{
-    indicator: string;
-    baseline: number;
-    target: number;
-    current: number;
-    unit: string;
-  }>;
+  kpis?: KPI[];
 }
 
 interface SDGSelectorModuleProps {
@@ -65,13 +68,13 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
         data.forEach(item => {
           details.set(item.sdg_number, {
             sdg_number: item.sdg_number,
-            selected_targets: item.selected_targets || [],
-            impact_level: item.impact_level as 'Alto' | 'Médio' | 'Baixo' || 'Médio',
+            selected_targets: (item.selected_targets as string[]) || [],
+            impact_level: (item.impact_level as 'Alto' | 'Médio' | 'Baixo') || 'Médio',
             actions_taken: item.actions_taken || undefined,
             results_achieved: item.results_achieved || undefined,
             future_commitments: item.future_commitments || undefined,
-            evidence_documents: item.evidence_documents || [],
-            kpis: item.kpis || []
+            evidence_documents: (item.evidence_documents as string[]) || [],
+            kpis: ((item.kpis as unknown) as KPI[]) || []
           });
         });
 
@@ -148,7 +151,7 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
           results_achieved: details.results_achieved,
           future_commitments: details.future_commitments,
           evidence_documents: details.evidence_documents,
-          kpis: details.kpis
+          kpis: details.kpis as any
         })
         .eq('report_id', reportId)
         .eq('sdg_number', details.sdg_number);
