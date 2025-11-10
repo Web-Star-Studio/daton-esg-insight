@@ -4,6 +4,7 @@ import { GovernanceDataCollectionModule } from './GovernanceDataCollectionModule
 import EnvironmentalDataCollectionModule from './EnvironmentalDataCollectionModule';
 import { SocialDataCollectionModule } from './SocialDataCollectionModule';
 import { EconomicDataCollectionModule } from './EconomicDataCollectionModule';
+import StakeholderEngagementDataModule from './StakeholderEngagementDataModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -69,32 +70,36 @@ interface Etapa2Props {
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Documentos Gerais
-          </TabsTrigger>
-          <TabsTrigger value="strategy" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Visão e Estratégia
-          </TabsTrigger>
-          <TabsTrigger value="governance" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Governança Corporativa
-          </TabsTrigger>
-          <TabsTrigger value="environmental" className="flex items-center gap-2">
-            <Leaf className="h-4 w-4" />
-            Gestão Ambiental
-          </TabsTrigger>
-          <TabsTrigger value="social" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Desempenho Social
-          </TabsTrigger>
-          <TabsTrigger value="economic" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Econômico
-          </TabsTrigger>
-        </TabsList>
+      <TabsList className="grid w-full grid-cols-7">
+        <TabsTrigger value="general" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Documentos Gerais
+        </TabsTrigger>
+        <TabsTrigger value="strategy" className="flex items-center gap-2">
+          <Target className="h-4 w-4" />
+          Visão e Estratégia
+        </TabsTrigger>
+        <TabsTrigger value="governance" className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Governança Corporativa
+        </TabsTrigger>
+        <TabsTrigger value="environmental" className="flex items-center gap-2">
+          <Leaf className="h-4 w-4" />
+          Gestão Ambiental
+        </TabsTrigger>
+        <TabsTrigger value="social" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Desempenho Social
+        </TabsTrigger>
+        <TabsTrigger value="economic" className="flex items-center gap-2">
+          <DollarSign className="h-4 w-4" />
+          Econômico
+        </TabsTrigger>
+        <TabsTrigger value="stakeholders" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Stakeholders
+        </TabsTrigger>
+      </TabsList>
 
       <TabsContent value="general" className="space-y-6">
         <div className="bg-muted/50 p-4 rounded-lg">
@@ -177,15 +182,25 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
           />
         </TabsContent>
 
-        <TabsContent value="economic">
-          <EconomicDataCollectionModule
-            reportId={reportId || ''}
-            onComplete={() => {
-              toast.success('Dados econômicos completos!');
-              onNext();
-            }}
-          />
-        </TabsContent>
-      </Tabs>
+      <TabsContent value="economic">
+        <EconomicDataCollectionModule
+          reportId={reportId || ''}
+          onComplete={() => {
+            toast.success('Dados econômicos completos!');
+            onNext();
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="stakeholders">
+        <StakeholderEngagementDataModule
+          reportId={reportId || ''}
+          onComplete={() => {
+            toast.success('Dados de stakeholder engagement completos!');
+            onNext();
+          }}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }

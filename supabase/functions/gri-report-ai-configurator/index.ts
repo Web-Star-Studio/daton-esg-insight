@@ -57,10 +57,15 @@ serve(async (req) => {
       case 'analyze_social_data':
         return await handleAnalyzeSocialData(supabaseClient, await req.json());
       
-      case 'analyze_economic_data': {
-        const { handleAnalyzeEconomicData } = await import('./economic-handler.ts');
-        return await handleAnalyzeEconomicData(supabaseClient, await req.json());
-      }
+        case 'analyze_economic_data': {
+          const { handleAnalyzeEconomicData } = await import('./economic-handler.ts');
+          return await handleAnalyzeEconomicData(supabaseClient, await req.json());
+        }
+
+        case 'analyze_stakeholder_engagement_data': {
+          const { handleAnalyzeStakeholderEngagementData } = await import('./stakeholder-engagement-handler.ts');
+          return await handleAnalyzeStakeholderEngagementData(supabaseClient, await req.json());
+        }
       
       default:
         throw new Error(`Unknown action: ${action}`);

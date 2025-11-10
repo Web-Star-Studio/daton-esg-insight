@@ -100,22 +100,39 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
       }
 
       // Se for seção de desempenho econômico, buscar texto pré-gerado
-      if (sectionKey === 'economic_performance') {
-        const { data: economicData } = await supabase
-          .from('gri_economic_data_collection')
-          .select('ai_generated_text, ai_analysis')
-          .eq('report_id', reportId)
-          .maybeSingle();
+          if (sectionKey === 'economic_performance') {
+            const { data: economicData } = await supabase
+              .from('gri_economic_data_collection')
+              .select('ai_generated_text, ai_analysis')
+              .eq('report_id', reportId)
+              .maybeSingle();
 
-        if (economicData?.ai_generated_text) {
-          setSections(prev => ({ 
-            ...prev, 
-            [sectionKey]: economicData.ai_generated_text 
-          }));
-          toast.success('Conteúdo econômico carregado!');
-          return;
-        }
-      }
+            if (economicData?.ai_generated_text) {
+              setSections(prev => ({
+                ...prev,
+                [sectionKey]: economicData.ai_generated_text
+              }));
+              toast.success('Conteúdo econômico carregado!');
+              return;
+            }
+          }
+
+          if (sectionKey === 'stakeholder_engagement') {
+            const { data: stakeholderData } = await supabase
+              .from('gri_stakeholder_engagement_data')
+              .select('ai_generated_text, ai_analysis')
+              .eq('report_id', reportId)
+              .maybeSingle();
+
+            if (stakeholderData?.ai_generated_text) {
+              setSections(prev => ({
+                ...prev,
+                [sectionKey]: stakeholderData.ai_generated_text
+              }));
+              toast.success('Conteúdo de stakeholder engagement carregado!');
+              return;
+            }
+          }
 
       // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {

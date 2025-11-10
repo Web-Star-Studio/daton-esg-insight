@@ -6933,6 +6933,255 @@ export type Database = {
           },
         ]
       }
+      gri_stakeholder_engagement_data: {
+        Row: {
+          active_partnerships: number | null
+          active_partnerships_count: number | null
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          average_engagement_score: number | null
+          average_meeting_frequency: number | null
+          average_satisfaction_score: number | null
+          collaborative_projects: number | null
+          communication_channels: string[] | null
+          company_id: string
+          completion_percentage: number | null
+          created_at: string | null
+          critical_stakeholders: number | null
+          critical_stakeholders_count: number | null
+          documents_checklist: Json | null
+          engagement_frequency_by_group: Json | null
+          engagement_hours_total: number | null
+          engagement_record_types: string[] | null
+          engagement_records_notes: string | null
+          grievance_resolution_rate: number | null
+          grievances_received: number | null
+          grievances_resolved: number | null
+          has_engagement_records: boolean | null
+          has_formal_grievance_mechanism: boolean | null
+          has_partnerships: boolean | null
+          has_stakeholder_mapping: boolean | null
+          has_stakeholder_surveys: boolean | null
+          high_influence_stakeholders: number | null
+          high_interest_stakeholders: number | null
+          id: string
+          partnership_types: string[] | null
+          partnerships_list: Json | null
+          partnerships_notes: string | null
+          preferred_communication_channels: Json | null
+          report_id: string
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          sector_average_engagement_score: number | null
+          sector_average_stakeholder_count: number | null
+          sector_average_survey_response_rate: number | null
+          sectoral_forums: string[] | null
+          sectoral_memberships: number | null
+          stakeholder_mapping_frequency: string | null
+          stakeholder_mapping_last_update: string | null
+          stakeholder_mapping_methodology: string | null
+          stakeholder_mapping_notes: string | null
+          stakeholders_annual_engagement: number | null
+          stakeholders_biannual_engagement: number | null
+          stakeholders_by_category: Json | null
+          stakeholders_high_influence: number | null
+          stakeholders_high_interest: number | null
+          stakeholders_low_influence: number | null
+          stakeholders_low_interest: number | null
+          stakeholders_medium_influence: number | null
+          stakeholders_medium_interest: number | null
+          stakeholders_monthly_engagement: number | null
+          stakeholders_quarterly_engagement: number | null
+          status: string | null
+          survey_last_conducted_date: string | null
+          survey_response_rate: number | null
+          survey_response_rate_calculated: number | null
+          survey_results_summary: string | null
+          survey_types: string[] | null
+          surveys_conducted_count: number | null
+          surveys_notes: string | null
+          total_engagement_events: number | null
+          total_meetings_held: number | null
+          total_participants: number | null
+          total_stakeholder_groups: number | null
+          total_stakeholders_mapped: number | null
+          total_survey_responses: number | null
+          total_surveys_sent: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_partnerships?: number | null
+          active_partnerships_count?: number | null
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          average_engagement_score?: number | null
+          average_meeting_frequency?: number | null
+          average_satisfaction_score?: number | null
+          collaborative_projects?: number | null
+          communication_channels?: string[] | null
+          company_id: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          critical_stakeholders?: number | null
+          critical_stakeholders_count?: number | null
+          documents_checklist?: Json | null
+          engagement_frequency_by_group?: Json | null
+          engagement_hours_total?: number | null
+          engagement_record_types?: string[] | null
+          engagement_records_notes?: string | null
+          grievance_resolution_rate?: number | null
+          grievances_received?: number | null
+          grievances_resolved?: number | null
+          has_engagement_records?: boolean | null
+          has_formal_grievance_mechanism?: boolean | null
+          has_partnerships?: boolean | null
+          has_stakeholder_mapping?: boolean | null
+          has_stakeholder_surveys?: boolean | null
+          high_influence_stakeholders?: number | null
+          high_interest_stakeholders?: number | null
+          id?: string
+          partnership_types?: string[] | null
+          partnerships_list?: Json | null
+          partnerships_notes?: string | null
+          preferred_communication_channels?: Json | null
+          report_id: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          sector_average_engagement_score?: number | null
+          sector_average_stakeholder_count?: number | null
+          sector_average_survey_response_rate?: number | null
+          sectoral_forums?: string[] | null
+          sectoral_memberships?: number | null
+          stakeholder_mapping_frequency?: string | null
+          stakeholder_mapping_last_update?: string | null
+          stakeholder_mapping_methodology?: string | null
+          stakeholder_mapping_notes?: string | null
+          stakeholders_annual_engagement?: number | null
+          stakeholders_biannual_engagement?: number | null
+          stakeholders_by_category?: Json | null
+          stakeholders_high_influence?: number | null
+          stakeholders_high_interest?: number | null
+          stakeholders_low_influence?: number | null
+          stakeholders_low_interest?: number | null
+          stakeholders_medium_influence?: number | null
+          stakeholders_medium_interest?: number | null
+          stakeholders_monthly_engagement?: number | null
+          stakeholders_quarterly_engagement?: number | null
+          status?: string | null
+          survey_last_conducted_date?: string | null
+          survey_response_rate?: number | null
+          survey_response_rate_calculated?: number | null
+          survey_results_summary?: string | null
+          survey_types?: string[] | null
+          surveys_conducted_count?: number | null
+          surveys_notes?: string | null
+          total_engagement_events?: number | null
+          total_meetings_held?: number | null
+          total_participants?: number | null
+          total_stakeholder_groups?: number | null
+          total_stakeholders_mapped?: number | null
+          total_survey_responses?: number | null
+          total_surveys_sent?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_partnerships?: number | null
+          active_partnerships_count?: number | null
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          average_engagement_score?: number | null
+          average_meeting_frequency?: number | null
+          average_satisfaction_score?: number | null
+          collaborative_projects?: number | null
+          communication_channels?: string[] | null
+          company_id?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          critical_stakeholders?: number | null
+          critical_stakeholders_count?: number | null
+          documents_checklist?: Json | null
+          engagement_frequency_by_group?: Json | null
+          engagement_hours_total?: number | null
+          engagement_record_types?: string[] | null
+          engagement_records_notes?: string | null
+          grievance_resolution_rate?: number | null
+          grievances_received?: number | null
+          grievances_resolved?: number | null
+          has_engagement_records?: boolean | null
+          has_formal_grievance_mechanism?: boolean | null
+          has_partnerships?: boolean | null
+          has_stakeholder_mapping?: boolean | null
+          has_stakeholder_surveys?: boolean | null
+          high_influence_stakeholders?: number | null
+          high_interest_stakeholders?: number | null
+          id?: string
+          partnership_types?: string[] | null
+          partnerships_list?: Json | null
+          partnerships_notes?: string | null
+          preferred_communication_channels?: Json | null
+          report_id?: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          sector_average_engagement_score?: number | null
+          sector_average_stakeholder_count?: number | null
+          sector_average_survey_response_rate?: number | null
+          sectoral_forums?: string[] | null
+          sectoral_memberships?: number | null
+          stakeholder_mapping_frequency?: string | null
+          stakeholder_mapping_last_update?: string | null
+          stakeholder_mapping_methodology?: string | null
+          stakeholder_mapping_notes?: string | null
+          stakeholders_annual_engagement?: number | null
+          stakeholders_biannual_engagement?: number | null
+          stakeholders_by_category?: Json | null
+          stakeholders_high_influence?: number | null
+          stakeholders_high_interest?: number | null
+          stakeholders_low_influence?: number | null
+          stakeholders_low_interest?: number | null
+          stakeholders_medium_influence?: number | null
+          stakeholders_medium_interest?: number | null
+          stakeholders_monthly_engagement?: number | null
+          stakeholders_quarterly_engagement?: number | null
+          status?: string | null
+          survey_last_conducted_date?: string | null
+          survey_response_rate?: number | null
+          survey_response_rate_calculated?: number | null
+          survey_results_summary?: string | null
+          survey_types?: string[] | null
+          surveys_conducted_count?: number | null
+          surveys_notes?: string | null
+          total_engagement_events?: number | null
+          total_meetings_held?: number | null
+          total_participants?: number | null
+          total_stakeholder_groups?: number | null
+          total_stakeholders_mapped?: number | null
+          total_survey_responses?: number | null
+          total_surveys_sent?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_stakeholder_engagement_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_stakeholder_engagement_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_strategy_data_collection: {
         Row: {
           ai_analysis: Json | null
