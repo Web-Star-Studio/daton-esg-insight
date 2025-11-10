@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IndicatorCategoryCard } from "@/components/esg/IndicatorCategoryCard";
+import { IndicatorTrendChart } from "@/components/esg/IndicatorTrendChart";
+import { IndicatorComparisonChart } from "@/components/esg/IndicatorComparisonChart";
 import { 
   getAllRecommendedIndicators, 
   getCachedIndicators, 
@@ -178,9 +180,8 @@ export default function IndicadoresRecomendados() {
           <TabsTrigger value="6.1" className="text-xs lg:text-sm">
             Clima & Energia
           </TabsTrigger>
-          <TabsTrigger value="6.2" disabled className="text-xs lg:text-sm">
+          <TabsTrigger value="6.2" className="text-xs lg:text-sm">
             Água
-            <Badge variant="secondary" className="ml-1 text-xs">Em breve</Badge>
           </TabsTrigger>
           <TabsTrigger value="6.3" className="text-xs lg:text-sm">
             Resíduos
@@ -188,17 +189,14 @@ export default function IndicadoresRecomendados() {
           <TabsTrigger value="6.4" className="text-xs lg:text-sm">
             Saúde & Segurança
           </TabsTrigger>
-          <TabsTrigger value="6.5" disabled className="text-xs lg:text-sm">
+          <TabsTrigger value="6.5" className="text-xs lg:text-sm">
             Capital Humano
-            <Badge variant="secondary" className="ml-1 text-xs">Em breve</Badge>
           </TabsTrigger>
-          <TabsTrigger value="6.6" disabled className="text-xs lg:text-sm">
+          <TabsTrigger value="6.6" className="text-xs lg:text-sm">
             Governança
-            <Badge variant="secondary" className="ml-1 text-xs">Em breve</Badge>
           </TabsTrigger>
-          <TabsTrigger value="6.7" disabled className="text-xs lg:text-sm">
+          <TabsTrigger value="6.7" className="text-xs lg:text-sm">
             Econômico
-            <Badge variant="secondary" className="ml-1 text-xs">Em breve</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -208,6 +206,52 @@ export default function IndicadoresRecomendados() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Visualizations Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Análise de Tendências</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <IndicatorTrendChart
+            title="Emissões de GEE (tCO₂e)"
+            data={generateMockTrendData('ghg_emissions')}
+            unit="tCO₂e"
+            color="#ef4444"
+          />
+          
+          <IndicatorTrendChart
+            title="Consumo de Energia (kWh)"
+            data={generateMockTrendData('energy_consumption')}
+            unit="kWh"
+            color="#f59e0b"
+          />
+          
+          <IndicatorTrendChart
+            title="Geração de Resíduos (t)"
+            data={generateMockTrendData('waste_generation')}
+            unit="toneladas"
+            color="#10b981"
+          />
+          
+          <IndicatorTrendChart
+            title="Taxa de Acidentes (LTIFR)"
+            data={generateMockTrendData('ltifr')}
+            unit=""
+            color="#8b5cf6"
+          />
+        </div>
+        
+        <IndicatorComparisonChart
+          title="Completude por Categoria"
+          data={categories.map(cat => ({
+            name: cat.categoryName,
+            value: cat.completeness
+          }))}
+          unit="%"
+        />
+      </div>
 
       {/* Framework Mapping Info */}
       <Card>
@@ -229,4 +273,31 @@ export default function IndicadoresRecomendados() {
       </Card>
     </div>
   );
+}
+
+// Mock data generator for trend charts
+function generateMockTrendData(type: string) {
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  
+  const baseValues: Record<string, number> = {
+    ghg_emissions: 1500,
+    energy_consumption: 50000,
+    waste_generation: 120,
+    ltifr: 2.5
+  };
+  
+  const base = baseValues[type] || 100;
+  
+  return months.map((month, index) => {
+    const variance = (Math.random() - 0.5) * 0.2;
+    const trend = -0.02;
+    const value = base * (1 + trend * index + variance);
+    
+    return {
+      period: month,
+      value: parseFloat(value.toFixed(2)),
+      benchmark: type === 'ltifr' ? 2.0 : undefined,
+      target: type === 'ghg_emissions' ? base * 0.8 : undefined
+    };
+  });
 }

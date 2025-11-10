@@ -496,41 +496,290 @@ export const calculateHealthSafetyIndicators = async (): Promise<ESGIndicator[]>
 };
 
 // ============================================
+// 6.2 WATER INDICATORS
+// ============================================
+
+async function calculateWaterIndicators(companyId: string): Promise<ESGIndicator[]> {
+  const indicators: ESGIndicator[] = [];
+  const currentYear = new Date().getFullYear();
+  
+  const { data: waterData } = await supabase
+    .from('water_consumption_data' as any)
+    .select('*')
+    .eq('company_id', companyId)
+    .gte('period_start', `${currentYear}-01-01`)
+    .lte('period_end', `${currentYear}-12-31`) as any;
+  
+  if (!waterData) return indicators;
+  
+  const totalConsumption = waterData.reduce((sum: number, log: any) => {
+    const quantity = typeof log.quantity === 'number' ? log.quantity : parseFloat(log.quantity || '0');
+    return sum + quantity;
+  }, 0);
+  
+  indicators.push({
+    code: 'AGUA_001',
+    name: 'Consumo Total de Água',
+    value: totalConsumption,
+    unit: 'm³/ano',
+    formula: '∑(Água de todas as fontes)',
+    category: '6.2',
+    subcategory: 'Gestão Hídrica',
+    lastUpdated: new Date().toISOString(),
+    dataQuality: waterData.length > 0 ? 'high' : 'low',
+    sources: ['water_consumption_data'],
+    metadata: {
+      totalRecords: waterData.length,
+      griReference: 'GRI 303-3'
+    }
+  });
+  
+  const { data: productionData } = await supabase
+    .from('production_data' as any)
+    .select('production_units')
+    .eq('company_id', companyId)
+    .gte('period_start', `${currentYear}-01-01`)
+    .lte('period_end', `${currentYear}-12-31`)
+    .maybeSingle() as any;
+  
+  const productionUnits = productionData ? (productionData as any).production_units : null;
+  
+  if (productionUnits && productionUnits > 0) {
+    const intensity = totalConsumption / productionUnits;
+    indicators.push({
+      code: 'AGUA_002',
+      name: 'Intensidade Hídrica',
+      value: parseFloat(intensity.toFixed(3)),
+      unit: 'm³/unidade',
+      formula: 'Consumo Total / Unidades Produzidas',
+      category: '6.2',
+      subcategory: 'Eficiência Hídrica',
+      lastUpdated: new Date().toISOString(),
+      dataQuality: 'high',
+      sources: ['water_consumption_data', 'production_data'],
+      metadata: { productionUnits, griReference: 'GRI 303-1' }
+    });
+  }
+  
+  return indicators;
+}
+
+// ============================================
+// 6.5 HUMAN CAPITAL INDICATORS
+// ============================================
+
+async function calculateHumanCapitalIndicators(companyId: string): Promise<ESGIndicator[]> {
+  const indicators: ESGIndicator[] = [];
+  
+  const { data: trainings } = await supabase
+    .from('training_programs')
+    .select('duration_hours, status')
+    .eq('company_id', companyId)
+    .eq('status', 'Concluído') as any;
+  
+  const { count: employeeCount } = await supabase
+    .from('employees')
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', companyId)
+    .eq('status', 'Ativo');
+  
+  const totalTrainingHours = trainings?.reduce((sum: number, t: any) => 
+    sum + (t.duration_hours || 0), 0) || 0;
+  
+  const avgTrainingHours = employeeCount ? totalTrainingHours / employeeCount : 0;
+  
+  indicators.push({
+    code: 'CAPITAL_001',
+    name: 'Horas de Treinamento Médias',
+    value: parseFloat(avgTrainingHours.toFixed(1)),
+    unit: 'h/funcionário/ano',
+    formula: 'Total de Horas / Número de Colaboradores',
+    category: '6.5',
+    subcategory: 'Desenvolvimento Profissional',
+    lastUpdated: new Date().toISOString(),
+    dataQuality: trainings && trainings.length > 0 ? 'high' : 'medium',
+    sources: ['training_programs', 'employees'],
+    benchmark: 40,
+    metadata: {
+      totalTrainingHours,
+      employeeCount,
+      griReference: 'GRI 404-1'
+    }
+  });
+  
+  return indicators;
+}
+
+// ============================================
+// 6.6 GOVERNANCE INDICATORS
+// ============================================
+
+async function calculateGovernanceIndicators(companyId: string): Promise<ESGIndicator[]> {
+  const indicators: ESGIndicator[] = [];
+  const currentYear = new Date().getFullYear();
+  
+  const { data: complaints, count: totalComplaints } = await supabase
+    .from('complaints' as any)
+    .select('*', { count: 'exact' })
+    .eq('company_id', companyId)
+    .gte('created_at', `${currentYear}-01-01`) as any;
+  
+  indicators.push({
+    code: 'GOV_001',
+    name: 'Denúncias Recebidas',
+    value: totalComplaints || 0,
+    unit: 'denúncias',
+    formula: '∑(Denúncias no período)',
+    category: '6.6',
+    subcategory: 'Canal de Ética',
+    lastUpdated: new Date().toISOString(),
+    dataQuality: complaints ? 'high' : 'medium',
+    sources: ['complaints'],
+    metadata: { period: `${currentYear}`, griReference: 'GRI 2-26' }
+  });
+  
+  if (complaints && complaints.length > 0) {
+    const resolvedCount = complaints.filter((c: any) => 
+      c.status === 'Resolvida' || c.status === 'Fechada'
+    ).length;
+    
+    const resolutionRate = (resolvedCount / complaints.length) * 100;
+    
+    indicators.push({
+      code: 'GOV_002',
+      name: 'Taxa de Resolução de Denúncias',
+      value: parseFloat(resolutionRate.toFixed(1)),
+      unit: '%',
+      formula: '(Resolvidas / Recebidas) × 100',
+      category: '6.6',
+      subcategory: 'Gestão de Ética',
+      lastUpdated: new Date().toISOString(),
+      dataQuality: 'high',
+      sources: ['complaints'],
+      benchmark: 90,
+      metadata: {
+        totalComplaints: complaints.length,
+        resolvedCount,
+        griReference: 'GRI 2-26'
+      }
+    });
+  }
+  
+  return indicators;
+}
+
+// ============================================
+// 6.7 ECONOMIC INDICATORS
+// ============================================
+
+async function calculateEconomicIndicators(companyId: string): Promise<ESGIndicator[]> {
+  const indicators: ESGIndicator[] = [];
+  const currentYear = new Date().getFullYear();
+  
+  const { data: investments } = await supabase
+    .from('esg_investments' as any)
+    .select('amount, currency')
+    .eq('company_id', companyId)
+    .gte('period', `${currentYear}-01-01`)
+    .lte('period', `${currentYear}-12-31`) as any;
+  
+  const totalInvestments = investments?.reduce((sum: number, inv: any) => {
+    const amount = typeof inv.amount === 'number' ? inv.amount : parseFloat(inv.amount || '0');
+    return sum + amount;
+  }, 0) || 0;
+  
+  const investmentsInMillions = totalInvestments / 1000000;
+  
+  indicators.push({
+    code: 'ECON_001',
+    name: 'Investimentos em Sustentabilidade',
+    value: parseFloat(investmentsInMillions.toFixed(2)),
+    unit: 'R$ milhões',
+    formula: '∑(Projetos ESG)',
+    category: '6.7',
+    subcategory: 'Investimentos ESG',
+    lastUpdated: new Date().toISOString(),
+    dataQuality: investments && investments.length > 0 ? 'high' : 'medium',
+    sources: ['esg_investments'],
+    metadata: {
+      projectCount: investments?.length || 0,
+      griReference: 'GRI 201-1'
+    }
+  });
+  
+  return indicators;
+}
+
+// ============================================
 // MAIN FUNCTION: GET ALL INDICATORS
 // ============================================
 
 export const getAllRecommendedIndicators = async (): Promise<CategoryIndicators[]> => {
-  const [climateIndicators, wasteIndicators, safetyIndicators] = await Promise.all([
+  const companyId = await getCompanyId();
+  
+  console.log('🔄 Calculating all ESG indicators...');
+  
+  const [climateEnergy, water, waste, health, humanCapital, governance, economic] = await Promise.all([
     calculateClimateEnergyIndicators(),
+    calculateWaterIndicators(companyId),
     calculateWasteIndicators(),
-    calculateHealthSafetyIndicators()
+    calculateHealthSafetyIndicators(),
+    calculateHumanCapitalIndicators(companyId),
+    calculateGovernanceIndicators(companyId),
+    calculateEconomicIndicators(companyId)
   ]);
 
-  const categories: CategoryIndicators[] = [
+  return [
     {
       categoryCode: '6.1',
       categoryName: 'Clima e Energia',
-      indicators: climateIndicators,
-      completeness: calculateCompleteness(climateIndicators),
+      indicators: climateEnergy,
+      completeness: calculateCompleteness(climateEnergy),
+      lastCalculated: new Date().toISOString()
+    },
+    {
+      categoryCode: '6.2',
+      categoryName: 'Água',
+      indicators: water,
+      completeness: calculateCompleteness(water),
       lastCalculated: new Date().toISOString()
     },
     {
       categoryCode: '6.3',
       categoryName: 'Resíduos',
-      indicators: wasteIndicators,
-      completeness: calculateCompleteness(wasteIndicators),
+      indicators: waste,
+      completeness: calculateCompleteness(waste),
       lastCalculated: new Date().toISOString()
     },
     {
       categoryCode: '6.4',
       categoryName: 'Saúde e Segurança',
-      indicators: safetyIndicators,
-      completeness: calculateCompleteness(safetyIndicators),
+      indicators: health,
+      completeness: calculateCompleteness(health),
+      lastCalculated: new Date().toISOString()
+    },
+    {
+      categoryCode: '6.5',
+      categoryName: 'Capital Humano',
+      indicators: humanCapital,
+      completeness: calculateCompleteness(humanCapital),
+      lastCalculated: new Date().toISOString()
+    },
+    {
+      categoryCode: '6.6',
+      categoryName: 'Governança e Ética',
+      indicators: governance,
+      completeness: calculateCompleteness(governance),
+      lastCalculated: new Date().toISOString()
+    },
+    {
+      categoryCode: '6.7',
+      categoryName: 'Desempenho Econômico',
+      indicators: economic,
+      completeness: calculateCompleteness(economic),
       lastCalculated: new Date().toISOString()
     }
   ];
-
-  return categories;
 };
 
 const calculateCompleteness = (indicators: ESGIndicator[]): number => {
