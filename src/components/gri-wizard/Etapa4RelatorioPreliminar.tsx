@@ -125,14 +125,15 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
           .maybeSingle();
 
         if ((stakeholderData as any)?.ai_generated_text) {
-          const { data: commData } = await supabase
+          let content = (stakeholderData as any).ai_generated_text;
+          
+          const { data: commData, error: commError } = await supabase
             .from('gri_communication_transparency_data' as any)
             .select('ai_generated_text')
             .eq('report_id', reportId)
             .maybeSingle();
 
-          let content = (stakeholderData as any).ai_generated_text;
-          if ((commData as any)?.ai_generated_text) {
+          if (commData && !commError && (commData as any)?.ai_generated_text) {
             content += '\n\n## Comunicação e Transparência\n\n' + (commData as any).ai_generated_text;
           }
 
