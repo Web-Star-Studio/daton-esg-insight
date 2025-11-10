@@ -93,6 +93,7 @@ const ExtracoesDocumentos = lazy(() => import("./pages/ExtracoesDocumentos"));
 // Phase 5-8: Novas páginas ESG
 const Fornecedores = lazy(() => import("./pages/Fornecedores"));
 const IndicadoresESG = lazy(() => import("./pages/IndicadoresESG"));
+const IndicadoresRecomendados = lazy(() => import("./pages/IndicadoresRecomendados"));
 const Materialidade = lazy(() => import("./pages/Materialidade"));
 
 // Lazy loading para RH modules
