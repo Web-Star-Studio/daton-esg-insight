@@ -13246,36 +13246,51 @@ export type Database = {
           contribution_level: string | null
           created_at: string
           description: string | null
+          evidence_documents: Json | null
           future_commitments: string | null
           id: string
+          impact_level: string | null
+          kpis: Json | null
           report_id: string
           results_achieved: string | null
           sdg_number: number
           sdg_target: string | null
+          selected_targets: string[] | null
+          updated_at: string | null
         }
         Insert: {
           actions_taken?: string | null
           contribution_level?: string | null
           created_at?: string
           description?: string | null
+          evidence_documents?: Json | null
           future_commitments?: string | null
           id?: string
+          impact_level?: string | null
+          kpis?: Json | null
           report_id: string
           results_achieved?: string | null
           sdg_number: number
           sdg_target?: string | null
+          selected_targets?: string[] | null
+          updated_at?: string | null
         }
         Update: {
           actions_taken?: string | null
           contribution_level?: string | null
           created_at?: string
           description?: string | null
+          evidence_documents?: Json | null
           future_commitments?: string | null
           id?: string
+          impact_level?: string | null
+          kpis?: Json | null
           report_id?: string
           results_achieved?: string | null
           sdg_number?: number
           sdg_target?: string | null
+          selected_targets?: string[] | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -13286,6 +13301,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sdg_library: {
+        Row: {
+          color: string
+          created_at: string | null
+          description: string
+          global_pact_principles: number[] | null
+          icon: string
+          id: string
+          long_description: string | null
+          name: string
+          sdg_number: number
+          short_name: string
+          targets: Json
+          theme: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          description: string
+          global_pact_principles?: number[] | null
+          icon: string
+          id?: string
+          long_description?: string | null
+          name: string
+          sdg_number: number
+          short_name: string
+          targets?: Json
+          theme?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          description?: string
+          global_pact_principles?: number[] | null
+          icon?: string
+          id?: string
+          long_description?: string | null
+          name?: string
+          sdg_number?: number
+          short_name?: string
+          targets?: Json
+          theme?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       security_frameworks: {
         Row: {
