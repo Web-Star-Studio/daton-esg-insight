@@ -8,9 +8,10 @@ import StakeholderEngagementDataModule from './StakeholderEngagementDataModule';
 import InnovationDataCollectionModule from './InnovationDataCollectionModule';
 import { ReportingStandardsDataModule } from './ReportingStandardsDataModule';
 import { CommunicationTransparencyDataModule } from './CommunicationTransparencyDataModule';
+import { AuditsAssessmentsDataModule } from './AuditsAssessmentsDataModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
+import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CHECKLIST_CATEGORIAS = [
@@ -73,7 +74,7 @@ interface Etapa2Props {
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
       <Tabs defaultValue="general" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-9">
+      <TabsList className="grid w-full grid-cols-10">
         <TabsTrigger value="general" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
           Geral
@@ -113,6 +114,10 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
         <TabsTrigger value="communication" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           Comunicação
+        </TabsTrigger>
+        <TabsTrigger value="audits" className="flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4" />
+          Auditorias
         </TabsTrigger>
       </TabsList>
 
@@ -242,6 +247,16 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
             reportId={reportId || ''}
             onComplete={() => {
               toast.success('Dados de comunicação e transparência completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="audits">
+          <AuditsAssessmentsDataModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados de auditorias e avaliações completos!');
               onNext();
             }}
           />

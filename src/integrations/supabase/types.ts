@@ -5568,6 +5568,387 @@ export type Database = {
           },
         ]
       }
+      gri_audits_assessments_data: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          annual_audit_budget: number | null
+          annual_certification_costs: number | null
+          assessment_certifier: string | null
+          audit_coverage_percentage: number | null
+          audit_frequency: string | null
+          audit_maturity_level: string | null
+          audit_schedule_exists: boolean | null
+          audits_by_area: Json | null
+          audits_evolution: Json | null
+          audits_list: Json | null
+          audits_notes: string | null
+          average_closure_time_days: number | null
+          awards_for_quality_esg: number | null
+          b_corp_certified: boolean | null
+          biodiversity_assessment_done: boolean | null
+          carbon_footprint_calculated: boolean | null
+          carbon_neutral_certified: boolean | null
+          certifications_count: number | null
+          certifications_list: Json | null
+          certifications_notes: string | null
+          closed_non_conformities: number | null
+          company_id: string
+          completion_percentage: number | null
+          continuous_improvement_initiatives: number | null
+          corrective_action_notes: string | null
+          corrective_actions_completed: number | null
+          corrective_actions_count: number | null
+          corrective_actions_in_progress: number | null
+          corrective_actions_overdue: number | null
+          cost_savings_from_improvements: number | null
+          created_at: string | null
+          days_without_regulatory_incidents: number | null
+          documents_checklist: Json | null
+          environmental_impact_assessment_done: boolean | null
+          esg_rating_agency: string | null
+          esg_rating_date: string | null
+          esg_rating_level: string | null
+          esg_rating_score: number | null
+          external_auditors: string[] | null
+          external_audits_count: number | null
+          fsc_certified: boolean | null
+          governance_involvement: boolean | null
+          green_seal_certified: boolean | null
+          has_certifications: boolean | null
+          has_corrective_action_plans: boolean | null
+          has_external_verification: boolean | null
+          has_impact_assessments: boolean | null
+          has_periodic_audits: boolean | null
+          human_rights_impact_assessment_done: boolean | null
+          id: string
+          impact_assessment_methodologies: string[] | null
+          impact_assessments_count: number | null
+          impact_assessments_list: Json | null
+          impact_assessments_notes: string | null
+          internal_audit_team_size: number | null
+          internal_audits_count: number | null
+          iso_14001_certified: boolean | null
+          iso_14001_expiry_date: string | null
+          iso_14001_issue_date: string | null
+          iso_26000_adherence: boolean | null
+          iso_27001_certified: boolean | null
+          iso_27001_expiry_date: string | null
+          iso_27001_issue_date: string | null
+          iso_37001_certified: boolean | null
+          iso_37001_expiry_date: string | null
+          iso_37001_issue_date: string | null
+          iso_45001_certified: boolean | null
+          iso_45001_expiry_date: string | null
+          iso_45001_issue_date: string | null
+          iso_50001_certified: boolean | null
+          iso_50001_expiry_date: string | null
+          iso_50001_issue_date: string | null
+          iso_9001_certified: boolean | null
+          iso_9001_expiry_date: string | null
+          iso_9001_issue_date: string | null
+          last_external_audit_date: string | null
+          last_internal_audit_date: string | null
+          leed_certified: boolean | null
+          leed_level: string | null
+          lifecycle_assessment_done: boolean | null
+          linked_audits: string[] | null
+          new_contracts_due_certifications: number | null
+          non_conformities_by_severity: Json | null
+          non_conformities_closure_rate: number | null
+          open_non_conformities: number | null
+          positive_client_audits_count: number | null
+          preventive_actions_implemented: number | null
+          procel_certified: boolean | null
+          process_improvements_from_audits: number | null
+          regulatory_audits_count: number | null
+          regulatory_fines_received: number | null
+          regulatory_fines_total_value: number | null
+          report_id: string
+          roi_from_certifications: string | null
+          sa_8000_certified: boolean | null
+          sa_8000_expiry_date: string | null
+          sa_8000_issue_date: string | null
+          social_impact_assessment_done: boolean | null
+          status: string | null
+          supplier_audit_score: number | null
+          third_party_assessment: boolean | null
+          total_non_conformities: number | null
+          updated_at: string | null
+          verification_coverage_percentage: number | null
+          verification_date: string | null
+          verification_level: string | null
+          verification_provider: string | null
+          verification_report_available: boolean | null
+          verification_scope: string | null
+          verification_standard: string | null
+          verification_statement_url: string | null
+          verified_indicators_count: number | null
+          verified_indicators_list: string[] | null
+          water_footprint_calculated: boolean | null
+          years_with_systematic_audits: number | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          annual_audit_budget?: number | null
+          annual_certification_costs?: number | null
+          assessment_certifier?: string | null
+          audit_coverage_percentage?: number | null
+          audit_frequency?: string | null
+          audit_maturity_level?: string | null
+          audit_schedule_exists?: boolean | null
+          audits_by_area?: Json | null
+          audits_evolution?: Json | null
+          audits_list?: Json | null
+          audits_notes?: string | null
+          average_closure_time_days?: number | null
+          awards_for_quality_esg?: number | null
+          b_corp_certified?: boolean | null
+          biodiversity_assessment_done?: boolean | null
+          carbon_footprint_calculated?: boolean | null
+          carbon_neutral_certified?: boolean | null
+          certifications_count?: number | null
+          certifications_list?: Json | null
+          certifications_notes?: string | null
+          closed_non_conformities?: number | null
+          company_id: string
+          completion_percentage?: number | null
+          continuous_improvement_initiatives?: number | null
+          corrective_action_notes?: string | null
+          corrective_actions_completed?: number | null
+          corrective_actions_count?: number | null
+          corrective_actions_in_progress?: number | null
+          corrective_actions_overdue?: number | null
+          cost_savings_from_improvements?: number | null
+          created_at?: string | null
+          days_without_regulatory_incidents?: number | null
+          documents_checklist?: Json | null
+          environmental_impact_assessment_done?: boolean | null
+          esg_rating_agency?: string | null
+          esg_rating_date?: string | null
+          esg_rating_level?: string | null
+          esg_rating_score?: number | null
+          external_auditors?: string[] | null
+          external_audits_count?: number | null
+          fsc_certified?: boolean | null
+          governance_involvement?: boolean | null
+          green_seal_certified?: boolean | null
+          has_certifications?: boolean | null
+          has_corrective_action_plans?: boolean | null
+          has_external_verification?: boolean | null
+          has_impact_assessments?: boolean | null
+          has_periodic_audits?: boolean | null
+          human_rights_impact_assessment_done?: boolean | null
+          id?: string
+          impact_assessment_methodologies?: string[] | null
+          impact_assessments_count?: number | null
+          impact_assessments_list?: Json | null
+          impact_assessments_notes?: string | null
+          internal_audit_team_size?: number | null
+          internal_audits_count?: number | null
+          iso_14001_certified?: boolean | null
+          iso_14001_expiry_date?: string | null
+          iso_14001_issue_date?: string | null
+          iso_26000_adherence?: boolean | null
+          iso_27001_certified?: boolean | null
+          iso_27001_expiry_date?: string | null
+          iso_27001_issue_date?: string | null
+          iso_37001_certified?: boolean | null
+          iso_37001_expiry_date?: string | null
+          iso_37001_issue_date?: string | null
+          iso_45001_certified?: boolean | null
+          iso_45001_expiry_date?: string | null
+          iso_45001_issue_date?: string | null
+          iso_50001_certified?: boolean | null
+          iso_50001_expiry_date?: string | null
+          iso_50001_issue_date?: string | null
+          iso_9001_certified?: boolean | null
+          iso_9001_expiry_date?: string | null
+          iso_9001_issue_date?: string | null
+          last_external_audit_date?: string | null
+          last_internal_audit_date?: string | null
+          leed_certified?: boolean | null
+          leed_level?: string | null
+          lifecycle_assessment_done?: boolean | null
+          linked_audits?: string[] | null
+          new_contracts_due_certifications?: number | null
+          non_conformities_by_severity?: Json | null
+          non_conformities_closure_rate?: number | null
+          open_non_conformities?: number | null
+          positive_client_audits_count?: number | null
+          preventive_actions_implemented?: number | null
+          procel_certified?: boolean | null
+          process_improvements_from_audits?: number | null
+          regulatory_audits_count?: number | null
+          regulatory_fines_received?: number | null
+          regulatory_fines_total_value?: number | null
+          report_id: string
+          roi_from_certifications?: string | null
+          sa_8000_certified?: boolean | null
+          sa_8000_expiry_date?: string | null
+          sa_8000_issue_date?: string | null
+          social_impact_assessment_done?: boolean | null
+          status?: string | null
+          supplier_audit_score?: number | null
+          third_party_assessment?: boolean | null
+          total_non_conformities?: number | null
+          updated_at?: string | null
+          verification_coverage_percentage?: number | null
+          verification_date?: string | null
+          verification_level?: string | null
+          verification_provider?: string | null
+          verification_report_available?: boolean | null
+          verification_scope?: string | null
+          verification_standard?: string | null
+          verification_statement_url?: string | null
+          verified_indicators_count?: number | null
+          verified_indicators_list?: string[] | null
+          water_footprint_calculated?: boolean | null
+          years_with_systematic_audits?: number | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          annual_audit_budget?: number | null
+          annual_certification_costs?: number | null
+          assessment_certifier?: string | null
+          audit_coverage_percentage?: number | null
+          audit_frequency?: string | null
+          audit_maturity_level?: string | null
+          audit_schedule_exists?: boolean | null
+          audits_by_area?: Json | null
+          audits_evolution?: Json | null
+          audits_list?: Json | null
+          audits_notes?: string | null
+          average_closure_time_days?: number | null
+          awards_for_quality_esg?: number | null
+          b_corp_certified?: boolean | null
+          biodiversity_assessment_done?: boolean | null
+          carbon_footprint_calculated?: boolean | null
+          carbon_neutral_certified?: boolean | null
+          certifications_count?: number | null
+          certifications_list?: Json | null
+          certifications_notes?: string | null
+          closed_non_conformities?: number | null
+          company_id?: string
+          completion_percentage?: number | null
+          continuous_improvement_initiatives?: number | null
+          corrective_action_notes?: string | null
+          corrective_actions_completed?: number | null
+          corrective_actions_count?: number | null
+          corrective_actions_in_progress?: number | null
+          corrective_actions_overdue?: number | null
+          cost_savings_from_improvements?: number | null
+          created_at?: string | null
+          days_without_regulatory_incidents?: number | null
+          documents_checklist?: Json | null
+          environmental_impact_assessment_done?: boolean | null
+          esg_rating_agency?: string | null
+          esg_rating_date?: string | null
+          esg_rating_level?: string | null
+          esg_rating_score?: number | null
+          external_auditors?: string[] | null
+          external_audits_count?: number | null
+          fsc_certified?: boolean | null
+          governance_involvement?: boolean | null
+          green_seal_certified?: boolean | null
+          has_certifications?: boolean | null
+          has_corrective_action_plans?: boolean | null
+          has_external_verification?: boolean | null
+          has_impact_assessments?: boolean | null
+          has_periodic_audits?: boolean | null
+          human_rights_impact_assessment_done?: boolean | null
+          id?: string
+          impact_assessment_methodologies?: string[] | null
+          impact_assessments_count?: number | null
+          impact_assessments_list?: Json | null
+          impact_assessments_notes?: string | null
+          internal_audit_team_size?: number | null
+          internal_audits_count?: number | null
+          iso_14001_certified?: boolean | null
+          iso_14001_expiry_date?: string | null
+          iso_14001_issue_date?: string | null
+          iso_26000_adherence?: boolean | null
+          iso_27001_certified?: boolean | null
+          iso_27001_expiry_date?: string | null
+          iso_27001_issue_date?: string | null
+          iso_37001_certified?: boolean | null
+          iso_37001_expiry_date?: string | null
+          iso_37001_issue_date?: string | null
+          iso_45001_certified?: boolean | null
+          iso_45001_expiry_date?: string | null
+          iso_45001_issue_date?: string | null
+          iso_50001_certified?: boolean | null
+          iso_50001_expiry_date?: string | null
+          iso_50001_issue_date?: string | null
+          iso_9001_certified?: boolean | null
+          iso_9001_expiry_date?: string | null
+          iso_9001_issue_date?: string | null
+          last_external_audit_date?: string | null
+          last_internal_audit_date?: string | null
+          leed_certified?: boolean | null
+          leed_level?: string | null
+          lifecycle_assessment_done?: boolean | null
+          linked_audits?: string[] | null
+          new_contracts_due_certifications?: number | null
+          non_conformities_by_severity?: Json | null
+          non_conformities_closure_rate?: number | null
+          open_non_conformities?: number | null
+          positive_client_audits_count?: number | null
+          preventive_actions_implemented?: number | null
+          procel_certified?: boolean | null
+          process_improvements_from_audits?: number | null
+          regulatory_audits_count?: number | null
+          regulatory_fines_received?: number | null
+          regulatory_fines_total_value?: number | null
+          report_id?: string
+          roi_from_certifications?: string | null
+          sa_8000_certified?: boolean | null
+          sa_8000_expiry_date?: string | null
+          sa_8000_issue_date?: string | null
+          social_impact_assessment_done?: boolean | null
+          status?: string | null
+          supplier_audit_score?: number | null
+          third_party_assessment?: boolean | null
+          total_non_conformities?: number | null
+          updated_at?: string | null
+          verification_coverage_percentage?: number | null
+          verification_date?: string | null
+          verification_level?: string | null
+          verification_provider?: string | null
+          verification_report_available?: boolean | null
+          verification_scope?: string | null
+          verification_standard?: string | null
+          verification_statement_url?: string | null
+          verified_indicators_count?: number | null
+          verified_indicators_list?: string[] | null
+          water_footprint_calculated?: boolean | null
+          years_with_systematic_audits?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_audits_assessments_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_audits_assessments_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_data_validations: {
         Row: {
           company_id: string

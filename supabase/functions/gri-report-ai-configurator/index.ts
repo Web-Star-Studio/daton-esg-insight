@@ -1521,6 +1521,11 @@ serve(async (req) => {
       return await handleAnalyzeCommunicationTransparencyData(supabaseClient, await req.json());
     }
 
+    case 'analyze_audits_assessments_data': {
+      const { handleAnalyzeAuditsAssessmentsData } = await import('./audits-assessments-handler.ts');
+      return await handleAnalyzeAuditsAssessmentsData(supabaseClient, await req.json());
+    }
+
     default:
         throw new Error(`Unknown action: ${action}`);
     }
