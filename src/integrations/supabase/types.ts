@@ -5606,6 +5606,84 @@ export type Database = {
           },
         ]
       }
+      gri_document_uploads: {
+        Row: {
+          ai_analysis: Json | null
+          category: string | null
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          extracted_metrics: Json | null
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size_kb: number | null
+          file_type: string
+          id: string
+          processed_at: string | null
+          processing_status: string | null
+          report_id: string | null
+          suggested_indicators: Json | null
+          updated_at: string | null
+          uploaded_by_user_id: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          category?: string | null
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          extracted_metrics?: Json | null
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size_kb?: number | null
+          file_type: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string | null
+          report_id?: string | null
+          suggested_indicators?: Json | null
+          updated_at?: string | null
+          uploaded_by_user_id?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          category?: string | null
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          extracted_metrics?: Json | null
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size_kb?: number | null
+          file_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string | null
+          report_id?: string | null
+          suggested_indicators?: Json | null
+          updated_at?: string | null
+          uploaded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_document_uploads_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_document_uploads_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_indicator_benchmarks: {
         Row: {
           benchmark_range_max: number | null
@@ -10639,6 +10717,94 @@ export type Database = {
         }
         Relationships: []
       }
+      report_approvals: {
+        Row: {
+          approval_level: string
+          approved_at: string | null
+          approver_user_id: string
+          comments: string | null
+          created_at: string | null
+          id: string
+          report_id: string | null
+          status: string | null
+        }
+        Insert: {
+          approval_level: string
+          approved_at?: string | null
+          approver_user_id: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          report_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          approval_level?: string
+          approved_at?: string | null
+          approver_user_id?: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          report_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_approvals_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_comments: {
+        Row: {
+          comment_text: string
+          comment_type: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          id: string
+          report_id: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          section_key: string | null
+        }
+        Insert: {
+          comment_text: string
+          comment_type?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          report_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          section_key?: string | null
+        }
+        Update: {
+          comment_text?: string
+          comment_type?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          report_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          section_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_comments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_generation_jobs: {
         Row: {
           company_id: string
@@ -10700,6 +10866,56 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_visualizations: {
+        Row: {
+          chart_config: Json
+          created_at: string | null
+          data_source_query: string | null
+          id: string
+          is_visible: boolean | null
+          order_index: number | null
+          report_id: string | null
+          section_key: string
+          title: string
+          updated_at: string | null
+          visualization_type: string
+        }
+        Insert: {
+          chart_config: Json
+          created_at?: string | null
+          data_source_query?: string | null
+          id?: string
+          is_visible?: boolean | null
+          order_index?: number | null
+          report_id?: string | null
+          section_key: string
+          title: string
+          updated_at?: string | null
+          visualization_type: string
+        }
+        Update: {
+          chart_config?: Json
+          created_at?: string | null
+          data_source_query?: string | null
+          id?: string
+          is_visible?: boolean | null
+          order_index?: number | null
+          report_id?: string | null
+          section_key?: string
+          title?: string
+          updated_at?: string | null
+          visualization_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_visualizations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
             referencedColumns: ["id"]
           },
         ]
