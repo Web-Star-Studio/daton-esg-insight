@@ -95,6 +95,8 @@ export function Etapa1Planejamento({ reportId, reportData, onUpdate, onNext }: E
         report_title: `Relatório GRI ${values.reporting_year} - ${values.company_name}`,
         year: parseInt(values.reporting_year),
         gri_standard_version: 'GRI Standards 2021',
+        reporting_period_start: values.period_start.toISOString().split('T')[0],
+        reporting_period_end: values.period_end.toISOString().split('T')[0],
       };
 
       let savedReportId = reportId;
