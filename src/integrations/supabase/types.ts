@@ -5990,6 +5990,103 @@ export type Database = {
           },
         ]
       }
+      gri_content_index_items: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_identified: boolean | null
+          created_at: string | null
+          created_by: string | null
+          direct_url: string | null
+          disclosure_status: string
+          id: string
+          indicator_code: string
+          indicator_description: string | null
+          indicator_id: string
+          indicator_title: string
+          last_updated_by: string | null
+          manually_verified: boolean | null
+          omission_reason: string | null
+          page_number: number | null
+          related_content: string | null
+          report_id: string
+          report_section_id: string | null
+          section_reference: string | null
+          supporting_documents: Json | null
+          updated_at: string | null
+          verification_notes: string | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_identified?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          direct_url?: string | null
+          disclosure_status?: string
+          id?: string
+          indicator_code: string
+          indicator_description?: string | null
+          indicator_id: string
+          indicator_title: string
+          last_updated_by?: string | null
+          manually_verified?: boolean | null
+          omission_reason?: string | null
+          page_number?: number | null
+          related_content?: string | null
+          report_id: string
+          report_section_id?: string | null
+          section_reference?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string | null
+          verification_notes?: string | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_identified?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          direct_url?: string | null
+          disclosure_status?: string
+          id?: string
+          indicator_code?: string
+          indicator_description?: string | null
+          indicator_id?: string
+          indicator_title?: string
+          last_updated_by?: string | null
+          manually_verified?: boolean | null
+          omission_reason?: string | null
+          page_number?: number | null
+          related_content?: string | null
+          report_id?: string
+          report_section_id?: string | null
+          section_reference?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string | null
+          verification_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_content_index_items_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "gri_indicators_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_content_index_items_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_content_index_items_report_section_id_fkey"
+            columns: ["report_section_id"]
+            isOneToOne: false
+            referencedRelation: "gri_report_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_data_validations: {
         Row: {
           company_id: string
@@ -6938,46 +7035,58 @@ export type Database = {
           ai_generated_content: boolean | null
           completion_percentage: number | null
           content: string | null
+          covered_indicators: string[] | null
           created_at: string
           id: string
           is_complete: boolean | null
           last_ai_update: string | null
           order_index: number | null
+          page_number_end: number | null
+          page_number_start: number | null
           report_id: string
           section_key: string
           template_used: string | null
           title: string
           updated_at: string
+          word_count: number | null
         }
         Insert: {
           ai_generated_content?: boolean | null
           completion_percentage?: number | null
           content?: string | null
+          covered_indicators?: string[] | null
           created_at?: string
           id?: string
           is_complete?: boolean | null
           last_ai_update?: string | null
           order_index?: number | null
+          page_number_end?: number | null
+          page_number_start?: number | null
           report_id: string
           section_key: string
           template_used?: string | null
           title: string
           updated_at?: string
+          word_count?: number | null
         }
         Update: {
           ai_generated_content?: boolean | null
           completion_percentage?: number | null
           content?: string | null
+          covered_indicators?: string[] | null
           created_at?: string
           id?: string
           is_complete?: boolean | null
           last_ai_update?: string | null
           order_index?: number | null
+          page_number_end?: number | null
+          page_number_start?: number | null
           report_id?: string
           section_key?: string
           template_used?: string | null
           title?: string
           updated_at?: string
+          word_count?: number | null
         }
         Relationships: [
           {

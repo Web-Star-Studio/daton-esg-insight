@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { GRIContentIndexGenerator } from '@/components/gri/GRIContentIndexGenerator';
+import { GRIContentIndexTable } from '@/components/gri/GRIContentIndexTable';
 
 interface Etapa5Props {
   reportId?: string;
 }
 
 export function Etapa5RelatorioFinal({ reportId }: Etapa5Props) {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const completionItems = [
     { label: 'Informações Organizacionais', completed: true },
     { label: 'Indicadores GRI Universais', completed: true },
@@ -57,27 +62,19 @@ export function Etapa5RelatorioFinal({ reportId }: Etapa5Props) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Índice GRI
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Índice completo de indicadores GRI utilizados neste relatório
-          </p>
-          <div className="space-y-2">
-            {['GRI 2: Conteúdos Gerais', 'GRI 302: Energia', 'GRI 305: Emissões', 'GRI 403: Saúde e Segurança', 'GRI 405: Diversidade'].map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 border rounded">
-                <span className="text-sm">{item}</span>
-                <Badge variant="outline">Aplicável</Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {reportId && (
+        <>
+          <GRIContentIndexGenerator 
+            reportId={reportId}
+            onGenerated={() => setRefreshTrigger(prev => prev + 1)}
+          />
+          
+          <GRIContentIndexTable 
+            reportId={reportId}
+            refreshTrigger={refreshTrigger}
+          />
+        </>
+      )}
     </div>
   );
 }
