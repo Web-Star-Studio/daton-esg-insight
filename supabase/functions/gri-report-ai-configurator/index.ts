@@ -1511,7 +1511,17 @@ serve(async (req) => {
         return await handleAnalyzeInnovationData(supabaseClient, await req.json());
       }
       
-      default:
+    case 'analyze_reporting_standards_data': {
+      const { handleAnalyzeReportingStandardsData } = await import('./reporting-standards-handler.ts');
+      return await handleAnalyzeReportingStandardsData(supabaseClient, await req.json());
+    }
+
+    case 'analyze_communication_transparency_data': {
+      const { handleAnalyzeCommunicationTransparencyData } = await import('./communication-transparency-handler.ts');
+      return await handleAnalyzeCommunicationTransparencyData(supabaseClient, await req.json());
+    }
+
+    default:
         throw new Error(`Unknown action: ${action}`);
     }
   } catch (error) {

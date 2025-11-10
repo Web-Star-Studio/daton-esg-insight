@@ -7,6 +7,7 @@ import { EconomicDataCollectionModule } from './EconomicDataCollectionModule';
 import StakeholderEngagementDataModule from './StakeholderEngagementDataModule';
 import InnovationDataCollectionModule from './InnovationDataCollectionModule';
 import { ReportingStandardsDataModule } from './ReportingStandardsDataModule';
+import { CommunicationTransparencyDataModule } from './CommunicationTransparencyDataModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -108,6 +109,10 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
         <TabsTrigger value="reporting" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
           Relatórios
+        </TabsTrigger>
+        <TabsTrigger value="communication" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Comunicação
         </TabsTrigger>
       </TabsList>
 
@@ -222,15 +227,25 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
         />
       </TabsContent>
 
-      <TabsContent value="reporting">
-        <ReportingStandardsDataModule
-          reportId={reportId || ''}
-          onComplete={() => {
-            toast.success('Dados de práticas de reporte completos!');
-            onNext();
-          }}
-        />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="reporting">
+          <ReportingStandardsDataModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados de práticas de reporte completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="communication">
+          <CommunicationTransparencyDataModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados de comunicação e transparência completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+      </Tabs>
   );
 }
