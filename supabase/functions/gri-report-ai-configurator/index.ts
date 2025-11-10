@@ -57,6 +57,11 @@ serve(async (req) => {
       case 'analyze_social_data':
         return await handleAnalyzeSocialData(supabaseClient, await req.json());
       
+      case 'analyze_economic_data': {
+        const { handleAnalyzeEconomicData } = await import('./economic-handler.ts');
+        return await handleAnalyzeEconomicData(supabaseClient, await req.json());
+      }
+      
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -1100,6 +1105,227 @@ Gere um texto de 500-800 palavras integrando essas informações de forma coesa.
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
   console.log('[Analyze Strategy Data] Analysis complete. Confidence:', analysis.confidence_score);
+
+  return new Response(
+    JSON.stringify(analysis),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function handleAnalyzeEconomicData(supabase: any, body: any) {
+  const { report_id, form_data, documents, quantitative_data } = body;
+
+  console.log('[Analyze Economic Data] Starting...');
+
+  // 1. Get report data
+  const { data: report } = await supabase
+    .from('gri_reports')
+    .select('*, companies(*)')
+    .eq('id', report_id)
+    .single();
+
+  // 2. Process documents
+  const documentContents = await Promise.all(
+    (documents || []).map(async (doc: any) => {
+      if (doc.extracted_text) {
+        return {
+          category: doc.category,
+          content: doc.extracted_text.substring(0, 5000)
+        };
+      }
+      return null;
+    })
+  ).then(results => results.filter(Boolean));
+
+  // 3. Calculate derived indicators
+  const derivedIndicators = {
+    economic_value_distributed: (quantitative_data.operating_costs || 0) + 
+                                (quantitative_data.employee_wages_benefits || 0) + 
+                                (quantitative_data.payments_to_government || 0),
+    economic_value_retained_percentage: quantitative_data.revenue_total > 0
+      ? ((quantitative_data.economic_value_retained || 0) / quantitative_data.revenue_total * 100).toFixed(2)
+      : 0,
+    local_procurement_strength: quantitative_data.local_procurement_percentage > 50 ? 'Alto' : 
+                                quantitative_data.local_procurement_percentage > 30 ? 'Médio' : 'Baixo',
+    climate_risk_exposure: quantitative_data.climate_related_risks_identified > 5 ? 'Alto' : 
+                          quantitative_data.climate_related_risks_identified > 2 ? 'Médio' : 'Baixo',
+    ebitda_performance: quantitative_data.ebitda_margin > 20 ? 'Excelente' : 
+                       quantitative_data.ebitda_margin > 10 ? 'Bom' : 'Em desenvolvimento',
+  };
+
+  // 4. Call Lovable AI
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
+  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [
+        {
+          role: 'system',
+          content: `Você é um especialista em Gestão Econômico-Financeira e relatórios GRI Standards.
+
+OBJETIVO: Analisar dados de Desempenho Econômico e gerar texto descritivo profissional para relatório GRI, INCLUINDO NÚMEROS ESPECÍFICOS.
+
+NORMAS GRI APLICÁVEIS:
+
+**GRI 201 - Desempenho Econômico:**
+- 201-1: Valor econômico direto gerado e distribuído
+- 201-2: Implicações financeiras e outros riscos e oportunidades decorrentes de mudanças climáticas
+- 201-3: Obrigações do plano de benefícios definidos e outros planos de aposentadoria
+- 201-4: Assistência financeira recebida do governo
+
+**GRI 203 - Impactos Econômicos Indiretos:**
+- 203-1: Investimentos em infraestrutura e serviços apoiados
+- 203-2: Impactos econômicos indiretos significativos
+
+**GRI 204 - Práticas de Compra:**
+- 204-1: Proporção de gastos com fornecedores locais
+
+**GRI 205 - Anticorrupção:**
+- 205-1: Operações avaliadas quanto a riscos relacionados à corrupção
+- 205-2: Comunicação e treinamento em políticas e procedimentos anticorrupção
+- 205-3: Casos confirmados de corrupção e medidas tomadas
+
+PÚBLICO-ALVO: ${report.target_audience?.join(', ') || 'Investidores e stakeholders'}
+EMPRESA: ${report.companies?.name || 'N/A'}
+SETOR: ${report.companies?.sector || 'N/A'}
+
+DIRETRIZES DE REDAÇÃO:
+1. **SEMPRE INCLUIR NÚMEROS ESPECÍFICOS** no texto narrativo
+2. Exemplos de redação:
+   - "A receita total atingiu R$ 45,3 milhões, representando crescimento de 12% em relação ao ano anterior."
+   - "O EBITDA foi de R$ 8,7 milhões, com margem de 19,2%, acima da média setorial de 15,8%."
+   - "72% dos gastos com fornecedores foram direcionados a empresas locais, fortalecendo a economia regional."
+   - "Foram identificados 7 riscos climáticos com potencial impacto financeiro estimado em R$ 2,1 milhões."
+   - "Investimento de R$ 1,2 milhão em inovação e sustentabilidade, representando 2,6% da receita."
+3. Contextualizar com comparações (ano anterior, meta, benchmark setorial)
+4. Destacar eficiência operacional e criação de valor
+5. Ser transparente sobre riscos e desafios
+6. Estrutura: contexto → desempenho econômico → distribuição de valor → compras locais → investimentos sustentáveis → riscos climáticos → perspectivas
+7. Usar linguagem profissional mas acessível
+8. Sugerir inserção de gráficos (distribuição de valor, evolução receita, fornecedores locais)
+
+IMPORTANTE:
+- Mencionar certificações e políticas formais
+- Destacar impactos econômicos indiretos
+- Calcular e apresentar índices financeiros
+- Comparar com benchmarks quando disponível
+- Abordar riscos climáticos e ESG de forma transparente`
+        },
+        {
+          role: 'user',
+          content: `Analise os seguintes dados e gere texto descritivo completo para "Desempenho Econômico":
+
+**DADOS DO FORMULÁRIO:**
+${JSON.stringify(form_data, null, 2)}
+
+**DADOS QUANTITATIVOS:**
+${JSON.stringify(quantitative_data, null, 2)}
+
+**INDICADORES DERIVADOS:**
+${JSON.stringify(derivedIndicators, null, 2)}
+
+**CONTEÚDO DOS DOCUMENTOS:**
+${documentContents.map(doc => `\n### ${doc?.category}\n${doc?.content}`).join('\n---\n')}
+
+Gere um texto de 1000-1400 palavras integrando TODOS os dados numéricos de forma profissional e estratégica.`
+        }
+      ],
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'analyze_economic_content',
+          description: 'Analisa dados econômicos e gera texto com números específicos',
+          parameters: {
+            type: 'object',
+            properties: {
+              generated_text: {
+                type: 'string',
+                description: 'Texto descritivo completo (1000-1400 palavras) com TODOS os números'
+              },
+              confidence_score: {
+                type: 'number',
+                description: 'Confiança 0-100'
+              },
+              key_points: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Principais pontos com números'
+              },
+              quantitative_highlights: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    indicator: { type: 'string' },
+                    value: { type: 'string' },
+                    unit: { type: 'string' },
+                    context: { type: 'string' }
+                  }
+                },
+                description: 'Destaques quantitativos'
+              },
+              suggested_charts: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: { type: 'string' },
+                    title: { type: 'string' },
+                    data_points: { type: 'array', items: { type: 'string' } }
+                  }
+                },
+                description: 'Sugestões de gráficos'
+              },
+              financial_highlights: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Destaques financeiros'
+              },
+              risks_identified: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Riscos identificados'
+              },
+              opportunities_identified: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Oportunidades identificadas'
+              },
+              suggestions: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Sugestões de melhoria'
+              },
+              gri_coverage: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Indicadores GRI cobertos'
+              }
+            },
+            required: ['generated_text', 'confidence_score', 'key_points', 'quantitative_highlights', 'gri_coverage']
+          }
+        }
+      }],
+      tool_choice: { type: 'function', function: { name: 'analyze_economic_content' } }
+    })
+  });
+
+  if (!aiResponse.ok) {
+    const errorText = await aiResponse.text();
+    console.error('[Analyze Economic Data] Error:', errorText);
+    throw new Error(`Lovable AI error: ${aiResponse.status}`);
+  }
+
+  const result = await aiResponse.json();
+  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+
+  console.log('[Analyze Economic Data] Complete with quantitative data');
 
   return new Response(
     JSON.stringify(analysis),

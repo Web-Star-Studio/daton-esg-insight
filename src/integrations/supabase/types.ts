@@ -5684,6 +5684,102 @@ export type Database = {
           },
         ]
       }
+      gri_economic_data_collection: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          balance_sheet_date: string | null
+          climate_related_risks_identified: number | null
+          company_id: string
+          completion_percentage: number | null
+          created_at: string | null
+          ebitda: number | null
+          ebitda_margin: number | null
+          employee_wages_benefits: number | null
+          has_financial_statements: boolean | null
+          id: string
+          local_procurement_percentage: number | null
+          local_suppliers_count: number | null
+          net_profit_margin: number | null
+          operating_costs: number | null
+          report_id: string
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          revenue_per_employee: number | null
+          revenue_total: number | null
+          total_suppliers_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          balance_sheet_date?: string | null
+          climate_related_risks_identified?: number | null
+          company_id: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          ebitda?: number | null
+          ebitda_margin?: number | null
+          employee_wages_benefits?: number | null
+          has_financial_statements?: boolean | null
+          id?: string
+          local_procurement_percentage?: number | null
+          local_suppliers_count?: number | null
+          net_profit_margin?: number | null
+          operating_costs?: number | null
+          report_id: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          revenue_per_employee?: number | null
+          revenue_total?: number | null
+          total_suppliers_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          balance_sheet_date?: string | null
+          climate_related_risks_identified?: number | null
+          company_id?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          ebitda?: number | null
+          ebitda_margin?: number | null
+          employee_wages_benefits?: number | null
+          has_financial_statements?: boolean | null
+          id?: string
+          local_procurement_percentage?: number | null
+          local_suppliers_count?: number | null
+          net_profit_margin?: number | null
+          operating_costs?: number | null
+          report_id?: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          revenue_per_employee?: number | null
+          revenue_total?: number | null
+          total_suppliers_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_economic_data_collection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_economic_data_collection_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_environmental_data_collection: {
         Row: {
           ai_analysis: Json | null
