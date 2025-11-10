@@ -75,7 +75,7 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('gri_innovation_data_collection')
+        .from('gri_innovation_data_collection' as any)
         .select('*')
         .eq('report_id', reportId)
         .maybeSingle();
@@ -85,18 +85,18 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
       if (data) {
         setFormData(data);
         setQuantitativeData({
-          total_innovation_investment: data.total_innovation_investment || 0,
-          rd_investment_percentage_revenue: data.rd_investment_percentage_revenue || 0,
-          total_innovations_implemented: data.total_innovations_implemented || 0,
-          total_partnerships: data.total_partnerships || 0,
-          innovation_awards_received: data.innovation_awards_received || 0,
-          ghg_emissions_avoided_tco2e: data.ghg_emissions_avoided_tco2e || 0,
-          waste_reduction_tons: data.waste_reduction_tons || 0,
-          innovation_training_hours: data.innovation_training_hours || 0,
-          employees_trained_improvement: data.employees_trained_improvement || 0,
-          technologies_investment_total: data.technologies_investment_total || 0,
+          total_innovation_investment: (data as any).total_innovation_investment || 0,
+          rd_investment_percentage_revenue: (data as any).rd_investment_percentage_revenue || 0,
+          total_innovations_implemented: (data as any).total_innovations_implemented || 0,
+          total_partnerships: (data as any).total_partnerships || 0,
+          innovation_awards_received: (data as any).innovation_awards_received || 0,
+          ghg_emissions_avoided_tco2e: (data as any).ghg_emissions_avoided_tco2e || 0,
+          waste_reduction_tons: (data as any).waste_reduction_tons || 0,
+          innovation_training_hours: (data as any).innovation_training_hours || 0,
+          employees_trained_improvement: (data as any).employees_trained_improvement || 0,
+          technologies_investment_total: (data as any).technologies_investment_total || 0,
         });
-        setCompletionPercentage(data.completion_percentage || 0);
+        setCompletionPercentage((data as any).completion_percentage || 0);
       } else {
         await calculateInnovationMetrics();
       }
@@ -134,7 +134,7 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
 
       // Buscar dados de emissões para calcular reduções
       const { data: emissions } = await supabase
-        .from('calculated_emissions')
+        .from('calculated_emissions' as any)
         .select('total_co2e, calculation_date')
         .eq('company_id', profile.company_id)
         .gte('calculation_date', periodStart.toISOString())
@@ -143,8 +143,8 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
 
       let emissionReduction = 0;
       if (emissions && emissions.length >= 2) {
-        const firstPeriod = emissions[0].total_co2e || 0;
-        const lastPeriod = emissions[emissions.length - 1].total_co2e || 0;
+        const firstPeriod = (emissions[0] as any).total_co2e || 0;
+        const lastPeriod = (emissions[emissions.length - 1] as any).total_co2e || 0;
         emissionReduction = Math.max(0, firstPeriod - lastPeriod);
       }
 
@@ -200,7 +200,7 @@ export default function InnovationDataCollectionModule({ reportId, onComplete }:
       };
 
       const { error } = await supabase
-        .from('gri_innovation_data_collection')
+        .from('gri_innovation_data_collection' as any)
         .upsert(saveData, { onConflict: 'report_id' });
 
       if (error) throw error;

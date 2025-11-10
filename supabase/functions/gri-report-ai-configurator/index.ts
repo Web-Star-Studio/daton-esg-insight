@@ -6,86 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { action, report_id, file_content, file_type, phase, section_key, category, data_type } = await req.json();
-
-    console.log(`[GRI AI Configurator] Action: ${action}, Report ID: ${report_id}`);
-
-    switch (action) {
-      case 'upload_document':
-        return await handleDocumentUpload(supabaseClient, report_id, file_content, file_type);
-      
-      case 'extract_info':
-        return await handleExtractInfo(supabaseClient, report_id, phase);
-      
-      case 'generate_content':
-        return await handleGenerateContent(supabaseClient, report_id, section_key);
-      
-      case 'suggest_indicators':
-        return await handleSuggestIndicators(supabaseClient, report_id, category);
-      
-      case 'generate_visuals':
-        return await handleGenerateVisuals(supabaseClient, report_id, data_type);
-      
-      case 'process_guidelines':
-        return await handleProcessGuidelines(supabaseClient, report_id);
-      
-      case 'analyze_strategy_data':
-        return await handleAnalyzeStrategyData(supabaseClient, await req.json());
-      
-      case 'analyze_governance_data':
-        return await handleAnalyzeGovernanceData(supabaseClient, await req.json());
-      
-      case 'analyze_environmental_data':
-        return await handleAnalyzeEnvironmentalData(supabaseClient, await req.json());
-      
-      case 'analyze_social_data': {
-        const { handleAnalyzeSocialData } = await import('./social-handler.ts');
-        return await handleAnalyzeSocialData(supabaseClient, await req.json());
-      }
-      
-        case 'analyze_economic_data': {
-          const { handleAnalyzeEconomicData } = await import('./economic-handler.ts');
-          return await handleAnalyzeEconomicData(supabaseClient, await req.json());
-        }
-
-    case 'analyze_stakeholder_engagement_data': {
-      const { handleAnalyzeStakeholderEngagementData } = await import('./stakeholder-engagement-handler.ts');
-      return await handleAnalyzeStakeholderEngagementData(supabaseClient, await req.json());
-    }
-
-    case 'analyze_innovation_data': {
-      const { handleAnalyzeInnovationData } = await import('./innovation-handler.ts');
-      return await handleAnalyzeInnovationData(supabaseClient, await req.json());
-    }
-      
-      default:
-        throw new Error(`Unknown action: ${action}`);
-    }
-  } catch (error) {
-    console.error('[GRI AI Configurator] Error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
-
+// Helper functions defined first
 async function handleDocumentUpload(supabase: any, reportId: string, fileContent: string, fileType: string) {
   console.log('[Upload] Processing document...');
   
@@ -1515,3 +1436,84 @@ Gere texto de 800-1200 palavras com números específicos.`
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
+
+// Main serve function at the end
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    const { action, report_id, file_content, file_type, phase, section_key, category, data_type } = await req.json();
+
+    console.log(`[GRI AI Configurator] Action: ${action}, Report ID: ${report_id}`);
+
+    switch (action) {
+      case 'upload_document':
+        return await handleDocumentUpload(supabaseClient, report_id, file_content, file_type);
+      
+      case 'extract_info':
+        return await handleExtractInfo(supabaseClient, report_id, phase);
+      
+      case 'generate_content':
+        return await handleGenerateContent(supabaseClient, report_id, section_key);
+      
+      case 'suggest_indicators':
+        return await handleSuggestIndicators(supabaseClient, report_id, category);
+      
+      case 'generate_visuals':
+        return await handleGenerateVisuals(supabaseClient, report_id, data_type);
+      
+      case 'process_guidelines':
+        return await handleProcessGuidelines(supabaseClient, report_id);
+      
+      case 'analyze_strategy_data':
+        return await handleAnalyzeStrategyData(supabaseClient, await req.json());
+      
+      case 'analyze_governance_data':
+        return await handleAnalyzeGovernanceData(supabaseClient, await req.json());
+      
+      case 'analyze_environmental_data':
+        return await handleAnalyzeEnvironmentalData(supabaseClient, await req.json());
+      
+      case 'analyze_social_data': {
+        const { handleAnalyzeSocialData } = await import('./social-handler.ts');
+        return await handleAnalyzeSocialData(supabaseClient, await req.json());
+      }
+      
+      case 'analyze_economic_data': {
+        const { handleAnalyzeEconomicData } = await import('./economic-handler.ts');
+        return await handleAnalyzeEconomicData(supabaseClient, await req.json());
+      }
+
+      case 'analyze_stakeholder_engagement_data': {
+        const { handleAnalyzeStakeholderEngagementData } = await import('./stakeholder-engagement-handler.ts');
+        return await handleAnalyzeStakeholderEngagementData(supabaseClient, await req.json());
+      }
+
+      case 'analyze_innovation_data': {
+        const { handleAnalyzeInnovationData } = await import('./innovation-handler.ts');
+        return await handleAnalyzeInnovationData(supabaseClient, await req.json());
+      }
+      
+      default:
+        throw new Error(`Unknown action: ${action}`);
+    }
+  } catch (error) {
+    console.error('[GRI AI Configurator] Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
