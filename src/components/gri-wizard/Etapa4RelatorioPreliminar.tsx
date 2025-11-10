@@ -27,6 +27,25 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
   const generateSection = async (sectionKey: string) => {
     setGenerating(sectionKey);
     try {
+      // Se for seção de estratégia, buscar texto pré-gerado
+      if (sectionKey === 'strategy_analysis') {
+        const { data: strategyData } = await supabase
+          .from('gri_strategy_data_collection')
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
+
+        if (strategyData?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: strategyData.ai_generated_text 
+          }));
+          toast.success('Conteúdo carregado da análise anterior!');
+          return;
+        }
+      }
+
+      // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {
         body: {
           action: 'generate_content',

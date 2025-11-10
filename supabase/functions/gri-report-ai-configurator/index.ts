@@ -45,6 +45,9 @@ serve(async (req) => {
       case 'process_guidelines':
         return await handleProcessGuidelines(supabaseClient, report_id);
       
+      case 'analyze_strategy_data':
+        return await handleAnalyzeStrategyData(supabaseClient, await req.json());
+      
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -804,6 +807,148 @@ Analise a planilha de diretrizes fornecida e extraia configurações estruturada
       interpretation,
       message: 'Diretrizes processadas com sucesso pela IA'
     }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function handleAnalyzeStrategyData(supabase: any, body: any) {
+  const { report_id, form_data, documents } = body;
+
+  console.log('[Analyze Strategy Data] Starting analysis for report:', report_id);
+
+  // 1. Buscar dados do relatório
+  const { data: report } = await supabase
+    .from('gri_reports')
+    .select('*, companies(*)')
+    .eq('id', report_id)
+    .single();
+
+  if (!report) throw new Error('Relatório não encontrado');
+
+  // 2. Processar documentos (extrair textos)
+  const documentContents = await Promise.all(
+    (documents || []).map(async (doc: any) => {
+      if (doc.extracted_text) {
+        return {
+          category: doc.category,
+          content: doc.extracted_text.substring(0, 5000)
+        };
+      }
+      return null;
+    })
+  ).then(results => results.filter(Boolean));
+
+  console.log('[Analyze Strategy Data] Processed', documentContents.length, 'documents');
+
+  // 3. Chamar Lovable AI para análise
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY não configurada');
+
+  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [
+        {
+          role: 'system',
+          content: `Você é um especialista em relatórios de sustentabilidade GRI Standards.
+
+OBJETIVO: Analisar dados sobre Visão e Estratégia de Sustentabilidade e gerar texto descritivo profissional para relatório GRI.
+
+NORMAS GRI APLICÁVEIS:
+- GRI 2-22: Declaração sobre estratégia de desenvolvimento sustentável
+- GRI 2-23: Compromissos com políticas
+- GRI 2-24: Incorporação de compromissos com políticas
+- GRI 2-25: Processos para remediar impactos negativos
+- GRI 2-26: Mecanismos para aconselhamento e preocupações sobre ética
+- GRI 2-27: Conformidade com leis e regulamentações
+- GRI 2-28: Associações e participações
+- GRI 2-29: Abordagem para o engajamento com stakeholders
+
+PÚBLICO-ALVO: ${report.target_audience?.join(', ') || 'Stakeholders gerais'}
+
+EMPRESA: ${report.companies?.name || 'N/A'}
+SETOR: ${report.companies?.sector || 'N/A'}
+
+DIRETRIZES:
+1. Redija texto narrativo fluente e profissional
+2. Integre informações dos documentos anexados
+3. Destaque compromissos concretos e resultados mensuráveis
+4. Use linguagem inspiradora mas baseada em fatos
+5. Inclua citações de documentos quando relevante
+6. Sugira melhorias ou dados faltantes
+7. Calcule um score de confiança (0-100) baseado na completude dos dados`
+        },
+        {
+          role: 'user',
+          content: `Analise os seguintes dados e gere texto descritivo para a seção "Visão e Estratégia de Sustentabilidade":
+
+**DADOS DO FORMULÁRIO:**
+${JSON.stringify(form_data, null, 2)}
+
+**CONTEÚDO DOS DOCUMENTOS:**
+${documentContents.map((doc: any) => `\n### ${doc?.category}\n${doc?.content}`).join('\n---\n')}
+
+Gere um texto de 500-800 palavras integrando essas informações de forma coesa.`
+        }
+      ],
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'analyze_strategy_content',
+          description: 'Analisa dados de estratégia e gera texto descritivo',
+          parameters: {
+            type: 'object',
+            properties: {
+              generated_text: {
+                type: 'string',
+                description: 'Texto descritivo completo em português (500-800 palavras)'
+              },
+              confidence_score: {
+                type: 'number',
+                description: 'Pontuação de confiança 0-100 baseado na completude'
+              },
+              key_points: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Principais pontos destacados'
+              },
+              suggestions: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Sugestões de melhoria ou dados faltantes'
+              },
+              gri_coverage: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Indicadores GRI cobertos (ex: GRI 2-22, GRI 2-23)'
+              }
+            },
+            required: ['generated_text', 'confidence_score', 'key_points', 'suggestions', 'gri_coverage']
+          }
+        }
+      }],
+      tool_choice: { type: 'function', function: { name: 'analyze_strategy_content' } }
+    })
+  });
+
+  if (!aiResponse.ok) {
+    const errorText = await aiResponse.text();
+    console.error('[Analyze Strategy Data] Lovable AI error:', errorText);
+    throw new Error(`Lovable AI error: ${aiResponse.status}`);
+  }
+
+  const result = await aiResponse.json();
+  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+
+  console.log('[Analyze Strategy Data] Analysis complete. Confidence:', analysis.confidence_score);
+
+  return new Response(
+    JSON.stringify(analysis),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

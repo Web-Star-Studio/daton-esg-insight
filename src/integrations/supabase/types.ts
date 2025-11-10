@@ -6186,6 +6186,108 @@ export type Database = {
         }
         Relationships: []
       }
+      gri_strategy_data_collection: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          company_id: string
+          completion_percentage: number | null
+          created_at: string | null
+          documents_checklist: Json | null
+          has_mission_vision_values: boolean | null
+          has_previous_results: boolean | null
+          has_public_commitments: boolean | null
+          has_strategic_plan_esg: boolean | null
+          has_sustainability_policy: boolean | null
+          id: string
+          mission_vision_values_notes: string | null
+          mission_vision_values_updated_date: string | null
+          previous_results_summary: string | null
+          public_commitments_list: string[] | null
+          public_commitments_notes: string | null
+          report_id: string
+          status: string | null
+          strategic_plan_notes: string | null
+          strategic_plan_period: string | null
+          sustainability_policy_approval_date: string | null
+          sustainability_policy_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          company_id: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          documents_checklist?: Json | null
+          has_mission_vision_values?: boolean | null
+          has_previous_results?: boolean | null
+          has_public_commitments?: boolean | null
+          has_strategic_plan_esg?: boolean | null
+          has_sustainability_policy?: boolean | null
+          id?: string
+          mission_vision_values_notes?: string | null
+          mission_vision_values_updated_date?: string | null
+          previous_results_summary?: string | null
+          public_commitments_list?: string[] | null
+          public_commitments_notes?: string | null
+          report_id: string
+          status?: string | null
+          strategic_plan_notes?: string | null
+          strategic_plan_period?: string | null
+          sustainability_policy_approval_date?: string | null
+          sustainability_policy_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          company_id?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          documents_checklist?: Json | null
+          has_mission_vision_values?: boolean | null
+          has_previous_results?: boolean | null
+          has_public_commitments?: boolean | null
+          has_strategic_plan_esg?: boolean | null
+          has_sustainability_policy?: boolean | null
+          id?: string
+          mission_vision_values_notes?: string | null
+          mission_vision_values_updated_date?: string | null
+          previous_results_summary?: string | null
+          public_commitments_list?: string[] | null
+          public_commitments_notes?: string | null
+          report_id?: string
+          status?: string | null
+          strategic_plan_notes?: string | null
+          strategic_plan_period?: string | null
+          sustainability_policy_approval_date?: string | null
+          sustainability_policy_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_strategy_data_collection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_strategy_data_collection_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ifrs_disclosures: {
         Row: {
           assurance_level: string | null
