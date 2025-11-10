@@ -63,6 +63,24 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
         }
       }
 
+      // Se for seção de gestão ambiental, buscar texto pré-gerado
+      if (sectionKey === 'environmental_performance') {
+        const { data: envData } = await supabase
+          .from('gri_environmental_data_collection')
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
+
+        if (envData?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: envData.ai_generated_text 
+          }));
+          toast.success('Conteúdo ambiental carregado!');
+          return;
+        }
+      }
+
       // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {
         body: {

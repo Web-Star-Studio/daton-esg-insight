@@ -1,6 +1,7 @@
 import { DocumentUploadZone } from './DocumentUploadZone';
 import { StrategyDataCollectionModule } from './StrategyDataCollectionModule';
 import { GovernanceDataCollectionModule } from './GovernanceDataCollectionModule';
+import EnvironmentalDataCollectionModule from './EnvironmentalDataCollectionModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -66,7 +67,7 @@ interface Etapa2Props {
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Documentos Gerais
@@ -78,6 +79,10 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Governança Corporativa
+          </TabsTrigger>
+          <TabsTrigger value="environmental" className="flex items-center gap-2">
+            <Leaf className="h-4 w-4" />
+            Gestão Ambiental
           </TabsTrigger>
         </TabsList>
 
@@ -137,6 +142,16 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
             reportId={reportId || ''}
             onComplete={() => {
               toast.success('Dados de governança completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="environmental">
+          <EnvironmentalDataCollectionModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados de gestão ambiental completos!');
               onNext();
             }}
           />

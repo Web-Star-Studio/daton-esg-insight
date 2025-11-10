@@ -956,6 +956,202 @@ Gere um texto de 500-800 palavras integrando essas informações de forma coesa.
   );
 }
 
+async function handleAnalyzeEnvironmentalData(supabase: any, body: any) {
+  const { report_id, form_data, documents, quantitative_data } = body;
+
+  console.log('[Analyze Environmental Data] Starting analysis...');
+
+  // 1. Buscar dados do relatório
+  const { data: report, error: reportError } = await supabase
+    .from('gri_reports')
+    .select('*, companies(*)')
+    .eq('id', report_id)
+    .single();
+
+  if (reportError || !report) {
+    console.error('Error fetching report:', reportError);
+    throw new Error('Relatório não encontrado');
+  }
+
+  // 2. Processar documentos anexados
+  const documentContents = await Promise.all(
+    (documents || []).map(async (doc: any) => {
+      if (doc.extracted_text) {
+        return {
+          category: doc.category,
+          content: doc.extracted_text.substring(0, 5000)
+        };
+      }
+      return null;
+    })
+  ).then(results => results.filter(Boolean));
+
+  // 3. Calcular indicadores derivados
+  const derivedIndicators = {
+    total_emissions: (quantitative_data.emissions_scope1_tco2e || 0) + 
+                     (quantitative_data.emissions_scope2_tco2e || 0) + 
+                     (quantitative_data.emissions_scope3_tco2e || 0),
+    emissions_scope1_percentage: quantitative_data.emissions_total_tco2e > 0 
+      ? ((quantitative_data.emissions_scope1_tco2e / quantitative_data.emissions_total_tco2e) * 100).toFixed(1)
+      : 0,
+    emissions_scope2_percentage: quantitative_data.emissions_total_tco2e > 0
+      ? ((quantitative_data.emissions_scope2_tco2e / quantitative_data.emissions_total_tco2e) * 100).toFixed(1)
+      : 0,
+    recycling_rate: quantitative_data.waste_recycled_percentage?.toFixed(1) || 0,
+    energy_renewable_share: quantitative_data.energy_renewable_percentage?.toFixed(1) || 0
+  };
+
+  // 4. Chamar Lovable AI
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY not configured');
+  }
+
+  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [
+        {
+          role: 'system',
+          content: `Você é um especialista em Gestão Ambiental e relatórios GRI Standards.
+
+OBJETIVO: Analisar dados ambientais e gerar texto descritivo profissional para relatório GRI, INCLUINDO NÚMEROS ESPECÍFICOS.
+
+NORMAS GRI APLICÁVEIS:
+- GRI 302 (Energia): 302-1 a 302-5
+- GRI 303 (Água e Efluentes): 303-1 a 303-5
+- GRI 305 (Emissões): 305-1 a 305-7
+- GRI 306 (Resíduos): 306-1 a 306-5
+- GRI 307 (Conformidade Ambiental): 307-1
+
+PÚBLICO-ALVO: ${report.target_audience?.join(', ') || 'Stakeholders gerais'}
+EMPRESA: ${report.companies?.name || 'N/A'}
+SETOR: ${report.companies?.sector || 'N/A'}
+
+DIRETRIZES DE REDAÇÃO:
+1. **SEMPRE INCLUIR NÚMEROS ESPECÍFICOS** no texto narrativo
+2. Exemplos de redação:
+   - "A organização emitiu 1.234,5 tCO₂e no período, sendo 567,8 tCO₂e de Escopo 1 (46%)"
+   - "O consumo total de energia foi de 2.345.678 kWh, dos quais 35,5% provenientes de fontes renováveis"
+   - "Foram gerados 123,4 toneladas de resíduos, com taxa de reciclagem de 78,9%"
+3. Contextualize números com comparações (ano anterior, meta, setor)
+4. Explique metodologias (GHG Protocol, ISO 14064, etc.)
+5. Destaque melhorias e desafios de forma transparente
+6. Estruture: contexto → indicadores quantitativos → gestão → perspectivas
+7. Use unidades corretas (kWh, m³, tCO₂e, toneladas)
+8. Sugira inserção de gráficos
+
+IMPORTANTE:
+- Nunca deixe campos numéricos em branco no texto
+- Se um valor for zero ou não informado, mencione explicitamente
+- Calcule indicadores derivados quando possível (%, intensidades, tendências)`
+        },
+        {
+          role: 'user',
+          content: `Analise os seguintes dados e gere texto descritivo completo para "Gestão Ambiental":
+
+**DADOS DO FORMULÁRIO:**
+${JSON.stringify(form_data, null, 2)}
+
+**DADOS QUANTITATIVOS:**
+${JSON.stringify(quantitative_data, null, 2)}
+
+**INDICADORES DERIVADOS:**
+${JSON.stringify(derivedIndicators, null, 2)}
+
+**CONTEÚDO DOS DOCUMENTOS:**
+${documentContents.map(doc => `\n### ${doc?.category}\n${doc?.content}`).join('\n---\n')}
+
+Gere um texto de 1000-1500 palavras integrando TODOS os dados numéricos de forma profissional e fluente.`
+        }
+      ],
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'analyze_environmental_content',
+          description: 'Analisa dados ambientais e gera texto com números específicos',
+          parameters: {
+            type: 'object',
+            properties: {
+              generated_text: {
+                type: 'string',
+                description: 'Texto descritivo completo (1000-1500 palavras) com TODOS os números'
+              },
+              confidence_score: {
+                type: 'number',
+                description: 'Confiança 0-100'
+              },
+              key_points: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Principais pontos com números'
+              },
+              quantitative_highlights: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    indicator: { type: 'string' },
+                    value: { type: 'string' },
+                    unit: { type: 'string' },
+                    context: { type: 'string' }
+                  }
+                },
+                description: 'Destaques quantitativos'
+              },
+              suggested_charts: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: { type: 'string' },
+                    title: { type: 'string' },
+                    data_points: { type: 'array', items: { type: 'string' } }
+                  }
+                },
+                description: 'Sugestões de gráficos'
+              },
+              suggestions: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Sugestões de melhoria'
+              },
+              gri_coverage: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Indicadores GRI cobertos'
+              }
+            },
+            required: ['generated_text', 'confidence_score', 'key_points', 'quantitative_highlights', 'gri_coverage']
+          }
+        }
+      }],
+      tool_choice: { type: 'function', function: { name: 'analyze_environmental_content' } }
+    })
+  });
+
+  if (!aiResponse.ok) {
+    const errorText = await aiResponse.text();
+    console.error('[Analyze Environmental Data] Lovable AI error:', errorText);
+    throw new Error(`Lovable AI error: ${aiResponse.status}`);
+  }
+
+  const result = await aiResponse.json();
+  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+
+  console.log('[Analyze Environmental Data] Analysis complete with quantitative data');
+
+  return new Response(
+    JSON.stringify(analysis),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
 async function handleAnalyzeGovernanceData(supabase: any, body: any) {
   const { report_id, form_data, documents } = body;
 

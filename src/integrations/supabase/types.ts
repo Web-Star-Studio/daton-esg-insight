@@ -5684,6 +5684,198 @@ export type Database = {
           },
         ]
       }
+      gri_environmental_data_collection: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          company_id: string
+          completion_percentage: number | null
+          created_at: string | null
+          documents_checklist: Json | null
+          effluent_treatment_type: string | null
+          emissions_biogenic_tco2: number | null
+          emissions_intensity_tco2e_per_revenue: number | null
+          emissions_scope1_tco2e: number | null
+          emissions_scope2_tco2e: number | null
+          emissions_scope3_tco2e: number | null
+          emissions_total_tco2e: number | null
+          energy_control_notes: string | null
+          energy_intensity_kwh_per_revenue: number | null
+          energy_monitoring_systems: string[] | null
+          energy_renewable_percentage: number | null
+          energy_total_consumption_kwh: number | null
+          ghg_inventory_last_update: string | null
+          ghg_inventory_methodology: string | null
+          ghg_inventory_notes: string | null
+          ghg_inventory_year: number | null
+          has_effluent_treatment: boolean | null
+          has_energy_controls: boolean | null
+          has_environmental_licenses: boolean | null
+          has_ghg_inventory: boolean | null
+          has_iso_14001: boolean | null
+          has_waste_controls: boolean | null
+          has_water_monitoring: boolean | null
+          id: string
+          iso_14001_certification_date: string | null
+          iso_14001_certifier: string | null
+          licenses_notes: string | null
+          report_id: string
+          sector_average_emissions_intensity: number | null
+          sector_average_energy_intensity: number | null
+          sector_average_recycling_rate: number | null
+          status: string | null
+          updated_at: string | null
+          waste_hazardous_tonnes: number | null
+          waste_incineration_percentage: number | null
+          waste_landfill_percentage: number | null
+          waste_management_plan_exists: boolean | null
+          waste_non_hazardous_tonnes: number | null
+          waste_notes: string | null
+          waste_recycled_percentage: number | null
+          waste_segregation_practices: string[] | null
+          waste_total_generated_tonnes: number | null
+          water_consumption_m3: number | null
+          water_intensity_m3_per_product: number | null
+          water_notes: string | null
+          water_recycled_percentage: number | null
+          water_sources: string[] | null
+          water_total_withdrawal_m3: number | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          company_id: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          documents_checklist?: Json | null
+          effluent_treatment_type?: string | null
+          emissions_biogenic_tco2?: number | null
+          emissions_intensity_tco2e_per_revenue?: number | null
+          emissions_scope1_tco2e?: number | null
+          emissions_scope2_tco2e?: number | null
+          emissions_scope3_tco2e?: number | null
+          emissions_total_tco2e?: number | null
+          energy_control_notes?: string | null
+          energy_intensity_kwh_per_revenue?: number | null
+          energy_monitoring_systems?: string[] | null
+          energy_renewable_percentage?: number | null
+          energy_total_consumption_kwh?: number | null
+          ghg_inventory_last_update?: string | null
+          ghg_inventory_methodology?: string | null
+          ghg_inventory_notes?: string | null
+          ghg_inventory_year?: number | null
+          has_effluent_treatment?: boolean | null
+          has_energy_controls?: boolean | null
+          has_environmental_licenses?: boolean | null
+          has_ghg_inventory?: boolean | null
+          has_iso_14001?: boolean | null
+          has_waste_controls?: boolean | null
+          has_water_monitoring?: boolean | null
+          id?: string
+          iso_14001_certification_date?: string | null
+          iso_14001_certifier?: string | null
+          licenses_notes?: string | null
+          report_id: string
+          sector_average_emissions_intensity?: number | null
+          sector_average_energy_intensity?: number | null
+          sector_average_recycling_rate?: number | null
+          status?: string | null
+          updated_at?: string | null
+          waste_hazardous_tonnes?: number | null
+          waste_incineration_percentage?: number | null
+          waste_landfill_percentage?: number | null
+          waste_management_plan_exists?: boolean | null
+          waste_non_hazardous_tonnes?: number | null
+          waste_notes?: string | null
+          waste_recycled_percentage?: number | null
+          waste_segregation_practices?: string[] | null
+          waste_total_generated_tonnes?: number | null
+          water_consumption_m3?: number | null
+          water_intensity_m3_per_product?: number | null
+          water_notes?: string | null
+          water_recycled_percentage?: number | null
+          water_sources?: string[] | null
+          water_total_withdrawal_m3?: number | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          company_id?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          documents_checklist?: Json | null
+          effluent_treatment_type?: string | null
+          emissions_biogenic_tco2?: number | null
+          emissions_intensity_tco2e_per_revenue?: number | null
+          emissions_scope1_tco2e?: number | null
+          emissions_scope2_tco2e?: number | null
+          emissions_scope3_tco2e?: number | null
+          emissions_total_tco2e?: number | null
+          energy_control_notes?: string | null
+          energy_intensity_kwh_per_revenue?: number | null
+          energy_monitoring_systems?: string[] | null
+          energy_renewable_percentage?: number | null
+          energy_total_consumption_kwh?: number | null
+          ghg_inventory_last_update?: string | null
+          ghg_inventory_methodology?: string | null
+          ghg_inventory_notes?: string | null
+          ghg_inventory_year?: number | null
+          has_effluent_treatment?: boolean | null
+          has_energy_controls?: boolean | null
+          has_environmental_licenses?: boolean | null
+          has_ghg_inventory?: boolean | null
+          has_iso_14001?: boolean | null
+          has_waste_controls?: boolean | null
+          has_water_monitoring?: boolean | null
+          id?: string
+          iso_14001_certification_date?: string | null
+          iso_14001_certifier?: string | null
+          licenses_notes?: string | null
+          report_id?: string
+          sector_average_emissions_intensity?: number | null
+          sector_average_energy_intensity?: number | null
+          sector_average_recycling_rate?: number | null
+          status?: string | null
+          updated_at?: string | null
+          waste_hazardous_tonnes?: number | null
+          waste_incineration_percentage?: number | null
+          waste_landfill_percentage?: number | null
+          waste_management_plan_exists?: boolean | null
+          waste_non_hazardous_tonnes?: number | null
+          waste_notes?: string | null
+          waste_recycled_percentage?: number | null
+          waste_segregation_practices?: string[] | null
+          waste_total_generated_tonnes?: number | null
+          water_consumption_m3?: number | null
+          water_intensity_m3_per_product?: number | null
+          water_notes?: string | null
+          water_recycled_percentage?: number | null
+          water_sources?: string[] | null
+          water_total_withdrawal_m3?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_environmental_data_collection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_environmental_data_collection_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_governance_data_collection: {
         Row: {
           ai_analysis: Json | null
