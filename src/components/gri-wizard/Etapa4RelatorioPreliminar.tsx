@@ -117,22 +117,39 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
             }
           }
 
-          if (sectionKey === 'stakeholder_engagement') {
-            const { data: stakeholderData } = await supabase
-              .from('gri_stakeholder_engagement_data')
-              .select('ai_generated_text, ai_analysis')
-              .eq('report_id', reportId)
-              .maybeSingle();
+      if (sectionKey === 'stakeholder_engagement') {
+        const { data: stakeholderData } = await supabase
+          .from('gri_stakeholder_engagement_data')
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
 
-            if (stakeholderData?.ai_generated_text) {
-              setSections(prev => ({
-                ...prev,
-                [sectionKey]: stakeholderData.ai_generated_text
-              }));
-              toast.success('Conteúdo de stakeholder engagement carregado!');
-              return;
-            }
-          }
+        if (stakeholderData?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: stakeholderData.ai_generated_text 
+          }));
+          toast.success('Conteúdo de stakeholder engagement carregado!');
+          return;
+        }
+      }
+
+      if (sectionKey === 'innovation_technology') {
+        const { data: innovationData } = await supabase
+          .from('gri_innovation_data_collection')
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
+
+        if (innovationData?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: innovationData.ai_generated_text 
+          }));
+          toast.success('Conteúdo de inovação carregado!');
+          return;
+        }
+      }
 
       // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {

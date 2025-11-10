@@ -5,6 +5,7 @@ import EnvironmentalDataCollectionModule from './EnvironmentalDataCollectionModu
 import { SocialDataCollectionModule } from './SocialDataCollectionModule';
 import { EconomicDataCollectionModule } from './EconomicDataCollectionModule';
 import StakeholderEngagementDataModule from './StakeholderEngagementDataModule';
+import InnovationDataCollectionModule from './InnovationDataCollectionModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -70,26 +71,26 @@ interface Etapa2Props {
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
       <Tabs defaultValue="general" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="grid w-full grid-cols-8">
         <TabsTrigger value="general" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          Documentos Gerais
+          Geral
         </TabsTrigger>
         <TabsTrigger value="strategy" className="flex items-center gap-2">
           <Target className="h-4 w-4" />
-          Visão e Estratégia
+          Estratégia
         </TabsTrigger>
         <TabsTrigger value="governance" className="flex items-center gap-2">
           <Shield className="h-4 w-4" />
-          Governança Corporativa
+          Governança
         </TabsTrigger>
         <TabsTrigger value="environmental" className="flex items-center gap-2">
           <Leaf className="h-4 w-4" />
-          Gestão Ambiental
+          Ambiental
         </TabsTrigger>
         <TabsTrigger value="social" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
-          Desempenho Social
+          Social
         </TabsTrigger>
         <TabsTrigger value="economic" className="flex items-center gap-2">
           <DollarSign className="h-4 w-4" />
@@ -98,6 +99,10 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
         <TabsTrigger value="stakeholders" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           Stakeholders
+        </TabsTrigger>
+        <TabsTrigger value="innovation" className="flex items-center gap-2">
+          <Target className="h-4 w-4" />
+          Inovação
         </TabsTrigger>
       </TabsList>
 
@@ -197,6 +202,16 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
           reportId={reportId || ''}
           onComplete={() => {
             toast.success('Dados de stakeholder engagement completos!');
+            onNext();
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="innovation">
+        <InnovationDataCollectionModule
+          reportId={reportId || ''}
+          onComplete={() => {
+            toast.success('Dados de inovação completos!');
             onNext();
           }}
         />
