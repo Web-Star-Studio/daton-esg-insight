@@ -151,6 +151,24 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
         }
       }
 
+      // Buscar dados de Práticas de Reporte com IA se disponível
+      if (sectionKey === 'reporting_practice') {
+        const { data: reportingData } = await supabase
+          .from('gri_reporting_standards_data' as any)
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
+
+        if ((reportingData as any)?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: (reportingData as any).ai_generated_text 
+          }));
+          toast.success('Conteúdo de práticas de reporte carregado!');
+          return;
+        }
+      }
+
       // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {
         body: {

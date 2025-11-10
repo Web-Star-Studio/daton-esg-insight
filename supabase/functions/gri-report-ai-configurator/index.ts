@@ -1486,10 +1486,15 @@ serve(async (req) => {
       case 'analyze_environmental_data':
         return await handleAnalyzeEnvironmentalData(supabaseClient, await req.json());
       
-      case 'analyze_social_data': {
-        const { handleAnalyzeSocialData } = await import('./social-handler.ts');
-        return await handleAnalyzeSocialData(supabaseClient, await req.json());
-      }
+    case 'analyze_social_data': {
+      const { handleAnalyzeSocialData } = await import('./social-handler.ts');
+      return await handleAnalyzeSocialData(supabaseClient, await req.json());
+    }
+
+    case 'analyze_reporting_standards_data': {
+      const { handleAnalyzeReportingStandardsData } = await import('./reporting-standards-handler.ts');
+      return await handleAnalyzeReportingStandardsData(supabaseClient, body);
+    }
       
       case 'analyze_economic_data': {
         const { handleAnalyzeEconomicData } = await import('./economic-handler.ts');

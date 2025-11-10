@@ -6,6 +6,7 @@ import { SocialDataCollectionModule } from './SocialDataCollectionModule';
 import { EconomicDataCollectionModule } from './EconomicDataCollectionModule';
 import StakeholderEngagementDataModule from './StakeholderEngagementDataModule';
 import InnovationDataCollectionModule from './InnovationDataCollectionModule';
+import { ReportingStandardsDataModule } from './ReportingStandardsDataModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -71,7 +72,7 @@ interface Etapa2Props {
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
       <Tabs defaultValue="general" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-8">
+      <TabsList className="grid w-full grid-cols-9">
         <TabsTrigger value="general" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
           Geral
@@ -103,6 +104,10 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
         <TabsTrigger value="innovation" className="flex items-center gap-2">
           <Target className="h-4 w-4" />
           Inovação
+        </TabsTrigger>
+        <TabsTrigger value="reporting" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Relatórios
         </TabsTrigger>
       </TabsList>
 
@@ -212,6 +217,16 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
           reportId={reportId || ''}
           onComplete={() => {
             toast.success('Dados de inovação completos!');
+            onNext();
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="reporting">
+        <ReportingStandardsDataModule
+          reportId={reportId || ''}
+          onComplete={() => {
+            toast.success('Dados de práticas de reporte completos!');
             onNext();
           }}
         />

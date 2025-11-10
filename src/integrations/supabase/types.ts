@@ -6567,6 +6567,249 @@ export type Database = {
           },
         ]
       }
+      gri_reporting_standards_data: {
+        Row: {
+          abnt_pr2030_adherence_level: string | null
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          assurance_certificate_date: string | null
+          assurance_coverage_percentage: number | null
+          assurance_level: string | null
+          assurance_provider: string | null
+          assurance_scope: string | null
+          assurance_standards: string | null
+          benchmarking_insights: Json | null
+          benchmarking_notes: string | null
+          benchmarking_sources: string[] | null
+          company_id: string
+          company_score: number | null
+          competitive_advantages: string[] | null
+          completion_percentage: number | null
+          created_at: string | null
+          data_quality_score: number | null
+          documents_checklist: Json | null
+          first_report_year: number | null
+          frameworks_adopted: string[] | null
+          frameworks_alignment_matrix: Json | null
+          frameworks_notes: string | null
+          gri_application_level: string | null
+          gri_topic_standards_coverage: number | null
+          gri_universal_standards_coverage: number | null
+          gri_version_used: string | null
+          has_aligned_policies: boolean | null
+          has_benchmarking_studies: boolean | null
+          has_external_assurance: boolean | null
+          has_framework_adherence: boolean | null
+          has_previous_reports: boolean | null
+          has_restatements: boolean | null
+          id: string
+          improvement_opportunities: string[] | null
+          indicators_disclosed_count: number | null
+          indicators_disclosed_evolution: Json | null
+          kpis_by_framework: Json | null
+          kpis_evolution: Json | null
+          last_report_publication_date: string | null
+          mandatory_indicators_reported: number | null
+          next_report_expected_date: string | null
+          optional_indicators_reported: number | null
+          pages_published_evolution: Json | null
+          policies_by_category: Json | null
+          policies_notes: string | null
+          previous_reports_list: Json | null
+          report_frequency: string | null
+          report_id: string
+          reporting_awards_list: Json | null
+          reporting_awards_received: number | null
+          reporting_cycle_duration_months: number | null
+          reporting_evolution_notes: string | null
+          reporting_maturity_level: string | null
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          restatements_count: number | null
+          restatements_details: Json | null
+          restatements_impact: string | null
+          sasb_industry_standard: string | null
+          sector_average_score: number | null
+          sector_position_ranking: number | null
+          status: string | null
+          tcfd_implementation_status: string | null
+          top_performer_score: number | null
+          total_gri_indicators_reported: number | null
+          total_kpis_tracked: number | null
+          total_policies_documented: number | null
+          total_reports_published: number | null
+          updated_at: string | null
+          years_of_reporting: number | null
+        }
+        Insert: {
+          abnt_pr2030_adherence_level?: string | null
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          assurance_certificate_date?: string | null
+          assurance_coverage_percentage?: number | null
+          assurance_level?: string | null
+          assurance_provider?: string | null
+          assurance_scope?: string | null
+          assurance_standards?: string | null
+          benchmarking_insights?: Json | null
+          benchmarking_notes?: string | null
+          benchmarking_sources?: string[] | null
+          company_id: string
+          company_score?: number | null
+          competitive_advantages?: string[] | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          data_quality_score?: number | null
+          documents_checklist?: Json | null
+          first_report_year?: number | null
+          frameworks_adopted?: string[] | null
+          frameworks_alignment_matrix?: Json | null
+          frameworks_notes?: string | null
+          gri_application_level?: string | null
+          gri_topic_standards_coverage?: number | null
+          gri_universal_standards_coverage?: number | null
+          gri_version_used?: string | null
+          has_aligned_policies?: boolean | null
+          has_benchmarking_studies?: boolean | null
+          has_external_assurance?: boolean | null
+          has_framework_adherence?: boolean | null
+          has_previous_reports?: boolean | null
+          has_restatements?: boolean | null
+          id?: string
+          improvement_opportunities?: string[] | null
+          indicators_disclosed_count?: number | null
+          indicators_disclosed_evolution?: Json | null
+          kpis_by_framework?: Json | null
+          kpis_evolution?: Json | null
+          last_report_publication_date?: string | null
+          mandatory_indicators_reported?: number | null
+          next_report_expected_date?: string | null
+          optional_indicators_reported?: number | null
+          pages_published_evolution?: Json | null
+          policies_by_category?: Json | null
+          policies_notes?: string | null
+          previous_reports_list?: Json | null
+          report_frequency?: string | null
+          report_id: string
+          reporting_awards_list?: Json | null
+          reporting_awards_received?: number | null
+          reporting_cycle_duration_months?: number | null
+          reporting_evolution_notes?: string | null
+          reporting_maturity_level?: string | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          restatements_count?: number | null
+          restatements_details?: Json | null
+          restatements_impact?: string | null
+          sasb_industry_standard?: string | null
+          sector_average_score?: number | null
+          sector_position_ranking?: number | null
+          status?: string | null
+          tcfd_implementation_status?: string | null
+          top_performer_score?: number | null
+          total_gri_indicators_reported?: number | null
+          total_kpis_tracked?: number | null
+          total_policies_documented?: number | null
+          total_reports_published?: number | null
+          updated_at?: string | null
+          years_of_reporting?: number | null
+        }
+        Update: {
+          abnt_pr2030_adherence_level?: string | null
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          assurance_certificate_date?: string | null
+          assurance_coverage_percentage?: number | null
+          assurance_level?: string | null
+          assurance_provider?: string | null
+          assurance_scope?: string | null
+          assurance_standards?: string | null
+          benchmarking_insights?: Json | null
+          benchmarking_notes?: string | null
+          benchmarking_sources?: string[] | null
+          company_id?: string
+          company_score?: number | null
+          competitive_advantages?: string[] | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          data_quality_score?: number | null
+          documents_checklist?: Json | null
+          first_report_year?: number | null
+          frameworks_adopted?: string[] | null
+          frameworks_alignment_matrix?: Json | null
+          frameworks_notes?: string | null
+          gri_application_level?: string | null
+          gri_topic_standards_coverage?: number | null
+          gri_universal_standards_coverage?: number | null
+          gri_version_used?: string | null
+          has_aligned_policies?: boolean | null
+          has_benchmarking_studies?: boolean | null
+          has_external_assurance?: boolean | null
+          has_framework_adherence?: boolean | null
+          has_previous_reports?: boolean | null
+          has_restatements?: boolean | null
+          id?: string
+          improvement_opportunities?: string[] | null
+          indicators_disclosed_count?: number | null
+          indicators_disclosed_evolution?: Json | null
+          kpis_by_framework?: Json | null
+          kpis_evolution?: Json | null
+          last_report_publication_date?: string | null
+          mandatory_indicators_reported?: number | null
+          next_report_expected_date?: string | null
+          optional_indicators_reported?: number | null
+          pages_published_evolution?: Json | null
+          policies_by_category?: Json | null
+          policies_notes?: string | null
+          previous_reports_list?: Json | null
+          report_frequency?: string | null
+          report_id?: string
+          reporting_awards_list?: Json | null
+          reporting_awards_received?: number | null
+          reporting_cycle_duration_months?: number | null
+          reporting_evolution_notes?: string | null
+          reporting_maturity_level?: string | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          restatements_count?: number | null
+          restatements_details?: Json | null
+          restatements_impact?: string | null
+          sasb_industry_standard?: string | null
+          sector_average_score?: number | null
+          sector_position_ranking?: number | null
+          status?: string | null
+          tcfd_implementation_status?: string | null
+          top_performer_score?: number | null
+          total_gri_indicators_reported?: number | null
+          total_kpis_tracked?: number | null
+          total_policies_documented?: number | null
+          total_reports_published?: number | null
+          updated_at?: string | null
+          years_of_reporting?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_reporting_standards_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_reporting_standards_data_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_reports: {
         Row: {
           ceo_message: string | null
