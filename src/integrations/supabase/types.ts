@@ -6116,15 +6116,19 @@ export type Database = {
           created_at: string
           executive_summary: string | null
           gri_standard_version: string
+          guidelines_file_path: string | null
           id: string
           materiality_assessment: Json | null
           methodology: string | null
+          organization_purpose: string | null
           publication_date: string | null
           published_at: string | null
+          report_objective: string | null
           reporting_period_end: string
           reporting_period_start: string
           stakeholder_engagement: Json | null
           status: Database["public"]["Enums"]["report_gri_status_enum"]
+          target_audience: string[] | null
           template_config: Json | null
           title: string
           updated_at: string
@@ -6137,15 +6141,19 @@ export type Database = {
           created_at?: string
           executive_summary?: string | null
           gri_standard_version?: string
+          guidelines_file_path?: string | null
           id?: string
           materiality_assessment?: Json | null
           methodology?: string | null
+          organization_purpose?: string | null
           publication_date?: string | null
           published_at?: string | null
+          report_objective?: string | null
           reporting_period_end: string
           reporting_period_start: string
           stakeholder_engagement?: Json | null
           status?: Database["public"]["Enums"]["report_gri_status_enum"]
+          target_audience?: string[] | null
           template_config?: Json | null
           title?: string
           updated_at?: string
@@ -6158,15 +6166,19 @@ export type Database = {
           created_at?: string
           executive_summary?: string | null
           gri_standard_version?: string
+          guidelines_file_path?: string | null
           id?: string
           materiality_assessment?: Json | null
           methodology?: string | null
+          organization_purpose?: string | null
           publication_date?: string | null
           published_at?: string | null
+          report_objective?: string | null
           reporting_period_end?: string
           reporting_period_start?: string
           stakeholder_engagement?: Json | null
           status?: Database["public"]["Enums"]["report_gri_status_enum"]
+          target_audience?: string[] | null
           template_config?: Json | null
           title?: string
           updated_at?: string
