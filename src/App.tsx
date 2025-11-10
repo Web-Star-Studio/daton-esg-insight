@@ -113,6 +113,7 @@ const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
 
 // Lazy loading para Intelligence Center
 const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
+const SDGDashboard = lazy(() => import("./pages/SDGDashboard"));
 
 // Páginas específicas mantidas
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));

@@ -1,39 +1,169 @@
-import { useState } from "react";
-import { SDGIntroductionCard } from "./SDGIntroductionCard";
-import { SDGCard } from "./SDGCard";
-import { SDG_DATA, SDGInfo } from "@/constants/sdgData";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Filter, Grid3x3, List, RefreshCw } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SDGIntroductionCard } from "./SDGIntroductionCard";
+import { SDGCard } from "./SDGCard";
+import { SDGDetailModal } from "./SDGDetailModal";
+import { SelectedSDGsTable } from "./SelectedSDGsTable";
+import { GeneratedTextPreview } from "./GeneratedTextPreview";
+import { SDG_DATA } from "@/constants/sdgData";
+import { Grid3x3, List, RefreshCw, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface SDGDetails {
+  sdg_number: number;
+  selected_targets: string[];
+  impact_level: 'Alto' | 'Médio' | 'Baixo';
+  actions_taken?: string;
+  results_achieved?: string;
+  future_commitments?: string;
+  evidence_documents?: string[];
+  kpis?: Array<{
+    indicator: string;
+    baseline: number;
+    target: number;
+    current: number;
+    unit: string;
+  }>;
+}
 
 interface SDGSelectorModuleProps {
-  reportId?: string;
+  reportId: string;
   onUpdate?: (selectedSDGs: number[]) => void;
 }
 
 export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps) {
   const [selectedSDGs, setSelectedSDGs] = useState<Set<number>>(new Set());
+  const [sdgDetails, setSdgDetails] = useState<Map<number, SDGDetails>>(new Map());
+  const [activeSDG, setActiveSDG] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterTheme, setFilterTheme] = useState<'all' | 'social' | 'economic' | 'environmental'>('all');
 
-  const toggleSDG = (sdgNumber: number) => {
+  useEffect(() => {
+    if (reportId) {
+      loadSavedSDGs();
+    }
+  }, [reportId]);
+
+  const loadSavedSDGs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sdg_alignment')
+        .select('*')
+        .eq('report_id', reportId);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const selected = new Set(data.map(d => d.sdg_number));
+        const details = new Map<number, SDGDetails>();
+
+        data.forEach(item => {
+          details.set(item.sdg_number, {
+            sdg_number: item.sdg_number,
+            selected_targets: item.selected_targets || [],
+            impact_level: item.impact_level as 'Alto' | 'Médio' | 'Baixo' || 'Médio',
+            actions_taken: item.actions_taken || undefined,
+            results_achieved: item.results_achieved || undefined,
+            future_commitments: item.future_commitments || undefined,
+            evidence_documents: item.evidence_documents || [],
+            kpis: item.kpis || []
+          });
+        });
+
+        setSelectedSDGs(selected);
+        setSdgDetails(details);
+      }
+    } catch (error) {
+      console.error('Error loading SDGs:', error);
+      toast.error('Erro ao carregar ODS salvos');
+    }
+  };
+
+  const toggleSDG = async (sdgNumber: number) => {
     const newSelected = new Set(selectedSDGs);
+    
     if (newSelected.has(sdgNumber)) {
       newSelected.delete(sdgNumber);
+      
+      const { error } = await supabase
+        .from('sdg_alignment')
+        .delete()
+        .eq('report_id', reportId)
+        .eq('sdg_number', sdgNumber);
+
+      if (error) {
+        console.error('Error removing SDG:', error);
+        toast.error('Erro ao remover ODS');
+        return;
+      }
+
+      const newDetails = new Map(sdgDetails);
+      newDetails.delete(sdgNumber);
+      setSdgDetails(newDetails);
+      
+      toast.success(`ODS ${sdgNumber} removido`);
     } else {
       newSelected.add(sdgNumber);
+      
+      const { error } = await supabase
+        .from('sdg_alignment')
+        .insert({
+          report_id: reportId,
+          sdg_number: sdgNumber,
+          impact_level: 'Médio',
+          selected_targets: []
+        });
+
+      if (error) {
+        console.error('Error adding SDG:', error);
+        toast.error('Erro ao adicionar ODS');
+        return;
+      }
+      
+      toast.success(`ODS ${sdgNumber} adicionado`);
     }
+    
     setSelectedSDGs(newSelected);
     onUpdate?.(Array.from(newSelected));
+  };
+
+  const openSDGDetails = (sdgNumber: number) => {
+    setActiveSDG(sdgNumber);
+    setIsModalOpen(true);
+  };
+
+  const saveSDGDetails = async (details: SDGDetails) => {
+    try {
+      const { error } = await supabase
+        .from('sdg_alignment')
+        .update({
+          selected_targets: details.selected_targets,
+          impact_level: details.impact_level,
+          actions_taken: details.actions_taken,
+          results_achieved: details.results_achieved,
+          future_commitments: details.future_commitments,
+          evidence_documents: details.evidence_documents,
+          kpis: details.kpis
+        })
+        .eq('report_id', reportId)
+        .eq('sdg_number', details.sdg_number);
+
+      if (error) throw error;
+
+      const newDetails = new Map(sdgDetails);
+      newDetails.set(details.sdg_number, details);
+      setSdgDetails(newDetails);
+
+      toast.success('Detalhes salvos com sucesso!');
+    } catch (error) {
+      console.error('Error saving SDG details:', error);
+      toast.error('Erro ao salvar detalhes');
+    }
   };
 
   const handleSelectAll = () => {
@@ -61,10 +191,8 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
 
   return (
     <div className="space-y-6">
-      {/* Card de Introdução */}
       <SDGIntroductionCard />
 
-      {/* Toolbar */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -82,7 +210,6 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {/* Filtro por tema */}
               <Select value={filterTheme} onValueChange={(value: any) => setFilterTheme(value)}>
                 <SelectTrigger className="w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
@@ -96,7 +223,6 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
                 </SelectContent>
               </Select>
 
-              {/* Toggle de visualização */}
               <div className="flex rounded-md border">
                 <Button
                   variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
@@ -116,15 +242,6 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
                 </Button>
               </div>
 
-              {/* Ações rápidas */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                disabled={selectedSDGs.size === filteredSDGs.length}
-              >
-                Selecionar Todos
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -138,7 +255,6 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
           </div>
         </CardHeader>
         <CardContent>
-          {/* Grid de ODS */}
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {filteredSDGs.map(sdg => (
@@ -146,16 +262,14 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
                   key={sdg.number}
                   sdg={sdg}
                   selected={selectedSDGs.has(sdg.number)}
+                  impactLevel={sdgDetails.get(sdg.number)?.impact_level}
+                  selectedTargetsCount={sdgDetails.get(sdg.number)?.selected_targets.length}
                   onToggle={() => toggleSDG(sdg.number)}
-                  onClick={() => {
-                    // Aqui você pode abrir o modal de detalhes
-                    console.log('Open details for ODS', sdg.number);
-                  }}
+                  onClick={() => openSDGDetails(sdg.number)}
                 />
               ))}
             </div>
           ) : (
-            /* Lista de ODS */
             <div className="space-y-2">
               {filteredSDGs.map(sdg => (
                 <div
@@ -179,19 +293,6 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
                       {sdg.description}
                     </p>
                   </div>
-                  <div
-                    className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                      selectedSDGs.has(sdg.number)
-                        ? 'bg-primary border-primary'
-                        : 'bg-background border-border'
-                    }`}
-                  >
-                    {selectedSDGs.has(sdg.number) && (
-                      <svg className="w-4 h-4 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
                 </div>
               ))}
             </div>
@@ -199,99 +300,29 @@ export function SDGSelectorModule({ reportId, onUpdate }: SDGSelectorModuleProps
         </CardContent>
       </Card>
 
-      {/* Resumo dos ODS Selecionados */}
       {selectedSDGs.size > 0 && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              ✨ Resumo da Seleção
-            </CardTitle>
-            <CardDescription>
-              Você selecionou {selectedSDGs.size} ODS prioritário{selectedSDGs.size !== 1 ? 's' : ''} para sua organização
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Social */}
-              <div className="p-4 rounded-lg bg-background border">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">🤝</span>
-                  <h4 className="font-semibold">Social</h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {Array.from(selectedSDGs)
-                    .filter(n => [1, 2, 3, 4, 5, 10, 16].includes(n))
-                    .map(n => {
-                      const sdg = SDG_DATA.find(s => s.number === n);
-                      return (
-                        <Badge 
-                          key={n} 
-                          style={{ backgroundColor: `${sdg?.color}20`, color: sdg?.color }}
-                        >
-                          {n}
-                        </Badge>
-                      );
-                    })}
-                </div>
-              </div>
-
-              {/* Econômico */}
-              <div className="p-4 rounded-lg bg-background border">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">💼</span>
-                  <h4 className="font-semibold">Econômico</h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {Array.from(selectedSDGs)
-                    .filter(n => [8, 9, 12, 17].includes(n))
-                    .map(n => {
-                      const sdg = SDG_DATA.find(s => s.number === n);
-                      return (
-                        <Badge 
-                          key={n}
-                          style={{ backgroundColor: `${sdg?.color}20`, color: sdg?.color }}
-                        >
-                          {n}
-                        </Badge>
-                      );
-                    })}
-                </div>
-              </div>
-
-              {/* Ambiental */}
-              <div className="p-4 rounded-lg bg-background border">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">🌱</span>
-                  <h4 className="font-semibold">Ambiental</h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {Array.from(selectedSDGs)
-                    .filter(n => [6, 7, 11, 13, 14, 15].includes(n))
-                    .map(n => {
-                      const sdg = SDG_DATA.find(s => s.number === n);
-                      return (
-                        <Badge 
-                          key={n}
-                          style={{ backgroundColor: `${sdg?.color}20`, color: sdg?.color }}
-                        >
-                          {n}
-                        </Badge>
-                      );
-                    })}
-                </div>
-              </div>
-            </div>
-
-            {/* Next steps */}
-            <div className="mt-4 p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">
-                <strong>Próximos passos:</strong> Clique em cada ODS para selecionar as metas específicas, 
-                documentar ações realizadas e adicionar indicadores de progresso.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <SelectedSDGsTable
+          selectedSDGs={Array.from(selectedSDGs)}
+          sdgDetails={sdgDetails}
+          onEdit={openSDGDetails}
+          onRemove={toggleSDG}
+        />
       )}
+
+      {selectedSDGs.size > 0 && (
+        <GeneratedTextPreview
+          selectedSDGs={Array.from(selectedSDGs)}
+          sdgDetails={sdgDetails}
+        />
+      )}
+
+      <SDGDetailModal
+        sdg={activeSDG ? SDG_DATA.find(s => s.number === activeSDG) || null : null}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={saveSDGDetails}
+        initialData={activeSDG ? sdgDetails.get(activeSDG) : undefined}
+      />
     </div>
   );
 }

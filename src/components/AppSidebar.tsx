@@ -165,7 +165,8 @@ const menuSections: MenuSection[] = [
       { id: "documents", title: "Documentos", icon: Folder, path: "/documentos", description: "Biblioteca, extrações e reconciliação IA" },
       { id: "assets", title: "Ativos", icon: Building2, path: "/ativos", description: "Gestão de ativos da organização" },
       { id: "recommended-indicators", title: "Indicadores ESG Recomendados", icon: BarChart3, path: "/indicadores-recomendados", description: "Cálculos automáticos de KPIs ESG com benchmarks" },
-      { id: "integrated-reports", title: "Relatórios Integrados", icon: BookMarked, path: "/relatorios-integrados", description: "Relatórios ESG completos e integrados" }
+      { id: "integrated-reports", title: "Relatórios Integrados", icon: BookMarked, path: "/relatorios-integrados", description: "Relatórios ESG completos e integrados" },
+      { id: "sdg-dashboard", title: "Dashboard ODS", icon: Target, path: "/sdg-dashboard", description: "Visualização de contribuição aos ODS" }
     ]
   },
   {

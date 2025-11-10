@@ -13,6 +13,7 @@ interface ContentRequest {
   metadataType?: 'ceo_message' | 'executive_summary' | 'methodology';
   context?: string;
   regenerate?: boolean;
+  sdgData?: any[];
 }
 
 Deno.serve(async (req) => {
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
     }
 
     const requestData: ContentRequest = await req.json();
-    const { reportId, sectionKey, contentType, metadataType, context, regenerate } = requestData;
+    const { reportId, sectionKey, contentType, metadataType, context, regenerate, sdgData } = requestData;
 
     console.log('Generating content for:', { reportId, sectionKey, contentType, metadataType, regenerate });
 
@@ -82,7 +83,10 @@ Deno.serve(async (req) => {
     // Generate content using AI
     let generatedContent: string;
     
-    if (metadataType) {
+    if (sectionKey === 'sdg_alignment' && sdgData) {
+      // Generate SDG-specific content
+      generatedContent = await generateSDGContent(company?.name || 'Organização', report, sdgData);
+    } else if (metadataType) {
       // Generate metadata content (CEO message, executive summary, methodology)
       generatedContent = await generateMetadataContent(
         metadataType,
@@ -373,6 +377,111 @@ Os limites organizacionais do relatório incluem todas as operações de ${compa
   };
 
   return templates[metadataType] || `Conteúdo de ${metadataType} para ${companyName} - ${year}.`;
+}
+
+// Generate SDG-specific content
+async function generateSDGContent(
+  companyName: string,
+  report: any,
+  sdgData: any[]
+): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  
+  if (!LOVABLE_API_KEY) {
+    console.warn('LOVABLE_API_KEY not configured, using SDG fallback');
+    return generateSDGFallback(companyName, report?.year || new Date().getFullYear(), sdgData);
+  }
+
+  const systemPrompt = `Você é um especialista em sustentabilidade e relatórios GRI.
+Gere um texto profissional e detalhado para a seção "Objetivos de Desenvolvimento Sustentável (ODS)" de um relatório de sustentabilidade.
+
+Diretrizes:
+- Use linguagem clara, objetiva e profissional
+- Integre dados quantitativos quando disponíveis
+- Mencione as metas específicas da Agenda 2030
+- Inclua referência ao Pacto Global
+- Foque em informação material e relevante
+- Use parágrafos bem estruturados
+- Tenha aproximadamente 800-1200 palavras`;
+
+  const userPrompt = `Gere um texto profissional para a seção "ODS" do relatório de sustentabilidade ${report?.year || new Date().getFullYear()} de ${companyName}.
+
+**Dados dos ODS selecionados:**
+${JSON.stringify(sdgData, null, 2)}
+
+O texto deve:
+1. Comece explicando brevemente a importância dos ODS para a estratégia da empresa
+2. Para cada ODS selecionado:
+   - Descreva como ele se relaciona com as operações da empresa
+   - Mencione as metas específicas da Agenda 2030 adotadas
+   - Apresente as ações realizadas de forma detalhada
+   - Destaque os resultados mensuráveis alcançados
+   - Mencione os compromissos futuros
+3. Inclua uma seção sobre o alinhamento com o Pacto Global da ONU
+4. Use linguagem profissional, objetiva e baseada em evidências
+5. Use formatação Markdown para estruturar o texto (## para títulos, ** para negrito, - para listas)
+6. Seja específico e evite frases genéricas`;
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`AI generation failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.choices?.[0]?.message?.content || generateSDGFallback(companyName, report?.year || new Date().getFullYear(), sdgData);
+
+  } catch (error) {
+    console.error('Error generating SDG content with AI:', error);
+    return generateSDGFallback(companyName, report?.year || new Date().getFullYear(), sdgData);
+  }
+}
+
+function generateSDGFallback(companyName: string, year: number, sdgData: any[]): string {
+  let text = `# Objetivos de Desenvolvimento Sustentável (ODS)\n\n`;
+  text += `${companyName} adota os seguintes Objetivos de Desenvolvimento Sustentável (ODS) da Agenda 2030 como parte integrante de sua estratégia de sustentabilidade:\n\n`;
+
+  sdgData.forEach((item, index) => {
+    text += `## ODS ${item.sdg_number}\n\n`;
+    text += `**Nível de Contribuição:** ${item.impact_level || 'Médio'}\n\n`;
+    
+    if (item.selected_targets && item.selected_targets.length > 0) {
+      text += `**Metas adotadas:** ${item.selected_targets.join(', ')}\n\n`;
+    }
+    
+    if (item.actions_taken) {
+      text += `**Ações realizadas:** ${item.actions_taken}\n\n`;
+    }
+    
+    if (item.results_achieved) {
+      text += `**Resultados alcançados:** ${item.results_achieved}\n\n`;
+    }
+    
+    if (index < sdgData.length - 1) {
+      text += `---\n\n`;
+    }
+  });
+
+  text += `\n## Alinhamento com o Pacto Global\n\n`;
+  text += `Esta seleção de ODS está alinhada aos princípios do Pacto Global da ONU, demonstrando o compromisso de ${companyName} com práticas empresariais responsáveis.`;
+
+  return text;
 }
 
 // Generate content using Lovable AI
