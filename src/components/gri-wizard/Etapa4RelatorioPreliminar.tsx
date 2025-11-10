@@ -81,6 +81,24 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
         }
       }
 
+      // Se for seção de desempenho social, buscar texto pré-gerado
+      if (sectionKey === 'social_performance') {
+        const { data: socialData } = await supabase
+          .from('gri_social_data_collection')
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
+
+        if (socialData?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: socialData.ai_generated_text 
+          }));
+          toast.success('Conteúdo social carregado!');
+          return;
+        }
+      }
+
       // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {
         body: {

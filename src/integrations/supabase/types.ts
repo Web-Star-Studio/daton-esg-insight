@@ -6549,6 +6549,294 @@ export type Database = {
         }
         Relationships: []
       }
+      gri_social_data_collection: {
+        Row: {
+          absenteeism_rate: number | null
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          average_training_hours_per_employee: number | null
+          beneficiaries_count: number | null
+          benefits_notes: string | null
+          benefits_offered: string[] | null
+          company_id: string
+          completion_percentage: number | null
+          created_at: string | null
+          days_lost: number | null
+          discrimination_incidents_reported: number | null
+          discrimination_incidents_resolved: number | null
+          diversity_initiatives: string[] | null
+          diversity_policy_approval_date: string | null
+          diversity_policy_notes: string | null
+          documents_checklist: Json | null
+          employees_30_50: number | null
+          employees_ethnic_minorities: number | null
+          employees_full_time: number | null
+          employees_men: number | null
+          employees_non_binary: number | null
+          employees_over_50: number | null
+          employees_part_time: number | null
+          employees_pcd: number | null
+          employees_permanent: number | null
+          employees_temporary: number | null
+          employees_trained: number | null
+          employees_under_30: number | null
+          employees_with_health_insurance: number | null
+          employees_with_life_insurance: number | null
+          employees_with_retirement_plan: number | null
+          employees_women: number | null
+          fatalities: number | null
+          has_benefits_program: boolean | null
+          has_cipa: boolean | null
+          has_diversity_policy: boolean | null
+          has_health_safety_programs: boolean | null
+          has_occupational_health_service: boolean | null
+          has_performance_bonus: boolean | null
+          has_safety_training_program: boolean | null
+          has_social_projects: boolean | null
+          has_training_effectiveness_evaluation: boolean | null
+          has_training_records: boolean | null
+          health_safety_certifications: string[] | null
+          health_safety_notes: string | null
+          id: string
+          incident_rate: number | null
+          indicators_notes: string | null
+          indicators_tracked: string[] | null
+          leadership_women_percentage: number | null
+          lost_time_incident_rate: number | null
+          lost_time_incidents: number | null
+          new_hires_rate: number | null
+          new_hires_total: number | null
+          occupational_diseases_cases: number | null
+          parental_leave_female_eligible: number | null
+          parental_leave_female_taken: number | null
+          parental_leave_male_eligible: number | null
+          parental_leave_male_taken: number | null
+          report_id: string
+          reporting_frequency: string | null
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          sector_average_incident_rate: number | null
+          sector_average_training_hours: number | null
+          sector_average_turnover_rate: number | null
+          sector_average_women_leadership: number | null
+          social_investment_annual: number | null
+          social_project_types: string[] | null
+          social_projects_notes: string | null
+          status: string | null
+          total_employees: number | null
+          total_safety_incidents: number | null
+          total_training_hours: number | null
+          tracks_social_indicators: boolean | null
+          training_coverage_rate: number | null
+          training_hours_men: number | null
+          training_hours_women: number | null
+          training_investment_total: number | null
+          training_notes: string | null
+          training_types: string[] | null
+          turnover_rate: number | null
+          turnover_total: number | null
+          updated_at: string | null
+          wage_gap_gender: number | null
+        }
+        Insert: {
+          absenteeism_rate?: number | null
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          average_training_hours_per_employee?: number | null
+          beneficiaries_count?: number | null
+          benefits_notes?: string | null
+          benefits_offered?: string[] | null
+          company_id: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          days_lost?: number | null
+          discrimination_incidents_reported?: number | null
+          discrimination_incidents_resolved?: number | null
+          diversity_initiatives?: string[] | null
+          diversity_policy_approval_date?: string | null
+          diversity_policy_notes?: string | null
+          documents_checklist?: Json | null
+          employees_30_50?: number | null
+          employees_ethnic_minorities?: number | null
+          employees_full_time?: number | null
+          employees_men?: number | null
+          employees_non_binary?: number | null
+          employees_over_50?: number | null
+          employees_part_time?: number | null
+          employees_pcd?: number | null
+          employees_permanent?: number | null
+          employees_temporary?: number | null
+          employees_trained?: number | null
+          employees_under_30?: number | null
+          employees_with_health_insurance?: number | null
+          employees_with_life_insurance?: number | null
+          employees_with_retirement_plan?: number | null
+          employees_women?: number | null
+          fatalities?: number | null
+          has_benefits_program?: boolean | null
+          has_cipa?: boolean | null
+          has_diversity_policy?: boolean | null
+          has_health_safety_programs?: boolean | null
+          has_occupational_health_service?: boolean | null
+          has_performance_bonus?: boolean | null
+          has_safety_training_program?: boolean | null
+          has_social_projects?: boolean | null
+          has_training_effectiveness_evaluation?: boolean | null
+          has_training_records?: boolean | null
+          health_safety_certifications?: string[] | null
+          health_safety_notes?: string | null
+          id?: string
+          incident_rate?: number | null
+          indicators_notes?: string | null
+          indicators_tracked?: string[] | null
+          leadership_women_percentage?: number | null
+          lost_time_incident_rate?: number | null
+          lost_time_incidents?: number | null
+          new_hires_rate?: number | null
+          new_hires_total?: number | null
+          occupational_diseases_cases?: number | null
+          parental_leave_female_eligible?: number | null
+          parental_leave_female_taken?: number | null
+          parental_leave_male_eligible?: number | null
+          parental_leave_male_taken?: number | null
+          report_id: string
+          reporting_frequency?: string | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          sector_average_incident_rate?: number | null
+          sector_average_training_hours?: number | null
+          sector_average_turnover_rate?: number | null
+          sector_average_women_leadership?: number | null
+          social_investment_annual?: number | null
+          social_project_types?: string[] | null
+          social_projects_notes?: string | null
+          status?: string | null
+          total_employees?: number | null
+          total_safety_incidents?: number | null
+          total_training_hours?: number | null
+          tracks_social_indicators?: boolean | null
+          training_coverage_rate?: number | null
+          training_hours_men?: number | null
+          training_hours_women?: number | null
+          training_investment_total?: number | null
+          training_notes?: string | null
+          training_types?: string[] | null
+          turnover_rate?: number | null
+          turnover_total?: number | null
+          updated_at?: string | null
+          wage_gap_gender?: number | null
+        }
+        Update: {
+          absenteeism_rate?: number | null
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          average_training_hours_per_employee?: number | null
+          beneficiaries_count?: number | null
+          benefits_notes?: string | null
+          benefits_offered?: string[] | null
+          company_id?: string
+          completion_percentage?: number | null
+          created_at?: string | null
+          days_lost?: number | null
+          discrimination_incidents_reported?: number | null
+          discrimination_incidents_resolved?: number | null
+          diversity_initiatives?: string[] | null
+          diversity_policy_approval_date?: string | null
+          diversity_policy_notes?: string | null
+          documents_checklist?: Json | null
+          employees_30_50?: number | null
+          employees_ethnic_minorities?: number | null
+          employees_full_time?: number | null
+          employees_men?: number | null
+          employees_non_binary?: number | null
+          employees_over_50?: number | null
+          employees_part_time?: number | null
+          employees_pcd?: number | null
+          employees_permanent?: number | null
+          employees_temporary?: number | null
+          employees_trained?: number | null
+          employees_under_30?: number | null
+          employees_with_health_insurance?: number | null
+          employees_with_life_insurance?: number | null
+          employees_with_retirement_plan?: number | null
+          employees_women?: number | null
+          fatalities?: number | null
+          has_benefits_program?: boolean | null
+          has_cipa?: boolean | null
+          has_diversity_policy?: boolean | null
+          has_health_safety_programs?: boolean | null
+          has_occupational_health_service?: boolean | null
+          has_performance_bonus?: boolean | null
+          has_safety_training_program?: boolean | null
+          has_social_projects?: boolean | null
+          has_training_effectiveness_evaluation?: boolean | null
+          has_training_records?: boolean | null
+          health_safety_certifications?: string[] | null
+          health_safety_notes?: string | null
+          id?: string
+          incident_rate?: number | null
+          indicators_notes?: string | null
+          indicators_tracked?: string[] | null
+          leadership_women_percentage?: number | null
+          lost_time_incident_rate?: number | null
+          lost_time_incidents?: number | null
+          new_hires_rate?: number | null
+          new_hires_total?: number | null
+          occupational_diseases_cases?: number | null
+          parental_leave_female_eligible?: number | null
+          parental_leave_female_taken?: number | null
+          parental_leave_male_eligible?: number | null
+          parental_leave_male_taken?: number | null
+          report_id?: string
+          reporting_frequency?: string | null
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          sector_average_incident_rate?: number | null
+          sector_average_training_hours?: number | null
+          sector_average_turnover_rate?: number | null
+          sector_average_women_leadership?: number | null
+          social_investment_annual?: number | null
+          social_project_types?: string[] | null
+          social_projects_notes?: string | null
+          status?: string | null
+          total_employees?: number | null
+          total_safety_incidents?: number | null
+          total_training_hours?: number | null
+          tracks_social_indicators?: boolean | null
+          training_coverage_rate?: number | null
+          training_hours_men?: number | null
+          training_hours_women?: number | null
+          training_investment_total?: number | null
+          training_notes?: string | null
+          training_types?: string[] | null
+          turnover_rate?: number | null
+          turnover_total?: number | null
+          updated_at?: string | null
+          wage_gap_gender?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_social_data_collection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_social_data_collection_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_strategy_data_collection: {
         Row: {
           ai_analysis: Json | null

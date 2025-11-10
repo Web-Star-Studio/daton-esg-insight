@@ -2,6 +2,7 @@ import { DocumentUploadZone } from './DocumentUploadZone';
 import { StrategyDataCollectionModule } from './StrategyDataCollectionModule';
 import { GovernanceDataCollectionModule } from './GovernanceDataCollectionModule';
 import EnvironmentalDataCollectionModule from './EnvironmentalDataCollectionModule';
+import { SocialDataCollectionModule } from './SocialDataCollectionModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -67,7 +68,7 @@ interface Etapa2Props {
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Documentos Gerais
@@ -83,6 +84,10 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
           <TabsTrigger value="environmental" className="flex items-center gap-2">
             <Leaf className="h-4 w-4" />
             Gestão Ambiental
+          </TabsTrigger>
+          <TabsTrigger value="social" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Desempenho Social
           </TabsTrigger>
         </TabsList>
 
@@ -152,6 +157,16 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
             reportId={reportId || ''}
             onComplete={() => {
               toast.success('Dados de gestão ambiental completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="social">
+          <SocialDataCollectionModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados sociais completos!');
               onNext();
             }}
           />
