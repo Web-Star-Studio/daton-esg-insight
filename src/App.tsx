@@ -353,6 +353,7 @@ const App = () => (
             <Route path="/analise-materialidade" element={<ProtectedLazyPageWrapper><AnaliseMaterialidade /></ProtectedLazyPageWrapper>} />
             <Route path="/materialidade" element={<ProtectedLazyPageWrapper><Materialidade /></ProtectedLazyPageWrapper>} />
             <Route path="/indicadores-esg" element={<ProtectedLazyPageWrapper><IndicadoresESG /></ProtectedLazyPageWrapper>} />
+            <Route path="/indicadores-recomendados" element={<ProtectedLazyPageWrapper><IndicadoresRecomendados /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores" element={<ProtectedLazyPageWrapper><Fornecedores /></ProtectedLazyPageWrapper>} />
             <Route path="/configuracao-organizacional" element={<ProtectedLazyPageWrapper><ConfiguracaoOrganizacional /></ProtectedLazyPageWrapper>} />
             <Route path="/social-esg" element={<ProtectedLazyPageWrapper><SocialESG /></ProtectedLazyPageWrapper>} />

@@ -154,8 +154,10 @@ export const calculateClimateEnergyIndicators = async (): Promise<ESGIndicator[]
       .lte('period_end', `${currentYear}-12-31`)
       .maybeSingle();
 
-    if (productionData?.production_units) {
-      const intensity = totalEnergyKwh / (productionData as any).production_units;
+    const productionUnits = productionData ? (productionData as any).production_units : null;
+
+    if (productionUnits) {
+      const intensity = totalEnergyKwh / productionUnits;
       indicators.push({
         code: 'CLIMA_002',
         name: 'Intensidade Energética',
@@ -566,9 +568,20 @@ export const getCachedIndicators = async (): Promise<CategoryIndicators[] | null
 export const saveIndicatorsToCache = async (indicators: CategoryIndicators[]): Promise<void> => {
   const companyId = await getCompanyId();
   
+  // Delete old cache entries for this company (keep only today's)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   await supabase
     .from('esg_indicator_cache' as any)
-    .upsert({
+    .delete()
+    .eq('company_id', companyId)
+    .lt('calculated_at', today.toISOString());
+  
+  // Insert new cache entry
+  await supabase
+    .from('esg_indicator_cache' as any)
+    .insert({
       company_id: companyId,
       calculated_at: new Date().toISOString(),
       indicators: indicators as any,

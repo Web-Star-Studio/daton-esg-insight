@@ -4298,6 +4298,47 @@ export type Database = {
         }
         Relationships: []
       }
+      esg_indicator_cache: {
+        Row: {
+          calculated_at: string
+          calculation_period_end: string | null
+          calculation_period_start: string | null
+          company_id: string
+          data_quality_score: number | null
+          id: string
+          indicators: Json
+          metadata: Json | null
+        }
+        Insert: {
+          calculated_at?: string
+          calculation_period_end?: string | null
+          calculation_period_start?: string | null
+          company_id: string
+          data_quality_score?: number | null
+          id?: string
+          indicators?: Json
+          metadata?: Json | null
+        }
+        Update: {
+          calculated_at?: string
+          calculation_period_end?: string | null
+          calculation_period_start?: string | null
+          company_id?: string
+          data_quality_score?: number | null
+          id?: string
+          indicators?: Json
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esg_indicator_cache_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       esg_insights_log: {
         Row: {
           action_items: Json | null
