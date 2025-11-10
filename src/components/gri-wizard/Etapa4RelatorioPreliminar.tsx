@@ -45,6 +45,24 @@ export function Etapa4RelatorioPreliminar({ reportId }: Etapa4Props) {
         }
       }
 
+      // Se for seção de governança, buscar texto pré-gerado
+      if (sectionKey === 'governance') {
+        const { data: govData } = await supabase
+          .from('gri_governance_data_collection')
+          .select('ai_generated_text, ai_analysis')
+          .eq('report_id', reportId)
+          .maybeSingle();
+
+        if (govData?.ai_generated_text) {
+          setSections(prev => ({ 
+            ...prev, 
+            [sectionKey]: govData.ai_generated_text 
+          }));
+          toast.success('Conteúdo de governança carregado!');
+          return;
+        }
+      }
+
       // Caso contrário, gerar normalmente
       const { data, error } = await supabase.functions.invoke('gri-report-ai-configurator', {
         body: {

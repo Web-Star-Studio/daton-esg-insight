@@ -48,6 +48,9 @@ serve(async (req) => {
       case 'analyze_strategy_data':
         return await handleAnalyzeStrategyData(supabaseClient, await req.json());
       
+      case 'analyze_governance_data':
+        return await handleAnalyzeGovernanceData(supabaseClient, await req.json());
+      
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -946,6 +949,126 @@ Gere um texto de 500-800 palavras integrando essas informações de forma coesa.
   const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
 
   console.log('[Analyze Strategy Data] Analysis complete. Confidence:', analysis.confidence_score);
+
+  return new Response(
+    JSON.stringify(analysis),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function handleAnalyzeGovernanceData(supabase: any, body: any) {
+  const { report_id, form_data, documents } = body;
+
+  console.log('[Analyze Governance Data] Starting analysis...');
+
+  const { data: report } = await supabase
+    .from('gri_reports')
+    .select('*, companies(*)')
+    .eq('id', report_id)
+    .single();
+
+  if (!report) throw new Error('Relatório não encontrado');
+
+  const documentContents = await Promise.all(
+    (documents || []).map(async (doc: any) => {
+      if (doc.extracted_text) {
+        return {
+          category: doc.category,
+          content: doc.extracted_text.substring(0, 5000)
+        };
+      }
+      return null;
+    })
+  ).then(results => results.filter(Boolean));
+
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY não configurada');
+
+  const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.5-pro',
+      messages: [
+        {
+          role: 'system',
+          content: `Você é um especialista em Governança Corporativa e relatórios GRI Standards.
+
+OBJETIVO: Analisar dados sobre Governança Corporativa e gerar texto descritivo profissional incluindo dados quantitativos.
+
+NORMAS GRI: 2-9 a 2-27 (Estrutura, composição, remuneração, políticas, compliance)
+ISO 37001: Sistema de Gestão Antissuborno
+OCDE: Diretrizes - Capítulo VII (Anticorrupção)
+
+EMPRESA: ${report.companies?.name || 'N/A'}
+SETOR: ${report.companies?.sector || 'N/A'}
+
+DIRETRIZES:
+1. Integre dados quantitativos naturalmente no texto
+2. Use números concretos (ex: "Conselho com 7 membros, 42% mulheres")
+3. Destaque boas práticas e compromissos formais
+4. Mencione certificações ISO 37001 e aderência OCDE
+5. Estruture: contexto → governança → compliance → transparência`
+        },
+        {
+          role: 'user',
+          content: `Analise e gere texto descritivo para "Governança Corporativa":
+
+**DADOS:**
+${JSON.stringify(form_data, null, 2)}
+
+**DOCUMENTOS:**
+${documentContents.map((doc: any) => `\n### ${doc?.category}\n${doc?.content}`).join('\n---\n')}
+
+Gere texto de 800-1200 palavras com números específicos.`
+        }
+      ],
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'analyze_governance_content',
+          description: 'Analisa governança e gera texto com números',
+          parameters: {
+            type: 'object',
+            properties: {
+              generated_text: { type: 'string', description: 'Texto 800-1200 palavras com dados quantitativos' },
+              confidence_score: { type: 'number', description: 'Score 0-100' },
+              key_points: { type: 'array', items: { type: 'string' } },
+              quantitative_highlights: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    indicator: { type: 'string' },
+                    value: { type: 'string' },
+                    context: { type: 'string' }
+                  }
+                }
+              },
+              suggestions: { type: 'array', items: { type: 'string' } },
+              gri_coverage: { type: 'array', items: { type: 'string' } }
+            },
+            required: ['generated_text', 'confidence_score', 'key_points', 'gri_coverage']
+          }
+        }
+      }],
+      tool_choice: { type: 'function', function: { name: 'analyze_governance_content' } }
+    })
+  });
+
+  if (!aiResponse.ok) {
+    const errorText = await aiResponse.text();
+    console.error('[Analyze Governance Data] Error:', errorText);
+    throw new Error(`Lovable AI error: ${aiResponse.status}`);
+  }
+
+  const result = await aiResponse.json();
+  const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+
+  console.log('[Analyze Governance Data] Complete. Confidence:', analysis.confidence_score);
 
   return new Response(
     JSON.stringify(analysis),

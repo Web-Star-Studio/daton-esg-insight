@@ -1,5 +1,6 @@
 import { DocumentUploadZone } from './DocumentUploadZone';
 import { StrategyDataCollectionModule } from './StrategyDataCollectionModule';
+import { GovernanceDataCollectionModule } from './GovernanceDataCollectionModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckSquare, FileText, Leaf, Users, DollarSign, Shield, Target } from 'lucide-react';
@@ -64,17 +65,21 @@ interface Etapa2Props {
 
 export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
   return (
-    <Tabs defaultValue="general" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="general" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Documentos Gerais
-        </TabsTrigger>
-        <TabsTrigger value="strategy" className="flex items-center gap-2">
-          <Target className="h-4 w-4" />
-          Visão e Estratégia
-        </TabsTrigger>
-      </TabsList>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="general" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Documentos Gerais
+          </TabsTrigger>
+          <TabsTrigger value="strategy" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Visão e Estratégia
+          </TabsTrigger>
+          <TabsTrigger value="governance" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Governança Corporativa
+          </TabsTrigger>
+        </TabsList>
 
       <TabsContent value="general" className="space-y-6">
         <div className="bg-muted/50 p-4 rounded-lg">
@@ -117,15 +122,25 @@ export function Etapa2ColetaDocumentos({ reportId, onNext }: Etapa2Props) {
         </div>
       </TabsContent>
 
-      <TabsContent value="strategy">
-        <StrategyDataCollectionModule
-          reportId={reportId || ''}
-          onComplete={() => {
-            toast.success('Dados de estratégia completos!');
-            onNext();
-          }}
-        />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="strategy">
+          <StrategyDataCollectionModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados de estratégia completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="governance">
+          <GovernanceDataCollectionModule
+            reportId={reportId || ''}
+            onComplete={() => {
+              toast.success('Dados de governança completos!');
+              onNext();
+            }}
+          />
+        </TabsContent>
+      </Tabs>
   );
 }

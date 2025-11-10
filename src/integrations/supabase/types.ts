@@ -5684,6 +5684,177 @@ export type Database = {
           },
         ]
       }
+      gri_governance_data_collection: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence_score: number | null
+          ai_generated_text: string | null
+          ai_last_analyzed_at: string | null
+          board_30_50_percentage: number | null
+          board_diversity_ethnicity: Json | null
+          board_diversity_vulnerable_groups: number | null
+          board_independent_members: number | null
+          board_over_50_percentage: number | null
+          board_total_members: number | null
+          board_under_30_percentage: number | null
+          board_women_percentage: number | null
+          bylaws_last_update_date: string | null
+          bylaws_notes: string | null
+          bylaws_publicly_accessible: boolean | null
+          code_applies_to: string[] | null
+          code_notes: string | null
+          code_of_conduct_approval_date: string | null
+          code_training_mandatory: boolean | null
+          company_id: string
+          completion_percentage: number | null
+          compliance_notes: string | null
+          compliance_policies_list: string[] | null
+          compliance_training_frequency: string | null
+          created_at: string | null
+          decision_flows_documented: boolean | null
+          documents_checklist: Json | null
+          ethics_training_employees_trained: number | null
+          ethics_training_hours_total: number | null
+          has_bylaws_updated: boolean | null
+          has_code_of_conduct: boolean | null
+          has_compliance_policies: boolean | null
+          has_formal_org_chart: boolean | null
+          has_transparency_practices: boolean | null
+          has_whistleblower_channel: boolean | null
+          highest_to_median_salary_ratio: number | null
+          id: string
+          org_chart_last_update_date: string | null
+          org_chart_notes: string | null
+          remuneration_linked_to_esg: boolean | null
+          remuneration_policy_approved: boolean | null
+          report_id: string
+          risk_assessment_frequency: string | null
+          risk_committee_exists: boolean | null
+          status: string | null
+          transparency_mechanisms: string[] | null
+          transparency_notes: string | null
+          updated_at: string | null
+          whistleblower_channel_url: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          board_30_50_percentage?: number | null
+          board_diversity_ethnicity?: Json | null
+          board_diversity_vulnerable_groups?: number | null
+          board_independent_members?: number | null
+          board_over_50_percentage?: number | null
+          board_total_members?: number | null
+          board_under_30_percentage?: number | null
+          board_women_percentage?: number | null
+          bylaws_last_update_date?: string | null
+          bylaws_notes?: string | null
+          bylaws_publicly_accessible?: boolean | null
+          code_applies_to?: string[] | null
+          code_notes?: string | null
+          code_of_conduct_approval_date?: string | null
+          code_training_mandatory?: boolean | null
+          company_id: string
+          completion_percentage?: number | null
+          compliance_notes?: string | null
+          compliance_policies_list?: string[] | null
+          compliance_training_frequency?: string | null
+          created_at?: string | null
+          decision_flows_documented?: boolean | null
+          documents_checklist?: Json | null
+          ethics_training_employees_trained?: number | null
+          ethics_training_hours_total?: number | null
+          has_bylaws_updated?: boolean | null
+          has_code_of_conduct?: boolean | null
+          has_compliance_policies?: boolean | null
+          has_formal_org_chart?: boolean | null
+          has_transparency_practices?: boolean | null
+          has_whistleblower_channel?: boolean | null
+          highest_to_median_salary_ratio?: number | null
+          id?: string
+          org_chart_last_update_date?: string | null
+          org_chart_notes?: string | null
+          remuneration_linked_to_esg?: boolean | null
+          remuneration_policy_approved?: boolean | null
+          report_id: string
+          risk_assessment_frequency?: string | null
+          risk_committee_exists?: boolean | null
+          status?: string | null
+          transparency_mechanisms?: string[] | null
+          transparency_notes?: string | null
+          updated_at?: string | null
+          whistleblower_channel_url?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence_score?: number | null
+          ai_generated_text?: string | null
+          ai_last_analyzed_at?: string | null
+          board_30_50_percentage?: number | null
+          board_diversity_ethnicity?: Json | null
+          board_diversity_vulnerable_groups?: number | null
+          board_independent_members?: number | null
+          board_over_50_percentage?: number | null
+          board_total_members?: number | null
+          board_under_30_percentage?: number | null
+          board_women_percentage?: number | null
+          bylaws_last_update_date?: string | null
+          bylaws_notes?: string | null
+          bylaws_publicly_accessible?: boolean | null
+          code_applies_to?: string[] | null
+          code_notes?: string | null
+          code_of_conduct_approval_date?: string | null
+          code_training_mandatory?: boolean | null
+          company_id?: string
+          completion_percentage?: number | null
+          compliance_notes?: string | null
+          compliance_policies_list?: string[] | null
+          compliance_training_frequency?: string | null
+          created_at?: string | null
+          decision_flows_documented?: boolean | null
+          documents_checklist?: Json | null
+          ethics_training_employees_trained?: number | null
+          ethics_training_hours_total?: number | null
+          has_bylaws_updated?: boolean | null
+          has_code_of_conduct?: boolean | null
+          has_compliance_policies?: boolean | null
+          has_formal_org_chart?: boolean | null
+          has_transparency_practices?: boolean | null
+          has_whistleblower_channel?: boolean | null
+          highest_to_median_salary_ratio?: number | null
+          id?: string
+          org_chart_last_update_date?: string | null
+          org_chart_notes?: string | null
+          remuneration_linked_to_esg?: boolean | null
+          remuneration_policy_approved?: boolean | null
+          report_id?: string
+          risk_assessment_frequency?: string | null
+          risk_committee_exists?: boolean | null
+          status?: string | null
+          transparency_mechanisms?: string[] | null
+          transparency_notes?: string | null
+          updated_at?: string | null
+          whistleblower_channel_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gri_governance_data_collection_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gri_governance_data_collection_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gri_indicator_benchmarks: {
         Row: {
           benchmark_range_max: number | null
