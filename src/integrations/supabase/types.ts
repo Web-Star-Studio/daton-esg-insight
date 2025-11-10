@@ -12689,6 +12689,81 @@ export type Database = {
           },
         ]
       }
+      report_generated_sections: {
+        Row: {
+          ai_generated: boolean | null
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          data_sources_used: string[] | null
+          editor_notes: string | null
+          generated_text: string | null
+          generated_visuals: Json | null
+          generation_timestamp: string | null
+          id: string
+          last_data_refresh: string | null
+          manually_edited: boolean | null
+          report_id: string
+          section_content: Json | null
+          template_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          data_sources_used?: string[] | null
+          editor_notes?: string | null
+          generated_text?: string | null
+          generated_visuals?: Json | null
+          generation_timestamp?: string | null
+          id?: string
+          last_data_refresh?: string | null
+          manually_edited?: boolean | null
+          report_id: string
+          section_content?: Json | null
+          template_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          data_sources_used?: string[] | null
+          editor_notes?: string | null
+          generated_text?: string | null
+          generated_visuals?: Json | null
+          generation_timestamp?: string | null
+          id?: string
+          last_data_refresh?: string | null
+          manually_edited?: boolean | null
+          report_id?: string
+          section_content?: Json | null
+          template_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_generated_sections_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "gri_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_generated_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_section_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_generation_jobs: {
         Row: {
           company_id: string
@@ -12753,6 +12828,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_section_templates: {
+        Row: {
+          ai_prompt_template: string | null
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          required_data_sources: string[] | null
+          section_order: number
+          subsections: Json | null
+          template_key: string
+          template_name: string
+          updated_at: string | null
+          visual_types: string[] | null
+        }
+        Insert: {
+          ai_prompt_template?: string | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          required_data_sources?: string[] | null
+          section_order: number
+          subsections?: Json | null
+          template_key: string
+          template_name: string
+          updated_at?: string | null
+          visual_types?: string[] | null
+        }
+        Update: {
+          ai_prompt_template?: string | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          required_data_sources?: string[] | null
+          section_order?: number
+          subsections?: Json | null
+          template_key?: string
+          template_name?: string
+          updated_at?: string | null
+          visual_types?: string[] | null
+        }
+        Relationships: []
       }
       report_visualizations: {
         Row: {
