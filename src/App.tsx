@@ -15,6 +15,7 @@ import { errorHandler } from "@/utils/errorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
 import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
+import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications";
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
@@ -157,24 +158,15 @@ const queryClient = new QueryClient({
 });
 
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CompanyProvider>
-          <TooltipProvider>
-            <SmartToastProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter 
-                future={{ 
-                  v7_startTransition: true, 
-                  v7_relativeSplatPath: true 
-                }}
-              >
-              <RouteValidator>
-                <GlobalKeyboardShortcuts />
-                <PageTransition>
+const AppContent = () => {
+  // Hook para notificações de processamento em tempo real
+  useDocumentProcessingNotifications();
+  
+  return (
+    <>
+      <RouteValidator>
+        <GlobalKeyboardShortcuts />
+        <PageTransition>
                   <Routes>
             {/* Landing Page - público */}
             <Route path="/" element={<LandingPage />} />
@@ -470,12 +462,32 @@ const App = () => (
                   </Routes>
                 </PageTransition>
               </RouteValidator>
-            </BrowserRouter>
-        </SmartToastProvider>
-      </TooltipProvider>
+    </>
+  );
+};
+
+const App = () => (
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CompanyProvider>
+          <TooltipProvider>
+            <SmartToastProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter 
+                future={{ 
+                  v7_startTransition: true, 
+                  v7_relativeSplatPath: true 
+                }}
+              >
+                <AppContent />
+              </BrowserRouter>
+            </SmartToastProvider>
+          </TooltipProvider>
         </CompanyProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 

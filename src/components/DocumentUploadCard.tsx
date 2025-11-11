@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, FileText, CheckCircle2, X, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { documentExtractionService } from "@/services/documentExtraction";
+import { uploadDocument } from "@/services/documents";
 
 interface DocumentUploadCardProps {
   onFileUploaded: (fileId: string) => void;
@@ -38,6 +38,13 @@ export const DocumentUploadCard = ({ onFileUploaded }: DocumentUploadCardProps) 
       return;
     }
     
+    // Aviso para arquivos Word
+    if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+      toast.warning('Para melhores resultados, converta o arquivo Word para PDF antes de enviar.', {
+        duration: 6000
+      });
+    }
+    
     if (file.size > 100 * 1024 * 1024) {
       toast.error('Arquivo muito grande. Máximo 100MB.');
       return;
@@ -47,12 +54,25 @@ export const DocumentUploadCard = ({ onFileUploaded }: DocumentUploadCardProps) 
     setUploadedFile(file);
 
     try {
-      const fileRecord = await documentExtractionService.uploadFile(file);
+      const uploadedDoc = await uploadDocument(file, {
+        skipAutoProcessing: true,
+        tags: ['upload-card']
+      });
       toast.success('Arquivo enviado com sucesso!');
-      onFileUploaded(fileRecord.id);
+      onFileUploaded(uploadedDoc.id);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erro no upload do arquivo');
+      const errorMsg = error instanceof Error ? error.message : 'Erro no upload do arquivo';
+      
+      // Tratamento específico de erros
+      if (errorMsg.includes('429')) {
+        toast.error('Limite de taxa atingido. Tente novamente em instantes.');
+      } else if (errorMsg.includes('402')) {
+        toast.error('Créditos de IA esgotados. Adicione créditos em Configurações.');
+      } else {
+        toast.error(errorMsg);
+      }
+      
       setUploadedFile(null);
     } finally {
       setIsUploading(false);

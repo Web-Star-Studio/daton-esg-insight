@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { documentExtractionService } from '@/services/documentExtraction';
+import { uploadDocument } from '@/services/documents';
 import { toast } from 'sonner';
 
 export interface ProcessingResult {
@@ -10,7 +10,7 @@ export interface ProcessingResult {
   entitiesExtracted?: number;
   autoInserted?: boolean;
   error?: string;
-  fileId?: string;
+  documentId?: string;
 }
 
 export interface ProcessingOptions {
@@ -42,25 +42,37 @@ export function useDocumentProcessing() {
         onProgress?.(i + 1, files.length, file.name);
         
         try {
-          // Upload file
-          const fileRecord = await documentExtractionService.uploadFile(file);
+          // Upload usando serviço unificado
+          const uploadedDoc = await uploadDocument(file, {
+            skipAutoProcessing: true,
+            tags: ['batch-processing']
+          });
           
-          // Process through intelligent pipeline
+          // Process through intelligent pipeline com document_id
           const { data: pipelineResult, error: pipelineError } = await supabase.functions.invoke(
             'intelligent-pipeline-orchestrator',
             {
               body: {
-                file_id: fileRecord.id,
-                file_path: fileRecord.storage_path,
+                document_id: uploadedDoc.id,
                 options: {
                   auto_insert: autoInsert,
-                  generate_insights: generateInsights
+                  generate_insights: generateInsights,
+                  auto_insert_threshold: 0.85
                 }
               }
             }
           );
 
-          if (pipelineError) throw pipelineError;
+          if (pipelineError) {
+            // Tratamento específico de erros
+            if (pipelineError.message?.includes('429')) {
+              throw new Error('Limite de taxa atingido. Aguarde alguns instantes.');
+            }
+            if (pipelineError.message?.includes('402')) {
+              throw new Error('Créditos de IA esgotados. Adicione créditos em Configurações.');
+            }
+            throw pipelineError;
+          }
 
           processingResults.push({
             fileName: file.name,
@@ -68,7 +80,7 @@ export function useDocumentProcessing() {
             documentType: pipelineResult?.classification?.document_type,
             entitiesExtracted: pipelineResult?.extraction?.entities_count,
             autoInserted: pipelineResult?.inserted_count > 0,
-            fileId: fileRecord.id
+            documentId: uploadedDoc.id
           });
 
           if (pipelineResult?.insights) {

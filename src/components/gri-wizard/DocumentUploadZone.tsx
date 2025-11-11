@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadDocument } from '@/services/documents';
 
 interface DocumentUploadZoneProps {
   reportId?: string;
@@ -34,26 +35,15 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
 
     for (const fileObj of newFiles) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Não autenticado');
+        // Upload com o serviço unificado
+        const uploadedDoc = await uploadDocument(fileObj.file, {
+          skipAutoProcessing: true,
+          related_model: 'gri_report',
+          related_id: reportId,
+          tags: ['gri-report']
+        });
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('id', user.id)
-          .single();
-
-        const fileExt = fileObj.file.name.split('.').pop();
-        const filePath = `${profile?.company_id}/${reportId}/${Date.now()}_${fileObj.file.name}`;
-
-        // Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from('gri-documents')
-          .upload(filePath, fileObj.file);
-
-        if (uploadError) throw uploadError;
-
-        // Read file content
+        // Read file content for AI processing
         const reader = new FileReader();
         reader.onload = async (e) => {
           const content = e.target?.result as string;
@@ -66,20 +56,29 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
                 action: 'upload_document',
                 report_id: reportId,
                 file_content: content.substring(0, 50000),
-                file_type: fileExt,
+                file_type: fileObj.file.name.split('.').pop(),
               },
             }
           );
 
-          if (functionError) throw functionError;
+          if (functionError) {
+            // Tratamento de erros
+            if (functionError.message?.includes('429')) {
+              throw new Error('Limite de taxa atingido. Aguarde alguns instantes.');
+            }
+            if (functionError.message?.includes('402')) {
+              throw new Error('Créditos de IA esgotados. Adicione créditos em Configurações.');
+            }
+            throw functionError;
+          }
 
           // Save document metadata
           await supabase.from('gri_document_uploads').insert({
             report_id: reportId,
-            company_id: profile?.company_id,
+            company_id: (await supabase.from('profiles').select('company_id').eq('id', (await supabase.auth.getUser()).data.user?.id).single()).data?.company_id,
             file_name: fileObj.file.name,
-            file_path: filePath,
-            file_type: fileExt || 'unknown',
+            file_path: uploadedDoc.file_path,
+            file_type: fileObj.file.name.split('.').pop() || 'unknown',
             file_size_kb: Math.round(fileObj.file.size / 1024),
             category: data.analysis.category,
             extracted_text: data.extracted_text,
@@ -87,7 +86,7 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
             suggested_indicators: data.analysis.suggested_indicators,
             confidence_score: data.analysis.confidence_score,
             processing_status: 'completed',
-            uploaded_by_user_id: user.id,
+            uploaded_by_user_id: (await supabase.auth.getUser()).data.user?.id,
             processed_at: new Date().toISOString(),
           });
 
