@@ -4191,8 +4191,11 @@ export type Database = {
           gender: string | null
           hire_date: string
           id: string
+          is_pcd: boolean | null
           location: string | null
           manager_id: string | null
+          pcd_cid: string | null
+          pcd_type: string | null
           phone: string | null
           position: string | null
           position_id: string | null
@@ -4214,8 +4217,11 @@ export type Database = {
           gender?: string | null
           hire_date: string
           id?: string
+          is_pcd?: boolean | null
           location?: string | null
           manager_id?: string | null
+          pcd_cid?: string | null
+          pcd_type?: string | null
           phone?: string | null
           position?: string | null
           position_id?: string | null
@@ -4237,8 +4243,11 @@ export type Database = {
           gender?: string | null
           hire_date?: string
           id?: string
+          is_pcd?: boolean | null
           location?: string | null
           manager_id?: string | null
+          pcd_cid?: string | null
+          pcd_type?: string | null
           phone?: string | null
           position?: string | null
           position_id?: string | null
@@ -7802,9 +7811,36 @@ export type Database = {
           days_lost: number | null
           discrimination_incidents_reported: number | null
           discrimination_incidents_resolved: number | null
+          diversity_avg_salary_men: number | null
+          diversity_avg_salary_women: number | null
+          diversity_bottom_5_departments: Json | null
+          diversity_by_hierarchy_level: Json | null
+          diversity_calculation_date: string | null
+          diversity_change_pcd_percentage: number | null
+          diversity_change_women_percentage: number | null
+          diversity_gender_gap_top_vs_base: number | null
+          diversity_gri_405_1_compliant: boolean | null
+          diversity_gri_missing_data: Json | null
           diversity_initiatives: string[] | null
+          diversity_leadership_gap: number | null
+          diversity_minorities_percentage: number | null
+          diversity_pay_gap_percentage: number | null
+          diversity_pcd_gap_top_vs_base: number | null
+          diversity_pcd_percentage: number | null
+          diversity_performance_classification: string | null
+          diversity_pipeline_funnel: Json | null
           diversity_policy_approval_date: string | null
           diversity_policy_notes: string | null
+          diversity_previous_pcd_percentage: number | null
+          diversity_previous_women_percentage: number | null
+          diversity_quota_law_compliant: boolean | null
+          diversity_quota_law_required_percentage: number | null
+          diversity_quota_missing_pcd_hires: number | null
+          diversity_top_5_departments: Json | null
+          diversity_total_minorities: number | null
+          diversity_total_pcd: number | null
+          diversity_total_women: number | null
+          diversity_women_percentage: number | null
           documents_checklist: Json | null
           employees_30_50: number | null
           employees_ethnic_minorities: number | null
@@ -7931,9 +7967,36 @@ export type Database = {
           days_lost?: number | null
           discrimination_incidents_reported?: number | null
           discrimination_incidents_resolved?: number | null
+          diversity_avg_salary_men?: number | null
+          diversity_avg_salary_women?: number | null
+          diversity_bottom_5_departments?: Json | null
+          diversity_by_hierarchy_level?: Json | null
+          diversity_calculation_date?: string | null
+          diversity_change_pcd_percentage?: number | null
+          diversity_change_women_percentage?: number | null
+          diversity_gender_gap_top_vs_base?: number | null
+          diversity_gri_405_1_compliant?: boolean | null
+          diversity_gri_missing_data?: Json | null
           diversity_initiatives?: string[] | null
+          diversity_leadership_gap?: number | null
+          diversity_minorities_percentage?: number | null
+          diversity_pay_gap_percentage?: number | null
+          diversity_pcd_gap_top_vs_base?: number | null
+          diversity_pcd_percentage?: number | null
+          diversity_performance_classification?: string | null
+          diversity_pipeline_funnel?: Json | null
           diversity_policy_approval_date?: string | null
           diversity_policy_notes?: string | null
+          diversity_previous_pcd_percentage?: number | null
+          diversity_previous_women_percentage?: number | null
+          diversity_quota_law_compliant?: boolean | null
+          diversity_quota_law_required_percentage?: number | null
+          diversity_quota_missing_pcd_hires?: number | null
+          diversity_top_5_departments?: Json | null
+          diversity_total_minorities?: number | null
+          diversity_total_pcd?: number | null
+          diversity_total_women?: number | null
+          diversity_women_percentage?: number | null
           documents_checklist?: Json | null
           employees_30_50?: number | null
           employees_ethnic_minorities?: number | null
@@ -8060,9 +8123,36 @@ export type Database = {
           days_lost?: number | null
           discrimination_incidents_reported?: number | null
           discrimination_incidents_resolved?: number | null
+          diversity_avg_salary_men?: number | null
+          diversity_avg_salary_women?: number | null
+          diversity_bottom_5_departments?: Json | null
+          diversity_by_hierarchy_level?: Json | null
+          diversity_calculation_date?: string | null
+          diversity_change_pcd_percentage?: number | null
+          diversity_change_women_percentage?: number | null
+          diversity_gender_gap_top_vs_base?: number | null
+          diversity_gri_405_1_compliant?: boolean | null
+          diversity_gri_missing_data?: Json | null
           diversity_initiatives?: string[] | null
+          diversity_leadership_gap?: number | null
+          diversity_minorities_percentage?: number | null
+          diversity_pay_gap_percentage?: number | null
+          diversity_pcd_gap_top_vs_base?: number | null
+          diversity_pcd_percentage?: number | null
+          diversity_performance_classification?: string | null
+          diversity_pipeline_funnel?: Json | null
           diversity_policy_approval_date?: string | null
           diversity_policy_notes?: string | null
+          diversity_previous_pcd_percentage?: number | null
+          diversity_previous_women_percentage?: number | null
+          diversity_quota_law_compliant?: boolean | null
+          diversity_quota_law_required_percentage?: number | null
+          diversity_quota_missing_pcd_hires?: number | null
+          diversity_top_5_departments?: Json | null
+          diversity_total_minorities?: number | null
+          diversity_total_pcd?: number | null
+          diversity_total_women?: number | null
+          diversity_women_percentage?: number | null
           documents_checklist?: Json | null
           employees_30_50?: number | null
           employees_ethnic_minorities?: number | null

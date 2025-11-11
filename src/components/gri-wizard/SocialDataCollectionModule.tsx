@@ -19,6 +19,8 @@ import { calculateLostTimeAccidentsMetrics, type LostTimeAccidentsResult } from 
 import { LostTimeAccidentsDashboard } from "@/components/safety/LostTimeAccidentsDashboard";
 import { calculateTrainingHoursMetrics, type TrainingHoursResult } from "@/services/trainingHoursAnalysis";
 import { TrainingHoursDashboard } from "@/components/training/TrainingHoursDashboard";
+import { calculateDiversityByLevelMetrics, type DiversityByLevelResult } from "@/services/diversityByLevelAnalysis";
+import { DiversityByLevelDashboard } from "@/components/diversity/DiversityByLevelDashboard";
 
 interface SocialDataCollectionModuleProps {
   reportId: string;
@@ -96,6 +98,7 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
   const [quantitativeData, setQuantitativeData] = useState<any>({});
   const [lostTimeAccidentsData, setLostTimeAccidentsData] = useState<LostTimeAccidentsResult | null>(null);
   const [trainingHoursData, setTrainingHoursData] = useState<TrainingHoursResult | null>(null);
+  const [diversityByLevelData, setDiversityByLevelData] = useState<DiversityByLevelResult | null>(null);
   const [companyId, setCompanyId] = useState<string>("");
   const [periodStart, setPeriodStart] = useState<string>("");
   const [periodEnd, setPeriodEnd] = useState<string>("");
@@ -229,6 +232,14 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
       );
       setTrainingHoursData(trainingHoursAnalysis);
 
+      // Calcular métricas de diversidade por nível hierárquico
+      const diversityData = await calculateDiversityByLevelMetrics(
+        compId,
+        start.toISOString().split('T')[0],
+        end.toISOString().split('T')[0]
+      );
+      setDiversityByLevelData(diversityData);
+
       await saveData({ ...formData, ...metrics });
       
       toast.success('Métricas calculadas!');
@@ -295,6 +306,37 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
           training_gri_404_1_compliant: trainingHoursData.gri_404_1_compliance.is_compliant,
           training_gri_missing_data: trainingHoursData.gri_404_1_compliance.missing_data,
           training_calculation_date: new Date().toISOString()
+        }),
+        
+        // Adicionar dados de diversidade por nível (GRI 405-1)
+        ...(diversityByLevelData && {
+          diversity_total_women: diversityByLevelData.total_women,
+          diversity_total_pcd: diversityByLevelData.total_pcd,
+          diversity_total_minorities: diversityByLevelData.total_minorities_ethnicity,
+          diversity_women_percentage: diversityByLevelData.women_percentage,
+          diversity_pcd_percentage: diversityByLevelData.pcd_percentage,
+          diversity_minorities_percentage: diversityByLevelData.minorities_percentage,
+          diversity_by_hierarchy_level: diversityByLevelData.by_hierarchy_level,
+          diversity_leadership_gap: diversityByLevelData.pipeline_analysis.leadership_diversity_gap,
+          diversity_gender_gap_top_vs_base: diversityByLevelData.pipeline_analysis.gender_gap_top_vs_base,
+          diversity_pcd_gap_top_vs_base: diversityByLevelData.pipeline_analysis.pcd_gap_top_vs_base,
+          diversity_pipeline_funnel: diversityByLevelData.pipeline_analysis.funnel,
+          diversity_avg_salary_women: diversityByLevelData.pay_equity_preview.avg_salary_women,
+          diversity_avg_salary_men: diversityByLevelData.pay_equity_preview.avg_salary_men,
+          diversity_pay_gap_percentage: diversityByLevelData.pay_equity_preview.pay_gap_percentage,
+          diversity_previous_women_percentage: diversityByLevelData.comparison.previous_women_percentage,
+          diversity_change_women_percentage: diversityByLevelData.comparison.change_women_percentage,
+          diversity_previous_pcd_percentage: diversityByLevelData.comparison.previous_pcd_percentage,
+          diversity_change_pcd_percentage: diversityByLevelData.comparison.change_pcd_percentage,
+          diversity_top_5_departments: diversityByLevelData.top_5_diverse_departments,
+          diversity_bottom_5_departments: diversityByLevelData.bottom_5_diverse_departments,
+          diversity_performance_classification: diversityByLevelData.performance_classification,
+          diversity_gri_405_1_compliant: diversityByLevelData.gri_405_1_compliance.is_compliant,
+          diversity_gri_missing_data: diversityByLevelData.gri_405_1_compliance.missing_data,
+          diversity_quota_law_required_percentage: diversityByLevelData.quota_law_compliance.required_pcd_percentage,
+          diversity_quota_law_compliant: diversityByLevelData.quota_law_compliance.is_compliant,
+          diversity_quota_missing_pcd_hires: diversityByLevelData.quota_law_compliance.missing_pcd_hires,
+          diversity_calculation_date: new Date().toISOString()
         }),
         
         updated_at: new Date().toISOString(),
@@ -532,6 +574,14 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
       {trainingHoursData && (
         <TrainingHoursDashboard
           data={trainingHoursData}
+          year={new Date(periodEnd).getFullYear()}
+        />
+      )}
+
+      {/* Dashboard de Diversidade por Nível Hierárquico */}
+      {diversityByLevelData && (
+        <DiversityByLevelDashboard
+          data={diversityByLevelData}
           year={new Date(periodEnd).getFullYear()}
         />
       )}
