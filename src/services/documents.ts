@@ -217,7 +217,29 @@ export const uploadDocument = async (
     onProgress?: (progress: number) => void;
   }
 ): Promise<Document> => {
-  console.log('Uploading document:', file.name, options);
+  console.log('📤 Uploading document:', file.name, options);
+
+  // Validação de arquivo
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`Arquivo muito grande. Máximo: 20MB. Tamanho: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+  }
+
+  const ALLOWED_TYPES = [
+    'application/pdf',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error(`Tipo de arquivo não permitido: ${file.type}. Tipos aceitos: PDF, Excel, CSV, Imagens, Word`);
+  }
 
   // Get user info
   const { data: { user } } = await supabase.auth.getUser();
@@ -232,62 +254,82 @@ export const uploadDocument = async (
     .maybeSingle();
 
   if (profileError) {
+    console.error('Profile error:', profileError);
     throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
   }
   
-  if (!profile) {
-    throw new Error('User profile not found');
+  if (!profile?.company_id) {
+    throw new Error('User profile or company not found');
   }
 
-  // Upload file to Supabase Storage
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+  // Sanitize filename
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileExt = sanitizedName.split('.').pop() || 'bin';
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(7);
+  const fileName = `${timestamp}-${randomId}.${fileExt}`;
   const filePath = `documents/${fileName}`;
 
+  console.log('📁 Storage path:', filePath);
+
+  // Upload file to Supabase Storage
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from('documents')
-    .upload(filePath, file);
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type
+    });
 
   if (uploadError) {
-    console.error('Error uploading file:', uploadError);
-    throw new Error(`Failed to upload file: ${uploadError.message}`);
+    console.error('❌ Storage upload error:', uploadError);
+    throw new Error(`Falha no upload: ${uploadError.message}`);
   }
+
+  console.log('✅ File uploaded to storage:', uploadData.path);
 
   // Simulate progress callback
   if (options?.onProgress) {
     options.onProgress(100);
   }
 
-  // Create document record
+  // Create document record in database
+  const documentData = {
+    company_id: profile.company_id,
+    uploader_user_id: user.id,
+    file_name: file.name, // Original filename
+    file_path: uploadData.path, // Storage path
+    file_type: file.type,
+    file_size: file.size,
+    folder_id: options?.folder_id || null,
+    tags: options?.tags || null,
+    related_model: options?.related_model || 'document',
+    related_id: options?.related_id || crypto.randomUUID(),
+  };
+
+  console.log('💾 Creating document record:', documentData);
+
   const { data, error } = await supabase
     .from('documents')
-    .insert({
-      company_id: profile.company_id,
-      uploader_user_id: user.id,
-      file_name: file.name,
-      file_path: filePath,
-      file_type: file.type,
-      file_size: file.size,
-      folder_id: options?.folder_id || null,
-      tags: options?.tags || null,
-      related_model: options?.related_model || 'document',
-      related_id: options?.related_id || crypto.randomUUID(),
-    })
+    .insert(documentData)
     .select()
     .maybeSingle();
 
   if (error) {
-    console.error('Error creating document record:', error);
+    console.error('❌ Database insert error:', error);
     // Clean up uploaded file if record creation fails
-    await supabase.storage.from('documents').remove([filePath]);
-    throw new Error(`Failed to create document record: ${error.message}`);
+    console.log('🧹 Cleaning up storage file...');
+    await supabase.storage.from('documents').remove([uploadData.path]);
+    throw new Error(`Falha ao criar registro: ${error.message}`);
   }
   
   if (!data) {
-    await supabase.storage.from('documents').remove([filePath]);
+    console.error('❌ No data returned from insert');
+    await supabase.storage.from('documents').remove([uploadData.path]);
     throw new Error('Não foi possível criar o registro do documento');
   }
 
+  console.log('✅ Document uploaded successfully:', data.id);
   return data;
 };
 

@@ -44,10 +44,26 @@ export interface ExtractionStatus {
 
 class DocumentExtractionService {
   async uploadFile(file: File): Promise<FileRecord> {
+    console.log('📤 DocumentExtraction: Uploading file:', file.name);
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       throw new Error('User not authenticated');
     }
+
+    // Validação de arquivo
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`Arquivo muito grande. Máximo: 20MB`);
+    }
+
+    // Sanitize filename
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const timestamp = Date.now();
+    const randomId = crypto.randomUUID().substring(0, 8);
+    const storagePath = `${session.user.id}/${randomId}/${sanitizedName}`;
+
+    console.log('📁 Storage path:', storagePath);
 
     // Create file record first
     const { data: fileRecord, error: fileError } = await supabase
@@ -55,7 +71,7 @@ class DocumentExtractionService {
       .insert({
         user_id: session.user.id,
         original_name: file.name,
-        storage_path: `${session.user.id}/${crypto.randomUUID()}/${file.name}`,
+        storage_path: storagePath,
         mime: file.type,
         size_bytes: file.size,
         status: 'uploaded'
@@ -64,23 +80,29 @@ class DocumentExtractionService {
       .single();
 
     if (fileError || !fileRecord) {
+      console.error('❌ Failed to create file record:', fileError);
       throw new Error(`Failed to create file record: ${fileError?.message}`);
     }
+
+    console.log('💾 File record created:', fileRecord.id);
 
     // Upload file to storage
     const { error: uploadError } = await supabase.storage
       .from('uploads')
-      .upload(fileRecord.storage_path, file, {
+      .upload(storagePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
+        contentType: file.type
       });
 
     if (uploadError) {
+      console.error('❌ Storage upload error:', uploadError);
       // Clean up file record if upload fails
       await supabase.from('files').delete().eq('id', fileRecord.id);
       throw new Error(`Failed to upload file: ${uploadError.message}`);
     }
 
+    console.log('✅ File uploaded successfully to storage');
     return fileRecord as FileRecord;
   }
 
