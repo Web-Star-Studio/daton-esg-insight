@@ -1566,32 +1566,38 @@ export type Database = {
       calculated_emissions: {
         Row: {
           activity_data_id: string
+          biogenic_co2_kg: number | null
           biogenic_co2e: number | null
           calculation_date: string
           details_json: Json | null
           emission_factor_id: string
           fossil_co2e: number | null
           id: string
+          is_biogenic_source: boolean | null
           total_co2e: number
         }
         Insert: {
           activity_data_id: string
+          biogenic_co2_kg?: number | null
           biogenic_co2e?: number | null
           calculation_date?: string
           details_json?: Json | null
           emission_factor_id: string
           fossil_co2e?: number | null
           id?: string
+          is_biogenic_source?: boolean | null
           total_co2e: number
         }
         Update: {
           activity_data_id?: string
+          biogenic_co2_kg?: number | null
           biogenic_co2e?: number | null
           calculation_date?: string
           details_json?: Json | null
           emission_factor_id?: string
           fossil_co2e?: number | null
           id?: string
+          is_biogenic_source?: boolean | null
           total_co2e?: number
         }
         Relationships: [
@@ -3692,6 +3698,7 @@ export type Database = {
       emission_factors: {
         Row: {
           activity_unit: string
+          biogenic_co2_factor: number | null
           biogenic_fraction: number | null
           calorific_value: number | null
           calorific_value_unit: string | null
@@ -3706,6 +3713,7 @@ export type Database = {
           fuel_type: string | null
           id: string
           is_biofuel: boolean | null
+          is_biogenic: boolean | null
           n2o_factor: number | null
           name: string
           source: string
@@ -3715,6 +3723,7 @@ export type Database = {
         }
         Insert: {
           activity_unit: string
+          biogenic_co2_factor?: number | null
           biogenic_fraction?: number | null
           calorific_value?: number | null
           calorific_value_unit?: string | null
@@ -3729,6 +3738,7 @@ export type Database = {
           fuel_type?: string | null
           id?: string
           is_biofuel?: boolean | null
+          is_biogenic?: boolean | null
           n2o_factor?: number | null
           name: string
           source: string
@@ -3738,6 +3748,7 @@ export type Database = {
         }
         Update: {
           activity_unit?: string
+          biogenic_co2_factor?: number | null
           biogenic_fraction?: number | null
           calorific_value?: number | null
           calorific_value_unit?: string | null
@@ -3752,6 +3763,7 @@ export type Database = {
           fuel_type?: string | null
           id?: string
           is_biofuel?: boolean | null
+          is_biogenic?: boolean | null
           n2o_factor?: number | null
           name?: string
           source?: string
@@ -5444,6 +5456,161 @@ export type Database = {
         }
         Relationships: []
       }
+      ghg_inventory_summary: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          base_year: number | null
+          biogenic_emissions: number | null
+          calculation_method: string | null
+          company_id: string
+          completeness_percentage: number | null
+          created_at: string | null
+          data_quality_score: number | null
+          ghg_protocol_seal: string | null
+          id: string
+          inventory_year: number
+          is_third_party_verified: boolean | null
+          methodology: string | null
+          notes: string | null
+          reporting_period_end: string
+          reporting_period_start: string
+          scope_1_agriculture: number | null
+          scope_1_fugitive_emissions: number | null
+          scope_1_industrial_processes: number | null
+          scope_1_mobile_combustion: number | null
+          scope_1_stationary_combustion: number | null
+          scope_1_total: number | null
+          scope_2_cooling: number | null
+          scope_2_electricity_location: number | null
+          scope_2_electricity_market: number | null
+          scope_2_heat_steam: number | null
+          scope_2_total: number | null
+          scope_3_business_travel: number | null
+          scope_3_capital_goods: number | null
+          scope_3_downstream_transport: number | null
+          scope_3_employee_commuting: number | null
+          scope_3_end_of_life: number | null
+          scope_3_fuel_energy: number | null
+          scope_3_leased_assets: number | null
+          scope_3_other: number | null
+          scope_3_product_use: number | null
+          scope_3_purchased_goods: number | null
+          scope_3_total: number | null
+          scope_3_upstream_transport: number | null
+          scope_3_waste: number | null
+          status: string | null
+          total_emissions: number | null
+          updated_at: string | null
+          verification_body: string | null
+          verification_date: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          base_year?: number | null
+          biogenic_emissions?: number | null
+          calculation_method?: string | null
+          company_id: string
+          completeness_percentage?: number | null
+          created_at?: string | null
+          data_quality_score?: number | null
+          ghg_protocol_seal?: string | null
+          id?: string
+          inventory_year: number
+          is_third_party_verified?: boolean | null
+          methodology?: string | null
+          notes?: string | null
+          reporting_period_end: string
+          reporting_period_start: string
+          scope_1_agriculture?: number | null
+          scope_1_fugitive_emissions?: number | null
+          scope_1_industrial_processes?: number | null
+          scope_1_mobile_combustion?: number | null
+          scope_1_stationary_combustion?: number | null
+          scope_1_total?: number | null
+          scope_2_cooling?: number | null
+          scope_2_electricity_location?: number | null
+          scope_2_electricity_market?: number | null
+          scope_2_heat_steam?: number | null
+          scope_2_total?: number | null
+          scope_3_business_travel?: number | null
+          scope_3_capital_goods?: number | null
+          scope_3_downstream_transport?: number | null
+          scope_3_employee_commuting?: number | null
+          scope_3_end_of_life?: number | null
+          scope_3_fuel_energy?: number | null
+          scope_3_leased_assets?: number | null
+          scope_3_other?: number | null
+          scope_3_product_use?: number | null
+          scope_3_purchased_goods?: number | null
+          scope_3_total?: number | null
+          scope_3_upstream_transport?: number | null
+          scope_3_waste?: number | null
+          status?: string | null
+          total_emissions?: number | null
+          updated_at?: string | null
+          verification_body?: string | null
+          verification_date?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          base_year?: number | null
+          biogenic_emissions?: number | null
+          calculation_method?: string | null
+          company_id?: string
+          completeness_percentage?: number | null
+          created_at?: string | null
+          data_quality_score?: number | null
+          ghg_protocol_seal?: string | null
+          id?: string
+          inventory_year?: number
+          is_third_party_verified?: boolean | null
+          methodology?: string | null
+          notes?: string | null
+          reporting_period_end?: string
+          reporting_period_start?: string
+          scope_1_agriculture?: number | null
+          scope_1_fugitive_emissions?: number | null
+          scope_1_industrial_processes?: number | null
+          scope_1_mobile_combustion?: number | null
+          scope_1_stationary_combustion?: number | null
+          scope_1_total?: number | null
+          scope_2_cooling?: number | null
+          scope_2_electricity_location?: number | null
+          scope_2_electricity_market?: number | null
+          scope_2_heat_steam?: number | null
+          scope_2_total?: number | null
+          scope_3_business_travel?: number | null
+          scope_3_capital_goods?: number | null
+          scope_3_downstream_transport?: number | null
+          scope_3_employee_commuting?: number | null
+          scope_3_end_of_life?: number | null
+          scope_3_fuel_energy?: number | null
+          scope_3_leased_assets?: number | null
+          scope_3_other?: number | null
+          scope_3_product_use?: number | null
+          scope_3_purchased_goods?: number | null
+          scope_3_total?: number | null
+          scope_3_upstream_transport?: number | null
+          scope_3_waste?: number | null
+          status?: string | null
+          total_emissions?: number | null
+          updated_at?: string | null
+          verification_body?: string | null
+          verification_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ghg_inventory_summary_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ghg_reports: {
         Row: {
           biogenic_co2: number
@@ -6325,10 +6492,18 @@ export type Database = {
           energy_monitoring_systems: string[] | null
           energy_renewable_percentage: number | null
           energy_total_consumption_kwh: number | null
+          ghg_base_year: number | null
+          ghg_biogenic_emissions: number | null
           ghg_inventory_last_update: string | null
           ghg_inventory_methodology: string | null
           ghg_inventory_notes: string | null
           ghg_inventory_year: number | null
+          ghg_methodology: string | null
+          ghg_protocol_seal: string | null
+          ghg_scope_1_total: number | null
+          ghg_scope_2_total: number | null
+          ghg_scope_3_total: number | null
+          ghg_total_emissions: number | null
           has_effluent_treatment: boolean | null
           has_energy_controls: boolean | null
           has_environmental_licenses: boolean | null
@@ -6389,10 +6564,18 @@ export type Database = {
           energy_monitoring_systems?: string[] | null
           energy_renewable_percentage?: number | null
           energy_total_consumption_kwh?: number | null
+          ghg_base_year?: number | null
+          ghg_biogenic_emissions?: number | null
           ghg_inventory_last_update?: string | null
           ghg_inventory_methodology?: string | null
           ghg_inventory_notes?: string | null
           ghg_inventory_year?: number | null
+          ghg_methodology?: string | null
+          ghg_protocol_seal?: string | null
+          ghg_scope_1_total?: number | null
+          ghg_scope_2_total?: number | null
+          ghg_scope_3_total?: number | null
+          ghg_total_emissions?: number | null
           has_effluent_treatment?: boolean | null
           has_energy_controls?: boolean | null
           has_environmental_licenses?: boolean | null
@@ -6453,10 +6636,18 @@ export type Database = {
           energy_monitoring_systems?: string[] | null
           energy_renewable_percentage?: number | null
           energy_total_consumption_kwh?: number | null
+          ghg_base_year?: number | null
+          ghg_biogenic_emissions?: number | null
           ghg_inventory_last_update?: string | null
           ghg_inventory_methodology?: string | null
           ghg_inventory_notes?: string | null
           ghg_inventory_year?: number | null
+          ghg_methodology?: string | null
+          ghg_protocol_seal?: string | null
+          ghg_scope_1_total?: number | null
+          ghg_scope_2_total?: number | null
+          ghg_scope_3_total?: number | null
+          ghg_total_emissions?: number | null
           has_effluent_treatment?: boolean | null
           has_energy_controls?: boolean | null
           has_environmental_licenses?: boolean | null

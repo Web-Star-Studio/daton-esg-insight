@@ -20,6 +20,13 @@ import { OperationalMetricsForm } from "@/components/operational/OperationalMetr
 import { EnergyIntensityDashboard } from "@/components/reports/EnergyIntensityDashboard";
 import { calculateEnergyIntensity, type EnergyIntensityResult } from "@/services/operationalMetrics";
 import { EnergyConsumptionBreakdown } from "@/components/reports/EnergyConsumptionBreakdown";
+import { 
+  calculateTotalGHGEmissions, 
+  generateInventorySummary,
+  type EmissionsByScope,
+  type GHGInventorySummary 
+} from "@/services/ghgInventory";
+import { GHGTotalEmissionsDashboard } from "@/components/reports/GHGTotalEmissionsDashboard";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -85,11 +92,15 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
   const [intensityData, setIntensityData] = useState<EnergyIntensityResult | null>(null);
   const [energyBreakdown, setEnergyBreakdown] = useState<any>(null);
+  const [ghgEmissions, setGhgEmissions] = useState<EmissionsByScope | null>(null);
+  const [previousYearEmissions, setPreviousYearEmissions] = useState<EmissionsByScope | null>(null);
+  const [inventorySummary, setInventorySummary] = useState<GHGInventorySummary | null>(null);
 
   useEffect(() => {
     loadExistingData();
     loadQuantitativeData();
     loadCompanyInfo();
+    loadGHGEmissions();
   }, [reportId]);
 
   const loadCompanyInfo = async () => {
@@ -130,6 +141,22 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       setIntensityData(data);
     } catch (error) {
       console.error('Error loading intensity:', error);
+    }
+  };
+
+  const loadGHGEmissions = async () => {
+    try {
+      const currentYearData = await calculateTotalGHGEmissions(reportYear);
+      setGhgEmissions(currentYearData);
+      
+      try {
+        const previousData = await calculateTotalGHGEmissions(reportYear - 1);
+        setPreviousYearEmissions(previousData);
+      } catch (error) {
+        console.log('Dados do ano anterior não disponíveis');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar emissões GEE:', error);
     }
   };
 
@@ -259,7 +286,6 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         const intensity = await calculateEnergyIntensity(reportYear);
         setIntensityData(intensity);
         
-        // Atualizar campos de intensidade no banco
         if (intensity.intensity_per_production) {
           toast.success('Intensidade energética calculada!', {
             description: `${intensity.intensity_per_production.toFixed(4)} kWh/${intensity.production_unit}`
@@ -267,7 +293,21 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         }
       } catch (intensityError) {
         console.error('Error calculating intensity:', intensityError);
-        // Continuar mesmo se o cálculo de intensidade falhar
+      }
+
+      // Calcular emissões GEE totais
+      let ghgSummary;
+      try {
+        ghgSummary = await generateInventorySummary(reportYear);
+        setInventorySummary(ghgSummary);
+        
+        await loadGHGEmissions();
+        
+        toast.success('Inventário GEE calculado!', {
+          description: `Total: ${ghgSummary.total_emissions.toLocaleString('pt-BR')} tCO₂e`
+        });
+      } catch (ghgError) {
+        console.error('Error calculating GHG emissions:', ghgError);
       }
 
       const dataToSave = {
@@ -290,6 +330,16 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           energy_intensity_kwh_per_m2: intensityData.intensity_per_m2,
           production_volume_reference: intensityData.production_volume,
           production_unit_reference: intensityData.production_unit
+        }),
+        ...(ghgSummary && {
+          ghg_scope_1_total: ghgSummary.scope_1_total,
+          ghg_scope_2_total: ghgSummary.scope_2_total,
+          ghg_scope_3_total: ghgSummary.scope_3_total,
+          ghg_total_emissions: ghgSummary.total_emissions,
+          ghg_biogenic_emissions: ghgSummary.biogenic_emissions,
+          ghg_inventory_year: ghgSummary.inventory_year,
+          ghg_methodology: ghgSummary.methodology,
+          ghg_protocol_seal: ghgSummary.ghg_protocol_seal
         }),
         updated_at: new Date().toISOString()
       };
@@ -625,6 +675,16 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         <EnergyIntensityDashboard
           intensityData={intensityData}
           year={reportYear}
+        />
+      )}
+
+      {/* GHG Total Emissions Dashboard */}
+      {ghgEmissions && (
+        <GHGTotalEmissionsDashboard
+          emissionsData={ghgEmissions}
+          year={reportYear}
+          previousYearData={previousYearEmissions || undefined}
+          inventorySummary={inventorySummary || undefined}
         />
       )}
 
