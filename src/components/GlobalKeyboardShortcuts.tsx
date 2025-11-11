@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { GlobalSearch } from './GlobalSearch';
 
 /**
  * Global keyboard shortcuts for the application
- * Ctrl/Cmd + K: Global search (placeholder)
+ * Ctrl/Cmd + K: Global search
  * Ctrl/Cmd + D: Go to Documents
  * Ctrl/Cmd + E: Go to Extractions/Approvals
  * Ctrl/Cmd + I: Open AI Assistant (placeholder)
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
  */
 export function GlobalKeyboardShortcuts() {
   const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -21,7 +23,7 @@ export function GlobalKeyboardShortcuts() {
       switch(e.key.toLowerCase()) {
         case 'k': {
           e.preventDefault();
-          toast.info('Busca global', { description: 'Em desenvolvimento' });
+          setSearchOpen(true);
           break;
         }
         
@@ -94,5 +96,5 @@ export function GlobalKeyboardShortcuts() {
     });
   };
 
-  return null; // This component doesn't render anything
+  return <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />;
 }
