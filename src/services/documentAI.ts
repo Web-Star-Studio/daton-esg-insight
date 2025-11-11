@@ -12,11 +12,15 @@ export interface ExtractionJob {
   id: string;
   company_id: string;
   document_id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'Concluído' | 'Erro';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'Concluído' | 'Erro' | 'Aguardando Retry' | 'Falha Permanente';
   processing_type?: string;
   confidence_score?: number;
   result_data?: any;
   error_message?: string;
+  retry_count?: number;
+  max_retries?: number;
+  last_retry_at?: string;
+  next_retry_at?: string;
   created_at: string;
   updated_at: string;
   document?: {

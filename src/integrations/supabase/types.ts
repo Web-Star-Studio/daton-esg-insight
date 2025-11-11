@@ -3293,9 +3293,13 @@ export type Database = {
           document_id: string
           error_message: string | null
           id: string
+          last_retry_at: string | null
+          max_retries: number | null
+          next_retry_at: string | null
           processing_end_time: string | null
           processing_start_time: string | null
           processing_type: string
+          retry_count: number | null
           started_at: string | null
           status: string
           updated_at: string
@@ -3309,9 +3313,13 @@ export type Database = {
           document_id: string
           error_message?: string | null
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           processing_end_time?: string | null
           processing_start_time?: string | null
           processing_type: string
+          retry_count?: number | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -3325,9 +3333,13 @@ export type Database = {
           document_id?: string
           error_message?: string | null
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           processing_end_time?: string | null
           processing_start_time?: string | null
           processing_type?: string
+          retry_count?: number | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -17057,6 +17069,10 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["license_status_enum"]
       }
+      calculate_retry_backoff: {
+        Args: { retry_count: number }
+        Returns: unknown
+      }
       calculate_risk_level: {
         Args: { p_impact: string; p_probability: string }
         Returns: string
@@ -17159,6 +17175,15 @@ export type Database = {
         Args: { policy_name: string; table_name: string }
         Returns: boolean
       }
+      process_pending_retries: {
+        Args: never
+        Returns: {
+          document_id: string
+          job_id: string
+          retry_attempt: number
+        }[]
+      }
+      queue_job_for_retry: { Args: { job_id: string }; Returns: boolean }
       search_across_tables: {
         Args: {
           result_limit?: number

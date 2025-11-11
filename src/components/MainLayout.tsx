@@ -11,6 +11,7 @@ import { ProfessionalModalProvider } from "@/components/ui/professional-modal-ma
 import { ChatAssistant } from "@/components/tools/ChatAssistant"
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs"
 import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications"
+import { useAutoRetryProcessor } from "@/hooks/useAutoRetryProcessor"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -21,6 +22,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   
   // Ativar notificações de processamento de documentos em tempo real
   useDocumentProcessingNotifications();
+  
+  // Ativar processamento automático de retries para jobs que falharam
+  useAutoRetryProcessor();
   
   // Force check if onboarding should be shown on mount
   useEffect(() => {
