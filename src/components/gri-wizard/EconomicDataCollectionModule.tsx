@@ -26,6 +26,8 @@ import {
   Coins,
   PieChart
 } from "lucide-react";
+import { calculateSustainableInvestments, type SustainableInvestmentResult } from "@/services/sustainableInvestmentAnalysis";
+import { SustainableInvestmentDashboard } from "@/components/economic/SustainableInvestmentDashboard";
 
 interface EconomicDataCollectionModuleProps {
   reportId: string;
@@ -112,6 +114,9 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
   const [periodEnd, setPeriodEnd] = useState('');
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [companyId, setCompanyId] = useState('');
+  const [companySector, setCompanySector] = useState('');
+  const [sustainableInvestmentData, setSustainableInvestmentData] = useState<SustainableInvestmentResult | null>(null);
+  const [calculatingSustainableInvestment, setCalculatingSustainableInvestment] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -133,6 +138,17 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
 
       if (!profile?.company_id) throw new Error('Company not found');
       setCompanyId(profile.company_id);
+
+      // Get company sector
+      const { data: company } = await supabase
+        .from('companies')
+        .select('sector')
+        .eq('id', profile.company_id)
+        .single();
+      
+      if (company?.sector) {
+        setCompanySector(company.sector);
+      }
 
       // Load existing economic data
       const { data: economicData } = await supabase
@@ -241,6 +257,55 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
     });
   };
 
+  const calculateSustainableInvestmentMetrics = async () => {
+    try {
+      setCalculatingSustainableInvestment(true);
+      
+      const { data: report } = await supabase
+        .from('gri_reports')
+        .select('reporting_period_start, reporting_period_end')
+        .eq('id', reportId)
+        .single();
+
+      if (!report) {
+        toast({
+          title: "Erro",
+          description: "Relatório não encontrado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const investmentData = await calculateSustainableInvestments(
+        companyId,
+        report.reporting_period_start,
+        report.reporting_period_end
+      );
+
+      setSustainableInvestmentData(investmentData);
+      
+      // Atualizar campo no quantitativeData
+      setQuantitativeData((prev: any) => ({
+        ...prev,
+        sustainability_investment_annual: investmentData.total_sustainable_investment
+      }));
+
+      toast({
+        title: "Investimentos Sustentáveis Calculados",
+        description: `Total: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(investmentData.total_sustainable_investment)}`
+      });
+    } catch (error) {
+      console.error('Error calculating sustainable investments:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao calcular investimentos sustentáveis",
+        variant: "destructive"
+      });
+    } finally {
+      setCalculatingSustainableInvestment(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -253,6 +318,35 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
         reporting_period_start: periodStart,
         reporting_period_end: periodEnd,
         completion_percentage: completionPercentage,
+        
+        // Add sustainable investment data if available
+        ...(sustainableInvestmentData && {
+          total_sustainable_investment: sustainableInvestmentData.total_sustainable_investment,
+          capex_sustainable: sustainableInvestmentData.capex_sustainable,
+          opex_sustainable: sustainableInvestmentData.opex_sustainable,
+          capex_percentage: sustainableInvestmentData.capex_percentage,
+          opex_percentage: sustainableInvestmentData.opex_percentage,
+          environmental_investment: sustainableInvestmentData.environmental_investment,
+          social_investment_calculated: sustainableInvestmentData.social_investment,
+          governance_investment: sustainableInvestmentData.governance_investment,
+          investment_by_project_type: sustainableInvestmentData.by_project_type,
+          sustainable_projects_count: sustainableInvestmentData.total_projects_count,
+          active_sustainable_projects: sustainableInvestmentData.active_projects_count,
+          completed_sustainable_projects: sustainableInvestmentData.completed_projects_count,
+          sustainability_investment_percentage_revenue: sustainableInvestmentData.investment_percentage_revenue,
+          previous_period_sustainable_investment: sustainableInvestmentData.previous_period_investment,
+          investment_growth_percentage: sustainableInvestmentData.investment_growth_percentage,
+          estimated_roi_percentage: sustainableInvestmentData.estimated_roi_percentage,
+          environmental_benefits: sustainableInvestmentData.environmental_benefits,
+          social_benefits: sustainableInvestmentData.social_benefits,
+          sector_avg_investment_percentage: sustainableInvestmentData.sector_average_investment_percentage,
+          is_above_sector_average: sustainableInvestmentData.is_above_sector_average,
+          gri_201_1_compliant: sustainableInvestmentData.gri_201_1_compliant,
+          gri_203_1_compliant: sustainableInvestmentData.gri_203_1_compliant,
+          sustainable_investment_missing_data: sustainableInvestmentData.missing_data,
+          sustainable_investment_calculation_date: sustainableInvestmentData.calculation_date,
+        }),
+        
         updated_at: new Date().toISOString(),
       };
 
@@ -478,6 +572,102 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* GRI 201-1, 203-1: Investimentos em Projetos Sustentáveis */}
+      <Card className="border-l-4 border-l-green-500">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-green-600" />
+                GRI 201-1, 203-1: Investimentos em Projetos Sustentáveis
+              </CardTitle>
+              <CardDescription>
+                Agregação automática de CAPEX + OPEX em projetos ESG
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={calculateSustainableInvestmentMetrics} 
+              variant="outline" 
+              size="sm"
+              disabled={calculatingSustainableInvestment}
+            >
+              {calculatingSustainableInvestment ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Calculando...
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Calcular Investimentos ESG
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Dashboard de Investimentos Sustentáveis */}
+          {sustainableInvestmentData && (
+            <SustainableInvestmentDashboard
+              data={sustainableInvestmentData}
+              year={new Date().getFullYear()}
+              sector={companySector}
+            />
+          )}
+
+          {/* Campo editável manual */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Investimento Sustentável Anual (R$)</Label>
+                  <Input
+                    type="number"
+                    value={quantitativeData.sustainability_investment_annual || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      sustainability_investment_annual: parseFloat(e.target.value) 
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Campo calculado automaticamente ou pode ser inserido manualmente
+                  </p>
+                </div>
+                
+                <div>
+                  <Label>% da Receita</Label>
+                  <Input
+                    type="number"
+                    value={sustainableInvestmentData?.investment_percentage_revenue.toFixed(4) || ''}
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Calculado automaticamente
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {!sustainableInvestmentData && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Calcular Investimentos ESG</AlertTitle>
+              <AlertDescription>
+                Clique em "Calcular Investimentos ESG" para agregar automaticamente:
+                <ul className="list-disc ml-4 mt-2 text-xs">
+                  <li>Projetos Sociais (invested_amount)</li>
+                  <li>Projetos ESG (spent_budget)</li>
+                  <li>Projetos de Carbono (investimentos)</li>
+                  <li>Separação CAPEX vs OPEX</li>
+                  <li>Compliance GRI 201-1, 203-1</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 

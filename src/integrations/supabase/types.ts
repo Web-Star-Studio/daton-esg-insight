@@ -1739,7 +1739,9 @@ export type Database = {
           company_id: string | null
           created_at: string
           description: string | null
+          esg_category: string | null
           id: string
+          investment_type: string | null
           is_public: boolean
           location: string | null
           name: string
@@ -1752,7 +1754,9 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
+          esg_category?: string | null
           id?: string
+          investment_type?: string | null
           is_public?: boolean
           location?: string | null
           name: string
@@ -1765,7 +1769,9 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
+          esg_category?: string | null
           id?: string
+          investment_type?: string | null
           is_public?: boolean
           location?: string | null
           name?: string
@@ -6381,81 +6387,153 @@ export type Database = {
       }
       gri_economic_data_collection: {
         Row: {
+          active_sustainable_projects: number | null
           ai_analysis: Json | null
           ai_confidence_score: number | null
           ai_generated_text: string | null
           balance_sheet_date: string | null
+          capex_percentage: number | null
+          capex_sustainable: number | null
           climate_related_risks_identified: number | null
           company_id: string
+          completed_sustainable_projects: number | null
           completion_percentage: number | null
           created_at: string | null
           ebitda: number | null
           ebitda_margin: number | null
           employee_wages_benefits: number | null
+          environmental_benefits: Json | null
+          environmental_investment: number | null
+          estimated_roi_percentage: number | null
+          governance_investment: number | null
+          gri_201_1_compliant: boolean | null
+          gri_203_1_compliant: boolean | null
           has_financial_statements: boolean | null
           id: string
+          investment_by_project_type: Json | null
+          investment_growth_percentage: number | null
+          is_above_sector_average: boolean | null
           local_procurement_percentage: number | null
           local_suppliers_count: number | null
           net_profit_margin: number | null
           operating_costs: number | null
+          opex_percentage: number | null
+          opex_sustainable: number | null
+          previous_period_sustainable_investment: number | null
           report_id: string
           reporting_period_end: string | null
           reporting_period_start: string | null
           revenue_per_employee: number | null
           revenue_total: number | null
+          sector_avg_investment_percentage: number | null
+          social_benefits: Json | null
+          social_investment_calculated: number | null
+          sustainability_investment_percentage_revenue: number | null
+          sustainable_investment_calculation_date: string | null
+          sustainable_investment_missing_data: Json | null
+          sustainable_projects_count: number | null
           total_suppliers_count: number | null
+          total_sustainable_investment: number | null
           updated_at: string | null
         }
         Insert: {
+          active_sustainable_projects?: number | null
           ai_analysis?: Json | null
           ai_confidence_score?: number | null
           ai_generated_text?: string | null
           balance_sheet_date?: string | null
+          capex_percentage?: number | null
+          capex_sustainable?: number | null
           climate_related_risks_identified?: number | null
           company_id: string
+          completed_sustainable_projects?: number | null
           completion_percentage?: number | null
           created_at?: string | null
           ebitda?: number | null
           ebitda_margin?: number | null
           employee_wages_benefits?: number | null
+          environmental_benefits?: Json | null
+          environmental_investment?: number | null
+          estimated_roi_percentage?: number | null
+          governance_investment?: number | null
+          gri_201_1_compliant?: boolean | null
+          gri_203_1_compliant?: boolean | null
           has_financial_statements?: boolean | null
           id?: string
+          investment_by_project_type?: Json | null
+          investment_growth_percentage?: number | null
+          is_above_sector_average?: boolean | null
           local_procurement_percentage?: number | null
           local_suppliers_count?: number | null
           net_profit_margin?: number | null
           operating_costs?: number | null
+          opex_percentage?: number | null
+          opex_sustainable?: number | null
+          previous_period_sustainable_investment?: number | null
           report_id: string
           reporting_period_end?: string | null
           reporting_period_start?: string | null
           revenue_per_employee?: number | null
           revenue_total?: number | null
+          sector_avg_investment_percentage?: number | null
+          social_benefits?: Json | null
+          social_investment_calculated?: number | null
+          sustainability_investment_percentage_revenue?: number | null
+          sustainable_investment_calculation_date?: string | null
+          sustainable_investment_missing_data?: Json | null
+          sustainable_projects_count?: number | null
           total_suppliers_count?: number | null
+          total_sustainable_investment?: number | null
           updated_at?: string | null
         }
         Update: {
+          active_sustainable_projects?: number | null
           ai_analysis?: Json | null
           ai_confidence_score?: number | null
           ai_generated_text?: string | null
           balance_sheet_date?: string | null
+          capex_percentage?: number | null
+          capex_sustainable?: number | null
           climate_related_risks_identified?: number | null
           company_id?: string
+          completed_sustainable_projects?: number | null
           completion_percentage?: number | null
           created_at?: string | null
           ebitda?: number | null
           ebitda_margin?: number | null
           employee_wages_benefits?: number | null
+          environmental_benefits?: Json | null
+          environmental_investment?: number | null
+          estimated_roi_percentage?: number | null
+          governance_investment?: number | null
+          gri_201_1_compliant?: boolean | null
+          gri_203_1_compliant?: boolean | null
           has_financial_statements?: boolean | null
           id?: string
+          investment_by_project_type?: Json | null
+          investment_growth_percentage?: number | null
+          is_above_sector_average?: boolean | null
           local_procurement_percentage?: number | null
           local_suppliers_count?: number | null
           net_profit_margin?: number | null
           operating_costs?: number | null
+          opex_percentage?: number | null
+          opex_sustainable?: number | null
+          previous_period_sustainable_investment?: number | null
           report_id?: string
           reporting_period_end?: string | null
           reporting_period_start?: string | null
           revenue_per_employee?: number | null
           revenue_total?: number | null
+          sector_avg_investment_percentage?: number | null
+          social_benefits?: Json | null
+          social_investment_calculated?: number | null
+          sustainability_investment_percentage_revenue?: number | null
+          sustainable_investment_calculation_date?: string | null
+          sustainable_investment_missing_data?: Json | null
+          sustainable_projects_count?: number | null
           total_suppliers_count?: number | null
+          total_sustainable_investment?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -13139,7 +13217,10 @@ export type Database = {
           created_by_user_id: string
           description: string | null
           end_date: string | null
+          esg_category: string | null
           id: string
+          investment_type: string | null
+          is_esg_project: boolean | null
           manager_user_id: string | null
           methodology: string | null
           name: string
@@ -13163,7 +13244,10 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           end_date?: string | null
+          esg_category?: string | null
           id?: string
+          investment_type?: string | null
+          is_esg_project?: boolean | null
           manager_user_id?: string | null
           methodology?: string | null
           name: string
@@ -13187,7 +13271,10 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           end_date?: string | null
+          esg_category?: string | null
           id?: string
+          investment_type?: string | null
+          is_esg_project?: boolean | null
           manager_user_id?: string | null
           methodology?: string | null
           name?: string
@@ -14488,9 +14575,11 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
+          esg_category: string | null
           id: string
           impact_metrics: Json | null
           invested_amount: number | null
+          investment_type: string | null
           location: string | null
           name: string
           objective: string | null
@@ -14506,9 +14595,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          esg_category?: string | null
           id?: string
           impact_metrics?: Json | null
           invested_amount?: number | null
+          investment_type?: string | null
           location?: string | null
           name: string
           objective?: string | null
@@ -14524,9 +14615,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          esg_category?: string | null
           id?: string
           impact_metrics?: Json | null
           invested_amount?: number | null
+          investment_type?: string | null
           location?: string | null
           name?: string
           objective?: string | null
