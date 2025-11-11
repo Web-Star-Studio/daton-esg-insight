@@ -116,6 +116,7 @@ const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 const SDGDashboard = lazy(() => import("./pages/SDGDashboard"));
 
 // Lazy loading para Monitoramento ESG (FASE 1)
+const MonitoramentoESG = lazy(() => import("./pages/MonitoramentoESG"));
 const MonitoramentoAgua = lazy(() => import("./pages/MonitoramentoAgua"));
 const MonitoramentoEnergia = lazy(() => import("./pages/MonitoramentoEnergia"));
 const MonitoramentoEmissoes = lazy(() => import("./pages/MonitoramentoEmissoes"));
@@ -288,7 +289,12 @@ const App = () => (
               </ProtectedLazyPageWrapper>
             } />
             
-            {/* Monitoramento ESG - FASE 1 */}
+            {/* Monitoramento ESG - FASE 1 & 2 */}
+            <Route path="/monitoramento-esg" element={
+              <ProtectedLazyPageWrapper>
+                <MonitoramentoESG />
+              </ProtectedLazyPageWrapper>
+            } />
             <Route path="/monitoramento-agua" element={
               <ProtectedLazyPageWrapper>
                 <MonitoramentoAgua />
