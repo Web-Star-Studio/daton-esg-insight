@@ -34,9 +34,11 @@ import { WaterIntensityDashboard } from "@/components/water/WaterIntensityDashbo
 import { WaterReusePercentageDashboard } from "@/components/water/WaterReusePercentageDashboard";
 import { calculateTotalWasteGeneration, calculateWasteIntensity, calculateRecyclingByMaterial, type WasteGenerationResult, type RecyclingByMaterialResult } from "@/services/wasteManagement";
 import { calculateWasteReusePercentage, type WasteReuseResult } from "@/services/wasteReuse";
+import { calculateWasteDisposalPercentage, type WasteDisposalResult } from "@/services/wasteDisposal";
 import { WasteTotalGenerationDashboard } from "@/components/waste/WasteTotalGenerationDashboard";
 import { WasteRecyclingDashboard } from "@/components/waste/WasteRecyclingDashboard";
 import { WasteReuseDashboard } from "@/components/waste/WasteReuseDashboard";
+import { WasteDisposalDashboard } from "@/components/waste/WasteDisposalDashboard";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -113,6 +115,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [wasteIntensityData, setWasteIntensityData] = useState<any>(null);
   const [recyclingData, setRecyclingData] = useState<RecyclingByMaterialResult | null>(null);
   const [wasteReuseData, setWasteReuseData] = useState<WasteReuseResult | null>(null);
+  const [wasteDisposalData, setWasteDisposalData] = useState<WasteDisposalResult | null>(null);
 
   useEffect(() => {
     loadExistingData();
@@ -241,9 +244,24 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       const reuse = await calculateWasteReusePercentage(reportYear);
       setWasteReuseData(reuse);
       
+      // Calcular disposal (aterro + incineração) - GRI 306-5
+      const disposal = await calculateWasteDisposalPercentage(reportYear);
+      setWasteDisposalData(disposal);
+      
+      // Toast com alerta se disposal alto
+      if (disposal.disposal_percentage > 40) {
+        toast.warning('Taxa de disposal alta!', {
+          description: `${disposal.disposal_percentage.toFixed(1)}% de resíduos para disposição final. Meta: <10%`
+        });
+      } else if (disposal.disposal_percentage <= 10) {
+        toast.success('Zero Waste alcançado! 🏆', {
+          description: `Apenas ${disposal.disposal_percentage.toFixed(1)}% de disposal`
+        });
+      }
+      
       if (wasteGeneration.total_generated_tonnes > 0) {
         toast.success('Dados de resíduos calculados!', {
-          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)}t geradas | ${reuse.reuse_percentage.toFixed(1)}% reuso | ${recycling.recycling_percentage.toFixed(1)}% reciclado`
+          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)}t geradas | ${reuse.reuse_percentage.toFixed(1)}% reuso | ${recycling.recycling_percentage.toFixed(1)}% reciclado | ${disposal.disposal_percentage.toFixed(1)}% disposal`
         });
       }
     } catch (error) {
@@ -521,6 +539,25 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           waste_reuse_by_category_construction_tonnes: wasteReuseData.reuse_by_category.construction_materials,
           waste_reuse_by_category_other_tonnes: wasteReuseData.reuse_by_category.other,
           waste_reuse_calculation_date: new Date().toISOString()
+        }),
+        // DISPOSAL (GRI 306-5 - Waste directed to disposal)
+        ...(wasteDisposalData && {
+          waste_disposal_percentage: wasteDisposalData.disposal_percentage,
+          waste_landfill_percentage: wasteDisposalData.landfill_percentage,
+          waste_incineration_percentage: wasteDisposalData.incineration_percentage,
+          waste_disposal_tonnes: wasteDisposalData.disposal_volume_tonnes,
+          waste_landfill_tonnes: wasteDisposalData.landfill_volume_tonnes,
+          waste_incineration_tonnes: wasteDisposalData.incineration_volume_tonnes,
+          waste_baseline_disposal_percentage: wasteDisposalData.baseline_disposal_percentage,
+          waste_disposal_improvement_percent: wasteDisposalData.improvement_percent,
+          waste_disposal_hazardous_tonnes: wasteDisposalData.disposal_breakdown.hazardous_disposal_tonnes,
+          waste_disposal_non_hazardous_tonnes: wasteDisposalData.disposal_breakdown.non_hazardous_disposal_tonnes,
+          waste_zero_waste_compliant: wasteDisposalData.zero_waste_compliance.is_compliant,
+          waste_zero_waste_gap_percent: wasteDisposalData.zero_waste_compliance.gap_to_target,
+          waste_disposal_co2_emissions_kg: wasteDisposalData.environmental_impact.total_disposal_emissions_kg,
+          waste_disposal_cost_estimate_brl: wasteDisposalData.disposal_cost_estimate.total_disposal_cost_brl,
+          waste_disposal_classification: wasteDisposalData.performance_classification,
+          waste_disposal_calculation_date: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       };
@@ -923,6 +960,19 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         <WasteReuseDashboard
           reuseData={wasteReuseData}
           year={reportYear}
+        />
+      )}
+
+      {/* Waste Disposal Dashboard (5º e 6º níveis - MINIMIZAR!) */}
+      {wasteDisposalData && (
+        <WasteDisposalDashboard
+          disposalData={wasteDisposalData}
+          year={reportYear}
+          sectorBenchmark={{
+            excellent: 15,
+            good: 30,
+            average: 45
+          }}
         />
       )}
 

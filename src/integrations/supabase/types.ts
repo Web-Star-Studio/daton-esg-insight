@@ -6523,6 +6523,7 @@ export type Database = {
           sector_average_recycling_rate: number | null
           status: string | null
           updated_at: string | null
+          waste_baseline_disposal_percentage: number | null
           waste_baseline_reuse_percentage: number | null
           waste_baseline_total_tonnes: number | null
           waste_by_treatment_composting_tonnes: number | null
@@ -6531,10 +6532,21 @@ export type Database = {
           waste_by_treatment_other_tonnes: number | null
           waste_by_treatment_recycling_tonnes: number | null
           waste_calculation_date: string | null
+          waste_disposal_calculation_date: string | null
+          waste_disposal_classification: string | null
+          waste_disposal_co2_emissions_kg: number | null
+          waste_disposal_cost_estimate_brl: number | null
+          waste_disposal_hazardous_tonnes: number | null
+          waste_disposal_improvement_percent: number | null
+          waste_disposal_non_hazardous_tonnes: number | null
+          waste_disposal_percentage: number | null
+          waste_disposal_tonnes: number | null
           waste_hazardous_tonnes: number | null
           waste_improvement_percent: number | null
           waste_incineration_percentage: number | null
+          waste_incineration_tonnes: number | null
           waste_landfill_percentage: number | null
+          waste_landfill_tonnes: number | null
           waste_management_plan_exists: boolean | null
           waste_non_hazardous_tonnes: number | null
           waste_notes: string | null
@@ -6551,6 +6563,8 @@ export type Database = {
           waste_reuse_tonnes: number | null
           waste_segregation_practices: string[] | null
           waste_total_generated_tonnes: number | null
+          waste_zero_waste_compliant: boolean | null
+          waste_zero_waste_gap_percent: number | null
           water_baseline_reuse_percentage: number | null
           water_calculation_date: string | null
           water_consumption_m3: number | null
@@ -6632,6 +6646,7 @@ export type Database = {
           sector_average_recycling_rate?: number | null
           status?: string | null
           updated_at?: string | null
+          waste_baseline_disposal_percentage?: number | null
           waste_baseline_reuse_percentage?: number | null
           waste_baseline_total_tonnes?: number | null
           waste_by_treatment_composting_tonnes?: number | null
@@ -6640,10 +6655,21 @@ export type Database = {
           waste_by_treatment_other_tonnes?: number | null
           waste_by_treatment_recycling_tonnes?: number | null
           waste_calculation_date?: string | null
+          waste_disposal_calculation_date?: string | null
+          waste_disposal_classification?: string | null
+          waste_disposal_co2_emissions_kg?: number | null
+          waste_disposal_cost_estimate_brl?: number | null
+          waste_disposal_hazardous_tonnes?: number | null
+          waste_disposal_improvement_percent?: number | null
+          waste_disposal_non_hazardous_tonnes?: number | null
+          waste_disposal_percentage?: number | null
+          waste_disposal_tonnes?: number | null
           waste_hazardous_tonnes?: number | null
           waste_improvement_percent?: number | null
           waste_incineration_percentage?: number | null
+          waste_incineration_tonnes?: number | null
           waste_landfill_percentage?: number | null
+          waste_landfill_tonnes?: number | null
           waste_management_plan_exists?: boolean | null
           waste_non_hazardous_tonnes?: number | null
           waste_notes?: string | null
@@ -6660,6 +6686,8 @@ export type Database = {
           waste_reuse_tonnes?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
+          waste_zero_waste_compliant?: boolean | null
+          waste_zero_waste_gap_percent?: number | null
           water_baseline_reuse_percentage?: number | null
           water_calculation_date?: string | null
           water_consumption_m3?: number | null
@@ -6741,6 +6769,7 @@ export type Database = {
           sector_average_recycling_rate?: number | null
           status?: string | null
           updated_at?: string | null
+          waste_baseline_disposal_percentage?: number | null
           waste_baseline_reuse_percentage?: number | null
           waste_baseline_total_tonnes?: number | null
           waste_by_treatment_composting_tonnes?: number | null
@@ -6749,10 +6778,21 @@ export type Database = {
           waste_by_treatment_other_tonnes?: number | null
           waste_by_treatment_recycling_tonnes?: number | null
           waste_calculation_date?: string | null
+          waste_disposal_calculation_date?: string | null
+          waste_disposal_classification?: string | null
+          waste_disposal_co2_emissions_kg?: number | null
+          waste_disposal_cost_estimate_brl?: number | null
+          waste_disposal_hazardous_tonnes?: number | null
+          waste_disposal_improvement_percent?: number | null
+          waste_disposal_non_hazardous_tonnes?: number | null
+          waste_disposal_percentage?: number | null
+          waste_disposal_tonnes?: number | null
           waste_hazardous_tonnes?: number | null
           waste_improvement_percent?: number | null
           waste_incineration_percentage?: number | null
+          waste_incineration_tonnes?: number | null
           waste_landfill_percentage?: number | null
+          waste_landfill_tonnes?: number | null
           waste_management_plan_exists?: boolean | null
           waste_non_hazardous_tonnes?: number | null
           waste_notes?: string | null
@@ -6769,6 +6809,8 @@ export type Database = {
           waste_reuse_tonnes?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
+          waste_zero_waste_compliant?: boolean | null
+          waste_zero_waste_gap_percent?: number | null
           water_baseline_reuse_percentage?: number | null
           water_calculation_date?: string | null
           water_consumption_m3?: number | null
