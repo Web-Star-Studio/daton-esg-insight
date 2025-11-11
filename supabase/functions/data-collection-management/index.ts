@@ -54,7 +54,7 @@ serve(async (req) => {
     const path = url.pathname
 
     if (req.method === 'GET' && path.includes('/tasks')) {
-      return await getTasks(supabaseClient, company_id, url.searchParams)
+      return await getTasks(supabaseClient, company_id, user.id, url.searchParams)
     } else if (req.method === 'POST' && path.includes('/tasks')) {
       const body = await req.json()
       return await createTask(supabaseClient, company_id, user.id, body)
@@ -79,7 +79,7 @@ serve(async (req) => {
   }
 })
 
-async function getTasks(supabase: any, company_id: string, searchParams: URLSearchParams) {
+async function getTasks(supabase: any, company_id: string, user_id: string, searchParams: URLSearchParams) {
   let query = supabase
     .from('data_collection_tasks')
     .select('*')
@@ -88,7 +88,7 @@ async function getTasks(supabase: any, company_id: string, searchParams: URLSear
 
   const assignee = searchParams.get('assignee')
   if (assignee === 'me') {
-    query = query.eq('assigned_to_user_id', company_id)
+    query = query.eq('assigned_to_user_id', user_id)
   } else if (assignee && assignee !== 'all') {
     query = query.eq('assigned_to_user_id', assignee)
   }
