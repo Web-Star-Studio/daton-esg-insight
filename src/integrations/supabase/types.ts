@@ -6912,6 +6912,39 @@ export type Database = {
           transparency_mechanisms: string[] | null
           transparency_notes: string | null
           updated_at: string | null
+          wb_anonymous_percentage: number | null
+          wb_anonymous_reports: number | null
+          wb_avg_resolution_time_days: number | null
+          wb_by_category: Json | null
+          wb_by_priority: Json | null
+          wb_by_status: Json | null
+          wb_calculation_date: string | null
+          wb_change_percentage: number | null
+          wb_channel_utilization_rate: number | null
+          wb_closed_reports: number | null
+          wb_compliance_missing_data: Json | null
+          wb_gri_2_26_compliant: boolean | null
+          wb_iso_37001_compliant: boolean | null
+          wb_median_resolution_time_days: number | null
+          wb_monthly_trend: Json | null
+          wb_open_reports: number | null
+          wb_performance_classification: string | null
+          wb_previous_period_total: number | null
+          wb_previous_resolution_rate: number | null
+          wb_reports_30_90_days: number | null
+          wb_reports_over_90_days: number | null
+          wb_reports_overdue: number | null
+          wb_reports_under_30_days: number | null
+          wb_resolution_rate: number | null
+          wb_resolution_rate_change: number | null
+          wb_sector_benchmark_reports_per_100: number | null
+          wb_sector_benchmark_resolution_days: number | null
+          wb_sector_benchmark_resolution_rate: number | null
+          wb_systemic_issues: Json | null
+          wb_systemic_issues_count: number | null
+          wb_top_5_categories: Json | null
+          wb_total_reports: number | null
+          wb_total_reports_current_year: number | null
           whistleblower_channel_url: string | null
         }
         Insert: {
@@ -6963,6 +6996,39 @@ export type Database = {
           transparency_mechanisms?: string[] | null
           transparency_notes?: string | null
           updated_at?: string | null
+          wb_anonymous_percentage?: number | null
+          wb_anonymous_reports?: number | null
+          wb_avg_resolution_time_days?: number | null
+          wb_by_category?: Json | null
+          wb_by_priority?: Json | null
+          wb_by_status?: Json | null
+          wb_calculation_date?: string | null
+          wb_change_percentage?: number | null
+          wb_channel_utilization_rate?: number | null
+          wb_closed_reports?: number | null
+          wb_compliance_missing_data?: Json | null
+          wb_gri_2_26_compliant?: boolean | null
+          wb_iso_37001_compliant?: boolean | null
+          wb_median_resolution_time_days?: number | null
+          wb_monthly_trend?: Json | null
+          wb_open_reports?: number | null
+          wb_performance_classification?: string | null
+          wb_previous_period_total?: number | null
+          wb_previous_resolution_rate?: number | null
+          wb_reports_30_90_days?: number | null
+          wb_reports_over_90_days?: number | null
+          wb_reports_overdue?: number | null
+          wb_reports_under_30_days?: number | null
+          wb_resolution_rate?: number | null
+          wb_resolution_rate_change?: number | null
+          wb_sector_benchmark_reports_per_100?: number | null
+          wb_sector_benchmark_resolution_days?: number | null
+          wb_sector_benchmark_resolution_rate?: number | null
+          wb_systemic_issues?: Json | null
+          wb_systemic_issues_count?: number | null
+          wb_top_5_categories?: Json | null
+          wb_total_reports?: number | null
+          wb_total_reports_current_year?: number | null
           whistleblower_channel_url?: string | null
         }
         Update: {
@@ -7014,6 +7080,39 @@ export type Database = {
           transparency_mechanisms?: string[] | null
           transparency_notes?: string | null
           updated_at?: string | null
+          wb_anonymous_percentage?: number | null
+          wb_anonymous_reports?: number | null
+          wb_avg_resolution_time_days?: number | null
+          wb_by_category?: Json | null
+          wb_by_priority?: Json | null
+          wb_by_status?: Json | null
+          wb_calculation_date?: string | null
+          wb_change_percentage?: number | null
+          wb_channel_utilization_rate?: number | null
+          wb_closed_reports?: number | null
+          wb_compliance_missing_data?: Json | null
+          wb_gri_2_26_compliant?: boolean | null
+          wb_iso_37001_compliant?: boolean | null
+          wb_median_resolution_time_days?: number | null
+          wb_monthly_trend?: Json | null
+          wb_open_reports?: number | null
+          wb_performance_classification?: string | null
+          wb_previous_period_total?: number | null
+          wb_previous_resolution_rate?: number | null
+          wb_reports_30_90_days?: number | null
+          wb_reports_over_90_days?: number | null
+          wb_reports_overdue?: number | null
+          wb_reports_under_30_days?: number | null
+          wb_resolution_rate?: number | null
+          wb_resolution_rate_change?: number | null
+          wb_sector_benchmark_reports_per_100?: number | null
+          wb_sector_benchmark_resolution_days?: number | null
+          wb_sector_benchmark_resolution_rate?: number | null
+          wb_systemic_issues?: Json | null
+          wb_systemic_issues_count?: number | null
+          wb_top_5_categories?: Json | null
+          wb_total_reports?: number | null
+          wb_total_reports_current_year?: number | null
           whistleblower_channel_url?: string | null
         }
         Relationships: [

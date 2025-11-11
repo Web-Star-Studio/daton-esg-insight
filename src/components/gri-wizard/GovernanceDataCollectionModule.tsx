@@ -16,6 +16,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { DocumentUploadZone } from './DocumentUploadZone';
+import { calculateWhistleblowerMetrics, type WhistleblowerAnalysisResult } from '@/services/whistleblowerAnalysis';
+import { WhistleblowerAnalysisDashboard } from '@/components/governance/WhistleblowerAnalysisDashboard';
 
 interface GovernanceDataCollectionModuleProps {
   reportId: string;
@@ -133,6 +135,8 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [whistleblowerData, setWhistleblowerData] = useState<WhistleblowerAnalysisResult | null>(null);
+  const [calculatingWhistleblower, setCalculatingWhistleblower] = useState(false);
 
   useEffect(() => {
     loadExistingData();
@@ -239,6 +243,97 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
       .update({ completion_percentage: percentage })
       .eq('report_id', reportId)
       .then();
+  };
+
+  const calculateWhistleblowerAnalysis = async () => {
+    setCalculatingWhistleblower(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) return;
+
+      const { data: report } = await supabase
+        .from('gri_reports')
+        .select('reporting_period_start, reporting_period_end')
+        .eq('id', reportId)
+        .single();
+
+      if (!report) return;
+
+      const analysisData = await calculateWhistleblowerMetrics(
+        profile.company_id,
+        report.reporting_period_start,
+        report.reporting_period_end
+      );
+
+      setWhistleblowerData(analysisData);
+      toast.success('Análise de denúncias calculada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao calcular análise de denúncias:', error);
+      toast.error('Falha ao calcular métricas de denúncias');
+    } finally {
+      setCalculatingWhistleblower(false);
+    }
+  };
+
+  const saveWhistleblowerAnalysis = async () => {
+    if (!whistleblowerData) return;
+
+    try {
+      const { error } = await supabase
+        .from('gri_governance_data_collection')
+        .update({
+          wb_total_reports: whistleblowerData.total_reports,
+          wb_total_reports_current_year: whistleblowerData.total_reports_current_year,
+          wb_open_reports: whistleblowerData.open_reports,
+          wb_closed_reports: whistleblowerData.closed_reports,
+          wb_anonymous_reports: whistleblowerData.anonymous_reports,
+          wb_anonymous_percentage: whistleblowerData.anonymous_percentage,
+          wb_by_status: whistleblowerData.by_status,
+          wb_by_category: whistleblowerData.by_category,
+          wb_by_priority: whistleblowerData.by_priority,
+          wb_monthly_trend: whistleblowerData.monthly_trend,
+          wb_resolution_rate: whistleblowerData.resolution_metrics.resolution_rate,
+          wb_avg_resolution_time_days: whistleblowerData.resolution_metrics.avg_resolution_time_days,
+          wb_median_resolution_time_days: whistleblowerData.resolution_metrics.median_resolution_time_days,
+          wb_reports_overdue: whistleblowerData.resolution_metrics.reports_overdue,
+          wb_reports_under_30_days: whistleblowerData.resolution_metrics.reports_under_30_days,
+          wb_reports_30_90_days: whistleblowerData.resolution_metrics.reports_30_90_days,
+          wb_reports_over_90_days: whistleblowerData.resolution_metrics.reports_over_90_days,
+          wb_previous_period_total: whistleblowerData.comparison.previous_period_total,
+          wb_change_percentage: whistleblowerData.comparison.change_percentage,
+          wb_previous_resolution_rate: whistleblowerData.comparison.previous_resolution_rate,
+          wb_resolution_rate_change: whistleblowerData.comparison.resolution_rate_change,
+          wb_top_5_categories: whistleblowerData.top_5_categories,
+          wb_systemic_issues: whistleblowerData.recurrence_analysis.categories_with_recurrence,
+          wb_systemic_issues_count: whistleblowerData.recurrence_analysis.systemic_issues_count,
+          wb_performance_classification: whistleblowerData.performance_classification,
+          wb_gri_2_26_compliant: whistleblowerData.compliance_status.gri_2_26_compliant,
+          wb_iso_37001_compliant: whistleblowerData.compliance_status.iso_37001_compliant,
+          wb_compliance_missing_data: whistleblowerData.compliance_status.missing_data,
+          wb_channel_utilization_rate: whistleblowerData.compliance_status.channel_utilization_rate,
+          wb_sector_benchmark_reports_per_100: whistleblowerData.sector_benchmark.reports_per_100_employees,
+          wb_sector_benchmark_resolution_days: whistleblowerData.sector_benchmark.typical_resolution_time_days,
+          wb_sector_benchmark_resolution_rate: whistleblowerData.sector_benchmark.typical_resolution_rate,
+          wb_calculation_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('report_id', reportId);
+
+      if (error) throw error;
+      
+      toast.success('Análise de denúncias salva com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar análise:', error);
+      toast.error('Falha ao salvar análise de denúncias');
+    }
   };
 
   const handleAnalyzeWithAI = async () => {
@@ -637,6 +732,56 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Dashboard de Análise de Denúncias (GRI 2-26) */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Análise do Canal de Denúncias (GRI 2-26, ISO 37001)
+              </CardTitle>
+              <CardDescription>
+                Dashboard estratégico com análise de reincidência e compliance
+              </CardDescription>
+            </div>
+            {whistleblowerData && (
+              <Button onClick={saveWhistleblowerAnalysis} variant="outline" size="sm">
+                Salvar Análise
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!whistleblowerData ? (
+            <div className="text-center py-8">
+              <Button 
+                onClick={calculateWhistleblowerAnalysis}
+                disabled={calculatingWhistleblower}
+                size="lg"
+              >
+                {calculatingWhistleblower ? (
+                  <>Calculando Análise...</>
+                ) : (
+                  <>
+                    <BarChart3 className="mr-2 h-5 w-5" />
+                    Calcular Análise de Denúncias
+                  </>
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground mt-3">
+                Gere análise completa com detecção de problemas sistêmicos e compliance
+              </p>
+            </div>
+          ) : (
+            <WhistleblowerAnalysisDashboard 
+              data={whistleblowerData}
+              year={new Date().getFullYear()}
+            />
+          )}
         </CardContent>
       </Card>
 
