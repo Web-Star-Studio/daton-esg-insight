@@ -216,7 +216,142 @@ Responda usando a ferramenta fornecida.`;
             updated_at: new Date().toISOString(),
           };
 
+          // 🔒 CHECK DEDUPLICATION RULES BEFORE INSERT
+          const { data: deduplicationRules } = await supabaseClient
+            .from('deduplication_rules')
+            .select('*')
+            .eq('company_id', unclassifiedData.company_id)
+            .eq('target_table', operation.table_name)
+            .eq('enabled', true)
+            .order('priority', { ascending: true });
+
+          let isDuplicate = false;
+          let duplicateRecord = null;
+          let appliedRule = null;
+
+          if (deduplicationRules && deduplicationRules.length > 0) {
+            // Apply deduplication rules in priority order
+            for (const rule of deduplicationRules) {
+              const uniqueFields = rule.unique_fields as string[];
+              
+              // Build query to check for duplicates
+              let duplicateQuery = supabaseClient
+                .from(operation.table_name)
+                .select('*')
+                .eq('company_id', unclassifiedData.company_id);
+
+              // Add conditions for all unique fields
+              let hasAllFields = true;
+              for (const field of uniqueFields) {
+                if (dataToInsert[field] !== undefined && dataToInsert[field] !== null) {
+                  duplicateQuery = duplicateQuery.eq(field, dataToInsert[field]);
+                } else {
+                  hasAllFields = false;
+                  break;
+                }
+              }
+
+              // Only check if all unique fields are present in the data
+              if (hasAllFields) {
+                const { data: existingRecords } = await duplicateQuery.limit(1);
+                
+                if (existingRecords && existingRecords.length > 0) {
+                  isDuplicate = true;
+                  duplicateRecord = existingRecords[0];
+                  appliedRule = rule;
+                  console.log(`🔍 Duplicate found in ${operation.table_name} using rule: ${rule.rule_name}`);
+                  break;
+                }
+              }
+            }
+          }
+
           let result;
+          
+          if (isDuplicate && appliedRule) {
+            // Apply merge strategy based on rule
+            switch (appliedRule.merge_strategy) {
+              case 'skip_if_exists':
+                console.log(`⏭️ Skipping insert (duplicate found, strategy: skip_if_exists)`);
+                results.successful_operations.push({
+                  table: operation.table_name,
+                  operation: 'SKIPPED',
+                  confidence: operation.confidence,
+                  reasoning: `Duplicata encontrada. ${operation.reasoning}`,
+                  deduplication: {
+                    rule_applied: appliedRule.rule_name,
+                    strategy: 'skip_if_exists',
+                    existing_record_id: duplicateRecord.id
+                  },
+                  result: null,
+                });
+                continue;
+
+              case 'update_existing':
+                console.log(`🔄 Updating existing record (strategy: update_existing)`);
+                const { data: updateData, error: updateError } = await supabaseClient
+                  .from(operation.table_name)
+                  .update({
+                    ...dataToInsert,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', duplicateRecord.id)
+                  .select();
+
+                if (updateError) throw updateError;
+                result = updateData;
+                
+                results.successful_operations.push({
+                  table: operation.table_name,
+                  operation: 'UPDATED',
+                  confidence: operation.confidence,
+                  reasoning: `Registro atualizado. ${operation.reasoning}`,
+                  deduplication: {
+                    rule_applied: appliedRule.rule_name,
+                    strategy: 'update_existing',
+                    existing_record_id: duplicateRecord.id
+                  },
+                  result,
+                });
+                continue;
+
+              case 'merge_fields':
+                console.log(`🔀 Merging fields (strategy: merge_fields)`);
+                // Merge non-null fields from new data with existing
+                const mergedData = { ...duplicateRecord };
+                for (const [key, value] of Object.entries(dataToInsert)) {
+                  if (value !== null && value !== undefined && value !== '') {
+                    mergedData[key] = value;
+                  }
+                }
+                mergedData.updated_at = new Date().toISOString();
+
+                const { data: mergeData, error: mergeError } = await supabaseClient
+                  .from(operation.table_name)
+                  .update(mergedData)
+                  .eq('id', duplicateRecord.id)
+                  .select();
+
+                if (mergeError) throw mergeError;
+                result = mergeData;
+                
+                results.successful_operations.push({
+                  table: operation.table_name,
+                  operation: 'MERGED',
+                  confidence: operation.confidence,
+                  reasoning: `Campos mesclados. ${operation.reasoning}`,
+                  deduplication: {
+                    rule_applied: appliedRule.rule_name,
+                    strategy: 'merge_fields',
+                    existing_record_id: duplicateRecord.id
+                  },
+                  result,
+                });
+                continue;
+            }
+          }
+
+          // No duplicate found or no rules - proceed with INSERT
           if (operation.operation_type === 'INSERT') {
             const { data, error } = await supabaseClient
               .from(operation.table_name)

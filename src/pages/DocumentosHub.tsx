@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Brain, GitCompare } from 'lucide-react';
+import { FileText, Brain, GitCompare, Shield } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import Documentos from './Documentos';
 import ExtracoesDocumentos from './ExtracoesDocumentos';
 import { ReconciliacaoDocumentos } from './ReconciliacaoDocumentos';
+import { DeduplicationRulesManager } from '@/components/deduplication/DeduplicationRulesManager';
 import { getPendingExtractions } from '@/services/documentAI';
 
 export default function DocumentosHub() {
@@ -61,14 +62,14 @@ export default function DocumentosHub() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="animate-fade-in">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="biblioteca" className="flex items-center gap-2 transition-all duration-200 hover-scale">
             <FileText className="h-4 w-4" />
             <span>Biblioteca</span>
           </TabsTrigger>
           <TabsTrigger value="extracoes" className="flex items-center gap-2 transition-all duration-200 hover-scale">
             <Brain className="h-4 w-4" />
-            <span>Aprovações Pendentes</span>
+            <span>Aprovações</span>
             {pendingCount > 0 && (
               <Badge variant="destructive" className="ml-1 animate-scale-in">
                 {pendingCount}
@@ -77,7 +78,11 @@ export default function DocumentosHub() {
           </TabsTrigger>
           <TabsTrigger value="reconciliacao" className="flex items-center gap-2 transition-all duration-200 hover-scale">
             <GitCompare className="h-4 w-4" />
-            <span>Reconciliação IA</span>
+            <span>Reconciliação</span>
+          </TabsTrigger>
+          <TabsTrigger value="deduplicacao" className="flex items-center gap-2 transition-all duration-200 hover-scale">
+            <Shield className="h-4 w-4" />
+            <span>Deduplicação</span>
           </TabsTrigger>
         </TabsList>
 
@@ -91,6 +96,10 @@ export default function DocumentosHub() {
 
         <TabsContent value="reconciliacao" className="mt-6 animate-fade-in">
           <ReconciliacaoDocumentos />
+        </TabsContent>
+
+        <TabsContent value="deduplicacao" className="mt-6 animate-fade-in">
+          <DeduplicationRulesManager />
         </TabsContent>
       </Tabs>
     </div>

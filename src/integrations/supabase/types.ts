@@ -3046,6 +3046,56 @@ export type Database = {
         }
         Relationships: []
       }
+      deduplication_rules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          enabled: boolean
+          id: string
+          merge_strategy: string
+          priority: number
+          rule_name: string
+          target_table: string
+          unique_fields: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          enabled?: boolean
+          id?: string
+          merge_strategy?: string
+          priority?: number
+          rule_name: string
+          target_table: string
+          unique_fields: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          enabled?: boolean
+          id?: string
+          merge_strategy?: string
+          priority?: number
+          rule_name?: string
+          target_table?: string
+          unique_fields?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deduplication_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           budget: number | null
