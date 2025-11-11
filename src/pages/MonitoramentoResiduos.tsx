@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +49,7 @@ export default function MonitoramentoResiduos() {
   });
 
   if (isLoading) {
-    return (
-      <AppLayout>
-        <EnhancedLoading text="Carregando dados de resíduos..." />
-      </AppLayout>
-    );
+    return <EnhancedLoading text="Carregando dados de resíduos..." />;
   }
 
   const totalWaste = wasteData?.total_generated_tonnes || 0;
@@ -62,8 +57,7 @@ export default function MonitoramentoResiduos() {
   const reusePercent = reuseData?.reuse_percentage || 0;
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -256,6 +250,5 @@ export default function MonitoramentoResiduos() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }

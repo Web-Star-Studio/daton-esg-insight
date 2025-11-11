@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,16 +28,11 @@ export default function MonitoramentoAgua() {
   });
 
   if (isLoading) {
-    return (
-      <AppLayout>
-        <EnhancedLoading text="Carregando dados de água..." />
-      </AppLayout>
-    );
+    return <EnhancedLoading text="Carregando dados de água..." />;
   }
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -167,6 +161,5 @@ export default function MonitoramentoAgua() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }
