@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { exportWasteData } from "@/services/dataExport";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertsPanel } from "@/components/alerts/AlertsPanel";
 
 export default function MonitoramentoResiduos() {
   const navigate = useNavigate();
@@ -163,6 +164,9 @@ export default function MonitoramentoResiduos() {
             </Card>
           </div>
         )}
+
+        {/* Intelligent Alerts */}
+        <AlertsPanel />
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="space-y-6">

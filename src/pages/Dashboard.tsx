@@ -36,6 +36,7 @@ import { ProductionHealthWidget } from '@/components/production/ProductionHealth
 import { AlertsWidget } from '@/components/dashboard/AlertsWidget';
 import { PredictiveInsightsWidget } from '@/components/dashboard/PredictiveInsightsWidget';
 import { ESGScoreGauge } from '@/components/esg/ESGScoreGauge';
+import { AlertsPanel } from '@/components/alerts/AlertsPanel';
 
 interface KPICard {
   id: string;
@@ -322,7 +323,7 @@ export default function Dashboard() {
 
       {/* Intelligent Alerts & Predictive Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
-        <AlertsWidget />
+        <AlertsPanel />
         <PredictiveInsightsWidget />
       </div>
 

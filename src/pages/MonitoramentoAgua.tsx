@@ -13,6 +13,7 @@ import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { AlertsPanel } from "@/components/alerts/AlertsPanel";
 
 export default function MonitoramentoAgua() {
   const currentYear = new Date().getFullYear();
@@ -135,6 +136,9 @@ export default function MonitoramentoAgua() {
             </Card>
           </div>
         )}
+
+        {/* Intelligent Alerts */}
+        <AlertsPanel />
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="space-y-6">

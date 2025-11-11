@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { exportEmissionsData } from "@/services/dataExport";
 import { toast } from "sonner";
+import { AlertsPanel } from "@/components/alerts/AlertsPanel";
 
 export default function MonitoramentoEmissoes() {
   const navigate = useNavigate();
@@ -153,6 +154,9 @@ export default function MonitoramentoEmissoes() {
             </Card>
           </div>
         )}
+
+        {/* Intelligent Alerts */}
+        <AlertsPanel />
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="space-y-6">

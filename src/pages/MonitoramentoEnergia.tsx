@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { exportEnergyData } from "@/services/dataExport";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertsPanel } from "@/components/alerts/AlertsPanel";
 
 export default function MonitoramentoEnergia() {
   const currentYear = new Date().getFullYear();
@@ -143,6 +144,9 @@ export default function MonitoramentoEnergia() {
             </Card>
           </div>
         )}
+
+        {/* Intelligent Alerts */}
+        <AlertsPanel />
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="space-y-6">
