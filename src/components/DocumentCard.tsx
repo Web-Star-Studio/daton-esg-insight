@@ -18,7 +18,8 @@ import {
   Folder,
   Tag,
   Eye,
-  Wand2
+  Wand2,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Document } from '@/services/documents';
@@ -35,6 +36,7 @@ interface DocumentCardProps {
   isSelected?: boolean;
   onToggleSelect?: () => void;
   onAnalyze?: () => void;
+  isAnalyzing?: boolean;
   extraActions?: React.ReactNode;
 }
 
@@ -48,6 +50,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   isSelected = false,
   onToggleSelect,
   onAnalyze,
+  isAnalyzing = false,
   extraActions
 }) => {
   const formatDate = (dateString: string) => {
@@ -152,9 +155,18 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                   Baixar
                 </DropdownMenuItem>
                 {onAnalyze && (
-                  <DropdownMenuItem onClick={onAnalyze}>
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Analisar com IA
+                  <DropdownMenuItem onClick={onAnalyze} disabled={isAnalyzing}>
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Analisar com IA
+                      </>
+                    )}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem 
@@ -197,9 +209,18 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                   Baixar
                 </DropdownMenuItem>
                 {onAnalyze && (
-                  <DropdownMenuItem onClick={onAnalyze}>
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Analisar com IA
+                  <DropdownMenuItem onClick={onAnalyze} disabled={isAnalyzing}>
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Analisar com IA
+                      </>
+                    )}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem 

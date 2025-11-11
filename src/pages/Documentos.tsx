@@ -95,6 +95,7 @@ export default function Documentos() {
   const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [analyzingDocId, setAnalyzingDocId] = useState<string | null>(null);
 
   // Advanced filters
   const [sortBy, setSortBy] = useState<string>('upload_date');
@@ -226,32 +227,33 @@ export default function Documentos() {
   };
 
   const handleAnalyze = async (document: Document) => {
+    setAnalyzingDocId(document.id);
     try {
-      toast.info('Análise iniciada', { description: 'Processando com IA...' });
-      const { jobId } = await processDocumentWithAI(document.id);
-
-      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-      const maxAttempts = 30;
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const job = await getExtractionJobStatus(jobId);
-        if (job.status === 'Concluído') {
-          const conf = Math.round(((job.confidence_score as number || 0) * 100));
-          toast.success('Análise concluída', { description: `Confiança: ${conf}%` });
-          await loadData();
-          return;
-        }
-        if (job.status === 'Erro') {
-          // @ts-ignore
-          const msg = (job as any).error_message || 'Erro desconhecido';
-          toast.error('Falha na análise', { description: msg });
-          return;
-        }
-        await sleep(2000);
+      toast.info('Análise iniciada', { description: 'Processando documento com IA...' });
+      
+      const result = await processDocumentWithAI(document.id);
+      
+      if (!result.success) {
+        toast.error('Falha na análise', { 
+          description: result.error || 'Erro desconhecido' 
+        });
+        return;
       }
-      toast.info('Análise em andamento', { description: 'Continuará em segundo plano.' });
+      
+      // Sucesso - recarregar dados
+      await loadData();
+      
+      toast.success('Análise concluída!', {
+        description: result.message || 'Dados enviados para revisão'
+      });
+      
     } catch (error) {
       console.error('Error analyzing document with AI:', error);
-      toast.error('Erro ao iniciar análise');
+      toast.error('Erro ao iniciar análise', {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    } finally {
+      setAnalyzingDocId(null);
     }
   };
   // Get all unique tags from documents
@@ -473,6 +475,7 @@ export default function Documentos() {
                         isSelected={isDocumentSelected(document.id)}
                         onToggleSelect={() => toggleDocumentSelection(document)}
                         onAnalyze={() => handleAnalyze(document)}
+                        isAnalyzing={analyzingDocId === document.id}
                         extraActions={
                           <div className="flex gap-1">
                             {/* GED components will be added here */}

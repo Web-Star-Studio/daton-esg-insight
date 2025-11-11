@@ -214,6 +214,40 @@ serve(async (req) => {
       entities_extracted: extractResult.analysis?.extracted_entities?.length || 0,
     };
 
+    // CREATE PREVIEW RECORDS: Se extração foi bem-sucedida E há entidades extraídas
+    if (extractResult.success && 
+        classification.extracted_entities?.length > 0 &&
+        classification.target_mappings?.length > 0) {
+      
+      console.log('📝 Creating preview records for manual review...');
+      
+      for (const mapping of classification.target_mappings) {
+        const confidenceScores: Record<string, number> = {};
+        Object.keys(mapping.field_mappings).forEach(field => {
+          confidenceScores[field] = mapping.confidence || 0.5;
+        });
+        
+        await supabaseClient
+          .from('extracted_data_preview')
+          .insert({
+            company_id: document.company_id,
+            document_id: document.id,
+            extraction_job_id: null,
+            extracted_fields: mapping.field_mappings,
+            confidence_scores: confidenceScores,
+            target_table: mapping.table_name,
+            validation_status: 'Pendente',
+            suggested_mappings: {
+              ai_category: classification.document_type,
+              esg_relevance: classification.esg_relevance_score,
+              processing_timestamp: new Date().toISOString()
+            }
+          });
+      }
+      
+      console.log(`✅ Created ${classification.target_mappings.length} preview records`);
+    }
+
     // STEP 4: Validar dados extraídos
     console.log('✅ Step 4: Validating extracted data...');
     pipeline[3].status = 'processing';
@@ -313,6 +347,17 @@ serve(async (req) => {
 
     pipeline[4].duration_ms = Date.now() - insertStart;
     pipeline[4].result = insertResult;
+
+    // UPDATE DOCUMENT STATUS
+    await supabaseClient
+      .from('documents')
+      .update({
+        ai_processing_status: insertResult.status === 'auto_inserted' 
+          ? 'completed' 
+          : 'requires_review',
+        ai_confidence_score: validation.overall_confidence
+      })
+      .eq('id', document_id);
 
     const totalDuration = Date.now() - startTime;
 
