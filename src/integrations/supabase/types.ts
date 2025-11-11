@@ -6523,6 +6523,7 @@ export type Database = {
           sector_average_recycling_rate: number | null
           status: string | null
           updated_at: string | null
+          waste_baseline_reuse_percentage: number | null
           waste_baseline_total_tonnes: number | null
           waste_by_treatment_composting_tonnes: number | null
           waste_by_treatment_incineration_tonnes: number | null
@@ -6538,6 +6539,16 @@ export type Database = {
           waste_non_hazardous_tonnes: number | null
           waste_notes: string | null
           waste_recycled_percentage: number | null
+          waste_reuse_by_category_construction_tonnes: number | null
+          waste_reuse_by_category_containers_tonnes: number | null
+          waste_reuse_by_category_equipment_tonnes: number | null
+          waste_reuse_by_category_other_tonnes: number | null
+          waste_reuse_by_category_packaging_tonnes: number | null
+          waste_reuse_by_category_pallets_tonnes: number | null
+          waste_reuse_calculation_date: string | null
+          waste_reuse_improvement_percent: number | null
+          waste_reuse_percentage: number | null
+          waste_reuse_tonnes: number | null
           waste_segregation_practices: string[] | null
           waste_total_generated_tonnes: number | null
           water_baseline_reuse_percentage: number | null
@@ -6621,6 +6632,7 @@ export type Database = {
           sector_average_recycling_rate?: number | null
           status?: string | null
           updated_at?: string | null
+          waste_baseline_reuse_percentage?: number | null
           waste_baseline_total_tonnes?: number | null
           waste_by_treatment_composting_tonnes?: number | null
           waste_by_treatment_incineration_tonnes?: number | null
@@ -6636,6 +6648,16 @@ export type Database = {
           waste_non_hazardous_tonnes?: number | null
           waste_notes?: string | null
           waste_recycled_percentage?: number | null
+          waste_reuse_by_category_construction_tonnes?: number | null
+          waste_reuse_by_category_containers_tonnes?: number | null
+          waste_reuse_by_category_equipment_tonnes?: number | null
+          waste_reuse_by_category_other_tonnes?: number | null
+          waste_reuse_by_category_packaging_tonnes?: number | null
+          waste_reuse_by_category_pallets_tonnes?: number | null
+          waste_reuse_calculation_date?: string | null
+          waste_reuse_improvement_percent?: number | null
+          waste_reuse_percentage?: number | null
+          waste_reuse_tonnes?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
           water_baseline_reuse_percentage?: number | null
@@ -6719,6 +6741,7 @@ export type Database = {
           sector_average_recycling_rate?: number | null
           status?: string | null
           updated_at?: string | null
+          waste_baseline_reuse_percentage?: number | null
           waste_baseline_total_tonnes?: number | null
           waste_by_treatment_composting_tonnes?: number | null
           waste_by_treatment_incineration_tonnes?: number | null
@@ -6734,6 +6757,16 @@ export type Database = {
           waste_non_hazardous_tonnes?: number | null
           waste_notes?: string | null
           waste_recycled_percentage?: number | null
+          waste_reuse_by_category_construction_tonnes?: number | null
+          waste_reuse_by_category_containers_tonnes?: number | null
+          waste_reuse_by_category_equipment_tonnes?: number | null
+          waste_reuse_by_category_other_tonnes?: number | null
+          waste_reuse_by_category_packaging_tonnes?: number | null
+          waste_reuse_by_category_pallets_tonnes?: number | null
+          waste_reuse_calculation_date?: string | null
+          waste_reuse_improvement_percent?: number | null
+          waste_reuse_percentage?: number | null
+          waste_reuse_tonnes?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
           water_baseline_reuse_percentage?: number | null

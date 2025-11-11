@@ -33,8 +33,10 @@ import { WaterConsumptionForm } from "@/components/water/WaterConsumptionForm";
 import { WaterIntensityDashboard } from "@/components/water/WaterIntensityDashboard";
 import { WaterReusePercentageDashboard } from "@/components/water/WaterReusePercentageDashboard";
 import { calculateTotalWasteGeneration, calculateWasteIntensity, calculateRecyclingByMaterial, type WasteGenerationResult, type RecyclingByMaterialResult } from "@/services/wasteManagement";
+import { calculateWasteReusePercentage, type WasteReuseResult } from "@/services/wasteReuse";
 import { WasteTotalGenerationDashboard } from "@/components/waste/WasteTotalGenerationDashboard";
 import { WasteRecyclingDashboard } from "@/components/waste/WasteRecyclingDashboard";
+import { WasteReuseDashboard } from "@/components/waste/WasteReuseDashboard";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -110,6 +112,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [wasteData, setWasteData] = useState<WasteGenerationResult | null>(null);
   const [wasteIntensityData, setWasteIntensityData] = useState<any>(null);
   const [recyclingData, setRecyclingData] = useState<RecyclingByMaterialResult | null>(null);
+  const [wasteReuseData, setWasteReuseData] = useState<WasteReuseResult | null>(null);
 
   useEffect(() => {
     loadExistingData();
@@ -234,9 +237,13 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       const recycling = await calculateRecyclingByMaterial(reportYear);
       setRecyclingData(recycling);
       
+      // Calcular reuso separadamente (2º nível da hierarquia)
+      const reuse = await calculateWasteReusePercentage(reportYear);
+      setWasteReuseData(reuse);
+      
       if (wasteGeneration.total_generated_tonnes > 0) {
         toast.success('Dados de resíduos calculados!', {
-          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)} toneladas geradas (${recycling.recycling_percentage.toFixed(1)}% reciclado)`
+          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)}t geradas | ${reuse.reuse_percentage.toFixed(1)}% reuso | ${recycling.recycling_percentage.toFixed(1)}% reciclado`
         });
       }
     } catch (error) {
@@ -492,6 +499,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           waste_recycled_percentage: wasteData.recycling_percentage,
           waste_landfill_percentage: wasteData.landfill_percentage,
           waste_incineration_percentage: wasteData.incineration_percentage,
+          waste_by_treatment_reuse_tonnes: wasteData.by_treatment.reuse,
           waste_by_treatment_recycling_tonnes: wasteData.by_treatment.recycling,
           waste_by_treatment_landfill_tonnes: wasteData.by_treatment.landfill,
           waste_by_treatment_incineration_tonnes: wasteData.by_treatment.incineration,
@@ -500,6 +508,19 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           waste_baseline_total_tonnes: wasteData.baseline_total,
           waste_improvement_percent: wasteData.improvement_percent,
           waste_calculation_date: new Date().toISOString()
+        }),
+        ...(wasteReuseData && {
+          waste_reuse_percentage: wasteReuseData.reuse_percentage,
+          waste_reuse_tonnes: wasteReuseData.reuse_volume_tonnes,
+          waste_baseline_reuse_percentage: wasteReuseData.baseline_reuse_percentage,
+          waste_reuse_improvement_percent: wasteReuseData.improvement_percent,
+          waste_reuse_by_category_packaging_tonnes: wasteReuseData.reuse_by_category.packaging,
+          waste_reuse_by_category_pallets_tonnes: wasteReuseData.reuse_by_category.pallets,
+          waste_reuse_by_category_containers_tonnes: wasteReuseData.reuse_by_category.containers,
+          waste_reuse_by_category_equipment_tonnes: wasteReuseData.reuse_by_category.equipment_parts,
+          waste_reuse_by_category_construction_tonnes: wasteReuseData.reuse_by_category.construction_materials,
+          waste_reuse_by_category_other_tonnes: wasteReuseData.reuse_by_category.other,
+          waste_reuse_calculation_date: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       };
@@ -894,6 +915,14 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           recyclingData={recyclingData}
           year={reportYear}
           target={70}
+        />
+      )}
+
+      {/* Waste Reuse Dashboard (2º nível hierarquia) */}
+      {wasteReuseData && (
+        <WasteReuseDashboard
+          reuseData={wasteReuseData}
+          year={reportYear}
         />
       )}
 

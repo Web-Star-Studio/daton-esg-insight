@@ -57,13 +57,15 @@ export interface WasteGenerationResult {
   non_hazardous_tonnes: number;
   
   by_treatment: {
-    recycling: number;
-    landfill: number;
-    incineration: number;
-    composting: number;
+    reuse: number;           // ⭐ 2º nível hierarquia (prioritário)
+    recycling: number;       // 4º nível
+    landfill: number;        // 6º nível (pior)
+    incineration: number;    // 5º nível
+    composting: number;      // 4º nível
     other: number;
   };
   
+  reuse_percentage: number;
   recycling_percentage: number;
   landfill_percentage: number;
   incineration_percentage: number;
@@ -112,12 +114,14 @@ export async function calculateTotalWasteGeneration(year: number): Promise<Waste
       hazardous_tonnes: 0,
       non_hazardous_tonnes: 0,
       by_treatment: {
+        reuse: 0,
         recycling: 0,
         landfill: 0,
         incineration: 0,
         composting: 0,
         other: 0
       },
+      reuse_percentage: 0,
       recycling_percentage: 0,
       landfill_percentage: 0,
       incineration_percentage: 0,
@@ -152,12 +156,13 @@ export async function calculateTotalWasteGeneration(year: number): Promise<Waste
 
   const non_hazardous_tonnes = total_generated_tonnes - hazardous_tonnes;
 
-  // Classificar por tipo de tratamento
+  // Classificar por tipo de tratamento (ORDEM: Reuso > Reciclagem > Compostagem > Incineração > Aterro)
   const by_treatment = {
-    recycling: 0,
-    landfill: 0,
-    incineration: 0,
-    composting: 0,
+    reuse: 0,           // 2º nível
+    recycling: 0,       // 4º nível
+    landfill: 0,        // 6º nível (pior)
+    incineration: 0,    // 5º nível
+    composting: 0,      // 4º nível
     other: 0
   };
 
@@ -165,20 +170,27 @@ export async function calculateTotalWasteGeneration(year: number): Promise<Waste
     const treatment = item.treatment_type.toLowerCase();
     const quantity = item.quantity_tonnes;
 
-    if (treatment.includes('recicla') || treatment.includes('reuso') || treatment.includes('reutiliza')) {
+    // IMPORTANTE: Verificar reuso ANTES de reciclagem (hierarquia de resíduos)
+    if (treatment.includes('reuso') || treatment.includes('reutiliz')) {
+      by_treatment.reuse += quantity;  // ✅ SEPARADO de reciclagem
+    } else if (treatment.includes('recicla')) {
       by_treatment.recycling += quantity;
-    } else if (treatment.includes('aterro')) {
-      by_treatment.landfill += quantity;
-    } else if (treatment.includes('incinera') || treatment.includes('queima')) {
-      by_treatment.incineration += quantity;
     } else if (treatment.includes('compost') || treatment.includes('orgânico')) {
       by_treatment.composting += quantity;
+    } else if (treatment.includes('incinera') || treatment.includes('queima')) {
+      by_treatment.incineration += quantity;
+    } else if (treatment.includes('aterro')) {
+      by_treatment.landfill += quantity;
     } else {
       by_treatment.other += quantity;
     }
   });
 
   // Calcular percentuais
+  const reuse_percentage = total_generated_tonnes > 0 
+    ? (by_treatment.reuse / total_generated_tonnes) * 100 
+    : 0;
+  
   const recycling_percentage = total_generated_tonnes > 0 
     ? (by_treatment.recycling / total_generated_tonnes) * 100 
     : 0;
@@ -218,12 +230,14 @@ export async function calculateTotalWasteGeneration(year: number): Promise<Waste
     hazardous_tonnes: Math.round(hazardous_tonnes * 1000) / 1000,
     non_hazardous_tonnes: Math.round(non_hazardous_tonnes * 1000) / 1000,
     by_treatment: {
+      reuse: Math.round(by_treatment.reuse * 1000) / 1000,
       recycling: Math.round(by_treatment.recycling * 1000) / 1000,
       landfill: Math.round(by_treatment.landfill * 1000) / 1000,
       incineration: Math.round(by_treatment.incineration * 1000) / 1000,
       composting: Math.round(by_treatment.composting * 1000) / 1000,
       other: Math.round(by_treatment.other * 1000) / 1000
     },
+    reuse_percentage: Math.round(reuse_percentage * 100) / 100,
     recycling_percentage: Math.round(recycling_percentage * 100) / 100,
     landfill_percentage: Math.round(landfill_percentage * 100) / 100,
     incineration_percentage: Math.round(incineration_percentage * 100) / 100,
@@ -396,9 +410,8 @@ export async function calculateRecyclingByMaterial(year: number): Promise<Recycl
     const treatment = item.treatment_type.toLowerCase();
     const description = item.waste_description.toLowerCase();
     
-    // Só considerar resíduos reciclados/compostados
-    if (treatment.includes('recicla') || treatment.includes('reuso') || 
-        treatment.includes('compost') || treatment.includes('orgânico')) {
+    // Só considerar resíduos reciclados/compostados (NÃO incluir reuso aqui)
+    if (treatment.includes('recicla') || treatment.includes('compost') || treatment.includes('orgânico')) {
       
       let classified = false;
       

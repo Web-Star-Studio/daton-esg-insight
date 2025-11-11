@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Trash2,
   Flame,
-  Sprout
+  Sprout,
+  Package
 } from "lucide-react";
 import { WasteGenerationResult } from "@/services/wasteManagement";
 import { 
@@ -51,12 +52,13 @@ export function WasteTotalGenerationDashboard({
   intensityData 
 }: WasteTotalGenerationDashboardProps) {
   
-  // Dados para o gráfico de pizza
+  // Dados para o gráfico de pizza (HIERARQUIA: Reuso > Reciclagem > Compostagem > Incineração > Aterro)
   const pieData = [
-    { name: 'Reciclagem', value: wasteData.by_treatment.recycling, color: TREATMENT_COLORS.recycling },
-    { name: 'Aterro', value: wasteData.by_treatment.landfill, color: TREATMENT_COLORS.landfill },
-    { name: 'Incineração', value: wasteData.by_treatment.incineration, color: TREATMENT_COLORS.incineration },
-    { name: 'Compostagem', value: wasteData.by_treatment.composting, color: TREATMENT_COLORS.composting },
+    { name: 'Reuso (2º nível)', value: wasteData.by_treatment.reuse, color: '#059669' },
+    { name: 'Reciclagem (4º nível)', value: wasteData.by_treatment.recycling, color: TREATMENT_COLORS.recycling },
+    { name: 'Compostagem (4º nível)', value: wasteData.by_treatment.composting, color: TREATMENT_COLORS.composting },
+    { name: 'Incineração (5º nível)', value: wasteData.by_treatment.incineration, color: TREATMENT_COLORS.incineration },
+    { name: 'Aterro (6º nível)', value: wasteData.by_treatment.landfill, color: TREATMENT_COLORS.landfill },
     { name: 'Outros', value: wasteData.by_treatment.other, color: TREATMENT_COLORS.other }
   ].filter(item => item.value > 0);
 
@@ -256,33 +258,40 @@ export function WasteTotalGenerationDashboard({
 
             {/* Legenda detalhada */}
             <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between text-sm font-semibold bg-green-50 dark:bg-green-950/20 p-2 rounded">
+                <span className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-green-700" />
+                  Reuso (2º nível)
+                </span>
+                <strong>{wasteData.by_treatment.reuse.toFixed(2)} t</strong>
+              </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
                   <Recycle className="h-4 w-4 text-green-600" />
-                  Reciclagem
+                  Reciclagem (4º nível)
                 </span>
                 <strong>{wasteData.by_treatment.recycling.toFixed(2)} t</strong>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
-                  <Trash2 className="h-4 w-4 text-orange-600" />
-                  Aterro
+                  <Sprout className="h-4 w-4 text-lime-600" />
+                  Compostagem (4º nível)
                 </span>
-                <strong>{wasteData.by_treatment.landfill.toFixed(2)} t</strong>
+                <strong>{wasteData.by_treatment.composting.toFixed(2)} t</strong>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
                   <Flame className="h-4 w-4 text-red-600" />
-                  Incineração
+                  Incineração (5º nível)
                 </span>
                 <strong>{wasteData.by_treatment.incineration.toFixed(2)} t</strong>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
-                  <Sprout className="h-4 w-4 text-lime-600" />
-                  Compostagem
+                  <Trash2 className="h-4 w-4 text-orange-600" />
+                  Aterro (6º nível)
                 </span>
-                <strong>{wasteData.by_treatment.composting.toFixed(2)} t</strong>
+                <strong>{wasteData.by_treatment.landfill.toFixed(2)} t</strong>
               </div>
             </div>
           </CardContent>
