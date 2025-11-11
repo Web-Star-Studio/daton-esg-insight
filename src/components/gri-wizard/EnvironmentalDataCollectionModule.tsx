@@ -16,6 +16,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DocumentUploadZone } from "./DocumentUploadZone";
+import { OperationalMetricsForm } from "@/components/operational/OperationalMetricsForm";
+import { EnergyIntensityDashboard } from "@/components/reports/EnergyIntensityDashboard";
+import { calculateEnergyIntensity, type EnergyIntensityResult } from "@/services/operationalMetrics";
+import { EnergyConsumptionBreakdown } from "@/components/reports/EnergyConsumptionBreakdown";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -77,11 +81,35 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [quantitativeData, setQuantitativeData] = useState<any>({});
   const [documents, setDocuments] = useState<any[]>([]);
   const [progress, setProgress] = useState(0);
+  const [companyId, setCompanyId] = useState<string>('');
+  const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
+  const [intensityData, setIntensityData] = useState<EnergyIntensityResult | null>(null);
+  const [energyBreakdown, setEnergyBreakdown] = useState<any>(null);
 
   useEffect(() => {
     loadExistingData();
     loadQuantitativeData();
+    loadCompanyInfo();
   }, [reportId]);
+
+  const loadCompanyInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.company_id) {
+        setCompanyId(profile.company_id);
+      }
+    } catch (error) {
+      console.error('Error loading company info:', error);
+    }
+  };
 
   const loadExistingData = async () => {
     const { data } = await supabase
@@ -93,6 +121,15 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     if (data) {
       setFormData(data);
       calculateProgress(data);
+    }
+  };
+
+  const loadIntensityData = async () => {
+    try {
+      const data = await calculateEnergyIntensity(reportYear);
+      setIntensityData(data);
+    } catch (error) {
+      console.error('Error loading intensity:', error);
     }
   };
 
@@ -194,7 +231,10 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       let energyCalculation;
       try {
         const { calculateTotalEnergyConsumption } = await import('@/services/integratedReportsHelpers');
-        energyCalculation = await calculateTotalEnergyConsumption();
+        energyCalculation = await calculateTotalEnergyConsumption(reportYear);
+        
+        // Guardar resultado completo para o breakdown
+        setEnergyBreakdown(energyCalculation);
         
         // Atualizar dados quantitativos com o cálculo
         setQuantitativeData(prev => ({
@@ -214,6 +254,22 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         // Continuar mesmo se o cálculo de energia falhar
       }
 
+      // Calcular intensidade energética
+      try {
+        const intensity = await calculateEnergyIntensity(reportYear);
+        setIntensityData(intensity);
+        
+        // Atualizar campos de intensidade no banco
+        if (intensity.intensity_per_production) {
+          toast.success('Intensidade energética calculada!', {
+            description: `${intensity.intensity_per_production.toFixed(4)} kWh/${intensity.production_unit}`
+          });
+        }
+      } catch (intensityError) {
+        console.error('Error calculating intensity:', intensityError);
+        // Continuar mesmo se o cálculo de intensidade falhar
+      }
+
       const dataToSave = {
         report_id: reportId,
         company_id: profile.company_id,
@@ -221,7 +277,19 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         ...quantitativeData,
         ...(energyCalculation && {
           energy_total_consumption_kwh: energyCalculation.total_kwh,
-          energy_renewable_percentage: energyCalculation.renewable_percentage
+          energy_renewable_percentage: energyCalculation.renewable_percentage,
+          energy_electricity_kwh: energyCalculation.electricity_kwh,
+          energy_fuel_kwh: energyCalculation.fuel_kwh,
+          energy_thermal_kwh: energyCalculation.thermal_kwh
+        }),
+        ...(intensityData && {
+          energy_intensity_kwh_per_unit: intensityData.intensity_per_production,
+          energy_intensity_unit: intensityData.production_unit ? `kWh/${intensityData.production_unit}` : null,
+          energy_intensity_kwh_per_revenue: intensityData.intensity_per_revenue,
+          energy_intensity_kwh_per_km: intensityData.intensity_per_km,
+          energy_intensity_kwh_per_m2: intensityData.intensity_per_m2,
+          production_volume_reference: intensityData.production_volume,
+          production_unit_reference: intensityData.production_unit
         }),
         updated_at: new Date().toISOString()
       };
@@ -537,6 +605,28 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           </div>
         </CardContent>
       </Card>
+
+      {/* Energy Consumption Breakdown */}
+      {energyBreakdown && (
+        <EnergyConsumptionBreakdown data={energyBreakdown} />
+      )}
+
+      {/* Operational Metrics Form */}
+      {companyId && (
+        <OperationalMetricsForm
+          companyId={companyId}
+          year={reportYear}
+          onSaved={loadIntensityData}
+        />
+      )}
+
+      {/* Energy Intensity Dashboard */}
+      {intensityData && (
+        <EnergyIntensityDashboard
+          intensityData={intensityData}
+          year={reportYear}
+        />
+      )}
 
       {/* Action Buttons */}
       <div className="flex gap-3">

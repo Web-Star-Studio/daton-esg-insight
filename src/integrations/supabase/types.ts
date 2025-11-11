@@ -6317,7 +6317,11 @@ export type Database = {
           emissions_scope3_tco2e: number | null
           emissions_total_tco2e: number | null
           energy_control_notes: string | null
+          energy_intensity_kwh_per_km: number | null
+          energy_intensity_kwh_per_m2: number | null
           energy_intensity_kwh_per_revenue: number | null
+          energy_intensity_kwh_per_unit: number | null
+          energy_intensity_unit: string | null
           energy_monitoring_systems: string[] | null
           energy_renewable_percentage: number | null
           energy_total_consumption_kwh: number | null
@@ -6336,6 +6340,8 @@ export type Database = {
           iso_14001_certification_date: string | null
           iso_14001_certifier: string | null
           licenses_notes: string | null
+          production_unit_reference: string | null
+          production_volume_reference: number | null
           report_id: string
           sector_average_emissions_intensity: number | null
           sector_average_energy_intensity: number | null
@@ -6375,7 +6381,11 @@ export type Database = {
           emissions_scope3_tco2e?: number | null
           emissions_total_tco2e?: number | null
           energy_control_notes?: string | null
+          energy_intensity_kwh_per_km?: number | null
+          energy_intensity_kwh_per_m2?: number | null
           energy_intensity_kwh_per_revenue?: number | null
+          energy_intensity_kwh_per_unit?: number | null
+          energy_intensity_unit?: string | null
           energy_monitoring_systems?: string[] | null
           energy_renewable_percentage?: number | null
           energy_total_consumption_kwh?: number | null
@@ -6394,6 +6404,8 @@ export type Database = {
           iso_14001_certification_date?: string | null
           iso_14001_certifier?: string | null
           licenses_notes?: string | null
+          production_unit_reference?: string | null
+          production_volume_reference?: number | null
           report_id: string
           sector_average_emissions_intensity?: number | null
           sector_average_energy_intensity?: number | null
@@ -6433,7 +6445,11 @@ export type Database = {
           emissions_scope3_tco2e?: number | null
           emissions_total_tco2e?: number | null
           energy_control_notes?: string | null
+          energy_intensity_kwh_per_km?: number | null
+          energy_intensity_kwh_per_m2?: number | null
           energy_intensity_kwh_per_revenue?: number | null
+          energy_intensity_kwh_per_unit?: number | null
+          energy_intensity_unit?: string | null
           energy_monitoring_systems?: string[] | null
           energy_renewable_percentage?: number | null
           energy_total_consumption_kwh?: number | null
@@ -6452,6 +6468,8 @@ export type Database = {
           iso_14001_certification_date?: string | null
           iso_14001_certifier?: string | null
           licenses_notes?: string | null
+          production_unit_reference?: string | null
+          production_volume_reference?: number | null
           report_id?: string
           sector_average_emissions_intensity?: number | null
           sector_average_energy_intensity?: number | null
@@ -11036,6 +11054,89 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "onboarding_selections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_metrics: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          data_source: string | null
+          distance_traveled_km: number | null
+          id: string
+          month: number | null
+          notes: string | null
+          operational_area_m2: number | null
+          operational_hours: number | null
+          period_end_date: string
+          period_start_date: string
+          production_type: string | null
+          production_unit: string | null
+          production_volume: number | null
+          revenue_brl: number | null
+          revenue_currency: string | null
+          service_units: number | null
+          updated_at: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+          year: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          data_source?: string | null
+          distance_traveled_km?: number | null
+          id?: string
+          month?: number | null
+          notes?: string | null
+          operational_area_m2?: number | null
+          operational_hours?: number | null
+          period_end_date: string
+          period_start_date: string
+          production_type?: string | null
+          production_unit?: string | null
+          production_volume?: number | null
+          revenue_brl?: number | null
+          revenue_currency?: string | null
+          service_units?: number | null
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          year: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          data_source?: string | null
+          distance_traveled_km?: number | null
+          id?: string
+          month?: number | null
+          notes?: string | null
+          operational_area_m2?: number | null
+          operational_hours?: number | null
+          period_end_date?: string
+          period_start_date?: string
+          production_type?: string | null
+          production_unit?: string | null
+          production_volume?: number | null
+          revenue_brl?: number | null
+          revenue_currency?: string | null
+          service_units?: number | null
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_metrics_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

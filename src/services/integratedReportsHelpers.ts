@@ -279,7 +279,7 @@ const convertToKwhEnergy = (quantity: number, unit: string, fuelType: string): n
   return quantityInBaseUnit * factor;
 };
 
-export const calculateTotalEnergyConsumption = async (): Promise<EnergyConsumptionResult> => {
+export const calculateTotalEnergyConsumption = async (year?: number): Promise<EnergyConsumptionResult> => {
   const { supabase } = await import('@/integrations/supabase/client');
   
   // Obter company_id do usuário
@@ -294,7 +294,7 @@ export const calculateTotalEnergyConsumption = async (): Promise<EnergyConsumpti
 
   if (!profile?.company_id) throw new Error('Empresa não encontrada');
 
-  const currentYear = new Date().getFullYear();
+  const currentYear = year || new Date().getFullYear();
   const breakdown: EnergyConsumptionResult['breakdown'] = [];
 
   // 1. ELETRICIDADE ADQUIRIDA (kWh direto)
