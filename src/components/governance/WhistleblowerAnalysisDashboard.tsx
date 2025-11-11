@@ -91,6 +91,35 @@ export function WhistleblowerAnalysisDashboard({ data, year }: WhistleblowerAnal
     });
   }
 
+  // Alertas de Eficácia de Resolução
+  if (!data.resolution_effectiveness.is_meeting_target) {
+    alerts.push({
+      severity: 'warning' as const,
+      message: `Taxa de resolução (${data.resolution_effectiveness.actual_resolution_rate.toFixed(1)}%) abaixo da meta (${data.resolution_effectiveness.target_resolution_rate}%). Faltam ${Math.abs(data.resolution_effectiveness.gap_to_target).toFixed(1)}% para atingir a meta.`
+    });
+  }
+
+  if (data.resolution_effectiveness.backlog_trend === 'worsening') {
+    alerts.push({
+      severity: 'error' as const,
+      message: `🔴 Backlog de denúncias aumentando. Priorizar resolução de casos pendentes.`
+    });
+  }
+
+  if (data.resolution_effectiveness.resolution_speed_score < 50) {
+    alerts.push({
+      severity: 'warning' as const,
+      message: `Score de velocidade de resolução baixo (${data.resolution_effectiveness.resolution_speed_score.toFixed(0)}/100). Apenas ${data.resolution_effectiveness.resolved_under_30_days_percentage.toFixed(1)}% resolvidas em <30 dias.`
+    });
+  }
+
+  if (data.resolution_effectiveness.resolved_with_action_taken === 0 && data.resolution_effectiveness.total_resolved > 0) {
+    alerts.push({
+      severity: 'warning' as const,
+      message: `⚠️ Nenhuma denúncia resolvida teve ação corretiva registrada. Verificar qualidade das resoluções.`
+    });
+  }
+
   // Badge de desempenho
   const getPerformanceBadgeVariant = () => {
     switch (data.performance_classification) {
@@ -147,6 +176,157 @@ export function WhistleblowerAnalysisDashboard({ data, year }: WhistleblowerAnal
                 {data.resolution_metrics.avg_resolution_time_days.toFixed(0)} dias
               </div>
               <p className="text-sm text-muted-foreground">Tempo Médio Resolução</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card Principal de Eficácia de Resolução */}
+      <Card className="border-l-4 border-l-success">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-success" />
+            Eficácia de Resolução de Denúncias
+          </CardTitle>
+          <CardDescription>
+            Indicador-chave de responsividade da governança ética (GRI 2-26)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Número absoluto + taxa */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="text-5xl font-bold" style={{ color: COLORS.success }}>
+                  {data.resolution_effectiveness.total_resolved}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Denúncias Resolvidas
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  de {data.resolution_effectiveness.total_received} recebidas
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="text-5xl font-bold" style={{ color: COLORS.success }}>
+                  {data.resolution_effectiveness.actual_resolution_rate.toFixed(1)}%
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Taxa de Resolução
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  {data.resolution_effectiveness.is_meeting_target ? (
+                    <Badge variant="default" className="bg-success">
+                      ✓ Meta Atingida (≥{data.resolution_effectiveness.target_resolution_rate}%)
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      ⚠ Abaixo da Meta ({Math.abs(data.resolution_effectiveness.gap_to_target).toFixed(1)}% faltando)
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress bar da meta */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progresso da Meta de Resolução</span>
+                <span className="font-semibold">
+                  {data.resolution_effectiveness.actual_resolution_rate.toFixed(1)}% / {data.resolution_effectiveness.target_resolution_rate}%
+                </span>
+              </div>
+              <Progress 
+                value={data.resolution_effectiveness.actual_resolution_rate} 
+                max={100}
+                className="h-3"
+              />
+            </div>
+            
+            {/* Funil de Resolução */}
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm">Funil de Resolução</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Recebidas</span>
+                  <span className="font-bold">{data.resolution_effectiveness.resolution_funnel.received}</span>
+                </div>
+                <div className="flex justify-between items-center pl-4">
+                  <span className="text-sm">Em Investigação</span>
+                  <span className="font-bold">{data.resolution_effectiveness.resolution_funnel.under_investigation}</span>
+                </div>
+                <div className="flex justify-between items-center pl-8">
+                  <span className="text-sm">Aguardando Ação</span>
+                  <span className="font-bold">{data.resolution_effectiveness.resolution_funnel.awaiting_action}</span>
+                </div>
+                <div className="flex justify-between items-center pl-12" style={{ color: COLORS.success }}>
+                  <span className="text-sm font-semibold">✓ Resolvidas</span>
+                  <span className="font-bold">{data.resolution_effectiveness.resolution_funnel.resolved}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Taxa de conversão: {data.resolution_effectiveness.resolution_funnel.conversion_rate.toFixed(1)}%
+              </p>
+            </div>
+            
+            {/* Score de velocidade de resolução */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Score de Velocidade de Resolução</span>
+                <span className="font-semibold">{data.resolution_effectiveness.resolution_speed_score.toFixed(0)}/100</span>
+              </div>
+              <Progress 
+                value={data.resolution_effectiveness.resolution_speed_score} 
+                max={100}
+                className="h-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                {data.resolution_effectiveness.resolved_under_30_days_percentage.toFixed(1)}% das denúncias resolvidas em menos de 30 dias
+              </p>
+            </div>
+            
+            {/* Tendência do backlog */}
+            <div className="flex items-center justify-between p-3 bg-muted rounded">
+              <span className="text-sm font-medium">Tendência do Backlog:</span>
+              {data.resolution_effectiveness.backlog_trend === 'improving' && (
+                <Badge variant="default" className="bg-success">
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                  Melhorando
+                </Badge>
+              )}
+              {data.resolution_effectiveness.backlog_trend === 'worsening' && (
+                <Badge variant="destructive">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  Piorando
+                </Badge>
+              )}
+              {data.resolution_effectiveness.backlog_trend === 'stable' && (
+                <Badge variant="secondary">
+                  <Minus className="h-3 w-3 mr-1" />
+                  Estável
+                </Badge>
+              )}
+            </div>
+            
+            {/* Qualidade da resolução */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div>
+                <div className="text-2xl font-bold" style={{ color: COLORS.success }}>
+                  {data.resolution_effectiveness.resolved_with_action_taken}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Com ação corretiva
+                </p>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-muted">
+                  {data.resolution_effectiveness.resolved_without_action}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Arquivadas sem ação
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -405,6 +585,45 @@ export function WhistleblowerAnalysisDashboard({ data, year }: WhistleblowerAnal
               </tbody>
             </table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Gráfico de Funil Visual */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Funil de Resolução de Denúncias</CardTitle>
+          <CardDescription>
+            Jornada das denúncias desde o recebimento até a resolução
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={[
+                { stage: 'Recebidas', count: data.resolution_effectiveness.resolution_funnel.received, fill: '#3b82f6' },
+                { stage: 'Em Investigação', count: data.resolution_effectiveness.resolution_funnel.under_investigation, fill: '#f59e0b' },
+                { stage: 'Aguardando Ação', count: data.resolution_effectiveness.resolution_funnel.awaiting_action, fill: '#fbbf24' },
+                { stage: 'Resolvidas', count: data.resolution_effectiveness.resolution_funnel.resolved, fill: '#10b981' }
+              ]}
+              layout="vertical"
+              margin={{ left: 120 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="stage" type="category" />
+              <Tooltip />
+              <Bar dataKey="count">
+                {[
+                  { fill: '#3b82f6' },
+                  { fill: '#f59e0b' },
+                  { fill: '#fbbf24' },
+                  { fill: '#10b981' }
+                ].map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
 

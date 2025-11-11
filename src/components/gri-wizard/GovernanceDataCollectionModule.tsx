@@ -319,10 +319,23 @@ export function GovernanceDataCollectionModule({ reportId, onComplete }: Governa
           wb_iso_37001_compliant: whistleblowerData.compliance_status.iso_37001_compliant,
           wb_compliance_missing_data: whistleblowerData.compliance_status.missing_data,
           wb_channel_utilization_rate: whistleblowerData.compliance_status.channel_utilization_rate,
-          wb_sector_benchmark_reports_per_100: whistleblowerData.sector_benchmark.reports_per_100_employees,
-          wb_sector_benchmark_resolution_days: whistleblowerData.sector_benchmark.typical_resolution_time_days,
-          wb_sector_benchmark_resolution_rate: whistleblowerData.sector_benchmark.typical_resolution_rate,
-          wb_calculation_date: new Date().toISOString(),
+        wb_sector_benchmark_reports_per_100: whistleblowerData.sector_benchmark.reports_per_100_employees,
+        wb_sector_benchmark_resolution_days: whistleblowerData.sector_benchmark.typical_resolution_time_days,
+        wb_sector_benchmark_resolution_rate: whistleblowerData.sector_benchmark.typical_resolution_rate,
+        wb_calculation_date: new Date().toISOString(),
+        
+        // Resolution Effectiveness
+        wb_target_resolution_rate: whistleblowerData.resolution_effectiveness.target_resolution_rate,
+        wb_is_meeting_target: whistleblowerData.resolution_effectiveness.is_meeting_target,
+        wb_gap_to_target: whistleblowerData.resolution_effectiveness.gap_to_target,
+        wb_resolved_with_action_taken: whistleblowerData.resolution_effectiveness.resolved_with_action_taken,
+        wb_resolved_without_action: whistleblowerData.resolution_effectiveness.resolved_without_action,
+        wb_resolved_under_30_days_percentage: whistleblowerData.resolution_effectiveness.resolved_under_30_days_percentage,
+        wb_resolution_funnel: whistleblowerData.resolution_effectiveness.resolution_funnel,
+        wb_resolution_speed_score: whistleblowerData.resolution_effectiveness.resolution_speed_score,
+        wb_backlog_trend: whistleblowerData.resolution_effectiveness.backlog_trend,
+        wb_best_resolved_categories: whistleblowerData.resolution_effectiveness.best_resolved_categories,
+        wb_worst_resolved_categories: whistleblowerData.resolution_effectiveness.worst_resolved_categories,
           updated_at: new Date().toISOString()
         })
         .eq('report_id', reportId);

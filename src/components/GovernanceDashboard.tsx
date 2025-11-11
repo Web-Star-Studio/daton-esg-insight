@@ -213,6 +213,60 @@ export function GovernanceDashboard({ governanceMetrics, riskMetrics }: Governan
           </div>
         </CardContent>
       </Card>
+
+      {/* Eficácia de Resolução */}
+      <Card className="border-l-4 border-l-green-500">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Eficácia de Resolução de Denúncias
+              </CardTitle>
+              <CardDescription>Indicador-chave de responsividade (GRI 2-26)</CardDescription>
+            </div>
+            <Badge variant="outline">Meta: 85%</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="text-3xl font-bold text-green-600">
+                  {(ethics?.totalReports || 0) - (ethics?.openReports || 0)} / {ethics?.totalReports || 0}
+                </div>
+                <p className="text-sm text-muted-foreground">Denúncias Resolvidas</p>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-green-600">
+                  {Math.round(ethics?.resolutionRate || 0)}%
+                </div>
+                <p className="text-sm text-muted-foreground">Taxa de Resolução</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progresso da Meta</span>
+                <span className="font-semibold">{Math.round(ethics?.resolutionRate || 0)}% / 85%</span>
+              </div>
+              <Progress value={ethics?.resolutionRate || 0} className="h-3" />
+            </div>
+            
+            <div className="pt-3 border-t">
+              {(ethics?.resolutionRate || 0) >= 85 ? (
+                <Badge variant="default" className="w-full justify-center bg-green-600">
+                  ✓ Meta Atingida
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="w-full justify-center">
+                  ⚠ {(85 - (ethics?.resolutionRate || 0)).toFixed(1)}% abaixo da meta
+                </Badge>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

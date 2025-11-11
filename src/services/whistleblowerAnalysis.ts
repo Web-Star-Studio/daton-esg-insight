@@ -102,6 +102,38 @@ export interface WhistleblowerAnalysisResult {
     typical_resolution_rate: number;
   };
   
+  // Eficácia de Resolução (KPI dedicado)
+  resolution_effectiveness: {
+    total_resolved: number;
+    total_received: number;
+    target_resolution_rate: number;
+    actual_resolution_rate: number;
+    is_meeting_target: boolean;
+    gap_to_target: number;
+    resolved_under_30_days_percentage: number;
+    resolved_with_action_taken: number;
+    resolved_without_action: number;
+    resolution_funnel: {
+      received: number;
+      under_investigation: number;
+      awaiting_action: number;
+      resolved: number;
+      conversion_rate: number;
+    };
+    resolution_speed_score: number;
+    backlog_trend: 'improving' | 'worsening' | 'stable';
+    best_resolved_categories: Array<{
+      category: string;
+      resolution_rate: number;
+      avg_resolution_days: number;
+    }>;
+    worst_resolved_categories: Array<{
+      category: string;
+      resolution_rate: number;
+      avg_resolution_days: number;
+    }>;
+  };
+  
   calculation_date: string;
 }
 
@@ -425,6 +457,67 @@ export async function calculateWhistleblowerMetrics(
   // Benchmarks setoriais (usando setor padrão)
   const sectorBenchmark = WHISTLEBLOWER_BENCHMARKS['Default'];
 
+  // === EFICÁCIA DE RESOLUÇÃO (KPI DEDICADO) ===
+  
+  // Meta de resolução
+  const targetResolutionRate = 85;
+  const gapToTarget = targetResolutionRate - resolutionRate;
+  const isMeetingTarget = resolutionRate >= targetResolutionRate;
+  
+  // Qualidade de resolução
+  const resolvedUnder30DaysPercentage = closedReports.length > 0
+    ? (reportsUnder30 / closedReports.length) * 100
+    : 0;
+  
+  // Denúncias com ação corretiva (assumindo que denúncias com status "Resolvida" tiveram ação)
+  const resolvedWithActionTaken = reports?.filter(r => r.status === 'Resolvida').length || 0;
+  const resolvedWithoutAction = reports?.filter(r => r.status === 'Arquivada').length || 0;
+  
+  // Funil de resolução
+  const underInvestigation = reports?.filter(r => r.status === 'Em Investigação').length || 0;
+  const awaitingAction = reports?.filter(r => r.status === 'Aguardando Ação').length || 0;
+  
+  const resolutionFunnel = {
+    received: totalReports,
+    under_investigation: underInvestigation,
+    awaiting_action: awaitingAction,
+    resolved: closedReports.length,
+    conversion_rate: totalReports > 0 ? (closedReports.length / totalReports) * 100 : 0
+  };
+  
+  // Score de velocidade (0-100)
+  const resolutionSpeedScore = Math.min(100, resolvedUnder30DaysPercentage * 1.5);
+  
+  // Tendência do backlog
+  const previousOpenReports = previousReports?.filter(r => !closedStatuses.includes(r.status)).length || 0;
+  let backlogTrend: 'improving' | 'worsening' | 'stable' = 'stable';
+  if (openReports.length < previousOpenReports) {
+    backlogTrend = 'improving';
+  } else if (openReports.length > previousOpenReports) {
+    backlogTrend = 'worsening';
+  }
+  
+  // Categorias com melhor/pior resolução
+  const categoriesWithResolution = byCategory
+    .filter(cat => cat.count >= 2) // Pelo menos 2 denúncias para ser estatisticamente relevante
+    .map(cat => {
+      const categoryReports = reports?.filter(r => r.category === cat.category) || [];
+      const categoryResolved = categoryReports.filter(r => closedStatuses.includes(r.status));
+      const categoryResolutionRate = categoryReports.length > 0 
+        ? (categoryResolved.length / categoryReports.length) * 100 
+        : 0;
+      
+      return {
+        category: cat.category,
+        resolution_rate: categoryResolutionRate,
+        avg_resolution_days: cat.avg_resolution_days
+      };
+    })
+    .sort((a, b) => b.resolution_rate - a.resolution_rate);
+  
+  const bestResolvedCategories = categoriesWithResolution.slice(0, 3);
+  const worstResolvedCategories = categoriesWithResolution.slice(-3).reverse();
+
   return {
     total_reports: totalReports,
     total_reports_current_year: currentYearReports.length,
@@ -470,6 +563,22 @@ export async function calculateWhistleblowerMetrics(
       reports_per_100_employees: sectorBenchmark.reports_per_100_employees_typical,
       typical_resolution_time_days: sectorBenchmark.typical_resolution_time_days,
       typical_resolution_rate: sectorBenchmark.typical_resolution_rate
+    },
+    resolution_effectiveness: {
+      total_resolved: closedReports.length,
+      total_received: totalReports,
+      target_resolution_rate: targetResolutionRate,
+      actual_resolution_rate: resolutionRate,
+      is_meeting_target: isMeetingTarget,
+      gap_to_target: gapToTarget,
+      resolved_under_30_days_percentage: resolvedUnder30DaysPercentage,
+      resolved_with_action_taken: resolvedWithActionTaken,
+      resolved_without_action: resolvedWithoutAction,
+      resolution_funnel: resolutionFunnel,
+      resolution_speed_score: resolutionSpeedScore,
+      backlog_trend: backlogTrend,
+      best_resolved_categories: bestResolvedCategories,
+      worst_resolved_categories: worstResolvedCategories
     },
     calculation_date: new Date().toISOString()
   };
