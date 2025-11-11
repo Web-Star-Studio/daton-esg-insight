@@ -6403,16 +6403,20 @@ export type Database = {
           ebitda_margin: number | null
           employee_wages_benefits: number | null
           environmental_benefits: Json | null
+          environmental_impact_from_revenue: Json | null
           environmental_investment: number | null
           estimated_roi_percentage: number | null
           governance_investment: number | null
           gri_201_1_compliant: boolean | null
           gri_203_1_compliant: boolean | null
+          gri_203_2_compliant: boolean | null
           has_financial_statements: boolean | null
           id: string
           investment_by_project_type: Json | null
           investment_growth_percentage: number | null
           is_above_sector_average: boolean | null
+          is_above_sector_avg_sustainable_revenue: boolean | null
+          is_sustainable_revenue_increasing: boolean | null
           local_procurement_percentage: number | null
           local_suppliers_count: number | null
           net_profit_margin: number | null
@@ -6420,18 +6424,35 @@ export type Database = {
           opex_percentage: number | null
           opex_sustainable: number | null
           previous_period_sustainable_investment: number | null
+          previous_period_sustainable_revenue: number | null
           report_id: string
           reporting_period_end: string | null
           reporting_period_start: string | null
+          revenue_circular_economy: number | null
+          revenue_clean_energy: number | null
+          revenue_other_esg: number | null
           revenue_per_employee: number | null
+          revenue_recycled_products: number | null
+          revenue_social_programs: number | null
+          revenue_sustainable_services: number | null
           revenue_total: number | null
           sector_avg_investment_percentage: number | null
+          sector_avg_sustainable_revenue_percentage: number | null
           social_benefits: Json | null
+          social_impact_from_revenue: Json | null
           social_investment_calculated: number | null
           sustainability_investment_percentage_revenue: number | null
           sustainable_investment_calculation_date: string | null
           sustainable_investment_missing_data: Json | null
           sustainable_projects_count: number | null
+          sustainable_revenue_breakdown: Json | null
+          sustainable_revenue_calculation_date: string | null
+          sustainable_revenue_data_source: string | null
+          sustainable_revenue_growth_percentage: number | null
+          sustainable_revenue_missing_data: Json | null
+          sustainable_revenue_percentage: number | null
+          sustainable_revenue_roi: number | null
+          sustainable_revenue_total: number | null
           total_suppliers_count: number | null
           total_sustainable_investment: number | null
           updated_at: string | null
@@ -6453,16 +6474,20 @@ export type Database = {
           ebitda_margin?: number | null
           employee_wages_benefits?: number | null
           environmental_benefits?: Json | null
+          environmental_impact_from_revenue?: Json | null
           environmental_investment?: number | null
           estimated_roi_percentage?: number | null
           governance_investment?: number | null
           gri_201_1_compliant?: boolean | null
           gri_203_1_compliant?: boolean | null
+          gri_203_2_compliant?: boolean | null
           has_financial_statements?: boolean | null
           id?: string
           investment_by_project_type?: Json | null
           investment_growth_percentage?: number | null
           is_above_sector_average?: boolean | null
+          is_above_sector_avg_sustainable_revenue?: boolean | null
+          is_sustainable_revenue_increasing?: boolean | null
           local_procurement_percentage?: number | null
           local_suppliers_count?: number | null
           net_profit_margin?: number | null
@@ -6470,18 +6495,35 @@ export type Database = {
           opex_percentage?: number | null
           opex_sustainable?: number | null
           previous_period_sustainable_investment?: number | null
+          previous_period_sustainable_revenue?: number | null
           report_id: string
           reporting_period_end?: string | null
           reporting_period_start?: string | null
+          revenue_circular_economy?: number | null
+          revenue_clean_energy?: number | null
+          revenue_other_esg?: number | null
           revenue_per_employee?: number | null
+          revenue_recycled_products?: number | null
+          revenue_social_programs?: number | null
+          revenue_sustainable_services?: number | null
           revenue_total?: number | null
           sector_avg_investment_percentage?: number | null
+          sector_avg_sustainable_revenue_percentage?: number | null
           social_benefits?: Json | null
+          social_impact_from_revenue?: Json | null
           social_investment_calculated?: number | null
           sustainability_investment_percentage_revenue?: number | null
           sustainable_investment_calculation_date?: string | null
           sustainable_investment_missing_data?: Json | null
           sustainable_projects_count?: number | null
+          sustainable_revenue_breakdown?: Json | null
+          sustainable_revenue_calculation_date?: string | null
+          sustainable_revenue_data_source?: string | null
+          sustainable_revenue_growth_percentage?: number | null
+          sustainable_revenue_missing_data?: Json | null
+          sustainable_revenue_percentage?: number | null
+          sustainable_revenue_roi?: number | null
+          sustainable_revenue_total?: number | null
           total_suppliers_count?: number | null
           total_sustainable_investment?: number | null
           updated_at?: string | null
@@ -6503,16 +6545,20 @@ export type Database = {
           ebitda_margin?: number | null
           employee_wages_benefits?: number | null
           environmental_benefits?: Json | null
+          environmental_impact_from_revenue?: Json | null
           environmental_investment?: number | null
           estimated_roi_percentage?: number | null
           governance_investment?: number | null
           gri_201_1_compliant?: boolean | null
           gri_203_1_compliant?: boolean | null
+          gri_203_2_compliant?: boolean | null
           has_financial_statements?: boolean | null
           id?: string
           investment_by_project_type?: Json | null
           investment_growth_percentage?: number | null
           is_above_sector_average?: boolean | null
+          is_above_sector_avg_sustainable_revenue?: boolean | null
+          is_sustainable_revenue_increasing?: boolean | null
           local_procurement_percentage?: number | null
           local_suppliers_count?: number | null
           net_profit_margin?: number | null
@@ -6520,18 +6566,35 @@ export type Database = {
           opex_percentage?: number | null
           opex_sustainable?: number | null
           previous_period_sustainable_investment?: number | null
+          previous_period_sustainable_revenue?: number | null
           report_id?: string
           reporting_period_end?: string | null
           reporting_period_start?: string | null
+          revenue_circular_economy?: number | null
+          revenue_clean_energy?: number | null
+          revenue_other_esg?: number | null
           revenue_per_employee?: number | null
+          revenue_recycled_products?: number | null
+          revenue_social_programs?: number | null
+          revenue_sustainable_services?: number | null
           revenue_total?: number | null
           sector_avg_investment_percentage?: number | null
+          sector_avg_sustainable_revenue_percentage?: number | null
           social_benefits?: Json | null
+          social_impact_from_revenue?: Json | null
           social_investment_calculated?: number | null
           sustainability_investment_percentage_revenue?: number | null
           sustainable_investment_calculation_date?: string | null
           sustainable_investment_missing_data?: Json | null
           sustainable_projects_count?: number | null
+          sustainable_revenue_breakdown?: Json | null
+          sustainable_revenue_calculation_date?: string | null
+          sustainable_revenue_data_source?: string | null
+          sustainable_revenue_growth_percentage?: number | null
+          sustainable_revenue_missing_data?: Json | null
+          sustainable_revenue_percentage?: number | null
+          sustainable_revenue_roi?: number | null
+          sustainable_revenue_total?: number | null
           total_suppliers_count?: number | null
           total_sustainable_investment?: number | null
           updated_at?: string | null

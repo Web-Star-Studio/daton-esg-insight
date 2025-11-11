@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { calculateSustainableInvestments, type SustainableInvestmentResult } from "@/services/sustainableInvestmentAnalysis";
 import { SustainableInvestmentDashboard } from "@/components/economic/SustainableInvestmentDashboard";
+import { calculateSustainableRevenue, type SustainableRevenueResult } from "@/services/sustainableRevenueAnalysis";
+import { SustainableRevenueDashboard } from "@/components/economic/SustainableRevenueDashboard";
 
 interface EconomicDataCollectionModuleProps {
   reportId: string;
@@ -117,6 +119,8 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
   const [companySector, setCompanySector] = useState('');
   const [sustainableInvestmentData, setSustainableInvestmentData] = useState<SustainableInvestmentResult | null>(null);
   const [calculatingSustainableInvestment, setCalculatingSustainableInvestment] = useState(false);
+  const [sustainableRevenueData, setSustainableRevenueData] = useState<SustainableRevenueResult | null>(null);
+  const [calculatingSustainableRevenue, setCalculatingSustainableRevenue] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -306,6 +310,42 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
     }
   };
 
+  const calculateSustainableRevenueMetrics = async () => {
+    try {
+      setCalculatingSustainableRevenue(true);
+      
+      const { data: report } = await supabase
+        .from('gri_reports')
+        .select('reporting_period_start, reporting_period_end')
+        .eq('id', reportId)
+        .single();
+
+      if (!report) return;
+
+      const revenueData = await calculateSustainableRevenue(
+        companyId,
+        report.reporting_period_start,
+        report.reporting_period_end
+      );
+
+      setSustainableRevenueData(revenueData);
+
+      toast({
+        title: "Receita ESG Calculada",
+        description: `Total: R$ ${revenueData.sustainable_revenue_total.toLocaleString('pt-BR')} (${revenueData.sustainable_revenue_percentage.toFixed(2)}% da receita total)`
+      });
+    } catch (error) {
+      console.error('Error calculating sustainable revenue:', error);
+      toast({
+        title: "Erro",
+        description: "Falha ao calcular receita sustentável",
+        variant: "destructive"
+      });
+    } finally {
+      setCalculatingSustainableRevenue(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -345,6 +385,31 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
           gri_203_1_compliant: sustainableInvestmentData.gri_203_1_compliant,
           sustainable_investment_missing_data: sustainableInvestmentData.missing_data,
           sustainable_investment_calculation_date: sustainableInvestmentData.calculation_date,
+        }),
+        
+        // Add sustainable revenue data if available
+        ...(sustainableRevenueData && {
+          sustainable_revenue_total: sustainableRevenueData.sustainable_revenue_total,
+          sustainable_revenue_percentage: sustainableRevenueData.sustainable_revenue_percentage,
+          revenue_clean_energy: sustainableRevenueData.by_category.clean_energy,
+          revenue_recycled_products: sustainableRevenueData.by_category.recycled_products,
+          revenue_circular_economy: sustainableRevenueData.by_category.circular_economy,
+          revenue_social_programs: sustainableRevenueData.by_category.social_programs,
+          revenue_sustainable_services: sustainableRevenueData.by_category.sustainable_services,
+          revenue_other_esg: sustainableRevenueData.by_category.other_esg,
+          sustainable_revenue_breakdown: sustainableRevenueData.detailed_breakdown,
+          previous_period_sustainable_revenue: sustainableRevenueData.previous_period_revenue,
+          sustainable_revenue_growth_percentage: sustainableRevenueData.growth_percentage,
+          is_sustainable_revenue_increasing: sustainableRevenueData.is_increasing,
+          sustainable_revenue_roi: sustainableRevenueData.sustainable_revenue_roi,
+          environmental_impact_from_revenue: sustainableRevenueData.environmental_benefits,
+          social_impact_from_revenue: sustainableRevenueData.social_benefits,
+          sector_avg_sustainable_revenue_percentage: sustainableRevenueData.sector_average_percentage,
+          is_above_sector_avg_sustainable_revenue: sustainableRevenueData.is_above_sector_average,
+          gri_203_2_compliant: sustainableRevenueData.gri_203_2_compliant,
+          sustainable_revenue_missing_data: sustainableRevenueData.missing_data,
+          sustainable_revenue_calculation_date: sustainableRevenueData.calculation_date,
+          sustainable_revenue_data_source: 'manual_input',
         }),
         
         updated_at: new Date().toISOString(),
@@ -664,6 +729,223 @@ export function EconomicDataCollectionModule({ reportId, onComplete }: EconomicD
                   <li>Projetos de Carbono (investimentos)</li>
                   <li>Separação CAPEX vs OPEX</li>
                   <li>Compliance GRI 201-1, 203-1</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* GRI 201-1, 203-2: Receita de Produtos/Serviços Sustentáveis */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                GRI 201-1, 203-2: Receita de Produtos/Serviços Sustentáveis
+              </CardTitle>
+              <CardDescription>
+                Receita proveniente de produtos/serviços com benefícios ambientais ou sociais
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={calculateSustainableRevenueMetrics} 
+              variant="outline" 
+              size="sm"
+              disabled={calculatingSustainableRevenue}
+            >
+              {calculatingSustainableRevenue ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Calculando...
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Calcular Receita ESG
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Dashboard de Receita Sustentável */}
+          {sustainableRevenueData && (
+            <SustainableRevenueDashboard
+              data={sustainableRevenueData}
+              year={new Date().getFullYear()}
+            />
+          )}
+
+          {/* Input Manual de Receita ESG */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Cadastro de Receita ESG por Categoria</CardTitle>
+              <CardDescription className="text-xs">
+                Informe a receita proveniente de produtos/serviços com benefícios ambientais ou sociais
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Total Calculado */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold">Total de Receita ESG:</span>
+                  <span className="text-2xl font-bold text-green-600">
+                    R$ {(
+                      (quantitativeData.revenue_clean_energy || 0) +
+                      (quantitativeData.revenue_recycled_products || 0) +
+                      (quantitativeData.revenue_circular_economy || 0) +
+                      (quantitativeData.revenue_social_programs || 0) +
+                      (quantitativeData.revenue_sustainable_services || 0) +
+                      (quantitativeData.revenue_other_esg || 0)
+                    ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                {quantitativeData.revenue_total && quantitativeData.revenue_total > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {(((
+                      (quantitativeData.revenue_clean_energy || 0) +
+                      (quantitativeData.revenue_recycled_products || 0) +
+                      (quantitativeData.revenue_circular_economy || 0) +
+                      (quantitativeData.revenue_social_programs || 0) +
+                      (quantitativeData.revenue_sustainable_services || 0) +
+                      (quantitativeData.revenue_other_esg || 0)
+                    ) / quantitativeData.revenue_total) * 100).toFixed(2)}% da receita total
+                  </p>
+                )}
+              </div>
+              
+              {/* Campos por Categoria */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    Energia Limpa (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: energia solar, eólica..."
+                    value={quantitativeData.revenue_clean_energy || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      revenue_clean_energy: parseFloat(e.target.value) || 0
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Receita de produtos/serviços de energia renovável
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    Produtos Reciclados (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: materiais reciclados..."
+                    value={quantitativeData.revenue_recycled_products || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      revenue_recycled_products: parseFloat(e.target.value) || 0
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Receita de produtos feitos com materiais reciclados
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                    Economia Circular (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: remanufatura, upcycling..."
+                    value={quantitativeData.revenue_circular_economy || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      revenue_circular_economy: parseFloat(e.target.value) || 0
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Receita de produtos de economia circular
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                    Programas Sociais (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: comércio justo, inclusão..."
+                    value={quantitativeData.revenue_social_programs || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      revenue_social_programs: parseFloat(e.target.value) || 0
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Receita de produtos com impacto social positivo
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
+                    Serviços Sustentáveis (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: consultoria ESG, auditorias..."
+                    value={quantitativeData.revenue_sustainable_services || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      revenue_sustainable_services: parseFloat(e.target.value) || 0
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Receita de serviços de sustentabilidade
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                    Outros ESG (R$)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="Outras receitas sustentáveis..."
+                    value={quantitativeData.revenue_other_esg || ''}
+                    onChange={(e) => setQuantitativeData({ 
+                      ...quantitativeData, 
+                      revenue_other_esg: parseFloat(e.target.value) || 0
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Outras receitas ESG não categorizadas acima
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {!sustainableRevenueData && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Calcular Receita ESG</AlertTitle>
+              <AlertDescription>
+                Preencha os valores acima e clique em "Calcular Receita ESG" para análise automática:
+                <ul className="list-disc ml-4 mt-2 text-xs">
+                  <li>% da receita total proveniente de ESG</li>
+                  <li>ROI de sustentabilidade (Receita ESG vs Investimento ESG)</li>
+                  <li>Comparação com benchmarks setoriais</li>
+                  <li>Compliance GRI 201-1, 203-2</li>
                 </ul>
               </AlertDescription>
             </Alert>
