@@ -319,3 +319,177 @@ export async function getWasteStatsByClass(year: number): Promise<{
     by_description
   };
 }
+
+/**
+ * Interface para análise de reciclagem por material
+ */
+export interface RecyclingByMaterialResult {
+  total_recycled_tonnes: number;
+  recycling_percentage: number;
+  by_material: Array<{
+    material: string;
+    quantity_tonnes: number;
+    percentage_of_recycling: number;
+    icon: string;
+  }>;
+  classification: {
+    level: 'excellent' | 'good' | 'regular' | 'low';
+    label: string;
+    color: string;
+  };
+  zero_waste_progress: number; // % para certificação Zero Waste (70% = mínimo)
+  comparison_previous_year?: {
+    previous_recycling_percentage: number;
+    change_percentage: number;
+    is_improving: boolean;
+  };
+}
+
+/**
+ * Calcula reciclagem por tipo de material com classificação automática
+ */
+export async function calculateRecyclingByMaterial(year: number): Promise<RecyclingByMaterialResult> {
+  const wasteData = await calculateTotalWasteGeneration(year);
+  
+  const total_recycled_tonnes = wasteData.by_treatment.recycling + wasteData.by_treatment.composting;
+  const recycling_percentage = wasteData.recycling_percentage + wasteData.composting_percentage;
+  
+  // Classificação automática por palavras-chave
+  const materialKeywords = {
+    'Papel/Papelão': ['papel', 'papelão', 'cartão', 'caixa', 'embalagem papel'],
+    'Plástico': ['plástico', 'pet', 'pvc', 'polietileno', 'embalagem plástica', 'filme'],
+    'Metal': ['metal', 'alumínio', 'ferro', 'aço', 'lata', 'sucata'],
+    'Vidro': ['vidro', 'garrafa'],
+    'Orgânico': ['orgânico', 'compostável', 'alimento', 'restos', 'bagaço'],
+    'Madeira': ['madeira', 'pallet', 'compensado'],
+    'Eletrônico': ['eletrônico', 'eletroeletrônico', 'e-lixo', 'equipamento'],
+    'Têxtil': ['têxtil', 'tecido', 'roupa', 'fibra'],
+    'Outros': []
+  };
+  
+  const materialIcons = {
+    'Papel/Papelão': '📄',
+    'Plástico': '♻️',
+    'Metal': '🔩',
+    'Vidro': '🍾',
+    'Orgânico': '🌱',
+    'Madeira': '🪵',
+    'Eletrônico': '💻',
+    'Têxtil': '👕',
+    'Outros': '📦'
+  };
+  
+  const materialQuantities: Record<string, number> = {
+    'Papel/Papelão': 0,
+    'Plástico': 0,
+    'Metal': 0,
+    'Vidro': 0,
+    'Orgânico': 0,
+    'Madeira': 0,
+    'Eletrônico': 0,
+    'Têxtil': 0,
+    'Outros': 0
+  };
+  
+  // Classificar resíduos recicláveis por material
+  wasteData.breakdown.forEach(item => {
+    const treatment = item.treatment_type.toLowerCase();
+    const description = item.waste_description.toLowerCase();
+    
+    // Só considerar resíduos reciclados/compostados
+    if (treatment.includes('recicla') || treatment.includes('reuso') || 
+        treatment.includes('compost') || treatment.includes('orgânico')) {
+      
+      let classified = false;
+      
+      // Tentar classificar por descrição
+      for (const [material, keywords] of Object.entries(materialKeywords)) {
+        if (material === 'Outros') continue;
+        
+        for (const keyword of keywords) {
+          if (description.includes(keyword)) {
+            materialQuantities[material] += item.quantity_tonnes;
+            classified = true;
+            break;
+          }
+        }
+        
+        if (classified) break;
+      }
+      
+      // Se não classificou, vai para "Outros"
+      if (!classified) {
+        materialQuantities['Outros'] += item.quantity_tonnes;
+      }
+    }
+  });
+  
+  // Criar array ordenado
+  const by_material = Object.entries(materialQuantities)
+    .map(([material, quantity]) => ({
+      material,
+      quantity_tonnes: Math.round(quantity * 1000) / 1000,
+      percentage_of_recycling: total_recycled_tonnes > 0 
+        ? Math.round((quantity / total_recycled_tonnes) * 100 * 100) / 100 
+        : 0,
+      icon: materialIcons[material as keyof typeof materialIcons] || '📦'
+    }))
+    .filter(item => item.quantity_tonnes > 0)
+    .sort((a, b) => b.quantity_tonnes - a.quantity_tonnes);
+  
+  // Classificação de desempenho
+  let classification: RecyclingByMaterialResult['classification'];
+  
+  if (recycling_percentage >= 70) {
+    classification = {
+      level: 'excellent',
+      label: 'Excelente',
+      color: 'text-green-600'
+    };
+  } else if (recycling_percentage >= 50) {
+    classification = {
+      level: 'good',
+      label: 'Bom',
+      color: 'text-blue-600'
+    };
+  } else if (recycling_percentage >= 30) {
+    classification = {
+      level: 'regular',
+      label: 'Regular',
+      color: 'text-yellow-600'
+    };
+  } else {
+    classification = {
+      level: 'low',
+      label: 'Baixo',
+      color: 'text-red-600'
+    };
+  }
+  
+  // Progresso para Zero Waste (mínimo 70% de desvio de aterro)
+  const zero_waste_progress = Math.min(100, (recycling_percentage / 70) * 100);
+  
+  // Comparação com ano anterior
+  let comparison_previous_year;
+  try {
+    const previousYearData = await calculateRecyclingByMaterial(year - 1);
+    const change_percentage = recycling_percentage - previousYearData.recycling_percentage;
+    
+    comparison_previous_year = {
+      previous_recycling_percentage: Math.round(previousYearData.recycling_percentage * 100) / 100,
+      change_percentage: Math.round(change_percentage * 100) / 100,
+      is_improving: change_percentage > 0
+    };
+  } catch (error) {
+    console.log('Dados do ano anterior não disponíveis para comparação de reciclagem');
+  }
+  
+  return {
+    total_recycled_tonnes: Math.round(total_recycled_tonnes * 1000) / 1000,
+    recycling_percentage: Math.round(recycling_percentage * 100) / 100,
+    by_material,
+    classification,
+    zero_waste_progress: Math.round(zero_waste_progress * 100) / 100,
+    comparison_previous_year
+  };
+}

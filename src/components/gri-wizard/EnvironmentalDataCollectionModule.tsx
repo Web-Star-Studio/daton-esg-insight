@@ -32,8 +32,9 @@ import { WaterConsumptionDashboard } from "@/components/water/WaterConsumptionDa
 import { WaterConsumptionForm } from "@/components/water/WaterConsumptionForm";
 import { WaterIntensityDashboard } from "@/components/water/WaterIntensityDashboard";
 import { WaterReusePercentageDashboard } from "@/components/water/WaterReusePercentageDashboard";
-import { calculateTotalWasteGeneration, calculateWasteIntensity, type WasteGenerationResult } from "@/services/wasteManagement";
+import { calculateTotalWasteGeneration, calculateWasteIntensity, calculateRecyclingByMaterial, type WasteGenerationResult, type RecyclingByMaterialResult } from "@/services/wasteManagement";
 import { WasteTotalGenerationDashboard } from "@/components/waste/WasteTotalGenerationDashboard";
+import { WasteRecyclingDashboard } from "@/components/waste/WasteRecyclingDashboard";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -108,6 +109,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [waterReuseData, setWaterReuseData] = useState<any>(null);
   const [wasteData, setWasteData] = useState<WasteGenerationResult | null>(null);
   const [wasteIntensityData, setWasteIntensityData] = useState<any>(null);
+  const [recyclingData, setRecyclingData] = useState<RecyclingByMaterialResult | null>(null);
 
   useEffect(() => {
     loadExistingData();
@@ -229,9 +231,12 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       const intensity = await calculateWasteIntensity(reportYear);
       setWasteIntensityData(intensity);
       
+      const recycling = await calculateRecyclingByMaterial(reportYear);
+      setRecyclingData(recycling);
+      
       if (wasteGeneration.total_generated_tonnes > 0) {
         toast.success('Dados de resíduos calculados!', {
-          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)} toneladas geradas`
+          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)} toneladas geradas (${recycling.recycling_percentage.toFixed(1)}% reciclado)`
         });
       }
     } catch (error) {
@@ -880,6 +885,15 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           wasteData={wasteData}
           year={reportYear}
           intensityData={wasteIntensityData}
+        />
+      )}
+
+      {/* Waste Recycling Dashboard */}
+      {recyclingData && (
+        <WasteRecyclingDashboard
+          recyclingData={recyclingData}
+          year={reportYear}
+          target={70}
         />
       )}
 
