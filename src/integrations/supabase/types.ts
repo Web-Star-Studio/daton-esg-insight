@@ -2009,6 +2009,7 @@ export type Database = {
       companies: {
         Row: {
           annual_revenue: number | null
+          auto_ai_processing: boolean | null
           business_units: Json | null
           cnpj: string
           created_at: string
@@ -2031,6 +2032,7 @@ export type Database = {
         }
         Insert: {
           annual_revenue?: number | null
+          auto_ai_processing?: boolean | null
           business_units?: Json | null
           cnpj: string
           created_at?: string
@@ -2053,6 +2055,7 @@ export type Database = {
         }
         Update: {
           annual_revenue?: number | null
+          auto_ai_processing?: boolean | null
           business_units?: Json | null
           cnpj?: string
           created_at?: string

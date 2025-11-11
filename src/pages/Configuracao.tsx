@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client"
 import { getUserAndCompany, type UserWithCompany } from "@/utils/auth"
 import { sanitizeFormData } from "@/utils/inputSanitizer"
 import { useAuth } from "@/contexts/AuthContext"
+import { AIProcessingSettings } from "@/components/settings/AIProcessingSettings"
 
 const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -483,13 +484,15 @@ export default function Configuracao() {
 
           {activeSection === "integracoes" && (
             <div className="space-y-6">
+              <AIProcessingSettings />
+              
               <Card>
                 <CardHeader>
-                  <CardTitle>Integrações Disponíveis</CardTitle>
+                  <CardTitle>Outras Integrações</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center text-muted-foreground py-6">
-                    <p>Integrações não configuradas ainda.</p>
+                    <p>Outras integrações não configuradas ainda.</p>
                   </div>
                 </CardContent>
               </Card>

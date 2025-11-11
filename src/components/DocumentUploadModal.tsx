@@ -7,11 +7,12 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, X, File, Plus, Bot, Zap, FileText, Brain, CheckCircle } from 'lucide-react';
+import { Upload, X, File, Plus, Bot, Zap, FileText, Brain, CheckCircle, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadDocument } from '@/services/documents';
 import { processDocumentWithAI } from '@/services/documentAI';
 import { logger } from '@/utils/logger';
+import { useAutoAIProcessing } from '@/hooks/useAutoAIProcessing';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;
@@ -42,6 +43,9 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const [processWithAI, setProcessWithAI] = useState(true);
   const [aiProcessingStatus, setAIProcessingStatus] = useState<string>('');
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
+  
+  // Check if auto AI processing is enabled
+  const { data: autoProcessing } = useAutoAIProcessing();
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -119,6 +123,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
     try {
       const results: ProcessingResult[] = [];
+      const isAutoProcessingEnabled = autoProcessing?.enabled || false;
 
       // Fase 1: Upload dos arquivos
       for (let i = 0; i < files.length; i++) {
@@ -127,6 +132,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         const document = await uploadDocument(file, {
           folder_id: selectedFolderId || undefined,
           tags: tags.length > 0 ? tags : undefined,
+          // Skip auto processing if we want to do manual processing OR if auto is disabled
+          skipAutoProcessing: !isAutoProcessingEnabled && !processWithAI,
           onProgress: (progress) => {
             const totalProgress = ((i / files.length) * 50) + (progress / files.length / 2);
             setUploadProgress(Math.round(totalProgress));
@@ -143,8 +150,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       setProcessingResults(results);
       toast.success(`${files.length} arquivo(s) enviado(s) com sucesso`);
 
-      // Fase 2: Processamento com IA (se habilitado)
-      if (processWithAI) {
+      // Fase 2: Processamento manual com IA (apenas se auto-processing está DESATIVADO e toggle está ativado)
+      if (!isAutoProcessingEnabled && processWithAI) {
         setAIProcessingStatus('Iniciando processamento com IA...');
         
         for (let i = 0; i < results.length; i++) {
@@ -171,6 +178,10 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         
         setAIProcessingStatus('Processamento com IA concluído!');
         toast.success('Documentos enviados para processamento IA');
+      } else if (isAutoProcessingEnabled) {
+        // Informar que o processamento automático está em andamento
+        toast.success('Documentos sendo processados automaticamente pela IA em segundo plano');
+        setAIProcessingStatus('Processamento automático em andamento...');
       }
 
       setUploadProgress(100);
@@ -223,36 +234,64 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* IA Processing Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Bot className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Processar com IA</Label>
-                <p className="text-xs text-muted-foreground">
-                  Extração automática de dados dos documentos
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={processWithAI}
-              onCheckedChange={setProcessWithAI}
-              disabled={uploading}
-            />
-          </div>
+        {/* Auto-Processing Status Badge */}
+        {autoProcessing?.enabled && (
+          <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+            <Zap className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertDescription className="text-green-800 dark:text-green-300 flex items-center justify-between">
+              <span>
+                <strong>Processamento automático ativado</strong>
+                <br />
+                Os documentos serão processados automaticamente após o upload.
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => window.location.href = '/configuracao'}
+                type="button"
+              >
+                <Settings className="h-3 w-3 mr-1" />
+                Configurar
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
-          {processWithAI && (
-            <Alert>
-              <Brain className="h-4 w-4" />
-              <AlertDescription>
-                A IA analisará automaticamente seus documentos e extrairá dados relevantes 
-                para facilitar a importação para o sistema ESG/GHG. 
-                Os dados extraídos serão disponibilizados para revisão manual.
-              </AlertDescription>
-            </Alert>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* IA Processing Toggle - Only shown when auto-processing is disabled */}
+          {!autoProcessing?.enabled && (
+            <>
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Bot className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Processar com IA</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Extração automática de dados dos documentos
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={processWithAI}
+                  onCheckedChange={setProcessWithAI}
+                  disabled={uploading}
+                />
+              </div>
+
+              {processWithAI && (
+                <Alert>
+                  <Brain className="h-4 w-4" />
+                  <AlertDescription>
+                    A IA analisará automaticamente seus documentos e extrairá dados relevantes 
+                    para facilitar a importação para o sistema ESG/GHG. 
+                    Os dados extraídos serão disponibilizados para revisão manual.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
           )}
 
           {/* File Drop Zone */}

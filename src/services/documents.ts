@@ -215,6 +215,7 @@ export const uploadDocument = async (
     related_model?: string;
     related_id?: string;
     onProgress?: (progress: number) => void;
+    skipAutoProcessing?: boolean;
   }
 ): Promise<Document> => {
   console.log('📤 Uploading document:', file.name, options);
@@ -261,6 +262,15 @@ export const uploadDocument = async (
   if (!profile?.company_id) {
     throw new Error('User profile or company not found');
   }
+
+  // Check if auto AI processing is enabled
+  const { data: company } = await supabase
+    .from('companies')
+    .select('auto_ai_processing')
+    .eq('id', profile.company_id)
+    .maybeSingle();
+
+  const shouldAutoProcess = company?.auto_ai_processing && !options?.skipAutoProcessing;
 
   // Sanitize filename
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -330,6 +340,19 @@ export const uploadDocument = async (
   }
 
   console.log('✅ Document uploaded successfully:', data.id);
+
+  // Trigger automatic AI processing if enabled
+  if (shouldAutoProcess) {
+    console.log('🤖 Auto-processing enabled, triggering AI analysis...');
+    // Import dynamically to avoid circular dependencies
+    import('./documentAI').then(({ processDocumentWithAI }) => {
+      processDocumentWithAI(data.id).catch((err) => {
+        console.error('❌ Auto AI processing failed:', err);
+        // Don't throw error - upload was successful, just processing failed
+      });
+    });
+  }
+
   return data;
 };
 
