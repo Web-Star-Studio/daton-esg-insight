@@ -207,6 +207,12 @@ export const getDocuments = async (
   };
 };
 
+// Utility function to normalize file paths
+export const normalizePath = (path: string): string => {
+  // Remove 'documents/' prefix if present
+  return path.replace(/^documents\//, '');
+};
+
 export const uploadDocument = async (
   file: File,
   options?: {
@@ -278,7 +284,8 @@ export const uploadDocument = async (
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(7);
   const fileName = `${timestamp}-${randomId}.${fileExt}`;
-  const filePath = `documents/${fileName}`;
+  // Store without 'documents/' prefix - bucket name is enough
+  const filePath = fileName;
 
   console.log('📁 Storage path:', filePath);
 
@@ -427,7 +434,7 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
   // Get document info
   const { data: document, error: fetchError } = await supabase
     .from('documents')
-    .select('file_path, file_name')
+    .select('file_path, file_name, file_type')
     .eq('id', documentId)
     .maybeSingle();
 
@@ -440,19 +447,144 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
     throw new Error('Documento não encontrado');
   }
 
-  // Get signed URL for download
-  const { data, error } = await supabase.storage
-    .from('documents')
-    .createSignedUrl(document.file_path, 60); // 60 seconds expiry
+  const normalizedPath = normalizePath(document.file_path);
 
-  if (error) {
-    console.error('Error creating signed URL:', error);
-    throw new Error(`Failed to create download URL: ${error.message}`);
+  // Try multiple fallback methods
+  // Method 1: Signed URL
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(normalizedPath, 60);
+
+  if (!signedError && signedData?.signedUrl) {
+    return {
+      url: signedData.signedUrl,
+      fileName: document.file_name
+    };
   }
 
+  console.warn('Signed URL failed, trying direct download...', signedError);
+
+  // Method 2: Direct download and create blob URL
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from('documents')
+    .download(normalizedPath);
+
+  if (!downloadError && blob) {
+    const url = URL.createObjectURL(blob);
+    return {
+      url,
+      fileName: document.file_name
+    };
+  }
+
+  console.error('All download methods failed:', { signedError, downloadError });
+  throw new Error(`Falha ao criar URL de download: ${downloadError?.message || signedError?.message}`);
+};
+
+// Get document preview (for modal display)
+export const getDocumentPreview = async (documentId: string): Promise<{ url: string; type: string }> => {
+  console.log('Getting preview URL for document:', documentId);
+
+  const { data: document, error: fetchError } = await supabase
+    .from('documents')
+    .select('file_path, file_type')
+    .eq('id', documentId)
+    .maybeSingle();
+
+  if (fetchError || !document) {
+    throw new Error('Documento não encontrado');
+  }
+
+  const normalizedPath = normalizePath(document.file_path);
+
+  // Method 1: Try signed URL first
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(normalizedPath, 300); // 5 minutes for preview
+
+  if (!signedError && signedData?.signedUrl) {
+    return {
+      url: signedData.signedUrl,
+      type: document.file_type
+    };
+  }
+
+  console.warn('Signed URL failed for preview, trying download...', signedError);
+
+  // Method 2: Download and create blob URL
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from('documents')
+    .download(normalizedPath);
+
+  if (!downloadError && blob) {
+    const url = URL.createObjectURL(blob);
+    return {
+      url,
+      type: document.file_type
+    };
+  }
+
+  throw new Error(`Falha ao criar preview: ${downloadError?.message || signedError?.message}`);
+};
+
+// Get text content for CSV/text preview
+export const getDocumentTextPreview = async (documentId: string): Promise<{
+  content: string;
+  headers?: string[];
+  rows?: any[];
+  totalLines: number;
+}> => {
+  console.log('Getting text preview for document:', documentId);
+
+  const { data: document, error: fetchError } = await supabase
+    .from('documents')
+    .select('file_path, file_type')
+    .eq('id', documentId)
+    .maybeSingle();
+
+  if (fetchError || !document) {
+    throw new Error('Documento não encontrado');
+  }
+
+  const normalizedPath = normalizePath(document.file_path);
+
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from('documents')
+    .download(normalizedPath);
+
+  if (downloadError || !blob) {
+    throw new Error(`Falha ao baixar arquivo: ${downloadError?.message}`);
+  }
+
+  const text = await blob.text();
+  const lines = text.split('\n');
+  const totalLines = lines.length;
+
+  // For CSV, parse first 100 rows
+  if (document.file_type.includes('csv')) {
+    const delimiter = text.includes(';') ? ';' : ',';
+    const headers = lines[0]?.split(delimiter).map(h => h.trim().replace(/^"|"$/g, '')) || [];
+    const rows = lines.slice(1, 101).map(line => {
+      const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+      const row: Record<string, string> = {};
+      headers.forEach((header, idx) => {
+        row[header] = values[idx] || '';
+      });
+      return row;
+    }).filter(row => Object.values(row).some(v => v));
+
+    return {
+      content: lines.slice(0, 200).join('\n'), // First 200 lines as text
+      headers,
+      rows,
+      totalLines
+    };
+  }
+
+  // For plain text, return first 200 lines
   return {
-    url: data.signedUrl,
-    fileName: document.file_name
+    content: lines.slice(0, 200).join('\n'),
+    totalLines
   };
 };
 
@@ -521,40 +653,6 @@ export const bulkUpdateTags = async (documentIds: string[], tags: string[]): Pro
   }
 };
 
-// Document preview
-export const getDocumentPreview = async (documentId: string): Promise<{ url: string; type: string }> => {
-  console.log('Getting preview for document:', documentId);
-
-  const { data: document, error: fetchError } = await supabase
-    .from('documents')
-    .select('file_path, file_type')
-    .eq('id', documentId)
-    .maybeSingle();
-
-  if (fetchError) {
-    console.error('Error fetching document:', fetchError);
-    throw new Error(`Failed to fetch document: ${fetchError.message}`);
-  }
-  
-  if (!document) {
-    throw new Error('Documento não encontrado');
-  }
-
-  // Get signed URL for preview
-  const { data, error } = await supabase.storage
-    .from('documents')
-    .createSignedUrl(document.file_path, 300); // 5 minutes expiry
-
-  if (error) {
-    console.error('Error creating preview URL:', error);
-    throw new Error(`Failed to create preview URL: ${error.message}`);
-  }
-
-  return {
-    url: data.signedUrl,
-    type: document.file_type
-  };
-};
 
 // Utility functions
 export const getFileIcon = (fileType: string): string => {

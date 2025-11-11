@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Download,
   ExternalLink,
@@ -13,7 +14,7 @@ import {
   Archive,
   X
 } from 'lucide-react';
-import { getDocumentPreview, downloadDocument } from '@/services/documents';
+import { getDocumentPreview, getDocumentTextPreview, downloadDocument } from '@/services/documents';
 import type { Document } from '@/services/documents';
 import { toast } from 'sonner';
 
@@ -29,6 +30,12 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   onClose
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [textPreview, setTextPreview] = useState<{
+    content: string;
+    headers?: string[];
+    rows?: any[];
+    totalLines: number;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,9 +46,14 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
 
     return () => {
       setPreviewUrl(null);
+      setTextPreview(null);
       setError(null);
     };
   }, [document, isOpen]);
+
+  const isTextFile = (fileType: string) => {
+    return fileType.includes('csv') || fileType.includes('text');
+  };
 
   const loadPreview = async () => {
     if (!document) return;
@@ -50,8 +62,15 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
       setLoading(true);
       setError(null);
 
-      const preview = await getDocumentPreview(document.id);
-      setPreviewUrl(preview.url);
+      // For CSV/text files, load text preview
+      if (isTextFile(document.file_type)) {
+        const preview = await getDocumentTextPreview(document.id);
+        setTextPreview(preview);
+      } else {
+        // For other files, load URL preview
+        const preview = await getDocumentPreview(document.id);
+        setPreviewUrl(preview.url);
+      }
     } catch (error) {
       console.error('Error loading preview:', error);
       setError('Não foi possível carregar a visualização');
@@ -90,7 +109,8 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
     return (
       fileType.includes('pdf') ||
       fileType.includes('image') ||
-      fileType.includes('text')
+      fileType.includes('text') ||
+      fileType.includes('csv')
     );
   };
 
@@ -162,6 +182,66 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
       );
     }
 
+    // CSV/Text preview
+    if (isTextFile(document.file_type) && textPreview) {
+      if (textPreview.headers && textPreview.rows) {
+        // CSV table view
+        return (
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Exibindo {textPreview.rows.length} de {textPreview.totalLines} linhas
+            </div>
+            <div className="max-h-96 overflow-auto border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {textPreview.headers.map((header, idx) => (
+                      <TableHead key={idx} className="font-semibold">
+                        {header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {textPreview.rows.map((row, idx) => (
+                    <TableRow key={idx}>
+                      {textPreview.headers!.map((header, cellIdx) => (
+                        <TableCell key={cellIdx} className="text-sm">
+                          {row[header]}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {textPreview.totalLines > 100 && (
+              <p className="text-xs text-muted-foreground">
+                Visualização parcial. Faça o download para ver o arquivo completo.
+              </p>
+            )}
+          </div>
+        );
+      } else {
+        // Plain text view
+        return (
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Exibindo primeiras 200 linhas de {textPreview.totalLines}
+            </div>
+            <pre className="max-h-96 overflow-auto p-4 bg-muted rounded-lg text-sm font-mono whitespace-pre-wrap">
+              {textPreview.content}
+            </pre>
+            {textPreview.totalLines > 200 && (
+              <p className="text-xs text-muted-foreground">
+                Visualização parcial. Faça o download para ver o arquivo completo.
+              </p>
+            )}
+          </div>
+        );
+      }
+    }
+
     return null;
   };
 
@@ -192,6 +272,9 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
           <DialogTitle className="flex items-center gap-2 pr-8">
             <span className="truncate">{document.file_name}</span>
           </DialogTitle>
+          <DialogDescription>
+            Visualização de documento - {document.file_type}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

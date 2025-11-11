@@ -59,11 +59,15 @@ serve(async (req) => {
       throw new Error('Documento não encontrado');
     }
 
+    // Normalize file path before sending to parse function
+    const normalizedPath = document.file_path.replace(/^documents\//, '');
+    console.log('📁 Using normalized path for parsing:', normalizedPath);
+
     const { data: parseResult, error: parseError } = await supabaseClient.functions.invoke(
       'parse-chat-document',
       {
         body: {
-          filePath: document.file_path,
+          filePath: normalizedPath,
           fileType: document.file_type,
           useVision: document.file_type.includes('image'),
           useCache: true,

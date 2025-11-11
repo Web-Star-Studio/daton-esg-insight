@@ -46,6 +46,10 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Normalize file path (remove 'documents/' prefix if present)
+    const normalizedPath = filePath.replace(/^documents\//, '');
+    console.log('📁 Normalized path:', normalizedPath, '(original:', filePath, ')');
+
     // Download file from storage - try different buckets
     let fileData: Blob | null = null;
     let downloadError: any = null;
@@ -53,19 +57,21 @@ Deno.serve(async (req) => {
     const chatResult = await supabaseClient
       .storage
       .from('chat-attachments')
-      .download(filePath);
+      .download(normalizedPath);
     
     if (chatResult.data) {
       fileData = chatResult.data;
+      console.log('✅ File found in chat-attachments');
     } else {
       console.log('File not in chat-attachments, trying documents bucket...');
       const docsResult = await supabaseClient
         .storage
         .from('documents')
-        .download(filePath);
+        .download(normalizedPath);
       
       if (docsResult.data) {
         fileData = docsResult.data;
+        console.log('✅ File found in documents');
       } else {
         downloadError = docsResult.error || chatResult.error;
       }
