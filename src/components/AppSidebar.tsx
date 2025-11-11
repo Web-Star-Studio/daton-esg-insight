@@ -43,7 +43,7 @@ import {
   Settings, Bell, Clock, Building2, MapPin,
   Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
-  FolderKanban, DollarSign, HelpCircle
+  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud
 } from "lucide-react"
 
 // Nova estrutura ESG completa reorganizada
@@ -72,6 +72,18 @@ const menuSections: MenuSection[] = [
     items: [
       { id: "dashboard", title: "Painel Principal", icon: LayoutDashboard, path: "/dashboard", description: "Visão geral do sistema ESG" },
       { id: "performance", title: "Análise de Desempenho", icon: TrendingUp, path: "/desempenho", description: "Monitoramento de KPIs ESG" }
+    ]
+  },
+  {
+    id: "monitoring",
+    title: "MONITORAMENTO ESG",
+    isCollapsible: true,
+    defaultOpen: true,
+    items: [
+      { id: "monitoring-water", title: "Monitoramento de Água", icon: Droplets, path: "/monitoramento-agua", description: "Gestão contínua de recursos hídricos (GRI 303)" },
+      { id: "monitoring-energy", title: "Monitoramento de Energia", icon: Zap, path: "/monitoramento-energia", description: "Gestão contínua de consumo energético (GRI 302)" },
+      { id: "monitoring-emissions", title: "Monitoramento de Emissões", icon: Cloud, path: "/monitoramento-emissoes", description: "Inventário contínuo de GEE (GRI 305)" },
+      { id: "monitoring-waste", title: "Monitoramento de Resíduos", icon: Trash2, path: "/monitoramento-residuos", description: "Gestão contínua de resíduos sólidos (GRI 306)" }
     ]
   },
   {
