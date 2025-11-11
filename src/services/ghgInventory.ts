@@ -54,6 +54,21 @@ export interface EmissionsByScope {
   calculation_date: string;
 }
 
+export interface GHGReductionTarget {
+  goal_id?: string;
+  base_year: number;
+  base_year_emissions: number;
+  target_year: number;
+  target_reduction_percent: number;
+  target_emissions: number;
+  current_year: number;
+  current_emissions: number;
+  current_reduction_percent: number;
+  is_on_track: boolean;
+  required_annual_reduction: number;
+  actual_annual_reduction: number;
+}
+
 /**
  * Calcula emissões totais de GEE por escopo
  */
@@ -328,7 +343,25 @@ export const generateInventorySummary = async (
     else summary.scope_3_other = (summary.scope_3_other || 0) + catData.emissions;
   });
   
-  return await saveGHGInventorySummary(summary);
+  const savedSummary = await saveGHGInventorySummary(summary);
+  
+  // Atualizar metas de redução de GEE automaticamente
+  const { data: ghgGoals } = await supabase
+    .from('goals')
+    .select('id')
+    .eq('metric_key', 'ghg_reduction_percent');
+  
+  if (ghgGoals && ghgGoals.length > 0) {
+    for (const goal of ghgGoals) {
+      try {
+        await updateGHGGoalProgress(goal.id);
+      } catch (error) {
+        console.error(`Erro ao atualizar meta ${goal.id}:`, error);
+      }
+    }
+  }
+  
+  return savedSummary;
 };
 
 /**
@@ -356,4 +389,138 @@ export const getGHGInventorySummary = async (year: number): Promise<GHGInventory
   
   if (error) throw error;
   return data;
+};
+
+/**
+ * Calcula redução de GEE entre ano base e ano atual
+ */
+export const calculateGHGReduction = async (
+  baseYear: number,
+  currentYear: number,
+  companyId?: string
+): Promise<GHGReductionTarget> => {
+  // 1. Buscar emissões do ano base
+  const baseYearSummary = await getGHGInventorySummary(baseYear);
+  if (!baseYearSummary) {
+    throw new Error(`Inventário do ano base ${baseYear} não encontrado`);
+  }
+  
+  // 2. Buscar emissões do ano atual
+  const currentYearSummary = await getGHGInventorySummary(currentYear);
+  if (!currentYearSummary) {
+    throw new Error(`Inventário do ano atual ${currentYear} não encontrado`);
+  }
+  
+  const baseEmissions = baseYearSummary.total_emissions;
+  const currentEmissions = currentYearSummary.total_emissions;
+  
+  // 3. Calcular redução percentual
+  const reductionPercent = ((baseEmissions - currentEmissions) / baseEmissions) * 100;
+  
+  // 4. Calcular redução anual média
+  const yearsDiff = currentYear - baseYear;
+  const annualReduction = yearsDiff > 0 ? reductionPercent / yearsDiff : 0;
+  
+  return {
+    base_year: baseYear,
+    base_year_emissions: baseEmissions,
+    current_year: currentYear,
+    current_emissions: currentEmissions,
+    current_reduction_percent: Math.round(reductionPercent * 100) / 100,
+    actual_annual_reduction: Math.round(annualReduction * 100) / 100,
+    target_year: 0,
+    target_reduction_percent: 0,
+    target_emissions: 0,
+    required_annual_reduction: 0,
+    is_on_track: reductionPercent > 0
+  };
+};
+
+/**
+ * Avalia se meta de redução está sendo cumprida
+ */
+export const evaluateGHGReductionGoal = async (
+  goalId: string
+): Promise<GHGReductionTarget> => {
+  const { data: goal, error } = await supabase
+    .from('goals')
+    .select('*')
+    .eq('id', goalId)
+    .eq('metric_key', 'ghg_reduction_percent')
+    .single();
+  
+  if (error || !goal) {
+    throw new Error('Meta de redução de GEE não encontrada');
+  }
+  
+  // Extrair ano base do baseline_period
+  const baseYear = parseInt(goal.baseline_period || '2020');
+  const currentYear = new Date().getFullYear();
+  const targetYear = new Date(goal.deadline_date).getFullYear();
+  
+  // Calcular redução atual
+  const reduction = await calculateGHGReduction(baseYear, currentYear);
+  
+  // Calcular meta
+  const targetReductionPercent = goal.target_value;
+  const targetEmissions = reduction.base_year_emissions * (1 - targetReductionPercent / 100);
+  
+  // Calcular redução anual necessária
+  const yearsToTarget = targetYear - baseYear;
+  const requiredAnnualReduction = yearsToTarget > 0 
+    ? targetReductionPercent / yearsToTarget 
+    : 0;
+  
+  // Avaliar se está no caminho certo
+  const yearsElapsed = currentYear - baseYear;
+  const expectedReductionNow = requiredAnnualReduction * yearsElapsed;
+  const isOnTrack = reduction.current_reduction_percent >= expectedReductionNow * 0.9;
+  
+  return {
+    goal_id: goalId,
+    base_year: baseYear,
+    base_year_emissions: reduction.base_year_emissions,
+    current_year: currentYear,
+    current_emissions: reduction.current_emissions,
+    current_reduction_percent: reduction.current_reduction_percent,
+    target_year: targetYear,
+    target_reduction_percent: targetReductionPercent,
+    target_emissions: Math.round(targetEmissions * 1000) / 1000,
+    required_annual_reduction: Math.round(requiredAnnualReduction * 100) / 100,
+    actual_annual_reduction: reduction.actual_annual_reduction,
+    is_on_track: isOnTrack
+  };
+};
+
+/**
+ * Atualiza progresso de meta de GEE automaticamente
+ */
+export const updateGHGGoalProgress = async (goalId: string): Promise<void> => {
+  const evaluation = await evaluateGHGReductionGoal(goalId);
+  
+  const { addProgressUpdate } = await import('./goals');
+  
+  // Calcular progresso (0-100%)
+  const progress = Math.min(100, Math.max(0, 
+    (evaluation.current_reduction_percent / evaluation.target_reduction_percent) * 100
+  ));
+  
+  // Adicionar atualização de progresso
+  await addProgressUpdate(goalId, {
+    update_date: new Date().toISOString().split('T')[0],
+    current_value: evaluation.current_reduction_percent,
+    notes: `Redução de ${evaluation.current_reduction_percent.toFixed(2)}% alcançada. ` +
+           `Emissões: ${evaluation.current_emissions.toFixed(2)} tCO₂e ` +
+           `(Base ${evaluation.base_year}: ${evaluation.base_year_emissions.toFixed(2)} tCO₂e).`
+  });
+  
+  // Atualizar status da meta
+  const newStatus = progress >= 100 ? 'Atingida' 
+    : evaluation.is_on_track ? 'No Caminho Certo' 
+    : 'Atenção Necessária';
+  
+  await supabase
+    .from('goals')
+    .update({ status: newStatus })
+    .eq('id', goalId);
 };
