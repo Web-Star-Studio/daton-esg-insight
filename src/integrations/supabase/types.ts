@@ -6523,7 +6523,15 @@ export type Database = {
           sector_average_recycling_rate: number | null
           status: string | null
           updated_at: string | null
+          waste_baseline_total_tonnes: number | null
+          waste_by_treatment_composting_tonnes: number | null
+          waste_by_treatment_incineration_tonnes: number | null
+          waste_by_treatment_landfill_tonnes: number | null
+          waste_by_treatment_other_tonnes: number | null
+          waste_by_treatment_recycling_tonnes: number | null
+          waste_calculation_date: string | null
           waste_hazardous_tonnes: number | null
+          waste_improvement_percent: number | null
           waste_incineration_percentage: number | null
           waste_landfill_percentage: number | null
           waste_management_plan_exists: boolean | null
@@ -6613,7 +6621,15 @@ export type Database = {
           sector_average_recycling_rate?: number | null
           status?: string | null
           updated_at?: string | null
+          waste_baseline_total_tonnes?: number | null
+          waste_by_treatment_composting_tonnes?: number | null
+          waste_by_treatment_incineration_tonnes?: number | null
+          waste_by_treatment_landfill_tonnes?: number | null
+          waste_by_treatment_other_tonnes?: number | null
+          waste_by_treatment_recycling_tonnes?: number | null
+          waste_calculation_date?: string | null
           waste_hazardous_tonnes?: number | null
+          waste_improvement_percent?: number | null
           waste_incineration_percentage?: number | null
           waste_landfill_percentage?: number | null
           waste_management_plan_exists?: boolean | null
@@ -6703,7 +6719,15 @@ export type Database = {
           sector_average_recycling_rate?: number | null
           status?: string | null
           updated_at?: string | null
+          waste_baseline_total_tonnes?: number | null
+          waste_by_treatment_composting_tonnes?: number | null
+          waste_by_treatment_incineration_tonnes?: number | null
+          waste_by_treatment_landfill_tonnes?: number | null
+          waste_by_treatment_other_tonnes?: number | null
+          waste_by_treatment_recycling_tonnes?: number | null
+          waste_calculation_date?: string | null
           waste_hazardous_tonnes?: number | null
+          waste_improvement_percent?: number | null
           waste_incineration_percentage?: number | null
           waste_landfill_percentage?: number | null
           waste_management_plan_exists?: boolean | null

@@ -32,6 +32,8 @@ import { WaterConsumptionDashboard } from "@/components/water/WaterConsumptionDa
 import { WaterConsumptionForm } from "@/components/water/WaterConsumptionForm";
 import { WaterIntensityDashboard } from "@/components/water/WaterIntensityDashboard";
 import { WaterReusePercentageDashboard } from "@/components/water/WaterReusePercentageDashboard";
+import { calculateTotalWasteGeneration, calculateWasteIntensity, type WasteGenerationResult } from "@/services/wasteManagement";
+import { WasteTotalGenerationDashboard } from "@/components/waste/WasteTotalGenerationDashboard";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -104,6 +106,8 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [previousYearWaterData, setPreviousYearWaterData] = useState<WaterConsumptionResult | null>(null);
   const [waterIntensityData, setWaterIntensityData] = useState<any>(null);
   const [waterReuseData, setWaterReuseData] = useState<any>(null);
+  const [wasteData, setWasteData] = useState<WasteGenerationResult | null>(null);
+  const [wasteIntensityData, setWasteIntensityData] = useState<any>(null);
 
   useEffect(() => {
     loadExistingData();
@@ -111,6 +115,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     loadCompanyInfo();
     loadGHGEmissions();
     loadWaterData();
+    loadWasteData();
   }, [reportId]);
 
   const loadCompanyInfo = async () => {
@@ -213,6 +218,24 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       }
     } catch (error) {
       console.error('Erro ao calcular reuso de água:', error);
+    }
+  };
+
+  const loadWasteData = async () => {
+    try {
+      const wasteGeneration = await calculateTotalWasteGeneration(reportYear);
+      setWasteData(wasteGeneration);
+      
+      const intensity = await calculateWasteIntensity(reportYear);
+      setWasteIntensityData(intensity);
+      
+      if (wasteGeneration.total_generated_tonnes > 0) {
+        toast.success('Dados de resíduos calculados!', {
+          description: `${wasteGeneration.total_generated_tonnes.toFixed(2)} toneladas geradas`
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao calcular resíduos:', error);
     }
   };
 
@@ -393,6 +416,13 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         console.error('Error calculating water reuse:', waterReuseError);
       }
 
+      // Calcular total de resíduos gerados
+      try {
+        await loadWasteData();
+      } catch (wasteError) {
+        console.error('Error calculating waste generation:', wasteError);
+      }
+
       const dataToSave = {
         report_id: reportId,
         company_id: profile.company_id,
@@ -449,6 +479,22 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           water_baseline_reuse_percentage: waterReuseData.baseline_reuse_percentage,
           water_reuse_improvement_percent: waterReuseData.improvement_percent,
           water_reuse_calculation_date: new Date().toISOString()
+        }),
+        ...(wasteData && {
+          waste_total_generated_tonnes: wasteData.total_generated_tonnes,
+          waste_hazardous_tonnes: wasteData.hazardous_tonnes,
+          waste_non_hazardous_tonnes: wasteData.non_hazardous_tonnes,
+          waste_recycled_percentage: wasteData.recycling_percentage,
+          waste_landfill_percentage: wasteData.landfill_percentage,
+          waste_incineration_percentage: wasteData.incineration_percentage,
+          waste_by_treatment_recycling_tonnes: wasteData.by_treatment.recycling,
+          waste_by_treatment_landfill_tonnes: wasteData.by_treatment.landfill,
+          waste_by_treatment_incineration_tonnes: wasteData.by_treatment.incineration,
+          waste_by_treatment_composting_tonnes: wasteData.by_treatment.composting,
+          waste_by_treatment_other_tonnes: wasteData.by_treatment.other,
+          waste_baseline_total_tonnes: wasteData.baseline_total,
+          waste_improvement_percent: wasteData.improvement_percent,
+          waste_calculation_date: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       };
@@ -825,6 +871,15 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         <WaterReusePercentageDashboard
           reuseData={waterReuseData}
           year={reportYear}
+        />
+      )}
+
+      {/* Waste Total Generation Dashboard */}
+      {wasteData && (
+        <WasteTotalGenerationDashboard
+          wasteData={wasteData}
+          year={reportYear}
+          intensityData={wasteIntensityData}
         />
       )}
 
