@@ -2868,6 +2868,79 @@ export type Database = {
         }
         Relationships: []
       }
+      data_approval_audit: {
+        Row: {
+          action: string
+          approval_notes: string | null
+          approved_by_user_id: string | null
+          company_id: string
+          confidence_scores: Json | null
+          created_at: string | null
+          document_id: string | null
+          edited_data: Json | null
+          id: string
+          original_data: Json | null
+          preview_id: string | null
+          processing_time_seconds: number | null
+          records_affected: number | null
+          target_table: string | null
+        }
+        Insert: {
+          action: string
+          approval_notes?: string | null
+          approved_by_user_id?: string | null
+          company_id: string
+          confidence_scores?: Json | null
+          created_at?: string | null
+          document_id?: string | null
+          edited_data?: Json | null
+          id?: string
+          original_data?: Json | null
+          preview_id?: string | null
+          processing_time_seconds?: number | null
+          records_affected?: number | null
+          target_table?: string | null
+        }
+        Update: {
+          action?: string
+          approval_notes?: string | null
+          approved_by_user_id?: string | null
+          company_id?: string
+          confidence_scores?: Json | null
+          created_at?: string | null
+          document_id?: string | null
+          edited_data?: Json | null
+          id?: string
+          original_data?: Json | null
+          preview_id?: string | null
+          processing_time_seconds?: number | null
+          records_affected?: number | null
+          target_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_approval_audit_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_approval_audit_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_approval_audit_preview_id_fkey"
+            columns: ["preview_id"]
+            isOneToOne: false
+            referencedRelation: "extracted_data_preview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_collection_tasks: {
         Row: {
           assigned_to_user_id: string | null
@@ -3455,6 +3528,66 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_processing_audit: {
+        Row: {
+          action_type: string
+          company_id: string
+          created_at: string | null
+          document_id: string | null
+          duration_ms: number | null
+          error_details: string | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          pipeline_step: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          company_id: string
+          created_at?: string | null
+          document_id?: string | null
+          duration_ms?: number | null
+          error_details?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          pipeline_step?: string | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          company_id?: string
+          created_at?: string | null
+          document_id?: string | null
+          duration_ms?: number | null
+          error_details?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          pipeline_step?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_processing_audit_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_processing_audit_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -5268,6 +5401,56 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: false
             referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_changes_audit: {
+        Row: {
+          change_source: string | null
+          changed_by_user_id: string | null
+          company_id: string
+          confidence_score: number | null
+          created_at: string | null
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          change_source?: string | null
+          changed_by_user_id?: string | null
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          change_source?: string | null
+          changed_by_user_id?: string | null
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_changes_audit_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
