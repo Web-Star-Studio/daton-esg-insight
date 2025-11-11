@@ -72,14 +72,68 @@ Identificação de áreas com escassez hídrica usando ferramentas como:
 - Devolução: 20% (bom para processos industriais)
 - Estresse hídrico: 0 m³ (região não está em área crítica)
 
-## Intensidade Hídrica
+## Intensidade Hídrica (m³/unidade produzida)
 
-**Intensidade Hídrica = Consumo Total / Unidades Produzidas**
+### Definição
+Relação entre o **consumo total de água** e a produção física ou de serviço. 
+Mede a eficiência no uso da água por unidade de output.
 
-Exemplo:
-- Consumo: 15.000 m³/ano
-- Produção: 5.000 toneladas/ano
-- **Intensidade: 3,0 m³/tonelada**
+### Fórmula
+
+**Intensidade Hídrica = Consumo Total de Água (m³) / Unidades Produzidas**
+
+⚠️ **IMPORTANTE**: Usar **CONSUMO** (GRI 303-5), não **RETIRADA** (GRI 303-3).
+
+- **Consumo (GRI 303-5)**: Água que não retorna à fonte = Retirada - Devolução
+- **Retirada (GRI 303-3)**: Água captada total (usado apenas para referência)
+
+### Exemplo de Cálculo
+
+**Cenário: Fábrica de Alimentos - 2024**
+
+| Métrica | Valor |
+|---------|-------|
+| Água Retirada (GRI 303-3) | 15.000 m³ |
+| Água Devolvida (GRI 303-4) | 3.000 m³ |
+| **Água Consumida (GRI 303-5)** | **12.000 m³** ← Usar este! |
+| Produção | 5.000 toneladas |
+
+**Cálculo**:
+```
+Intensidade Hídrica = 12.000 m³ / 5.000 ton = 2,4 m³/ton
+```
+
+### Fontes de Dados / Evidências
+1. Dados de consumo de água (tabela `water_consumption_data`)
+2. Dados de produção (tabela `operational_metrics`)
+3. Dados de receita (para intensidade por receita)
+4. Contas de abastecimento e hidrômetros
+5. Registros internos de produção
+
+### Interpretação
+- **Quanto MENOR**, melhor a eficiência
+- Comparar com ano anterior para medir melhoria
+- Benchmark setorial para avaliar competitividade
+- Identificar oportunidades de otimização de processos
+
+### Benchmarks Setoriais (Consumo)
+- **Alimentos e Bebidas**: 2-5 m³/ton produto
+- **Têxtil**: 80-150 m³/ton tecido
+- **Papel e Celulose**: 20-50 m³/ton papel
+- **Metalurgia**: 5-15 m³/ton metal
+- **Química**: 10-30 m³/ton produto
+
+### Exemplo de Evolução
+
+| Ano | Consumo (m³) | Produção (ton) | Intensidade (m³/ton) | Melhoria |
+|-----|--------------|----------------|----------------------|----------|
+| 2023 | 15.000 | 5.000 | 3,00 | Baseline |
+| 2024 | 12.000 | 5.000 | 2,40 | **-20%** ✅ |
+
+### Compliance GRI
+- **GRI 303-5**: Consumo de água (base do cálculo)
+- **CDP Water Security**: W1.2b (Intensidade de uso de água)
+- **ISO 14046**: Pegada hídrica por produto
 
 ## Metas e Benchmarks
 

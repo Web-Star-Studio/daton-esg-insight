@@ -211,6 +211,9 @@ export const calculateWaterIntensity = async (
   production_volume?: number;
   production_unit?: string;
   revenue_brl?: number;
+  baseline_intensity?: number;
+  is_improving?: boolean;
+  improvement_percent?: number;
 }> => {
   const waterData = await calculateTotalWaterConsumption(year);
   
@@ -232,8 +235,9 @@ export const calculateWaterIntensity = async (
     .gte('period_start_date', `${year}-01-01`)
     .lte('period_end_date', `${year}-12-31`);
   
+  // ✅ CORRIGIDO: Usar CONSUMO (GRI 303-5), não RETIRADA (GRI 303-3)
   const result: any = {
-    total_water_m3: waterData.total_withdrawal_m3
+    total_water_m3: waterData.total_consumption_m3  // CORRETO - Consumo real
   };
   
   if (metrics && metrics.length > 0) {
@@ -244,15 +248,45 @@ export const calculateWaterIntensity = async (
     }), {} as any);
     
     if (aggregated.production_volume > 0) {
-      result.intensity_per_production = waterData.total_withdrawal_m3 / aggregated.production_volume;
+      result.intensity_per_production = waterData.total_consumption_m3 / aggregated.production_volume;  // CORRETO
       result.production_volume = aggregated.production_volume;
       result.production_unit = aggregated.production_unit;
     }
     
     if (aggregated.revenue_brl > 0) {
-      result.intensity_per_revenue = (waterData.total_withdrawal_m3 / aggregated.revenue_brl) * 1000;
+      result.intensity_per_revenue = (waterData.total_consumption_m3 / aggregated.revenue_brl) * 1000;  // CORRETO
       result.revenue_brl = aggregated.revenue_brl;
     }
+  }
+  
+  // Comparar com ano anterior para medir melhoria
+  let previousYearIntensity = null;
+  try {
+    const previousWater = await calculateTotalWaterConsumption(year - 1);
+    const { data: prevMetrics } = await supabase
+      .from('operational_metrics')
+      .select('*')
+      .eq('company_id', profile.company_id)
+      .gte('period_start_date', `${year - 1}-01-01`)
+      .lte('period_end_date', `${year - 1}-12-31`);
+    
+    if (prevMetrics && prevMetrics.length > 0) {
+      const prevProduction = prevMetrics.reduce((sum, m) => sum + (m.production_volume || 0), 0);
+      if (prevProduction > 0) {
+        previousYearIntensity = previousWater.total_consumption_m3 / prevProduction;
+      }
+    }
+  } catch (error) {
+    console.log('Dados do ano anterior não disponíveis');
+  }
+  
+  result.baseline_intensity = previousYearIntensity;
+  result.is_improving = previousYearIntensity && result.intensity_per_production 
+    ? result.intensity_per_production < previousYearIntensity
+    : null;
+  
+  if (result.is_improving !== null && previousYearIntensity) {
+    result.improvement_percent = ((previousYearIntensity - result.intensity_per_production!) / previousYearIntensity) * 100;
   }
   
   return result;

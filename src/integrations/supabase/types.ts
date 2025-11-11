@@ -6535,7 +6535,12 @@ export type Database = {
           water_calculation_date: string | null
           water_consumption_m3: number | null
           water_discharge_total_m3: number | null
+          water_intensity_baseline: number | null
+          water_intensity_improvement_percent: number | null
           water_intensity_m3_per_product: number | null
+          water_intensity_m3_per_revenue: number | null
+          water_intensity_m3_per_unit: number | null
+          water_intensity_unit: string | null
           water_notes: string | null
           water_recycled_percentage: number | null
           water_sources: string[] | null
@@ -6615,7 +6620,12 @@ export type Database = {
           water_calculation_date?: string | null
           water_consumption_m3?: number | null
           water_discharge_total_m3?: number | null
+          water_intensity_baseline?: number | null
+          water_intensity_improvement_percent?: number | null
           water_intensity_m3_per_product?: number | null
+          water_intensity_m3_per_revenue?: number | null
+          water_intensity_m3_per_unit?: number | null
+          water_intensity_unit?: string | null
           water_notes?: string | null
           water_recycled_percentage?: number | null
           water_sources?: string[] | null
@@ -6695,7 +6705,12 @@ export type Database = {
           water_calculation_date?: string | null
           water_consumption_m3?: number | null
           water_discharge_total_m3?: number | null
+          water_intensity_baseline?: number | null
+          water_intensity_improvement_percent?: number | null
           water_intensity_m3_per_product?: number | null
+          water_intensity_m3_per_revenue?: number | null
+          water_intensity_m3_per_unit?: number | null
+          water_intensity_unit?: string | null
           water_notes?: string | null
           water_recycled_percentage?: number | null
           water_sources?: string[] | null
