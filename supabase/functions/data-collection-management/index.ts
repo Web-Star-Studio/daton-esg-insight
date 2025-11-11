@@ -82,11 +82,7 @@ serve(async (req) => {
 async function getTasks(supabase: any, company_id: string, searchParams: URLSearchParams) {
   let query = supabase
     .from('data_collection_tasks')
-    .select(`
-      *,
-      assigned_user:profiles!data_collection_tasks_assigned_to_user_id_fkey(id, full_name),
-      related_asset:assets(id, name)
-    `)
+    .select('*')
     .eq('company_id', company_id)
     .order('due_date', { ascending: true })
 
