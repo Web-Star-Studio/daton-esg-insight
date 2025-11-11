@@ -23,7 +23,14 @@ export function useAutoRetryProcessor() {
         const { data: pendingRetries, error } = await supabase.rpc('process_pending_retries');
         
         if (error) {
-          console.error('Erro ao buscar retries pendentes:', error);
+          console.error('❌ Erro ao buscar retries pendentes:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          // NÃO mostrar toast - isso polui a UI a cada 2 minutos
+          // Apenas logar silenciosamente para debugging
           return;
         }
 
@@ -70,7 +77,12 @@ export function useAutoRetryProcessor() {
               }
             );
           } catch (retryError) {
-            console.error(`Erro ao reprocessar job ${job.job_id}:`, retryError);
+            console.error(`❌ Erro ao reprocessar job ${job.job_id}:`, {
+              error: retryError,
+              jobId: job.job_id,
+              documentId: job.document_id,
+              attempt: job.retry_attempt
+            });
             
             // Notificar apenas se for a última tentativa
             const { data: jobData } = await supabase
