@@ -228,46 +228,126 @@ export default function Documentos() {
 
   const handleAnalyze = async (document: Document) => {
     setAnalyzingDocId(document.id);
+    
+    // Enhanced user feedback with processing steps
+    const processingToastId = toast.loading('🔄 Processando documento...', { 
+      description: (
+        <div className="space-y-1 text-xs">
+          <p>✓ Etapa 1/5: Parseando documento</p>
+          <p className="text-muted-foreground">⏳ Aguarde aproximadamente 15-30 segundos</p>
+        </div>
+      )
+    });
+    
     try {
-      toast.info('🔄 Análise iniciada', { 
-        description: 'Processando documento com IA. Você será notificado quando concluir.' 
-      });
-      
       const result = await processDocumentWithAI(document.id);
       
+      toast.dismiss(processingToastId);
+      
       if (!result.success) {
-        toast.error('❌ Falha na análise', { 
-          description: result.error || 'Erro desconhecido' 
+        const errorDetails = result.details || {};
+        toast.error('❌ Falha no processamento', { 
+          description: (
+            <div className="space-y-2">
+              <p><strong>Erro:</strong> {result.error || 'Erro desconhecido'}</p>
+              {errorDetails.step && (
+                <p className="text-xs text-muted-foreground">
+                  Falha na etapa: {errorDetails.step}
+                </p>
+              )}
+              <div className="pt-2 border-t border-border">
+                <p className="text-xs font-medium mb-1">Possíveis soluções:</p>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  <li>• Verifique se o arquivo não está corrompido</li>
+                  <li>• Tente converter para PDF antes do upload</li>
+                  <li>• Para imagens, certifique-se que o texto está legível</li>
+                </ul>
+              </div>
+              <button 
+                onClick={() => window.open('/docs/troubleshooting', '_blank')}
+                className="text-sm font-medium underline text-left pt-2"
+              >
+                Ver guia completo de solução de problemas →
+              </button>
+            </div>
+          ),
+          duration: 15000,
         });
         return;
       }
       
-      // Sucesso - recarregar dados
+      // Success - reload data
       await loadData();
       
-      toast.success('✅ Análise concluída!', {
+      const summary = result.summary || {};
+      toast.success('✅ Processamento concluído!', {
         description: (
-          <div className="flex flex-col gap-2">
-            <p>{result.message || 'Dados enviados para revisão'}</p>
-            <button 
-              onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('tab', 'extracoes');
-                window.location.href = url.toString();
-              }}
-              className="text-sm font-medium underline text-left"
-            >
-              Ver na seção de Aprovações →
-            </button>
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <p><strong>Tipo identificado:</strong> {summary.document_type || 'Não classificado'}</p>
+              <p><strong>Relevância ESG:</strong> {summary.esg_relevance || 0}%</p>
+              <p><strong>Confiança:</strong> {Math.round((summary.overall_confidence || 0) * 100)}%</p>
+            </div>
+            
+            {summary.auto_inserted ? (
+              <div className="pt-2 border-t border-border">
+                <p className="text-sm font-medium text-green-600">
+                  ✓ {summary.records_inserted || 0} registro(s) inserido(s) automaticamente
+                </p>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-border">
+                <p className="text-sm font-medium">
+                  📋 Dados enviados para aprovação manual
+                </p>
+                <button 
+                  onClick={() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', 'extracoes');
+                    window.location.href = url.toString();
+                  }}
+                  className="text-sm font-medium underline text-left mt-1"
+                >
+                  Ver na seção de Aprovações →
+                </button>
+              </div>
+            )}
+            
+            <div className="pt-2 text-xs text-muted-foreground">
+              ⏱️ Processado em {result.total_duration_ms ? `${(result.total_duration_ms / 1000).toFixed(1)}s` : 'tempo desconhecido'}
+            </div>
           </div>
         ),
-        duration: 8000,
+        duration: 10000,
       });
       
     } catch (error) {
+      toast.dismiss(processingToastId);
+      
       console.error('Error analyzing document with AI:', error);
-      toast.error('❌ Erro ao iniciar análise', {
-        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      toast.error('❌ Erro crítico no processamento', {
+        description: (
+          <div className="space-y-2">
+            <p><strong>Erro:</strong> {error instanceof Error ? error.message : 'Erro desconhecido'}</p>
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-1">
+                Se o problema persistir:
+              </p>
+              <ul className="text-xs space-y-1 text-muted-foreground">
+                <li>• Verifique sua conexão com a internet</li>
+                <li>• Tente novamente em alguns minutos</li>
+                <li>• Entre em contato com o suporte técnico</li>
+              </ul>
+            </div>
+            <button 
+              onClick={() => window.open('https://docs.lovable.dev/tips-tricks/troubleshooting', '_blank')}
+              className="text-sm font-medium underline text-left pt-2"
+            >
+              Acessar documentação de troubleshooting →
+            </button>
+          </div>
+        ),
+        duration: 15000,
       });
     } finally {
       setAnalyzingDocId(null);

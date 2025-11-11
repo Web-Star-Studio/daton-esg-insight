@@ -150,7 +150,7 @@ serve(async (req) => {
 
     const classification = classifyResult.classification;
 
-    // STEP 3: Extrair dados estruturados
+    // STEP 3: Extrair dados estruturados (✅ COM REUSO DE CONTEÚDO PARSEADO)
     console.log('📊 Step 3: Extracting structured data...');
     pipeline[2].status = 'processing';
     const extractStart = Date.now();
@@ -161,6 +161,8 @@ serve(async (req) => {
         body: {
           document_id: document_id,
           mode: 'exploratory',
+          parsed_content: parseResult.parsedContent, // ✅ Passar conteúdo já parseado
+          skip_parse: true // ✅ Pular re-parsing desnecessário
         },
       }
     );

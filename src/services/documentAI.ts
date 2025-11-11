@@ -6,6 +6,23 @@ export interface ProcessingResult {
   jobId?: string;
   message?: string;
   error?: string;
+  details?: {
+    function?: string;
+    step?: string;
+    error?: string;
+    timestamp?: string;
+  };
+  summary?: {
+    document_type?: string;
+    esg_relevance?: number;
+    overall_confidence?: number;
+    auto_inserted?: boolean;
+    records_inserted?: number;
+    requires_review?: boolean;
+  };
+  total_duration_ms?: number;
+  pipeline?: any[];
+  final_status?: string;
 }
 
 export interface ExtractionJob {
@@ -71,19 +88,31 @@ export async function processDocumentWithAI(
     });
 
     if (error) {
-      return { success: false, error: error.message };
+      return { 
+        success: false, 
+        error: error.message,
+        details: error.details || {}
+      };
     }
 
     if (!data?.success) {
-      return { success: false, error: data?.error || 'Processing failed' };
+      return { 
+        success: false, 
+        error: data?.error || 'Processing failed',
+        details: data?.details || {}
+      };
     }
 
     return {
       success: true,
       jobId: documentId,
       message: data.final_status === 'auto_inserted' 
-        ? `Dados inseridos automaticamente (${data.summary.records_inserted} registro(s))`
-        : 'Dados enviados para revisão manual'
+        ? `Dados inseridos automaticamente (${data.summary?.records_inserted || 0} registro(s))`
+        : 'Dados enviados para revisão manual',
+      summary: data.summary,
+      total_duration_ms: data.total_duration_ms,
+      pipeline: data.pipeline,
+      final_status: data.final_status
     };
   } catch (error) {
     return {

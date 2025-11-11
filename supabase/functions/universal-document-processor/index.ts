@@ -18,9 +18,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { document_id, mode = 'exploratory' } = await req.json();
+    const { 
+      document_id, 
+      mode = 'exploratory',
+      parsed_content = null,
+      skip_parse = false 
+    } = await req.json();
 
-    console.log(`Processing document: ${document_id} in ${mode} mode`);
+    console.log('📍 [universal-document-processor] Starting:', {
+      document_id,
+      mode,
+      has_parsed_content: !!parsed_content,
+      skip_parse,
+      timestamp: new Date().toISOString()
+    });
 
     // Get document details
     const { data: document, error: docError } = await supabaseClient
@@ -48,39 +59,59 @@ serve(async (req) => {
     let extractedContent = '';
     let hasImage = false;
 
-    if (document.file_type === 'application/pdf') {
-      // Call parse-pdf-document function
-      const { data: pdfData, error: pdfError } = await supabaseClient.functions.invoke(
-        'parse-pdf-document',
-        {
-          body: { file_path: document.file_path },
-        }
-      );
+    if (skip_parse && parsed_content) {
+      console.log('✅ Using pre-parsed content, skipping file download');
+      extractedContent = parsed_content;
+    } else {
+      console.log('📄 Parsing document from storage...');
+      
+      if (document.file_type === 'application/pdf') {
+        // Call parse-pdf-document function
+        const { data: pdfData, error: pdfError } = await supabaseClient.functions.invoke(
+          'parse-pdf-document',
+          {
+            body: { file_path: document.file_path },
+          }
+        );
 
-      if (!pdfError && pdfData) {
-        extractedContent = pdfData.text || '';
-        hasImage = pdfData.hasImage || false;
-      }
-    } else if (
-      document.file_type.startsWith('image/') ||
-      document.file_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      document.file_type === 'application/vnd.ms-excel'
-    ) {
-      // Use spreadsheet or image extraction
-      const { data: extractData, error: extractError } = await supabaseClient.functions.invoke(
-        'parse-chat-document',
-        {
-          body: { file_path: document.file_path, file_type: document.file_type },
+        if (!pdfError && pdfData) {
+          extractedContent = pdfData.text || '';
+          hasImage = pdfData.hasImage || false;
+        } else {
+          console.error('❌ PDF parsing failed:', pdfError);
         }
-      );
+      } else if (
+        document.file_type.startsWith('image/') ||
+        document.file_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        document.file_type === 'application/vnd.ms-excel'
+      ) {
+        // ✅ CRITICAL FIX: Use camelCase parameters
+        const { data: extractData, error: extractError } = await supabaseClient.functions.invoke(
+          'parse-chat-document',
+          {
+            body: { 
+              filePath: document.file_path,
+              fileType: document.file_type,
+              useVision: document.file_type.startsWith('image/'),
+              useCache: true
+            },
+          }
+        );
 
-      if (!extractError && extractData) {
-        extractedContent = extractData.content || '';
-        hasImage = extractData.hasImage || false;
+        if (!extractError && extractData) {
+          extractedContent = extractData.content || '';
+          hasImage = extractData.hasImage || false;
+        } else {
+          console.error('❌ Document parsing failed:', extractError);
+        }
       }
     }
 
-    console.log(`Content extracted, length: ${extractedContent.length}, hasImage: ${hasImage}`);
+    console.log('📍 [universal-document-processor] Content extracted:', {
+      length: extractedContent.length,
+      hasImage,
+      source: skip_parse ? 'pre-parsed' : 'storage'
+    });
 
     // Build comprehensive company context
     const context = await buildCompanyContext(supabaseClient, document.company_id);
@@ -317,10 +348,19 @@ Responda SEMPRE usando a estrutura de tool calling fornecida.`,
       }
     );
   } catch (error) {
-    console.error('Error in universal-document-processor:', error);
+    const errorDetails = {
+      function: 'universal-document-processor',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack?.split('\n').slice(0, 3) : undefined,
+      timestamp: new Date().toISOString()
+    };
+    console.error('❌ [universal-document-processor] Error:', errorDetails);
+    
     return new Response(
       JSON.stringify({
+        success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+        details: errorDetails
       }),
       {
         status: 500,

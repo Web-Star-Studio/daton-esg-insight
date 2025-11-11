@@ -13429,6 +13429,57 @@ export type Database = {
           },
         ]
       }
+      processing_metrics: {
+        Row: {
+          company_id: string
+          created_at: string
+          document_id: string | null
+          duration_ms: number
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          step_name: string
+          success: boolean
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          document_id?: string | null
+          duration_ms: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          step_name: string
+          success?: boolean
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          document_id?: string | null
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          step_name?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processing_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processing_metrics_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_id: string
