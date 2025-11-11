@@ -27,6 +27,9 @@ import {
   type GHGInventorySummary 
 } from "@/services/ghgInventory";
 import { GHGTotalEmissionsDashboard } from "@/components/reports/GHGTotalEmissionsDashboard";
+import { calculateTotalWaterConsumption, type WaterConsumptionResult } from "@/services/waterManagement";
+import { WaterConsumptionDashboard } from "@/components/water/WaterConsumptionDashboard";
+import { WaterConsumptionForm } from "@/components/water/WaterConsumptionForm";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -95,12 +98,15 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [ghgEmissions, setGhgEmissions] = useState<EmissionsByScope | null>(null);
   const [previousYearEmissions, setPreviousYearEmissions] = useState<EmissionsByScope | null>(null);
   const [inventorySummary, setInventorySummary] = useState<GHGInventorySummary | null>(null);
+  const [waterData, setWaterData] = useState<WaterConsumptionResult | null>(null);
+  const [previousYearWaterData, setPreviousYearWaterData] = useState<WaterConsumptionResult | null>(null);
 
   useEffect(() => {
     loadExistingData();
     loadQuantitativeData();
     loadCompanyInfo();
     loadGHGEmissions();
+    loadWaterData();
   }, [reportId]);
 
   const loadCompanyInfo = async () => {
@@ -157,6 +163,22 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       }
     } catch (error) {
       console.error('Erro ao carregar emissões GEE:', error);
+    }
+  };
+
+  const loadWaterData = async () => {
+    try {
+      const currentYearData = await calculateTotalWaterConsumption(reportYear);
+      setWaterData(currentYearData);
+      
+      try {
+        const previousData = await calculateTotalWaterConsumption(reportYear - 1);
+        setPreviousYearWaterData(previousData);
+      } catch (error) {
+        console.log('Dados de água do ano anterior não disponíveis');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados de água:', error);
     }
   };
 
@@ -310,6 +332,19 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         console.error('Error calculating GHG emissions:', ghgError);
       }
 
+      // Calcular consumo total de água
+      let waterConsumption;
+      try {
+        waterConsumption = await calculateTotalWaterConsumption(reportYear);
+        setWaterData(waterConsumption);
+        
+        toast.success('Consumo de água calculado!', {
+          description: `Total: ${waterConsumption.total_withdrawal_m3.toLocaleString('pt-BR')} m³`
+        });
+      } catch (waterError) {
+        console.error('Error calculating water consumption:', waterError);
+      }
+
       const dataToSave = {
         report_id: reportId,
         company_id: profile.company_id,
@@ -340,6 +375,18 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           ghg_inventory_year: ghgSummary.inventory_year,
           ghg_methodology: ghgSummary.methodology,
           ghg_protocol_seal: ghgSummary.ghg_protocol_seal
+        }),
+        ...(waterConsumption && {
+          water_total_withdrawal_m3: waterConsumption.total_withdrawal_m3,
+          water_consumption_m3: waterConsumption.total_consumption_m3,
+          water_discharge_total_m3: waterConsumption.total_discharge_m3,
+          water_withdrawal_public_network_m3: waterConsumption.by_source.public_network,
+          water_withdrawal_well_m3: waterConsumption.by_source.well,
+          water_withdrawal_surface_m3: waterConsumption.by_source.surface_water,
+          water_withdrawal_reuse_m3: waterConsumption.by_source.reuse,
+          water_withdrawal_other_m3: waterConsumption.by_source.other,
+          water_stressed_areas_m3: waterConsumption.water_stressed_areas_m3,
+          water_calculation_date: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       };
@@ -685,6 +732,21 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           year={reportYear}
           previousYearData={previousYearEmissions || undefined}
           inventorySummary={inventorySummary || undefined}
+        />
+      )}
+
+      {/* Water Consumption Form */}
+      <WaterConsumptionForm
+        year={reportYear}
+        onSaved={loadWaterData}
+      />
+
+      {/* Water Consumption Dashboard */}
+      {waterData && (
+        <WaterConsumptionDashboard
+          waterData={waterData}
+          year={reportYear}
+          previousYearData={previousYearWaterData || undefined}
         />
       )}
 

@@ -6532,12 +6532,20 @@ export type Database = {
           waste_recycled_percentage: number | null
           waste_segregation_practices: string[] | null
           waste_total_generated_tonnes: number | null
+          water_calculation_date: string | null
           water_consumption_m3: number | null
+          water_discharge_total_m3: number | null
           water_intensity_m3_per_product: number | null
           water_notes: string | null
           water_recycled_percentage: number | null
           water_sources: string[] | null
+          water_stressed_areas_m3: number | null
           water_total_withdrawal_m3: number | null
+          water_withdrawal_other_m3: number | null
+          water_withdrawal_public_network_m3: number | null
+          water_withdrawal_reuse_m3: number | null
+          water_withdrawal_surface_m3: number | null
+          water_withdrawal_well_m3: number | null
         }
         Insert: {
           ai_analysis?: Json | null
@@ -6604,12 +6612,20 @@ export type Database = {
           waste_recycled_percentage?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
+          water_calculation_date?: string | null
           water_consumption_m3?: number | null
+          water_discharge_total_m3?: number | null
           water_intensity_m3_per_product?: number | null
           water_notes?: string | null
           water_recycled_percentage?: number | null
           water_sources?: string[] | null
+          water_stressed_areas_m3?: number | null
           water_total_withdrawal_m3?: number | null
+          water_withdrawal_other_m3?: number | null
+          water_withdrawal_public_network_m3?: number | null
+          water_withdrawal_reuse_m3?: number | null
+          water_withdrawal_surface_m3?: number | null
+          water_withdrawal_well_m3?: number | null
         }
         Update: {
           ai_analysis?: Json | null
@@ -6676,12 +6692,20 @@ export type Database = {
           waste_recycled_percentage?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
+          water_calculation_date?: string | null
           water_consumption_m3?: number | null
+          water_discharge_total_m3?: number | null
           water_intensity_m3_per_product?: number | null
           water_notes?: string | null
           water_recycled_percentage?: number | null
           water_sources?: string[] | null
+          water_stressed_areas_m3?: number | null
           water_total_withdrawal_m3?: number | null
+          water_withdrawal_other_m3?: number | null
+          water_withdrawal_public_network_m3?: number | null
+          water_withdrawal_reuse_m3?: number | null
+          water_withdrawal_surface_m3?: number | null
+          water_withdrawal_well_m3?: number | null
         }
         Relationships: [
           {
@@ -15727,6 +15751,125 @@ export type Database = {
         }
         Relationships: []
       }
+      water_consumption_data: {
+        Row: {
+          company_id: string
+          consumption_volume_m3: number | null
+          created_at: string | null
+          created_by: string
+          data_quality_score: number | null
+          data_source: string | null
+          discharge_volume_m3: number | null
+          has_water_permit: boolean | null
+          id: string
+          invoice_number: string | null
+          is_water_stressed_area: boolean | null
+          measurement_method: string | null
+          meter_reading_end: number | null
+          meter_reading_start: number | null
+          month: number | null
+          notes: string | null
+          period_end_date: string
+          period_start_date: string
+          permit_expiry_date: string | null
+          permit_number: string | null
+          source_document: string | null
+          source_location: string | null
+          source_name: string | null
+          source_type: Database["public"]["Enums"]["water_source_type_enum"]
+          total_dissolved_solids_mg_l: number | null
+          updated_at: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+          water_quality:
+            | Database["public"]["Enums"]["water_quality_enum"]
+            | null
+          withdrawal_volume_m3: number
+          year: number
+        }
+        Insert: {
+          company_id: string
+          consumption_volume_m3?: number | null
+          created_at?: string | null
+          created_by: string
+          data_quality_score?: number | null
+          data_source?: string | null
+          discharge_volume_m3?: number | null
+          has_water_permit?: boolean | null
+          id?: string
+          invoice_number?: string | null
+          is_water_stressed_area?: boolean | null
+          measurement_method?: string | null
+          meter_reading_end?: number | null
+          meter_reading_start?: number | null
+          month?: number | null
+          notes?: string | null
+          period_end_date: string
+          period_start_date: string
+          permit_expiry_date?: string | null
+          permit_number?: string | null
+          source_document?: string | null
+          source_location?: string | null
+          source_name?: string | null
+          source_type: Database["public"]["Enums"]["water_source_type_enum"]
+          total_dissolved_solids_mg_l?: number | null
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          water_quality?:
+            | Database["public"]["Enums"]["water_quality_enum"]
+            | null
+          withdrawal_volume_m3: number
+          year: number
+        }
+        Update: {
+          company_id?: string
+          consumption_volume_m3?: number | null
+          created_at?: string | null
+          created_by?: string
+          data_quality_score?: number | null
+          data_source?: string | null
+          discharge_volume_m3?: number | null
+          has_water_permit?: boolean | null
+          id?: string
+          invoice_number?: string | null
+          is_water_stressed_area?: boolean | null
+          measurement_method?: string | null
+          meter_reading_end?: number | null
+          meter_reading_start?: number | null
+          month?: number | null
+          notes?: string | null
+          period_end_date?: string
+          period_start_date?: string
+          permit_expiry_date?: string | null
+          permit_number?: string | null
+          source_document?: string | null
+          source_location?: string | null
+          source_name?: string | null
+          source_type?: Database["public"]["Enums"]["water_source_type_enum"]
+          total_dissolved_solids_mg_l?: number | null
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          water_quality?:
+            | Database["public"]["Enums"]["water_quality_enum"]
+            | null
+          withdrawal_volume_m3?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "water_consumption_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whistleblower_reports: {
         Row: {
           assigned_to_user_id: string | null
@@ -16096,6 +16239,25 @@ export type Database = {
         | "Classe II A - Não Inerte"
         | "Classe II B - Inerte"
       waste_status_enum: "Coletado" | "Em Trânsito" | "Destinação Finalizada"
+      water_quality_enum:
+        | "Potável"
+        | "Industrial"
+        | "Água Doce (≤1.000 mg/L TDS)"
+        | "Água Salobra (>1.000 mg/L TDS)"
+        | "Água Salgada (>35.000 mg/L TDS)"
+        | "Outra"
+      water_source_type_enum:
+        | "Superficial - Rio/Lago"
+        | "Superficial - Reservatório"
+        | "Subterrânea - Poço Artesiano"
+        | "Subterrânea - Poço Cacimba"
+        | "Água de Chuva"
+        | "Água de Reuso/Reciclada"
+        | "Água do Mar"
+        | "Produzida/Água de Processo"
+        | "Terceiros - Rede Pública"
+        | "Terceiros - Caminhão Pipa"
+        | "Outras Fontes"
       workflow_step_type_enum: "approval" | "review" | "notification"
     }
     CompositeTypes: {
@@ -16312,6 +16474,27 @@ export const Constants = {
         "Classe II B - Inerte",
       ],
       waste_status_enum: ["Coletado", "Em Trânsito", "Destinação Finalizada"],
+      water_quality_enum: [
+        "Potável",
+        "Industrial",
+        "Água Doce (≤1.000 mg/L TDS)",
+        "Água Salobra (>1.000 mg/L TDS)",
+        "Água Salgada (>35.000 mg/L TDS)",
+        "Outra",
+      ],
+      water_source_type_enum: [
+        "Superficial - Rio/Lago",
+        "Superficial - Reservatório",
+        "Subterrânea - Poço Artesiano",
+        "Subterrânea - Poço Cacimba",
+        "Água de Chuva",
+        "Água de Reuso/Reciclada",
+        "Água do Mar",
+        "Produzida/Água de Processo",
+        "Terceiros - Rede Pública",
+        "Terceiros - Caminhão Pipa",
+        "Outras Fontes",
+      ],
       workflow_step_type_enum: ["approval", "review", "notification"],
     },
   },
