@@ -7784,6 +7784,10 @@ export type Database = {
       gri_social_data_collection: {
         Row: {
           absenteeism_rate: number | null
+          accidents_by_incident_type: Json | null
+          accidents_by_severity: Json | null
+          accidents_monthly_trend: Json | null
+          accidents_with_lost_time: number | null
           ai_analysis: Json | null
           ai_confidence_score: number | null
           ai_generated_text: string | null
@@ -7836,6 +7840,10 @@ export type Database = {
           indicators_notes: string | null
           indicators_tracked: string[] | null
           leadership_women_percentage: number | null
+          lost_time_accident_rate: number | null
+          lost_time_accidents_calculation_date: string | null
+          lost_time_accidents_change_percent: number | null
+          lost_time_accidents_classification: string | null
           lost_time_incident_rate: number | null
           lost_time_incidents: number | null
           ltifr_accidents_with_lost_time: number | null
@@ -7852,6 +7860,7 @@ export type Database = {
           parental_leave_female_taken: number | null
           parental_leave_male_eligible: number | null
           parental_leave_male_taken: number | null
+          previous_period_lost_time_accidents: number | null
           report_id: string
           reporting_frequency: string | null
           reporting_period_end: string | null
@@ -7864,6 +7873,7 @@ export type Database = {
           social_project_types: string[] | null
           social_projects_notes: string | null
           status: string | null
+          top_lost_time_accident_types: Json | null
           total_employees: number | null
           total_safety_incidents: number | null
           total_training_hours: number | null
@@ -7881,6 +7891,10 @@ export type Database = {
         }
         Insert: {
           absenteeism_rate?: number | null
+          accidents_by_incident_type?: Json | null
+          accidents_by_severity?: Json | null
+          accidents_monthly_trend?: Json | null
+          accidents_with_lost_time?: number | null
           ai_analysis?: Json | null
           ai_confidence_score?: number | null
           ai_generated_text?: string | null
@@ -7933,6 +7947,10 @@ export type Database = {
           indicators_notes?: string | null
           indicators_tracked?: string[] | null
           leadership_women_percentage?: number | null
+          lost_time_accident_rate?: number | null
+          lost_time_accidents_calculation_date?: string | null
+          lost_time_accidents_change_percent?: number | null
+          lost_time_accidents_classification?: string | null
           lost_time_incident_rate?: number | null
           lost_time_incidents?: number | null
           ltifr_accidents_with_lost_time?: number | null
@@ -7949,6 +7967,7 @@ export type Database = {
           parental_leave_female_taken?: number | null
           parental_leave_male_eligible?: number | null
           parental_leave_male_taken?: number | null
+          previous_period_lost_time_accidents?: number | null
           report_id: string
           reporting_frequency?: string | null
           reporting_period_end?: string | null
@@ -7961,6 +7980,7 @@ export type Database = {
           social_project_types?: string[] | null
           social_projects_notes?: string | null
           status?: string | null
+          top_lost_time_accident_types?: Json | null
           total_employees?: number | null
           total_safety_incidents?: number | null
           total_training_hours?: number | null
@@ -7978,6 +7998,10 @@ export type Database = {
         }
         Update: {
           absenteeism_rate?: number | null
+          accidents_by_incident_type?: Json | null
+          accidents_by_severity?: Json | null
+          accidents_monthly_trend?: Json | null
+          accidents_with_lost_time?: number | null
           ai_analysis?: Json | null
           ai_confidence_score?: number | null
           ai_generated_text?: string | null
@@ -8030,6 +8054,10 @@ export type Database = {
           indicators_notes?: string | null
           indicators_tracked?: string[] | null
           leadership_women_percentage?: number | null
+          lost_time_accident_rate?: number | null
+          lost_time_accidents_calculation_date?: string | null
+          lost_time_accidents_change_percent?: number | null
+          lost_time_accidents_classification?: string | null
           lost_time_incident_rate?: number | null
           lost_time_incidents?: number | null
           ltifr_accidents_with_lost_time?: number | null
@@ -8046,6 +8074,7 @@ export type Database = {
           parental_leave_female_taken?: number | null
           parental_leave_male_eligible?: number | null
           parental_leave_male_taken?: number | null
+          previous_period_lost_time_accidents?: number | null
           report_id?: string
           reporting_frequency?: string | null
           reporting_period_end?: string | null
@@ -8058,6 +8087,7 @@ export type Database = {
           social_project_types?: string[] | null
           social_projects_notes?: string | null
           status?: string | null
+          top_lost_time_accident_types?: Json | null
           total_employees?: number | null
           total_safety_incidents?: number | null
           total_training_hours?: number | null

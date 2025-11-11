@@ -15,6 +15,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DocumentUploadZone } from "./DocumentUploadZone";
+import { calculateLostTimeAccidentsMetrics, type LostTimeAccidentsResult } from "@/services/lostTimeAccidentsAnalysis";
+import { LostTimeAccidentsDashboard } from "@/components/safety/LostTimeAccidentsDashboard";
 
 interface SocialDataCollectionModuleProps {
   reportId: string;
@@ -90,6 +92,7 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
   const [analyzing, setAnalyzing] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [quantitativeData, setQuantitativeData] = useState<any>({});
+  const [lostTimeAccidentsData, setLostTimeAccidentsData] = useState<LostTimeAccidentsResult | null>(null);
   const [companyId, setCompanyId] = useState<string>("");
   const [periodStart, setPeriodStart] = useState<string>("");
   const [periodEnd, setPeriodEnd] = useState<string>("");
@@ -206,6 +209,15 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
       };
 
       setQuantitativeData(metrics);
+
+      // Calcular métricas de acidentes com afastamento
+      const lostTimeData = await calculateLostTimeAccidentsMetrics(
+        compId,
+        start.toISOString().split('T')[0],
+        end.toISOString().split('T')[0]
+      );
+      setLostTimeAccidentsData(lostTimeData);
+
       await saveData({ ...formData, ...metrics });
       
       toast.success('Métricas calculadas!');
@@ -233,6 +245,21 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
         reporting_period_start: periodStart,
         reporting_period_end: periodEnd,
         ...data,
+        
+        // Adicionar dados de acidentes com afastamento (GRI 403-9)
+        ...(lostTimeAccidentsData && {
+          accidents_with_lost_time: lostTimeAccidentsData.total_accidents_with_lost_time,
+          lost_time_accident_rate: lostTimeAccidentsData.lost_time_accident_rate,
+          accidents_by_incident_type: lostTimeAccidentsData.by_incident_type,
+          accidents_by_severity: lostTimeAccidentsData.by_severity,
+          accidents_monthly_trend: lostTimeAccidentsData.monthly_trend,
+          previous_period_lost_time_accidents: lostTimeAccidentsData.comparison.previous_period_count,
+          lost_time_accidents_change_percent: lostTimeAccidentsData.comparison.change_percentage,
+          top_lost_time_accident_types: lostTimeAccidentsData.top_5_types,
+          lost_time_accidents_classification: lostTimeAccidentsData.performance_classification,
+          lost_time_accidents_calculation_date: new Date().toISOString()
+        }),
+        
         updated_at: new Date().toISOString(),
       };
 
@@ -455,6 +482,14 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
           </div>
         </CardContent>
       </Card>
+
+      {/* Dashboard de Acidentes com Afastamento */}
+      {lostTimeAccidentsData && (
+        <LostTimeAccidentsDashboard
+          data={lostTimeAccidentsData}
+          year={new Date(periodEnd).getFullYear()}
+        />
+      )}
 
       {/* Perguntas Qualitativas */}
       {SOCIAL_QUESTIONS.map((question) => {

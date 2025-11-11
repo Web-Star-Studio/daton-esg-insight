@@ -128,6 +128,7 @@ export const getSafetyMetrics = async () => {
     totalIncidents,
     daysLostTotal,
     withMedicalTreatment,
+    accidentsWithLostTime,
     ltifr: Number(ltifr.toFixed(2)),
     severityDistribution,
     incidentTrend: calculateMonthlyTrend(currentYearIncidents),

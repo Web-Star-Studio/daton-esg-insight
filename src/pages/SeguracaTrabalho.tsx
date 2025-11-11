@@ -412,7 +412,7 @@ export default function SeguracaTrabalho() {
         <LTIFRDashboard 
           ltifr={safetyMetrics.ltifr}
           metadata={safetyMetrics.ltifr_metadata}
-          accidentsWithLostTime={safetyMetrics.totalIncidents}
+          accidentsWithLostTime={safetyMetrics.accidentsWithLostTime}
           sectorBenchmark={2.5}
         />
       )}
