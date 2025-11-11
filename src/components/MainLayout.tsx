@@ -10,6 +10,7 @@ import { UnifiedTourSystem } from "@/components/tutorial/unified/UnifiedTourSyst
 import { ProfessionalModalProvider } from "@/components/ui/professional-modal-manager"
 import { ChatAssistant } from "@/components/tools/ChatAssistant"
 import { Breadcrumbs } from "@/components/navigation/Breadcrumbs"
+import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessingNotifications"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -17,6 +18,9 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const { shouldShowOnboarding, isLoading, user } = useAuth();
+  
+  // Ativar notificações de processamento de documentos em tempo real
+  useDocumentProcessingNotifications();
   
   // Force check if onboarding should be shown on mount
   useEffect(() => {
