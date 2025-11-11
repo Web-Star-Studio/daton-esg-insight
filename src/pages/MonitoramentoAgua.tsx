@@ -8,13 +8,16 @@ import { Droplets, Download, Calendar, TrendingUp } from "lucide-react";
 import { WaterConsumptionForm } from "@/components/water/WaterConsumptionForm";
 import { WaterConsumptionDashboard } from "@/components/water/WaterConsumptionDashboard";
 import { calculateTotalWaterConsumption } from "@/services/waterManagement";
+import { exportWaterData } from "@/services/dataExport";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export default function MonitoramentoAgua() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [exporting, setExporting] = useState(false);
 
   const { data: waterData, isLoading, refetch } = useQuery({
     queryKey: ['water-monitoring', selectedYear],
@@ -26,6 +29,23 @@ export default function MonitoramentoAgua() {
     queryFn: () => calculateTotalWaterConsumption(selectedYear - 1),
     enabled: selectedYear > 2020,
   });
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportWaterData({
+        year: selectedYear,
+        reportTitle: `Monitoramento de Água - ${selectedYear}`,
+        companyName: 'Empresa', // Pode ser dinamicamente obtido do perfil
+        includeMetadata: true
+      });
+      toast.success('Dados de água exportados com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao exportar dados');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (isLoading) {
     return <EnhancedLoading text="Carregando dados de água..." />;
@@ -59,9 +79,9 @@ export default function MonitoramentoAgua() {
                 max={currentYear}
               />
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport} disabled={exporting || !waterData || waterData.total_withdrawal_m3 === 0}>
               <Download className="h-4 w-4 mr-2" />
-              Exportar
+              {exporting ? 'Exportando...' : 'Exportar'}
             </Button>
           </div>
         </div>
