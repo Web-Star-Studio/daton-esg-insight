@@ -87,13 +87,37 @@ export const getSafetyMetrics = async () => {
     new Date(incident.incident_date).getFullYear() === currentYear
   );
 
+  // Buscar company_id do usuário autenticado
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+
+  // Importar função de cálculo de horas trabalhadas
+  const { calculateWorkedHours } = await import('./workedHoursCalculator');
+
+  // ✅ USAR NOVA FUNÇÃO PARA CALCULAR HORAS TRABALHADAS
+  const workedHoursData = await calculateWorkedHours(
+    profile.company_id,
+    `${currentYear}-01-01`,
+    `${currentYear}-12-31`
+  );
+
   const totalIncidents = currentYearIncidents.length;
   const daysLostTotal = currentYearIncidents.reduce((sum, inc) => sum + inc.days_lost, 0);
   const withMedicalTreatment = currentYearIncidents.filter(inc => inc.medical_treatment_required).length;
   
-  // Calcula LTIFR (Lost Time Injury Frequency Rate) - assumindo 200.000 horas trabalhadas
-  const hoursWorked = 200000; // Pode ser calculado dinamicamente baseado no número de funcionários
-  const ltifr = (currentYearIncidents.filter(inc => inc.days_lost > 0).length / hoursWorked) * 200000;
+  // ✅ CÁLCULO CORRETO DO LTIFR (OIT/ISO 45001)
+  const accidentsWithLostTime = currentYearIncidents.filter(inc => inc.days_lost > 0).length;
+  const ltifr = workedHoursData.total_hours > 0 
+    ? (accidentsWithLostTime * 1000000) / workedHoursData.total_hours 
+    : 0;
   
   const severityDistribution = currentYearIncidents.reduce((acc, inc) => {
     acc[inc.severity] = (acc[inc.severity] || 0) + 1;
@@ -106,7 +130,17 @@ export const getSafetyMetrics = async () => {
     withMedicalTreatment,
     ltifr: Number(ltifr.toFixed(2)),
     severityDistribution,
-    incidentTrend: calculateMonthlyTrend(currentYearIncidents)
+    incidentTrend: calculateMonthlyTrend(currentYearIncidents),
+    
+    // ✅ ADICIONAR METADATA SOBRE QUALIDADE DO CÁLCULO
+    ltifr_metadata: {
+      worked_hours: workedHoursData.total_hours,
+      calculation_method: workedHoursData.calculation_method,
+      data_quality: workedHoursData.data_quality,
+      confidence_level: workedHoursData.metadata.confidence_level,
+      formula: 'LTIFR = (Nº Acidentes com Afastamento × 1.000.000) / Total Horas Trabalhadas',
+      compliance: 'OIT/ISO 45001'
+    }
   };
 };
 

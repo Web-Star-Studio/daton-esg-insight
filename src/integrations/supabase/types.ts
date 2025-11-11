@@ -7838,6 +7838,13 @@ export type Database = {
           leadership_women_percentage: number | null
           lost_time_incident_rate: number | null
           lost_time_incidents: number | null
+          ltifr_accidents_with_lost_time: number | null
+          ltifr_calculation_date: string | null
+          ltifr_calculation_method: string | null
+          ltifr_confidence_level: number | null
+          ltifr_data_quality: string | null
+          ltifr_value: number | null
+          ltifr_worked_hours: number | null
           new_hires_rate: number | null
           new_hires_total: number | null
           occupational_diseases_cases: number | null
@@ -7928,6 +7935,13 @@ export type Database = {
           leadership_women_percentage?: number | null
           lost_time_incident_rate?: number | null
           lost_time_incidents?: number | null
+          ltifr_accidents_with_lost_time?: number | null
+          ltifr_calculation_date?: string | null
+          ltifr_calculation_method?: string | null
+          ltifr_confidence_level?: number | null
+          ltifr_data_quality?: string | null
+          ltifr_value?: number | null
+          ltifr_worked_hours?: number | null
           new_hires_rate?: number | null
           new_hires_total?: number | null
           occupational_diseases_cases?: number | null
@@ -8018,6 +8032,13 @@ export type Database = {
           leadership_women_percentage?: number | null
           lost_time_incident_rate?: number | null
           lost_time_incidents?: number | null
+          ltifr_accidents_with_lost_time?: number | null
+          ltifr_calculation_date?: string | null
+          ltifr_calculation_method?: string | null
+          ltifr_confidence_level?: number | null
+          ltifr_data_quality?: string | null
+          ltifr_value?: number | null
+          ltifr_worked_hours?: number | null
           new_hires_rate?: number | null
           new_hires_total?: number | null
           occupational_diseases_cases?: number | null

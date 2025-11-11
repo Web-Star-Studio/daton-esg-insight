@@ -447,14 +447,14 @@ export const calculateHealthSafetyIndicators = async (): Promise<ESGIndicator[]>
     const safetyMetrics = await getSafetyMetrics();
     const companyId = await getCompanyId();
 
-    // Buscar número de funcionários para calcular horas trabalhadas
-    const { count: employeeCount } = await supabase
-      .from('employees')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('status', 'Ativo');
-
-    const workedHours = (employeeCount || 0) * 220 * 8; // 220 dias úteis, 8h/dia
+    // ✅ USAR FUNÇÃO CENTRALIZADA DE HORAS TRABALHADAS
+    const { calculateWorkedHours } = await import('./workedHoursCalculator');
+    
+    const workedHoursData = await calculateWorkedHours(
+      companyId,
+      `${getCurrentYear()}-01-01`,
+      `${getCurrentYear()}-12-31`
+    );
 
     // a) LTIFR (Lost Time Injury Frequency Rate)
     const { data: incidents } = await supabase
@@ -464,7 +464,9 @@ export const calculateHealthSafetyIndicators = async (): Promise<ESGIndicator[]>
       .gt('days_lost', 0);
 
     const accidentsWithLeave = incidents?.length || 0;
-    const ltifr = workedHours > 0 ? (accidentsWithLeave * 1000000) / workedHours : 0;
+    const ltifr = workedHoursData.total_hours > 0 
+      ? (accidentsWithLeave * 1000000) / workedHoursData.total_hours 
+      : 0;
 
     indicators.push({
       code: 'SAFETY_001',
@@ -474,14 +476,15 @@ export const calculateHealthSafetyIndicators = async (): Promise<ESGIndicator[]>
       formula: '(Acidentes Afastamento × 1.000.000) / Horas Trabalhadas',
       category: '6.4',
       subcategory: 'Segurança',
-      benchmark: 2.5, // Benchmark setorial
+      benchmark: 2.5,
       lastUpdated: new Date().toISOString(),
-      dataQuality: workedHours > 0 ? 'high' : 'medium',
-      sources: ['safety_incidents', 'employees'],
+      dataQuality: workedHoursData.data_quality, // ✅ USAR DATA QUALITY DA FUNÇÃO
+      sources: ['safety_incidents', 'attendance_records'],
       metadata: {
         accidentsWithLeave,
-        workedHours,
-        employeeCount
+        workedHours: workedHoursData.total_hours,
+        calculationMethod: workedHoursData.calculation_method,
+        confidenceLevel: workedHoursData.metadata.confidence_level
       }
     });
 

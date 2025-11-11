@@ -21,6 +21,7 @@ import { DateRange } from "react-day-picker";
 import { startOfYear, endOfYear, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { exportToCSV } from "@/services/reportService";
+import { LTIFRDashboard } from "@/components/safety/LTIFRDashboard";
 
 export default function SeguracaTrabalho() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -405,6 +406,16 @@ export default function SeguracaTrabalho() {
           </CardContent>
         </Card>
       </div>
+
+      {/* LTIFR Dashboard */}
+      {safetyMetrics?.ltifr_metadata && (
+        <LTIFRDashboard 
+          ltifr={safetyMetrics.ltifr}
+          metadata={safetyMetrics.ltifr_metadata}
+          accidentsWithLostTime={safetyMetrics.totalIncidents}
+          sectorBenchmark={2.5}
+        />
+      )}
 
       {/* Main Content */}
       <Tabs defaultValue="dashboard" className="space-y-4">
