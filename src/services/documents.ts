@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import Papa from 'papaparse';
 
 // Interfaces
 export interface DocumentFolder {
@@ -207,10 +208,10 @@ export const getDocuments = async (
   };
 };
 
-// Utility function to normalize file paths
+// Utility function to normalize file paths (removes ALL leading 'documents/' prefixes)
 export const normalizePath = (path: string): string => {
-  // Remove 'documents/' prefix if present
-  return path.replace(/^documents\//, '');
+  // Remove all leading 'documents/' prefixes (handles legacy duplicates)
+  return path.replace(/^(documents\/)+/, '');
 };
 
 export const uploadDocument = async (
@@ -534,7 +535,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
   rows?: any[];
   totalLines: number;
 }> => {
-  console.log('Getting text preview for document:', documentId);
+  console.log('📖 Getting text preview for document:', documentId);
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
@@ -543,38 +544,75 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
     .maybeSingle();
 
   if (fetchError || !document) {
+    console.error('❌ Document not found:', fetchError);
     throw new Error('Documento não encontrado');
   }
 
   const normalizedPath = normalizePath(document.file_path);
+  console.log('📁 Normalized path:', normalizedPath);
 
-  const { data: blob, error: downloadError } = await supabase.storage
+  let text: string;
+
+  // Method 1: Try signed URL + fetch (more reliable with bucket policies)
+  const { data: signedData, error: signedError } = await supabase.storage
     .from('documents')
-    .download(normalizedPath);
+    .createSignedUrl(normalizedPath, 300);
 
-  if (downloadError || !blob) {
-    throw new Error(`Falha ao baixar arquivo: ${downloadError?.message}`);
+  if (!signedError && signedData?.signedUrl) {
+    console.log('✅ Using signed URL for text preview');
+    try {
+      const response = await fetch(signedData.signedUrl);
+      if (response.ok) {
+        text = await response.text();
+      } else {
+        throw new Error(`Fetch failed: ${response.status}`);
+      }
+    } catch (fetchErr) {
+      console.warn('⚠️ Signed URL fetch failed, trying direct download...', fetchErr);
+      // Fall through to Method 2
+    }
   }
 
-  const text = await blob.text();
+  // Method 2: Direct download (fallback)
+  if (!text) {
+    console.log('🔄 Falling back to direct download');
+    const { data: blob, error: downloadError } = await supabase.storage
+      .from('documents')
+      .download(normalizedPath);
+
+    if (downloadError || !blob) {
+      console.error('❌ Both methods failed:', { signedError, downloadError });
+      throw new Error(
+        `Falha ao baixar arquivo para preview:\n` +
+        `- Signed URL: ${signedError?.message || 'OK'}\n` +
+        `- Download: ${downloadError?.message || 'OK'}`
+      );
+    }
+
+    text = await blob.text();
+  }
+
   const lines = text.split('\n');
   const totalLines = lines.length;
 
-  // For CSV, parse first 100 rows
+  // For CSV, parse with PapaParse (robust parsing)
   if (document.file_type.includes('csv')) {
-    const delimiter = text.includes(';') ? ';' : ',';
-    const headers = lines[0]?.split(delimiter).map(h => h.trim().replace(/^"|"$/g, '')) || [];
-    const rows = lines.slice(1, 101).map(line => {
-      const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
-      const row: Record<string, string> = {};
-      headers.forEach((header, idx) => {
-        row[header] = values[idx] || '';
-      });
-      return row;
-    }).filter(row => Object.values(row).some(v => v));
+    console.log('📊 Parsing CSV with PapaParse...');
+    
+    const parseResult = Papa.parse(text, {
+      header: true,
+      dynamicTyping: false,
+      skipEmptyLines: 'greedy',
+      preview: 100 // Only parse first 100 rows
+    });
+
+    const headers = parseResult.meta.fields || [];
+    const rows = parseResult.data as Record<string, any>[];
+
+    console.log(`✅ CSV parsed: ${headers.length} columns, ${rows.length} rows preview`);
 
     return {
-      content: lines.slice(0, 200).join('\n'), // First 200 lines as text
+      content: lines.slice(0, 200).join('\n'), // First 200 lines as text fallback
       headers,
       rows,
       totalLines
@@ -582,6 +620,7 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
   }
 
   // For plain text, return first 200 lines
+  console.log('📝 Plain text preview:', totalLines, 'total lines');
   return {
     content: lines.slice(0, 200).join('\n'),
     totalLines
