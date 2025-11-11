@@ -31,169 +31,19 @@ export const GRIReportExportModal: React.FC<GRIReportExportModalProps> = ({ isOp
   const [exportType, setExportType] = useState<string>('');
 
   const handleExport = async (type: 'pdf' | 'html' | 'docx') => {
-    setIsExporting(true);
-    setExportType(type);
-    setExportProgress(0);
-
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setExportProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      console.log(`Exporting report ${report.id} as ${type}`);
-      
-      const { data, error } = await supabase.functions.invoke('gri-content-generator', {
-        body: {
-          action: 'export',
-          reportId: report.id,
-          format: type
-        }
-      });
-
-      clearInterval(progressInterval);
-      setExportProgress(100);
-
-      if (error) {
-        console.error('Export error details:', error);
-        
-        // Provide specific error messages based on response
-        let errorMessage = 'Erro desconhecido na exportação';
-        if (error.message?.includes('Report not found') || error.message?.includes('404')) {
-          errorMessage = 'Relatório não encontrado. Verifique se o relatório existe e tente novamente.';
-        } else if (error.message?.includes('422')) {
-          errorMessage = 'Dados do relatório inválidos. Verifique se todos os campos obrigatórios estão preenchidos.';
-        } else if (error.message?.includes('500')) {
-          errorMessage = 'Erro interno do servidor. Tente novamente em alguns instantes.';
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      if (!data) {
-        throw new Error('Nenhum conteúdo foi retornado pela função de exportação');
-      }
-
-      // Handle PDF export
-      if (type === 'pdf' && data.pdfBase64) {
-        const pdfBytes = Uint8Array.from(atob(data.pdfBase64), c => c.charCodeAt(0));
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Relatório_GRI_${report.title.replace(/\s+/g, '_')}_${report.year}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast({
-          title: "Sucesso",
-          description: "Relatório PDF exportado com sucesso!",
-        });
-      } else {
-        // Handle HTML and other formats
-        const htmlContent = typeof data === 'string' ? data : data.content || JSON.stringify(data);
-        
-        const blob = new Blob([htmlContent], { 
-          type: type === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html'
-        });
-        
-        const extension = type === 'docx' ? 'docx' : 'html';
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Relatório_GRI_${report.title.replace(/\s+/g, '_')}_${report.year}.${extension}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        let successMessage = 'Relatório exportado com sucesso!';
-        if (type === 'docx') {
-          successMessage += ' Abra o arquivo em um editor de texto para melhor formatação.';
-        }
-        
-        toast({
-          title: "Sucesso",
-          description: successMessage,
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao exportar relatório:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao exportar';
-      
-      toast({
-        title: "Erro na Exportação",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsExporting(false);
-      setExportProgress(0);
-      setExportType('');
-    }
+    toast({
+      title: "Funcionalidade em Desenvolvimento",
+      description: "A exportação completa está disponível na Etapa 5 do wizard após gerar as seções do relatório.",
+      variant: "default",
+    });
   };
 
   const handlePreview = async () => {
-    try {
-      console.log(`Generating preview for report ${report.id}`);
-      
-      const { data, error } = await supabase.functions.invoke('gri-content-generator', {
-        body: {
-          action: 'preview',
-          reportId: report.id
-        }
-      });
-
-      if (error) {
-        console.error('Preview error details:', error);
-        throw new Error(`Erro na prévia: ${error.message || 'Função edge retornou erro'}`);
-      }
-
-      if (!data) {
-        throw new Error('Nenhum conteúdo foi gerado para a prévia');
-      }
-
-      // Open preview in new window
-      const htmlContent = typeof data === 'string' ? data : data.content || JSON.stringify(data);
-      const previewWindow = window.open('', '_blank');
-      
-      if (previewWindow) {
-        previewWindow.document.write(htmlContent);
-        previewWindow.document.close();
-        previewWindow.document.title = `Prévia - ${report.title} ${report.year}`;
-        
-        toast({
-          title: "Sucesso",
-          description: "Prévia do relatório aberta em nova janela",
-        });
-      } else {
-        toast({
-          title: "Erro",
-          description: "Não foi possível abrir nova janela. Verifique o bloqueador de popups.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao gerar prévia:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido na prévia';
-      
-      toast({
-        title: "Erro na Prévia",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Funcionalidade em Desenvolvimento",
+      description: "A prévia completa está disponível na Etapa 5 do wizard após gerar as seções do relatório.",
+      variant: "default",
+    });
   };
 
   const handleShare = async () => {
