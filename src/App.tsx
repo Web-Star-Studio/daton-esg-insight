@@ -14,6 +14,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { errorHandler } from "@/utils/errorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import RouteValidator from "@/components/RouteValidator";
+import { GlobalKeyboardShortcuts } from "@/components/GlobalKeyboardShortcuts";
 
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
@@ -172,6 +173,7 @@ const App = () => (
                 }}
               >
               <RouteValidator>
+                <GlobalKeyboardShortcuts />
                 <PageTransition>
                   <Routes>
             {/* Landing Page - público */}

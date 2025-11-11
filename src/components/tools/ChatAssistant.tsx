@@ -11,6 +11,7 @@ import { FileUploadButton } from '@/components/ai/FileUploadButton';
 import { FileAttachmentCompact } from '@/components/ai/FileAttachmentCompact';
 import { ChatHistory } from '@/components/ai/ChatHistory';
 import { VirtualizedMessageList } from '@/components/ai/VirtualizedMessageList';
+import { DocumentPromptTemplates } from '@/components/ai/DocumentPromptTemplates';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -367,6 +368,23 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
 
               {/* Input Area - Redesigned */}
               <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur">
+                {/* Document Prompt Templates - Show when files are attached */}
+                {attachments.length > 0 && !isLoading && !isUploading && (
+                  <div className="px-4 pt-4 pb-3 border-b">
+                    <DocumentPromptTemplates 
+                      onSelectPrompt={(prompt) => {
+                        setInputMessage(prompt);
+                        // Scroll to input
+                        setTimeout(() => {
+                          const textarea = document.querySelector('textarea');
+                          textarea?.focus();
+                        }, 100);
+                      }}
+                      disabled={isLoading || isUploading}
+                    />
+                  </div>
+                )}
+                
                 {/* Attachments Preview - Compact */}
                 {attachments.length > 0 && (
                   <div className="px-4 pt-3 pb-2 border-b">

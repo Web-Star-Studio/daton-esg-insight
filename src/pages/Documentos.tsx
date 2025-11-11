@@ -229,12 +229,14 @@ export default function Documentos() {
   const handleAnalyze = async (document: Document) => {
     setAnalyzingDocId(document.id);
     try {
-      toast.info('Análise iniciada', { description: 'Processando documento com IA...' });
+      toast.info('🔄 Análise iniciada', { 
+        description: 'Processando documento com IA. Você será notificado quando concluir.' 
+      });
       
       const result = await processDocumentWithAI(document.id);
       
       if (!result.success) {
-        toast.error('Falha na análise', { 
+        toast.error('❌ Falha na análise', { 
           description: result.error || 'Erro desconhecido' 
         });
         return;
@@ -243,13 +245,28 @@ export default function Documentos() {
       // Sucesso - recarregar dados
       await loadData();
       
-      toast.success('Análise concluída!', {
-        description: result.message || 'Dados enviados para revisão'
+      toast.success('✅ Análise concluída!', {
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>{result.message || 'Dados enviados para revisão'}</p>
+            <button 
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', 'extracoes');
+                window.location.href = url.toString();
+              }}
+              className="text-sm font-medium underline text-left"
+            >
+              Ver na seção de Aprovações →
+            </button>
+          </div>
+        ),
+        duration: 8000,
       });
       
     } catch (error) {
       console.error('Error analyzing document with AI:', error);
-      toast.error('Erro ao iniciar análise', {
+      toast.error('❌ Erro ao iniciar análise', {
         description: error instanceof Error ? error.message : 'Erro desconhecido'
       });
     } finally {

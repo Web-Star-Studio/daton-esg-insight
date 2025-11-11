@@ -65,9 +65,34 @@ export function useExtractionRealtime({
       )
       .subscribe();
 
-    // Subscribe to extracted_data_preview updates
+    // Subscribe to extracted_data_preview updates AND inserts
     const previewChannel = supabase
       .channel('extraction-preview-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'extracted_data_preview',
+        },
+        (payload) => {
+          console.log('New preview created:', payload.new);
+          
+          // Show notification for new extractions ready for review
+          toast({
+            title: '✨ Extração concluída!',
+            description: 'Dados prontos para revisão na seção de Aprovações. Clique para ver.',
+          });
+
+          // Call custom handler
+          if (onPreviewUpdate) {
+            onPreviewUpdate(payload.new);
+          }
+
+          // Invalidate queries
+          queryClient.invalidateQueries({ queryKey: ['extracted-data-previews'] });
+        }
+      )
       .on(
         'postgres_changes',
         {
@@ -84,7 +109,7 @@ export function useExtractionRealtime({
           }
 
           // Invalidate queries
-          queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
+          queryClient.invalidateQueries({ queryKey: ['extracted-data-previews'] });
         }
       )
       .subscribe();

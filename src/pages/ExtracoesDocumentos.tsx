@@ -1,11 +1,15 @@
 import { DocumentExtractionApproval } from '@/components/DocumentExtractionApproval';
 import { AIExtractionStats } from '@/components/ai/AIExtractionStats';
 import { useAIHealth } from '@/hooks/useAIHealth';
+import { useExtractionRealtime } from '@/hooks/useExtractionRealtime';
 import { FileCheck, AlertCircle, CheckCircle2, Activity } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ExtracoesDocumentos() {
   const { data: health } = useAIHealth();
+  
+  // Enable real-time updates for extractions
+  useExtractionRealtime({ enabled: true });
 
   return (
     <div className="container mx-auto p-6 space-y-6">
