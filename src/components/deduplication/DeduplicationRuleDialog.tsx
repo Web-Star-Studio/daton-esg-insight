@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { X, Plus, Info } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   createDeduplicationRule,
@@ -36,6 +37,13 @@ export function DeduplicationRuleDialog({
   const [newField, setNewField] = useState('');
   const [mergeStrategy, setMergeStrategy] = useState<'skip_if_exists' | 'update_existing' | 'merge_fields'>('skip_if_exists');
   const [priority, setPriority] = useState('0');
+  const [normOptions, setNormOptions] = useState({
+    trim: true,
+    lowercase: true,
+    remove_accents: true,
+    remove_special_chars: false,
+    normalize_whitespace: true
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -45,6 +53,19 @@ export function DeduplicationRuleDialog({
       setUniqueFields(editingRule.unique_fields);
       setMergeStrategy(editingRule.merge_strategy);
       setPriority(String(editingRule.priority));
+      setNormOptions(editingRule.normalization_options ? {
+        trim: editingRule.normalization_options.trim ?? true,
+        lowercase: editingRule.normalization_options.lowercase ?? true,
+        remove_accents: editingRule.normalization_options.remove_accents ?? true,
+        remove_special_chars: editingRule.normalization_options.remove_special_chars ?? false,
+        normalize_whitespace: editingRule.normalization_options.normalize_whitespace ?? true
+      } : {
+        trim: true,
+        lowercase: true,
+        remove_accents: true,
+        remove_special_chars: false,
+        normalize_whitespace: true
+      });
     } else {
       resetForm();
     }
@@ -57,6 +78,13 @@ export function DeduplicationRuleDialog({
     setNewField('');
     setMergeStrategy('skip_if_exists');
     setPriority('0');
+    setNormOptions({
+      trim: true,
+      lowercase: true,
+      remove_accents: true,
+      remove_special_chars: false,
+      normalize_whitespace: true
+    });
   };
 
   const handleAddField = () => {
@@ -101,6 +129,7 @@ export function DeduplicationRuleDialog({
         unique_fields: uniqueFields,
         merge_strategy: mergeStrategy,
         priority: parseInt(priority) || 0,
+        normalization_options: normOptions
       };
 
       if (editingRule) {
@@ -258,6 +287,78 @@ export function DeduplicationRuleDialog({
             <p className="text-xs text-muted-foreground">
               Menor valor = maior prioridade (quando múltiplas regras existem)
             </p>
+          </div>
+
+          {/* Opções de Normalização */}
+          <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+            <Label className="text-base font-semibold">Normalização de Dados</Label>
+            <p className="text-sm text-muted-foreground mb-3">
+              Configure como os dados devem ser normalizados antes de verificar duplicatas
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="trim" 
+                  checked={normOptions.trim}
+                  onCheckedChange={(checked) => setNormOptions({...normOptions, trim: !!checked})}
+                />
+                <Label htmlFor="trim" className="font-normal cursor-pointer">
+                  Remover espaços extras (trim)
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="lowercase" 
+                  checked={normOptions.lowercase}
+                  onCheckedChange={(checked) => setNormOptions({...normOptions, lowercase: !!checked})}
+                />
+                <Label htmlFor="lowercase" className="font-normal cursor-pointer">
+                  Converter para minúsculas
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remove_accents" 
+                  checked={normOptions.remove_accents}
+                  onCheckedChange={(checked) => setNormOptions({...normOptions, remove_accents: !!checked})}
+                />
+                <Label htmlFor="remove_accents" className="font-normal cursor-pointer">
+                  Remover acentos (João → Joao)
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="normalize_whitespace" 
+                  checked={normOptions.normalize_whitespace}
+                  onCheckedChange={(checked) => setNormOptions({...normOptions, normalize_whitespace: !!checked})}
+                />
+                <Label htmlFor="normalize_whitespace" className="font-normal cursor-pointer">
+                  Normalizar espaços múltiplos
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remove_special_chars" 
+                  checked={normOptions.remove_special_chars}
+                  onCheckedChange={(checked) => setNormOptions({...normOptions, remove_special_chars: !!checked})}
+                />
+                <Label htmlFor="remove_special_chars" className="font-normal cursor-pointer">
+                  Remover caracteres especiais
+                </Label>
+              </div>
+            </div>
+
+            <Alert className="mt-3">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                <strong>Exemplo:</strong> Com todas opções ativadas, "  João da Silva  " seria normalizado para "joao da silva"
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
 

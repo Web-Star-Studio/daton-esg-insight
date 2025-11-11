@@ -3054,6 +3054,7 @@ export type Database = {
           enabled: boolean
           id: string
           merge_strategy: string
+          normalization_options: Json | null
           priority: number
           rule_name: string
           target_table: string
@@ -3067,6 +3068,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           merge_strategy?: string
+          normalization_options?: Json | null
           priority?: number
           rule_name: string
           target_table: string
@@ -3080,6 +3082,7 @@ export type Database = {
           enabled?: boolean
           id?: string
           merge_strategy?: string
+          normalization_options?: Json | null
           priority?: number
           rule_name?: string
           target_table?: string
@@ -17219,6 +17222,10 @@ export type Database = {
           p_severity?: string
           p_user_id: string
         }
+        Returns: string
+      }
+      normalize_text: {
+        Args: { input_text: string; options?: Json }
         Returns: string
       }
       policy_exists: {

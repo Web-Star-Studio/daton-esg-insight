@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export interface NormalizationOptions {
+  trim?: boolean;
+  lowercase?: boolean;
+  remove_accents?: boolean;
+  remove_special_chars?: boolean;
+  normalize_whitespace?: boolean;
+}
+
 export interface DeduplicationRule {
   id: string;
   company_id: string;
@@ -9,6 +17,7 @@ export interface DeduplicationRule {
   merge_strategy: 'skip_if_exists' | 'update_existing' | 'merge_fields';
   enabled: boolean;
   priority: number;
+  normalization_options?: NormalizationOptions;
   created_by_user_id?: string;
   created_at: string;
   updated_at: string;
@@ -21,6 +30,7 @@ export interface CreateRuleData {
   merge_strategy: 'skip_if_exists' | 'update_existing' | 'merge_fields';
   enabled?: boolean;
   priority?: number;
+  normalization_options?: NormalizationOptions;
 }
 
 /**
@@ -86,10 +96,11 @@ export async function createDeduplicationRule(
         company_id: profile.company_id,
         target_table: ruleData.target_table,
         rule_name: ruleData.rule_name,
-        unique_fields: ruleData.unique_fields,
+        unique_fields: ruleData.unique_fields as any,
         merge_strategy: ruleData.merge_strategy,
         enabled: ruleData.enabled ?? true,
         priority: ruleData.priority ?? 0,
+        normalization_options: ruleData.normalization_options as any,
         created_by_user_id: user.id
       })
       .select()
@@ -111,9 +122,12 @@ export async function updateDeduplicationRule(
   updates: Partial<CreateRuleData>
 ): Promise<DeduplicationRule> {
   try {
+    // Convert to proper format for Supabase
+    const updateData: any = { ...updates };
+    
     const { data, error } = await supabase
       .from('deduplication_rules')
-      .update(updates)
+      .update(updateData)
       .eq('id', ruleId)
       .select()
       .single();

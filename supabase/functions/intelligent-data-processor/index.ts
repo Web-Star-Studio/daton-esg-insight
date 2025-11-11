@@ -225,6 +225,32 @@ Responda usando a ferramenta fornecida.`;
             .eq('enabled', true)
             .order('priority', { ascending: true });
 
+          // Helper function to normalize text values
+          const normalizeValue = (value: any, normOptions: any): any => {
+            if (value === null || value === undefined) return value;
+            if (typeof value !== 'string') return value;
+            
+            let result = value;
+            const opts = normOptions || {
+              trim: true,
+              lowercase: true,
+              remove_accents: true,
+              normalize_whitespace: true
+            };
+            
+            if (opts.trim) result = result.trim();
+            if (opts.normalize_whitespace) result = result.replace(/\s+/g, ' ');
+            if (opts.lowercase) result = result.toLowerCase();
+            if (opts.remove_accents) {
+              result = result.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            }
+            if (opts.remove_special_chars) {
+              result = result.replace(/[^a-zA-Z0-9\s]/g, '');
+            }
+            
+            return result;
+          };
+
           let isDuplicate = false;
           let duplicateRecord = null;
           let appliedRule = null;
@@ -233,6 +259,7 @@ Responda usando a ferramenta fornecida.`;
             // Apply deduplication rules in priority order
             for (const rule of deduplicationRules) {
               const uniqueFields = rule.unique_fields as string[];
+              const normOptions = rule.normalization_options || {};
               
               // Build query to check for duplicates
               let duplicateQuery = supabaseClient
@@ -240,11 +267,19 @@ Responda usando a ferramenta fornecida.`;
                 .select('*')
                 .eq('company_id', unclassifiedData.company_id);
 
-              // Add conditions for all unique fields
+              // Add conditions for all unique fields with normalization
               let hasAllFields = true;
               for (const field of uniqueFields) {
                 if (dataToInsert[field] !== undefined && dataToInsert[field] !== null) {
-                  duplicateQuery = duplicateQuery.eq(field, dataToInsert[field]);
+                  const normalizedValue = normalizeValue(dataToInsert[field], normOptions);
+                  
+                  // For text fields, we need to compare normalized values
+                  // Use ilike for case-insensitive comparison if lowercase is enabled
+                  if (typeof normalizedValue === 'string' && normOptions.lowercase) {
+                    duplicateQuery = duplicateQuery.ilike(field, normalizedValue);
+                  } else {
+                    duplicateQuery = duplicateQuery.eq(field, normalizedValue);
+                  }
                 } else {
                   hasAllFields = false;
                   break;
