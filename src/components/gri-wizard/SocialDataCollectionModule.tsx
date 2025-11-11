@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { DocumentUploadZone } from "./DocumentUploadZone";
 import { calculateLostTimeAccidentsMetrics, type LostTimeAccidentsResult } from "@/services/lostTimeAccidentsAnalysis";
 import { LostTimeAccidentsDashboard } from "@/components/safety/LostTimeAccidentsDashboard";
+import { calculateTrainingHoursMetrics, type TrainingHoursResult } from "@/services/trainingHoursAnalysis";
+import { TrainingHoursDashboard } from "@/components/training/TrainingHoursDashboard";
 
 interface SocialDataCollectionModuleProps {
   reportId: string;
@@ -93,6 +95,7 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
   const [formData, setFormData] = useState<any>({});
   const [quantitativeData, setQuantitativeData] = useState<any>({});
   const [lostTimeAccidentsData, setLostTimeAccidentsData] = useState<LostTimeAccidentsResult | null>(null);
+  const [trainingHoursData, setTrainingHoursData] = useState<TrainingHoursResult | null>(null);
   const [companyId, setCompanyId] = useState<string>("");
   const [periodStart, setPeriodStart] = useState<string>("");
   const [periodEnd, setPeriodEnd] = useState<string>("");
@@ -218,6 +221,14 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
       );
       setLostTimeAccidentsData(lostTimeData);
 
+      // Calcular métricas de horas de treinamento
+      const trainingHoursAnalysis = await calculateTrainingHoursMetrics(
+        compId,
+        start.toISOString().split('T')[0],
+        end.toISOString().split('T')[0]
+      );
+      setTrainingHoursData(trainingHoursAnalysis);
+
       await saveData({ ...formData, ...metrics });
       
       toast.success('Métricas calculadas!');
@@ -258,6 +269,32 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
           top_lost_time_accident_types: lostTimeAccidentsData.top_5_types,
           lost_time_accidents_classification: lostTimeAccidentsData.performance_classification,
           lost_time_accidents_calculation_date: new Date().toISOString()
+        }),
+        
+        // Adicionar dados de horas de treinamento (GRI 404-1)
+        ...(trainingHoursData && {
+          training_avg_hours_per_employee: trainingHoursData.average_hours_per_employee,
+          training_total_hours_period: trainingHoursData.total_training_hours,
+          training_data_quality: trainingHoursData.data_quality,
+          training_data_completeness_percent: trainingHoursData.data_completeness_percent,
+          training_hours_by_gender: trainingHoursData.by_gender,
+          training_hours_by_department: trainingHoursData.by_department,
+          training_hours_by_category: trainingHoursData.by_category,
+          training_hours_by_role: trainingHoursData.by_role,
+          training_mandatory_vs_optional: trainingHoursData.mandatory_vs_optional,
+          training_monthly_trend: trainingHoursData.monthly_trend,
+          training_previous_period_avg: trainingHoursData.comparison.previous_period_avg,
+          training_change_percent: trainingHoursData.comparison.change_percentage,
+          training_employees_without_training: trainingHoursData.employees_without_training.count,
+          training_employees_without_training_percent: trainingHoursData.employees_without_training.percentage,
+          training_top_10_employees: trainingHoursData.top_10_employees,
+          training_bottom_10_employees: trainingHoursData.bottom_10_employees,
+          training_performance_classification: trainingHoursData.performance_classification,
+          training_sector_benchmark: trainingHoursData.sector_benchmark,
+          training_performance_vs_benchmark: trainingHoursData.performance_vs_benchmark,
+          training_gri_404_1_compliant: trainingHoursData.gri_404_1_compliance.is_compliant,
+          training_gri_missing_data: trainingHoursData.gri_404_1_compliance.missing_data,
+          training_calculation_date: new Date().toISOString()
         }),
         
         updated_at: new Date().toISOString(),
@@ -487,6 +524,14 @@ export function SocialDataCollectionModule({ reportId, onComplete }: SocialDataC
       {lostTimeAccidentsData && (
         <LostTimeAccidentsDashboard
           data={lostTimeAccidentsData}
+          year={new Date(periodEnd).getFullYear()}
+        />
+      )}
+
+      {/* Dashboard de Média de Horas de Treinamento */}
+      {trainingHoursData && (
+        <TrainingHoursDashboard
+          data={trainingHoursData}
           year={new Date(periodEnd).getFullYear()}
         />
       )}

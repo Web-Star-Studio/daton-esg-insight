@@ -7878,11 +7878,33 @@ export type Database = {
           total_safety_incidents: number | null
           total_training_hours: number | null
           tracks_social_indicators: boolean | null
+          training_avg_hours_per_employee: number | null
+          training_bottom_10_employees: Json | null
+          training_calculation_date: string | null
+          training_change_percent: number | null
           training_coverage_rate: number | null
+          training_data_completeness_percent: number | null
+          training_data_quality: string | null
+          training_employees_without_training: number | null
+          training_employees_without_training_percent: number | null
+          training_gri_404_1_compliant: boolean | null
+          training_gri_missing_data: Json | null
+          training_hours_by_category: Json | null
+          training_hours_by_department: Json | null
+          training_hours_by_gender: Json | null
+          training_hours_by_role: Json | null
           training_hours_men: number | null
           training_hours_women: number | null
           training_investment_total: number | null
+          training_mandatory_vs_optional: Json | null
+          training_monthly_trend: Json | null
           training_notes: string | null
+          training_performance_classification: string | null
+          training_performance_vs_benchmark: number | null
+          training_previous_period_avg: number | null
+          training_sector_benchmark: number | null
+          training_top_10_employees: Json | null
+          training_total_hours_period: number | null
           training_types: string[] | null
           turnover_rate: number | null
           turnover_total: number | null
@@ -7985,11 +8007,33 @@ export type Database = {
           total_safety_incidents?: number | null
           total_training_hours?: number | null
           tracks_social_indicators?: boolean | null
+          training_avg_hours_per_employee?: number | null
+          training_bottom_10_employees?: Json | null
+          training_calculation_date?: string | null
+          training_change_percent?: number | null
           training_coverage_rate?: number | null
+          training_data_completeness_percent?: number | null
+          training_data_quality?: string | null
+          training_employees_without_training?: number | null
+          training_employees_without_training_percent?: number | null
+          training_gri_404_1_compliant?: boolean | null
+          training_gri_missing_data?: Json | null
+          training_hours_by_category?: Json | null
+          training_hours_by_department?: Json | null
+          training_hours_by_gender?: Json | null
+          training_hours_by_role?: Json | null
           training_hours_men?: number | null
           training_hours_women?: number | null
           training_investment_total?: number | null
+          training_mandatory_vs_optional?: Json | null
+          training_monthly_trend?: Json | null
           training_notes?: string | null
+          training_performance_classification?: string | null
+          training_performance_vs_benchmark?: number | null
+          training_previous_period_avg?: number | null
+          training_sector_benchmark?: number | null
+          training_top_10_employees?: Json | null
+          training_total_hours_period?: number | null
           training_types?: string[] | null
           turnover_rate?: number | null
           turnover_total?: number | null
@@ -8092,11 +8136,33 @@ export type Database = {
           total_safety_incidents?: number | null
           total_training_hours?: number | null
           tracks_social_indicators?: boolean | null
+          training_avg_hours_per_employee?: number | null
+          training_bottom_10_employees?: Json | null
+          training_calculation_date?: string | null
+          training_change_percent?: number | null
           training_coverage_rate?: number | null
+          training_data_completeness_percent?: number | null
+          training_data_quality?: string | null
+          training_employees_without_training?: number | null
+          training_employees_without_training_percent?: number | null
+          training_gri_404_1_compliant?: boolean | null
+          training_gri_missing_data?: Json | null
+          training_hours_by_category?: Json | null
+          training_hours_by_department?: Json | null
+          training_hours_by_gender?: Json | null
+          training_hours_by_role?: Json | null
           training_hours_men?: number | null
           training_hours_women?: number | null
           training_investment_total?: number | null
+          training_mandatory_vs_optional?: Json | null
+          training_monthly_trend?: Json | null
           training_notes?: string | null
+          training_performance_classification?: string | null
+          training_performance_vs_benchmark?: number | null
+          training_previous_period_avg?: number | null
+          training_sector_benchmark?: number | null
+          training_top_10_employees?: Json | null
+          training_total_hours_period?: number | null
           training_types?: string[] | null
           turnover_rate?: number | null
           turnover_total?: number | null
