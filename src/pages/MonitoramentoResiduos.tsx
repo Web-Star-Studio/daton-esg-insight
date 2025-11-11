@@ -19,6 +19,9 @@ import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { exportWasteData } from "@/services/dataExport";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function MonitoramentoResiduos() {
   const navigate = useNavigate();
@@ -47,6 +50,21 @@ export default function MonitoramentoResiduos() {
     queryFn: () => calculateWasteDisposalPercentage(selectedYear),
     enabled: !!wasteData && wasteData.total_generated_tonnes > 0,
   });
+
+  const handleExport = async () => {
+    try {
+      await exportWasteData({
+        year: selectedYear,
+        companyName: 'Empresa',
+        reportTitle: `Relatório de Resíduos ${selectedYear}`,
+        includeMetadata: true
+      });
+      
+      toast.success('Dados exportados com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao exportar dados');
+    }
+  };
 
   if (isLoading) {
     return <EnhancedLoading text="Carregando dados de resíduos..." />;
@@ -84,7 +102,7 @@ export default function MonitoramentoResiduos() {
                 max={currentYear}
               />
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>

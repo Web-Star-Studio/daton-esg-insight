@@ -11,6 +11,8 @@ import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { exportEmissionsData } from "@/services/dataExport";
+import { toast } from "sonner";
 
 export default function MonitoramentoEmissoes() {
   const navigate = useNavigate();
@@ -33,6 +35,21 @@ export default function MonitoramentoEmissoes() {
     queryFn: () => generateInventorySummary(selectedYear),
     enabled: !!emissionsData && emissionsData.grand_total > 0,
   });
+
+  const handleExport = async () => {
+    try {
+      await exportEmissionsData({
+        year: selectedYear,
+        companyName: 'Empresa',
+        reportTitle: `Relatório de Emissões GEE ${selectedYear}`,
+        includeMetadata: true
+      });
+      
+      toast.success('Dados exportados com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao exportar dados');
+    }
+  };
 
   if (isLoading) {
     return <EnhancedLoading text="Carregando dados de emissões..." />;
@@ -71,7 +88,7 @@ export default function MonitoramentoEmissoes() {
                 max={currentYear}
               />
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>

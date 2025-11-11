@@ -11,6 +11,9 @@ import { calculateTotalEnergyConsumption } from "@/services/energyManagement";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { exportEnergyData } from "@/services/dataExport";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function MonitoramentoEnergia() {
   const currentYear = new Date().getFullYear();
@@ -26,6 +29,21 @@ export default function MonitoramentoEnergia() {
     queryFn: () => calculateTotalEnergyConsumption(selectedYear - 1),
     enabled: selectedYear > 2020,
   });
+
+  const handleExport = async () => {
+    try {
+      await exportEnergyData({
+        year: selectedYear,
+        companyName: 'Empresa',
+        reportTitle: `Relatório de Energia ${selectedYear}`,
+        includeMetadata: true
+      });
+      
+      toast.success('Dados exportados com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao exportar dados');
+    }
+  };
 
   if (isLoading) {
     return <EnhancedLoading text="Carregando dados de energia..." />;
@@ -59,7 +77,7 @@ export default function MonitoramentoEnergia() {
                 max={currentYear}
               />
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
