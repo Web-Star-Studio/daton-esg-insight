@@ -148,6 +148,51 @@ export function WaterConsumptionDashboard({
               </AlertDescription>
             </Alert>
           )}
+
+          {/* Card de Destaque - Água Reutilizada (Economia Circular) */}
+          {waterData.by_source.reuse > 0 && (
+            <Card className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-2 border-emerald-500/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-emerald-600 text-white">
+                    <Droplets className="h-4 w-4" />
+                  </div>
+                  Água Reutilizada (Economia Circular)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {((waterData.by_source.reuse / waterData.total_consumption_m3) * 100).toFixed(2)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      do consumo total
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {waterData.by_source.reuse.toLocaleString()} m³ reutilizados
+                    </div>
+                  </div>
+                  
+                  {((waterData.by_source.reuse / waterData.total_consumption_m3) * 100) >= 15 ? (
+                    <Badge className="text-lg px-4 py-2 bg-emerald-600 hover:bg-emerald-700">
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      Boa Prática
+                    </Badge>
+                  ) : ((waterData.by_source.reuse / waterData.total_consumption_m3) * 100) >= 10 ? (
+                    <Badge variant="outline" className="text-lg px-4 py-2 border-2 border-yellow-500 text-yellow-700 dark:text-yellow-400">
+                      Oportunidade de Melhoria
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-lg px-4 py-2 border-2 border-orange-500 text-orange-700 dark:text-orange-400">
+                      <AlertTriangle className="h-5 w-5 mr-2" />
+                      Baixo Reuso
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
 

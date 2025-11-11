@@ -172,7 +172,141 @@ Intensidade Hídrica = 12.000 m³ / 5.000 ton = 2,4 m³/ton
    - Detecção de vazamentos
    - Auditoria hídrica periódica
 
-## Compliance e Reporting
+## Percentual de Água Reutilizada (Economia Circular)
+
+### Definição
+Proporção de água reutilizada no total consumido. Indicador crítico para economia circular e redução de dependência de fontes externas. Promove práticas de conservação e uso eficiente dos recursos hídricos.
+
+### Fórmula
+
+**Reuso (%) = (Volume de Água Reutilizada / Consumo Total de Água) × 100**
+
+⚠️ **IMPORTANTE**: O cálculo usa **CONSUMO** (GRI 303-5), não **RETIRADA** (GRI 303-3).
+
+### Exemplo de Cálculo
+
+**Cenário: Indústria Química - 2024**
+
+| Métrica | Valor |
+|---------|-------|
+| Água Retirada (GRI 303-3) | 15.000 m³ |
+| Água Devolvida (GRI 303-4) | 3.000 m³ |
+| **Água Consumida (GRI 303-5)** | **12.000 m³** ← Usar este! |
+| Água de Reuso | 2.400 m³ |
+
+**Cálculo**:
+```
+Reuso (%) = (2.400 / 12.000) × 100 = 20%
+```
+
+### Fontes de Dados / Evidências
+1. Registros de reuso (tabela `water_consumption_data` com source_type = 'Água de Reuso/Reciclada')
+2. Dados de consumo total de água
+3. Sistemas de tratamento de efluentes (ETE)
+4. Medidores de vazão em circuitos de reuso
+5. Planilhas de controle operacional
+6. Relatórios de gestão hídrica
+
+### Tipos de Reuso
+1. **Reuso Industrial**: Água tratada reutilizada em processos produtivos
+   - Lavagem de equipamentos
+   - Circuitos de resfriamento
+   - Processos auxiliares
+
+2. **Reuso em Resfriamento**: Torres de resfriamento com circuito fechado
+   - Sistemas de climatização
+   - Resfriamento de máquinas
+
+3. **Reuso em Irrigação**: Efluentes tratados para jardins e paisagismo
+   - Áreas verdes
+   - Gramados
+   - Cultivo interno
+
+4. **Reuso Sanitário**: Água de chuva ou efluente tratado para descargas
+   - Vasos sanitários
+   - Limpeza de áreas externas
+   - Lavagem de pisos
+
+5. **Reuso em Construção**: Água de chuva para atividades de obra
+   - Preparo de concreto
+   - Limpeza de ferramentas
+   - Umidificação de terreno
+
+### Benchmarks Setoriais
+
+| Setor | Percentual de Reuso | Observações |
+|-------|---------------------|-------------|
+| **Papel e Celulose** | 60-85% | Circuitos fechados em polpação |
+| **Mineração** | 70-90% | Lavagem de minério com recirculação |
+| **Indústria Química** | 20-35% | Alta complexidade de processos |
+| **Têxtil** | 15-30% | Tingimento e lavagem |
+| **Alimentos e Bebidas** | 10-20% | Restrições sanitárias rigorosas |
+| **Metalurgia** | 25-40% | Circuitos de resfriamento |
+| **Automotiva** | 30-50% | Lavagem de peças e pintura |
+
+### Classificação de Desempenho
+
+- **🟢 Excelente**: ≥30% (práticas avançadas de circularidade)
+- **🟡 Bom**: 15-30% (gestão hídrica adequada)
+- **🟠 Regular**: 10-15% (oportunidades de melhoria)
+- **🔴 Baixo**: <10% (necessário plano de ação)
+
+### Interpretação
+- **Quanto MAIOR**, melhor a circularidade hídrica
+- Comparar com ano anterior para medir melhoria
+- Benchmark setorial para avaliar competitividade
+- Identificar oportunidades de aumento de reuso
+
+### Exemplo de Evolução
+
+| Ano | Reuso (m³) | Consumo (m³) | Reuso (%) | Melhoria |
+|-----|------------|--------------|-----------|----------|
+| 2023 | 1.500 | 15.000 | 10,0% | Baseline |
+| 2024 | 2.400 | 12.000 | 20,0% | **+10,0pp** ✅ |
+
+### Ações para Aumentar Reuso
+
+1. **Tratamento de Efluentes**:
+   - Instalar ETE (Estação de Tratamento de Efluentes)
+   - Implementar sistemas de filtração e osmose reversa
+   - Monitorar qualidade da água tratada
+
+2. **Circuitos Fechados**:
+   - Recirculação em processos industriais
+   - Torres de resfriamento com tratamento
+   - Sistemas de lavagem com reuso
+
+3. **Captação de Água de Chuva**:
+   - Cisternas e reservatórios
+   - Uso em processos não potáveis
+   - Irrigação e sanitários
+
+4. **Segregação de Efluentes**:
+   - Separar efluentes por tipo
+   - Tratamento específico para cada uso
+   - Reduzir contaminação cruzada
+
+5. **Monitoramento e Controle**:
+   - Medidores de vazão em pontos estratégicos
+   - Dashboard em tempo real
+   - Análise de qualidade da água
+
+### Compliance e Reporting
+
+- **GRI 303-3**: Retirada de água (incluindo reuso)
+- **GRI 303-5**: Consumo de água (base do cálculo)
+- **CDP Water Security**: W1.2h (Water reuse)
+- **Alliance for Water Stewardship (AWS)**: Standard 3.5
+- **ISO 14046**: Pegada hídrica (considera reuso)
+- **CEO Water Mandate**: Compromisso de gestão sustentável
+
+### Certificações Relacionadas
+- **AWS Standard**: Certification for water stewardship
+- **ISO 14001**: Sistema de Gestão Ambiental
+- **LEED**: Créditos para reuso de água
+- **AQUA-HQE**: Alta Qualidade Ambiental
+
+## Compliance e Reporting Geral
 
 - **GRI 303**: Água e Efluentes
 - **CDP Water Security**: Questionário sobre segurança hídrica

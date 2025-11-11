@@ -6532,6 +6532,7 @@ export type Database = {
           waste_recycled_percentage: number | null
           waste_segregation_practices: string[] | null
           waste_total_generated_tonnes: number | null
+          water_baseline_reuse_percentage: number | null
           water_calculation_date: string | null
           water_consumption_m3: number | null
           water_discharge_total_m3: number | null
@@ -6543,6 +6544,10 @@ export type Database = {
           water_intensity_unit: string | null
           water_notes: string | null
           water_recycled_percentage: number | null
+          water_reuse_calculation_date: string | null
+          water_reuse_improvement_percent: number | null
+          water_reuse_percentage: number | null
+          water_reuse_volume_m3: number | null
           water_sources: string[] | null
           water_stressed_areas_m3: number | null
           water_total_withdrawal_m3: number | null
@@ -6617,6 +6622,7 @@ export type Database = {
           waste_recycled_percentage?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
+          water_baseline_reuse_percentage?: number | null
           water_calculation_date?: string | null
           water_consumption_m3?: number | null
           water_discharge_total_m3?: number | null
@@ -6628,6 +6634,10 @@ export type Database = {
           water_intensity_unit?: string | null
           water_notes?: string | null
           water_recycled_percentage?: number | null
+          water_reuse_calculation_date?: string | null
+          water_reuse_improvement_percent?: number | null
+          water_reuse_percentage?: number | null
+          water_reuse_volume_m3?: number | null
           water_sources?: string[] | null
           water_stressed_areas_m3?: number | null
           water_total_withdrawal_m3?: number | null
@@ -6702,6 +6712,7 @@ export type Database = {
           waste_recycled_percentage?: number | null
           waste_segregation_practices?: string[] | null
           waste_total_generated_tonnes?: number | null
+          water_baseline_reuse_percentage?: number | null
           water_calculation_date?: string | null
           water_consumption_m3?: number | null
           water_discharge_total_m3?: number | null
@@ -6713,6 +6724,10 @@ export type Database = {
           water_intensity_unit?: string | null
           water_notes?: string | null
           water_recycled_percentage?: number | null
+          water_reuse_calculation_date?: string | null
+          water_reuse_improvement_percent?: number | null
+          water_reuse_percentage?: number | null
+          water_reuse_volume_m3?: number | null
           water_sources?: string[] | null
           water_stressed_areas_m3?: number | null
           water_total_withdrawal_m3?: number | null

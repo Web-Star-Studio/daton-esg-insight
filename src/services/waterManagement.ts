@@ -291,3 +291,113 @@ export const calculateWaterIntensity = async (
   
   return result;
 };
+
+/**
+ * Calcula percentual de água reutilizada (Economia Circular)
+ * GRI 303-3 - Práticas de circularidade hídrica
+ */
+export const calculateWaterReusePercentage = async (
+  year: number
+): Promise<{
+  reuse_percentage: number;
+  reuse_volume_m3: number;
+  total_consumption_m3: number;
+  baseline_reuse_percentage?: number;
+  is_improving?: boolean;
+  improvement_percent?: number;
+  reuse_by_type: {
+    industrial_process: number;
+    cooling: number;
+    irrigation: number;
+    sanitation: number;
+    other: number;
+  };
+}> => {
+  // 1. Obter dados de consumo total de água
+  const waterData = await calculateTotalWaterConsumption(year);
+  
+  // 2. Volume de água reutilizada já está em waterData.by_source.reuse
+  const reuseVolume = waterData.by_source.reuse;
+  
+  // 3. Calcular percentual (sobre CONSUMO, não retirada)
+  const reusePercentage = waterData.total_consumption_m3 > 0
+    ? (reuseVolume / waterData.total_consumption_m3) * 100
+    : 0;
+  
+  // 4. Buscar dados do ano anterior para comparação
+  let baselinePercentage: number | undefined = undefined;
+  let isImproving: boolean | undefined = undefined;
+  let improvementPercent: number | undefined = undefined;
+  
+  try {
+    const previousYearData = await calculateTotalWaterConsumption(year - 1);
+    const previousReuse = previousYearData.by_source.reuse;
+    
+    if (previousYearData.total_consumption_m3 > 0) {
+      baselinePercentage = (previousReuse / previousYearData.total_consumption_m3) * 100;
+      
+      // Melhoria = AUMENTO do percentual de reuso
+      isImproving = reusePercentage > baselinePercentage;
+      improvementPercent = reusePercentage - baselinePercentage;
+    }
+  } catch (error) {
+    console.log('Dados do ano anterior não disponíveis para comparação');
+  }
+  
+  // 5. Buscar breakdown detalhado por tipo de reuso
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado');
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+  
+  if (!profile?.company_id) throw new Error('Empresa não encontrada');
+  
+  const { data: reuseData } = await supabase
+    .from('water_consumption_data')
+    .select('*')
+    .eq('company_id', profile.company_id)
+    .ilike('source_type', '%reuso%')
+    .gte('period_start_date', `${year}-01-01`)
+    .lte('period_end_date', `${year}-12-31`);
+  
+  // 6. Classificar tipos de reuso (baseado em source_name ou notes)
+  const reuseByType = {
+    industrial_process: 0,
+    cooling: 0,
+    irrigation: 0,
+    sanitation: 0,
+    other: 0
+  };
+  
+  reuseData?.forEach(record => {
+    const withdrawal = record.withdrawal_volume_m3 || 0;
+    const sourceName = (record.source_name || '').toLowerCase();
+    const notes = (record.notes || '').toLowerCase();
+    
+    if (sourceName.includes('processo') || notes.includes('processo')) {
+      reuseByType.industrial_process += withdrawal;
+    } else if (sourceName.includes('resfriamento') || sourceName.includes('cooling') || notes.includes('torre')) {
+      reuseByType.cooling += withdrawal;
+    } else if (sourceName.includes('irrigação') || sourceName.includes('jardim') || notes.includes('paisagismo')) {
+      reuseByType.irrigation += withdrawal;
+    } else if (sourceName.includes('sanitário') || sourceName.includes('vaso') || notes.includes('descarga')) {
+      reuseByType.sanitation += withdrawal;
+    } else {
+      reuseByType.other += withdrawal;
+    }
+  });
+  
+  return {
+    reuse_percentage: Math.round(reusePercentage * 100) / 100,
+    reuse_volume_m3: Math.round(reuseVolume * 1000) / 1000,
+    total_consumption_m3: Math.round(waterData.total_consumption_m3 * 1000) / 1000,
+    baseline_reuse_percentage: baselinePercentage ? Math.round(baselinePercentage * 100) / 100 : undefined,
+    is_improving: isImproving,
+    improvement_percent: improvementPercent ? Math.round(improvementPercent * 100) / 100 : undefined,
+    reuse_by_type: reuseByType
+  };
+};

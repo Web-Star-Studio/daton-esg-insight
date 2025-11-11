@@ -27,10 +27,11 @@ import {
   type GHGInventorySummary 
 } from "@/services/ghgInventory";
 import { GHGTotalEmissionsDashboard } from "@/components/reports/GHGTotalEmissionsDashboard";
-import { calculateTotalWaterConsumption, calculateWaterIntensity, type WaterConsumptionResult } from "@/services/waterManagement";
+import { calculateTotalWaterConsumption, calculateWaterIntensity, calculateWaterReusePercentage, type WaterConsumptionResult } from "@/services/waterManagement";
 import { WaterConsumptionDashboard } from "@/components/water/WaterConsumptionDashboard";
 import { WaterConsumptionForm } from "@/components/water/WaterConsumptionForm";
 import { WaterIntensityDashboard } from "@/components/water/WaterIntensityDashboard";
+import { WaterReusePercentageDashboard } from "@/components/water/WaterReusePercentageDashboard";
 
 interface EnvironmentalDataCollectionModuleProps {
   reportId: string;
@@ -102,6 +103,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [waterData, setWaterData] = useState<WaterConsumptionResult | null>(null);
   const [previousYearWaterData, setPreviousYearWaterData] = useState<WaterConsumptionResult | null>(null);
   const [waterIntensityData, setWaterIntensityData] = useState<any>(null);
+  const [waterReuseData, setWaterReuseData] = useState<any>(null);
 
   useEffect(() => {
     loadExistingData();
@@ -196,6 +198,21 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       }
     } catch (error) {
       console.error('Erro ao calcular intensidade hídrica:', error);
+    }
+  };
+
+  const loadWaterReusePercentage = async () => {
+    try {
+      const reuse = await calculateWaterReusePercentage(reportYear);
+      setWaterReuseData(reuse);
+      
+      if (reuse.reuse_percentage > 0) {
+        toast.success('Percentual de reuso de água calculado!', {
+          description: `${reuse.reuse_percentage.toFixed(2)}% de água reutilizada`
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao calcular reuso de água:', error);
     }
   };
 
@@ -369,6 +386,13 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
         console.error('Error calculating water intensity:', waterIntensityError);
       }
 
+      // Calcular percentual de reuso de água
+      try {
+        await loadWaterReusePercentage();
+      } catch (waterReuseError) {
+        console.error('Error calculating water reuse:', waterReuseError);
+      }
+
       const dataToSave = {
         report_id: reportId,
         company_id: profile.company_id,
@@ -418,6 +442,13 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
           water_intensity_m3_per_revenue: waterIntensityData.intensity_per_revenue,
           water_intensity_baseline: waterIntensityData.baseline_intensity,
           water_intensity_improvement_percent: waterIntensityData.improvement_percent
+        }),
+        ...(waterReuseData && {
+          water_reuse_percentage: waterReuseData.reuse_percentage,
+          water_reuse_volume_m3: waterReuseData.reuse_volume_m3,
+          water_baseline_reuse_percentage: waterReuseData.baseline_reuse_percentage,
+          water_reuse_improvement_percent: waterReuseData.improvement_percent,
+          water_reuse_calculation_date: new Date().toISOString()
         }),
         updated_at: new Date().toISOString()
       };
@@ -785,6 +816,14 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       {waterIntensityData && (
         <WaterIntensityDashboard
           intensityData={waterIntensityData}
+          year={reportYear}
+        />
+      )}
+
+      {/* Water Reuse Percentage Dashboard */}
+      {waterReuseData && (
+        <WaterReusePercentageDashboard
+          reuseData={waterReuseData}
           year={reportYear}
         />
       )}
