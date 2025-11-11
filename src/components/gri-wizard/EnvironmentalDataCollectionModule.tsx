@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
   Wind, Zap, Droplets, Recycle, Award, 
   CheckCircle2, AlertCircle, BarChart3, Download,
-  FileText, Upload
+  FileText, Upload, ExternalLink, ArrowRight, Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ import { OperationalMetricsForm } from "@/components/operational/OperationalMetr
 import { EnergyIntensityDashboard } from "@/components/reports/EnergyIntensityDashboard";
 import { calculateEnergyIntensity, type EnergyIntensityResult } from "@/services/operationalMetrics";
 import { EnergyConsumptionBreakdown } from "@/components/reports/EnergyConsumptionBreakdown";
+import { calculateTotalEnergyConsumption, type EnergyConsumptionResult } from "@/services/energyManagement";
 import { 
   calculateTotalGHGEmissions, 
   generateInventorySummary,
@@ -94,6 +96,7 @@ const ENVIRONMENTAL_QUESTIONS = [
 ];
 
 export default function EnvironmentalDataCollectionModule({ reportId, onComplete }: EnvironmentalDataCollectionModuleProps) {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [formData, setFormData] = useState<any>({});
@@ -104,6 +107,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
   const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
   const [intensityData, setIntensityData] = useState<EnergyIntensityResult | null>(null);
   const [energyBreakdown, setEnergyBreakdown] = useState<any>(null);
+  const [energyData, setEnergyData] = useState<EnergyConsumptionResult | null>(null);
   const [ghgEmissions, setGhgEmissions] = useState<EmissionsByScope | null>(null);
   const [previousYearEmissions, setPreviousYearEmissions] = useState<EmissionsByScope | null>(null);
   const [inventorySummary, setInventorySummary] = useState<GHGInventorySummary | null>(null);
@@ -121,6 +125,7 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
     loadExistingData();
     loadQuantitativeData();
     loadCompanyInfo();
+    loadEnergyData();
     loadGHGEmissions();
     loadWaterData();
     loadWasteData();
@@ -180,6 +185,15 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
       }
     } catch (error) {
       console.error('Erro ao carregar emissões GEE:', error);
+    }
+  };
+
+  const loadEnergyData = async () => {
+    try {
+      const currentYearData = await calculateTotalEnergyConsumption(reportYear);
+      setEnergyData(currentYearData);
+    } catch (error) {
+      console.error('Erro ao carregar dados de energia:', error);
     }
   };
 
@@ -773,6 +787,31 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
                 ).toFixed(3)} tCO₂e
               </AlertDescription>
             </Alert>
+            
+            {/* Auto-import alert */}
+            {ghgEmissions && ghgEmissions.grand_total > 0 && (
+              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  ✓ Dados de Emissões Encontrados
+                </AlertTitle>
+                <AlertDescription className="text-xs text-blue-800 dark:text-blue-200 space-y-2">
+                  <p>
+                    <strong>{ghgEmissions.grand_total.toFixed(2)} tCO₂e</strong> registrados no Monitoramento Contínuo de Emissões para {reportYear}.
+                    Os dados já foram importados automaticamente e aparecem nos dashboards abaixo.
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => navigate('/monitoramento-emissoes')}
+                  >
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Ir para Monitoramento de Emissões
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* GRI 302: Energia */}
@@ -802,6 +841,31 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
                 />
               </div>
             </div>
+            
+            {/* Auto-import alert */}
+            {energyData && energyData.total_consumption_gj > 0 && (
+              <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200">
+                <Info className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  ✓ Dados de Energia Encontrados
+                </AlertTitle>
+                <AlertDescription className="text-xs text-amber-800 dark:text-amber-200 space-y-2">
+                  <p>
+                    <strong>{energyData.total_consumption_gj.toFixed(2)} GJ</strong> ({(energyData.total_consumption_kwh/1000).toFixed(0)} MWh) registrados no Monitoramento Contínuo de Energia para {reportYear}.
+                    Os dados já foram importados automaticamente.
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => navigate('/monitoramento-energia')}
+                  >
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Ir para Monitoramento de Energia
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* GRI 303: Água */}
@@ -832,9 +896,32 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
                 />
               </div>
             </div>
+            
+            {/* Auto-import alert */}
+            {waterData && waterData.total_withdrawal_m3 > 0 && (
+              <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  ✓ Dados de Água Encontrados
+                </AlertTitle>
+                <AlertDescription className="text-xs text-blue-800 dark:text-blue-200 space-y-2">
+                  <p>
+                    <strong>{waterData.total_withdrawal_m3.toFixed(2)} m³</strong> de captação e <strong>{waterData.total_consumption_m3.toFixed(2)} m³</strong> de consumo registrados no Monitoramento Contínuo de Água para {reportYear}.
+                    Os dados já foram importados automaticamente.
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => navigate('/monitoramento-agua')}
+                  >
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Ir para Monitoramento de Água
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
-
-          {/* GRI 306: Resíduos */}
           <div className="space-y-4">
             <h4 className="font-semibold text-sm flex items-center gap-2">
               <Recycle className="h-4 w-4 text-green-600" />
@@ -870,6 +957,31 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
                 />
               </div>
             </div>
+            
+            {/* Auto-import alert */}
+            {wasteData && wasteData.total_generated_tonnes > 0 && (
+              <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200">
+                <Info className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-sm font-semibold text-green-900 dark:text-green-100">
+                  ✓ Dados de Resíduos Encontrados
+                </AlertTitle>
+                <AlertDescription className="text-xs text-green-800 dark:text-green-200 space-y-2">
+                  <p>
+                    <strong>{wasteData.total_generated_tonnes.toFixed(2)} t</strong> de resíduos gerados registrados no Monitoramento Contínuo de Resíduos para {reportYear}.
+                    Os dados já foram importados automaticamente.
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => navigate('/monitoramento-residuos')}
+                  >
+                    <ArrowRight className="h-3 w-3 mr-1" />
+                    Ir para Monitoramento de Resíduos
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         </CardContent>
       </Card>
