@@ -41,3 +41,9 @@ export const FAQ = lazyLoad(() => import('@/pages/FAQ'));
 export const Fornecedores = lazyLoad(() => import('@/pages/Fornecedores'));
 export const IndicadoresESG = lazyLoad(() => import('@/pages/IndicadoresESG'));
 export const Materialidade = lazyLoad(() => import('@/pages/Materialidade'));
+
+// Monitoring pages (FASE 1)
+export const MonitoramentoAgua = lazyLoad(() => import('@/pages/MonitoramentoAgua'));
+export const MonitoramentoEnergia = lazyLoad(() => import('@/pages/MonitoramentoEnergia'));
+export const MonitoramentoEmissoes = lazyLoad(() => import('@/pages/MonitoramentoEmissoes'));
+export const MonitoramentoResiduos = lazyLoad(() => import('@/pages/MonitoramentoResiduos'));

@@ -115,6 +115,12 @@ const GestaoUsuarios = lazy(() => import("./pages/GestaoUsuarios"));
 const IntelligenceCenter = lazy(() => import("./pages/IntelligenceCenter"));
 const SDGDashboard = lazy(() => import("./pages/SDGDashboard"));
 
+// Lazy loading para Monitoramento ESG (FASE 1)
+const MonitoramentoAgua = lazy(() => import("./pages/MonitoramentoAgua"));
+const MonitoramentoEnergia = lazy(() => import("./pages/MonitoramentoEnergia"));
+const MonitoramentoEmissoes = lazy(() => import("./pages/MonitoramentoEmissoes"));
+const MonitoramentoResiduos = lazy(() => import("./pages/MonitoramentoResiduos"));
+
 // Páginas específicas mantidas
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
@@ -279,6 +285,28 @@ const App = () => (
             <Route path="/residuos/registrar-destinacao" element={
               <ProtectedLazyPageWrapper>
                 <RegistrarDestinacao />
+              </ProtectedLazyPageWrapper>
+            } />
+            
+            {/* Monitoramento ESG - FASE 1 */}
+            <Route path="/monitoramento-agua" element={
+              <ProtectedLazyPageWrapper>
+                <MonitoramentoAgua />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/monitoramento-energia" element={
+              <ProtectedLazyPageWrapper>
+                <MonitoramentoEnergia />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/monitoramento-emissoes" element={
+              <ProtectedLazyPageWrapper>
+                <MonitoramentoEmissoes />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/monitoramento-residuos" element={
+              <ProtectedLazyPageWrapper>
+                <MonitoramentoResiduos />
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/residuos/novo" element={<Navigate to="/residuos/registrar-destinacao" replace />} />

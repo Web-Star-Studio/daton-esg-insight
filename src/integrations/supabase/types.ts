@@ -4271,6 +4271,95 @@ export type Database = {
           },
         ]
       }
+      energy_consumption_data: {
+        Row: {
+          company_id: string
+          consumption_unit: string
+          consumption_value: number
+          cost_brl: number | null
+          created_at: string | null
+          created_by: string | null
+          data_quality_score: number | null
+          data_source: string | null
+          energy_source_name: string | null
+          energy_source_type: string
+          id: string
+          is_from_grid: boolean | null
+          is_renewable: boolean | null
+          is_self_generated: boolean | null
+          notes: string | null
+          period_end_date: string
+          period_start_date: string
+          production_unit: string | null
+          production_volume: number | null
+          revenue_brl: number | null
+          updated_at: string | null
+          verification_date: string | null
+          verified_by: string | null
+          year: number
+        }
+        Insert: {
+          company_id: string
+          consumption_unit: string
+          consumption_value: number
+          cost_brl?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          data_quality_score?: number | null
+          data_source?: string | null
+          energy_source_name?: string | null
+          energy_source_type: string
+          id?: string
+          is_from_grid?: boolean | null
+          is_renewable?: boolean | null
+          is_self_generated?: boolean | null
+          notes?: string | null
+          period_end_date: string
+          period_start_date: string
+          production_unit?: string | null
+          production_volume?: number | null
+          revenue_brl?: number | null
+          updated_at?: string | null
+          verification_date?: string | null
+          verified_by?: string | null
+          year: number
+        }
+        Update: {
+          company_id?: string
+          consumption_unit?: string
+          consumption_value?: number
+          cost_brl?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          data_quality_score?: number | null
+          data_source?: string | null
+          energy_source_name?: string | null
+          energy_source_type?: string
+          id?: string
+          is_from_grid?: boolean | null
+          is_renewable?: boolean | null
+          is_self_generated?: boolean | null
+          notes?: string | null
+          period_end_date?: string
+          period_start_date?: string
+          production_unit?: string | null
+          production_volume?: number | null
+          revenue_brl?: number | null
+          updated_at?: string | null
+          verification_date?: string | null
+          verified_by?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_consumption_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_maintenance_schedules: {
         Row: {
           asset_id: string
