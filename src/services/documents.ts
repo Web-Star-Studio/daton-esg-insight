@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import Papa from 'papaparse';
+import { retryOperation } from "@/utils/retryOperation";
 
 // Interfaces
 export interface DocumentFolder {
@@ -484,7 +485,7 @@ export const downloadDocument = async (documentId: string): Promise<{ url: strin
 
 // Get document preview (for modal display)
 export const getDocumentPreview = async (documentId: string): Promise<{ url: string; type: string }> => {
-  console.log('Getting preview URL for document:', documentId);
+  console.log('📄 Getting preview URL for document:', documentId);
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
@@ -493,39 +494,63 @@ export const getDocumentPreview = async (documentId: string): Promise<{ url: str
     .maybeSingle();
 
   if (fetchError || !document) {
+    console.error('❌ Document not found:', fetchError);
     throw new Error('Documento não encontrado');
   }
 
   const normalizedPath = normalizePath(document.file_path);
+  console.log('📁 Normalized path:', normalizedPath);
 
-  // Method 1: Try signed URL first
-  const { data: signedData, error: signedError } = await supabase.storage
-    .from('documents')
-    .createSignedUrl(normalizedPath, 300); // 5 minutes for preview
+  // Method 1: Try signed URL with retry
+  try {
+    const signedData = await retryOperation(
+      async () => {
+        const { data, error } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(normalizedPath, 300);
+        
+        if (error || !data?.signedUrl) {
+          throw new Error(error?.message || 'Failed to create signed URL');
+        }
+        return data;
+      },
+      { maxRetries: 3, initialDelay: 500 }
+    );
 
-  if (!signedError && signedData?.signedUrl) {
+    console.log('✅ Signed URL created successfully');
     return {
       url: signedData.signedUrl,
       type: document.file_type
     };
+  } catch (signedError) {
+    console.warn('⚠️ Signed URL failed, trying direct download...', signedError);
+    
+    // Method 2: Download and create blob URL with retry
+    try {
+      const blob = await retryOperation(
+        async () => {
+          const { data, error } = await supabase.storage
+            .from('documents')
+            .download(normalizedPath);
+          
+          if (error || !data) {
+            throw new Error(error?.message || 'Failed to download file');
+          }
+          return data;
+        },
+        { maxRetries: 3, initialDelay: 500 }
+      );
+
+      console.log('✅ Direct download successful');
+      return {
+        url: URL.createObjectURL(blob),
+        type: document.file_type
+      };
+    } catch (downloadError) {
+      console.error('❌ Both methods failed:', { signedError, downloadError });
+      throw new Error('Não foi possível carregar a visualização. Verifique as permissões do arquivo.');
+    }
   }
-
-  console.warn('Signed URL failed for preview, trying download...', signedError);
-
-  // Method 2: Download and create blob URL
-  const { data: blob, error: downloadError } = await supabase.storage
-    .from('documents')
-    .download(normalizedPath);
-
-  if (!downloadError && blob) {
-    const url = URL.createObjectURL(blob);
-    return {
-      url,
-      type: document.file_type
-    };
-  }
-
-  throw new Error(`Falha ao criar preview: ${downloadError?.message || signedError?.message}`);
 };
 
 // Get text content for CSV/text preview
@@ -553,43 +578,54 @@ export const getDocumentTextPreview = async (documentId: string): Promise<{
 
   let text: string;
 
-  // Method 1: Try signed URL + fetch (more reliable with bucket policies)
-  const { data: signedData, error: signedError } = await supabase.storage
-    .from('documents')
-    .createSignedUrl(normalizedPath, 300);
+  // Method 1: Try signed URL + fetch with retry (more reliable with bucket policies)
+  try {
+    const signedData = await retryOperation(
+      async () => {
+        const { data, error } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(normalizedPath, 300);
+        
+        if (error || !data?.signedUrl) {
+          throw new Error(error?.message || 'Failed to create signed URL');
+        }
+        return data;
+      },
+      { maxRetries: 3, initialDelay: 500 }
+    );
 
-  if (!signedError && signedData?.signedUrl) {
     console.log('✅ Using signed URL for text preview');
+    const response = await fetch(signedData.signedUrl);
+    if (response.ok) {
+      text = await response.text();
+    } else {
+      throw new Error(`Fetch failed: ${response.status}`);
+    }
+  } catch (signedError) {
+    console.warn('⚠️ Signed URL method failed, trying direct download...', signedError);
+    
+    // Method 2: Direct download with retry (fallback)
     try {
-      const response = await fetch(signedData.signedUrl);
-      if (response.ok) {
-        text = await response.text();
-      } else {
-        throw new Error(`Fetch failed: ${response.status}`);
-      }
-    } catch (fetchErr) {
-      console.warn('⚠️ Signed URL fetch failed, trying direct download...', fetchErr);
-      // Fall through to Method 2
-    }
-  }
-
-  // Method 2: Direct download (fallback)
-  if (!text) {
-    console.log('🔄 Falling back to direct download');
-    const { data: blob, error: downloadError } = await supabase.storage
-      .from('documents')
-      .download(normalizedPath);
-
-    if (downloadError || !blob) {
-      console.error('❌ Both methods failed:', { signedError, downloadError });
-      throw new Error(
-        `Falha ao baixar arquivo para preview:\n` +
-        `- Signed URL: ${signedError?.message || 'OK'}\n` +
-        `- Download: ${downloadError?.message || 'OK'}`
+      const blob = await retryOperation(
+        async () => {
+          const { data, error } = await supabase.storage
+            .from('documents')
+            .download(normalizedPath);
+          
+          if (error || !data) {
+            throw new Error(error?.message || 'Failed to download file');
+          }
+          return data;
+        },
+        { maxRetries: 3, initialDelay: 500 }
       );
-    }
 
-    text = await blob.text();
+      text = await blob.text();
+      console.log('✅ Direct download successful');
+    } catch (downloadError) {
+      console.error('❌ Both methods failed:', { signedError, downloadError });
+      throw new Error('Não foi possível carregar a visualização. Verifique as permissões do arquivo.');
+    }
   }
 
   const lines = text.split('\n');
