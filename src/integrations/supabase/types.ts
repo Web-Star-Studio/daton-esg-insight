@@ -3296,6 +3296,7 @@ export type Database = {
           processing_end_time: string | null
           processing_start_time: string | null
           processing_type: string
+          started_at: string | null
           status: string
           updated_at: string
           user_id: string
@@ -3311,6 +3312,7 @@ export type Database = {
           processing_end_time?: string | null
           processing_start_time?: string | null
           processing_type: string
+          started_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -3326,6 +3328,7 @@ export type Database = {
           processing_end_time?: string | null
           processing_start_time?: string | null
           processing_type?: string
+          started_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -17073,6 +17076,7 @@ export type Database = {
         }
         Returns: Json
       }
+      check_job_timeouts: { Args: never; Returns: number }
       check_rate_limit: {
         Args: {
           p_endpoint: string
