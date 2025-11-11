@@ -214,50 +214,112 @@ serve(async (req) => {
       entities_extracted: extractResult.analysis?.extracted_entities?.length || 0,
     };
 
-    // CREATE PREVIEW RECORDS: Se extração foi bem-sucedida E há entidades extraídas
+    // Calculate overall confidence BEFORE creating preview records (needed for job creation)
+    const avgConfidence = classification.extracted_entities?.reduce(
+      (sum: number, e: any) => sum + (e.confidence || 0),
+      0
+    ) / (classification.extracted_entities?.length || 1);
+
+    // CREATE EXTRACTION JOB AND PREVIEW RECORDS: Se extração foi bem-sucedida E há entidades extraídas
     if (extractResult.success && 
         classification.extracted_entities?.length > 0 &&
         classification.target_mappings?.length > 0) {
       
-      console.log('📝 Creating preview records for manual review...');
-      
-      for (const mapping of classification.target_mappings) {
-        const confidenceScores: Record<string, number> = {};
-        Object.keys(mapping.field_mappings).forEach(field => {
-          confidenceScores[field] = mapping.confidence || 0.5;
-        });
+      try {
+        console.log('📝 Creating extraction job and preview records...');
         
-        await supabaseClient
-          .from('extracted_data_preview')
+        // 1. BUSCAR USER_ID CORRETAMENTE
+        let userId = document.created_by;
+        if (!userId) {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          userId = user?.id || document.company_id; // Fallback para company_id
+          console.log('⚠️ No created_by, using fallback user_id:', userId);
+        }
+        
+        // 2. CRIAR O JOB PRIMEIRO
+        const { data: job, error: jobError } = await supabaseClient
+          .from('document_extraction_jobs')
           .insert({
             company_id: document.company_id,
-            document_id: document.id,
-            extraction_job_id: null,
-            extracted_fields: mapping.field_mappings,
-            confidence_scores: confidenceScores,
-            target_table: mapping.table_name,
-            validation_status: 'Pendente',
-            suggested_mappings: {
-              ai_category: classification.document_type,
-              esg_relevance: classification.esg_relevance_score,
-              processing_timestamp: new Date().toISOString()
-            }
+            document_id: document_id,
+            user_id: userId,
+            status: 'completed',
+            processing_type: 'ai_extraction',
+            confidence_score: avgConfidence || 0,
+            ai_model_used: 'gemini-2.0-flash-exp',
+            processing_start_time: new Date(startTime).toISOString(),
+            processing_end_time: new Date().toISOString()
+          })
+          .select()
+          .single();
+        
+        if (jobError || !job) {
+          console.error('❌ Failed to create extraction job:', jobError);
+          throw new Error(`Failed to create extraction job: ${jobError?.message}`);
+        }
+        
+        console.log(`✅ Created extraction job: ${job.id}`);
+        
+        // 3. CRIAR PREVIEW RECORDS COM O JOB ID VÁLIDO
+        for (const mapping of classification.target_mappings) {
+          const confidenceScores: Record<string, number> = {};
+          Object.keys(mapping.field_mappings).forEach(field => {
+            confidenceScores[field] = mapping.confidence || 0.5;
           });
+          
+          const { error: previewError } = await supabaseClient
+            .from('extracted_data_preview')
+            .insert({
+              company_id: document.company_id,
+              extraction_job_id: job.id,  // ✅ Usando o ID válido do job
+              extracted_fields: mapping.field_mappings,
+              confidence_scores: confidenceScores,
+              target_table: mapping.table_name,
+              validation_status: 'Pendente',
+              suggested_mappings: {
+                ai_category: classification.document_type,
+                esg_relevance: classification.esg_relevance_score,
+                processing_timestamp: new Date().toISOString(),
+                document_name: document.file_name
+              }
+            });
+          
+          if (previewError) {
+            console.error('❌ Failed to create preview:', previewError);
+            throw new Error(`Failed to create preview: ${previewError.message}`);
+          }
+        }
+        
+        console.log(`✅ Created ${classification.target_mappings.length} preview records`);
+        console.log('📊 Extraction Summary:', {
+          job_id: job.id,
+          preview_count: classification.target_mappings.length,
+          document_id: document_id,
+          document_name: document.file_name,
+          confidence: avgConfidence
+        });
+        
+      } catch (error) {
+        console.error('💥 Error creating extraction records:', error);
+        pipeline[2].status = 'failed';
+        pipeline[2].error = error.message;
+        
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Falha ao criar registros de extração: ${error.message}`,
+            pipeline,
+            document_id
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-      
-      console.log(`✅ Created ${classification.target_mappings.length} preview records`);
     }
 
     // STEP 4: Validar dados extraídos
     console.log('✅ Step 4: Validating extracted data...');
     pipeline[3].status = 'processing';
     const validateStart = Date.now();
-
-    // Calculate overall confidence
-    const avgConfidence = classification.extracted_entities?.reduce(
-      (sum: number, e: any) => sum + (e.confidence || 0),
-      0
-    ) / (classification.extracted_entities?.length || 1);
 
     const dataQuality = classification.data_quality_assessment;
     const hasIssues = dataQuality?.issues?.some((i: any) => i.severity === 'high') || false;
