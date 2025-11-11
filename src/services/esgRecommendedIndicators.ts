@@ -53,27 +53,66 @@ const getCompanyId = async (): Promise<string> => {
 const getCurrentYear = () => new Date().getFullYear();
 
 const convertToKwh = (quantity: number, unit: string, fuelType: string): number => {
-  // Fatores de conversão IPCC/MCTI
+  // Fatores de conversão IPCC/MCTI expandidos
   const conversionFactors: Record<string, number> = {
+    // Combustíveis Líquidos
     'diesel': 10.8, // kWh/L
+    'diesel b': 10.8, // kWh/L
+    'diesel s10': 10.8, // kWh/L
+    'diesel s500': 10.8, // kWh/L
     'gasolina': 9.1, // kWh/L
+    'gasolina comum': 9.1, // kWh/L
+    'gasolina premium': 9.1, // kWh/L
     'etanol': 6.5, // kWh/L
-    'gás natural': 10.6, // kWh/m³
-    'GLP': 12.8, // kWh/kg
+    'etanol hidratado': 6.5, // kWh/L
+    'etanol anidro': 6.5, // kWh/L
+    'biodiesel': 10.0, // kWh/L
     'óleo combustível': 11.2, // kWh/L
+    'querosene': 10.2, // kWh/L
+    'querosene de aviação': 10.3, // kWh/L
+    
+    // Combustíveis Gasosos
+    'gás natural': 10.6, // kWh/m³
+    'gás natural veicular': 10.6, // kWh/m³
+    'gnv': 10.6, // kWh/m³
+    'glp': 12.8, // kWh/kg
+    'gás liquefeito de petróleo': 12.8, // kWh/kg
+    'biogás': 6.5, // kWh/m³
+    
+    // Combustíveis Sólidos
     'carvão': 7.5, // kWh/kg
+    'carvão mineral': 7.5, // kWh/kg
+    'carvão vegetal': 8.1, // kWh/kg
+    'lenha': 4.4, // kWh/kg
+    'biomassa': 4.5, // kWh/kg
+    'pellet': 5.0, // kWh/kg
+    'bagaço de cana': 4.2, // kWh/kg
+    
+    // Energia Térmica (já em kWh)
+    'vapor': 1.0, // kWh/kWh (sem conversão)
+    'calor': 1.0, // kWh/kWh (sem conversão)
+    'energia térmica': 1.0, // kWh/kWh (sem conversão)
   };
 
   const factor = conversionFactors[fuelType.toLowerCase()] || 0;
   
   // Converter unidade se necessário
   let quantityInBaseUnit = quantity;
-  if (unit.toLowerCase() === 'kg' && ['GLP', 'carvão'].includes(fuelType)) {
+  const unitLower = unit.toLowerCase();
+  
+  // Normalizar unidades
+  if (['kg', 'quilograma', 'quilogramas'].includes(unitLower)) {
     quantityInBaseUnit = quantity;
-  } else if (unit.toLowerCase() === 'l' && ['diesel', 'gasolina', 'etanol'].includes(fuelType)) {
+  } else if (['l', 'litro', 'litros'].includes(unitLower)) {
     quantityInBaseUnit = quantity;
-  } else if (unit.toLowerCase() === 'm³' && fuelType === 'gás natural') {
+  } else if (['m³', 'm3', 'metro cúbico', 'metros cúbicos'].includes(unitLower)) {
     quantityInBaseUnit = quantity;
+  } else if (['t', 'tonelada', 'toneladas'].includes(unitLower)) {
+    quantityInBaseUnit = quantity * 1000; // converter para kg
+  } else if (['kwh', 'mwh', 'gwh'].includes(unitLower)) {
+    // Já está em kWh ou múltiplos
+    if (unitLower === 'mwh') quantityInBaseUnit = quantity * 1000;
+    if (unitLower === 'gwh') quantityInBaseUnit = quantity * 1000000;
   }
 
   return quantityInBaseUnit * factor;

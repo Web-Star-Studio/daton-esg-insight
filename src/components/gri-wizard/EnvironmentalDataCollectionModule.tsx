@@ -190,11 +190,39 @@ export default function EnvironmentalDataCollectionModule({ reportId, onComplete
 
       if (!profile?.company_id) throw new Error('Company not found');
 
+      // Calcular consumo total de energia automaticamente
+      let energyCalculation;
+      try {
+        const { calculateTotalEnergyConsumption } = await import('@/services/integratedReportsHelpers');
+        energyCalculation = await calculateTotalEnergyConsumption();
+        
+        // Atualizar dados quantitativos com o cálculo
+        setQuantitativeData(prev => ({
+          ...prev,
+          energy_total_consumption_kwh: energyCalculation.total_kwh,
+          energy_renewable_percentage: energyCalculation.renewable_percentage,
+          energy_electricity_kwh: energyCalculation.electricity_kwh,
+          energy_fuel_kwh: energyCalculation.fuel_kwh,
+          energy_thermal_kwh: energyCalculation.thermal_kwh
+        }));
+
+        toast.success('Consumo de energia calculado automaticamente!', {
+          description: `Total: ${energyCalculation.total_kwh.toLocaleString('pt-BR')} kWh (${energyCalculation.renewable_percentage.toFixed(1)}% renovável)`
+        });
+      } catch (energyError) {
+        console.error('Error calculating energy:', energyError);
+        // Continuar mesmo se o cálculo de energia falhar
+      }
+
       const dataToSave = {
         report_id: reportId,
         company_id: profile.company_id,
         ...formData,
         ...quantitativeData,
+        ...(energyCalculation && {
+          energy_total_consumption_kwh: energyCalculation.total_kwh,
+          energy_renewable_percentage: energyCalculation.renewable_percentage
+        }),
         updated_at: new Date().toISOString()
       };
 
