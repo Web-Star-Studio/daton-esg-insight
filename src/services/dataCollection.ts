@@ -38,40 +38,102 @@ export interface DataImportJob {
 
 export const dataCollectionService = {
   async getTasks(params?: { assignee?: 'me'; status?: string }): Promise<DataCollectionTask[]> {
-    const { data, error } = await supabase.functions.invoke('data-collection-management', {
-      body: { action: 'getTasks', ...params }
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    
+    if (!token) throw new Error('Not authenticated');
+    
+    const queryParams = new URLSearchParams();
+    if (params?.assignee) queryParams.set('assignee', params.assignee);
+    if (params?.status) queryParams.set('status', params.status);
+    
+    const url = `https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-collection-management/tasks${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
-    if (error) throw error;
-    return data || [];
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to fetch tasks: ${error}`);
+    }
+
+    return response.json();
   },
 
   async completeTask(taskId: string): Promise<DataCollectionTask> {
-    const { data, error } = await supabase.functions.invoke('data-collection-management', {
-      body: { action: 'completeTask', taskId }
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    
+    if (!token) throw new Error('Not authenticated');
+    
+    const url = `https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-collection-management/complete?id=${taskId}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
-    if (error) throw error;
-    return data[0];
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to complete task: ${error}`);
+    }
+
+    return response.json();
   },
 
   async createTask(taskData: Omit<DataCollectionTask, 'id' | 'company_id' | 'created_at' | 'updated_at'>): Promise<DataCollectionTask> {
-    const { data, error } = await supabase.functions.invoke('data-collection-management', {
-      body: taskData,
-      method: 'POST'
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    
+    if (!token) throw new Error('Not authenticated');
+    
+    const url = 'https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-collection-management/tasks';
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(taskData)
     });
 
-    if (error) throw error;
-    return data[0];
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to create task: ${error}`);
+    }
+
+    return response.json();
   },
 
   async getImportJobs(): Promise<DataImportJob[]> {
-    const { data, error } = await supabase.functions.invoke('data-import-processor', {
-      body: { action: 'getJobs' }
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    
+    if (!token) throw new Error('Not authenticated');
+    
+    const url = 'https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-import-processor/jobs';
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
-    if (error) throw error;
-    return data || [];
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Failed to fetch jobs: ${error}`);
+    }
+
+    return response.json();
   },
 
   async uploadFile(file: File, importType: string): Promise<{ job_id: string; message: string }> {
@@ -95,28 +157,42 @@ export const dataCollectionService = {
   },
 
   async getJobStatus(jobId: string): Promise<DataImportJob> {
-    const response = await fetch(`https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-import-processor/jobs/${jobId}/status`, {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    
+    if (!token) throw new Error('Not authenticated');
+    
+    const response = await fetch(`https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-import-processor/jobs?id=${jobId}`, {
       headers: {
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get job status');
+      const error = await response.text();
+      throw new Error(`Failed to get job status: ${error}`);
     }
 
     return response.json();
   },
 
   async getTemplate(type: string): Promise<{ data: any[]; fileName: string }> {
-    const response = await fetch(`https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-import-processor/template/${type}`, {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    
+    if (!token) throw new Error('Not authenticated');
+    
+    const response = await fetch(`https://dqlvioijqzlvnvvajmft.supabase.co/functions/v1/data-import-processor/template?type=${type}`, {
       headers: {
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get template');
+      const error = await response.text();
+      throw new Error(`Failed to get template: ${error}`);
     }
 
     return response.json();
