@@ -401,9 +401,69 @@ serve(async (req) => {
         console.log(`✅ Created extraction job: ${job.id}`);
         
         // 3. CRIAR PREVIEW RECORDS COM O JOB ID VÁLIDO
+        // ✅ Required fields per table
+        const REQUIRED_FIELDS: Record<string, string[]> = {
+          licenses: ['license_name', 'license_type', 'issue_date', 'expiration_date'],
+          assets: ['name', 'asset_type'],
+          waste_logs: ['waste_type', 'quantity', 'unit', 'log_date'],
+          emission_sources: ['source_name', 'scope', 'category'],
+          suppliers: ['name'],
+          employees: ['full_name', 'hire_date'],
+          energy_consumption: ['source_type', 'consumption_date', 'quantity_kwh'],
+          water_consumption: ['consumption_date', 'quantity_m3'],
+          activity_data: ['quantity', 'period_start_date', 'emission_source_id'],
+        };
+        
+        // ✅ Field name aliases for mapping
+        const FIELD_ALIASES: Record<string, string[]> = {
+          name: ['nome', 'transportador', 'receptor', 'fornecedor', 'empresa', 'razao_social'],
+          waste_type: ['tipo_residuo', 'tipo', 'residuo', 'waste'],
+          quantity: ['quantidade', 'qtd', 'volume', 'peso'],
+          log_date: ['data', 'data_geracao', 'data_log', 'date'],
+          unit: ['unidade', 'un', 'medida'],
+        };
+        
+        let createdPreviewsCount = 0;
+        
         for (const mapping of classification.target_mappings) {
           const confidenceScores: Record<string, number> = {};
-          Object.keys(mapping.field_mappings).forEach(field => {
+          const normalizedFields = { ...mapping.field_mappings };
+          
+          // ✅ SMART FIELD MAPPING: Try to map required fields from aliases
+          const tableName = mapping.table_name;
+          const requiredFields = REQUIRED_FIELDS[tableName] || [];
+          
+          for (const requiredField of requiredFields) {
+            // If required field is missing, try to find it from aliases
+            if (!normalizedFields[requiredField]) {
+              const aliases = FIELD_ALIASES[requiredField] || [];
+              
+              for (const alias of aliases) {
+                const foundValue = normalizedFields[alias];
+                if (foundValue && String(foundValue).trim() !== '') {
+                  console.log(`✅ Mapping ${alias} → ${requiredField} for table ${tableName}`);
+                  normalizedFields[requiredField] = foundValue;
+                  break;
+                }
+              }
+            }
+          }
+          
+          // ✅ SKIP INVALID MAPPINGS: If still missing required fields, skip this mapping
+          const missingFields: string[] = [];
+          for (const requiredField of requiredFields) {
+            if (!normalizedFields[requiredField] || String(normalizedFields[requiredField]).trim() === '') {
+              missingFields.push(requiredField);
+            }
+          }
+          
+          if (missingFields.length > 0) {
+            console.warn(`⚠️ Skipping preview for ${tableName}: missing required fields: ${missingFields.join(', ')}`);
+            console.warn(`Available fields: ${Object.keys(normalizedFields).join(', ')}`);
+            continue; // Skip this mapping
+          }
+          
+          Object.keys(normalizedFields).forEach(field => {
             confidenceScores[field] = mapping.confidence || 0.5;
           });
           
@@ -412,7 +472,7 @@ serve(async (req) => {
             .insert({
               company_id: document.company_id,
               extraction_job_id: job.id,  // ✅ Usando o ID válido do job
-              extracted_fields: mapping.field_mappings,
+              extracted_fields: normalizedFields,
               confidence_scores: confidenceScores,
               target_table: mapping.table_name,
               validation_status: 'Pendente',
@@ -420,7 +480,8 @@ serve(async (req) => {
                 ai_category: classification.document_type,
                 esg_relevance: classification.esg_relevance_score,
                 processing_timestamp: new Date().toISOString(),
-                document_name: document.file_name
+                document_name: document.file_name,
+                field_mappings_applied: Object.keys(normalizedFields)
               }
             });
           
@@ -428,12 +489,16 @@ serve(async (req) => {
             console.error('❌ Failed to create preview:', previewError);
             throw new Error(`Failed to create preview: ${previewError.message}`);
           }
+          
+          createdPreviewsCount++;
         }
         
-        console.log(`✅ Created ${classification.target_mappings.length} preview records`);
+        console.log(`✅ Created ${createdPreviewsCount} preview records (${classification.target_mappings.length - createdPreviewsCount} skipped due to missing required fields)`);
         console.log('📊 Extraction Summary:', {
           job_id: job.id,
-          preview_count: classification.target_mappings.length,
+          preview_count: createdPreviewsCount,
+          total_mappings: classification.target_mappings.length,
+          skipped_mappings: classification.target_mappings.length - createdPreviewsCount,
           document_id: document_id,
           document_name: document.file_name,
           confidence: avgConfidence
@@ -456,7 +521,9 @@ serve(async (req) => {
             duration_ms: Date.now() - extractStart,
             success: true,
             metadata: {
-              preview_count: classification.target_mappings.length,
+              preview_count: createdPreviewsCount,
+              total_mappings: classification.target_mappings.length,
+              skipped_mappings: classification.target_mappings.length - createdPreviewsCount,
               avg_field_count: Math.round(avgFieldCount * 100) / 100,
               empty_previews: emptyPreviewsCount,
               tables: classification.target_mappings.map(m => m.table_name)
