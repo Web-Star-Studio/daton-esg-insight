@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -13,7 +13,7 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Upload, X, FileText, Eye } from "lucide-react"
+import { CalendarIcon, Upload, X, FileText, Eye, DollarSign } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query"
@@ -56,6 +56,25 @@ const formSchema = z.object({
   custo: z.number().min(0, "Custo deve ser positivo").optional(),
   pgrsSourceId: z.string().optional(),
   pgrsWasteTypeId: z.string().optional(),
+  
+  // Campos Financeiros
+  destinationCostPerUnit: z.number().min(0).optional(),
+  destinationCostTotal: z.number().min(0).optional(),
+  transportCost: z.number().min(0).optional(),
+  revenuePerUnit: z.number().min(0).optional(),
+  revenueTotal: z.number().min(0).optional(),
+  
+  // Campos Logísticos
+  driverName: z.string().optional(),
+  vehiclePlate: z.string().optional(),
+  storageType: z.string().optional(),
+  
+  // Campos Documentais
+  invoiceGenerator: z.string().optional(),
+  invoicePayment: z.string().optional(),
+  cdfNumber: z.string().optional(),
+  cdfAdditional1: z.string().optional(),
+  cdfAdditional2: z.string().optional(),
 })
 
 const RegistrarDestinacao = () => {
@@ -124,6 +143,19 @@ const RegistrarDestinacao = () => {
       custo: 0,
       pgrsSourceId: "",
       pgrsWasteTypeId: "",
+      destinationCostPerUnit: 0,
+      destinationCostTotal: 0,
+      transportCost: 0,
+      revenuePerUnit: 0,
+      revenueTotal: 0,
+      driverName: "",
+      vehiclePlate: "",
+      storageType: "",
+      invoiceGenerator: "",
+      invoicePayment: "",
+      cdfNumber: "",
+      cdfAdditional1: "",
+      cdfAdditional2: "",
     },
   })
 
@@ -236,6 +268,9 @@ const RegistrarDestinacao = () => {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("🚀 [SUBMIT] Formulário submetido com valores:", values);
     
+    // Calcular total_payable automaticamente
+    const totalPayable = (values.destinationCostTotal || 0) + (values.transportCost || 0);
+    
     const wasteData = {
       mtr_number: values.mtr,
       waste_description: values.descricaoResiduo,
@@ -249,7 +284,28 @@ const RegistrarDestinacao = () => {
       destination_cnpj: sanitizeCNPJ(values.cnpjDestinador),
       final_treatment_type: values.tipoDestinacao || undefined,
       cost: values.custo || undefined,
-      status: 'Coletado' as const
+      status: 'Coletado' as const,
+      
+      // Campos Financeiros
+      destination_cost_per_unit: values.destinationCostPerUnit || undefined,
+      destination_cost_total: values.destinationCostTotal || undefined,
+      transport_cost: values.transportCost || undefined,
+      revenue_per_unit: values.revenuePerUnit || undefined,
+      revenue_total: values.revenueTotal || undefined,
+      total_payable: totalPayable > 0 ? totalPayable : undefined,
+      payment_status: totalPayable > 0 ? 'Pendente' : undefined,
+      
+      // Campos Logísticos
+      driver_name: values.driverName || undefined,
+      vehicle_plate: values.vehiclePlate || undefined,
+      storage_type: values.storageType || undefined,
+      
+      // Campos Documentais
+      invoice_generator: values.invoiceGenerator || undefined,
+      invoice_payment: values.invoicePayment || undefined,
+      cdf_number: values.cdfNumber || undefined,
+      cdf_additional_1: values.cdfAdditional1 || undefined,
+      cdf_additional_2: values.cdfAdditional2 || undefined,
     };
 
     console.log("📦 [SUBMIT] Dados formatados para API:", wasteData);
@@ -672,7 +728,285 @@ const RegistrarDestinacao = () => {
               </CardContent>
             </Card>
 
-            {/* Seção 5: Upload de Documentos */}
+            {/* Seção 5: Dados Financeiros Detalhados */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Dados Financeiros Detalhados
+                </CardTitle>
+                <CardDescription>Custos de destinação, transporte e receitas (se aplicável)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="destinationCostPerUnit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custo Unitário de Destinação (R$/ton)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              field.onChange(value);
+                              // Auto-calcular custo total
+                              const qty = form.getValues('quantidade') || 0;
+                              form.setValue('destinationCostTotal', value * qty);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="destinationCostTotal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custo Total de Destinação (R$)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="transportCost"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custo de Transporte (R$)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200">
+                  <FormField
+                    control={form.control}
+                    name="revenuePerUnit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Receita Unitária - Venda (R$/ton)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value) || 0;
+                              field.onChange(value);
+                              // Auto-calcular receita total
+                              const qty = form.getValues('quantidade') || 0;
+                              form.setValue('revenueTotal', value * qty);
+                            }}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">Aplicável apenas para recicláveis vendidos</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="revenueTotal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Receita Total - Venda (R$)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Seção 6: Dados Logísticos */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Dados Logísticos</CardTitle>
+                <CardDescription>Informações sobre transporte e armazenamento</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="driverName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Motorista</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="vehiclePlate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Placa do Veículo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ABC-1234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="storageType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Armazenamento</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="BAG'S">BAG'S</SelectItem>
+                            <SelectItem value="CAÇAMBA">CAÇAMBA</SelectItem>
+                            <SelectItem value="TANQUES">TANQUES</SelectItem>
+                            <SelectItem value="IBC">IBC</SelectItem>
+                            <SelectItem value="BAMBONA">BAMBONA</SelectItem>
+                            <SelectItem value="AGRANEL">AGRANEL</SelectItem>
+                            <SelectItem value="CONTAINER">CONTAINER</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Seção 7: Documentação */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Documentação Fiscal e de Destinação</CardTitle>
+                <CardDescription>Notas fiscais, certificados de destinação final e outros documentos</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="invoiceGenerator"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº NF do Gerador</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Número da nota fiscal" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="invoicePayment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº NF de Pagamento</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Número da nota fiscal de pagamento" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="cdfNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº CDF Principal</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Certificado de Destinação Final" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cdfAdditional1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº CDF Adicional 1</FormLabel>
+                        <FormControl>
+                          <Input placeholder="CDF adicional (opcional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cdfAdditional2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nº CDF Adicional 2</FormLabel>
+                        <FormControl>
+                          <Input placeholder="CDF adicional (opcional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Seção 8: Upload de Documentos */}
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

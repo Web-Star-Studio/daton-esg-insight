@@ -116,7 +116,17 @@ const menuSections: MenuSection[] = [
               { id: "carbon-projects", title: "Projetos de Carbono", icon: Leaf, path: "/projetos-carbono", description: "Gestão de projetos de redução" }
             ]
           },
-          { id: "waste-management", title: "Gestão de Resíduos", icon: Recycle, path: "/residuos", description: "Controle e destinação de resíduos" },
+          {
+            id: "waste-management",
+            title: "Gestão de Resíduos",
+            icon: Recycle,
+            path: "/residuos",
+            description: "Controle e destinação de resíduos",
+            subItems: [
+              { id: "waste-logs", title: "Registros de Resíduos", icon: Trash2, path: "/residuos", description: "Controle e destinação de resíduos" },
+              { id: "waste-payables", title: "Contas a Pagar", icon: icons.DollarSign, path: "/financeiro/residuos/contas-a-pagar", description: "Gestão financeira de pagamentos" },
+            ]
+          },
           { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" },
           { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" }
         ]
@@ -226,7 +236,7 @@ export function AppSidebar() {
   
   // Auto-expand category if active page belongs to it
   useState(() => {
-    const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/licenciamento', '/metas-sustentabilidade']
+    const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/financeiro/residuos', '/licenciamento', '/metas-sustentabilidade']
     const socialPaths = ['/social-esg', '/gestao-funcionarios', '/seguranca-trabalho', '/gestao-treinamentos', '/desenvolvimento-carreira']
     const governancePaths = ['/governanca-esg', '/gestao-riscos', '/compliance', '/auditoria', '/gestao-stakeholders', '/analise-materialidade']
     
