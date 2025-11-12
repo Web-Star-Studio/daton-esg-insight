@@ -51,6 +51,7 @@ serve(async (req) => {
             console.log(`✅ Using pre-processed attachment: ${att.name}`);
             
             const structured = att.structured || {};
+            const dataRows = structured.records || structured.rows || [];
             parsedAttachments.push({
               name: att.name,
               type: att.type,
@@ -58,11 +59,13 @@ serve(async (req) => {
               parsedContent: att.parsedContent,
               structured: structured,
               headers: structured.headers || [],
-              records: structured.records || []
+              records: dataRows,
+              rows: dataRows
             });
             
-            if (structured.records && structured.records.length > 0) {
+            if (dataRows && dataRows.length > 0) {
               hasStructuredData = true;
+              console.log(`✅ Found ${dataRows.length} structured records in ${att.name}`);
             }
           } else if (att.path) {
             // Fallback: parse if not pre-processed
@@ -91,7 +94,17 @@ serve(async (req) => {
         }
       }
       
-      console.log(`📊 Parsed attachments: ${parsedAttachments.length}, structured data: ${hasStructuredData}`);
+      console.log(`📊 Attachment processing summary:
+- Total attachments: ${parsedAttachments.length}
+- With structured data: ${parsedAttachments.filter(pa => {
+    const dataRows = pa.records || pa.rows || [];
+    return dataRows.length > 0;
+  }).length}
+- Total records: ${parsedAttachments.reduce((sum, pa) => {
+    const dataRows = pa.records || pa.rows || [];
+    return sum + dataRows.length;
+  }, 0)}
+`);
     }
 
     // 2. Get current page data for context
@@ -149,13 +162,14 @@ Amostra: ${JSON.stringify(ed.sample_records.slice(0, 2), null, 2)}
 ${parsedAttachments.length > 0 ? `
 ANEXOS PROCESSADOS:
 ${parsedAttachments.map(pa => {
-  if (pa.structured && pa.records) {
+  const dataRows = pa.records || pa.rows || [];
+  if (pa.structured && dataRows.length > 0) {
     return `
 Arquivo: ${pa.name} (${pa.type})
-Estrutura detectada: ${pa.records.length} linhas
+Estrutura detectada: ${dataRows.length} linhas
 Colunas: ${pa.headers?.join(', ') || 'N/A'}
 Primeiras linhas:
-${JSON.stringify(pa.records.slice(0, 3), null, 2)}
+${JSON.stringify(dataRows.slice(0, 3), null, 2)}
 `;
   }
   return `
@@ -416,11 +430,17 @@ IMPORTANTE:
       const operations: any[] = [];
       const validations: any[] = [];
       
-      for (const attachment of parsedAttachments) {
-        if (!attachment.structured || !attachment.records) continue;
-        
+      const attachmentsWithStructuredData = parsedAttachments.filter(pa => {
+        const dataRows = pa.records || pa.rows || [];
+        return pa.structured && dataRows.length > 0;
+      });
+      
+      console.log(`📦 Processing ${attachmentsWithStructuredData.length} attachments with structured data`);
+      
+      for (const attachment of attachmentsWithStructuredData) {
         const headers = attachment.headers || [];
-        const records = attachment.records || [];
+        const dataRows = attachment.records || attachment.rows || [];
+        const records = dataRows;
         
         console.log(`🔍 Analisando anexo: ${attachment.name}`);
         console.log(`📋 Headers encontrados: ${headers.join(', ')}`);

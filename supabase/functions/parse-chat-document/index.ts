@@ -154,6 +154,7 @@ Deno.serve(async (req) => {
         content: text.trim(),
         headers,
         rows: dataRows,
+        records: dataRows,  // Add for backward compatibility
         delimiter,
         encoding: 'utf-8',
       };
