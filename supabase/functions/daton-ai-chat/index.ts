@@ -1078,7 +1078,9 @@ serve(async (req) => {
     const { buildPageContext } = await import('./context-builder.ts');
     let pageContextInfo = '';
     try {
-      pageContextInfo = await buildPageContext(currentRoute, companyId, supabaseClient);
+      console.log('🔍 Building page context for:', currentPage);
+      pageContextInfo = await buildPageContext(currentPage, companyId, supabaseClient);
+      console.log('✅ Page context built successfully');
     } catch (e) {
       console.log('⚠️ Could not build page context:', e);
     }
