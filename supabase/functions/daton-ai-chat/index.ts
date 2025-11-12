@@ -914,7 +914,29 @@ serve(async (req) => {
                   classification
                 }
               });
+              
+              // ✅ Log comparison to detect inconsistencies
               if (extractData?.structuredData) {
+                console.log('📊 Data source comparison:', {
+                  parseDataRecords: parseData.structured?.rows?.length || 0,
+                  extractDataRecords: extractData.structuredData?.records?.length || 0,
+                  parseDataHeaders: parseData.structured?.headers?.length || 0,
+                  extractDataHeaders: extractData.structuredData?.headers?.length || 0,
+                  difference: Math.abs(
+                    (parseData.structured?.rows?.length || 0) - 
+                    (extractData.structuredData?.records?.length || 0)
+                  )
+                });
+                
+                if (Math.abs(
+                  (parseData.structured?.rows?.length || 0) - 
+                  (extractData.structuredData?.records?.length || 0)
+                ) > 0) {
+                  console.warn('⚠️ INCONSISTENCY DETECTED: Record count differs between parse and extract!');
+                  console.log('Parse data preview:', JSON.stringify(parseData.structured?.rows?.slice(0, 2), null, 2));
+                  console.log('Extract data preview:', JSON.stringify(extractData.structuredData?.records?.slice(0, 2), null, 2));
+                }
+                
                 extractedData = extractData.structuredData;
                 console.log('📊 Advanced extraction completed');
               }

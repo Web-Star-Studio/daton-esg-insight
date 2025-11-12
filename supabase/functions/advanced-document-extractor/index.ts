@@ -8,6 +8,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Normaliza string removendo espaços, aspas e caracteres invisíveis
+ */
+function normalizeValue(value: any): string {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .trim()
+    .replace(/^["']|["']$/g, '') // Remove aspas nas pontas
+    .replace(/\r/g, ''); // Remove carriage returns
+}
+
+/**
+ * Verifica se uma row tem pelo menos um valor não vazio
+ */
+function hasNonEmptyValue(record: Record<string, any>): boolean {
+  return Object.values(record).some(val => {
+    const normalized = normalizeValue(val);
+    return normalized.length > 0;
+  });
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -59,27 +80,40 @@ serve(async (req) => {
       if (jsonData.length > 0) {
         // First row as headers
         structuredData.headers = (jsonData[0] as any[]).map((h: any) => 
-          String(h || '').trim()
+          normalizeValue(h)
         ).filter(h => h);
         
         // Remaining rows as records
         const dataRows = jsonData.slice(1) as any[][];
+        const totalDataRows = dataRows.length;
         structuredData.records = dataRows
-          .filter((row: any[]) => row.some(cell => cell !== null && cell !== undefined && cell !== ''))
           .map((row: any[]) => {
             const record: any = {};
             structuredData.headers.forEach((header: string, idx: number) => {
               if (header && row[idx] !== undefined && row[idx] !== null) {
-                record[header] = row[idx];
+                record[header] = normalizeValue(row[idx]);
               }
             });
             return record;
-          });
+          })
+          // ✅ CRITICAL: Filter rows where ALL values are empty
+          .filter(record => hasNonEmptyValue(record));
         
         structuredData.rowCount = structuredData.records.length;
         structuredData.columnCount = structuredData.headers.length;
         
-        console.log(`✅ Extracted ${structuredData.rowCount} records with ${structuredData.columnCount} columns`);
+        const emptyRowsCount = totalDataRows - structuredData.records.length;
+        
+        console.log(`✅ Excel Processing Details:`, {
+          totalRows: totalDataRows,
+          headers: structuredData.headers.length,
+          recordsAfterFilter: structuredData.records.length,
+          emptyRowsFiltered: emptyRowsCount
+        });
+        
+        if (emptyRowsCount > totalDataRows * 0.3) {
+          console.warn(`⚠️ High empty row ratio in Excel: ${emptyRowsCount}/${totalDataRows} (${Math.round(emptyRowsCount/totalDataRows*100)}%)`);
+        }
       }
       
     } else if (fileType === 'text/csv') {
@@ -90,10 +124,16 @@ serve(async (req) => {
       const lines = text.split('\n').filter(line => line.trim());
       
       if (lines.length > 0) {
-        // Detect delimiter
+        // Detect delimiter (using same logic as parse-chat-document)
         const firstLine = lines[0];
-        const delimiter = firstLine.includes(';') ? ';' : 
-                         firstLine.includes('\t') ? '\t' : ',';
+        const delimiters = [',', ';', '\t', '|'];
+        const delimiter = delimiters.reduce((best, delim) => {
+          const count = (firstLine.match(new RegExp(`\\${delim}`, 'g')) || []).length;
+          const bestCount = (firstLine.match(new RegExp(`\\${best}`, 'g')) || []).length;
+          return count > bestCount ? delim : best;
+        });
+        
+        console.log('🔍 CSV delimiter detection:', { delimiter, firstLinePreview: firstLine.substring(0, 100) });
         
         // Parse CSV with proper quote handling
         const parseLine = (line: string): string[] => {
@@ -117,8 +157,9 @@ serve(async (req) => {
           return result;
         };
         
-        structuredData.headers = parseLine(lines[0]);
+        structuredData.headers = parseLine(lines[0]).map(h => normalizeValue(h)).filter(h => h);
         
+        const totalDataLines = lines.length - 1;
         structuredData.records = lines.slice(1)
           .filter(line => line.trim())
           .map(line => {
@@ -126,16 +167,40 @@ serve(async (req) => {
             const record: any = {};
             structuredData.headers.forEach((header: string, idx: number) => {
               if (header && values[idx] !== undefined) {
-                record[header] = values[idx];
+                record[header] = normalizeValue(values[idx]);
               }
             });
             return record;
-          });
+          })
+          // ✅ CRITICAL: Filter rows where ALL values are empty (consistent with parse-chat-document)
+          .filter(record => hasNonEmptyValue(record));
         
         structuredData.rowCount = structuredData.records.length;
         structuredData.columnCount = structuredData.headers.length;
         
-        console.log(`✅ Extracted ${structuredData.rowCount} CSV records with ${structuredData.columnCount} columns`);
+        const emptyRowsCount = totalDataLines - structuredData.records.length;
+        
+        console.log(`✅ CSV Processing Details:`, {
+          totalLines: lines.length,
+          headers: structuredData.headers.length,
+          recordsBeforeFilter: totalDataLines,
+          recordsAfterFilter: structuredData.records.length,
+          emptyRowsFiltered: emptyRowsCount
+        });
+        
+        // Validação de sanidade
+        if (structuredData.records.length === 0 && lines.length > 1) {
+          console.warn('⚠️ WARNING: No records extracted but file has data!', {
+            totalLines: lines.length,
+            headers: structuredData.headers.length,
+            firstDataLine: lines[1]?.substring(0, 100)
+          });
+        }
+        
+        // Detectar e alertar sobre muitas linhas vazias
+        if (emptyRowsCount > totalDataLines * 0.3) { // > 30% vazias
+          console.warn(`⚠️ High empty row ratio: ${emptyRowsCount}/${totalDataLines} (${Math.round(emptyRowsCount/totalDataLines*100)}%)`);
+        }
       }
       
     } else if (fileType === 'application/pdf') {

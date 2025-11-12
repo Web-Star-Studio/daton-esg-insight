@@ -29,18 +29,7 @@ Deno.serve(async (req) => {
       throw new Error('filePath e fileType são obrigatórios');
     }
 
-    // Check cache
-    const cacheKey = `${filePath}-${fileType}-${useVision}`;
-    if (useCache) {
-      const cached = parseCache.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('✅ Returning cached result');
-        return new Response(JSON.stringify(cached.result), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
-
+    // Download file first to generate content hash for robust caching
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -81,14 +70,36 @@ Deno.serve(async (req) => {
       throw new Error(`Erro ao baixar arquivo: ${downloadError?.message}`);
     }
 
+    // Generate content hash for robust caching
+    const buffer = await fileData.arrayBuffer();
+    const contentHash = await crypto.subtle.digest('SHA-256', buffer);
+    const hashHex = Array.from(new Uint8Array(contentHash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    const cacheKey = `${hashHex}-${fileType}-${useVision}`;
+    console.log('🔑 Cache key:', cacheKey.substring(0, 20) + '...');
+    
+    // Check cache with content hash
+    if (useCache) {
+      const cached = parseCache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log('✅ Cache hit - returning cached result');
+        return new Response(JSON.stringify(cached.result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+
     let parsedContent: any = {};
     let tables: number | null = null;
     let rows: number | null = null;
 
-    // Parse based on file type
+    // Parse based on file type (buffer already loaded above for hash)
     if (fileType.includes('pdf')) {
       console.log('📕 Parsing PDF with table detection...');
-      const buffer = await fileData.arrayBuffer();
       const data = await pdfParse(new Uint8Array(buffer));
       
       // Enhanced table detection
@@ -104,7 +115,6 @@ Deno.serve(async (req) => {
 
     } else if (fileType.includes('csv')) {
       console.log('📊 Parsing CSV with encoding detection...');
-      const buffer = await fileData.arrayBuffer();
       
       // Try different encodings
       let text = '';
@@ -150,7 +160,6 @@ Deno.serve(async (req) => {
 
     } else if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('sheet')) {
       console.log('📈 Parsing Excel with multi-sheet support...');
-      const buffer = await fileData.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
       
       const allSheets: any[] = [];
@@ -201,7 +210,7 @@ Deno.serve(async (req) => {
 
     } else if (fileType.includes('json')) {
       console.log('🔧 Parsing JSON...');
-      const text = await fileData.text();
+      const text = new TextDecoder().decode(buffer);
       const json = JSON.parse(text);
       
       parsedContent = {
@@ -212,7 +221,7 @@ Deno.serve(async (req) => {
 
     } else if (fileType.includes('xml')) {
       console.log('🔧 Parsing XML...');
-      const text = await fileData.text();
+      const text = new TextDecoder().decode(buffer);
       
       parsedContent = {
         content: text,
@@ -226,7 +235,6 @@ Deno.serve(async (req) => {
         throw new Error('LOVABLE_API_KEY não configurada');
       }
 
-      const buffer = await fileData.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       const dataUrl = `data:${fileType};base64,${base64}`;
 
