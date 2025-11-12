@@ -179,6 +179,58 @@ ${f.user_edits ? `- Ajustes feitos: ${JSON.stringify(f.user_edits)}` : ''}
 Com base nesse histórico, ajuste suas próximas recomendações para maior precisão.
 ` : ''}
 
+TABELAS DO SISTEMA E SEUS SCHEMAS:
+
+1. waste_logs (Gestão de Resíduos)
+   Colunas obrigatórias:
+   - waste_type: string (tipo de resíduo)
+   - quantity: number (quantidade em kg)
+   - log_date: date (data do registro)
+   - company_id: uuid (preenchido automaticamente)
+   Colunas opcionais:
+   - unit: string (unidade de medida)
+   - destination: string (destino final)
+   - notes: text (observações)
+
+2. emission_sources (Fontes de Emissão)
+   Colunas obrigatórias:
+   - source_name: string (nome da fonte)
+   - scope: number (1, 2 ou 3)
+   - category: string (categoria da emissão)
+   - company_id: uuid (preenchido automaticamente)
+   Colunas opcionais:
+   - description: text (descrição)
+   - location: string (localização)
+   
+3. employees (Funcionários)
+   Colunas obrigatórias:
+   - full_name: string (nome completo)
+   - company_id: uuid (preenchido automaticamente)
+   Colunas opcionais:
+   - email: string
+   - cpf: string
+   - department: string
+   - position: string
+   - hire_date: date
+   
+4. goals (Metas ESG)
+   Colunas obrigatórias:
+   - goal_name: string (nome da meta)
+   - target_value: number (valor alvo)
+   - target_date: date (data alvo)
+   - company_id: uuid (preenchido automaticamente)
+   Colunas opcionais:
+   - description: text
+   - category: string
+
+REGRAS CRÍTICAS PARA MAPEAMENTO:
+- Se o CSV contém "waste_type" e "quantity" → usar tabela "waste_logs"
+- Se o CSV contém "source_name" e "scope" → usar tabela "emission_sources"
+- Se o CSV contém "full_name" ou "email" → usar tabela "employees"
+- Se o CSV contém "goal_name" e "target_value" → usar tabela "goals"
+- NUNCA criar nomes de tabela baseados no nome do arquivo
+- SEMPRE usar um dos nomes de tabela listados acima: waste_logs, emission_sources, employees, goals
+
 SUAS CAPACIDADES:
 1. Analisar dados ESG e fornecer insights
 2. Propor operações de dados (INSERT/UPDATE/DELETE) quando anexos são enviados
@@ -191,6 +243,7 @@ IMPORTANTE:
 - Se o usuário está apenas conversando, responda normalmente sem usar a função
 - Sempre priorize segurança dos dados e confirmação do usuário
 - Use confiança alta (>80%) apenas quando tiver certeza absoluta
+- SEMPRE use uma das tabelas válidas: waste_logs, emission_sources, employees, goals
 `;
 
     // 5. Call Lovable AI with tool calling
@@ -220,7 +273,11 @@ IMPORTANTE:
                     type: 'object',
                     properties: {
                       type: { type: 'string', enum: ['INSERT', 'UPDATE', 'DELETE'] },
-                      table: { type: 'string' },
+                      table: { 
+                        type: 'string',
+                        enum: ['waste_logs', 'emission_sources', 'employees', 'goals'],
+                        description: 'Nome da tabela de destino. Usar SOMENTE uma das tabelas válidas do sistema.'
+                      },
                       data: { type: 'object' },
                       where_clause: { type: 'object' },
                       confidence: { type: 'number', minimum: 0, maximum: 100 },
@@ -274,7 +331,71 @@ IMPORTANTE:
     
     if (toolCall && toolCall.function.name === 'plan_data_operations') {
       const operationsPlan = JSON.parse(toolCall.function.arguments);
-      console.log('🎯 Operations planned:', operationsPlan.operations?.length || 0);
+      
+      // VALIDAÇÃO: Garantir que todas as tabelas são válidas
+      const validTables = ['waste_logs', 'emission_sources', 'employees', 'goals'];
+      const operations = operationsPlan.operations || [];
+      
+      console.log(`📋 AI proposed ${operations.length} operations`);
+      
+      const invalidOps = operations.filter((op: any) => !validTables.includes(op.table));
+      
+      if (invalidOps.length > 0) {
+        console.warn(`⚠️ IA retornou ${invalidOps.length} tabela(s) inválida(s):`, invalidOps.map((o: any) => o.table));
+        
+        // Tentar corrigir automaticamente baseando-se nos dados
+        for (const op of invalidOps) {
+          const data = op.data || {};
+          const originalTable = op.table;
+          
+          if (data.waste_type && data.quantity) {
+            op.table = 'waste_logs';
+            console.log(`✅ Tabela corrigida: ${originalTable} → waste_logs (detectado: waste_type + quantity)`);
+          } else if (data.source_name && data.scope) {
+            op.table = 'emission_sources';
+            console.log(`✅ Tabela corrigida: ${originalTable} → emission_sources (detectado: source_name + scope)`);
+          } else if (data.full_name || data.email) {
+            op.table = 'employees';
+            console.log(`✅ Tabela corrigida: ${originalTable} → employees (detectado: full_name/email)`);
+          } else if (data.goal_name && data.target_value) {
+            op.table = 'goals';
+            console.log(`✅ Tabela corrigida: ${originalTable} → goals (detectado: goal_name + target_value)`);
+          } else {
+            console.error(`❌ Não foi possível mapear operação com tabela: ${originalTable}`, data);
+            // Tentar detectar pela quantidade de campos conhecidos
+            const dataKeys = Object.keys(data);
+            if (dataKeys.some(k => ['tipo_residuo', 'residuo', 'lixo'].includes(k.toLowerCase()))) {
+              op.table = 'waste_logs';
+              console.log(`✅ Tabela corrigida por heurística: ${originalTable} → waste_logs`);
+            } else if (dataKeys.some(k => ['fonte', 'emissao', 'co2'].includes(k.toLowerCase()))) {
+              op.table = 'emission_sources';
+              console.log(`✅ Tabela corrigida por heurística: ${originalTable} → emission_sources`);
+            } else if (dataKeys.some(k => ['nome', 'funcionario', 'colaborador'].includes(k.toLowerCase()))) {
+              op.table = 'employees';
+              console.log(`✅ Tabela corrigida por heurística: ${originalTable} → employees`);
+            } else if (dataKeys.some(k => ['meta', 'objetivo', 'target'].includes(k.toLowerCase()))) {
+              op.table = 'goals';
+              console.log(`✅ Tabela corrigida por heurística: ${originalTable} → goals`);
+            } else {
+              // Se não conseguir detectar, remover operação
+              const index = operations.indexOf(op);
+              if (index > -1) {
+                operations.splice(index, 1);
+                console.error(`❌ Operação removida: não foi possível detectar tabela para ${originalTable}`);
+              }
+            }
+          }
+        }
+      }
+      
+      // Logging detalhado das operações finais
+      const operationsByTable = operations.reduce((acc: any, op: any) => {
+        acc[op.table] = (acc[op.table] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log('🎯 Operações finais por tabela:', operationsByTable);
+      console.log('📊 Total de operações validadas:', operations.length);
 
       // Return structured plan for preview
       return new Response(JSON.stringify({
@@ -301,24 +422,42 @@ IMPORTANTE:
         const headers = attachment.headers || [];
         const records = attachment.records || [];
         
-        // Detect table type based on headers
+        console.log(`🔍 Analisando anexo: ${attachment.name}`);
+        console.log(`📋 Headers encontrados: ${headers.join(', ')}`);
+        console.log(`📊 Total de registros: ${records.length}`);
+        
+        // Detect table type based on headers with flexible matching
         let targetTable = '';
-        if (headers.includes('waste_type') && headers.includes('quantity')) {
+        const headersLower = headers.map((h: string) => h.toLowerCase());
+        
+        // Waste logs detection (mais flexível)
+        if (headersLower.some((h: string) => ['waste_type', 'tipo_residuo', 'residuo', 'tipo'].includes(h)) &&
+            headersLower.some((h: string) => ['quantity', 'quantidade', 'peso', 'qtd'].includes(h))) {
           targetTable = 'waste_logs';
-        } else if (headers.includes('source_name') && headers.includes('scope')) {
+        } 
+        // Emission sources detection
+        else if (headersLower.some((h: string) => ['source_name', 'fonte', 'nome'].includes(h)) &&
+                 headersLower.some((h: string) => ['scope', 'escopo'].includes(h))) {
           targetTable = 'emission_sources';
-        } else if (headers.includes('full_name') || headers.includes('email')) {
+        } 
+        // Employees detection
+        else if (headersLower.some((h: string) => ['full_name', 'nome', 'funcionario', 'colaborador'].includes(h)) ||
+                 headersLower.some((h: string) => ['email'].includes(h))) {
           targetTable = 'employees';
-        } else if (headers.includes('goal_name') && headers.includes('target_value')) {
+        } 
+        // Goals detection
+        else if (headersLower.some((h: string) => ['goal_name', 'meta', 'objetivo'].includes(h)) &&
+                 headersLower.some((h: string) => ['target_value', 'valor_alvo', 'alvo'].includes(h))) {
           targetTable = 'goals';
         }
         
         if (!targetTable) {
-          console.warn(`⚠️ Could not detect table for attachment: ${attachment.name}`);
+          console.warn(`⚠️ Não foi possível detectar tabela para anexo: ${attachment.name}`);
+          console.warn(`⚠️ Headers disponíveis: ${headers.join(', ')}`);
           continue;
         }
         
-        console.log(`✅ Detected table: ${targetTable} for ${attachment.name} (${records.length} records)`);
+        console.log(`✅ Tabela detectada: ${targetTable} para ${attachment.name} (${records.length} registros)`);
         
         // Convert each record to INSERT operation
         for (const record of records) {
