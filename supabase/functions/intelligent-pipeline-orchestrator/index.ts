@@ -443,6 +443,58 @@ serve(async (req) => {
           
           console.log(`📋 CSV Headers detected at line ${headerInfo.index} (${headers.length} columns):`, headers.slice(0, 10));
 
+          // 🤖 PHASE 1 & 5: Detect entity type and invoke AI field mapper
+          const detectEntityType = (headers: string[]): string => {
+            const normalizedHeaders = headers.map(h => h.replace(/[_\s-]/g, '').toLowerCase());
+            
+            const entitySignatures = {
+              waste_logs: ['residuo', 'tipo', 'quantidade', 'destinacao', 'transportador', 'receptor', 'dmr'],
+              suppliers: ['cnpj', 'razao', 'fornecedor', 'empresa'],
+              emissions: ['co2', 'emissao', 'scope', 'fonte', 'ghg'],
+              employees: ['colaborador', 'cpf', 'cargo', 'departamento']
+            };
+            
+            let bestMatch = { entity: 'waste_logs', score: 0 };
+            
+            for (const [entity, keywords] of Object.entries(entitySignatures)) {
+              const matchCount = keywords.filter(kw => 
+                normalizedHeaders.some(h => h.includes(kw))
+              ).length;
+              
+              if (matchCount > bestMatch.score) {
+                bestMatch = { entity, score: matchCount };
+              }
+            }
+            
+            console.log('🎯 Detected entity type:', bestMatch);
+            return bestMatch.entity;
+          };
+
+          const detectedEntity = detectEntityType(headers);
+          console.log(`🤖 Invoking AI field mapper for entity: ${detectedEntity}...`);
+
+          // Call field-mapper for intelligent column mapping
+          const { data: aiMappings, error: mappingError } = await supabaseClient.functions.invoke(
+            'field-mapper',
+            {
+              body: {
+                sourceHeaders: headers,
+                targetEntity: detectedEntity,
+                companyId: document.company_id
+              }
+            }
+          );
+
+          if (mappingError) {
+            console.warn('⚠️ AI field mapping failed, using fixed aliases:', mappingError);
+          } else {
+            console.log('✅ AI Mappings received:', {
+              mappings: aiMappings?.mappings?.length || 0,
+              unmapped: aiMappings?.unmapped?.length || 0,
+              suggestions: aiMappings?.suggestions?.length || 0
+            });
+          }
+
           // Process data rows (skip header and empty lines)
           const dataRows = lines.slice(headerInfo.index + 1).filter(line => line.trim());
           console.log(`📊 Data lines to process: ${dataRows.length}`);
@@ -451,12 +503,41 @@ serve(async (req) => {
           const uniqueSuppliers = new Map<string, any>();
           const wasteLogs: any[] = [];
 
-          // Enhanced column mapping helpers with fuzzy matching
+          // 🧠 Smart column mapping: AI mappings first, then fallback to fixed aliases
+          const normalizeFieldName = (field: string) => {
+            return field
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/\([^)]*\)/g, '') // Remove parentheses content
+              .replace(/[^a-z0-9\s]/g, '')
+              .replace(/\s+/g, '')
+              .trim();
+          };
+
+          const colIndices: any = {};
+
+          // Phase 1: Use AI mappings with high confidence (> 0.7)
+          if (aiMappings?.mappings && !mappingError) {
+            for (const mapping of aiMappings.mappings) {
+              if (mapping.confidence > 0.7) {
+                const headerIndex = headers.findIndex(h => 
+                  normalizeFieldName(h) === normalizeFieldName(mapping.sourceField)
+                );
+                if (headerIndex !== -1) {
+                  colIndices[mapping.targetField] = headerIndex;
+                  console.log(`✅ AI mapped: "${headers[headerIndex]}" → ${mapping.targetField} (${(mapping.confidence * 100).toFixed(0)}%)`);
+                }
+              }
+            }
+          }
+
+          // Phase 2: Fallback to fixed aliases for unmapped fields
           const findColumn = (aliases: string[]) => {
             for (const alias of aliases) {
-              const normalizedAlias = alias.replace(/[_\s-]/g, '').toLowerCase();
+              const normalizedAlias = normalizeFieldName(alias);
               const idx = headers.findIndex(h => {
-                const normalizedHeader = h.replace(/[_\s-]/g, '').toLowerCase();
+                const normalizedHeader = normalizeFieldName(h);
                 return normalizedHeader.includes(normalizedAlias) || normalizedAlias.includes(normalizedHeader);
               });
               if (idx !== -1) return idx;
@@ -464,28 +545,60 @@ serve(async (req) => {
             return -1;
           };
 
-          // Find column indices with expanded aliases
-          const colIndices = {
-            transportador: findColumn(['transportador', 'transportadora', 'transporte', 'empresa_transporte']),
-            receptor: findColumn(['receptor', 'destinador', 'destino', 'destinatario', 'empresa_destino']),
-            gerador: findColumn(['gerador', 'origem', 'remetente', 'empresa_origem']),
-            cnpj_transportador: findColumn(['cnpjtransportador', 'cnpj_transportador', 'cnpj_transporte']),
-            cnpj_receptor: findColumn(['cnpjreceptor', 'cnpj_receptor', 'cnpj_destino', 'cnpj_destinador']),
-            tipo_residuo: findColumn(['tiporesiduos', 'tipoderesiduos', 'tipo', 'residuo', 'resduos', 'waste']),
-            quantidade: findColumn(['quantidade', 'quant', 'qtd', 'qtde', 'volume', 'peso', 'weight']),
-            unidade: findColumn(['unidade', 'un', 'medida', 'unit']),
-            data: findColumn(['data', 'dt', 'data_coleta', 'data_geracao', 'date']),
-            custo: findColumn(['custo', 'valor', 'preco', 'price', 'cost'])
+          // Map with expanded aliases and AI fallback
+          if (colIndices.transporter_name === undefined) {
+            colIndices.transporter_name = findColumn(['transportador', 'transportadora', 'transporte', 'empresa_transporte', 'empresa_a']);
+          }
+          if (colIndices.destination_name === undefined) {
+            colIndices.destination_name = findColumn(['receptor', 'destinador', 'destino', 'destinatario', 'empresa_destino', 'empresa_b']);
+          }
+          if (colIndices.generator_name === undefined) {
+            colIndices.generator_name = findColumn(['gerador', 'origem', 'remetente', 'empresa_origem']);
+          }
+          if (colIndices.waste_description === undefined) {
+            colIndices.waste_description = findColumn(['tiporesiduos', 'tipoderesiduos', 'tipo', 'residuo', 'resduos', 'waste', 'descricao', 'material']);
+          }
+          if (colIndices.quantity === undefined) {
+            colIndices.quantity = findColumn(['quantidade', 'quant', 'qtd', 'qtde', 'volume', 'peso', 'weight', 'dmr', 'ton', 'kg', 'massa']);
+          }
+          if (colIndices.unit === undefined) {
+            colIndices.unit = findColumn(['unidade', 'un', 'medida', 'unit']);
+          }
+          if (colIndices.collection_date === undefined) {
+            colIndices.collection_date = findColumn(['data', 'dt', 'data_coleta', 'data_geracao', 'date', 'data_movimentacao']);
+          }
+          if (colIndices.total_cost === undefined) {
+            colIndices.total_cost = findColumn(['custo', 'valor', 'preco', 'price', 'cost', 'custo_total']);
+          }
+
+          console.log('📍 Final column mapping:', colIndices);
+          console.log('✅ Recognized headers:', {
+            quantity_header: colIndices.quantity >= 0 ? headers[colIndices.quantity] : 'NOT FOUND',
+            type_header: colIndices.waste_description >= 0 ? headers[colIndices.waste_description] : 'NOT FOUND',
+            transporter_header: colIndices.transporter_name >= 0 ? headers[colIndices.transporter_name] : 'NOT FOUND',
+            receptor_header: colIndices.destination_name >= 0 ? headers[colIndices.destination_name] : 'NOT FOUND'
+          });
+          
+          // 🔍 PHASE 6: Data validators
+          const validators = {
+            cnpj: (value: string) => /^\d{14}$/.test(value.replace(/\D/g, '')),
+            email: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+            date: (value: string) => !isNaN(Date.parse(value)),
+            number: (value: string) => {
+              const cleaned = value.replace(/[^\d.,-]/g, '').replace(',', '.');
+              return !isNaN(parseFloat(cleaned));
+            }
           };
 
-          console.log('📍 Column mapping:', colIndices);
+          // Validate essential columns exist
+          const hasQuantity = colIndices.quantity !== undefined && colIndices.quantity >= 0;
+          const hasWasteDesc = colIndices.waste_description !== undefined && colIndices.waste_description >= 0;
+          const hasTransport = (colIndices.transporter_name >= 0 || colIndices.destination_name >= 0);
           
-          // Validate essential columns
-          const essentialColumns = ['tipo_residuo', 'quantidade'];
-          const missingColumns = essentialColumns.filter(col => colIndices[col as keyof typeof colIndices] === -1);
-          if (missingColumns.length > 0) {
-            console.warn('⚠️ Missing essential columns:', missingColumns);
+          if (!hasQuantity && !hasWasteDesc && !hasTransport) {
+            console.error('❌ No essential columns found! Cannot process.');
             console.warn('📋 Available headers:', headers);
+            throw new Error('CSV missing essential columns (quantity, waste_description, or transport info)');
           }
 
           // Process each row with validation
@@ -500,13 +613,18 @@ serve(async (req) => {
               continue;
             }
 
-            // Extract and validate suppliers from this row
+            // Extract and validate suppliers from this row with CNPJ validation
             const extractSupplier = (colIndex: number, category: string, cnpjColIndex?: number) => {
               if (colIndex >= 0 && values[colIndex]) {
                 const name = values[colIndex].trim();
                 // Validate: minimum length and not just numbers
                 if (name.length >= 2 && !/^\d+$/.test(name)) {
-                  const cnpj = cnpjColIndex && cnpjColIndex >= 0 ? values[cnpjColIndex]?.trim() : undefined;
+                  let cnpj = cnpjColIndex && cnpjColIndex >= 0 ? values[cnpjColIndex]?.trim() : undefined;
+                  // Validate CNPJ if present
+                  if (cnpj && !validators.cnpj(cnpj)) {
+                    console.warn(`⚠️ Invalid CNPJ for ${name}: ${cnpj}`);
+                    cnpj = undefined; // Don't use invalid CNPJ
+                  }
                   return { name, category, cnpj: cnpj || undefined };
                 }
               }
@@ -514,9 +632,9 @@ serve(async (req) => {
             };
 
             const suppliers = [
-              extractSupplier(colIndices.transportador, 'Transporte', colIndices.cnpj_transportador),
-              extractSupplier(colIndices.receptor, 'Destinação', colIndices.cnpj_receptor),
-              extractSupplier(colIndices.gerador, 'Gerador'),
+              extractSupplier(colIndices.transporter_name, 'Transporte'),
+              extractSupplier(colIndices.destination_name, 'Destinação'),
+              extractSupplier(colIndices.generator_name, 'Gerador'),
             ].filter(s => s !== null);
 
             // Add unique suppliers (deduplicate by normalized name)
@@ -529,42 +647,51 @@ serve(async (req) => {
               }
             });
 
-            // Extract and normalize waste log data with validation
+            // Extract and normalize waste log data with PHASE 6 validation
             const wasteLog: any = {
               line_number: i + 1,
               raw_data: values.slice(0, 10).join(',') // Limit raw data size
             };
             
             // Extract and validate waste description
-            if (colIndices.tipo_residuo >= 0 && values[colIndices.tipo_residuo]) {
-              wasteLog.waste_description = values[colIndices.tipo_residuo].trim();
+            if (colIndices.waste_description >= 0 && values[colIndices.waste_description]) {
+              wasteLog.waste_description = values[colIndices.waste_description].trim();
             }
             
-            // Extract and validate quantity
-            if (colIndices.quantidade >= 0 && values[colIndices.quantidade]) {
-              const qtyStr = values[colIndices.quantidade].replace(/[^\d.,]/g, '').replace(',', '.');
-              const quantity = parseFloat(qtyStr);
-              if (!isNaN(quantity) && quantity > 0) {
-                wasteLog.quantity = quantity;
+            // Extract and validate quantity with number validator
+            if (colIndices.quantity >= 0 && values[colIndices.quantity]) {
+              const qtyStr = values[colIndices.quantity];
+              if (validators.number(qtyStr)) {
+                const quantity = parseFloat(qtyStr.replace(/[^\d.,-]/g, '').replace(',', '.'));
+                if (quantity > 0) {
+                  wasteLog.quantity = quantity;
+                }
+              } else {
+                console.warn(`⚠️ Row ${i + 1}: invalid quantity "${qtyStr}"`);
               }
             }
             
             // Extract unit
-            if (colIndices.unidade >= 0 && values[colIndices.unidade]) {
-              wasteLog.unit = values[colIndices.unidade].trim();
+            if (colIndices.unit >= 0 && values[colIndices.unit]) {
+              wasteLog.unit = values[colIndices.unit].trim();
             }
             
-            // Extract and normalize date
-            if (colIndices.data >= 0 && values[colIndices.data]) {
-              wasteLog.collection_date = values[colIndices.data].trim();
+            // Extract and validate date
+            if (colIndices.collection_date >= 0 && values[colIndices.collection_date]) {
+              const dateStr = values[colIndices.collection_date].trim();
+              if (validators.date(dateStr)) {
+                wasteLog.collection_date = dateStr;
+              } else {
+                console.warn(`⚠️ Row ${i + 1}: invalid date "${dateStr}"`);
+              }
             }
             
-            // Extract cost
-            if (colIndices.custo >= 0 && values[colIndices.custo]) {
-              const costStr = values[colIndices.custo].replace(/[^\d.,]/g, '').replace(',', '.');
-              const cost = parseFloat(costStr);
-              if (!isNaN(cost)) {
-                wasteLog.cost = cost;
+            // Extract cost with number validator
+            if (colIndices.total_cost >= 0 && values[colIndices.total_cost]) {
+              const costStr = values[colIndices.total_cost];
+              if (validators.number(costStr)) {
+                const cost = parseFloat(costStr.replace(/[^\d.,-]/g, '').replace(',', '.'));
+                wasteLog.total_cost = cost;
               }
             }
 
@@ -574,11 +701,20 @@ serve(async (req) => {
             if (transportador) wasteLog.transporter_name = transportador.name;
             if (receptor) wasteLog.destination_name = receptor.name;
 
-            // Only add waste log if it has minimum required data
-            if (wasteLog.waste_description || wasteLog.quantity) {
+            // PHASE 2: Relaxed validation - accept if has quantity, description, or complete transport info
+            const hasMinimumData = 
+              wasteLog.quantity ||
+              wasteLog.waste_description ||
+              (wasteLog.transporter_name && wasteLog.destination_name);
+
+            if (hasMinimumData) {
+              // PHASE 3: Add fallback description if missing but has transport info
+              if (!wasteLog.waste_description && wasteLog.transporter_name && wasteLog.destination_name) {
+                wasteLog.waste_description = `Resíduo (${wasteLog.transporter_name} → ${wasteLog.destination_name})`;
+              }
               wasteLogs.push(wasteLog);
             } else {
-              console.log(`⏭️ Skipping row ${i + 1}: no waste description or quantity`);
+              console.log(`⏭️ Skipping row ${i + 1}: insufficient data`);
             }
 
             // Log progress every 50 rows
@@ -587,12 +723,13 @@ serve(async (req) => {
             }
           }
 
-      console.log(`✅ CSV Processing Complete:`, {
-        total_rows_processed: dataLines.length,
-        unique_suppliers: uniqueSuppliers.size,
-        waste_logs: wasteLogs.length,
-        supplier_names: Array.from(uniqueSuppliers.values()).map(s => s.name).slice(0, 5)
-      });
+          console.log(`✅ CSV Processing Complete:`, {
+            total_rows_processed: dataRows.length,
+            unique_suppliers: uniqueSuppliers.size,
+            waste_logs: wasteLogs.length,
+            supplier_names: Array.from(uniqueSuppliers.values()).map((s: any) => s.name).slice(0, 5),
+            sample_waste_log: wasteLogs[0] // Show first entry as example
+          });
 
           // 1. CREATE EXTRACTION JOB
           let userId = document.created_by;
