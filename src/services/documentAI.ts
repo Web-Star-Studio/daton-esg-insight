@@ -213,6 +213,39 @@ export async function approveExtractedData(
   editedData?: Record<string, any>
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Get preview data to learn from edits
+    const { data: preview } = await supabase
+      .from('extracted_data_preview')
+      .select('*')
+      .eq('id', previewId)
+      .single();
+
+    if (preview && editedData) {
+      // ✅ FASE 3: Registrar campos editados para aprendizado
+      const { recordFieldMapping } = await import('./fieldMappingLearning');
+      const originalFields = preview.extracted_fields as Record<string, any>;
+      
+      // Comparar campos editados vs originais
+      Object.keys(editedData).forEach(async (field) => {
+        if (editedData[field] !== originalFields[field]) {
+          // Campo foi editado - pode indicar um mapeamento incorreto
+          console.log(`📝 User edited field: ${field} in table ${preview.target_table}`);
+          
+          // Se houver um source field correspondente em suggested_mappings, aprender
+          const suggestedMappings = preview.suggested_mappings as Record<string, any>;
+          if (suggestedMappings?.applied_mappings) {
+            const appliedMappings = suggestedMappings.applied_mappings as string[];
+            const relevantMapping = appliedMappings.find(m => m.includes(field));
+            
+            if (relevantMapping) {
+              const [sourceField] = relevantMapping.split(' → ');
+              await recordFieldMapping(sourceField, field, preview.target_table);
+            }
+          }
+        }
+      });
+    }
+
     const { error } = await supabase
       .from('extracted_data_preview')
       .update({ 

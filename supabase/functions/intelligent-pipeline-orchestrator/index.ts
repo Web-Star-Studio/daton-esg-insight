@@ -401,29 +401,117 @@ serve(async (req) => {
         console.log(`✅ Created extraction job: ${job.id}`);
         
         // 3. CRIAR PREVIEW RECORDS COM O JOB ID VÁLIDO
-        // ✅ Required fields per table
+        // ✅ FASE 1: Required fields per table (FLEXIBILIZADO)
         const REQUIRED_FIELDS: Record<string, string[]> = {
-          licenses: ['license_name', 'license_type', 'issue_date', 'expiration_date'],
+          licenses: ['license_name', 'license_type'],
           assets: ['name', 'asset_type'],
-          waste_logs: ['waste_type', 'quantity', 'unit', 'log_date'],
-          emission_sources: ['source_name', 'scope', 'category'],
+          waste_logs: ['waste_type', 'quantity'], // ✅ Flexibilizado: apenas campos essenciais
+          emission_sources: ['source_name', 'scope'],
           suppliers: ['name'],
-          employees: ['full_name', 'hire_date'],
-          energy_consumption: ['source_type', 'consumption_date', 'quantity_kwh'],
-          water_consumption: ['consumption_date', 'quantity_m3'],
-          activity_data: ['quantity', 'period_start_date', 'emission_source_id'],
+          employees: ['full_name'],
+          energy_consumption: ['source_type', 'quantity_kwh'],
+          water_consumption: ['quantity_m3'],
+          activity_data: ['quantity'],
         };
         
-        // ✅ Field name aliases for mapping
-        const FIELD_ALIASES: Record<string, string[]> = {
-          name: ['nome', 'transportador', 'receptor', 'fornecedor', 'empresa', 'razao_social'],
-          waste_type: ['tipo_residuo', 'tipo', 'residuo', 'waste'],
-          quantity: ['quantidade', 'qtd', 'volume', 'peso'],
-          log_date: ['data', 'data_geracao', 'data_log', 'date'],
-          unit: ['unidade', 'un', 'medida'],
+        // ✅ FASE 1: Optional fields (desejados mas não obrigatórios)
+        const OPTIONAL_FIELDS: Record<string, string[]> = {
+          waste_logs: ['unit', 'log_date', 'transporter', 'receiver', 'waste_code', 'treatment_type'],
+          licenses: ['issue_date', 'expiration_date', 'license_number'],
+          employees: ['hire_date', 'department', 'position'],
+          energy_consumption: ['consumption_date', 'source_name'],
+          water_consumption: ['consumption_date', 'source'],
+          activity_data: ['period_start_date', 'period_end_date', 'emission_source_id'],
         };
+        
+        // ✅ FASE 1: Field name aliases for mapping (EXPANDIDO)
+        const FIELD_ALIASES: Record<string, string[]> = {
+          // Nomes gerais
+          name: ['nome', 'transportador', 'receptor', 'fornecedor', 'empresa', 'razao_social', 'nome_empresa', 'empresa_nome'],
+          
+          // Resíduos
+          waste_type: ['tipo_residuo', 'tipo_de_residuo', 'tipo', 'residuo', 'waste', 'material', 'descricao_residuo'],
+          quantity: ['quantidade', 'qtd', 'volume', 'peso', 'massa', 'toneladas', 'kg', 'litros'],
+          log_date: ['data', 'data_evento', 'data_geracao', 'data_log', 'date', 'data_do_evento', 'dt_evento'],
+          unit: ['unidade', 'unidade_medida', 'un', 'medida', 'unid', 'ud'],
+          transporter: ['transportador', 'empresa_transportadora', 'transp', 'empresa_transporte'],
+          receiver: ['receptor', 'receptor_destino', 'destino', 'destinatario', 'empresa_receptora'],
+          waste_code: ['codigo', 'codigo_residuo', 'cod_residuo', 'cod', 'codigo_ibama'],
+          treatment_type: ['tipo_tratamento', 'tratamento', 'destinacao', 'tipo_destinacao', 'dest'],
+          
+          // Emissões
+          emission_factor: ['fator_emissao', 'fe', 'fator'],
+          scope: ['escopo', 'scope'],
+          category: ['categoria', 'cat'],
+          source_name: ['fonte', 'fonte_emissao', 'nome_fonte'],
+          
+          // Água
+          consumption_date: ['data_consumo', 'data', 'dt_consumo', 'periodo'],
+          quantity_m3: ['volume_m3', 'consumo_m3', 'quantidade_m3', 'volume'],
+          source: ['fonte', 'origem', 'tipo_fonte'],
+          
+          // Energia
+          quantity_kwh: ['consumo_kwh', 'quantidade_kwh', 'energia_kwh', 'consumo'],
+          source_type: ['tipo_fonte', 'fonte_energia', 'tipo'],
+          
+          // Licenças
+          license_name: ['nome_licenca', 'licenca', 'nome'],
+          license_type: ['tipo_licenca', 'tipo'],
+          issue_date: ['data_emissao', 'dt_emissao', 'emitida_em'],
+          expiration_date: ['data_vencimento', 'dt_vencimento', 'validade', 'vencimento'],
+          license_number: ['numero', 'num_licenca', 'numero_licenca', 'n'],
+          
+          // Funcionários
+          full_name: ['nome_completo', 'nome', 'funcionario', 'colaborador'],
+          hire_date: ['data_admissao', 'dt_admissao', 'admissao'],
+          department: ['departamento', 'setor', 'area'],
+          position: ['cargo', 'funcao', 'posicao'],
+        };
+        
+        // ✅ FASE 3: Buscar aliases aprendidos da empresa
+        let learnedAliases: Record<string, string[]> = {};
+        try {
+          const { data: mappingHistory } = await supabaseClient
+            .from('field_mapping_history')
+            .select('source_field_name, target_field_name, target_table')
+            .eq('company_id', document.company_id)
+            .gte('usage_count', 2) // Apenas mapeamentos usados 2+ vezes
+            .order('usage_count', { ascending: false })
+            .limit(100);
+          
+          if (mappingHistory && mappingHistory.length > 0) {
+            console.log(`🧠 Loaded ${mappingHistory.length} learned field mappings from company history`);
+            
+            mappingHistory.forEach((record: any) => {
+              const targetField = record.target_field_name;
+              const sourceField = record.source_field_name;
+              
+              if (!learnedAliases[targetField]) {
+                learnedAliases[targetField] = [];
+              }
+              
+              if (!learnedAliases[targetField].includes(sourceField)) {
+                learnedAliases[targetField].push(sourceField);
+              }
+            });
+            
+            // Merge learned aliases with default aliases
+            Object.keys(learnedAliases).forEach(field => {
+              if (FIELD_ALIASES[field]) {
+                FIELD_ALIASES[field] = [...FIELD_ALIASES[field], ...learnedAliases[field]];
+              } else {
+                FIELD_ALIASES[field] = learnedAliases[field];
+              }
+            });
+            
+            console.log('🎓 Enhanced field aliases with learned mappings:', Object.keys(learnedAliases));
+          }
+        } catch (learnError) {
+          console.warn('⚠️ Failed to load learned field mappings:', learnError);
+        }
         
         let createdPreviewsCount = 0;
+        const mappingLogs: any[] = []; // ✅ FASE 2: Log detalhado de mapeamentos
         
         for (const mapping of classification.target_mappings) {
           const confidenceScores: Record<string, number> = {};
@@ -432,6 +520,13 @@ serve(async (req) => {
           // ✅ SMART FIELD MAPPING: Try to map required fields from aliases
           const tableName = mapping.table_name;
           const requiredFields = REQUIRED_FIELDS[tableName] || [];
+          const optionalFields = OPTIONAL_FIELDS[tableName] || [];
+          const appliedMappings: string[] = [];
+          
+          console.log(`🔍 Processing mapping for table: ${tableName}`);
+          console.log(`📋 Available source fields: ${Object.keys(normalizedFields).join(', ')}`);
+          console.log(`✅ Required fields: ${requiredFields.join(', ')}`);
+          console.log(`📌 Optional fields: ${optionalFields.join(', ')}`);
           
           for (const requiredField of requiredFields) {
             // If required field is missing, try to find it from aliases
@@ -443,9 +538,52 @@ serve(async (req) => {
                 if (foundValue && String(foundValue).trim() !== '') {
                   console.log(`✅ Mapping ${alias} → ${requiredField} for table ${tableName}`);
                   normalizedFields[requiredField] = foundValue;
+                  appliedMappings.push(`${alias} → ${requiredField}`);
+                  
+                  // ✅ FASE 3: Registrar mapeamento para aprendizado
+                  try {
+                    await supabaseClient.rpc('increment_field_mapping_usage', {
+                      p_company_id: document.company_id,
+                      p_source_field: alias,
+                      p_target_field: requiredField,
+                      p_target_table: tableName
+                    });
+                  } catch (learnError) {
+                    console.warn('⚠️ Failed to record field mapping:', learnError);
+                  }
+                  
                   break;
                 }
               }
+            }
+          }
+          
+          // ✅ FASE 1: Tentar mapear campos opcionais também
+          const mappedOptionalFields: string[] = [];
+          const unmappedOptionalFields: string[] = [];
+          
+          for (const optionalField of optionalFields) {
+            if (!normalizedFields[optionalField]) {
+              const aliases = FIELD_ALIASES[optionalField] || [];
+              let mapped = false;
+              
+              for (const alias of aliases) {
+                const foundValue = normalizedFields[alias];
+                if (foundValue && String(foundValue).trim() !== '') {
+                  console.log(`📌 Optional: Mapping ${alias} → ${optionalField}`);
+                  normalizedFields[optionalField] = foundValue;
+                  appliedMappings.push(`${alias} → ${optionalField} (optional)`);
+                  mappedOptionalFields.push(optionalField);
+                  mapped = true;
+                  break;
+                }
+              }
+              
+              if (!mapped) {
+                unmappedOptionalFields.push(optionalField);
+              }
+            } else {
+              mappedOptionalFields.push(optionalField);
             }
           }
           
@@ -459,13 +597,30 @@ serve(async (req) => {
           
           if (missingFields.length > 0) {
             console.warn(`⚠️ Skipping preview for ${tableName}: missing required fields: ${missingFields.join(', ')}`);
-            console.warn(`Available fields: ${Object.keys(normalizedFields).join(', ')}`);
+            console.warn(`📋 Available fields: ${Object.keys(normalizedFields).join(', ')}`);
+            
+            mappingLogs.push({
+              table: tableName,
+              status: 'skipped',
+              reason: 'missing_required_fields',
+              missing: missingFields,
+              available: Object.keys(normalizedFields)
+            });
+            
             continue; // Skip this mapping
           }
           
           Object.keys(normalizedFields).forEach(field => {
             confidenceScores[field] = mapping.confidence || 0.5;
           });
+          
+          // ✅ FASE 2: Criar notes detalhadas sobre o mapeamento
+          const mappingNotes = [
+            `📊 Campos mapeados: ${appliedMappings.length > 0 ? appliedMappings.join(', ') : 'mapeamento direto'}`,
+            mappedOptionalFields.length > 0 ? `✅ Campos opcionais encontrados: ${mappedOptionalFields.join(', ')}` : null,
+            unmappedOptionalFields.length > 0 ? `⚠️ Campos opcionais não encontrados: ${unmappedOptionalFields.join(', ')}` : null,
+            `🎯 Confiança média: ${Math.round(mapping.confidence * 100)}%`
+          ].filter(Boolean).join('\n');
           
           const { error: previewError } = await supabaseClient
             .from('extracted_data_preview')
@@ -476,32 +631,75 @@ serve(async (req) => {
               confidence_scores: confidenceScores,
               target_table: mapping.table_name,
               validation_status: 'Pendente',
+              mapping_notes: mappingNotes, // ✅ FASE 2: Notas detalhadas
               suggested_mappings: {
                 ai_category: classification.document_type,
                 esg_relevance: classification.esg_relevance_score,
                 processing_timestamp: new Date().toISOString(),
                 document_name: document.file_name,
-                field_mappings_applied: Object.keys(normalizedFields)
+                field_mappings_applied: Object.keys(normalizedFields),
+                applied_mappings: appliedMappings,
+                mapped_optional_fields: mappedOptionalFields,
+                unmapped_optional_fields: unmappedOptionalFields,
+                learned_aliases_used: appliedMappings.length
               }
             });
           
           if (previewError) {
             console.error('❌ Failed to create preview:', previewError);
+            
+            mappingLogs.push({
+              table: tableName,
+              status: 'error',
+              error: previewError.message
+            });
+            
             throw new Error(`Failed to create preview: ${previewError.message}`);
           }
+          
+          mappingLogs.push({
+            table: tableName,
+            status: 'created',
+            fields_count: Object.keys(normalizedFields).length,
+            applied_mappings: appliedMappings,
+            confidence: mapping.confidence
+          });
           
           createdPreviewsCount++;
         }
         
-        console.log(`✅ Created ${createdPreviewsCount} preview records (${classification.target_mappings.length - createdPreviewsCount} skipped due to missing required fields)`);
-        console.log('📊 Extraction Summary:', {
+        // ✅ FASE 2: Logging detalhado com resumo completo
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log(`✅ PREVIEW CREATION COMPLETE`);
+        console.log(`Created: ${createdPreviewsCount} previews`);
+        console.log(`Skipped: ${classification.target_mappings.length - createdPreviewsCount}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        
+        mappingLogs.forEach((log, idx) => {
+          console.log(`\n[${idx + 1}] Table: ${log.table} - Status: ${log.status.toUpperCase()}`);
+          if (log.status === 'created') {
+            console.log(`  ✅ Fields: ${log.fields_count}`);
+            console.log(`  📊 Confidence: ${Math.round((log.confidence || 0) * 100)}%`);
+            if (log.applied_mappings?.length > 0) {
+              console.log(`  🔄 Mappings: ${log.applied_mappings.slice(0, 3).join(', ')}${log.applied_mappings.length > 3 ? '...' : ''}`);
+            }
+          } else if (log.status === 'skipped') {
+            console.log(`  ⚠️ Missing: ${log.missing.join(', ')}`);
+            console.log(`  📋 Available: ${log.available.slice(0, 5).join(', ')}${log.available.length > 5 ? '...' : ''}`);
+          } else if (log.status === 'error') {
+            console.log(`  ❌ Error: ${log.error}`);
+          }
+        });
+        
+        console.log('\n📊 Overall Summary:', {
           job_id: job.id,
           preview_count: createdPreviewsCount,
           total_mappings: classification.target_mappings.length,
           skipped_mappings: classification.target_mappings.length - createdPreviewsCount,
           document_id: document_id,
           document_name: document.file_name,
-          confidence: avgConfidence
+          confidence: avgConfidence,
+          success_rate: `${Math.round((createdPreviewsCount / classification.target_mappings.length) * 100)}%`
         });
 
         // ✅ FASE 1.4: Gravar métrica de qualidade

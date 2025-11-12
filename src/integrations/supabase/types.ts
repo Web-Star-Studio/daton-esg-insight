@@ -5169,6 +5169,7 @@ export type Database = {
           extracted_fields: Json
           extraction_job_id: string
           id: string
+          mapping_notes: string | null
           suggested_mappings: Json
           target_table: string
           updated_at: string
@@ -5184,6 +5185,7 @@ export type Database = {
           extracted_fields?: Json
           extraction_job_id: string
           id?: string
+          mapping_notes?: string | null
           suggested_mappings?: Json
           target_table: string
           updated_at?: string
@@ -5199,6 +5201,7 @@ export type Database = {
           extracted_fields?: Json
           extraction_job_id?: string
           id?: string
+          mapping_notes?: string | null
           suggested_mappings?: Json
           target_table?: string
           updated_at?: string
@@ -5519,6 +5522,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "field_changes_audit_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_mapping_history: {
+        Row: {
+          company_id: string
+          confidence_score: number | null
+          created_at: string | null
+          created_by_user_id: string | null
+          id: string
+          last_used_at: string | null
+          source_field_name: string
+          target_field_name: string
+          target_table: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          last_used_at?: string | null
+          source_field_name: string
+          target_field_name: string
+          target_table: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          last_used_at?: string | null
+          source_field_name?: string
+          target_field_name?: string
+          target_table?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_mapping_history_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -17345,6 +17398,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_field_mapping_usage: {
+        Args: {
+          p_company_id: string
+          p_source_field: string
+          p_target_field: string
+          p_target_table: string
+        }
+        Returns: undefined
       }
       increment_glossary_usage: {
         Args: { term_id: string }
