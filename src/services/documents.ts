@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import Papa from 'papaparse';
 import { retryOperation } from "@/utils/retryOperation";
-import { queryClient } from '@/lib/queryClient';
 
 // Interfaces
 export interface DocumentFolder {
@@ -419,7 +418,7 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     console.warn('Error deleting file from storage:', storageError);
   }
 
-  // Delete document record (CASCADE will handle related tables)
+  // Delete document record
   const { error } = await supabase
     .from('documents')
     .delete()
@@ -429,19 +428,6 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     console.error('Error deleting document:', error);
     throw new Error(`Failed to delete document: ${error.message}`);
   }
-
-  // ✅ Invalidar todas as queries relacionadas após exclusão
-  console.log('🔄 Invalidating related queries after document deletion...');
-  
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ['extracted-data-previews'] }),
-    queryClient.invalidateQueries({ queryKey: ['pending-extractions'] }),
-    queryClient.invalidateQueries({ queryKey: ['ai-processing-stats'] }),
-    queryClient.invalidateQueries({ queryKey: ['extraction-jobs'] }),
-    queryClient.invalidateQueries({ queryKey: ['documents'] }),
-  ]);
-  
-  console.log('✅ All queries invalidated successfully');
 };
 
 export const downloadDocument = async (documentId: string): Promise<{ url: string; fileName: string }> => {
