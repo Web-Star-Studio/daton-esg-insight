@@ -682,6 +682,23 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   activity_data: ['quantity', 'period_start_date', 'emission_source_id'],
 };
 
+// Field aliases to smart-map incoming fields to required ones
+const FIELD_ALIASES: Record<string, string[]> = {
+  // Common mappings from Portuguese/CSV headers to canonical fields
+  name: ['nome', 'transportador', 'receptor', 'fornecedor', 'empresa', 'razao_social'],
+  full_name: ['nome_completo', 'nome', 'funcionario'],
+  asset_type: ['tipo_ativo', 'tipo'],
+  waste_type: ['tipo_residuo', 'tipo', 'residuo', 'waste'],
+  quantity: ['quantidade', 'qtd', 'volume', 'peso'],
+  unit: ['unidade', 'un', 'medida'],
+  log_date: ['data', 'data_geracao', 'data_log', 'date'],
+  source_name: ['fonte', 'nome_fonte'],
+  scope: ['escopo'],
+  category: ['categoria'],
+  issue_date: ['data_emissao'],
+  expiration_date: ['data_validade', 'validade']
+};
+
 async function handleApprovalAction(supabaseClient: any, action: string, previewId: string, userId: string, editedFields?: Record<string, any>) {
   try {
     console.log(`Handling ${action} for preview:`, previewId);
@@ -699,8 +716,8 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
 
     if (action === 'approve') {
       // Use edited fields if provided, otherwise use extracted fields
-      const fieldsToInsert = editedFields || preview.extracted_fields || {};
-      const fieldCount = Object.keys(fieldsToInsert).length;
+      const originalFields = editedFields || preview.extracted_fields || {};
+      const fieldCount = Object.keys(originalFields).length;
       
       if (fieldCount === 0) {
         throw new Error('Não é possível aprovar: nenhum campo foi extraído do documento. Por favor, reprocesse o documento ou extraia os dados manualmente.');
@@ -708,12 +725,29 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
 
       const tableName = preview.target_table;
       
-      // Validate required fields
+      // ✅ Smart mapping using aliases to satisfy required fields
+      const normalizedFields: Record<string, any> = { ...originalFields };
       const requiredFields = REQUIRED_FIELDS[tableName] || [];
-      const missingFields: string[] = [];
       
+      for (const requiredField of requiredFields) {
+        if (!normalizedFields[requiredField] || String(normalizedFields[requiredField]).trim() === '') {
+          const aliases = FIELD_ALIASES[requiredField] || [];
+          for (const alias of aliases) {
+            // Try exact alias or lowercase-safe access
+            const candidate = originalFields[alias] ?? originalFields[(alias as string).toLowerCase?.() || alias];
+            if (candidate !== undefined && String(candidate).trim() !== '') {
+              console.log(`✅ [Approval] Mapping ${alias} → ${requiredField} for table ${tableName}`);
+              normalizedFields[requiredField] = candidate;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Validate required fields AFTER mapping
+      const missingFields: string[] = [];
       requiredFields.forEach(field => {
-        if (!fieldsToInsert[field] || String(fieldsToInsert[field]).trim() === '') {
+        if (!normalizedFields[field] || String(normalizedFields[field]).trim() === '') {
           missingFields.push(field);
         }
       });
@@ -723,8 +757,8 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
       }
 
       // Prepare record data
-      const recordData = {
-        ...fieldsToInsert,
+      const recordData: Record<string, any> = {
+        ...normalizedFields,
         company_id: preview.company_id,
         created_at: new Date().toISOString()
       };
