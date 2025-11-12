@@ -901,7 +901,12 @@ export function getActionDisplayName(toolName: string): string {
     'add_project_task': 'Adicionar Tarefa ao Projeto',
     'create_indicator': 'Criar Indicador',
     'add_indicator_measurement': 'Registrar Medição de Indicador',
-    'create_license': 'Criar Licença Ambiental'
+    'create_license': 'Criar Licença Ambiental',
+    // Bulk import tools
+    'bulk_import_emissions': 'Importar Emissões em Massa',
+    'bulk_import_employees': 'Importar Funcionários em Massa',
+    'bulk_import_goals': 'Importar Metas ESG em Massa',
+    'bulk_import_waste': 'Importar Resíduos em Massa'
   };
   return names[toolName] || toolName;
 }
@@ -958,6 +963,15 @@ export function getActionDescription(toolName: string, params: any): string {
       return `Registrar medição de ${params.measured_value} para o indicador`;
     case 'create_license':
       return `Criar licença "${params.license_name}" (${params.license_type}) válida até ${params.expiration_date}`;
+    // Bulk import tools
+    case 'bulk_import_emissions':
+      return `Importar ${params.emissions?.length || 0} registros de emissões${params.skip_duplicates ? ' (ignorando duplicatas)' : ''}`;
+    case 'bulk_import_employees':
+      return `Importar ${params.employees?.length || 0} funcionários${params.skip_duplicates ? ' (ignorando duplicatas)' : ''}`;
+    case 'bulk_import_goals':
+      return `Importar ${params.goals?.length || 0} metas ESG${params.skip_duplicates ? ' (ignorando duplicatas)' : ''}`;
+    case 'bulk_import_waste':
+      return `Importar ${params.waste?.length || 0} registros de resíduos`;
     default:
       return 'Ação não especificada';
   }
@@ -989,7 +1003,12 @@ export function getActionImpact(toolName: string): 'low' | 'medium' | 'high' {
     'add_project_task': 'low',
     'create_indicator': 'medium',
     'add_indicator_measurement': 'low',
-    'create_license': 'high'
+    'create_license': 'high',
+    // Bulk import tools - high impact due to multiple records
+    'bulk_import_emissions': 'high',
+    'bulk_import_employees': 'high',
+    'bulk_import_goals': 'high',
+    'bulk_import_waste': 'high'
   };
   return impacts[toolName] || 'medium';
 }

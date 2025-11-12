@@ -1659,7 +1659,8 @@ ${attachmentContext}`;
     const choice = data.choices[0];
     
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls) {
-      console.log('AI requested tool calls:', choice.message.tool_calls);
+      const toolNames = choice.message.tool_calls.map((tc: any) => tc.function.name);
+      console.log('🔧 AI requested tool calls:', toolNames);
       
       // Check if any write tools were called
       const writeTools = [
@@ -1674,17 +1675,36 @@ ${attachmentContext}`;
         'create_okr', 'add_key_result', 'update_okr_progress',
         'create_project', 'add_project_task',
         'create_indicator', 'add_indicator_measurement',
-        'create_license'
+        'create_license',
+        // ✅ BULK IMPORT TOOLS - require confirmation
+        'bulk_import_emissions',
+        'bulk_import_employees',
+        'bulk_import_goals',
+        'bulk_import_waste'
       ];
-      const hasWriteAction = choice.message.tool_calls.some((tc: any) => 
+      
+      // Partition tool calls into write and read
+      const writeCalls = choice.message.tool_calls.filter((tc: any) => 
         writeTools.includes(tc.function.name)
       );
+      const readCalls = choice.message.tool_calls.filter((tc: any) => 
+        !writeTools.includes(tc.function.name)
+      );
+      
+      console.log('📊 Tool routing:', {
+        total: choice.message.tool_calls.length,
+        writeCalls: writeCalls.length,
+        readCalls: readCalls.length,
+        writeToolNames: writeCalls.map((tc: any) => tc.function.name),
+        readToolNames: readCalls.map((tc: any) => tc.function.name)
+      });
+      
+      const hasWriteAction = writeCalls.length > 0;
 
       // If write action detected, return pending action for confirmation
       if (hasWriteAction) {
-        const writeCall = choice.message.tool_calls.find((tc: any) => 
-          writeTools.includes(tc.function.name)
-        );
+        console.log('✅ Write action detected - returning pendingAction for user confirmation');
+        const writeCall = writeCalls[0]; // Use first write call
         
         const functionArgs = JSON.parse(writeCall.function.arguments);
         
@@ -1696,6 +1716,11 @@ ${attachmentContext}`;
             currentPage
           }
         );
+        
+        console.log('📤 Returning pendingAction:', {
+          toolName: writeCall.function.name,
+          displayName: getActionDisplayName(writeCall.function.name)
+        });
         
         // Return pending action to frontend
         return new Response(JSON.stringify({
@@ -1713,22 +1738,37 @@ ${attachmentContext}`;
         });
       }
       
-      // Execute read-only tools using the new executeReadTool function
+      console.log('🔍 No write actions - executing read-only tools');
+      
+      // Execute ONLY read-only tools using the new executeReadTool function
       const toolResults = await Promise.all(
-        choice.message.tool_calls.map(async (toolCall: any) => {
+        readCalls.map(async (toolCall: any) => {
           const functionName = toolCall.function.name;
           const functionArgs = JSON.parse(toolCall.function.arguments);
           
-          console.log(`Executing tool: ${functionName}`, functionArgs);
+          console.log(`📖 Executing read tool: ${functionName}`, functionArgs);
           
-          const result = await executeReadTool(functionName, functionArgs, companyId, supabaseClient);
-          
-          return {
-            tool_call_id: toolCall.id,
-            role: 'tool' as const,
-            name: functionName,
-            content: JSON.stringify(result)
-          };
+          try {
+            const result = await executeReadTool(functionName, functionArgs, companyId, supabaseClient);
+            
+            return {
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              name: functionName,
+              content: JSON.stringify(result)
+            };
+          } catch (error: any) {
+            console.error(`❌ Error executing read tool ${functionName}:`, error);
+            return {
+              tool_call_id: toolCall.id,
+              role: 'tool' as const,
+              name: functionName,
+              content: JSON.stringify({ 
+                error: true, 
+                message: `Erro ao executar ${functionName}: ${error.message}` 
+              })
+            };
+          }
         })
       );
 
