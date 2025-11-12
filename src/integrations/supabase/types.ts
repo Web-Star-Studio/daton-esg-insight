@@ -16700,64 +16700,162 @@ export type Database = {
         }
         Relationships: []
       }
+      waste_log_documents: {
+        Row: {
+          created_at: string | null
+          document_number: string
+          document_type: string
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          updated_at: string | null
+          waste_log_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_number: string
+          document_type: string
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          waste_log_id: string
+        }
+        Update: {
+          created_at?: string | null
+          document_number?: string
+          document_type?: string
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          waste_log_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waste_log_documents_waste_log_id_fkey"
+            columns: ["waste_log_id"]
+            isOneToOne: false
+            referencedRelation: "waste_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waste_logs: {
         Row: {
+          amount_paid: number | null
           asset_id: string | null
+          cdf_additional_1: string | null
+          cdf_additional_2: string | null
+          cdf_number: string | null
           collection_date: string
           company_id: string
           cost: number | null
           created_at: string
           destination_cnpj: string | null
+          destination_cost_per_unit: number | null
+          destination_cost_total: number | null
           destination_name: string | null
+          driver_name: string | null
           final_treatment_type: string | null
           id: string
+          invoice_generator: string | null
+          invoice_payment: string | null
           mtr_number: string
+          payment_date: string | null
+          payment_notes: string | null
+          payment_status: string | null
           quantity: number
+          revenue_per_unit: number | null
+          revenue_total: number | null
           status: Database["public"]["Enums"]["waste_status_enum"]
+          storage_type: string | null
+          total_payable: number | null
+          transport_cost: number | null
           transporter_cnpj: string | null
           transporter_name: string | null
           unit: string
           updated_at: string
+          vehicle_plate: string | null
           waste_class: Database["public"]["Enums"]["waste_class_enum"]
           waste_description: string
         }
         Insert: {
+          amount_paid?: number | null
           asset_id?: string | null
+          cdf_additional_1?: string | null
+          cdf_additional_2?: string | null
+          cdf_number?: string | null
           collection_date: string
           company_id: string
           cost?: number | null
           created_at?: string
           destination_cnpj?: string | null
+          destination_cost_per_unit?: number | null
+          destination_cost_total?: number | null
           destination_name?: string | null
+          driver_name?: string | null
           final_treatment_type?: string | null
           id?: string
+          invoice_generator?: string | null
+          invoice_payment?: string | null
           mtr_number: string
+          payment_date?: string | null
+          payment_notes?: string | null
+          payment_status?: string | null
           quantity: number
+          revenue_per_unit?: number | null
+          revenue_total?: number | null
           status?: Database["public"]["Enums"]["waste_status_enum"]
+          storage_type?: string | null
+          total_payable?: number | null
+          transport_cost?: number | null
           transporter_cnpj?: string | null
           transporter_name?: string | null
           unit: string
           updated_at?: string
+          vehicle_plate?: string | null
           waste_class: Database["public"]["Enums"]["waste_class_enum"]
           waste_description: string
         }
         Update: {
+          amount_paid?: number | null
           asset_id?: string | null
+          cdf_additional_1?: string | null
+          cdf_additional_2?: string | null
+          cdf_number?: string | null
           collection_date?: string
           company_id?: string
           cost?: number | null
           created_at?: string
           destination_cnpj?: string | null
+          destination_cost_per_unit?: number | null
+          destination_cost_total?: number | null
           destination_name?: string | null
+          driver_name?: string | null
           final_treatment_type?: string | null
           id?: string
+          invoice_generator?: string | null
+          invoice_payment?: string | null
           mtr_number?: string
+          payment_date?: string | null
+          payment_notes?: string | null
+          payment_status?: string | null
           quantity?: number
+          revenue_per_unit?: number | null
+          revenue_total?: number | null
           status?: Database["public"]["Enums"]["waste_status_enum"]
+          storage_type?: string | null
+          total_payable?: number | null
+          transport_cost?: number | null
           transporter_cnpj?: string | null
           transporter_name?: string | null
           unit?: string
           updated_at?: string
+          vehicle_plate?: string | null
           waste_class?: Database["public"]["Enums"]["waste_class_enum"]
           waste_description?: string
         }
