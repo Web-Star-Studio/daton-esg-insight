@@ -793,6 +793,17 @@ function normalizeForTable(tableName: string, fields: Record<string, any>): Reco
     normalized[targetKey] = normalizedValue;
   }
   
+  // ✅ Smart defaults for waste_logs missing fields
+  if (tableName === 'waste_logs') {
+    // Infer unit if missing
+    if (!normalized.unit) {
+      const quantity = normalized.quantity || 0;
+      // If quantity >= 10, likely in tons; otherwise kg
+      normalized.unit = quantity >= 10 ? 'toneladas' : 'kg';
+      console.log(`ℹ️ [Normalize] Inferred unit: ${normalized.unit} (based on quantity: ${quantity})`);
+    }
+  }
+  
   return normalized;
 }
 
