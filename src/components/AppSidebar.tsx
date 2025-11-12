@@ -75,19 +75,6 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
-    id: "monitoring",
-    title: "MONITORAMENTO ESG",
-    isCollapsible: true,
-    defaultOpen: true,
-    items: [
-      { id: "monitoring-dashboard", title: "Dashboard ESG Unificado", icon: Activity, path: "/monitoramento-esg", description: "Central consolidada de indicadores ESG" },
-      { id: "monitoring-water", title: "Monitoramento de Água", icon: Droplets, path: "/monitoramento-agua", description: "Gestão contínua de recursos hídricos (GRI 303)" },
-      { id: "monitoring-energy", title: "Monitoramento de Energia", icon: Zap, path: "/monitoramento-energia", description: "Gestão contínua de consumo energético (GRI 302)" },
-      { id: "monitoring-emissions", title: "Monitoramento de Emissões", icon: Cloud, path: "/monitoramento-emissoes", description: "Inventário contínuo de GEE (GRI 305)" },
-      { id: "monitoring-waste", title: "Monitoramento de Resíduos", icon: Trash2, path: "/monitoramento-residuos", description: "Gestão contínua de resíduos sólidos (GRI 306)" }
-    ]
-  },
-  {
     id: "esg",
     title: "ESG",
     isCollapsible: true,
@@ -103,6 +90,20 @@ const menuSections: MenuSection[] = [
         path: "#",
         description: "Gestão ambiental, emissões e licenciamento",
         subItems: [
+          {
+            id: "monitoring",
+            title: "Monitoramento ESG",
+            icon: Activity,
+            path: "/monitoramento-esg",
+            description: "Central consolidada de indicadores ESG",
+            subItems: [
+              { id: "monitoring-dashboard", title: "Dashboard ESG Unificado", icon: Activity, path: "/monitoramento-esg", description: "Central consolidada de indicadores ESG" },
+              { id: "monitoring-water", title: "Monitoramento de Água", icon: Droplets, path: "/monitoramento-agua", description: "Gestão contínua de recursos hídricos (GRI 303)" },
+              { id: "monitoring-energy", title: "Monitoramento de Energia", icon: Zap, path: "/monitoramento-energia", description: "Gestão contínua de consumo energético (GRI 302)" },
+              { id: "monitoring-emissions", title: "Monitoramento de Emissões", icon: Cloud, path: "/monitoramento-emissoes", description: "Inventário contínuo de GEE (GRI 305)" },
+              { id: "monitoring-waste", title: "Monitoramento de Resíduos", icon: Trash2, path: "/monitoramento-residuos", description: "Gestão contínua de resíduos sólidos (GRI 306)" }
+            ]
+          },
           {
             id: "emissions",
             title: "Emissões de GEE",
@@ -225,7 +226,7 @@ export function AppSidebar() {
   
   // Auto-expand category if active page belongs to it
   useState(() => {
-    const environmentalPaths = ['/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/licenciamento', '/metas-sustentabilidade']
+    const environmentalPaths = ['/monitoramento-esg', '/monitoramento-agua', '/monitoramento-energia', '/monitoramento-emissoes', '/monitoramento-residuos', '/inventario-gee', '/dashboard-ghg', '/projetos-carbono', '/residuos', '/licenciamento', '/metas-sustentabilidade']
     const socialPaths = ['/social-esg', '/gestao-funcionarios', '/seguranca-trabalho', '/gestao-treinamentos', '/desenvolvimento-carreira']
     const governancePaths = ['/governanca-esg', '/gestao-riscos', '/compliance', '/auditoria', '/gestao-stakeholders', '/analise-materialidade']
     
