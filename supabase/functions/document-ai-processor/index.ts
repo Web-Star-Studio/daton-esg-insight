@@ -669,11 +669,11 @@ Execute a extração agora usando a função \`extract_document_data\`.
 `;
 }
 
-// Required fields per table
+// Required fields per table (aligned with DB schema)
 const REQUIRED_FIELDS: Record<string, string[]> = {
   licenses: ['license_name', 'license_type', 'issue_date', 'expiration_date'],
   assets: ['name', 'asset_type'],
-  waste_logs: ['waste_type', 'quantity', 'unit', 'log_date'],
+  waste_logs: ['waste_description', 'quantity', 'unit', 'collection_date'], // ✅ Aligned with DB schema
   emission_sources: ['source_name', 'scope', 'category'],
   suppliers: ['name'],
   employees: ['full_name', 'hire_date'],
@@ -688,16 +688,113 @@ const FIELD_ALIASES: Record<string, string[]> = {
   name: ['nome', 'transportador', 'receptor', 'fornecedor', 'empresa', 'razao_social'],
   full_name: ['nome_completo', 'nome', 'funcionario'],
   asset_type: ['tipo_ativo', 'tipo'],
-  waste_type: ['tipo_residuo', 'tipo', 'residuo', 'waste'],
+  waste_description: ['tipo_residuo', 'waste_type', 'tipo', 'residuo', 'waste', 'descricao_residuo'],
   quantity: ['quantidade', 'qtd', 'volume', 'peso'],
   unit: ['unidade', 'un', 'medida'],
-  log_date: ['data', 'data_geracao', 'data_log', 'date'],
+  collection_date: ['data', 'data_geracao', 'data_log', 'date', 'log_date', 'data_coleta'],
   source_name: ['fonte', 'nome_fonte'],
   scope: ['escopo'],
   category: ['categoria'],
   issue_date: ['data_emissao'],
   expiration_date: ['data_validade', 'validade']
 };
+
+// Per-table field renames for DB schema normalization
+const TABLE_RENAMES: Record<string, Record<string, string>> = {
+  suppliers: {
+    transportador: 'name',
+    receptor: 'name',
+    fornecedor: 'name',
+    empresa: 'name',
+    razao_social: 'name',
+    nome: 'name',
+    email: 'contact_email',
+    telefone: 'contact_phone',
+    endereco: 'address'
+  },
+  waste_logs: {
+    tipo_residuo: 'waste_description',
+    waste_type: 'waste_description',
+    tipo: 'waste_description',
+    quantidade: 'quantity',
+    unidade: 'unit',
+    data_geracao: 'collection_date',
+    data: 'collection_date',
+    log_date: 'collection_date',
+    data_coleta: 'collection_date',
+    transportador: 'transporter_name',
+    cnpj_transportador: 'transporter_cnpj',
+    receptor: 'destination_name',
+    cnpj_receptor: 'destination_cnpj',
+    custo_transporte: 'transport_cost',
+    custo_destino: 'destination_cost_total',
+    valor_receber: 'revenue_total',
+    numero_mtr: 'mtr_number',
+    tipo_tratamento: 'final_treatment_type',
+    placa_veiculo: 'vehicle_plate'
+  }
+};
+
+// Whitelisted fields per table (prevents unknown column errors)
+const TABLE_FIELD_WHITELIST: Record<string, string[]> = {
+  suppliers: [
+    'name', 'cnpj', 'category', 'contact_email', 'contact_phone', 
+    'address', 'status', 'rating', 'qualification_status', 'notes',
+    'company_id', 'created_at', 'updated_at'
+  ],
+  waste_logs: [
+    'waste_description', 'quantity', 'unit', 'collection_date',
+    'transporter_name', 'transporter_cnpj', 'destination_name', 'destination_cnpj',
+    'transport_cost', 'destination_cost_total', 'revenue_total',
+    'status', 'company_id', 'created_at', 'updated_at',
+    'mtr_number', 'final_treatment_type', 'vehicle_plate',
+    'invoice_payment', 'payment_status', 'payment_date',
+    'total_payable', 'amount_paid', 'storage_type', 'invoice_generator'
+  ]
+};
+
+// Normalize fields for a specific table
+function normalizeForTable(tableName: string, fields: Record<string, any>): Record<string, any> {
+  const normalized: Record<string, any> = {};
+  const renames = TABLE_RENAMES[tableName] || {};
+  
+  for (const [key, value] of Object.entries(fields)) {
+    // Apply rename if exists
+    const targetKey = renames[key] || key;
+    
+    // Skip empty values
+    if (value === null || value === undefined || String(value).trim() === '') {
+      continue;
+    }
+    
+    let normalizedValue = value;
+    
+    // Numeric normalization for quantity and cost fields
+    if (['quantity', 'transport_cost', 'destination_cost_total', 'revenue_total', 'total_payable', 'amount_paid'].includes(targetKey)) {
+      const strValue = String(value).trim();
+      // Handle PT-BR formatting: "1.130,50" or "1,130" → remove dots, replace comma with dot
+      normalizedValue = parseFloat(strValue.replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    
+    // Date normalization: DD/MM/YYYY → YYYY-MM-DD
+    if (['collection_date', 'issue_date', 'expiration_date', 'payment_date'].includes(targetKey)) {
+      const strValue = String(value).trim();
+      // Match DD/MM/YYYY or DD-MM-YYYY
+      const dateMatch = strValue.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+      if (dateMatch) {
+        const [, day, month, year] = dateMatch;
+        normalizedValue = `${year}-${month}-${day}`;
+      } else if (strValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Already in ISO format
+        normalizedValue = strValue;
+      }
+    }
+    
+    normalized[targetKey] = normalizedValue;
+  }
+  
+  return normalized;
+}
 
 async function handleApprovalAction(supabaseClient: any, action: string, previewId: string, userId: string, editedFields?: Record<string, any>) {
   try {
@@ -719,32 +816,40 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
       const originalFields = editedFields || preview.extracted_fields || {};
       const fieldCount = Object.keys(originalFields).length;
       
+      console.log(`[Approval] Starting approval for preview ${previewId}`);
+      console.log(`[Approval] Target table: ${preview.target_table}`);
+      console.log(`[Approval] Original fields:`, Object.keys(originalFields));
+      
       if (fieldCount === 0) {
         throw new Error('Não é possível aprovar: nenhum campo foi extraído do documento. Por favor, reprocesse o documento ou extraia os dados manualmente.');
       }
 
       const tableName = preview.target_table;
       
-      // ✅ Smart mapping using aliases to satisfy required fields
-      const normalizedFields: Record<string, any> = { ...originalFields };
+      // STEP 1: Smart mapping using aliases to satisfy required fields
+      const aliasedFields: Record<string, any> = { ...originalFields };
       const requiredFields = REQUIRED_FIELDS[tableName] || [];
       
       for (const requiredField of requiredFields) {
-        if (!normalizedFields[requiredField] || String(normalizedFields[requiredField]).trim() === '') {
+        if (!aliasedFields[requiredField] || String(aliasedFields[requiredField]).trim() === '') {
           const aliases = FIELD_ALIASES[requiredField] || [];
           for (const alias of aliases) {
             // Try exact alias or lowercase-safe access
             const candidate = originalFields[alias] ?? originalFields[(alias as string).toLowerCase?.() || alias];
             if (candidate !== undefined && String(candidate).trim() !== '') {
-              console.log(`✅ [Approval] Mapping ${alias} → ${requiredField} for table ${tableName}`);
-              normalizedFields[requiredField] = candidate;
+              console.log(`✅ [Approval] Alias mapping: ${alias} → ${requiredField}`);
+              aliasedFields[requiredField] = candidate;
               break;
             }
           }
         }
       }
       
-      // Validate required fields AFTER mapping
+      // STEP 2: Normalize for table schema (renames + type conversions)
+      const normalizedFields = normalizeForTable(tableName, aliasedFields);
+      console.log(`[Approval] Normalized fields:`, Object.keys(normalizedFields));
+      
+      // STEP 3: Validate required fields AFTER normalization
       const missingFields: string[] = [];
       requiredFields.forEach(field => {
         if (!normalizedFields[field] || String(normalizedFields[field]).trim() === '') {
@@ -753,37 +858,57 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
       });
 
       if (missingFields.length > 0) {
+        console.error(`[Approval] Missing required fields:`, missingFields);
         throw new Error(`Não é possível aprovar: os seguintes campos obrigatórios estão faltando: ${missingFields.join(', ')}. Por favor, edite e adicione esses campos.`);
       }
 
-      // Prepare record data
-      const recordData: Record<string, any> = {
-        ...normalizedFields,
-        company_id: preview.company_id,
-        created_at: new Date().toISOString()
-      };
+      // STEP 4: Apply whitelist filtering
+      const whitelist = TABLE_FIELD_WHITELIST[tableName];
+      const safeRecordData: Record<string, any> = {};
+      
+      if (whitelist) {
+        // Filter to only whitelisted fields
+        for (const key of Object.keys(normalizedFields)) {
+          if (whitelist.includes(key)) {
+            safeRecordData[key] = normalizedFields[key];
+          } else {
+            console.log(`⚠️ [Approval] Filtered out non-whitelisted field: ${key}`);
+          }
+        }
+      } else {
+        // No whitelist defined, use all normalized fields
+        Object.assign(safeRecordData, normalizedFields);
+      }
+      
+      // Add system fields
+      safeRecordData.company_id = preview.company_id;
+      safeRecordData.created_at = new Date().toISOString();
 
       // Special handling for specific tables
       if (tableName === 'licenses') {
-        recordData.status = recordData.status || 'Ativa';
+        safeRecordData.status = safeRecordData.status || 'Ativa';
       } else if (tableName === 'waste_logs') {
-        recordData.log_date = recordData.log_date || new Date().toISOString().split('T')[0];
+        safeRecordData.status = safeRecordData.status || 'Ativo';
+        // collection_date already normalized above
       } else if (tableName === 'emission_sources') {
-        recordData.scope = recordData.scope || 1;
+        safeRecordData.scope = safeRecordData.scope || 1;
       }
+      
+      console.log(`[Approval] Final fields for insertion:`, Object.keys(safeRecordData));
 
+      // STEP 5: Insert into table
       const { data: insertedData, error: insertError } = await supabaseClient
         .from(tableName)
-        .insert(recordData)
+        .insert(safeRecordData)
         .select()
         .single();
 
       if (insertError) {
-        console.error(`Error inserting into ${tableName}:`, insertError);
+        console.error(`[Approval] Error inserting into ${tableName}:`, insertError);
         throw new Error(`Falha ao inserir em ${tableName}: ${insertError.message}`);
       }
 
-      console.log(`Inserted into ${tableName}:`, insertedData.id);
+      console.log(`✅ [Approval] Successfully inserted into ${tableName}:`, insertedData.id);
 
       // Update preview status
       await supabaseClient
@@ -795,7 +920,7 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
         })
         .eq('id', previewId);
 
-      console.log('Approval completed');
+      console.log('✅ [Approval] Approval completed successfully');
 
       return new Response(JSON.stringify({
         success: true,
