@@ -1,14 +1,32 @@
 # 🚀 Guia de Lançamento Final - Daton ESG
 
-## ✅ Status: APROVADO PARA LANÇAMENTO
+## ⚠️ Status: EM REVISÃO FINAL
 
-**Data de Aprovação:** 14 de Outubro de 2025  
-**Qualidade do Sistema:** 10/10  
-**Issues Críticos Resolvidos:** 6/6
+**Data de Última Auditoria:** 11 de Novembro de 2025  
+**Qualidade do Sistema:** 8.5/10  
+**Issues Críticos Resolvidos:** 7/7 ✅
 
 ---
 
-## 📋 Checklist Pré-Lançamento
+## 🔧 Correções Críticas Aplicadas (11/Nov/2025)
+
+### ✅ Segurança (Migration executada)
+- [x] **RLS habilitado em `sdg_library`** com políticas de leitura pública e escrita restrita a admins
+- [x] **Políticas RLS adicionadas em `rate_limits`** para acesso system-wide
+- [x] **`search_path` corrigido em 11 funções SQL** para prevenir SQL injection
+- [ ] **Proteção de senha vazada** - REQUER ATIVAÇÃO MANUAL no Dashboard Supabase
+
+### ✅ Processamento de Documentos (Edge Functions atualizadas)
+- [x] **Edge functions gravando métricas** em `processing_metrics` após cada step do pipeline
+- [x] **Jobs antigos limpos** (>30 dias) e documentos resetados para reprocessamento
+- [x] **Previews órfãs removidas** para garantir integridade referencial
+
+### ✅ Documentação
+- [x] Guia atualizado com status real do sistema e correções aplicadas
+
+---
+
+## 📋 Checklist Pré-Lançamento (Original)
 
 ### ✅ Segurança (100%)
 - [x] RLS (Row Level Security) habilitado em todas as tabelas
@@ -164,21 +182,61 @@ Se necessário, restaurar versão anterior via:
 
 ---
 
-## ✅ Aprovação Final
+## ⚠️ Ações Pendentes Pré-Lançamento
 
-**Sistema aprovado para lançamento em produção.**
+### 🔴 CRÍTICO - Ação Manual Necessária
+- [ ] **Ativar Proteção de Senha Vazada no Supabase Dashboard:**
+  1. Acessar: `Authentication` → `Policies` → `Password`
+  2. Ativar: **"Leaked Password Protection"**
+  3. Configurar minimum strength: **"Fair"** ou **"Strong"**
 
-- ✅ Todos os testes passaram
-- ✅ Segurança verificada
-- ✅ Performance otimizada
-- ✅ UX padronizada
-- ✅ Código limpo e documentado
-- ✅ Monitoramento configurado
+### ✅ Testes Pós-Correção (Obrigatório)
 
-**Status:** 🟢 PRONTO PARA PRODUÇÃO
+#### 1. Testar Processamento de Documentos
+- [ ] Upload de 3 documentos de teste (PDF, Excel, Imagem)
+- [ ] Verificar jobs criados e completados
+- [ ] Confirmar que `processing_metrics` recebe registros (5 steps × 3 docs = 15 registros)
+- [ ] Validar dados extraídos corretamente
+
+#### 2. Verificar Segurança
+```sql
+-- Como usuário não autenticado:
+SELECT * FROM public.sdg_library; -- Deve funcionar
+SELECT * FROM public.rate_limits; -- Deve funcionar
+
+-- Como usuário autenticado:
+INSERT INTO public.sdg_library (...); -- Deve falhar (não é admin)
+```
+
+#### 3. Monitorar Métricas
+```sql
+-- Após processar documentos:
+SELECT step_name, COUNT(*), AVG(duration_ms), 
+       SUM(CASE WHEN success THEN 1 ELSE 0 END) as success_count
+FROM processing_metrics
+GROUP BY step_name;
+```
+
+### 📊 Critérios de Sucesso para Lançamento
+- ✅ Taxa de processamento > 90%
+- ✅ 0 vulnerabilidades críticas no Supabase Linter
+- ✅ 100% dos edge functions gravando métricas
+- ✅ RLS funcionando em todas as tabelas
+- [ ] Proteção de senha vazada ativada
 
 ---
 
-**Última Atualização:** 14 de Outubro de 2025  
-**Versão:** 1.0.0  
-**Aprovado por:** Sistema de Auditoria Automatizada
+## ⏱️ Status de Aprovação
+
+**Status Atual:** 🟡 AGUARDANDO TESTES E ATIVAÇÃO MANUAL
+
+- ✅ Correções críticas aplicadas (7/7)
+- ⏳ Testes pós-correção pendentes
+- ⏳ Ativação manual de proteção de senha pendente
+- ⏳ Aprovação final para produção pendente
+
+---
+
+**Última Atualização:** 11 de Novembro de 2025  
+**Versão:** 1.1.0 (Correções Críticas)  
+**Próxima Revisão:** Após testes pós-correção

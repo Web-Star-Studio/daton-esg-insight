@@ -95,6 +95,20 @@ serve(async (req) => {
     pipeline[0].duration_ms = Date.now() - parseStart;
     pipeline[0].result = { content_length: parseResult.parsedContent?.length || 0 };
 
+    // CORREÇÃO 4: Gravar métrica do Step 1
+    try {
+      await supabaseClient.from('processing_metrics').insert({
+        company_id: document.company_id,
+        document_id: document_id,
+        step_name: 'parse',
+        duration_ms: pipeline[0].duration_ms,
+        success: true,
+        metadata: { content_length: parseResult.parsedContent?.length || 0 }
+      });
+    } catch (metricError) {
+      console.warn('⚠️ Failed to log parse metric:', metricError);
+    }
+
     // STEP 2: Classificar conteúdo
     console.log('🧠 Step 2: Classifying content...');
     pipeline[1].status = 'processing';
@@ -147,6 +161,20 @@ serve(async (req) => {
       esg_relevance: classifyResult.classification.esg_relevance_score,
       entities_found: classifyResult.classification.extracted_entities?.length || 0,
     };
+
+    // CORREÇÃO 4: Gravar métrica do Step 2
+    try {
+      await supabaseClient.from('processing_metrics').insert({
+        company_id: document.company_id,
+        document_id: document_id,
+        step_name: 'classify',
+        duration_ms: pipeline[1].duration_ms,
+        success: true,
+        metadata: pipeline[1].result
+      });
+    } catch (metricError) {
+      console.warn('⚠️ Failed to log classify metric:', metricError);
+    }
 
     const classification = classifyResult.classification;
 
@@ -215,6 +243,20 @@ serve(async (req) => {
       unclassified_data_id: extractResult.unclassified_data_id,
       entities_extracted: extractResult.analysis?.extracted_entities?.length || 0,
     };
+
+    // CORREÇÃO 4: Gravar métrica do Step 3
+    try {
+      await supabaseClient.from('processing_metrics').insert({
+        company_id: document.company_id,
+        document_id: document_id,
+        step_name: 'extract',
+        duration_ms: pipeline[2].duration_ms,
+        success: true,
+        metadata: pipeline[2].result
+      });
+    } catch (metricError) {
+      console.warn('⚠️ Failed to log extract metric:', metricError);
+    }
 
     // Calculate overall confidence BEFORE creating preview records (needed for job creation)
     const avgConfidence = classification.extracted_entities?.reduce(
@@ -337,6 +379,20 @@ serve(async (req) => {
     pipeline[3].duration_ms = Date.now() - validateStart;
     pipeline[3].result = validation;
 
+    // CORREÇÃO 4: Gravar métrica do Step 4
+    try {
+      await supabaseClient.from('processing_metrics').insert({
+        company_id: document.company_id,
+        document_id: document_id,
+        step_name: 'validate',
+        duration_ms: pipeline[3].duration_ms,
+        success: true,
+        metadata: validation
+      });
+    } catch (metricError) {
+      console.warn('⚠️ Failed to log validate metric:', metricError);
+    }
+
     // STEP 5: Inserir dados (se confiança alta) ou enviar para revisão
     console.log('💾 Step 5: Inserting data or queueing for review...');
     pipeline[4].status = 'processing';
@@ -411,6 +467,21 @@ serve(async (req) => {
 
     pipeline[4].duration_ms = Date.now() - insertStart;
     pipeline[4].result = insertResult;
+
+    // CORREÇÃO 4: Gravar métrica do Step 5
+    try {
+      await supabaseClient.from('processing_metrics').insert({
+        company_id: document.company_id,
+        document_id: document_id,
+        step_name: 'insert',
+        duration_ms: pipeline[4].duration_ms,
+        success: pipeline[4].status === 'completed',
+        error_message: pipeline[4].error || null,
+        metadata: insertResult
+      });
+    } catch (metricError) {
+      console.warn('⚠️ Failed to log insert metric:', metricError);
+    }
 
     // UPDATE DOCUMENT STATUS
     await supabaseClient
