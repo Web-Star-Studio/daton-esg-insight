@@ -13,7 +13,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DocumentViewer } from './DocumentViewer';
 import { useExtractionRealtime } from '@/hooks/useExtractionRealtime';
 import { createDocumentApprovalLog } from '@/services/documentApprovalLog';
-import { GroupedDocumentExtractions } from './GroupedDocumentExtractions';
 
 interface ExtractedPreview {
   id: string;
@@ -381,18 +380,11 @@ export function DocumentExtractionApproval() {
     </Card>
   );
 
-  // Check if we should use grouped view (when there are multiple items from same job)
-  const useGroupedView = previews && previews.length > 10;
-
   return (
     <div className="space-y-6">
       {batchApprovalSection}
       
-      {useGroupedView ? (
-        <GroupedDocumentExtractions previews={previews} />
-      ) : (
-        <>
-          {previews.map((preview) => {
+      {previews.map((preview) => {
         const isEditing = editingItems.has(preview.id);
         const isViewingDoc = viewingDocuments.has(preview.id);
         const avgConfidence = getAverageConfidence(preview.confidence_scores);
@@ -613,8 +605,6 @@ export function DocumentExtractionApproval() {
           </Card>
         );
       })}
-        </>
-      )}
     </div>
   );
 }

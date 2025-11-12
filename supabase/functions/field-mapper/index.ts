@@ -25,74 +25,52 @@ interface MappingResult {
   }>;
 }
 
-// Entity field definitions with comprehensive aliases
+// Entity field definitions
 const ENTITY_FIELDS: Record<string, Record<string, string[]>> = {
-  'waste_logs': {
-    'waste_description': ['tipo', 'residuo', 'tipo_de_residuo', 'tipo_residuo', 'descricao', 'material', 'waste', 'waste_type', 'classificacao'],
-    'quantity': ['quantidade', 'dmr', 'peso', 'volume', 'ton', 'tonelada', 'kg', 'quilograma', 'massa', 'mass', 'qtd', 'qtde', 'quant'],
-    'unit': ['unidade', 'un', 'medida', 'unit', 'ud'],
-    'collection_date': ['data', 'dt', 'data_coleta', 'data_geracao', 'date', 'data_movimentacao', 'dt_coleta'],
-    'transporter_name': ['transportador', 'transportadora', 'transporte', 'empresa_transporte', 'empresa_a', 'origem_transporte'],
-    'destination_name': ['receptor', 'destinador', 'destino', 'destinatario', 'empresa_destino', 'empresa_b', 'destino_final'],
-    'generator_name': ['gerador', 'origem', 'remetente', 'empresa_origem', 'geradora'],
-    'transport_cost': ['custo_transporte', 'valor_transporte', 'frete', 'custo_frete'],
-    'disposal_cost': ['custo_destinacao', 'valor_destinacao', 'custo_tratamento', 'valor_tratamento'],
-    'total_cost': ['custo_total', 'valor_total', 'custo', 'valor', 'preco', 'total']
-  },
-  'suppliers': {
-    'name': ['nome', 'empresa', 'razao_social', 'razao', 'fornecedor', 'supplier', 'transportador', 'receptor', 'destinador', 'parceiro'],
-    'cnpj': ['cnpj', 'documento', 'tax_id', 'cpf_cnpj', 'registro'],
-    'contact_email': ['email', 'e-mail', 'contato', 'email_contato', 'correio'],
-    'contact_phone': ['telefone', 'fone', 'phone', 'celular', 'tel', 'contato_tel'],
-    'address': ['endereco', 'address', 'localizacao', 'local', 'rua'],
-    'city': ['cidade', 'city', 'municipio'],
-    'state': ['estado', 'state', 'uf'],
-    'category': ['categoria', 'tipo', 'category', 'classificacao', 'segmento']
-  },
   'emissions': {
-    'source_name': ['fonte', 'nome da fonte', 'source', 'emission source', 'fonte de emissão', 'origem'],
-    'scope': ['escopo', 'scope', 'nivel', 'nível'],
-    'category': ['categoria', 'category', 'tipo', 'classificacao'],
-    'quantity': ['quantidade', 'qty', 'quantity', 'volume', 'consumo', 'qtd'],
-    'unit': ['unidade', 'unit', 'un', 'medida'],
-    'total_co2e': ['emissao', 'co2', 'co2e', 'tco2e', 'emissoes', 'total', 'emissão'],
-    'period_start': ['inicio', 'data_inicio', 'start_date', 'de', 'início'],
-    'period_end': ['fim', 'data_fim', 'end_date', 'ate', 'até']
+    'source_name': ['fonte', 'nome da fonte', 'source', 'emission source', 'fonte de emissão'],
+    'scope': ['escopo', 'scope', 'nível'],
+    'category': ['categoria', 'category', 'tipo'],
+    'quantity': ['quantidade', 'qty', 'quantity', 'volume', 'consumo'],
+    'unit': ['unidade', 'unit', 'un'],
+    'total_co2e': ['emissão', 'co2', 'co2e', 'tco2e', 'emissões', 'total'],
+    'period_start': ['início', 'data início', 'start date', 'de'],
+    'period_end': ['fim', 'data fim', 'end date', 'até']
   },
   'employees': {
-    'full_name': ['nome', 'nome_completo', 'colaborador', 'funcionario', 'name', 'funcionário'],
-    'email': ['email', 'e-mail', 'correio', 'contato'],
-    'cpf': ['cpf', 'documento', 'doc'],
-    'department': ['departamento', 'dept', 'setor', 'area', 'área'],
-    'position': ['cargo', 'funcao', 'position', 'job_title', 'função'],
-    'hire_date': ['admissao', 'data_admissao', 'contratacao', 'hire_date', 'admissão'],
-    'birth_date': ['nascimento', 'data_nascimento', 'birth_date', 'aniversario', 'aniversário'],
-    'gender': ['genero', 'sexo', 'gender', 'gênero']
+    'full_name': ['nome', 'nome completo', 'colaborador', 'funcionário', 'name'],
+    'email': ['email', 'e-mail', 'correio'],
+    'cpf': ['cpf', 'documento'],
+    'department': ['departamento', 'dept', 'setor', 'área'],
+    'position': ['cargo', 'função', 'position', 'job title'],
+    'hire_date': ['admissão', 'data admissão', 'contratação', 'hire date'],
+    'birth_date': ['nascimento', 'data nascimento', 'birth date', 'aniversário'],
+    'gender': ['gênero', 'sexo', 'gender']
   },
   'goals': {
-    'goal_name': ['meta', 'objetivo', 'goal', 'nome', 'titulo', 'título'],
-    'category': ['categoria', 'category', 'pilar', 'tipo', 'classificacao'],
-    'target_value': ['valor_alvo', 'target', 'meta_valor', 'objetivo', 'alvo'],
-    'baseline_value': ['baseline', 'linha_base', 'valor_base', 'inicial', 'base'],
-    'target_date': ['prazo', 'data_alvo', 'target_date', 'ate', 'até'],
-    'unit': ['unidade', 'unit', 'un', 'medida'],
-    'description': ['descricao', 'description', 'detalhes', 'descrição']
+    'goal_name': ['meta', 'objetivo', 'goal', 'nome'],
+    'category': ['categoria', 'category', 'pilar', 'tipo'],
+    'target_value': ['valor alvo', 'target', 'meta valor', 'objetivo'],
+    'baseline_value': ['baseline', 'linha base', 'valor base', 'inicial'],
+    'target_date': ['prazo', 'data alvo', 'target date', 'até'],
+    'unit': ['unidade', 'unit', 'un'],
+    'description': ['descrição', 'description', 'detalhes']
   },
   'waste': {
-    'waste_type': ['tipo', 'residuo', 'material', 'waste_type', 'resíduo'],
-    'waste_class': ['classe', 'classificacao', 'class', 'classificação'],
-    'quantity': ['quantidade', 'qty', 'quantity', 'peso', 'qtd'],
-    'unit': ['unidade', 'unit', 'un', 'medida'],
-    'disposal_method': ['destinacao', 'metodo', 'disposal', 'tratamento', 'destinação', 'método'],
-    'disposal_date': ['data', 'data_destinacao', 'date', 'dt']
+    'waste_type': ['tipo', 'resíduo', 'material', 'waste type'],
+    'waste_class': ['classe', 'classificação', 'class'],
+    'quantity': ['quantidade', 'qty', 'quantity', 'peso'],
+    'unit': ['unidade', 'unit', 'un'],
+    'disposal_method': ['destinação', 'método', 'disposal', 'tratamento'],
+    'disposal_date': ['data', 'data destinação', 'date']
   },
   'licenses': {
-    'license_name': ['nome', 'licenca', 'license', 'licença'],
-    'license_number': ['numero', 'protocolo', 'number', 'nº', 'número'],
-    'license_type': ['tipo', 'type', 'modalidade', 'categoria'],
-    'issuing_body': ['orgao', 'emissor', 'issuing_body', 'órgão'],
-    'issue_date': ['emissao', 'data_emissao', 'issue_date', 'emissão'],
-    'expiry_date': ['validade', 'vencimento', 'expiry', 'expiracao', 'expiração']
+    'license_name': ['nome', 'licença', 'license'],
+    'license_number': ['número', 'protocolo', 'number', 'nº'],
+    'license_type': ['tipo', 'type', 'modalidade'],
+    'issuing_body': ['órgão', 'emissor', 'issuing body'],
+    'issue_date': ['emissão', 'data emissão', 'issue date'],
+    'expiry_date': ['validade', 'vencimento', 'expiry', 'expiração']
   }
 };
 
@@ -220,9 +198,7 @@ function normalizeFieldName(field: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Remove accents
-    .replace(/\([^)]*\)/g, '') // Remove content in parentheses: "dmr (ton)" -> "dmr"
     .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, ' ')
     .trim();
 }
 
