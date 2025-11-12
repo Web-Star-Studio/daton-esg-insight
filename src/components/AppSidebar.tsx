@@ -125,6 +125,7 @@ const menuSections: MenuSection[] = [
             subItems: [
               { id: "waste-logs", title: "Registros de Resíduos", icon: Trash2, path: "/residuos", description: "Controle e destinação de resíduos" },
               { id: "waste-payables", title: "Contas a Pagar", icon: icons.DollarSign, path: "/financeiro/residuos/contas-a-pagar", description: "Gestão financeira de pagamentos" },
+              { id: "waste-receivables", title: "Contas a Receber", icon: TrendingUp, path: "/financeiro/residuos/contas-a-receber", description: "Receitas com recicláveis" },
             ]
           },
           { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" },

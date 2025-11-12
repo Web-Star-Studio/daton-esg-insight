@@ -48,6 +48,7 @@ const ProjetosCarbono = lazy(() => import("./pages/ProjetosCarbono"));
 const RegistrarAtividadeConservacao = lazy(() => import("./pages/RegistrarAtividadeConservacao"));
 const FornecedoresResiduos = lazy(() => import("./pages/FornecedoresResiduos"));
 const FinanceiroResiduosContasAPagar = lazy(() => import("./pages/FinanceiroResiduosContasAPagar"));
+const FinanceiroResiduosContasAReceber = lazy(() => import("./pages/FinanceiroResiduosContasAReceber"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Desempenho = lazy(() => import("./pages/Desempenho"));
 const Configuracao = lazy(() => import("./pages/Configuracao"));
@@ -324,6 +325,11 @@ const AppContent = () => {
             <Route path="/financeiro/residuos/contas-a-pagar" element={
               <ProtectedLazyPageWrapper>
                 <FinanceiroResiduosContasAPagar />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/residuos/contas-a-receber" element={
+              <ProtectedLazyPageWrapper>
+                <FinanceiroResiduosContasAReceber />
               </ProtectedLazyPageWrapper>
             } />
 
