@@ -36,34 +36,62 @@ serve(async (req) => {
     // 1. Process attachments if present
     let attachmentContext = '';
     let parsedAttachments: any[] = [];
+    let hasStructuredData = false;
     
     if (attachments && attachments.length > 0) {
-      console.log('📎 Processing attachments...');
+      console.log('📎 Processing attachments...', {
+        count: attachments.length,
+        hasParsedContent: attachments.some((a: any) => a.parsedContent || a.structured)
+      });
       
       for (const att of attachments) {
         try {
-          const { data, error } = await supabase.functions.invoke('parse-chat-document', {
-            body: {
-              filePath: att.path,
-              fileType: att.type,
-              useVision: att.type.startsWith('image/')
+          // Check if attachment is already pre-processed
+          if (att.parsedContent || att.structured) {
+            console.log(`✅ Using pre-processed attachment: ${att.name}`);
+            
+            const structured = att.structured || {};
+            parsedAttachments.push({
+              name: att.name,
+              type: att.type,
+              size: att.size,
+              parsedContent: att.parsedContent,
+              structured: structured,
+              headers: structured.headers || [],
+              records: structured.records || []
+            });
+            
+            if (structured.records && structured.records.length > 0) {
+              hasStructuredData = true;
             }
-          });
+          } else if (att.path) {
+            // Fallback: parse if not pre-processed
+            console.log(`🔄 Parsing attachment: ${att.name}`);
+            const { data, error } = await supabase.functions.invoke('parse-chat-document', {
+              body: {
+                filePath: att.path,
+                fileType: att.type,
+                useVision: att.type.startsWith('image/')
+              }
+            });
 
-          if (error) throw error;
+            if (error) throw error;
 
-          parsedAttachments.push({
-            name: att.name,
-            type: att.type,
-            size: att.size,
-            parsedContent: data.parsedContent,
-            tables: data.tables,
-            rows: data.rows
-          });
+            parsedAttachments.push({
+              name: att.name,
+              type: att.type,
+              size: att.size,
+              parsedContent: data.parsedContent,
+              tables: data.tables,
+              rows: data.rows
+            });
+          }
         } catch (error) {
           console.error(`Failed to parse attachment ${att.name}:`, error);
         }
       }
+      
+      console.log(`📊 Parsed attachments: ${parsedAttachments.length}, structured data: ${hasStructuredData}`);
     }
 
     // 2. Get current page data for context
@@ -120,12 +148,23 @@ Amostra: ${JSON.stringify(ed.sample_records.slice(0, 2), null, 2)}
 
 ${parsedAttachments.length > 0 ? `
 ANEXOS PROCESSADOS:
-${parsedAttachments.map(pa => `
+${parsedAttachments.map(pa => {
+  if (pa.structured && pa.records) {
+    return `
+Arquivo: ${pa.name} (${pa.type})
+Estrutura detectada: ${pa.records.length} linhas
+Colunas: ${pa.headers?.join(', ') || 'N/A'}
+Primeiras linhas:
+${JSON.stringify(pa.records.slice(0, 3), null, 2)}
+`;
+  }
+  return `
 Arquivo: ${pa.name} (${pa.type})
 ${pa.tables ? `Tabelas detectadas: ${pa.tables} linhas x ${pa.rows} colunas` : ''}
 Conteúdo extraído (primeiras linhas):
 ${JSON.stringify(pa.parsedContent).substring(0, 500)}...
-`).join('\n')}
+`;
+}).join('\n')}
 ` : ''}
 
 ${recentFeedback && recentFeedback.length > 0 ? `
@@ -167,7 +206,7 @@ IMPORTANTE:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        tools: parsedAttachments.length > 0 ? [{
+        tools: (attachments && attachments.length > 0) ? [{
           type: 'function',
           function: {
             name: 'plan_data_operations',
@@ -244,6 +283,84 @@ IMPORTANTE:
         validations: operationsPlan.validation_checks,
         summary: operationsPlan.summary,
         response: `Analisei os anexos e identifiquei **${operationsPlan.operations?.length || 0} operações** possíveis.\n\n${operationsPlan.summary}\n\nGostaria de revisar antes de executar?`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Fallback: If AI didn't call tool but we have structured data, create operations automatically
+    if (hasStructuredData && parsedAttachments.length > 0) {
+      console.log('🔄 AI did not call tool, applying fallback for structured data...');
+      
+      const operations: any[] = [];
+      const validations: any[] = [];
+      
+      for (const attachment of parsedAttachments) {
+        if (!attachment.structured || !attachment.records) continue;
+        
+        const headers = attachment.headers || [];
+        const records = attachment.records || [];
+        
+        // Detect table type based on headers
+        let targetTable = '';
+        if (headers.includes('waste_type') && headers.includes('quantity')) {
+          targetTable = 'waste_logs';
+        } else if (headers.includes('source_name') && headers.includes('scope')) {
+          targetTable = 'emission_sources';
+        } else if (headers.includes('full_name') || headers.includes('email')) {
+          targetTable = 'employees';
+        } else if (headers.includes('goal_name') && headers.includes('target_value')) {
+          targetTable = 'goals';
+        }
+        
+        if (!targetTable) {
+          console.warn(`⚠️ Could not detect table for attachment: ${attachment.name}`);
+          continue;
+        }
+        
+        console.log(`✅ Detected table: ${targetTable} for ${attachment.name} (${records.length} records)`);
+        
+        // Convert each record to INSERT operation
+        for (const record of records) {
+          operations.push({
+            type: 'INSERT',
+            table: targetTable,
+            data: record,
+            confidence: 85,
+            reasoning: `Importado de ${attachment.name}`,
+            reconciliation: {
+              duplicates_found: 0,
+              conflicts_detected: [],
+              resolution_strategy: 'insert_new',
+              similarity_score: 0
+            }
+          });
+        }
+      }
+      
+      // Add validation
+      if (operations.length === 0) {
+        validations.push({
+          check_type: 'completeness',
+          status: 'error',
+          message: 'Nenhum registro detectado nos anexos'
+        });
+      } else {
+        validations.push({
+          check_type: 'completeness',
+          status: 'pass',
+          message: `${operations.length} registro(s) detectado(s)`
+        });
+      }
+      
+      console.log(`📦 Fallback created ${operations.length} operations`);
+      
+      return new Response(JSON.stringify({
+        operations_proposed: true,
+        operations,
+        validations,
+        summary: `Importação automática de ${operations.length} registro(s) dos anexos enviados`,
+        response: `Identifiquei **${operations.length} operações** de importação.\n\nGostaria de revisar antes de executar?`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });

@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Brain, Info, Zap, X, AlertTriangle } from 'lucide-react';
 import { OperationCard, Operation } from './OperationCard';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -37,6 +37,13 @@ export function AIOperationsPreview({
   const [approvedIndices, setApprovedIndices] = useState<Set<number>>(new Set());
   const [rejectedIndices, setRejectedIndices] = useState<Set<number>>(new Set());
   const [isExecuting, setIsExecuting] = useState(false);
+
+  // Sync operations state when props change
+  useEffect(() => {
+    setOperations(initialOperations || []);
+    setApprovedIndices(new Set());
+    setRejectedIndices(new Set());
+  }, [initialOperations]);
 
   // Group operations by table
   const groupedByTable = useMemo(() => {
