@@ -30,6 +30,80 @@ const corsHeaders = {
 // HELPER: ENSURE VALID MESSAGE
 // ============================================
 /**
+ * Convert bulk import tool call to operations array format
+ */
+function convertBulkImportToOperations(
+  toolCall: any,
+  functionArgs: any
+): any[] {
+  const tableName = getTableNameFromTool(toolCall.function.name);
+  const records = functionArgs.emissions || functionArgs.employees || functionArgs.goals || functionArgs.waste_logs || [];
+  
+  console.log('🔄 Converting bulk import:', {
+    toolName: toolCall.function.name,
+    tableName,
+    recordsCount: records.length
+  });
+  
+  return records.map((record: any, index: number) => ({
+    type: 'INSERT' as const,
+    table: tableName,
+    data: record,
+    confidence: 85,
+    reasoning: `Registro ${index + 1} de ${records.length} do arquivo importado`,
+    reconciliation: {
+      duplicates_found: 0,
+      conflicts_detected: [],
+      resolution_strategy: 'insert_new',
+      similarity_score: 0
+    }
+  }));
+}
+
+/**
+ * Map tool name to target table
+ */
+function getTableNameFromTool(toolName: string): string {
+  const mapping: Record<string, string> = {
+    'bulk_import_emissions': 'emission_sources',
+    'bulk_import_employees': 'employees',
+    'bulk_import_goals': 'goals',
+    'bulk_import_waste': 'waste_logs'
+  };
+  return mapping[toolName] || 'unknown';
+}
+
+/**
+ * Generate validations for bulk import
+ */
+function generateValidations(functionArgs: any): any[] {
+  const validations: any[] = [];
+  
+  const records = functionArgs.emissions || functionArgs.employees || functionArgs.goals || functionArgs.waste_logs || [];
+  
+  // Check for empty or missing data
+  if (records.length === 0) {
+    validations.push({
+      check_type: 'completeness',
+      status: 'error',
+      message: 'Nenhum registro encontrado para importação.'
+    });
+  }
+  
+  // Check for potential duplicates (simplified check)
+  const uniqueKeys = new Set(records.map((r: any) => JSON.stringify(r)));
+  if (uniqueKeys.size < records.length) {
+    validations.push({
+      check_type: 'duplicates',
+      status: 'warning',
+      message: `${records.length - uniqueKeys.size} registro(s) duplicado(s) detectado(s).`
+    });
+  }
+  
+  return validations;
+}
+
+/**
  * Ensures AI response has valid, non-empty content
  * Returns intelligent fallback based on context if content is empty
  */
@@ -1707,6 +1781,38 @@ ${attachmentContext}`;
         const writeCall = writeCalls[0]; // Use first write call
         
         const functionArgs = JSON.parse(writeCall.function.arguments);
+        
+        // Check if it's a bulk import tool
+        const isBulkImport = writeCall.function.name.startsWith('bulk_import_');
+        
+        if (isBulkImport) {
+          console.log('📊 Bulk import detected - converting to operations format');
+          
+          // Convert to operations format for preview
+          const operations = convertBulkImportToOperations(writeCall, functionArgs);
+          
+          // Generate validations
+          const validations = generateValidations(functionArgs);
+          
+          const validMessage = `📊 Identifiquei ${operations.length} registro(s) para importar. Revise antes de executar.`;
+          
+          console.log('📤 Returning operations for preview:', {
+            toolName: writeCall.function.name,
+            operationsCount: operations.length,
+            validationsCount: validations.length
+          });
+          
+          return new Response(JSON.stringify({
+            message: validMessage,
+            operations_proposed: true,
+            operations: operations,
+            validations: validations,
+            summary: `Importação de ${operations.length} registro(s)`,
+            bulkImportTool: writeCall.function.name
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         
         // VALIDATION: Ensure message is valid for pending action
         const validMessage = ensureValidMessage(

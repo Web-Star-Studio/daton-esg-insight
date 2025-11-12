@@ -83,6 +83,30 @@ export interface UseChatAssistantReturn {
   processingProgress: number;
 }
 
+/**
+ * Map table to bulk import tool name
+ */
+function getToolFromTable(table: string): string | null {
+  const mapping: Record<string, string> = {
+    'emission_sources': 'bulk_import_emissions',
+    'employees': 'bulk_import_employees',
+    'goals': 'bulk_import_goals',
+    'waste_logs': 'bulk_import_waste'
+  };
+  return mapping[table] || null;
+}
+
+/**
+ * Prepare bulk import params based on tool name
+ */
+function getBulkImportParams(toolName: string, records: any[]): any {
+  const paramKey = toolName.replace('bulk_import_', '');
+  return {
+    [paramKey]: records,
+    skip_duplicates: true
+  };
+}
+
 export function useChatAssistant(): UseChatAssistantReturn {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -1357,42 +1381,69 @@ Qual informação você precisa?`,
         const companyId = user?.company.id;
         if (!companyId) throw new Error('Company ID not found');
 
-        // Insert/Update operations sequentially to maintain data integrity
-        for (const op of operations) {
-          try {
-            if (op.type === 'INSERT') {
-              const { error } = await supabase
-                .from(op.table as any)
-                .insert({ ...op.data, company_id: companyId });
-              if (error) throw error;
-            } else if (op.type === 'UPDATE') {
-              const { error } = await supabase
-                .from(op.table as any)
-                .update(op.data)
-                .match({ ...op.where_clause, company_id: companyId });
-              if (error) throw error;
-            } else if (op.type === 'DELETE') {
-              const { error } = await supabase
-                .from(op.table as any)
-                .delete()
-                .match({ ...op.where_clause, company_id: companyId });
-              if (error) throw error;
-            }
+        // Group operations by table to detect bulk imports
+        const operationsByTable = operations.reduce((acc, op) => {
+          if (!acc[op.table]) acc[op.table] = [];
+          acc[op.table].push(op);
+          return acc;
+        }, {} as Record<string, Operation[]>);
+        
+        console.log('📦 Operations grouped by table:', Object.keys(operationsByTable));
+        
+        // Execute bulk imports
+        for (const [table, ops] of Object.entries(operationsByTable)) {
+          const bulkImportTool = getToolFromTable(table);
+          
+          if (bulkImportTool && ops.length > 1) {
+            console.log(`📦 Bulk importing ${ops.length} records to ${table} using ${bulkImportTool}`);
             
-            // Log operation history
-            await supabase.from('ai_operation_history' as any).insert({
-              company_id: companyId,
-              user_id: user.id,
-              operation_type: op.type,
-              table_name: op.table,
-              operation_data: op.data,
-              confidence: op.confidence,
-              executed_at: new Date().toISOString()
+            // Prepare records for bulk import
+            const records = ops.map(o => o.data);
+            
+            // Call the bulk import function via write tools
+            const { data, error } = await supabase.functions.invoke('daton-ai-chat', {
+              body: {
+                companyId,
+                confirmed: true,
+                action: {
+                  toolName: bulkImportTool,
+                  params: getBulkImportParams(bulkImportTool, records)
+                }
+              }
             });
             
-          } catch (error) {
-            console.error(`Failed to execute ${op.type} on ${op.table}:`, error);
-            throw error;
+            if (error) throw error;
+            
+            console.log('✅ Bulk import result:', data);
+          } else {
+            // Fallback to direct insert for single operations or non-bulk tables
+            console.log(`💾 Direct insert for ${ops.length} operations on ${table}`);
+            
+            for (const op of ops) {
+              try {
+                if (op.type === 'INSERT') {
+                  const { error } = await supabase
+                    .from(op.table as any)
+                    .insert({ ...op.data, company_id: companyId });
+                  if (error) throw error;
+                } else if (op.type === 'UPDATE') {
+                  const { error } = await supabase
+                    .from(op.table as any)
+                    .update(op.data)
+                    .match({ ...op.where_clause, company_id: companyId });
+                  if (error) throw error;
+                } else if (op.type === 'DELETE') {
+                  const { error } = await supabase
+                    .from(op.table as any)
+                    .delete()
+                    .match({ ...op.where_clause, company_id: companyId });
+                  if (error) throw error;
+                }
+              } catch (error) {
+                console.error(`Failed to execute ${op.type} on ${op.table}:`, error);
+                throw error;
+              }
+            }
           }
         }
         
@@ -1400,11 +1451,13 @@ Qual informação você precisa?`,
         setPendingOperations([]);
         setShowOperationsPreview(false);
         
+        toast.success(`✅ ${operations.length} registro(s) importado(s) com sucesso!`);
+        
         // Add success message
         const successMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: `✅ Executei ${operations.length} operação(ões) com sucesso! Os dados foram inseridos/atualizados no sistema.`,
+          content: `✅ Executei ${operations.length} operação(ões) com sucesso! Os dados foram inseridos no sistema.`,
           timestamp: new Date()
         };
         setMessages(prev => [...prev, successMessage]);
