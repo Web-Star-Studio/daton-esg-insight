@@ -613,20 +613,54 @@ serve(async (req) => {
               continue;
             }
 
-            // Extract and validate suppliers from this row with CNPJ validation
+            // Extract and validate suppliers from this row with STRICT validation
             const extractSupplier = (colIndex: number, category: string, cnpjColIndex?: number) => {
               if (colIndex >= 0 && values[colIndex]) {
                 const name = values[colIndex].trim();
-                // Validate: minimum length and not just numbers
-                if (name.length >= 2 && !/^\d+$/.test(name)) {
-                  let cnpj = cnpjColIndex && cnpjColIndex >= 0 ? values[cnpjColIndex]?.trim() : undefined;
-                  // Validate CNPJ if present
-                  if (cnpj && !validators.cnpj(cnpj)) {
-                    console.warn(`⚠️ Invalid CNPJ for ${name}: ${cnpj}`);
-                    cnpj = undefined; // Don't use invalid CNPJ
-                  }
-                  return { name, category, cnpj: cnpj || undefined };
+                
+                // 🛡️ CRITICAL: Reject dates, monetary values, and invalid names
+                // Check if it's a date (DD/MM/YYYY, YYYY-MM-DD, etc.)
+                const datePattern = /^\d{1,4}[\/\-]\d{1,2}[\/\-]\d{1,4}$/;
+                if (datePattern.test(name)) {
+                  console.warn(`⚠️ Row ${i + 1}: Rejecting date as supplier name: "${name}"`);
+                  return null;
                 }
+                
+                // Check if it's a monetary value (R$, $, contains currency symbols)
+                const monetaryPattern = /^(R\$|US\$|\$|€)?\s*[\d.,]+$/;
+                if (monetaryPattern.test(name)) {
+                  console.warn(`⚠️ Row ${i + 1}: Rejecting monetary value as supplier name: "${name}"`);
+                  return null;
+                }
+                
+                // Check minimum length (company names should be at least 5 characters)
+                if (name.length < 5) {
+                  console.warn(`⚠️ Row ${i + 1}: Rejecting too short name: "${name}"`);
+                  return null;
+                }
+                
+                // Check if it's only numbers or only special characters
+                if (!/[a-zA-Z]/.test(name)) {
+                  console.warn(`⚠️ Row ${i + 1}: Rejecting non-alphabetic name: "${name}"`);
+                  return null;
+                }
+                
+                // Must have at least 3 alphabetic characters
+                const alphaCount = (name.match(/[a-zA-Z]/g) || []).length;
+                if (alphaCount < 3) {
+                  console.warn(`⚠️ Row ${i + 1}: Rejecting name with insufficient letters: "${name}"`);
+                  return null;
+                }
+                
+                // Validate CNPJ if present
+                let cnpj = cnpjColIndex && cnpjColIndex >= 0 ? values[cnpjColIndex]?.trim() : undefined;
+                if (cnpj && !validators.cnpj(cnpj)) {
+                  console.warn(`⚠️ Row ${i + 1}: Invalid CNPJ for ${name}: ${cnpj}`);
+                  cnpj = undefined;
+                }
+                
+                console.log(`✅ Row ${i + 1}: Valid supplier name: "${name}" (${category})`);
+                return { name, category, cnpj: cnpj || undefined };
               }
               return null;
             };
