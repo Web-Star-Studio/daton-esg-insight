@@ -395,119 +395,204 @@ serve(async (req) => {
             throw new Error('CSV must have at least headers and one data row');
           }
 
-          // Extract headers
-          const headerLine = lines[0];
-          const delimiter = headerLine.includes(';') ? ';' : ',';
+          // 🔍 Intelligent header detection
+          const detectHeaderRow = (csvLines: string[]): { index: number, delimiter: string } => {
+            const keywords = ['data', 'tipo', 'quantidade', 'transportador', 'receptor', 'residuo', 'custo', 'unidade', 'gerador', 'cnpj'];
+            const maxLinesToCheck = Math.min(5, csvLines.length);
+            
+            for (let i = 0; i < maxLinesToCheck; i++) {
+              // Try both delimiters
+              const delimiter = csvLines[i].includes(';') ? ';' : ',';
+              const cells = csvLines[i].split(delimiter).map(c => c.trim().toLowerCase());
+              
+              // Skip if too many empty cells (>60%)
+              const emptyCount = cells.filter(c => !c).length;
+              if (emptyCount > cells.length * 0.6) {
+                console.log(`⏭️ Skipping line ${i}: too many empty cells (${emptyCount}/${cells.length})`);
+                continue;
+              }
+              
+              // Check for keyword matches
+              const matchCount = keywords.filter(kw => 
+                cells.some(cell => cell.includes(kw))
+              ).length;
+              
+              // Check that it doesn't contain mostly numbers (data rows have numbers)
+              const numericCells = cells.filter(c => {
+                const cleaned = c.replace(/[^\d.-]/g, '');
+                return cleaned && !isNaN(parseFloat(cleaned));
+              }).length;
+              const hasMoreTextThanNumbers = numericCells < cells.length * 0.5;
+              
+              console.log(`🔍 Line ${i} analysis: ${matchCount} keywords, ${numericCells}/${cells.length} numeric cells`);
+              
+              if (matchCount >= 3 && hasMoreTextThanNumbers) {
+                console.log(`✅ Header row detected at line ${i}`);
+                return { index: i, delimiter };
+              }
+            }
+            
+            console.log('⚠️ No clear header found, using first line');
+            return { index: 0, delimiter: lines[0].includes(';') ? ';' : ',' };
+          };
+
+          const headerInfo = detectHeaderRow(lines);
+          const headerLine = lines[headerInfo.index];
+          const delimiter = headerInfo.delimiter;
           const headers = headerLine.split(delimiter).map((h: string) => h.trim().toLowerCase());
           
-          console.log(`📋 CSV Headers (${headers.length}):`, headers);
+          console.log(`📋 CSV Headers detected at line ${headerInfo.index} (${headers.length} columns):`, headers.slice(0, 10));
 
-          // Process data rows
-          const dataRows = lines.slice(1).filter(line => line.trim());
-          console.log(`📊 Processing ${dataRows.length} data rows...`);
+          // Process data rows (skip header and empty lines)
+          const dataRows = lines.slice(headerInfo.index + 1).filter(line => line.trim());
+          console.log(`📊 Data lines to process: ${dataRows.length}`);
 
           // Track unique suppliers to avoid duplicates
           const uniqueSuppliers = new Map<string, any>();
           const wasteLogs: any[] = [];
 
-          // Column mapping helpers
+          // Enhanced column mapping helpers with fuzzy matching
           const findColumn = (aliases: string[]) => {
             for (const alias of aliases) {
-              const idx = headers.findIndex(h => 
-                h.includes(alias) || 
-                h.replace(/[_\s]/g, '').includes(alias.replace(/[_\s]/g, ''))
-              );
+              const normalizedAlias = alias.replace(/[_\s-]/g, '').toLowerCase();
+              const idx = headers.findIndex(h => {
+                const normalizedHeader = h.replace(/[_\s-]/g, '').toLowerCase();
+                return normalizedHeader.includes(normalizedAlias) || normalizedAlias.includes(normalizedHeader);
+              });
               if (idx !== -1) return idx;
             }
             return -1;
           };
 
-          // Find column indices
+          // Find column indices with expanded aliases
           const colIndices = {
-            transportador: findColumn(['transportador', 'transporte', 'empresa_transporte']),
-            receptor: findColumn(['receptor', 'destinador', 'destino', 'empresa_destino']),
-            gerador: findColumn(['gerador', 'origem', 'empresa_origem']),
-            cnpj_transportador: findColumn(['cnpj_transportador', 'cnpj_transporte']),
-            cnpj_receptor: findColumn(['cnpj_receptor', 'cnpj_destino', 'cnpj_destinador']),
-            tipo_residuo: findColumn(['tipo', 'tipo_residuo', 'residuo', 'waste']),
-            quantidade: findColumn(['quantidade', 'qtd', 'volume', 'peso']),
+            transportador: findColumn(['transportador', 'transportadora', 'transporte', 'empresa_transporte']),
+            receptor: findColumn(['receptor', 'destinador', 'destino', 'destinatario', 'empresa_destino']),
+            gerador: findColumn(['gerador', 'origem', 'remetente', 'empresa_origem']),
+            cnpj_transportador: findColumn(['cnpjtransportador', 'cnpj_transportador', 'cnpj_transporte']),
+            cnpj_receptor: findColumn(['cnpjreceptor', 'cnpj_receptor', 'cnpj_destino', 'cnpj_destinador']),
+            tipo_residuo: findColumn(['tiporesiduos', 'tipoderesiduos', 'tipo', 'residuo', 'resduos', 'waste']),
+            quantidade: findColumn(['quantidade', 'quant', 'qtd', 'qtde', 'volume', 'peso', 'weight']),
             unidade: findColumn(['unidade', 'un', 'medida', 'unit']),
-            data: findColumn(['data', 'data_coleta', 'data_geracao', 'date']),
-            custo: findColumn(['custo', 'valor', 'preco', 'price'])
+            data: findColumn(['data', 'dt', 'data_coleta', 'data_geracao', 'date']),
+            custo: findColumn(['custo', 'valor', 'preco', 'price', 'cost'])
           };
 
           console.log('📍 Column mapping:', colIndices);
+          
+          // Validate essential columns
+          const essentialColumns = ['tipo_residuo', 'quantidade'];
+          const missingColumns = essentialColumns.filter(col => colIndices[col as keyof typeof colIndices] === -1);
+          if (missingColumns.length > 0) {
+            console.warn('⚠️ Missing essential columns:', missingColumns);
+            console.warn('📋 Available headers:', headers);
+          }
 
-          // Process each row
+          // Process each row with validation
           for (let i = 0; i < dataRows.length; i++) {
             const row = dataRows[i];
             const values = row.split(delimiter).map((v: string) => v.trim());
 
-            // Extract suppliers from this row
-            const suppliers = [
-              {
-                name: colIndices.transportador >= 0 ? values[colIndices.transportador] : null,
-                cnpj: colIndices.cnpj_transportador >= 0 ? values[colIndices.cnpj_transportador] : null,
-                category: 'Transporte'
-              },
-              {
-                name: colIndices.receptor >= 0 ? values[colIndices.receptor] : null,
-                cnpj: colIndices.cnpj_receptor >= 0 ? values[colIndices.cnpj_receptor] : null,
-                category: 'Destinação'
-              },
-              {
-                name: colIndices.gerador >= 0 ? values[colIndices.gerador] : null,
-                cnpj: null,
-                category: 'Gerador'
-              }
-            ];
-
-            // Add unique suppliers
-            for (const supplier of suppliers) {
-              if (supplier.name && supplier.name.trim() !== '') {
-                const normalizedName = supplier.name.trim().toUpperCase();
-                if (!uniqueSuppliers.has(normalizedName)) {
-                  uniqueSuppliers.set(normalizedName, {
-                    name: supplier.name.trim(),
-                    cnpj: supplier.cnpj?.trim() || null,
-                    category: supplier.category
-                  });
-                }
-              }
+            // Skip empty or invalid rows
+            const nonEmptyCells = values.filter(v => v).length;
+            if (nonEmptyCells < 2) {
+              console.log(`⏭️ Skipping row ${i + 1}: insufficient data (${nonEmptyCells} cells)`);
+              continue;
             }
 
-            // Extract waste log data
-            const wasteLog: any = {};
+            // Extract and validate suppliers from this row
+            const extractSupplier = (colIndex: number, category: string, cnpjColIndex?: number) => {
+              if (colIndex >= 0 && values[colIndex]) {
+                const name = values[colIndex].trim();
+                // Validate: minimum length and not just numbers
+                if (name.length >= 2 && !/^\d+$/.test(name)) {
+                  const cnpj = cnpjColIndex && cnpjColIndex >= 0 ? values[cnpjColIndex]?.trim() : undefined;
+                  return { name, category, cnpj: cnpj || undefined };
+                }
+              }
+              return null;
+            };
+
+            const suppliers = [
+              extractSupplier(colIndices.transportador, 'Transporte', colIndices.cnpj_transportador),
+              extractSupplier(colIndices.receptor, 'Destinação', colIndices.cnpj_receptor),
+              extractSupplier(colIndices.gerador, 'Gerador'),
+            ].filter(s => s !== null);
+
+            // Add unique suppliers (deduplicate by normalized name)
+            suppliers.forEach(supplier => {
+              if (supplier) {
+                const normalizedName = supplier.name.toLowerCase().trim();
+                if (!uniqueSuppliers.has(normalizedName)) {
+                  uniqueSuppliers.set(normalizedName, supplier);
+                }
+              }
+            });
+
+            // Extract and normalize waste log data with validation
+            const wasteLog: any = {
+              line_number: i + 1,
+              raw_data: values.slice(0, 10).join(',') // Limit raw data size
+            };
             
+            // Extract and validate waste description
             if (colIndices.tipo_residuo >= 0 && values[colIndices.tipo_residuo]) {
               wasteLog.waste_description = values[colIndices.tipo_residuo].trim();
             }
+            
+            // Extract and validate quantity
             if (colIndices.quantidade >= 0 && values[colIndices.quantidade]) {
               const qtyStr = values[colIndices.quantidade].replace(/[^\d.,]/g, '').replace(',', '.');
-              wasteLog.quantity = parseFloat(qtyStr) || null;
+              const quantity = parseFloat(qtyStr);
+              if (!isNaN(quantity) && quantity > 0) {
+                wasteLog.quantity = quantity;
+              }
             }
+            
+            // Extract unit
             if (colIndices.unidade >= 0 && values[colIndices.unidade]) {
               wasteLog.unit = values[colIndices.unidade].trim();
             }
+            
+            // Extract and normalize date
             if (colIndices.data >= 0 && values[colIndices.data]) {
               wasteLog.collection_date = values[colIndices.data].trim();
             }
+            
+            // Extract cost
             if (colIndices.custo >= 0 && values[colIndices.custo]) {
               const costStr = values[colIndices.custo].replace(/[^\d.,]/g, '').replace(',', '.');
-              wasteLog.cost = parseFloat(costStr) || null;
+              const cost = parseFloat(costStr);
+              if (!isNaN(cost)) {
+                wasteLog.cost = cost;
+              }
             }
 
-            // Add transporter/destination names
-            if (suppliers[0].name) wasteLog.transporter_name = suppliers[0].name.trim();
-            if (suppliers[1].name) wasteLog.destination_name = suppliers[1].name.trim();
+            // Add supplier references
+            const transportador = suppliers.find((s: any) => s && s.category === 'Transporte');
+            const receptor = suppliers.find((s: any) => s && s.category === 'Destinação');
+            if (transportador) wasteLog.transporter_name = transportador.name;
+            if (receptor) wasteLog.destination_name = receptor.name;
 
-            // Only add if has minimum required data
+            // Only add waste log if it has minimum required data
             if (wasteLog.waste_description || wasteLog.quantity) {
               wasteLogs.push(wasteLog);
+            } else {
+              console.log(`⏭️ Skipping row ${i + 1}: no waste description or quantity`);
+            }
+
+            // Log progress every 50 rows
+            if ((i + 1) % 50 === 0) {
+              console.log(`📊 Progress: ${i + 1}/${dataRows.length} rows, ${uniqueSuppliers.size} suppliers, ${wasteLogs.length} waste logs`);
             }
           }
 
-          console.log(`✅ Extracted: ${uniqueSuppliers.size} unique suppliers, ${wasteLogs.length} waste logs`);
+      console.log(`✅ CSV Processing Complete:`, {
+        total_rows_processed: dataLines.length,
+        unique_suppliers: uniqueSuppliers.size,
+        waste_logs: wasteLogs.length,
+        supplier_names: Array.from(uniqueSuppliers.values()).map(s => s.name).slice(0, 5)
+      });
 
           // 1. CREATE EXTRACTION JOB
           let userId = document.created_by;
@@ -591,7 +676,12 @@ serve(async (req) => {
             if (!previewError) wasteLogPreviewsCreated++;
           }
 
-          console.log(`✅ Created ${supplierPreviewsCreated} supplier previews + ${wasteLogPreviewsCreated} waste log previews`);
+          console.log(`✅ Previews Created Successfully:`, {
+            suppliers: supplierPreviewsCreated,
+            waste_logs: wasteLogPreviewsCreated,
+            total_previews: supplierPreviewsCreated + wasteLogPreviewsCreated,
+            extraction_job_id: job.id
+          });
 
           // Log metrics
           await supabaseClient.from('processing_metrics').insert({
