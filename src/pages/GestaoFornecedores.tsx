@@ -49,6 +49,7 @@ export default function GestaoFornecedores() {
   const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isQualificationOpen, setIsQualificationOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -160,8 +161,17 @@ export default function GestaoFornecedores() {
     setIsQualificationOpen(true);
   };
 
+  const handleSupplierEdit = (supplier: SupplierType) => {
+    setSelectedSupplier(supplier);
+    setIsEditModalOpen(true);
+  };
+
   const handleModalSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+  };
+
+  const isSupplierIncomplete = (supplier: SupplierType) => {
+    return !supplier.cnpj || !supplier.contact_email || !supplier.category;
   };
 
   if (isLoading) {
@@ -406,7 +416,15 @@ export default function GestaoFornecedores() {
                         <TableRow key={supplier.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{supplier.name}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{supplier.name}</span>
+                                {isSupplierIncomplete(supplier) && (
+                                  <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    Dados incompletos
+                                  </Badge>
+                                )}
+                              </div>
                               {supplier.cnpj && (
                                 <div className="text-sm text-muted-foreground">
                                   CNPJ: {supplier.cnpj}
@@ -415,10 +433,12 @@ export default function GestaoFornecedores() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {supplier.category && (
+                            {supplier.category ? (
                               <Badge variant="outline">
                                 {supplier.category}
                               </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Não definida</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -461,10 +481,18 @@ export default function GestaoFornecedores() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleSupplierView(supplier)}
+                              >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleSupplierEdit(supplier)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </div>
@@ -611,6 +639,13 @@ export default function GestaoFornecedores() {
         isOpen={isQualificationOpen}
         onClose={() => setIsQualificationOpen(false)}
         onSuccess={handleModalSuccess}
+      />
+
+      <SupplierDetailsModal
+        supplier={selectedSupplier}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSupplierUpdate={handleModalSuccess}
       />
     </>
   );

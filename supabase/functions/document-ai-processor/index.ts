@@ -708,9 +708,19 @@ const TABLE_RENAMES: Record<string, Record<string, string>> = {
     empresa: 'name',
     razao_social: 'name',
     nome: 'name',
+    cnpj: 'cnpj',
+    cnpj_transportador: 'cnpj',
+    cnpj_receptor: 'cnpj',
     email: 'contact_email',
+    'e-mail': 'contact_email',
+    'e_mail': 'contact_email',
     telefone: 'contact_phone',
-    endereco: 'address'
+    tel: 'contact_phone',
+    fone: 'contact_phone',
+    endereco: 'address',
+    endereço: 'address',
+    categoria: 'category',
+    tipo: 'category'
   },
   waste_logs: {
     tipo_residuo: 'waste_description',
