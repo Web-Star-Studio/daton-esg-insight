@@ -1783,8 +1783,35 @@ ${attachmentContext}`;
         }
       }
       
+      // Check for pending extracted data after attachment processing
+      let enrichedMessage = validMessage;
+      if (attachmentsToUse && attachmentsToUse.length > 0) {
+        try {
+          console.log('🔍 Checking for pending extracted data...');
+          const { data: pendingPreviews, error: previewError } = await supabaseClient
+            .from('extracted_data_preview')
+            .select('id, total_records, avg_confidence, target_table')
+            .eq('company_id', companyId)
+            .eq('validation_status', 'Pendente')
+            .order('created_at', { ascending: false })
+            .limit(10);
+          
+          if (!previewError && pendingPreviews && pendingPreviews.length > 0) {
+            const totalRecords = pendingPreviews.reduce((sum, p) => sum + (p.total_records || 0), 0);
+            const avgConfidence = pendingPreviews.reduce((sum, p) => sum + (p.avg_confidence || 0), 0) / pendingPreviews.length;
+            
+            console.log(`✅ Found ${pendingPreviews.length} pending previews with ${totalRecords} total records`);
+            
+            enrichedMessage += `\n\n---\n\n✅ **Processamento Concluído!**\n\n📊 **${totalRecords} registros** foram extraídos com confiança média de **${Math.round(avgConfidence * 100)}%**.\n\n🔍 **Próximo Passo:** [Revisar e Aprovar Dados](/reconciliacao-documentos)\n\nVocê pode revisar, editar e aprovar os dados extraídos na página de Reconciliação de Documentos.`;
+          }
+        } catch (err) {
+          console.error('❌ Error checking for pending data:', err);
+          // Continue without enrichment
+        }
+      }
+      
       return new Response(JSON.stringify({ 
-        message: validMessage,
+        message: enrichedMessage,
         dataAccessed: toolResults.map((r: any) => r.name),
         insights: insights.length > 0 ? insights : undefined,
         visualizations: visualizations.length > 0 ? visualizations : undefined
@@ -1814,8 +1841,35 @@ ${attachmentContext}`;
       supabaseClient
     );
     
+    // Check for pending extracted data after attachment processing
+    let enrichedMessage = validMessage;
+    if (attachmentsToUse && attachmentsToUse.length > 0) {
+      try {
+        console.log('🔍 Checking for pending extracted data (no tool calls)...');
+        const { data: pendingPreviews, error: previewError } = await supabaseClient
+          .from('extracted_data_preview')
+          .select('id, total_records, avg_confidence, target_table')
+          .eq('company_id', companyId)
+          .eq('validation_status', 'Pendente')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (!previewError && pendingPreviews && pendingPreviews.length > 0) {
+          const totalRecords = pendingPreviews.reduce((sum, p) => sum + (p.total_records || 0), 0);
+          const avgConfidence = pendingPreviews.reduce((sum, p) => sum + (p.avg_confidence || 0), 0) / pendingPreviews.length;
+          
+          console.log(`✅ Found ${pendingPreviews.length} pending previews with ${totalRecords} total records`);
+          
+          enrichedMessage += `\n\n---\n\n✅ **Processamento Concluído!**\n\n📊 **${totalRecords} registros** foram extraídos com confiança média de **${Math.round(avgConfidence * 100)}%**.\n\n🔍 **Próximo Passo:** [Revisar e Aprovar Dados](/reconciliacao-documentos)\n\nVocê pode revisar, editar e aprovar os dados extraídos na página de Reconciliação de Documentos.`;
+        }
+      } catch (err) {
+        console.error('❌ Error checking for pending data:', err);
+        // Continue without enrichment
+      }
+    }
+    
     return new Response(JSON.stringify({ 
-      message: validMessage,
+      message: enrichedMessage,
       insights: insights.length > 0 ? insights : undefined
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
