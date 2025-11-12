@@ -360,48 +360,307 @@ serve(async (req) => {
       
       try {
         console.log('📝 Creating extraction job and preview records...');
-        console.log('📊 Preview creation data:', {
-          mappings: classification.target_mappings.map(m => ({
-            table: m.table_name,
-            field_count: Object.keys(m.field_mappings || {}).length,
-            fields: Object.keys(m.field_mappings || {})
-          }))
-        });
         
-        // 1. BUSCAR USER_ID CORRETAMENTE
-        let userId = document.created_by;
-        if (!userId) {
-          const { data: { user } } = await supabaseClient.auth.getUser();
-          userId = user?.id || document.company_id; // Fallback para company_id
-          console.log('⚠️ No created_by, using fallback user_id:', userId);
-        }
+        // ✅ DETECT CSV/EXCEL FOR LINE-BY-LINE PROCESSING
+        const isStructuredFile = document.file_type.includes('csv') || 
+                                  document.file_type.includes('spreadsheet') ||
+                                  document.file_type.includes('excel');
         
-        // 2. CRIAR O JOB PRIMEIRO
-        const { data: job, error: jobError } = await supabaseClient
-          .from('document_extraction_jobs')
-          .insert({
+        if (isStructuredFile) {
+          console.log('📊 CSV/Excel detected - initiating line-by-line processing...');
+          
+          // Parse CSV with full extraction
+          const { data: fullParse, error: fullParseError } = await supabaseClient.functions.invoke(
+            'parse-chat-document',
+            {
+              body: {
+                filePath: normalizedPath,
+                fileType: document.file_type,
+                fullExtraction: true
+              }
+            }
+          );
+
+          if (fullParseError || !fullParse?.success) {
+            console.error('❌ Failed to parse CSV for line-by-line processing:', fullParseError);
+            throw new Error('Failed to parse CSV structure');
+          }
+
+          console.log('✅ CSV parsed successfully, processing rows...');
+          
+          // Parse CSV content
+          const lines = fullParse.parsedContent.split('\n').filter((l: string) => l.trim());
+          
+          if (lines.length < 2) {
+            throw new Error('CSV must have at least headers and one data row');
+          }
+
+          // Extract headers
+          const headerLine = lines[0];
+          const delimiter = headerLine.includes(';') ? ';' : ',';
+          const headers = headerLine.split(delimiter).map((h: string) => h.trim().toLowerCase());
+          
+          console.log(`📋 CSV Headers (${headers.length}):`, headers);
+
+          // Process data rows
+          const dataRows = lines.slice(1).filter(line => line.trim());
+          console.log(`📊 Processing ${dataRows.length} data rows...`);
+
+          // Track unique suppliers to avoid duplicates
+          const uniqueSuppliers = new Map<string, any>();
+          const wasteLogs: any[] = [];
+
+          // Column mapping helpers
+          const findColumn = (aliases: string[]) => {
+            for (const alias of aliases) {
+              const idx = headers.findIndex(h => 
+                h.includes(alias) || 
+                h.replace(/[_\s]/g, '').includes(alias.replace(/[_\s]/g, ''))
+              );
+              if (idx !== -1) return idx;
+            }
+            return -1;
+          };
+
+          // Find column indices
+          const colIndices = {
+            transportador: findColumn(['transportador', 'transporte', 'empresa_transporte']),
+            receptor: findColumn(['receptor', 'destinador', 'destino', 'empresa_destino']),
+            gerador: findColumn(['gerador', 'origem', 'empresa_origem']),
+            cnpj_transportador: findColumn(['cnpj_transportador', 'cnpj_transporte']),
+            cnpj_receptor: findColumn(['cnpj_receptor', 'cnpj_destino', 'cnpj_destinador']),
+            tipo_residuo: findColumn(['tipo', 'tipo_residuo', 'residuo', 'waste']),
+            quantidade: findColumn(['quantidade', 'qtd', 'volume', 'peso']),
+            unidade: findColumn(['unidade', 'un', 'medida', 'unit']),
+            data: findColumn(['data', 'data_coleta', 'data_geracao', 'date']),
+            custo: findColumn(['custo', 'valor', 'preco', 'price'])
+          };
+
+          console.log('📍 Column mapping:', colIndices);
+
+          // Process each row
+          for (let i = 0; i < dataRows.length; i++) {
+            const row = dataRows[i];
+            const values = row.split(delimiter).map((v: string) => v.trim());
+
+            // Extract suppliers from this row
+            const suppliers = [
+              {
+                name: colIndices.transportador >= 0 ? values[colIndices.transportador] : null,
+                cnpj: colIndices.cnpj_transportador >= 0 ? values[colIndices.cnpj_transportador] : null,
+                category: 'Transporte'
+              },
+              {
+                name: colIndices.receptor >= 0 ? values[colIndices.receptor] : null,
+                cnpj: colIndices.cnpj_receptor >= 0 ? values[colIndices.cnpj_receptor] : null,
+                category: 'Destinação'
+              },
+              {
+                name: colIndices.gerador >= 0 ? values[colIndices.gerador] : null,
+                cnpj: null,
+                category: 'Gerador'
+              }
+            ];
+
+            // Add unique suppliers
+            for (const supplier of suppliers) {
+              if (supplier.name && supplier.name.trim() !== '') {
+                const normalizedName = supplier.name.trim().toUpperCase();
+                if (!uniqueSuppliers.has(normalizedName)) {
+                  uniqueSuppliers.set(normalizedName, {
+                    name: supplier.name.trim(),
+                    cnpj: supplier.cnpj?.trim() || null,
+                    category: supplier.category
+                  });
+                }
+              }
+            }
+
+            // Extract waste log data
+            const wasteLog: any = {};
+            
+            if (colIndices.tipo_residuo >= 0 && values[colIndices.tipo_residuo]) {
+              wasteLog.waste_description = values[colIndices.tipo_residuo].trim();
+            }
+            if (colIndices.quantidade >= 0 && values[colIndices.quantidade]) {
+              const qtyStr = values[colIndices.quantidade].replace(/[^\d.,]/g, '').replace(',', '.');
+              wasteLog.quantity = parseFloat(qtyStr) || null;
+            }
+            if (colIndices.unidade >= 0 && values[colIndices.unidade]) {
+              wasteLog.unit = values[colIndices.unidade].trim();
+            }
+            if (colIndices.data >= 0 && values[colIndices.data]) {
+              wasteLog.collection_date = values[colIndices.data].trim();
+            }
+            if (colIndices.custo >= 0 && values[colIndices.custo]) {
+              const costStr = values[colIndices.custo].replace(/[^\d.,]/g, '').replace(',', '.');
+              wasteLog.cost = parseFloat(costStr) || null;
+            }
+
+            // Add transporter/destination names
+            if (suppliers[0].name) wasteLog.transporter_name = suppliers[0].name.trim();
+            if (suppliers[1].name) wasteLog.destination_name = suppliers[1].name.trim();
+
+            // Only add if has minimum required data
+            if (wasteLog.waste_description || wasteLog.quantity) {
+              wasteLogs.push(wasteLog);
+            }
+          }
+
+          console.log(`✅ Extracted: ${uniqueSuppliers.size} unique suppliers, ${wasteLogs.length} waste logs`);
+
+          // 1. CREATE EXTRACTION JOB
+          let userId = document.created_by;
+          if (!userId) {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            userId = user?.id || document.company_id;
+          }
+          
+          const { data: job, error: jobError } = await supabaseClient
+            .from('document_extraction_jobs')
+            .insert({
+              company_id: document.company_id,
+              document_id: document_id,
+              user_id: userId,
+              status: 'completed',
+              processing_type: 'ai_extraction',
+              confidence_score: 0.85,
+              ai_model_used: 'csv-line-processor',
+              processing_start_time: new Date(startTime).toISOString(),
+              processing_end_time: new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (jobError || !job) {
+            throw new Error(`Failed to create extraction job: ${jobError?.message}`);
+          }
+          
+          console.log(`✅ Created extraction job: ${job.id}`);
+
+          // 2. CREATE SUPPLIER PREVIEWS
+          let supplierPreviewsCreated = 0;
+          for (const [_, supplier] of uniqueSuppliers) {
+            const { error: previewError } = await supabaseClient
+              .from('extracted_data_preview')
+              .insert({
+                company_id: document.company_id,
+                extraction_job_id: job.id,
+                extracted_fields: {
+                  name: supplier.name,
+                  cnpj: supplier.cnpj,
+                  category: supplier.category
+                },
+                confidence_scores: {
+                  name: 0.9,
+                  cnpj: supplier.cnpj ? 0.85 : 0.5,
+                  category: 0.8
+                },
+                target_table: 'suppliers',
+                validation_status: 'Pendente',
+                suggested_mappings: {
+                  source: 'CSV line-by-line extraction',
+                  document_name: document.file_name
+                }
+              });
+            
+            if (!previewError) supplierPreviewsCreated++;
+          }
+
+          // 3. CREATE WASTE LOG PREVIEWS
+          let wasteLogPreviewsCreated = 0;
+          for (const wasteLog of wasteLogs) {
+            const { error: previewError } = await supabaseClient
+              .from('extracted_data_preview')
+              .insert({
+                company_id: document.company_id,
+                extraction_job_id: job.id,
+                extracted_fields: wasteLog,
+                confidence_scores: Object.keys(wasteLog).reduce((acc, key) => {
+                  acc[key] = 0.85;
+                  return acc;
+                }, {} as Record<string, number>),
+                target_table: 'waste_logs',
+                validation_status: 'Pendente',
+                suggested_mappings: {
+                  source: 'CSV line-by-line extraction',
+                  document_name: document.file_name
+                }
+              });
+            
+            if (!previewError) wasteLogPreviewsCreated++;
+          }
+
+          console.log(`✅ Created ${supplierPreviewsCreated} supplier previews + ${wasteLogPreviewsCreated} waste log previews`);
+
+          // Log metrics
+          await supabaseClient.from('processing_metrics').insert({
             company_id: document.company_id,
             document_id: document_id,
-            user_id: userId,
-            status: 'completed',
-            processing_type: 'ai_extraction',
-            confidence_score: avgConfidence || 0,
-            ai_model_used: 'gemini-2.0-flash-exp',
-            processing_start_time: new Date(startTime).toISOString(),
-            processing_end_time: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
-        if (jobError || !job) {
-          console.error('❌ Failed to create extraction job:', jobError);
-          throw new Error(`Failed to create extraction job: ${jobError?.message}`);
-        }
-        
-        console.log(`✅ Created extraction job: ${job.id}`);
-        
-        // 3. CRIAR PREVIEW RECORDS COM O JOB ID VÁLIDO
-        // ✅ Required fields per table
+            step_name: 'csv_line_extraction',
+            duration_ms: Date.now() - extractStart,
+            success: true,
+            metadata: {
+              total_rows: dataRows.length,
+              unique_suppliers: uniqueSuppliers.size,
+              waste_logs: wasteLogs.length,
+              supplier_previews_created: supplierPreviewsCreated,
+              waste_log_previews_created: wasteLogPreviewsCreated
+            }
+          });
+
+          pipeline[2].result = {
+            extraction_type: 'csv_line_by_line',
+            rows_processed: dataRows.length,
+            unique_suppliers: uniqueSuppliers.size,
+            waste_logs: wasteLogs.length,
+            previews_created: supplierPreviewsCreated + wasteLogPreviewsCreated
+          };
+
+        } else {
+          // ORIGINAL AGGREGATE PROCESSING FOR NON-CSV FILES
+          console.log('📊 Preview creation data:', {
+            mappings: classification.target_mappings.map(m => ({
+              table: m.table_name,
+              field_count: Object.keys(m.field_mappings || {}).length,
+              fields: Object.keys(m.field_mappings || {})
+            }))
+          });
+          
+          // 1. BUSCAR USER_ID CORRETAMENTE
+          let userId = document.created_by;
+          if (!userId) {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            userId = user?.id || document.company_id; // Fallback para company_id
+            console.log('⚠️ No created_by, using fallback user_id:', userId);
+          }
+          
+          // 2. CRIAR O JOB PRIMEIRO
+          const { data: job, error: jobError } = await supabaseClient
+            .from('document_extraction_jobs')
+            .insert({
+              company_id: document.company_id,
+              document_id: document_id,
+              user_id: userId,
+              status: 'completed',
+              processing_type: 'ai_extraction',
+              confidence_score: avgConfidence || 0,
+              ai_model_used: 'gemini-2.0-flash-exp',
+              processing_start_time: new Date(startTime).toISOString(),
+              processing_end_time: new Date().toISOString()
+            })
+            .select()
+            .single();
+          
+          if (jobError || !job) {
+            console.error('❌ Failed to create extraction job:', jobError);
+            throw new Error(`Failed to create extraction job: ${jobError?.message}`);
+          }
+          
+          console.log(`✅ Created extraction job: ${job.id}`);
+          
+          // 3. CRIAR PREVIEW RECORDS COM O JOB ID VÁLIDO (For aggregate extraction)
+          // ✅ Required fields per table
         const REQUIRED_FIELDS: Record<string, string[]> = {
           licenses: ['license_name', 'license_type', 'issue_date', 'expiration_date'],
           assets: ['name', 'asset_type'],
@@ -532,6 +791,7 @@ serve(async (req) => {
         } catch (metricError) {
           console.warn('⚠️ Failed to log preview creation metric:', metricError);
         }
+        } // End of non-CSV aggregate processing
         
       } catch (error) {
         console.error('💥 Error creating extraction records:', error);
