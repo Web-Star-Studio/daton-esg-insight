@@ -264,6 +264,95 @@ serve(async (req) => {
       0
     ) / (classification.extracted_entities?.length || 1);
 
+    // ✅ FASE 1.2: VALIDAÇÃO antes de criar previews
+    console.log('🔍 Validating extraction results before preview creation...');
+    console.log('📊 Extraction validation:', {
+      success: extractResult.success,
+      entities_count: classification.extracted_entities?.length || 0,
+      mappings_count: classification.target_mappings?.length || 0
+    });
+
+    // Verificar se há mappings válidos com field_mappings preenchidos
+    const hasValidMappings = classification.target_mappings?.some(
+      mapping => mapping.field_mappings && Object.keys(mapping.field_mappings).length > 0
+    );
+
+    if (!hasValidMappings && classification.target_mappings?.length > 0) {
+      console.error('❌ Target mappings exist but field_mappings are empty!');
+      console.log('📋 Invalid mappings:', JSON.stringify(classification.target_mappings, null, 2));
+      
+      // ✅ FASE 1.3: FALLBACK - Processamento direto de CSV/Excel
+      if (document.file_type.includes('csv') || 
+          document.file_type.includes('spreadsheet') ||
+          document.file_type.includes('excel')) {
+        
+        console.log('📊 CSV/Excel detected - attempting direct processing fallback...');
+        
+        try {
+          const { data: fullParse, error: fullParseError } = await supabaseClient.functions.invoke(
+            'parse-chat-document',
+            {
+              body: {
+                filePath: normalizedPath,
+                fileType: document.file_type,
+                fullExtraction: true
+              }
+            }
+          );
+
+          if (!fullParseError && fullParse?.success && fullParse?.parsedContent) {
+            console.log('✅ Direct parsing successful, creating field mappings from data...');
+            
+            // Tentar extrair linhas de dados do conteúdo parseado
+            const lines = fullParse.parsedContent.split('\n').filter((l: string) => l.trim());
+            if (lines.length > 1) {
+              // Primeira linha como headers
+              const headers = lines[0].split(/[,;\t]/).map((h: string) => h.trim());
+              
+              // Segunda linha como dados de exemplo
+              const values = lines[1].split(/[,;\t]/).map((v: string) => v.trim());
+              
+              // Criar field_mappings
+              const directFieldMappings: Record<string, any> = {};
+              headers.forEach((header: string, idx: number) => {
+                if (header && values[idx]) {
+                  const fieldName = header.toLowerCase().replace(/\s+/g, '_').replace(/[^\w_]/g, '');
+                  directFieldMappings[fieldName] = values[idx];
+                }
+              });
+              
+              if (Object.keys(directFieldMappings).length > 0) {
+                // Inferir tabela baseada no tipo de documento
+                let inferredTable = 'waste_logs'; // Default
+                if (classification.document_type?.toLowerCase().includes('emiss')) {
+                  inferredTable = 'activity_data';
+                } else if (classification.document_type?.toLowerCase().includes('agua')) {
+                  inferredTable = 'water_consumption_logs';
+                }
+                
+                classification.target_mappings = [{
+                  table_name: inferredTable,
+                  confidence: 0.75,
+                  field_mappings: directFieldMappings,
+                  validation_notes: 'Dados extraídos diretamente do arquivo (fallback)',
+                  requires_review: true
+                }];
+                
+                console.log(`✅ Direct extraction successful: ${Object.keys(directFieldMappings).length} fields mapped to ${inferredTable}`);
+              }
+            }
+          }
+        } catch (fallbackError) {
+          console.error('⚠️ Direct processing fallback failed:', fallbackError);
+        }
+      }
+      
+      // Se ainda não há mappings válidos após fallback, lançar erro
+      if (!classification.target_mappings?.some(m => m.field_mappings && Object.keys(m.field_mappings).length > 0)) {
+        throw new Error('No valid field mappings found after classification and fallback attempts');
+      }
+    }
+
     // CREATE EXTRACTION JOB AND PREVIEW RECORDS: Se extração foi bem-sucedida E há entidades extraídas
     if (extractResult.success && 
         classification.extracted_entities?.length > 0 &&
@@ -271,6 +360,13 @@ serve(async (req) => {
       
       try {
         console.log('📝 Creating extraction job and preview records...');
+        console.log('📊 Preview creation data:', {
+          mappings: classification.target_mappings.map(m => ({
+            table: m.table_name,
+            field_count: Object.keys(m.field_mappings || {}).length,
+            fields: Object.keys(m.field_mappings || {})
+          }))
+        });
         
         // 1. BUSCAR USER_ID CORRETAMENTE
         let userId = document.created_by;
@@ -342,6 +438,33 @@ serve(async (req) => {
           document_name: document.file_name,
           confidence: avgConfidence
         });
+
+        // ✅ FASE 1.4: Gravar métrica de qualidade
+        try {
+          const emptyPreviewsCount = classification.target_mappings.filter(
+            m => !m.field_mappings || Object.keys(m.field_mappings).length === 0
+          ).length;
+
+          const avgFieldCount = classification.target_mappings.reduce(
+            (sum, m) => sum + Object.keys(m.field_mappings || {}).length, 0
+          ) / classification.target_mappings.length;
+
+          await supabaseClient.from('processing_metrics').insert({
+            company_id: document.company_id,
+            document_id: document_id,
+            step_name: 'preview_creation',
+            duration_ms: Date.now() - extractStart,
+            success: true,
+            metadata: {
+              preview_count: classification.target_mappings.length,
+              avg_field_count: Math.round(avgFieldCount * 100) / 100,
+              empty_previews: emptyPreviewsCount,
+              tables: classification.target_mappings.map(m => m.table_name)
+            }
+          });
+        } catch (metricError) {
+          console.warn('⚠️ Failed to log preview creation metric:', metricError);
+        }
         
       } catch (error) {
         console.error('💥 Error creating extraction records:', error);

@@ -234,6 +234,46 @@ ${content.substring(0, 20000)}`,
       mappings: classification.target_mappings?.length,
     });
 
+    // ✅ FASE 1.1: FALLBACK para field_mappings vazios
+    if (classification.target_mappings && classification.target_mappings.length > 0) {
+      console.log('🔍 Validating field_mappings...');
+      
+      for (const mapping of classification.target_mappings) {
+        const fieldCount = Object.keys(mapping.field_mappings || {}).length;
+        console.log(`📊 Mapping for ${mapping.table_name}: ${fieldCount} fields`);
+        
+        // Se field_mappings está vazio, tentar extrair das entidades
+        if (!mapping.field_mappings || fieldCount === 0) {
+          console.warn(`⚠️ Empty field_mappings for ${mapping.table_name}, applying fallback...`);
+          mapping.field_mappings = {};
+          
+          // Extrair dados das entidades
+          for (const entity of classification.extracted_entities || []) {
+            const fieldName = entity.entity_name
+              .toLowerCase()
+              .replace(/\s+/g, '_')
+              .replace(/[^\w_]/g, '');
+            
+            mapping.field_mappings[fieldName] = entity.entity_value;
+          }
+          
+          console.log(`✅ Fallback applied: ${Object.keys(mapping.field_mappings).length} fields extracted`);
+        }
+      }
+    }
+
+    // Logging detalhado final
+    console.log('📋 Final Classification Result:', {
+      document_type: classification.document_type,
+      entities_count: classification.extracted_entities?.length || 0,
+      target_mappings_count: classification.target_mappings?.length || 0,
+      mappings_detail: classification.target_mappings?.map(m => ({
+        table: m.table_name,
+        field_count: Object.keys(m.field_mappings || {}).length,
+        fields: Object.keys(m.field_mappings || {}).slice(0, 5)
+      }))
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
