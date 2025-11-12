@@ -468,6 +468,98 @@ serve(async (req) => {
           position: ['cargo', 'funcao', 'posicao'],
         };
         
+        // ✅ FASE 3: ENUM NORMALIZATION - Converter valores PT/EN para enums válidos do DB
+        const ENUM_NORMALIZATIONS: Record<string, Record<string, string>> = {
+          // waste_status_enum: "Coletado" | "Em Trânsito" | "Destinação Finalizada"
+          status: {
+            'ativo': 'Coletado',
+            'active': 'Coletado',
+            'coletado': 'Coletado',
+            'collected': 'Coletado',
+            'em transito': 'Em Trânsito',
+            'em trânsito': 'Em Trânsito',
+            'in transit': 'Em Trânsito',
+            'transito': 'Em Trânsito',
+            'destinado': 'Destinação Finalizada',
+            'finalizado': 'Destinação Finalizada',
+            'destinação finalizada': 'Destinação Finalizada',
+            'final destination': 'Destinação Finalizada',
+            'concluído': 'Destinação Finalizada',
+            'concluido': 'Destinação Finalizada',
+            'completed': 'Destinação Finalizada'
+          },
+          // waste_class_enum: "Classe I - Perigoso" | "Classe II A - Não Inerte" | "Classe II B - Inerte"
+          waste_class: {
+            'classe i': 'Classe I - Perigoso',
+            'classe 1': 'Classe I - Perigoso',
+            'perigoso': 'Classe I - Perigoso',
+            'hazardous': 'Classe I - Perigoso',
+            'classe ii a': 'Classe II A - Não Inerte',
+            'classe 2a': 'Classe II A - Não Inerte',
+            'não inerte': 'Classe II A - Não Inerte',
+            'nao inerte': 'Classe II A - Não Inerte',
+            'non-inert': 'Classe II A - Não Inerte',
+            'classe ii b': 'Classe II B - Inerte',
+            'classe 2b': 'Classe II B - Inerte',
+            'inerte': 'Classe II B - Inerte',
+            'inert': 'Classe II B - Inerte'
+          },
+          // water_quality_enum
+          water_quality: {
+            'potavel': 'Potável',
+            'potável': 'Potável',
+            'drinking': 'Potável',
+            'industrial': 'Industrial',
+            'doce': 'Água Doce (≤1.000 mg/L TDS)',
+            'agua doce': 'Água Doce (≤1.000 mg/L TDS)',
+            'freshwater': 'Água Doce (≤1.000 mg/L TDS)',
+            'salobra': 'Água Salobra (>1.000 mg/L TDS)',
+            'brackish': 'Água Salobra (>1.000 mg/L TDS)',
+            'salgada': 'Água Salgada (>35.000 mg/L TDS)',
+            'saltwater': 'Água Salgada (>35.000 mg/L TDS)',
+            'outra': 'Outra',
+            'other': 'Outra'
+          },
+          // water_source_type_enum
+          water_source_type: {
+            'superficial': 'Superficial - Rio/Lago',
+            'rio': 'Superficial - Rio/Lago',
+            'lago': 'Superficial - Rio/Lago',
+            'surface': 'Superficial - Rio/Lago',
+            'subterranea': 'Subterrânea - Poço',
+            'subterrânea': 'Subterrânea - Poço',
+            'poço': 'Subterrânea - Poço',
+            'poco': 'Subterrânea - Poço',
+            'groundwater': 'Subterrânea - Poço',
+            'concessionaria': 'Concessionária',
+            'concessionária': 'Concessionária',
+            'utility': 'Concessionária',
+            'reuso': 'Reúso',
+            'reuse': 'Reúso',
+            'captacao propria': 'Captação Própria - Outro',
+            'captação própria': 'Captação Própria - Outro',
+            'own capture': 'Captação Própria - Outro'
+          }
+        };
+        
+        // Função para normalizar valores enum
+        const normalizeEnumValue = (fieldName: string, value: string): string => {
+          if (!value || typeof value !== 'string') return value;
+          
+          const normalizations = ENUM_NORMALIZATIONS[fieldName];
+          if (!normalizations) return value;
+          
+          const normalizedKey = value.toLowerCase().trim();
+          const mappedValue = normalizations[normalizedKey];
+          
+          if (mappedValue) {
+            console.log(`🔄 Enum normalized: ${fieldName}: "${value}" → "${mappedValue}"`);
+            return mappedValue;
+          }
+          
+          return value;
+        };
+        
         // ✅ FASE 3: Buscar aliases aprendidos da empresa
         let learnedAliases: Record<string, string[]> = {};
         try {
@@ -610,8 +702,14 @@ serve(async (req) => {
             continue; // Skip this mapping
           }
           
+          // ✅ FASE 3: Normalizar valores enum antes de criar preview
           Object.keys(normalizedFields).forEach(field => {
             confidenceScores[field] = mapping.confidence || 0.5;
+            
+            // Aplicar normalização de enums
+            if (normalizedFields[field] && typeof normalizedFields[field] === 'string') {
+              normalizedFields[field] = normalizeEnumValue(field, normalizedFields[field]);
+            }
           });
           
           // ✅ FASE 2: Criar notes detalhadas sobre o mapeamento
@@ -794,18 +892,28 @@ serve(async (req) => {
 
       const operations = classification.target_mappings
         .filter((m: any) => m.confidence >= auto_insert_threshold)
-        .map((mapping: any) => ({
-          table: mapping.table_name,
-          action: 'INSERT',
-          data: mapping.field_mappings,
-          deduplication: {
-            check_fields: Object.keys(mapping.field_mappings).slice(0, 2),
-            merge_strategy: 'skip_if_exists',
-          },
-          validation: {
-            required_fields: Object.keys(mapping.field_mappings),
-          },
-        }));
+        .map((mapping: any) => {
+          // ✅ Normalizar valores enum antes de inserir
+          const normalizedData = { ...mapping.field_mappings };
+          Object.keys(normalizedData).forEach(field => {
+            if (normalizedData[field] && typeof normalizedData[field] === 'string') {
+              normalizedData[field] = normalizeEnumValue(field, normalizedData[field]);
+            }
+          });
+          
+          return {
+            table: mapping.table_name,
+            action: 'INSERT',
+            data: normalizedData,
+            deduplication: {
+              check_fields: Object.keys(normalizedData).slice(0, 2),
+              merge_strategy: 'skip_if_exists',
+            },
+            validation: {
+              required_fields: Object.keys(normalizedData),
+            },
+          };
+        });
 
       if (operations.length > 0) {
         const { data: processResult, error: processError } =
