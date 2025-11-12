@@ -97,7 +97,7 @@ const menuSections: MenuSection[] = [
             path: "/monitoramento-esg",
             description: "Central consolidada de indicadores ESG",
             subItems: [
-              { id: "monitoring-dashboard", title: "Dashboard ESG Unificado", icon: Activity, path: "/monitoramento-esg", description: "Central consolidada de indicadores ESG" },
+              { id: "monitoring-dashboard", title: "Dashboard de Monitoramento", icon: Activity, path: "/monitoramento-esg", description: "Central consolidada de indicadores ESG" },
               { id: "monitoring-water", title: "Monitoramento de Água", icon: Droplets, path: "/monitoramento-agua", description: "Gestão contínua de recursos hídricos (GRI 303)" },
               { id: "monitoring-energy", title: "Monitoramento de Energia", icon: Zap, path: "/monitoramento-energia", description: "Gestão contínua de consumo energético (GRI 302)" },
               { id: "monitoring-emissions", title: "Monitoramento de Emissões", icon: Cloud, path: "/monitoramento-emissoes", description: "Inventário contínuo de GEE (GRI 305)" },
