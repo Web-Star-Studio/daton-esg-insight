@@ -699,6 +699,54 @@ const FIELD_ALIASES: Record<string, string[]> = {
   expiration_date: ['data_validade', 'validade']
 };
 
+// ✅ Enum normalization map: PT/EN values to DB enums
+const ENUM_NORMALIZATIONS: Record<string, Record<string, string>> = {
+  // waste_status_enum: Coletado | Em Trânsito | Destinação Finalizada
+  status: {
+    'ativo': 'Coletado',
+    'active': 'Coletado',
+    'coletado': 'Coletado',
+    'collected': 'Coletado',
+    'em transito': 'Em Trânsito',
+    'em trânsito': 'Em Trânsito',
+    'in transit': 'Em Trânsito',
+    'transito': 'Em Trânsito',
+    'destinado': 'Destinação Finalizada',
+    'finalizado': 'Destinação Finalizada',
+    'destinação finalizada': 'Destinação Finalizada',
+    'final destination': 'Destinação Finalizada',
+    'concluído': 'Destinação Finalizada',
+    'concluido': 'Destinação Finalizada',
+    'completed': 'Destinação Finalizada'
+  },
+  // waste_class_enum: Classe I - Perigoso | Classe II A - Não Inerte | Classe II B - Inerte
+  waste_class: {
+    'classe i': 'Classe I - Perigoso',
+    'classe 1': 'Classe I - Perigoso',
+    'perigoso': 'Classe I - Perigoso',
+    'hazardous': 'Classe I - Perigoso',
+    'classe ii a': 'Classe II A - Não Inerte',
+    'classe 2a': 'Classe II A - Não Inerte',
+    'não inerte': 'Classe II A - Não Inerte',
+    'nao inerte': 'Classe II A - Não Inerte',
+    'non-inert': 'Classe II A - Não Inerte',
+    'classe ii b': 'Classe II B - Inerte',
+    'classe 2b': 'Classe II B - Inerte',
+    'inerte': 'Classe II B - Inerte',
+    'inert': 'Classe II B - Inerte'
+  }
+};
+
+function normalizeEnumValue(fieldName: string, value: any): any {
+  if (typeof value !== 'string') return value;
+  const mapped = ENUM_NORMALIZATIONS[fieldName]?.[value.toLowerCase().trim()];
+  if (mapped) {
+    console.log(`🔄 [Approval] Enum normalized: ${fieldName}: "${value}" → "${mapped}"`);
+    return mapped;
+  }
+  return value;
+}
+
 // Per-table field renames for DB schema normalization
 const TABLE_RENAMES: Record<string, Record<string, string>> = {
   suppliers: {
@@ -798,6 +846,11 @@ function normalizeForTable(tableName: string, fields: Record<string, any>): Reco
         // Already in ISO format
         normalizedValue = strValue;
       }
+    }
+    
+    // Enum normalization for known enum fields
+    if (['status', 'waste_class', 'payment_status', 'license_type', 'operational_status', 'risk_level'].includes(targetKey) && typeof normalizedValue === 'string') {
+      normalizedValue = normalizeEnumValue(targetKey, normalizedValue);
     }
     
     normalized[targetKey] = normalizedValue;
@@ -909,7 +962,8 @@ async function handleApprovalAction(supabaseClient: any, action: string, preview
       if (tableName === 'licenses') {
         safeRecordData.status = safeRecordData.status || 'Ativa';
       } else if (tableName === 'waste_logs') {
-        safeRecordData.status = safeRecordData.status || 'Ativo';
+        // Default to a valid enum and normalize if provided
+        safeRecordData.status = normalizeEnumValue('status', safeRecordData.status || 'Coletado');
         // collection_date already normalized above
       } else if (tableName === 'emission_sources') {
         safeRecordData.scope = safeRecordData.scope || 1;
