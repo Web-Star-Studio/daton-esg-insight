@@ -9,7 +9,7 @@ const corsHeaders = {
 
 interface ProcessingStep {
   name: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'Pendente' | 'Processando' | 'Concluído' | 'Erro';
   duration_ms?: number;
   result?: any;
   error?: string;
@@ -35,18 +35,18 @@ serve(async (req) => {
     );
 
     const pipeline: ProcessingStep[] = [
-      { name: 'parse', status: 'pending' },
-      { name: 'classify', status: 'pending' },
-      { name: 'extract', status: 'pending' },
-      { name: 'validate', status: 'pending' },
-      { name: 'insert', status: 'pending' },
+      { name: 'parse', status: 'Pendente' },
+      { name: 'classify', status: 'Pendente' },
+      { name: 'extract', status: 'Pendente' },
+      { name: 'validate', status: 'Pendente' },
+      { name: 'insert', status: 'Pendente' },
     ];
 
     const startTime = Date.now();
 
     // STEP 1: Parse documento
     console.log('📄 Step 1: Parsing document...');
-    pipeline[0].status = 'processing';
+    pipeline[0].status = 'Processando';
     const parseStart = Date.now();
 
     const { data: document } = await supabaseClient
@@ -78,7 +78,7 @@ serve(async (req) => {
     // ROBUST FALLBACK: If parse fails, try to continue with empty content
     if (parseError || !parseResult?.success) {
       console.warn('⚠️ Parse failed, attempting graceful fallback:', parseError?.message);
-      pipeline[0].status = 'completed';
+      pipeline[0].status = 'Concluído';
       pipeline[0].duration_ms = Date.now() - parseStart;
       pipeline[0].result = { 
         content_length: 0,
@@ -91,7 +91,7 @@ serve(async (req) => {
       };
     }
 
-    pipeline[0].status = 'completed';
+    pipeline[0].status = 'Concluído';
     pipeline[0].duration_ms = Date.now() - parseStart;
     pipeline[0].result = { content_length: parseResult.parsedContent?.length || 0 };
 
@@ -111,7 +111,7 @@ serve(async (req) => {
 
     // STEP 2: Classificar conteúdo
     console.log('🧠 Step 2: Classifying content...');
-    pipeline[1].status = 'processing';
+    pipeline[1].status = 'Processando';
     const classifyStart = Date.now();
 
     const { data: classifyResult, error: classifyError } = await supabaseClient.functions.invoke(
@@ -129,7 +129,7 @@ serve(async (req) => {
     // ROBUST FALLBACK: If classification fails, use default classification
     if (classifyError || !classifyResult?.success) {
       console.warn('⚠️ Classification failed, using fallback classification:', classifyError?.message);
-      pipeline[1].status = 'completed';
+      pipeline[1].status = 'Concluído';
       pipeline[1].duration_ms = Date.now() - classifyStart;
       pipeline[1].result = {
         document_type: 'Documento Não Classificado',
@@ -154,7 +154,7 @@ serve(async (req) => {
       };
     }
 
-    pipeline[1].status = 'completed';
+    pipeline[1].status = 'Concluído';
     pipeline[1].duration_ms = Date.now() - classifyStart;
     pipeline[1].result = {
       document_type: classifyResult.classification.document_type,
@@ -180,7 +180,7 @@ serve(async (req) => {
 
     // STEP 3: Extrair dados estruturados (✅ COM REUSO DE CONTEÚDO PARSEADO)
     console.log('📊 Step 3: Extracting structured data...');
-    pipeline[2].status = 'processing';
+    pipeline[2].status = 'Processando';
     const extractStart = Date.now();
 
     const { data: extractResult, error: extractError } = await supabaseClient.functions.invoke(
@@ -221,7 +221,7 @@ serve(async (req) => {
         .select()
         .single();
       
-      pipeline[2].status = 'completed';
+      pipeline[2].status = 'Concluído';
       pipeline[2].duration_ms = Date.now() - extractStart;
       pipeline[2].result = {
         unclassified_data_id: fallbackData?.id,
@@ -237,7 +237,7 @@ serve(async (req) => {
       };
     }
 
-    pipeline[2].status = 'completed';
+    pipeline[2].status = 'Concluído';
     pipeline[2].duration_ms = Date.now() - extractStart;
     pipeline[2].result = {
       unclassified_data_id: extractResult.unclassified_data_id,
@@ -383,7 +383,7 @@ serve(async (req) => {
             company_id: document.company_id,
             document_id: document_id,
             user_id: userId,
-            status: 'completed',
+            status: 'Concluído',
             processing_type: 'ai_extraction',
             confidence_score: avgConfidence || 0,
             ai_model_used: 'gemini-2.0-flash-exp',
@@ -535,7 +535,7 @@ serve(async (req) => {
         
       } catch (error) {
         console.error('💥 Error creating extraction records:', error);
-        pipeline[2].status = 'failed';
+        pipeline[2].status = 'Erro';
         pipeline[2].error = error.message;
         
         return new Response(
@@ -552,7 +552,7 @@ serve(async (req) => {
 
     // STEP 4: Validar dados extraídos
     console.log('✅ Step 4: Validating extracted data...');
-    pipeline[3].status = 'processing';
+    pipeline[3].status = 'Processando';
     const validateStart = Date.now();
 
     const dataQuality = classification.data_quality_assessment;
@@ -565,7 +565,7 @@ serve(async (req) => {
       requires_review: avgConfidence < auto_insert_threshold || hasIssues,
     };
 
-    pipeline[3].status = 'completed';
+    pipeline[3].status = 'Concluído';
     pipeline[3].duration_ms = Date.now() - validateStart;
     pipeline[3].result = validation;
 
@@ -585,7 +585,7 @@ serve(async (req) => {
 
     // STEP 5: Inserir dados (se confiança alta) ou enviar para revisão
     console.log('💾 Step 5: Inserting data or queueing for review...');
-    pipeline[4].status = 'processing';
+    pipeline[4].status = 'Processando';
     const insertStart = Date.now();
 
     let insertResult: any = {};
@@ -629,18 +629,18 @@ serve(async (req) => {
             records_inserted: processResult.records_inserted || 0,
             tables_affected: processResult.tables_affected || [],
           };
-          pipeline[4].status = 'completed';
+          pipeline[4].status = 'Concluído';
         } else {
           insertResult = {
             status: 'auto_insert_failed',
             error: processError?.message,
           };
-          pipeline[4].status = 'failed';
+          pipeline[4].status = 'Erro';
           pipeline[4].error = processError?.message;
         }
       } else {
         insertResult = { status: 'no_operations', message: 'Nenhuma operação de alta confiança' };
-        pipeline[4].status = 'completed';
+        pipeline[4].status = 'Concluído';
       }
     } else {
       // Queue for manual review
@@ -652,7 +652,7 @@ serve(async (req) => {
           : 'Sem mapeamentos disponíveis',
         unclassified_data_id: extractResult.unclassified_data_id,
       };
-      pipeline[4].status = 'completed';
+      pipeline[4].status = 'Concluído';
     }
 
     pipeline[4].duration_ms = Date.now() - insertStart;
@@ -665,7 +665,7 @@ serve(async (req) => {
         document_id: document_id,
         step_name: 'insert',
         duration_ms: pipeline[4].duration_ms,
-        success: pipeline[4].status === 'completed',
+        success: pipeline[4].status === 'Concluído',
         error_message: pipeline[4].error || null,
         metadata: insertResult
       });
