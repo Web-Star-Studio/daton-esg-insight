@@ -74,15 +74,21 @@ export interface AIProcessingStats {
   averageConfidence: number;
 }
 
+import { DocumentClientProcessor } from './DocumentClientProcessor';
+
 // Main processing function - CLIENT SIDE ONLY
 export async function processDocumentWithAI(
   documentId: string,
   options?: { autoInsertThreshold?: number }
 ): Promise<ProcessingResult> {
-  // Client-side processing only - no Edge Functions
+  const processor = new DocumentClientProcessor();
+  const result = await processor.processDocument(documentId);
+  
   return {
-    success: false,
-    error: 'Processamento via Edge Functions foi removido. Use processamento client-side.'
+    success: result.success,
+    jobId: result.jobId,
+    error: result.error,
+    summary: result.summary
   };
 }
 
