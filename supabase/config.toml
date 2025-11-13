@@ -79,9 +79,6 @@ verify_jwt = true
 [functions.data-import-processor]
 verify_jwt = true
 
-[functions.document-ai-processor]
-verify_jwt = true
-
 [functions.documents-management]
 verify_jwt = true
 
