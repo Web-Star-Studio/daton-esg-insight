@@ -143,101 +143,60 @@ export function useAttachments({
     [conversationId]
   );
 
-  // Upload file with retry logic
+  // Upload file locally with parsing
   const uploadFile = useCallback(
     async (file: File, attachmentId: string): Promise<boolean> => {
-      if (!userId) {
-        throw new Error('Usuário não autenticado');
-      }
+      logger.info(`📤 Processing ${file.name} locally`);
 
-      const sanitizedName = sanitizeFileName(file.name);
-      const timestamp = Date.now();
-      const filePath = `${userId}/${timestamp}_${sanitizedName}`;
-
-      logger.info(`📤 Uploading ${file.name} (attempt 1/${MAX_RETRY_ATTEMPTS})`);
-
-      for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
-        try {
-          // Upload to storage
-          const { error: uploadError } = await supabase.storage
-            .from('chat-attachments')
-            .upload(filePath, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-
-          if (uploadError) {
-            throw new Error(`Erro no upload: ${uploadError.message}`);
-          }
-
-          // Verify upload
-          const { data: fileExists } = await supabase.storage
-            .from('chat-attachments')
-            .list(userId, {
-              search: `${timestamp}_${sanitizedName}`
-            });
-
-          if (!fileExists || fileExists.length === 0) {
-            throw new Error('Falha na verificação do upload');
-          }
-
-          logger.info(`✅ Upload verified: ${file.name}`);
-
-          // Log to database
-          if (companyId && conversationId) {
-            await supabase.from('chat_file_uploads').insert({
-              company_id: companyId,
-              user_id: userId,
-              conversation_id: conversationId,
-              file_name: file.name,
-              file_type: file.type,
-              file_size: file.size,
-              file_path: filePath,
-              processing_status: 'uploaded'
-            });
-          }
-
-          // Update attachment state
-          transitionState(attachmentId, 'uploaded', { path: filePath });
-
-          toast.success('Arquivo enviado', {
-            description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`
-          });
-
-          return true;
-
-        } catch (error) {
-          logger.error(`Upload attempt ${attempt} failed:`, error);
-
-          if (attempt < MAX_RETRY_ATTEMPTS) {
-            const delay = Math.min(RETRY_DELAY_BASE * Math.pow(2, attempt - 1), 5000);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            
-            toast.info(`Tentando novamente (${attempt + 1}/${MAX_RETRY_ATTEMPTS})...`, {
-              duration: 2000
-            });
-          } else {
-            const errorMessage = error instanceof Error 
-              ? error.message 
-              : 'Erro desconhecido';
-            
-            transitionState(attachmentId, 'error', {
-              error: `Upload falhou: ${errorMessage}`,
-              retryCount: (attachments.find(a => a.id === attachmentId)?.retryCount || 0) + 1
-            });
-
-            toast.error('Falha no upload', {
-              description: errorMessage
-            });
-
-            return false;
-          }
+      try {
+        // Parse file client-side
+        const { parseFileClientSide } = await import('@/utils/clientSideParsers');
+        const { saveAttachmentFile } = await import('@/utils/localStorageDB');
+        
+        const parsed = await parseFileClientSide(file);
+        
+        if (!parsed.success) {
+          throw new Error(parsed.error || 'Erro ao processar arquivo');
         }
-      }
 
-      return false;
+        // Save to localStorage (for small files) or memory (for large files)
+        const localPath = conversationId 
+          ? await saveAttachmentFile(conversationId, attachmentId, file)
+          : `memory:${attachmentId}`;
+
+        logger.info(`✅ File processed locally: ${file.name}`);
+
+        // Update attachment state with parsed data
+        transitionState(attachmentId, 'uploaded', { 
+          path: localPath,
+          // Store parsed content in attachment for later use
+        });
+
+        toast.success('Arquivo processado', {
+          description: `${file.name} - ${parsed.content?.substring(0, 50) || 'Processado com sucesso'}`
+        });
+
+        return true;
+
+      } catch (error) {
+        logger.error(`Processing failed:`, error);
+        
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : 'Erro desconhecido';
+        
+        transitionState(attachmentId, 'error', {
+          error: `Processamento falhou: ${errorMessage}`,
+        });
+
+        toast.error('Falha no processamento', {
+          description: errorMessage
+        });
+
+        return false;
+      }
     },
-    [userId, companyId, conversationId, transitionState, attachments]
+    [conversationId, transitionState]
   );
 
   // Add attachment

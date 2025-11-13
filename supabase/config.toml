@@ -118,9 +118,6 @@ verify_jwt = true
 [functions.get-company-quick-stats]
 verify_jwt = true
 
-[functions.parse-chat-document]
-verify_jwt = false
-
 [functions.process-intelligent-alerts]
 verify_jwt = false
 
@@ -139,17 +136,11 @@ verify_jwt = true
 [functions.universal-document-processor]
 verify_jwt = true
 
-[functions.ai-chat-controller]
-verify_jwt = true
-
 [functions.generate-intelligent-report]
 verify_jwt = true
 
 [functions.smart-content-analyzer]
 verify_jwt = false
-
-[functions.intelligent-pipeline-orchestrator]
-verify_jwt = true
 
 [functions.intelligent-data-processor]
 verify_jwt = true

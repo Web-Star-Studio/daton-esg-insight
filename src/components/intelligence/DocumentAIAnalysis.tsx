@@ -49,50 +49,20 @@ export function DocumentAIAnalysis() {
         setProgress(Math.floor((i / totalFiles) * 90));
         
         try {
-          // Upload file usando o serviço unificado
-          const uploadedDoc = await uploadDocument(file, { 
-            skipAutoProcessing: true,
-            tags: ['ai-analysis']
-          });
+          // Process client-side with parsing
+          const { parseFileClientSide } = await import('@/utils/clientSideParsers');
+          const parsed = await parseFileClientSide(file);
           
-          // Call intelligent pipeline orchestrator com document_id
-          const { data: pipelineResult, error: pipelineError } = await supabase.functions.invoke(
-            'intelligent-pipeline-orchestrator',
-            {
-              body: {
-                document_id: uploadedDoc.id,
-                options: {
-                  auto_insert: true,
-                  generate_insights: true,
-                  auto_insert_threshold: 0.8
-                }
-              }
-            }
-          );
-
-          if (pipelineError) {
-            // Tratamento específico de erros de rate limit e créditos
-            if (pipelineError.message?.includes('429')) {
-              throw new Error('Limite de taxa atingido. Tente novamente em instantes.');
-            }
-            if (pipelineError.message?.includes('402')) {
-              throw new Error('Créditos de IA esgotados. Adicione créditos em Configurações → Workspace → Uso.');
-            }
-            throw pipelineError;
-          }
-
-          processingResults.push({
-            fileName: file.name,
-            status: 'success',
-            documentType: pipelineResult?.classification?.document_type,
-            entitiesExtracted: pipelineResult?.extraction?.entities_count,
-            autoInserted: pipelineResult?.inserted_count > 0,
-            documentId: uploadedDoc.id
-          });
-
-          // Collect insights
-          if (pipelineResult?.insights) {
-            setInsights(prev => [...prev, ...pipelineResult.insights]);
+          if (parsed.success) {
+            processingResults.push({
+              fileName: file.name,
+              status: 'success',
+              documentType: file.type,
+              entitiesExtracted: parsed.structured?.totalRows || 0,
+              autoInserted: false
+            });
+          } else {
+            throw new Error(parsed.error || 'Erro ao processar arquivo');
           }
         } catch (err) {
           processingResults.push({

@@ -7,7 +7,7 @@ import { PendingAction } from '@/components/ai/AIActionConfirmation';
 import { FileAttachmentData } from '@/types/attachment';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useIntelligentAnalysis } from '@/hooks/useIntelligentAnalysis';
-import { logger } from '@/utils/logger';
+import { parseFileClientSide } from '@/utils/clientSideParsers';
 import { setupAutomaticCleanup, cleanupStaleCache } from '@/utils/memoryCleanup';
 import { ActionCardData } from '@/components/ai/ActionCard';
 import { VisualizationData } from '@/components/ai/ContextualVisualization';
@@ -568,46 +568,42 @@ Qual informação você precisa?`,
         setProcessingProgress(10);
         
         try {
-          // Process attachments through parse-chat-document first
+          // Process attachments locally
           const processedAttachments: any[] = [];
           for (let i = 0; i < finalProcessedAttachments.length; i++) {
             const attachment = finalProcessedAttachments[i];
             setProcessingProgress(10 + (i / finalProcessedAttachments.length) * 40);
             
-            console.log(`📄 Parsing ${attachment.name}...`);
-            const { data: parseResult, error: parseError } = await supabase.functions.invoke('parse-chat-document', {
-              body: {
-                filePath: attachment.path,
-                fileType: attachment.type,
-                useVision: attachment.type.startsWith('image/')
+            console.log(`📄 Parsing ${attachment.name} locally...`);
+            if (attachment.file) {
+              const parsed = await parseFileClientSide(attachment.file);
+              if (parsed.success) {
+                processedAttachments.push({
+                  ...attachment,
+                  parsedContent: parsed.content,
+                  structured: parsed.structured
+                });
               }
-            });
-            
-            if (!parseError && parseResult?.success) {
-              processedAttachments.push({
-                ...attachment,
-                parsedContent: parseResult.content,
-                structured: parseResult.structured
-              });
             }
           }
           
           setProcessingProgress(60);
           
-          // Call AI Chat Controller
-          console.log('🧠 Invoking AI Chat Controller...');
-          const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-chat-controller', {
-            body: {
-              message: content,
-              attachments: processedAttachments,
-              pageContext: {
-                tables: pageContext.tables,
-                currentData: pageContext.currentData
-              },
-              conversationId,
-              companyId,
-              userId: user.id
-            }
+          // Call Anthropic directly
+          console.log('🧠 Calling Anthropic API...');
+          const { sendToAnthropic, getApiKey, hasApiKey } = await import('@/utils/anthropicClient');
+          
+          if (!hasApiKey()) {
+            throw new Error('Configure sua API key do Anthropic nas configurações');
+          }
+          
+          const apiKey = getApiKey()!;
+          const contextMessage = `${content}\n\nAnexos: ${processedAttachments.map(a => a.parsedContent).join('\n\n')}`;
+          
+          const response = await sendToAnthropic(
+            [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: contextMessage }],
+            apiKey
+          );
           });
           
           setProcessingProgress(90);

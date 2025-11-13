@@ -74,52 +74,16 @@ export interface AIProcessingStats {
   averageConfidence: number;
 }
 
-// Main processing function
+// Main processing function - CLIENT SIDE ONLY
 export async function processDocumentWithAI(
   documentId: string,
   options?: { autoInsertThreshold?: number }
 ): Promise<ProcessingResult> {
-  try {
-    const { data, error } = await supabase.functions.invoke('intelligent-pipeline-orchestrator', {
-      body: {
-        document_id: documentId,
-        auto_insert_threshold: options?.autoInsertThreshold || 0.8
-      }
-    });
-
-    if (error) {
-      return { 
-        success: false, 
-        error: error.message,
-        details: error.details || {}
-      };
-    }
-
-    if (!data?.success) {
-      return { 
-        success: false, 
-        error: data?.error || 'Processing failed',
-        details: data?.details || {}
-      };
-    }
-
-    return {
-      success: true,
-      jobId: documentId,
-      message: data.final_status === 'auto_inserted' 
-        ? `Dados inseridos automaticamente (${data.summary?.records_inserted || 0} registro(s))`
-        : 'Dados enviados para revisão manual',
-      summary: data.summary,
-      total_duration_ms: data.total_duration_ms,
-      pipeline: data.pipeline,
-      final_status: data.final_status
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  // Client-side processing only - no Edge Functions
+  return {
+    success: false,
+    error: 'Processamento via Edge Functions foi removido. Use processamento client-side.'
+  };
 }
 
 // Get extraction jobs
