@@ -8,6 +8,7 @@ import { FileAttachmentData } from '@/types/attachment';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useIntelligentAnalysis } from '@/hooks/useIntelligentAnalysis';
 import { parseFileClientSide } from '@/utils/clientSideParsers';
+import { logger } from '@/utils/logger';
 import { setupAutomaticCleanup, cleanupStaleCache } from '@/utils/memoryCleanup';
 import { ActionCardData } from '@/components/ai/ActionCard';
 import { VisualizationData } from '@/components/ai/ContextualVisualization';
@@ -568,24 +569,11 @@ Qual informação você precisa?`,
         setProcessingProgress(10);
         
         try {
-          // Process attachments locally
-          const processedAttachments: any[] = [];
-          for (let i = 0; i < finalProcessedAttachments.length; i++) {
-            const attachment = finalProcessedAttachments[i];
-            setProcessingProgress(10 + (i / finalProcessedAttachments.length) * 40);
-            
-            console.log(`📄 Parsing ${attachment.name} locally...`);
-            if (attachment.file) {
-              const parsed = await parseFileClientSide(attachment.file);
-              if (parsed.success) {
-                processedAttachments.push({
-                  ...attachment,
-                  parsedContent: parsed.content,
-                  structured: parsed.structured
-                });
-              }
-            }
-          }
+          // Attachments already processed locally during upload
+          const processedAttachments = finalProcessedAttachments.map(att => ({
+            ...att,
+            parsedContent: `Arquivo: ${att.name} (${att.type})`
+          }));
           
           setProcessingProgress(60);
           
@@ -594,95 +582,44 @@ Qual informação você precisa?`,
           const { sendToAnthropic, getApiKey, hasApiKey } = await import('@/utils/anthropicClient');
           
           if (!hasApiKey()) {
-            throw new Error('Configure sua API key do Anthropic nas configurações');
+            toast.error('Configure sua API key do Anthropic nas configurações');
+            setIsProcessingAttachments(false);
+            setIsLoading(false);
+            return;
           }
           
           const apiKey = getApiKey()!;
-          const contextMessage = `${content}\n\nAnexos: ${processedAttachments.map(a => a.parsedContent).join('\n\n')}`;
+          const attachmentsContext = processedAttachments.map(a => `- ${a.parsedContent}`).join('\n');
+          const contextMessage = `${content}\n\nArquivos anexados:\n${attachmentsContext}`;
+          
+          setProcessingProgress(70);
           
           const response = await sendToAnthropic(
             [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: contextMessage }],
             apiKey
           );
-          });
           
           setProcessingProgress(90);
           
-          if (aiError) {
-            console.error('❌ AI Controller error:', aiError);
-            throw new Error(aiError.message || 'Erro ao processar com IA');
-          }
-          
-          // Check if AI proposed operations
-          if (aiResponse?.operations_proposed && aiResponse?.operations) {
-            console.log('🎯 AI proposed operations:', aiResponse.operations.length);
-            
-            // Set operations for preview
-            setPendingOperations(aiResponse.operations);
-            setOperationsValidations(aiResponse.validations || []);
-            setOperationsSummary(aiResponse.summary || '');
-            setShowOperationsPreview(true);
-            
-            // Add AI response message
-            const aiMessage: ChatMessage = {
-              id: `assistant-${Date.now()}`,
-              role: 'assistant',
-              content: aiResponse.response || 'Operações identificadas. Revise antes de executar.',
-              timestamp: new Date(),
-            };
-            
-            setMessages(prev => [...prev, aiMessage]);
-            
-            // Save to database
-            if (conversationId) {
-              await supabase.from('ai_chat_messages').insert({
-                conversation_id: conversationId,
-                company_id: companyId,
-                user_id: user.id,
-                role: 'assistant',
-                content: aiMessage.content,
-                metadata: {
-                  operations_proposed: true,
-                  operations_count: aiResponse.operations.length
-                }
-              });
-            }
-            
-            setProcessingProgress(100);
-            toast.success('Análise concluída', {
-              description: `${aiResponse.operations.length} operação(ões) identificada(s)`,
-              duration: 5000
-            });
-            
-            setIsLoading(false);
-            setIsProcessingAttachments(false);
-            
-            // Mark attachments as sent
-            if (readyAttachments.length > 0) {
-              markAsSent(readyAttachments.map(a => a.id));
-              clearSentAttachments();
-            }
-            
-            return; // Exit early - user will review operations
-          }
-          
-          // No operations - normal chat response
+          // Create AI message with response
           const aiMessage: ChatMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: aiResponse?.response || 'Entendi. Como posso ajudar?',
+            content: response.content,
             timestamp: new Date(),
           };
           
           setMessages(prev => [...prev, aiMessage]);
           
+          // Save to localStorage
+          const { saveConversation } = await import('@/utils/localStorageDB');
           if (conversationId) {
-            await supabase.from('ai_chat_messages').insert({
-              conversation_id: conversationId,
-              company_id: companyId,
-              user_id: user.id,
-              role: 'assistant',
-              content: aiMessage.content
+            saveConversation({
+              id: conversationId,
+              title: messages[0]?.content.substring(0, 50) || 'Nova conversa',
+              messages: [...messages, userMessage, aiMessage],
+              createdAt: Date.now(),
+              updatedAt: Date.now()
             });
           }
           
@@ -696,14 +633,23 @@ Qual informação você precisa?`,
             clearSentAttachments();
           }
           
+          toast.success('Resposta recebida!');
           return;
           
         } catch (error) {
-          console.error('❌ AI Controller processing error:', error);
+          console.error('❌ Anthropic API error:', error);
           setIsProcessingAttachments(false);
+          setIsLoading(false);
+          
+          toast.error('Erro ao processar com IA', {
+            description: error instanceof Error ? error.message : 'Erro desconhecido'
+          });
+          
           throw error;
         }
       }
+
+      // No attachments - continue with normal flow below
 
       // Add current user message
       apiMessages.push({
