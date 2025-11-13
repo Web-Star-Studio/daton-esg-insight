@@ -564,12 +564,11 @@ Qual informação você precisa?`,
       // ============================================
       
       if (finalProcessedAttachments.length > 0) {
-        console.log('🤖 Calling AI Chat Controller for intelligent data operations...');
+        console.log('🤖 Processing attachments via Daton AI...');
         setIsProcessingAttachments(true);
         setProcessingProgress(10);
         
         try {
-          // Attachments already processed locally during upload
           const processedAttachments = finalProcessedAttachments.map(att => ({
             ...att,
             parsedContent: `Arquivo: ${att.name} (${att.type})`
@@ -577,27 +576,21 @@ Qual informação você precisa?`,
           
           setProcessingProgress(60);
           
-          // Call Anthropic directly
-          console.log('🧠 Calling Anthropic API...');
-          const { sendToAnthropic, getApiKey, hasApiKey } = await import('@/utils/anthropicClient');
-          
-          if (!hasApiKey()) {
-            toast.error('Configure sua API key do Anthropic nas configurações');
-            setIsProcessingAttachments(false);
-            setIsLoading(false);
-            return;
-          }
-          
-          const apiKey = getApiKey()!;
           const attachmentsContext = processedAttachments.map(a => `- ${a.parsedContent}`).join('\n');
           const contextMessage = `${content}\n\nArquivos anexados:\n${attachmentsContext}`;
           
           setProcessingProgress(70);
           
-          const response = await sendToAnthropic(
-            [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: contextMessage }],
-            apiKey
-          );
+          // Call daton-ai-chat edge function
+          const { data: aiResponse, error: aiError } = await supabase.functions.invoke('daton-ai-chat', {
+            body: {
+              messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: contextMessage }]
+            }
+          });
+          
+          if (aiError) {
+            throw aiError;
+          }
           
           setProcessingProgress(90);
           
@@ -605,7 +598,7 @@ Qual informação você precisa?`,
           const aiMessage: ChatMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: response.content,
+            content: aiResponse.content || 'Resposta recebida',
             timestamp: new Date(),
           };
           
@@ -637,7 +630,7 @@ Qual informação você precisa?`,
           return;
           
         } catch (error) {
-          console.error('❌ Anthropic API error:', error);
+          console.error('❌ AI processing error:', error);
           setIsProcessingAttachments(false);
           setIsLoading(false);
           
