@@ -74,22 +74,28 @@ export interface AIProcessingStats {
   averageConfidence: number;
 }
 
-import { DocumentClientProcessor } from './DocumentClientProcessor';
-
-// Main processing function - CLIENT SIDE ONLY
+// Main processing function - uses Edge Function with Lovable AI
 export async function processDocumentWithAI(
   documentId: string,
   options?: { autoInsertThreshold?: number }
 ): Promise<ProcessingResult> {
-  const processor = new DocumentClientProcessor();
-  const result = await processor.processDocument(documentId);
-  
-  return {
-    success: result.success,
-    jobId: result.jobId,
-    error: result.error,
-    summary: result.summary
-  };
+  try {
+    const { data, error } = await supabase.functions.invoke('document-ai-processor', {
+      body: { documentId }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error processing document:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao processar documento'
+    };
+  }
 }
 
 // Get extraction jobs
