@@ -218,7 +218,11 @@ export function DocumentExtractionApproval() {
   const getAverageConfidence = (scores: Record<string, number>) => {
     const values = Object.values(scores);
     if (values.length === 0) return 0;
-    return values.reduce((a, b) => a + b, 0) / values.length;
+    
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    
+    // Normalizar se estiver em escala 0-100 (dados antigos)
+    return avg > 1 ? avg / 100 : avg;
   };
 
   const getConfidenceBadge = (scores: Record<string, number>) => {

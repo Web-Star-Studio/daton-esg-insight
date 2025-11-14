@@ -6,6 +6,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Normaliza valores de confiança para escala 0-1
+ * Aceita tanto valores decimais (0-1) quanto percentuais (0-100)
+ */
+function normalizeConfidence(value: number): number {
+  if (value > 1) {
+    return value / 100; // Converter de 0-100 para 0-1
+  }
+  return value; // Já está na escala correta
+}
+
 // Helper function to determine target table based on document type
 function determineTargetTable(documentType: string): string {
   const typeMapping: Record<string, string> = {
@@ -297,8 +308,8 @@ Por favor, retorne um JSON com a seguinte estrutura:
         target_table: targetTable,   // ✅ ADDED: required field
         extracted_fields: analysis.extracted_fields || {},
         confidence_scores: {
-          overall: analysis.confidence || 50,
-          esg_relevance: analysis.esg_relevance || 0
+          overall: normalizeConfidence(analysis.confidence || 50),
+          esg_relevance: normalizeConfidence(analysis.esg_relevance || 0)
         },
         suggested_mappings: {
           document_id: documentId,
