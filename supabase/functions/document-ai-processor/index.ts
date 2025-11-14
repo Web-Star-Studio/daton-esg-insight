@@ -17,20 +17,70 @@ function normalizeConfidence(value: number): number {
   return value; // Já está na escala correta
 }
 
-// Helper function to determine target table based on document type
-function determineTargetTable(documentType: string): string {
+// Helper function to determine target table based on document type AND extracted fields
+function determineTargetTable(documentType: string, extractedFields: any = {}): string {
+  const fieldNames = Object.keys(extractedFields).map(k => k.toLowerCase());
+  const fieldContent = JSON.stringify(extractedFields).toLowerCase();
+  
+  // 1️⃣ PRIORIDADE: Análise de campos extraídos (mais confiável)
+  
+  // Detectar dados de resíduos
+  if (
+    fieldNames.some(f => f.includes('residuo') || f.includes('waste') || f.includes('mtr')) ||
+    fieldContent.includes('residuos_por_mes') ||
+    fieldContent.includes('tipos_residuos') ||
+    fieldContent.includes('mtr_number') ||
+    fieldContent.includes('waste_')
+  ) {
+    console.log('🗑️ Detected WASTE data from fields');
+    return 'waste_logs';
+  }
+  
+  // Detectar dados de fornecedores
+  if (
+    fieldNames.some(f => f.includes('cnpj') || f.includes('razao_social') || f.includes('fornecedor')) ||
+    (extractedFields.cnpj && extractedFields.nome) ||
+    fieldContent.includes('supplier')
+  ) {
+    console.log('🏢 Detected SUPPLIER data from fields');
+    return 'suppliers';
+  }
+  
+  // Detectar dados de licenças
+  if (
+    fieldNames.some(f => f.includes('licenca') || f.includes('license')) ||
+    fieldContent.includes('numero_licenca') ||
+    fieldContent.includes('orgao_ambiental')
+  ) {
+    console.log('📄 Detected LICENSE data from fields');
+    return 'licenses';
+  }
+  
+  // 2️⃣ FALLBACK: Análise do tipo do documento
   const typeMapping: Record<string, string> = {
     'MTR': 'waste_logs',
+    'Manifesto de Transporte de Resíduos': 'waste_logs',
+    'Relatório de Resíduos': 'waste_logs',
+    'Planilha de Resíduos': 'waste_logs',
     'Nota Fiscal': 'suppliers',
     'Licença': 'licenses',
-    'Planilha de Dados': 'suppliers',
+    'Licença Ambiental': 'licenses',
+    'Planilha de Dados': 'suppliers', // genérico
     'Contrato': 'suppliers',
     'Fatura': 'suppliers',
-    'Relatório': 'suppliers',
+    'Relatório': 'suppliers', // genérico
     'Certificado': 'licenses'
   };
   
-  return typeMapping[documentType] || 'suppliers'; // fallback to suppliers
+  const mappedTable = typeMapping[documentType];
+  if (mappedTable) {
+    console.log(`📋 Mapped document type "${documentType}" → ${mappedTable}`);
+    return mappedTable;
+  }
+  
+  // 3️⃣ ÚLTIMO RECURSO: suppliers como fallback
+  console.log('⚠️ Using fallback table: suppliers');
+  return 'suppliers';
 }
 
 serve(async (req) => {
@@ -290,7 +340,10 @@ Por favor, retorne um JSON com a seguinte estrutura:
     }
 
     // 10. Create extracted data preview with correct schema
-    const targetTable = determineTargetTable(analysis.document_type || 'Desconhecido');
+    const targetTable = determineTargetTable(
+      analysis.document_type || 'Desconhecido',
+      analysis.extracted_fields || {}
+    );
     
     console.log('💾 Creating data preview:', {
       jobId: job.id,
