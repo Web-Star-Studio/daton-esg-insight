@@ -123,9 +123,7 @@ const menuSections: MenuSection[] = [
             path: "/residuos",
             description: "Controle e destinação de resíduos",
             subItems: [
-              { id: "waste-logs", title: "Registros de Resíduos", icon: Trash2, path: "/residuos", description: "Controle e destinação de resíduos" },
-              { id: "waste-payables", title: "Contas a Pagar", icon: icons.DollarSign, path: "/financeiro/residuos/contas-a-pagar", description: "Gestão financeira de pagamentos" },
-              { id: "waste-receivables", title: "Contas a Receber", icon: TrendingUp, path: "/financeiro/residuos/contas-a-receber", description: "Receitas com recicláveis" },
+              { id: "waste-logs", title: "Registros de Resíduos", icon: Trash2, path: "/residuos", description: "Controle e destinação de resíduos" }
             ]
           },
           { id: "environmental-licensing", title: "Licenciamento Ambiental", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças ambientais" },
@@ -164,6 +162,56 @@ const menuSections: MenuSection[] = [
           { id: "stakeholder-management", title: "Gestão de Stakeholders", icon: Handshake, path: "/gestao-stakeholders", description: "Gestão de partes interessadas" },
           { id: "materiality-analysis", title: "Análise de Materialidade", icon: Eye, path: "/analise-materialidade", description: "Identificação de temas ESG relevantes" }
         ]
+      }
+    ]
+  },
+  {
+    id: "financial",
+    title: "FINANCEIRO",
+    isCollapsible: true,
+    defaultOpen: false,
+    items: [
+      { 
+        id: "financial-dashboard", 
+        title: "Dashboard Financeiro", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/dashboard", 
+        description: "Visão consolidada das finanças" 
+      },
+      { 
+        id: "budget-management", 
+        title: "Gestão de Orçamento", 
+        icon: TrendingUp, 
+        path: "/financeiro/orcamento", 
+        description: "Planejamento e controle orçamentário" 
+      },
+      { 
+        id: "cash-flow", 
+        title: "Fluxo de Caixa", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/fluxo-caixa", 
+        description: "Controle de entradas e saídas" 
+      },
+      { 
+        id: "cost-centers", 
+        title: "Centros de Custo", 
+        icon: Building2, 
+        path: "/financeiro/centros-custo", 
+        description: "Alocação de despesas por departamento" 
+      },
+      { 
+        id: "waste-payables", 
+        title: "Contas a Pagar - Resíduos", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/residuos/contas-a-pagar", 
+        description: "Gestão financeira de pagamentos de resíduos" 
+      },
+      { 
+        id: "waste-receivables", 
+        title: "Contas a Receber - Resíduos", 
+        icon: TrendingUp, 
+        path: "/financeiro/residuos/contas-a-receber", 
+        description: "Receitas com venda de recicláveis" 
       }
     ]
   },
