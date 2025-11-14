@@ -49,6 +49,10 @@ const RegistrarAtividadeConservacao = lazy(() => import("./pages/RegistrarAtivid
 const FornecedoresResiduos = lazy(() => import("./pages/FornecedoresResiduos"));
 const FinanceiroResiduosContasAPagar = lazy(() => import("./pages/FinanceiroResiduosContasAPagar"));
 const FinanceiroResiduosContasAReceber = lazy(() => import("./pages/FinanceiroResiduosContasAReceber"));
+const DashboardFinanceiro = lazy(() => import("./pages/DashboardFinanceiro"));
+const GestaoOrcamento = lazy(() => import("./pages/GestaoOrcamento"));
+const FluxoCaixa = lazy(() => import("./pages/FluxoCaixa"));
+const CentroCustos = lazy(() => import("./pages/CentroCustos"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Desempenho = lazy(() => import("./pages/Desempenho"));
 const Configuracao = lazy(() => import("./pages/Configuracao"));
@@ -330,6 +334,26 @@ const AppContent = () => {
             <Route path="/financeiro/residuos/contas-a-receber" element={
               <ProtectedLazyPageWrapper>
                 <FinanceiroResiduosContasAReceber />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/dashboard" element={
+              <ProtectedLazyPageWrapper>
+                <DashboardFinanceiro />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/orcamento" element={
+              <ProtectedLazyPageWrapper>
+                <GestaoOrcamento />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/fluxo-caixa" element={
+              <ProtectedLazyPageWrapper>
+                <FluxoCaixa />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/centros-custo" element={
+              <ProtectedLazyPageWrapper>
+                <CentroCustos />
               </ProtectedLazyPageWrapper>
             } />
 
