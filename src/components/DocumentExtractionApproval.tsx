@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DocumentViewer } from './DocumentViewer';
 import { useExtractionRealtime } from '@/hooks/useExtractionRealtime';
 import { createDocumentApprovalLog } from '@/services/documentApprovalLog';
+import { useDataReconciliation } from '@/hooks/useDataReconciliation';
 
 interface ExtractedPreview {
   id: string;
@@ -38,6 +39,7 @@ export function DocumentExtractionApproval() {
   const [selectedForBatch, setSelectedForBatch] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { approveExtraction, rejectExtraction, isProcessing } = useDataReconciliation();
 
   // Enable realtime updates
   useExtractionRealtime({
@@ -76,15 +78,10 @@ export function DocumentExtractionApproval() {
       const startTime = Date.now();
       
       for (const previewId of previewIds) {
-        const { data, error } = await supabase.functions.invoke('document-ai-processor', {
-          body: {
-            action: 'approve',
-            preview_id: previewId,
-            batch_mode: true
-          }
-        });
-
-        if (error) throw error;
+        const result = await approveExtraction(previewId);
+        if (!result.success) {
+          throw new Error(result.error || 'Falha ao aprovar extração');
+        }
 
         // Log the approval
         const preview = previews?.find(p => p.id === previewId);
@@ -94,7 +91,7 @@ export function DocumentExtractionApproval() {
             job_id: preview.extraction_job_id,
             action: 'batch_approved',
             items_count: Object.keys(preview.extracted_fields).length,
-            high_confidence_count: Object.values(preview.confidence_scores).filter(s => s >= 0.85).length,
+            high_confidence_count: Object.values(preview.confidence_scores).filter(s => (s > 1 ? s/100 : s) >= 0.85).length,
             processing_time_seconds: (Date.now() - startTime) / 1000,
           });
         }
@@ -124,15 +121,9 @@ export function DocumentExtractionApproval() {
     mutationFn: async ({ previewId, editedFields }: { previewId: string; editedFields?: Record<string, any> }) => {
       const startTime = Date.now();
 
-      const { data, error } = await supabase.functions.invoke('document-ai-processor', {
-        body: {
-          action: 'approve',
-          preview_id: previewId,
-          edited_fields: editedFields
-        }
-      });
+      const result = await approveExtraction(previewId, editedFields);
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error || 'Falha ao aprovar');
 
       // Log the approval
       const preview = previews?.find(p => p.id === previewId);
@@ -151,7 +142,7 @@ export function DocumentExtractionApproval() {
         });
       }
 
-      return { data, processingTime: (Date.now() - startTime) / 1000 };
+      return { processingTime: (Date.now() - startTime) / 1000 };
     },
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
@@ -177,14 +168,8 @@ export function DocumentExtractionApproval() {
   // Reject mutation
   const rejectMutation = useMutation({
     mutationFn: async (previewId: string) => {
-      const { data, error } = await supabase.functions.invoke('document-ai-processor', {
-        body: {
-          action: 'reject',
-          preview_id: previewId
-        }
-      });
-
-      if (error) throw error;
+      const result = await rejectExtraction(previewId, '');
+      if (!result.success) throw new Error(result.error || 'Falha ao rejeitar');
 
       // Log the rejection
       const preview = previews?.find(p => p.id === previewId);
@@ -197,7 +182,7 @@ export function DocumentExtractionApproval() {
         });
       }
 
-      return data;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
