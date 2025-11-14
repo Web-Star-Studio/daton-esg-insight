@@ -147,3 +147,6 @@ verify_jwt = true
 
 [functions.document-ai-processor]
 verify_jwt = true
+
+[functions.approve-extracted-data]
+verify_jwt = true
