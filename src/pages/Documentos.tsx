@@ -242,9 +242,9 @@ export default function Documentos() {
     try {
       const result = await processDocumentWithAI(document.id);
       
-      toast.dismiss(processingToastId);
-      
       if (!result.success) {
+        toast.dismiss(processingToastId);
+        
         const errorDetails = result.details || {};
         toast.error('❌ Falha no processamento', { 
           description: (
@@ -276,50 +276,128 @@ export default function Documentos() {
         return;
       }
       
-      // Success - reload data
-      await loadData();
-      
-      const summary = result.summary || {};
-      toast.success('✅ Processamento concluído!', {
-        description: (
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <p><strong>Tipo identificado:</strong> {summary.document_type || 'Não classificado'}</p>
-              <p><strong>Relevância ESG:</strong> {summary.esg_relevance || 0}%</p>
-              <p><strong>Confiança:</strong> {Math.round((summary.overall_confidence || 0) * 100)}%</p>
-            </div>
+      // Poll job status if we have a jobId
+      if (result.jobId) {
+        toast.loading('⏳ Verificando status do processamento...', { 
+          id: processingToastId,
+          description: 'Aguarde enquanto verificamos o resultado...'
+        });
+        
+        // Poll for job completion (max 30 attempts, 2 seconds each = 1 minute)
+        let jobCompleted = false;
+        for (let i = 0; i < 30 && !jobCompleted; i++) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          try {
+            const status = await getExtractionJobStatus(result.jobId);
             
-            {summary.auto_inserted ? (
-              <div className="pt-2 border-t border-border">
-                <p className="text-sm font-medium text-green-600">
-                  ✓ {summary.records_inserted || 0} registro(s) inserido(s) automaticamente
-                </p>
-              </div>
-            ) : (
-              <div className="pt-2 border-t border-border">
-                <p className="text-sm font-medium">
-                  📋 Dados enviados para aprovação manual
-                </p>
-                <button 
-                  onClick={() => {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('tab', 'extracoes');
-                    window.location.href = url.toString();
-                  }}
-                  className="text-sm font-medium underline text-left mt-1"
-                >
-                  Ver na seção de Aprovações →
-                </button>
-              </div>
-            )}
+            if (status?.status === 'Concluído') {
+              jobCompleted = true;
+              toast.dismiss(processingToastId);
+              
+              toast.success('✅ Processamento concluído!', {
+                description: (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      📋 Dados enviados para aprovação na aba "Aprovações"
+                    </p>
+                    <button 
+                      onClick={() => {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('tab', 'extracoes');
+                        window.location.href = url.toString();
+                      }}
+                      className="text-sm font-medium underline text-left mt-1"
+                    >
+                      Ver na seção de Aprovações →
+                    </button>
+                  </div>
+                ),
+                duration: 10000,
+              });
+              
+              await loadData();
+              break;
+            }
             
-            <div className="pt-2 text-xs text-muted-foreground">
-              ⏱️ Processado em {result.total_duration_ms ? `${(result.total_duration_ms / 1000).toFixed(1)}s` : 'tempo desconhecido'}
+            if (status?.status === 'Erro') {
+              jobCompleted = true;
+              toast.dismiss(processingToastId);
+              
+              toast.error('❌ Erro no processamento', {
+                description: status.error_message || 'Erro desconhecido durante o processamento',
+                duration: 10000,
+              });
+              break;
+            }
+            
+            // Update progress
+            if (i % 5 === 0) { // Update every 10 seconds
+              toast.loading(`⏳ Processando... (${i * 2}s)`, { 
+                id: processingToastId,
+                description: 'O processamento está em andamento...'
+              });
+            }
+          } catch (pollError) {
+            console.error('Error polling job status:', pollError);
+          }
+        }
+        
+        if (!jobCompleted) {
+          toast.dismiss(processingToastId);
+          toast.warning('⚠️ Processamento demorou mais que o esperado', {
+            description: 'Verifique a aba "Aprovações" em alguns minutos para ver o resultado.',
+            duration: 10000,
+          });
+        }
+      } else {
+        // Fallback for old response format
+        toast.dismiss(processingToastId);
+        
+        await loadData();
+        
+        const summary = result.summary || {};
+        toast.success('✅ Processamento concluído!', {
+          description: (
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <p><strong>Tipo identificado:</strong> {summary.document_type || 'Não classificado'}</p>
+                <p><strong>Relevância ESG:</strong> {summary.esg_relevance || 0}%</p>
+                <p><strong>Confiança:</strong> {Math.round((summary.overall_confidence || 0) * 100)}%</p>
+              </div>
+              
+              {summary.auto_inserted ? (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-sm font-medium text-green-600">
+                    ✓ {summary.records_inserted || 0} registro(s) inserido(s) automaticamente
+                  </p>
+                </div>
+              ) : (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-sm font-medium">
+                    📋 Dados enviados para aprovação manual
+                  </p>
+                  <button 
+                    onClick={() => {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', 'extracoes');
+                      window.location.href = url.toString();
+                    }}
+                    className="text-sm font-medium underline text-left mt-1"
+                  >
+                    Ver na seção de Aprovações →
+                  </button>
+                </div>
+              )}
+              
+              <div className="pt-2 text-xs text-muted-foreground">
+                ⏱️ Processado em {result.total_duration_ms ? `${(result.total_duration_ms / 1000).toFixed(1)}s` : 'tempo desconhecido'}
+              </div>
             </div>
-          </div>
-        ),
-        duration: 10000,
-      });
+          ),
+          duration: 10000,
+        });
+      }
       
     } catch (error) {
       toast.dismiss(processingToastId);
@@ -328,26 +406,11 @@ export default function Documentos() {
       toast.error('❌ Erro crítico no processamento', {
         description: (
           <div className="space-y-2">
-            <p><strong>Erro:</strong> {error instanceof Error ? error.message : 'Erro desconhecido'}</p>
-            <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-1">
-                Se o problema persistir:
-              </p>
-              <ul className="text-xs space-y-1 text-muted-foreground">
-                <li>• Verifique sua conexão com a internet</li>
-                <li>• Tente novamente em alguns minutos</li>
-                <li>• Entre em contato com o suporte técnico</li>
-              </ul>
-            </div>
-            <button 
-              onClick={() => window.open('https://docs.lovable.dev/tips-tricks/troubleshooting', '_blank')}
-              className="text-sm font-medium underline text-left pt-2"
-            >
-              Acessar documentação de troubleshooting →
-            </button>
+            <p>{error instanceof Error ? error.message : 'Erro desconhecido'}</p>
+            <p className="text-xs text-muted-foreground">Verifique os logs ou tente novamente</p>
           </div>
         ),
-        duration: 15000,
+        duration: 10000,
       });
     } finally {
       setAnalyzingDocId(null);
