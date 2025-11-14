@@ -6,6 +6,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * Re-detecta a tabela correta com base nos campos extraídos
+ * Serve como camada de segurança para corrigir classificações incorretas
+ */
+function intelligentTableDetection(extractedFields: any, declaredTable: string): string {
+  const fieldNames = Object.keys(extractedFields).map(k => k.toLowerCase());
+  const fieldContent = JSON.stringify(extractedFields).toLowerCase();
+  
+  // Detectar dados de resíduos com alta confiança
+  if (
+    fieldNames.some(f => f.includes('residuo') || f.includes('waste')) ||
+    extractedFields.residuos_por_mes ||
+    extractedFields.tipos_residuos_quantidades_kg
+  ) {
+    if (declaredTable !== 'waste_logs') {
+      console.log('🔍 INTELLIGENT DETECTION: Correcting table from', declaredTable, '→ waste_logs');
+    }
+    return 'waste_logs';
+  }
+  
+  // Detectar fornecedores com alta confiança
+  if (extractedFields.cnpj && (extractedFields.nome || extractedFields.razao_social)) {
+    if (declaredTable !== 'suppliers') {
+      console.log('🔍 INTELLIGENT DETECTION: Correcting table from', declaredTable, '→ suppliers');
+    }
+    return 'suppliers';
+  }
+  
+  // Manter tabela declarada se não detectar nada específico
+  console.log('🔍 INTELLIGENT DETECTION: Keeping declared table', declaredTable);
+  return declaredTable;
+}
+
 interface ApprovalRequest {
   preview_id: string;
   edited_data?: Record<string, any>;
@@ -241,7 +274,16 @@ serve(async (req) => {
 
     // Use edited data if provided, otherwise use original
     const finalData = edited_data || preview.extracted_fields;
-    const targetTable = preview.target_table;
+
+    // 🔍 INTELLIGENT TABLE DETECTION
+    // Re-check the target table based on actual extracted fields
+    const declaredTable = preview.target_table;
+    const targetTable = intelligentTableDetection(finalData, declaredTable);
+
+    if (targetTable !== declaredTable) {
+      console.log(`⚠️ TABLE MISMATCH DETECTED: "${declaredTable}" → "${targetTable}"`);
+      console.log('📊 Extracted fields sample:', JSON.stringify(finalData).substring(0, 300));
+    }
 
     // Transform and validate data based on target table
     let recordsToInsert: any[] = [];
@@ -279,6 +321,17 @@ serve(async (req) => {
     console.log(`📊 Records to insert: ${recordsToInsert.length}`);
     if (recordsToInsert.length > 0) {
       console.log('📄 Sample record:', JSON.stringify(recordsToInsert[0]));
+    } else {
+      console.warn('⚠️ NO RECORDS GENERATED');
+      console.warn('📋 Target table:', targetTable);
+      console.warn('📄 Extracted fields:', JSON.stringify(finalData).substring(0, 500));
+      console.warn('🔍 Available field keys:', Object.keys(finalData));
+      
+      // Sugestões de correção
+      if (targetTable === 'suppliers' && finalData.residuos_por_mes) {
+        console.error('❌ CRITICAL: Supplier table selected but data contains waste information!');
+        console.error('💡 SUGGESTION: This preview should target "waste_logs" instead');
+      }
     }
 
     // Check for duplicates (only for waste_logs with MTR)
