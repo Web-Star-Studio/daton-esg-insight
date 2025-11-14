@@ -121,6 +121,16 @@ export const ROUTE_PATHS = {
     ORGANIZATIONAL: '/configuracao-organizacional',
     USER_MANAGEMENT: '/gestao-usuarios',
   },
+
+  // Financial Module
+  FINANCIAL: {
+    DASHBOARD: '/financeiro/dashboard',
+    BUDGET: '/financeiro/orcamento',
+    CASH_FLOW: '/financeiro/fluxo-caixa',
+    COST_CENTERS: '/financeiro/centros-custo',
+    PAYABLES: '/financeiro/residuos/contas-pagar',
+    RECEIVABLES: '/financeiro/residuos/contas-receber',
+  },
 } as const;
 
 /**

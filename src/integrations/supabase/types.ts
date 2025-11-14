@@ -1563,6 +1563,72 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string | null
+          department: string | null
+          id: string
+          monthly_breakdown: Json | null
+          notes: string | null
+          planned_amount: number
+          project_id: string | null
+          scenario: string | null
+          spent_amount: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          department?: string | null
+          id?: string
+          monthly_breakdown?: Json | null
+          notes?: string | null
+          planned_amount: number
+          project_id?: string | null
+          scenario?: string | null
+          spent_amount?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          department?: string | null
+          id?: string
+          monthly_breakdown?: Json | null
+          notes?: string | null
+          planned_amount?: number
+          project_id?: string | null
+          scenario?: string | null
+          spent_amount?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calculated_emissions: {
         Row: {
           activity_data_id: string
@@ -1875,6 +1941,98 @@ export type Database = {
             columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_flow_transactions: {
+        Row: {
+          amount: number
+          category: string
+          company_id: string
+          cost_center_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          project_id: string | null
+          status: string | null
+          supplier_id: string | null
+          transaction_date: string
+          type: string
+          updated_at: string | null
+          waste_log_id: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          company_id: string
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          project_id?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          transaction_date: string
+          type: string
+          updated_at?: string | null
+          waste_log_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          company_id?: string
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          project_id?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          transaction_date?: string
+          type?: string
+          updated_at?: string | null
+          waste_log_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_flow_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_flow_transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_flow_transactions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_flow_transactions_waste_log_id_fkey"
+            columns: ["waste_log_id"]
+            isOneToOne: false
+            referencedRelation: "waste_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -2445,6 +2603,66 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_centers: {
+        Row: {
+          budget: number | null
+          code: string | null
+          company_id: string
+          created_at: string | null
+          department: string | null
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          responsible_user_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          code?: string | null
+          company_id: string
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          code?: string | null
+          company_id?: string
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_centers_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cost_centers"
             referencedColumns: ["id"]
           },
         ]
