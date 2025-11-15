@@ -7,6 +7,366 @@ import { FAQCategory } from "@/types/faq";
 
 export const faqCategories: FAQCategory[] = [
   {
+    id: "use-cases",
+    title: "Casos de Uso Práticos",
+    icon: "Lightbulb",
+    description: "Exemplos reais de uso da plataforma",
+    questions: [
+      {
+        id: "uc-1",
+        question: "Como fazer meu primeiro inventário de emissões?",
+        answer: "Para fazer seu primeiro inventário: 1) Acesse 'Inventário GEE' no menu, 2) Clique em 'Novo Inventário', 3) Defina o período (geralmente ano fiscal), 4) Configure limites organizacionais, 5) Adicione fontes de emissão por escopo, 6) Insira dados de atividade, 7) Revise cálculos automáticos, 8) Gere relatório final. O Assistente IA pode guiá-lo em cada etapa.",
+        tags: ["inventário", "ghg", "iniciante", "tutorial"]
+      },
+      {
+        id: "uc-2",
+        question: "Como preparar relatório para auditoria externa?",
+        answer: "Para auditoria: 1) Acesse 'Relatórios' > 'GHG Protocol', 2) Selecione período auditado, 3) Verifique completude de dados (mínimo 95%), 4) Exporte dados brutos e memória de cálculo, 5) Gere relatório de verificação com evidências, 6) Exporte planilha Excel detalhada, 7) Prepare documentação suporte (notas fiscais, medidores). Use tags de qualidade para rastrear evidências.",
+        tags: ["auditoria", "conformidade", "relatório", "verificação"]
+      },
+      {
+        id: "uc-3",
+        question: "Como usar o Daton para ISO 14001?",
+        answer: "O Daton suporta ISO 14001: 1) Use módulo 'Licenças' para controlar requisitos legais, 2) Configure 'Aspectos Ambientais' em Meio Ambiente, 3) Defina objetivos e metas mensuráveis, 4) Use 'Gestão de Tarefas' para planos de ação, 5) Configure indicadores de desempenho, 6) Gere relatórios de análise crítica, 7) Use alertas para não-conformidades. Integre com auditorias internas.",
+        tags: ["iso14001", "sga", "gestão ambiental", "normas"]
+      },
+      {
+        id: "uc-4",
+        question: "Como integrar Daton com sistema ERP?",
+        answer: "Integração com ERP: 1) Acesse 'Configurações' > 'Integrações', 2) Use API REST do Daton (documentação em /api/docs), 3) Configure webhook para sincronização em tempo real, 4) Mapeie campos ERP para campos Daton, 5) Use CSV/Excel para importação batch inicial, 6) Configure automação para dados financeiros, 7) Teste integração em ambiente sandbox. Suporte para SAP, TOTVS, Protheus.",
+        tags: ["integração", "erp", "api", "automação"]
+      },
+      {
+        id: "uc-5",
+        question: "Como treinar equipe no Daton?",
+        answer: "Plano de treinamento: 1) Comece com 'Vídeos e Tutoriais' desta Central, 2) Faça tour guiado na plataforma (15min), 3) Crie usuários com permissões adequadas, 4) Realize workshop de 2h para equipe principal, 5) Use casos práticos da empresa, 6) Configure projetos piloto, 7) Agende Q&A semanal inicial, 8) Compartilhe esta Central de Ajuda. Certificação disponível em plano Enterprise.",
+        tags: ["treinamento", "onboarding", "capacitação", "equipe"]
+      },
+      {
+        id: "uc-6",
+        question: "Como migrar dados de outro sistema?",
+        answer: "Migração de dados: 1) Exporte dados do sistema antigo em CSV/Excel, 2) Use templates Daton em 'Importação', 3) Mapeie colunas corretamente, 4) Valide dados antes de importar, 5) Importe em lotes pequenos (máx 5.000 linhas), 6) Verifique integridade pós-importação, 7) Use API para volumes grandes (>50k linhas), 8) Mantenha backup do sistema antigo. Serviço de migração assistida disponível.",
+        tags: ["migração", "importação", "dados", "transição"]
+      },
+      {
+        id: "uc-7",
+        question: "Como criar workflow de aprovação de licenças?",
+        answer: "Configure workflow: 1) Acesse 'Configurações' > 'Workflows', 2) Crie novo workflow 'Aprovação de Licenças', 3) Defina etapas (Solicitação > Análise Técnica > Aprovação Gerencial > Aprovação Diretoria), 4) Atribua responsáveis por etapa, 5) Configure prazos (SLA), 6) Ative notificações automáticas, 7) Defina regras de escalação, 8) Teste workflow com licença fictícia.",
+        tags: ["workflow", "aprovação", "licenças", "automação"]
+      },
+      {
+        id: "uc-8",
+        question: "Como monitorar conformidade em tempo real?",
+        answer: "Monitoramento em tempo real: 1) Configure Dashboard de Conformidade, 2) Ative alertas para vencimentos (30/60/90 dias), 3) Use scoring de risco da IA, 4) Configure KPIs de conformidade, 5) Ative notificações push, 6) Use widget de 'Licenças Críticas', 7) Configure relatório semanal automático, 8) Integre com calendário institucional. Painel executivo disponível.",
+        tags: ["conformidade", "monitoramento", "alertas", "tempo real"]
+      },
+      {
+        id: "uc-9",
+        question: "Como preparar relatório para investidores ESG?",
+        answer: "Relatório para investidores: 1) Use template 'Relatório Executivo ESG', 2) Inclua métricas financeiras ESG (ROI, investimentos), 3) Adicione análise de materialidade, 4) Mostre evolução temporal (3-5 anos), 5) Inclua benchmarking setorial, 6) Adicione análise preditiva, 7) Destaque iniciativas e resultados, 8) Exporte em PDF executivo. Use dados do Dashboard ESG Financeiro.",
+        tags: ["investidores", "relatório", "esg", "financeiro"]
+      },
+      {
+        id: "uc-10",
+        question: "Como usar Daton para certificações (B Corp, etc)?",
+        answer: "Para certificações: 1) Use módulo 'GRI Standards' como base, 2) Configure indicadores específicos da certificação, 3) Use 'Casos de Uso' para mapear requisitos, 4) Colete evidências documentais, 5) Use scoring e análise preditiva, 6) Gere relatórios customizados, 7) Acompanhe progresso com metas, 8) Prepare documentação final. Suporte para B Corp, ISO 14001, LEED, GBC Brasil.",
+        tags: ["certificação", "b-corp", "iso", "acreditação"]
+      },
+      {
+        id: "uc-11",
+        question: "Como configurar Daton para múltiplas unidades?",
+        answer: "Gestão multi-unidades: 1) Configure 'Empresas' para cada unidade/planta, 2) Use estrutura hierárquica (Holding > Subsidiárias), 3) Configure usuários com acesso específico, 4) Ative consolidação automática, 5) Use tags geográficas, 6) Configure centros de custos por unidade, 7) Gere relatórios consolidados e individuais, 8) Use Dashboard corporativo. Suporte para holdings e grupos empresariais.",
+        tags: ["multi-site", "unidades", "consolidação", "grupos"]
+      },
+      {
+        id: "uc-12",
+        question: "Como fazer benchmarking setorial?",
+        answer: "Benchmarking: 1) Acesse 'Análise' > 'Benchmarking', 2) Selecione setor (CNAE), 3) Compare indicadores-chave (intensidade carbono, água, resíduos), 4) Use dados anônimos de mercado, 5) Identifique gaps de desempenho, 6) Configure alertas para desvios, 7) Exporte relatório comparativo, 8) Use IA para insights de melhoria. Base de dados de 500+ empresas brasileiras.",
+        tags: ["benchmarking", "comparação", "setor", "mercado"]
+      },
+      {
+        id: "uc-13",
+        question: "Como usar Daton para due diligence ESG?",
+        answer: "Due diligence ESG: 1) Crie projeto específico de DD, 2) Use checklist de due diligence, 3) Carregue documentos para análise IA, 4) Avalie riscos ambientais e sociais, 5) Verifique conformidade legal, 6) Analise passivos ambientais, 7) Gere scoring de risco, 8) Exporte relatório executivo. Template para M&A disponível.",
+        tags: ["due diligence", "m&a", "risco", "avaliação"]
+      },
+      {
+        id: "uc-14",
+        question: "Como criar plano de ação ESG?",
+        answer: "Plano de ação ESG: 1) Use módulo 'Planos de Ação', 2) Defina objetivos SMART, 3) Use metodologia 5W2H, 4) Vincule a metas e indicadores, 5) Atribua responsáveis e prazos, 6) Estime custos e ROI, 7) Configure marcos (milestones), 8) Acompanhe progresso no Dashboard, 9) Use IA para recomendações. Template ESG disponível.",
+        tags: ["plano de ação", "5w2h", "planejamento", "esg"]
+      },
+      {
+        id: "uc-15",
+        question: "Como vincular ESG a bônus de executivos?",
+        answer: "KPIs ESG em remuneração: 1) Defina metas ESG mensuráveis, 2) Configure indicadores no Dashboard, 3) Estabeleça pesos por meta (ex: 20% redução emissões), 4) Use scoring automático, 5) Integre com RH, 6) Configure relatório trimestral, 7) Use análise preditiva para forecast, 8) Exporte dados para comitê. Alinhado com melhores práticas de governança.",
+        tags: ["remuneração", "bonus", "kpi", "governança"]
+      },
+      {
+        id: "uc-16",
+        question: "Como usar IA para identificar oportunidades de melhoria?",
+        answer: "Oportunidades com IA: 1) Use Assistente IA para análise de dados, 2) Pergunte 'Quais as principais oportunidades de redução de emissões?', 3) Analise anomalias e outliers, 4) Use análise preditiva para cenários, 5) Compare com benchmarks, 6) Receba insights proativos semanais, 7) Priorize ações por ROI, 8) Implemente quick wins identificados pela IA.",
+        tags: ["ia", "oportunidades", "melhoria", "otimização"]
+      },
+      {
+        id: "uc-17",
+        question: "Como calcular pegada de carbono de produtos?",
+        answer: "Pegada de produto: 1) Use módulo 'LCA' (Life Cycle Assessment), 2) Mapeie ciclo de vida (berço ao túmulo), 3) Calcule emissões por etapa (matéria-prima, produção, transporte, uso, descarte), 4) Use fatores de emissão específicos, 5) Aloque emissões proporcionalmente, 6) Gere PCR (Product Carbon Footprint), 7) Compare produtos, 8) Use para rotulagem ambiental.",
+        tags: ["produto", "lca", "pegada", "carbono"]
+      },
+      {
+        id: "uc-18",
+        question: "Como monitorar fornecedores ESG?",
+        answer: "Gestão de fornecedores: 1) Configure cadastro de fornecedores, 2) Defina critérios ESG (emissões Escopo 3, certificações), 3) Colete dados via formulário, 4) Avalie performance ESG, 5) Use scoring de risco, 6) Configure auditorias periódicas, 7) Integre com procurement, 8) Gere relatório de cadeia de suprimentos. Questionnaire ESG disponível.",
+        tags: ["fornecedores", "cadeia", "escopo3", "supply chain"]
+      },
+      {
+        id: "uc-19",
+        question: "Como preparar para rating ESG (S&P, MSCI)?",
+        answer: "Preparação para rating: 1) Use checklist do rating desejado, 2) Mapeie indicadores requeridos, 3) Colete dados históricos (3-5 anos), 4) Valide qualidade de dados, 5) Prepare evidências documentais, 6) Use simulador de score, 7) Identifique gaps críticos, 8) Gere relatório pré-rating. Templates para CDP, S&P, MSCI, ISS disponíveis.",
+        tags: ["rating", "esg", "cdp", "msci"]
+      },
+      {
+        id: "uc-20",
+        question: "Como usar Daton em comitês ESG?",
+        answer: "Suporte a comitês: 1) Configure Dashboard executivo, 2) Gere relatórios mensais automáticos, 3) Use métricas de decisão (KPIs, ROI), 4) Prepare apresentações executivas, 5) Compartilhe insights da IA, 6) Acompanhe deliberações e prazos, 7) Use análise de cenários, 8) Exporte atas com dados. Template de governança ESG disponível.",
+        tags: ["comitê", "governança", "decisão", "executivo"]
+      }
+    ]
+  },
+  {
+    id: "glossary",
+    title: "Glossário ESG & Financeiro",
+    icon: "BookMarked",
+    description: "Termos técnicos explicados",
+    questions: [
+      {
+        id: "glos-1",
+        question: "O que é tCO2e (toneladas de CO2 equivalente)?",
+        answer: "tCO2e é a unidade padrão para medir emissões de gases de efeito estufa. Converte todos os GEE (CO2, CH4, N2O, HFCs, etc.) em uma métrica comum, baseando-se no potencial de aquecimento global (GWP) de cada gás em relação ao CO2. Por exemplo: 1 tonelada de metano (CH4) = 25 tCO2e.",
+        tags: ["métrica", "ghg", "unidade", "carbono"]
+      },
+      {
+        id: "glos-2",
+        question: "O que são Escopo 1, 2 e 3?",
+        answer: "Classificação do GHG Protocol: **Escopo 1** = emissões diretas da empresa (combustão, processos, veículos próprios). **Escopo 2** = emissões indiretas de energia comprada (eletricidade, vapor). **Escopo 3** = outras emissões indiretas na cadeia de valor (fornecedores, transporte terceirizado, resíduos, viagens). Escopo 3 geralmente representa 70-90% das emissões totais.",
+        tags: ["escopo", "ghg protocol", "inventário", "classificação"]
+      },
+      {
+        id: "glos-3",
+        question: "O que é GHG Protocol?",
+        answer: "GHG Protocol é o padrão internacional mais usado para quantificar e gerenciar emissões de gases de efeito estufa. Desenvolvido pelo WRI e WBCSD, estabelece metodologia para inventários corporativos e de produtos. É base para ISO 14064 e diversos programas de reporte como CDP.",
+        tags: ["metodologia", "protocolo", "padrão", "inventário"]
+      },
+      {
+        id: "glos-4",
+        question: "O que é Materialidade em ESG?",
+        answer: "Materialidade é o processo de identificar e priorizar temas ESG mais relevantes para o negócio e stakeholders. Considera impacto financeiro (materialidade financeira) e impacto no mundo (materialidade de impacto/dupla). Orienta estratégia ESG e disclosure. Base para relatórios GRI e SASB.",
+        tags: ["materialidade", "esg", "estratégia", "stakeholder"]
+      },
+      {
+        id: "glos-5",
+        question: "O que é Stakeholder?",
+        answer: "Stakeholder é qualquer parte interessada afetada ou que afeta as atividades da organização: funcionários, clientes, fornecedores, investidores, comunidade, governo, ONGs. Engajamento de stakeholders é pilar da gestão ESG e essencial para análise de materialidade.",
+        tags: ["stakeholder", "partes interessadas", "engajamento", "esg"]
+      },
+      {
+        id: "glos-6",
+        question: "O que é Due Diligence ESG?",
+        answer: "Due diligence ESG é processo de avaliação de riscos e oportunidades ambientais, sociais e de governança de uma empresa, comum em M&A, investimentos e concessão de crédito. Inclui análise de conformidade legal, passivos ambientais, questões trabalhistas, litígios, reputação e gestão ESG.",
+        tags: ["due diligence", "risco", "m&a", "avaliação"]
+      },
+      {
+        id: "glos-7",
+        question: "O que é Rating ESG?",
+        answer: "Rating ESG é avaliação quantitativa da performance ESG de uma empresa, realizada por agências especializadas (MSCI, S&P, Sustainalytics, ISS). Considera métricas, disclosure, controvérsias e gestão. Influencia decisões de investidores, custo de capital e reputação. Escala varia por agência (ex: AAA-CCC no MSCI).",
+        tags: ["rating", "avaliação", "esg", "investidores"]
+      },
+      {
+        id: "glos-8",
+        question: "O que são TCFD, SASB e IIRC?",
+        answer: "**TCFD** (Task Force on Climate-related Financial Disclosures) = framework para disclosure de riscos climáticos financeiros. **SASB** (Sustainability Accounting Standards Board) = padrões de reporte de sustentabilidade por setor. **IIRC** (International Integrated Reporting Council) = framework de reporte integrado conectando valor financeiro e não-financeiro. Convergem no ISSB.",
+        tags: ["tcfd", "sasb", "iirc", "frameworks"]
+      },
+      {
+        id: "glos-9",
+        question: "O que é Carbon Pricing?",
+        answer: "Carbon pricing (precificação de carbono) atribui valor monetário às emissões de CO2, internalizando custos ambientais. Principais mecanismos: **taxa de carbono** (imposto fixo por tCO2e) e **cap-and-trade** (mercado de permissões). Usado para incentivo à redução de emissões e transição energética. Preço varia de US$ 5 a US$ 150/tCO2e globalmente.",
+        tags: ["precificação", "carbono", "mercado", "economia"]
+      },
+      {
+        id: "glos-10",
+        question: "Qual a diferença entre Offset e Insetting?",
+        answer: "**Offset** = compensação de emissões comprando créditos de projetos externos (ex: reflorestamento na Amazônia). **Insetting** = redução/remoção de emissões dentro da própria cadeia de valor (ex: agricultura regenerativa de fornecedores). Insetting é preferível por impacto direto e resiliência da cadeia.",
+        tags: ["offset", "insetting", "compensação", "neutralização"]
+      },
+      {
+        id: "glos-11",
+        question: "O que é Economia Circular?",
+        answer: "Economia circular é modelo econômico que visa eliminar resíduos, mantendo produtos, materiais e recursos em uso pelo máximo de tempo. Contrasta com economia linear (extrair-produzir-descartar). Princípios: design regenerativo, compartilhamento, reuso, reparo, remanufatura, reciclagem. Reduz extração de recursos e emissões.",
+        tags: ["circular", "resíduos", "sustentabilidade", "modelo"]
+      },
+      {
+        id: "glos-12",
+        question: "O que é LCA (Life Cycle Assessment)?",
+        answer: "LCA (Avaliação de Ciclo de Vida) é metodologia para avaliar impactos ambientais de um produto/serviço ao longo de todo seu ciclo: extração de matéria-prima, produção, distribuição, uso e descarte (berço ao túmulo). Quantifica emissões, consumo de água, energia, geração de resíduos. Norma ISO 14040.",
+        tags: ["lca", "ciclo de vida", "produto", "impacto"]
+      },
+      {
+        id: "glos-13",
+        question: "O que é Science Based Targets (SBTi)?",
+        answer: "Science Based Targets (SBTi) são metas de redução de emissões alinhadas com a ciência climática (limitar aquecimento a 1,5°C). Validadas pela iniciativa SBTi (CDP, WRI, WWF, UNGC). Empresas comprometem reduzir emissões Escopo 1, 2 e 3 em linha com cenários climáticos do IPCC. Mais de 5.000 empresas globalmente.",
+        tags: ["sbti", "meta", "clima", "ciência"]
+      },
+      {
+        id: "glos-14",
+        question: "Diferença entre Net Zero e Carbon Neutral?",
+        answer: "**Carbon Neutral** = equilibrar emissões com compensações (offsets), sem necessariamente reduzir. Pode ser anual. **Net Zero** = reduzir emissões drasticamente (90%+) alinhado à ciência (SBTi) e compensar apenas residuais inevitáveis. Prazo até 2050. Net Zero é mais ambicioso e exige descarbonização profunda.",
+        tags: ["net zero", "carbon neutral", "neutralização", "meta"]
+      },
+      {
+        id: "glos-15",
+        question: "O que é DRE (Demonstração do Resultado do Exercício)?",
+        answer: "DRE é demonstrativo contábil que apresenta receitas, custos e despesas de um período, resultando no lucro ou prejuízo. Estrutura: Receita Bruta → Deduções → Receita Líquida → CMV → Lucro Bruto → Despesas Operacionais → EBITDA → Juros e Impostos → Lucro Líquido. Obrigatória anualmente.",
+        tags: ["dre", "contabilidade", "financeiro", "lucro"]
+      },
+      {
+        id: "glos-16",
+        question: "O que é EBITDA?",
+        answer: "EBITDA (Earnings Before Interest, Taxes, Depreciation and Amortization) = Lucro antes de juros, impostos, depreciação e amortização. Mede performance operacional pura, excluindo efeitos de estrutura de capital, regime fiscal e investimentos. Facilita comparação entre empresas e setores. Calculado: EBITDA = Lucro Operacional + Depreciação + Amortização.",
+        tags: ["ebitda", "financeiro", "indicador", "performance"]
+      },
+      {
+        id: "glos-17",
+        question: "O que é ROI (Retorno sobre Investimento)?",
+        answer: "ROI mede rentabilidade de um investimento. Fórmula: ROI = (Ganho - Custo) / Custo × 100%. Exemplo: investimento de R$ 100k em eficiência energética gera economia de R$ 30k/ano → ROI = 30% ao ano, payback de 3,3 anos. Em ESG, mede retorno financeiro de iniciativas sustentáveis.",
+        tags: ["roi", "retorno", "investimento", "financeiro"]
+      },
+      {
+        id: "glos-18",
+        question: "O que é Payback?",
+        answer: "Payback é tempo necessário para recuperar investimento inicial através dos retornos gerados. Fórmula simples: Payback = Investimento Inicial / Fluxo de Caixa Anual. Exemplo: projeto de R$ 200k com economia de R$ 50k/ano tem payback de 4 anos. Payback descontado considera valor do dinheiro no tempo (TMA).",
+        tags: ["payback", "investimento", "análise", "retorno"]
+      },
+      {
+        id: "glos-19",
+        question: "Diferença entre CAPEX e OPEX?",
+        answer: "**CAPEX** (Capital Expenditure) = investimentos em ativos de longo prazo (máquinas, imóveis, TI). Deprecia ao longo do tempo. **OPEX** (Operational Expenditure) = despesas operacionais do dia a dia (salários, aluguel, insumos). Impacta resultado imediatamente. Em ESG: painel solar é CAPEX, energia comprada é OPEX.",
+        tags: ["capex", "opex", "investimento", "despesa"]
+      },
+      {
+        id: "glos-20",
+        question: "O que é Fluxo de Caixa?",
+        answer: "Fluxo de caixa registra todas as entradas e saídas de dinheiro em período determinado. Componentes: Fluxo Operacional (atividades do negócio), Fluxo de Investimento (CAPEX), Fluxo de Financiamento (empréstimos, dividendos). Saldo positivo indica geração de caixa. Essencial para liquidez e planejamento financeiro.",
+        tags: ["fluxo de caixa", "liquidez", "financeiro", "gestão"]
+      },
+      {
+        id: "glos-21",
+        question: "O que é Conciliação Bancária?",
+        answer: "Conciliação bancária é processo de comparar registros contábeis da empresa com extratos bancários, identificando e ajustando diferenças (cheques não compensados, depósitos em trânsito, tarifas, erros). Garante acurácia do saldo de caixa. Deve ser feita mensalmente no mínimo. Daton automatiza com importação de OFX.",
+        tags: ["conciliação", "banco", "contabilidade", "auditoria"]
+      },
+      {
+        id: "glos-22",
+        question: "O que é Plano de Contas?",
+        answer: "Plano de Contas é estrutura hierárquica que classifica todas as contas contábeis: Ativo, Passivo, Patrimônio Líquido, Receitas, Custos e Despesas. Exemplo: 1.1.1.01 Caixa, 3.1.1.01 Receita de Vendas. Padroniza registro de transações. Daton oferece modelo alinhado com GRI e categorias ESG.",
+        tags: ["plano de contas", "contabilidade", "classificação", "estrutura"]
+      },
+      {
+        id: "glos-23",
+        question: "O que é Centro de Custos?",
+        answer: "Centro de Custos é unidade organizacional que acumula custos (departamento, projeto, produto). Permite análise de rentabilidade e controle gerencial. Exemplo: CC Marketing, CC Produção, CC P&D. Em ESG, centros de custos são vinculados a pilares (Ambiental, Social, Governança) para rastreamento de investimentos.",
+        tags: ["centro de custos", "controle", "gestão", "custos"]
+      },
+      {
+        id: "glos-24",
+        question: "O que é Lançamento Contábil?",
+        answer: "Lançamento contábil registra fato econômico pelo método das partidas dobradas: débito em uma conta, crédito em outra. Exemplo: compra de equipamento → Débito: Ativo Imobilizado, Crédito: Caixa/Fornecedores. Compõe-se de: data, contas, histórico, valor. Base da escrituração contábil.",
+        tags: ["lançamento", "contabilidade", "débito", "crédito"]
+      },
+      {
+        id: "glos-25",
+        question: "Diferença entre Regime de Competência e Regime de Caixa?",
+        answer: "**Competência** = reconhece receita/despesa quando ocorre o fato gerador (venda, consumo), independente de pagamento. Obrigatório na contabilidade. **Caixa** = reconhece apenas quando há entrada/saída de dinheiro. Usado em gestão de fluxo de caixa. Exemplo: venda a prazo é receita em competência, mas caixa só quando receber.",
+        tags: ["competência", "caixa", "contabilidade", "regime"]
+      }
+    ]
+  },
+  {
+    id: "videos",
+    title: "Vídeos e Tutoriais",
+    icon: "Video",
+    description: "Aprenda com vídeos passo-a-passo",
+    questions: [
+      {
+        id: "vid-1",
+        question: "Tour completo da plataforma (5min)",
+        answer: "Vídeo introdutório apresentando todos os módulos do Daton: Dashboard principal, Inventário GEE, Módulo Financeiro, Assistente IA, Gestão de Licenças, Relatórios, Configurações. Ideal para novos usuários. Link: [Em breve - Entre em contato com suporte para agendar demonstração ao vivo]",
+        tags: ["vídeo", "tour", "introdução", "overview"]
+      },
+      {
+        id: "vid-2",
+        question: "Como fazer seu primeiro inventário GEE (10min)",
+        answer: "Tutorial passo-a-passo: criação de inventário, definição de limites organizacionais, cadastro de fontes de emissão Escopo 1/2/3, inserção de dados de atividade, revisão de fatores de emissão, cálculo automático, geração de relatório GHG Protocol. Inclui exemplos práticos. Link: [Em breve]",
+        tags: ["vídeo", "inventário", "ghg", "tutorial"]
+      },
+      {
+        id: "vid-3",
+        question: "Configuração inicial passo-a-passo (15min)",
+        answer: "Guia completo de setup: criação de empresa, configuração de usuários e permissões, definição de ano fiscal, customização de dashboard, configuração de notificações, importação de dados iniciais, integração com sistemas. Para administradores. Link: [Em breve]",
+        tags: ["vídeo", "configuração", "setup", "admin"]
+      },
+      {
+        id: "vid-4",
+        question: "Módulo Financeiro do zero (12min)",
+        answer: "Tutorial financeiro: configuração de plano de contas, cadastro de contas bancárias, registro de contas a pagar/receber, lançamentos contábeis, centros de custos ESG, vinculação financeiro-ESG, geração de DRE e fluxo de caixa, relatórios financeiros. Link: [Em breve]",
+        tags: ["vídeo", "financeiro", "contabilidade", "tutorial"]
+      },
+      {
+        id: "vid-5",
+        question: "Usando o Assistente IA (8min)",
+        answer: "Como maximizar o Assistente IA: tipos de perguntas efetivas, upload de documentos, análise contextual, pedidos de análise preditiva, interpretação de insights, comandos avançados, melhores práticas. Inclui exemplos reais de uso. Link: [Em breve]",
+        tags: ["vídeo", "ia", "assistente", "tutorial"]
+      },
+      {
+        id: "vid-6",
+        question: "Criando relatórios GRI (15min)",
+        answer: "Relatório GRI completo: análise de materialidade, seleção de indicadores, preenchimento de conteúdos gerais (GRI 2), indicadores temáticos (GRI 300), vinculação de dados automáticos, revisão de completude, exportação para relatório de sustentabilidade. Link: [Em breve]",
+        tags: ["vídeo", "gri", "relatório", "sustentabilidade"]
+      },
+      {
+        id: "vid-7",
+        question: "Integrações e API (10min)",
+        answer: "Guia técnico: autenticação API, endpoints principais, integração com ERP (SAP, TOTVS), webhooks para sincronização, importação batch via CSV/Excel, automações com Zapier/Make, troubleshooting. Para desenvolvedores e equipe de TI. Link: [Em breve]",
+        tags: ["vídeo", "api", "integração", "técnico"]
+      },
+      {
+        id: "vid-8",
+        question: "Análise preditiva na prática (7min)",
+        answer: "Usando análise preditiva: previsão de emissões futuras, cálculo de probabilidade de atingir metas, identificação de anomalias, scoring de risco de conformidade, interpretação de intervalos de confiança, tomada de decisão baseada em dados. Casos reais. Link: [Em breve]",
+        tags: ["vídeo", "preditivo", "análise", "ia"]
+      },
+      {
+        id: "vid-9",
+        question: "Dashboard customizado (6min)",
+        answer: "Personalize seu dashboard: seleção de widgets, configuração de KPIs, filtros e períodos, gráficos customizados, dashboard financeiro ESG, compartilhamento com equipe, visualizações executivas vs. operacionais. Link: [Em breve]",
+        tags: ["vídeo", "dashboard", "customização", "kpi"]
+      },
+      {
+        id: "vid-10",
+        question: "Gestão de tarefas e aprovações (9min)",
+        answer: "Workflow completo: criação de tarefas, atribuição de responsáveis, definição de prazos, configuração de workflow de aprovação, notificações automáticas, acompanhamento de progresso, relatórios de produtividade, integração com licenças e metas. Link: [Em breve]",
+        tags: ["vídeo", "tarefas", "workflow", "aprovação"]
+      },
+      {
+        id: "vid-11",
+        question: "Como acessar material de treinamento?",
+        answer: "Todos os vídeos estarão disponíveis em breve no Centro de Treinamento Daton. Enquanto isso, entre em contato com nosso suporte (suporte@daton.com.br) para agendar: 1) Demonstração ao vivo personalizada (1h), 2) Workshop de onboarding (2h), 3) Treinamento customizado para sua equipe. Certificação disponível em plano Enterprise.",
+        tags: ["treinamento", "contato", "suporte", "workshop"]
+      }
+    ]
+  },
+  {
     id: "primeiros-passos",
     title: "Primeiros Passos",
     icon: "Rocket",
