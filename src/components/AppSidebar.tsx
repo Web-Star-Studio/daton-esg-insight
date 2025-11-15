@@ -200,6 +200,20 @@ const menuSections: MenuSection[] = [
         description: "Alocação de despesas por departamento" 
       },
       { 
+        id: "financial-reports", 
+        title: "Relatórios Financeiros", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/relatorios", 
+        description: "DRE e análises gerenciais" 
+      },
+      { 
+        id: "profitability-analysis", 
+        title: "Análise de Rentabilidade", 
+        icon: TrendingUp, 
+        path: "/financeiro/rentabilidade", 
+        description: "ROI de projetos e categorias" 
+      },
+      { 
         id: "waste-payables", 
         title: "Contas a Pagar - Resíduos", 
         icon: icons.DollarSign, 
