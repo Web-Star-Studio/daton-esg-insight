@@ -59,6 +59,7 @@ const PlanoContas = lazy(() => import("./pages/PlanoContas"));
 const LancamentosContabeis = lazy(() => import("./pages/LancamentosContabeis"));
 const ContasAPagar = lazy(() => import("./pages/ContasAPagar"));
 const ContasAReceber = lazy(() => import("./pages/ContasAReceber"));
+const AprovacoesFinanceiras = lazy(() => import("./pages/AprovacoesFinanceiras"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Desempenho = lazy(() => import("./pages/Desempenho"));
 const Configuracao = lazy(() => import("./pages/Configuracao"));
@@ -390,6 +391,11 @@ const AppContent = () => {
             <Route path="/financeiro/contas-receber" element={
               <ProtectedLazyPageWrapper>
                 <ContasAReceber />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/aprovacoes" element={
+              <ProtectedLazyPageWrapper>
+                <AprovacoesFinanceiras />
               </ProtectedLazyPageWrapper>
             } />
 

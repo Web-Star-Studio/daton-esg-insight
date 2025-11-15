@@ -207,6 +207,13 @@ const menuSections: MenuSection[] = [
         description: "Gestão de recebíveis" 
       },
       { 
+        id: "financial-approvals", 
+        title: "Aprovações", 
+        icon: icons.CheckCircle, 
+        path: "/financeiro/aprovacoes", 
+        description: "Aprovações financeiras pendentes" 
+      },
+      { 
         id: "budget-management", 
         title: "Gestão de Orçamento", 
         icon: TrendingUp, 
