@@ -179,6 +179,34 @@ const menuSections: MenuSection[] = [
         description: "Visão consolidada das finanças" 
       },
       { 
+        id: "chart-of-accounts", 
+        title: "Plano de Contas", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/plano-contas", 
+        description: "Estrutura contábil da empresa" 
+      },
+      { 
+        id: "accounting-entries", 
+        title: "Lançamentos Contábeis", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/lancamentos-contabeis", 
+        description: "Registro de operações contábeis" 
+      },
+      { 
+        id: "accounts-payable", 
+        title: "Contas a Pagar", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/contas-pagar", 
+        description: "Gestão de obrigações financeiras" 
+      },
+      { 
+        id: "accounts-receivable", 
+        title: "Contas a Receber", 
+        icon: TrendingUp, 
+        path: "/financeiro/contas-receber", 
+        description: "Gestão de recebíveis" 
+      },
+      { 
         id: "budget-management", 
         title: "Gestão de Orçamento", 
         icon: TrendingUp, 

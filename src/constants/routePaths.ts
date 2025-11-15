@@ -132,6 +132,10 @@ export const ROUTE_PATHS = {
     PROFITABILITY: '/financeiro/rentabilidade',
     PAYABLES: '/financeiro/residuos/contas-pagar',
     RECEIVABLES: '/financeiro/residuos/contas-receber',
+    CHART_OF_ACCOUNTS: '/financeiro/plano-contas',
+    ACCOUNTING_ENTRIES: '/financeiro/lancamentos-contabeis',
+    ACCOUNTS_PAYABLE_GENERAL: '/financeiro/contas-pagar',
+    ACCOUNTS_RECEIVABLE_GENERAL: '/financeiro/contas-receber',
   },
 } as const;
 
