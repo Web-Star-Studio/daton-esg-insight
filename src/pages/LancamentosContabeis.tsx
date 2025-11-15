@@ -7,10 +7,12 @@ import { accountingEntriesService } from '@/services/accountingEntries';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { NewEntryDialog } from '@/components/accounting/NewEntryDialog';
 
 export default function LancamentosContabeis() {
   const queryClient = useQueryClient();
   const [dateFilter, setDateFilter] = useState<{ start?: string; end?: string }>({});
+  const [showNewDialog, setShowNewDialog] = useState(false);
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ['accounting-entries', dateFilter],
@@ -95,7 +97,7 @@ export default function LancamentosContabeis() {
           <h1 className="text-3xl font-bold">Lançamentos Contábeis</h1>
           <p className="text-muted-foreground">Registro de operações contábeis</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Lançamento
         </Button>
@@ -138,6 +140,8 @@ export default function LancamentosContabeis() {
           <DataTable columns={columns} data={entries} />
         </CardContent>
       </Card>
+
+      <NewEntryDialog open={showNewDialog} onOpenChange={setShowNewDialog} />
     </div>
   );
 }
