@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Download } from 'lucide-react';
-import { chartOfAccountsService } from '@/services/chartOfAccounts';
+import { Plus, Download, Pencil } from 'lucide-react';
+import { chartOfAccountsService, ChartOfAccount } from '@/services/chartOfAccounts';
 import { DataTable } from '@/components/ui/data-table';
+import { ChartOfAccountDialog } from '@/components/accounting/ChartOfAccountDialog';
 
 export default function PlanoContas() {
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | undefined>();
-  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [editingAccount, setEditingAccount] = useState<ChartOfAccount | undefined>();
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['chart-of-accounts'],
@@ -38,7 +38,7 @@ export default function PlanoContas() {
           variant="ghost"
           size="icon"
           onClick={() => {
-            setSelectedAccount(row.original);
+            setEditingAccount(row.original);
             setShowDialog(true);
           }}
         >
@@ -60,7 +60,10 @@ export default function PlanoContas() {
             <Download className="mr-2 h-4 w-4" />
             Importar Plano Padrão
           </Button>
-          <Button>
+          <Button onClick={() => {
+            setEditingAccount(undefined);
+            setShowDialog(true);
+          }}>
             <Plus className="mr-2 h-4 w-4" />
             Nova Conta
           </Button>
@@ -75,6 +78,16 @@ export default function PlanoContas() {
           <DataTable columns={columns} data={accounts} />
         </CardContent>
       </Card>
+
+      <ChartOfAccountDialog
+        open={showDialog}
+        onOpenChange={(open) => {
+          setShowDialog(open);
+          if (!open) setEditingAccount(undefined);
+        }}
+        account={editingAccount}
+        parentAccounts={accounts}
+      />
     </div>
   );
 }
