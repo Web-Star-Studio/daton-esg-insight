@@ -6,14 +6,38 @@ import { Button } from '@/components/ui/button';
 import { DRETable } from '@/components/financial/DRETable';
 import { financialReports } from '@/services/financialReports';
 import { esgFinancialService } from '@/services/esgFinancial';
+import { downloadGRIFinancialExport } from '@/services/griExport';
+import { useToast } from '@/hooks/use-toast';
 import { FileText, Download, Leaf, Users, Shield } from 'lucide-react';
 
 export default function RelatoriosFinanceiros() {
   const currentYear = new Date().getFullYear();
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
   const currentMonth = new Date().getMonth() + 1;
   
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number | undefined>(currentMonth);
+
+  const handleGRIExport = async () => {
+    setIsExporting(true);
+    try {
+      await downloadGRIFinancialExport(selectedYear);
+      toast({
+        title: "Export concluído",
+        description: `Dados financeiros GRI ${selectedYear} exportados com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Error exporting GRI data:', error);
+      toast({
+        title: "Erro no export",
+        description: "Não foi possível exportar os dados. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const { data: dreData, isLoading: dreLoading } = useQuery({
     queryKey: ['dre', selectedYear, selectedMonth],
@@ -70,9 +94,9 @@ export default function RelatoriosFinanceiros() {
             DRE, indicadores e análises gerenciais
           </p>
         </div>
-        <Button>
+        <Button onClick={handleGRIExport} disabled={isExporting}>
           <Download className="mr-2 h-4 w-4" />
-          Exportar Relatório
+          {isExporting ? 'Exportando...' : 'Exportar para GRI'}
         </Button>
       </div>
 
