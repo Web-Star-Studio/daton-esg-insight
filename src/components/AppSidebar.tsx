@@ -214,7 +214,14 @@ const menuSections: MenuSection[] = [
         description: "Aprovações financeiras pendentes" 
       },
       { 
-        id: "budget-management", 
+        id: "esg-financial-dashboard", 
+        title: "Dashboard ESG", 
+        icon: icons.Activity, 
+        path: "/financeiro/esg-dashboard", 
+        description: "Integração Financeiro-ESG" 
+      },
+      { 
+        id: "budget-management",
         title: "Gestão de Orçamento", 
         icon: TrendingUp, 
         path: "/financeiro/orcamento", 

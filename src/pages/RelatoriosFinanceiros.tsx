@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { DRETable } from '@/components/financial/DRETable';
 import { financialReports } from '@/services/financialReports';
-import { FileText, Download } from 'lucide-react';
+import { esgFinancialService } from '@/services/esgFinancial';
+import { FileText, Download, Leaf, Users, Shield } from 'lucide-react';
 
 export default function RelatoriosFinanceiros() {
   const currentYear = new Date().getFullYear();
@@ -28,6 +29,18 @@ export default function RelatoriosFinanceiros() {
     queryKey: ['monthly-comparison', selectedYear],
     queryFn: () => financialReports.getMonthlyComparison(selectedYear),
   });
+
+  const { data: esgStats } = useQuery({
+    queryKey: ['esg-financial-stats', selectedYear],
+    queryFn: () => esgFinancialService.getESGFinancialStats(selectedYear),
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   const months = [
     { value: undefined, label: 'Ano Completo' },
@@ -133,6 +146,68 @@ export default function RelatoriosFinanceiros() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Custos por Pilar ESG */}
+      {esgStats && esgStats.total_esg_costs > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Leaf className="h-5 w-5 text-primary" />
+              Custos por Pilar ESG
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Leaf className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium">Ambiental (E)</span>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(esgStats.environmental_costs)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {esgStats.total_carbon_impact?.toFixed(2) || 0} tCO2e impacto
+                  </p>
+                </div>
+
+                <div className="p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium">Social (S)</span>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(esgStats.social_costs)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Treinamentos, projetos sociais
+                  </p>
+                </div>
+
+                <div className="p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="h-4 w-4 text-purple-600" />
+                    <span className="text-sm font-medium">Governança (G)</span>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(esgStats.governance_costs)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Compliance, auditorias
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Total de Investimentos ESG</p>
+                    <p className="text-xs text-muted-foreground">
+                      Representa {esgStats.esg_percentage.toFixed(1)}% do total de despesas em {selectedYear}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(esgStats.total_esg_costs)}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* DRE */}

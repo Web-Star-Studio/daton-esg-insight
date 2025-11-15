@@ -27,6 +27,8 @@ export type Database = {
           document_type: string | null
           entry_date: string
           entry_number: string
+          esg_category: string | null
+          esg_notes: string | null
           id: string
           notes: string | null
           status: string | null
@@ -46,6 +48,8 @@ export type Database = {
           document_type?: string | null
           entry_date: string
           entry_number: string
+          esg_category?: string | null
+          esg_notes?: string | null
           id?: string
           notes?: string | null
           status?: string | null
@@ -65,6 +69,8 @@ export type Database = {
           document_type?: string | null
           entry_date?: string
           entry_number?: string
+          esg_category?: string | null
+          esg_notes?: string | null
           id?: string
           notes?: string | null
           status?: string | null
@@ -154,6 +160,7 @@ export type Database = {
           approved_by: string | null
           bank_account_id: string | null
           barcode: string | null
+          carbon_impact_estimate: number | null
           category: string
           company_id: string
           cost_center_id: string | null
@@ -161,6 +168,8 @@ export type Database = {
           created_by: string | null
           discount_amount: number | null
           due_date: string
+          esg_category: string | null
+          esg_related_project_id: string | null
           final_amount: number | null
           fine_amount: number | null
           id: string
@@ -189,6 +198,7 @@ export type Database = {
           approved_by?: string | null
           bank_account_id?: string | null
           barcode?: string | null
+          carbon_impact_estimate?: number | null
           category: string
           company_id: string
           cost_center_id?: string | null
@@ -196,6 +206,8 @@ export type Database = {
           created_by?: string | null
           discount_amount?: number | null
           due_date: string
+          esg_category?: string | null
+          esg_related_project_id?: string | null
           final_amount?: number | null
           fine_amount?: number | null
           id?: string
@@ -224,6 +236,7 @@ export type Database = {
           approved_by?: string | null
           bank_account_id?: string | null
           barcode?: string | null
+          carbon_impact_estimate?: number | null
           category?: string
           company_id?: string
           cost_center_id?: string | null
@@ -231,6 +244,8 @@ export type Database = {
           created_by?: string | null
           discount_amount?: number | null
           due_date?: string
+          esg_category?: string | null
+          esg_related_project_id?: string | null
           final_amount?: number | null
           fine_amount?: number | null
           id?: string
@@ -294,6 +309,7 @@ export type Database = {
       accounts_receivable: {
         Row: {
           bank_account_id: string | null
+          carbon_impact_estimate: number | null
           category: string
           company_id: string
           cost_center_id: string | null
@@ -302,6 +318,8 @@ export type Database = {
           customer_name: string
           discount_amount: number | null
           due_date: string
+          esg_category: string | null
+          esg_related_project_id: string | null
           final_amount: number | null
           fine_amount: number | null
           id: string
@@ -322,6 +340,7 @@ export type Database = {
         }
         Insert: {
           bank_account_id?: string | null
+          carbon_impact_estimate?: number | null
           category: string
           company_id: string
           cost_center_id?: string | null
@@ -330,6 +349,8 @@ export type Database = {
           customer_name: string
           discount_amount?: number | null
           due_date: string
+          esg_category?: string | null
+          esg_related_project_id?: string | null
           final_amount?: number | null
           fine_amount?: number | null
           id?: string
@@ -350,6 +371,7 @@ export type Database = {
         }
         Update: {
           bank_account_id?: string | null
+          carbon_impact_estimate?: number | null
           category?: string
           company_id?: string
           cost_center_id?: string | null
@@ -358,6 +380,8 @@ export type Database = {
           customer_name?: string
           discount_amount?: number | null
           due_date?: string
+          esg_category?: string | null
+          esg_related_project_id?: string | null
           final_amount?: number | null
           fine_amount?: number | null
           id?: string
@@ -5365,6 +5389,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      esg_financial_links: {
+        Row: {
+          allocation_percentage: number | null
+          carbon_impact_estimate: number | null
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string | null
+          esg_category: string
+          esg_pillar: string | null
+          financial_entity_id: string
+          financial_entity_type: string
+          id: string
+          notes: string | null
+          related_project_id: string | null
+          related_project_type: string | null
+          social_impact_description: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          carbon_impact_estimate?: number | null
+          company_id: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          esg_category: string
+          esg_pillar?: string | null
+          financial_entity_id: string
+          financial_entity_type: string
+          id?: string
+          notes?: string | null
+          related_project_id?: string | null
+          related_project_type?: string | null
+          social_impact_description?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allocation_percentage?: number | null
+          carbon_impact_estimate?: number | null
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          esg_category?: string
+          esg_pillar?: string | null
+          financial_entity_id?: string
+          financial_entity_type?: string
+          id?: string
+          notes?: string | null
+          related_project_id?: string | null
+          related_project_type?: string | null
+          social_impact_description?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esg_financial_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       esg_indicator_cache: {
         Row: {
@@ -18100,7 +18186,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_esg_financial_summary: {
+        Row: {
+          company_id: string | null
+          esg_category: string | null
+          month: number | null
+          source_type: string | null
+          total_amount: number | null
+          total_carbon_impact: number | null
+          transaction_count: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_bsc_objective_progress: {
@@ -18196,6 +18294,10 @@ export type Database = {
             Returns: number
           }
       get_dashboard_analytics: { Args: { p_company_id: string }; Returns: Json }
+      get_esg_financial_stats: {
+        Args: { p_company_id: string; p_year?: number }
+        Returns: Json
+      }
       get_indicator_suggested_value:
         | {
             Args: { p_company_id: string; p_indicator_code: string }
