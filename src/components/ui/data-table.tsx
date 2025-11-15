@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/table";
 
 interface Column<T> {
-  accessorKey: string;
+  accessorKey?: string;
+  id?: string;
   header: string;
   cell?: (props: { row: { original: T } }) => React.ReactNode;
 }
@@ -28,7 +29,7 @@ export function DataTable<T extends Record<string, any>>({
         <TableHeader>
           <TableRow>
             {columns.map((column) => (
-              <TableHead key={column.accessorKey}>{column.header}</TableHead>
+              <TableHead key={column.accessorKey || column.id}>{column.header}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -43,10 +44,10 @@ export function DataTable<T extends Record<string, any>>({
             data.map((row, rowIndex) => (
               <TableRow key={rowIndex}>
                 {columns.map((column) => (
-                  <TableCell key={column.accessorKey}>
+                  <TableCell key={column.accessorKey || column.id}>
                     {column.cell
                       ? column.cell({ row: { original: row } })
-                      : row[column.accessorKey]}
+                      : column.accessorKey ? row[column.accessorKey] : null}
                   </TableCell>
                 ))}
               </TableRow>
