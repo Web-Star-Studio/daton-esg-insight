@@ -53,6 +53,8 @@ const DashboardFinanceiro = lazy(() => import("./pages/DashboardFinanceiro"));
 const GestaoOrcamento = lazy(() => import("./pages/GestaoOrcamento"));
 const FluxoCaixa = lazy(() => import("./pages/FluxoCaixa"));
 const CentroCustos = lazy(() => import("./pages/CentroCustos"));
+const RelatoriosFinanceiros = lazy(() => import("./pages/RelatoriosFinanceiros"));
+const AnaliseRentabilidade = lazy(() => import("./pages/AnaliseRentabilidade"));
 const Ativos = lazy(() => import("./pages/Ativos"));
 const Desempenho = lazy(() => import("./pages/Desempenho"));
 const Configuracao = lazy(() => import("./pages/Configuracao"));
@@ -354,6 +356,16 @@ const AppContent = () => {
             <Route path="/financeiro/centros-custo" element={
               <ProtectedLazyPageWrapper>
                 <CentroCustos />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/relatorios" element={
+              <ProtectedLazyPageWrapper>
+                <RelatoriosFinanceiros />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/financeiro/rentabilidade" element={
+              <ProtectedLazyPageWrapper>
+                <AnaliseRentabilidade />
               </ProtectedLazyPageWrapper>
             } />
 

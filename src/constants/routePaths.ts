@@ -128,6 +128,8 @@ export const ROUTE_PATHS = {
     BUDGET: '/financeiro/orcamento',
     CASH_FLOW: '/financeiro/fluxo-caixa',
     COST_CENTERS: '/financeiro/centros-custo',
+    REPORTS: '/financeiro/relatorios',
+    PROFITABILITY: '/financeiro/rentabilidade',
     PAYABLES: '/financeiro/residuos/contas-pagar',
     RECEIVABLES: '/financeiro/residuos/contas-receber',
   },
