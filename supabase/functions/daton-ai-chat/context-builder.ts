@@ -49,6 +49,32 @@ export async function buildPageContext(
       context = await buildPeopleContext(companyId, supabase);
       break;
     
+    // Financial pages
+    case '/financeiro/dashboard':
+      context = await buildFinancialDashboardContext(companyId, supabase);
+      break;
+    
+    case '/financeiro/lancamentos':
+      context = await buildAccountingEntriesContext(companyId, supabase);
+      break;
+    
+    case '/financeiro/contas-pagar':
+      context = await buildAccountsPayableContext(companyId, supabase);
+      break;
+    
+    case '/financeiro/contas-receber':
+      context = await buildAccountsReceivableContext(companyId, supabase);
+      break;
+    
+    case '/financeiro/esg-dashboard':
+      context = await buildESGFinancialContext(companyId, supabase);
+      break;
+    
+    case '/financeiro/relatorios':
+    case '/financeiro/rentabilidade':
+      context = await buildFinancialReportsContext(companyId, supabase);
+      break;
+    
     default:
       context = '📍 **Contexto:** Página geral do sistema ESG';
   }
@@ -368,5 +394,265 @@ async function buildPeopleContext(companyId: string, supabase: SupabaseClient): 
 - Gaps de treinamento
 - Indicadores de RH
 - Recomendações de D&I
+`;
+}
+
+/**
+ * Financial Dashboard Context
+ */
+async function buildFinancialDashboardContext(companyId: string, supabase: SupabaseClient): Promise<string> {
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  const [payables, receivables, bankAccounts] = await Promise.all([
+    supabase
+      .from('accounts_payable')
+      .select('final_amount, status, due_date', { count: 'exact' })
+      .eq('company_id', companyId)
+      .gte('due_date', firstDayOfMonth.toISOString()),
+    
+    supabase
+      .from('accounts_receivable')
+      .select('final_amount, status, due_date', { count: 'exact' })
+      .eq('company_id', companyId)
+      .gte('due_date', firstDayOfMonth.toISOString()),
+    
+    supabase
+      .from('bank_accounts')
+      .select('current_balance')
+      .eq('company_id', companyId)
+      .eq('status', 'Ativa')
+  ]);
+
+  const totalPayable = payables.data?.reduce((sum, p) => sum + (p.final_amount || 0), 0) || 0;
+  const totalReceivable = receivables.data?.reduce((sum, r) => sum + (r.final_amount || 0), 0) || 0;
+  const totalBalance = bankAccounts.data?.reduce((sum, b) => sum + (b.current_balance || 0), 0) || 0;
+
+  return `
+📍 **Página:** Dashboard Financeiro
+
+💰 **Resumo Financeiro (Mês Atual):**
+• Saldo em contas: R$ ${totalBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+• Contas a pagar: R$ ${totalPayable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${payables.count || 0} contas)
+• Contas a receber: R$ ${totalReceivable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${receivables.count || 0} contas)
+• Saldo projetado: R$ ${(totalBalance + totalReceivable - totalPayable).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+
+💡 **Assistência Contextual:**
+- Posso projetar seu fluxo de caixa para os próximos meses
+- Posso analisar padrões de receitas e despesas
+- Posso calcular índices financeiros (liquidez, rentabilidade)
+- Posso identificar contas em atraso ou próximas ao vencimento
+`;
+}
+
+/**
+ * Accounting Entries Context
+ */
+async function buildAccountingEntriesContext(companyId: string, supabase: SupabaseClient): Promise<string> {
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  const { data: entries, count } = await supabase
+    .from('accounting_entries')
+    .select('status, total_debit, total_credit', { count: 'exact' })
+    .eq('company_id', companyId)
+    .gte('accounting_date', firstDayOfMonth.toISOString());
+
+  const totalDebit = entries?.reduce((sum, e) => sum + e.total_debit, 0) || 0;
+  const totalCredit = entries?.reduce((sum, e) => sum + e.total_credit, 0) || 0;
+  const draftCount = entries?.filter(e => e.status === 'Rascunho').length || 0;
+
+  return `
+📍 **Página:** Lançamentos Contábeis
+
+📊 **Lançamentos (Mês Atual):**
+• Total de lançamentos: ${count || 0}
+• Rascunhos pendentes: ${draftCount}
+• Total débito: R$ ${totalDebit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+• Total crédito: R$ ${totalCredit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+
+💡 **Assistência Contextual:**
+- Posso revisar lançamentos pendentes de aprovação
+- Posso identificar inconsistências contábeis
+- Posso sugerir categorizações ESG para lançamentos
+- Posso gerar relatórios contábeis customizados
+`;
+}
+
+/**
+ * Accounts Payable Context
+ */
+async function buildAccountsPayableContext(companyId: string, supabase: SupabaseClient): Promise<string> {
+  const now = new Date();
+  const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  
+  const [overdue, dueSoon, esgRelated] = await Promise.all([
+    supabase
+      .from('accounts_payable')
+      .select('final_amount', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('status', 'Pendente')
+      .lt('due_date', now.toISOString()),
+    
+    supabase
+      .from('accounts_payable')
+      .select('final_amount', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('status', 'Pendente')
+      .gte('due_date', now.toISOString())
+      .lte('due_date', next7Days.toISOString()),
+    
+    supabase
+      .from('accounts_payable')
+      .select('esg_category, final_amount')
+      .eq('company_id', companyId)
+      .not('esg_category', 'is', null)
+  ]);
+
+  const overdueAmount = overdue.data?.reduce((sum, p) => sum + (p.final_amount || 0), 0) || 0;
+  const dueSoonAmount = dueSoon.data?.reduce((sum, p) => sum + (p.final_amount || 0), 0) || 0;
+
+  return `
+📍 **Página:** Contas a Pagar
+
+⚠️ **Alertas:**
+• Contas em atraso: ${overdue.count || 0} (R$ ${overdueAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+• Vencimento em 7 dias: ${dueSoon.count || 0} (R$ ${dueSoonAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+• Contas com categoria ESG: ${esgRelated.data?.length || 0}
+
+💡 **Assistência Contextual:**
+- Posso priorizar pagamentos por urgência e impacto
+- Posso identificar fornecedores ESG
+- Posso sugerir renegociações com base em padrões
+- Posso calcular custo ESG mensal/anual
+`;
+}
+
+/**
+ * Accounts Receivable Context
+ */
+async function buildAccountsReceivableContext(companyId: string, supabase: SupabaseClient): Promise<string> {
+  const now = new Date();
+  
+  const [overdue, pending] = await Promise.all([
+    supabase
+      .from('accounts_receivable')
+      .select('final_amount', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('status', 'Pendente')
+      .lt('due_date', now.toISOString()),
+    
+    supabase
+      .from('accounts_receivable')
+      .select('final_amount', { count: 'exact' })
+      .eq('company_id', companyId)
+      .eq('status', 'Pendente')
+  ]);
+
+  const overdueAmount = overdue.data?.reduce((sum, r) => sum + (r.final_amount || 0), 0) || 0;
+  const pendingAmount = pending.data?.reduce((sum, r) => sum + (r.final_amount || 0), 0) || 0;
+
+  return `
+📍 **Página:** Contas a Receber
+
+📈 **Situação:**
+• Total pendente: R$ ${pendingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${pending.count || 0} contas)
+• Em atraso: R$ ${overdueAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${overdue.count || 0} contas)
+• Taxa de inadimplência: ${pending.count ? ((overdue.count || 0) / pending.count * 100).toFixed(1) : 0}%
+
+💡 **Assistência Contextual:**
+- Posso identificar clientes com maior risco de inadimplência
+- Posso sugerir ações de cobrança priorizadas
+- Posso prever recebimentos para os próximos meses
+- Posso analisar padrões de pagamento por cliente
+`;
+}
+
+/**
+ * ESG Financial Context
+ */
+async function buildESGFinancialContext(companyId: string, supabase: SupabaseClient): Promise<string> {
+  const { data: stats, error } = await supabase.rpc('get_esg_financial_stats', {
+    p_company_id: companyId,
+    p_year: new Date().getFullYear()
+  });
+
+  if (error || !stats) {
+    return `
+📍 **Página:** Dashboard ESG Financeiro
+
+💡 **Assistência Contextual:**
+- Configure vínculos ESG em suas transações para análises detalhadas
+- Posso ajudar a categorizar despesas por pilar ESG
+- Posso calcular ROI de iniciativas ESG
+`;
+  }
+
+  return `
+📍 **Página:** Dashboard ESG Financeiro
+
+🌱 **Impacto Financeiro ESG (${stats.year}):**
+• Total ESG: R$ ${stats.total_esg_costs?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+• Ambiental: R$ ${stats.environmental_costs?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+• Social: R$ ${stats.social_costs?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+• Governança: R$ ${stats.governance_costs?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+• % do total de despesas: ${stats.esg_percentage?.toFixed(2) || '0.00'}%
+• Impacto carbono estimado: ${stats.total_carbon_impact?.toLocaleString('pt-BR') || '0'} tCO2e
+
+💡 **Assistência Contextual:**
+- Posso calcular ROI de cada iniciativa ESG
+- Posso comparar seu investimento ESG com benchmarks de mercado
+- Posso identificar oportunidades de economia com impacto ESG
+- Posso projetar custos ESG futuros
+`;
+}
+
+/**
+ * Financial Reports Context
+ */
+async function buildFinancialReportsContext(companyId: string, supabase: SupabaseClient): Promise<string> {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  
+  const [entries, payables, receivables] = await Promise.all([
+    supabase
+      .from('accounting_entries')
+      .select('total_debit, total_credit', { count: 'exact' })
+      .eq('company_id', companyId)
+      .gte('accounting_date', startOfYear.toISOString()),
+    
+    supabase
+      .from('accounts_payable')
+      .select('final_amount, status')
+      .eq('company_id', companyId)
+      .gte('due_date', startOfYear.toISOString()),
+    
+    supabase
+      .from('accounts_receivable')
+      .select('final_amount, status')
+      .eq('company_id', companyId)
+      .gte('due_date', startOfYear.toISOString())
+  ]);
+
+  const totalExpenses = payables.data?.reduce((sum, p) => sum + (p.final_amount || 0), 0) || 0;
+  const totalRevenue = receivables.data?.reduce((sum, r) => sum + (r.final_amount || 0), 0) || 0;
+  const paidExpenses = payables.data?.filter(p => p.status === 'Pago').reduce((sum, p) => sum + (p.final_amount || 0), 0) || 0;
+  const receivedRevenue = receivables.data?.filter(r => r.status === 'Recebido').reduce((sum, r) => sum + (r.final_amount || 0), 0) || 0;
+
+  return `
+📍 **Página:** Relatórios Financeiros
+
+📊 **Dados Anuais (${now.getFullYear()}):**
+• Lançamentos contábeis: ${entries.count || 0}
+• Receitas: R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${((receivedRevenue / totalRevenue) * 100).toFixed(1)}% realizadas)
+• Despesas: R$ ${totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${((paidExpenses / totalExpenses) * 100).toFixed(1)}% pagas)
+• Resultado: R$ ${(totalRevenue - totalExpenses).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+
+💡 **Assistência Contextual:**
+- Posso gerar DRE (Demonstração de Resultado)
+- Posso criar análise de rentabilidade por período
+- Posso comparar desempenho com períodos anteriores
+- Posso identificar principais custos e receitas
+- Posso gerar relatórios personalizados
 `;
 }

@@ -755,5 +755,222 @@ export const readTools = [
         required: []
       }
     }
+  },
+  
+  // =================== FINANCIAL TOOLS ===================
+  {
+    type: "function",
+    function: {
+      name: "query_accounting_entries",
+      description: "Consulta lançamentos contábeis. Use para análise de despesas, receitas, balanço.",
+      parameters: {
+        type: "object",
+        properties: {
+          startDate: {
+            type: "string",
+            description: "Data inicial (formato YYYY-MM-DD)"
+          },
+          endDate: {
+            type: "string",
+            description: "Data final (formato YYYY-MM-DD)"
+          },
+          status: {
+            type: "string",
+            enum: ["all", "Rascunho", "Lançado", "Aprovado"],
+            description: "Status do lançamento"
+          },
+          includeDetails: {
+            type: "boolean",
+            description: "Incluir linhas detalhadas dos lançamentos"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_accounts_payable",
+      description: "Consulta contas a pagar. Use para análise de dívidas, projeções de pagamento, fornecedores.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["all", "Pendente", "Pago", "Em Atraso", "Agendado"],
+            description: "Status da conta"
+          },
+          dueInDays: {
+            type: "number",
+            description: "Vencimento nos próximos X dias"
+          },
+          esgCategory: {
+            type: "string",
+            enum: ["all", "Environmental", "Social", "Governance"],
+            description: "Filtrar por categoria ESG"
+          },
+          includeSupplierInfo: {
+            type: "boolean",
+            description: "Incluir informações do fornecedor"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_accounts_receivable",
+      description: "Consulta contas a receber. Use para análise de receitas, inadimplência, fluxo de entrada.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: {
+            type: "string",
+            enum: ["all", "Pendente", "Recebido", "Em Atraso"],
+            description: "Status da conta"
+          },
+          dueInDays: {
+            type: "number",
+            description: "Vencimento nos próximos X dias"
+          },
+          esgCategory: {
+            type: "string",
+            enum: ["all", "Environmental", "Social", "Governance"],
+            description: "Filtrar por categoria ESG"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "calculate_financial_ratios",
+      description: "Calcula índices financeiros (liquidez, rentabilidade, endividamento).",
+      parameters: {
+        type: "object",
+        properties: {
+          period: {
+            type: "string",
+            enum: ["current_month", "current_quarter", "current_year", "custom"],
+            description: "Período de análise"
+          },
+          ratios: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["liquidity", "profitability", "debt", "esg_impact", "all"]
+            },
+            description: "Índices a calcular"
+          }
+        },
+        required: ["period"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "predict_cash_flow",
+      description: "Prevê fluxo de caixa baseado em contas a pagar/receber e histórico.",
+      parameters: {
+        type: "object",
+        properties: {
+          forecastMonths: {
+            type: "number",
+            description: "Número de meses para projetar (1-12)"
+          },
+          includeESGImpact: {
+            type: "boolean",
+            description: "Incluir impacto de investimentos ESG na projeção"
+          },
+          confidence: {
+            type: "string",
+            enum: ["low", "medium", "high"],
+            description: "Nível de confiança da projeção"
+          }
+        },
+        required: ["forecastMonths"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_esg_financial_impact",
+      description: "Analisa impacto financeiro de iniciativas ESG (ROI, custos, benefícios).",
+      parameters: {
+        type: "object",
+        properties: {
+          year: {
+            type: "number",
+            description: "Ano de análise"
+          },
+          category: {
+            type: "string",
+            enum: ["Environmental", "Social", "Governance", "all"],
+            description: "Categoria ESG"
+          },
+          includeROI: {
+            type: "boolean",
+            description: "Incluir cálculo de ROI por projeto"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_bank_accounts",
+      description: "Consulta saldos e movimentações de contas bancárias.",
+      parameters: {
+        type: "object",
+        properties: {
+          includeBalances: {
+            type: "boolean",
+            description: "Incluir saldos atuais"
+          },
+          includeProjections: {
+            type: "boolean",
+            description: "Incluir projeções baseadas em contas a pagar/receber"
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "analyze_financial_trends",
+      description: "Analisa tendências financeiras (receitas, despesas, margens) ao longo do tempo.",
+      parameters: {
+        type: "object",
+        properties: {
+          metric: {
+            type: "string",
+            enum: ["revenue", "expenses", "profit", "esg_costs", "cash_flow"],
+            description: "Métrica a analisar"
+          },
+          period: {
+            type: "string",
+            enum: ["last_3_months", "last_6_months", "last_12_months", "year_to_date"],
+            description: "Período de análise"
+          },
+          groupBy: {
+            type: "string",
+            enum: ["month", "quarter", "category", "esg_pillar"],
+            description: "Agrupar resultados"
+          }
+        },
+        required: ["metric", "period"]
+      }
+    }
   }
 ];

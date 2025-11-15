@@ -16,6 +16,16 @@ import {
   identifyOptimizationOpportunities,
   analyzeStakeholderImpact
 } from './advanced-tool-executors.ts';
+import {
+  queryAccountingEntries,
+  queryAccountsPayable,
+  queryAccountsReceivable,
+  calculateFinancialRatios,
+  predictCashFlow,
+  analyzeESGFinancialImpact,
+  queryBankAccounts,
+  analyzeFinancialTrends
+} from './financial-tool-executors.ts';
 
 export async function executeReadTool(
   toolName: string,
@@ -94,6 +104,31 @@ export async function executeReadTool(
       
       case 'analyze_stakeholder_impact':
         return await analyzeStakeholderImpact(args, companyId, supabaseClient);
+      
+      // Financial Tools
+      case 'query_accounting_entries':
+        return await queryAccountingEntries(args, companyId, supabaseClient);
+      
+      case 'query_accounts_payable':
+        return await queryAccountsPayable(args, companyId, supabaseClient);
+      
+      case 'query_accounts_receivable':
+        return await queryAccountsReceivable(args, companyId, supabaseClient);
+      
+      case 'calculate_financial_ratios':
+        return await calculateFinancialRatios(args, companyId, supabaseClient);
+      
+      case 'predict_cash_flow':
+        return await predictCashFlow(args, companyId, supabaseClient);
+      
+      case 'analyze_esg_financial_impact':
+        return await analyzeESGFinancialImpact(args, companyId, supabaseClient);
+      
+      case 'query_bank_accounts':
+        return await queryBankAccounts(args, companyId, supabaseClient);
+      
+      case 'analyze_financial_trends':
+        return await analyzeFinancialTrends(args, companyId, supabaseClient);
       
       // New expanded tools
       case 'global_search':
