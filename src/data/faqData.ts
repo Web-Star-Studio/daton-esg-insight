@@ -96,6 +96,34 @@ export const faqCategories: FAQCategory[] = [
         answer: "Acesse Dashboard > Novo Dashboard Customizado. Escolha os widgets desejados, configure filtros padrão, defina o período de análise e salve com um nome. Você pode criar múltiplos dashboards para diferentes públicos (executivo, operacional, regulatório).",
         tags: ["dashboard", "customização", "widgets", "personalização"],
         relatedQuestions: ["personalizar-widgets", "exportar-dashboard"]
+      },
+      {
+        id: "dashboard-financeiro",
+        question: "O que é o Dashboard Financeiro?",
+        answer: "O Dashboard Financeiro integra métricas financeiras e ESG em uma única visualização. Mostra: fluxo de caixa com categorização ESG, ROI de investimentos sustentáveis, despesas por pilar ESG, previsões de custo-carbono, análise de rentabilidade de projetos ambientais e alertas financeiros inteligentes. Acesse através de Financeiro > Dashboard.",
+        tags: ["dashboard", "financeiro", "esg", "integração", "roi"],
+        relatedQuestions: ["dashboard-esg-financeiro", "metricas-financeiras"]
+      },
+      {
+        id: "dashboard-esg-financeiro",
+        question: "Como usar o Dashboard ESG Financeiro?",
+        answer: "Este dashboard específico mostra a conexão entre performance financeira e ESG: custos ambientais vs economia gerada, investimentos em iniciativas sociais vs retorno em reputação, gastos em governança vs redução de riscos. Inclui gráficos de correlação, análise de materialidade financeira e projeções de impacto. Ideal para CFOs e comitês ESG.",
+        tags: ["esg", "financeiro", "dashboard", "análise", "impacto"],
+        relatedQuestions: ["dashboard-financeiro", "integracao-financeiro-esg"]
+      },
+      {
+        id: "customizar-kpis",
+        question: "Como customizar KPIs no dashboard?",
+        answer: "Acesse Dashboard > Configurar KPIs. Você pode: criar KPIs customizados com fórmulas próprias, definir metas e limites com alertas visuais, escolher tipo de visualização (número, gauge, gráfico), configurar cores por faixa de desempenho e vincular KPIs a metas estratégicas. Suporta cálculos complexos combinando múltiplas fontes de dados.",
+        tags: ["kpi", "customização", "métricas", "indicadores", "fórmulas"],
+        relatedQuestions: ["metricas-automaticas", "dashboards-customizados"]
+      },
+      {
+        id: "compartilhar-dashboards",
+        question: "Como compartilhar dashboards com stakeholders?",
+        answer: "Dashboards podem ser compartilhados de várias formas: **Link público** (visualização apenas leitura), **Agendamento de envios** (PDF por e-mail semanal/mensal), **Exportação** (PDF, PowerPoint, imagem), **Embedding** (iframe em sites externos com autenticação) e **Acesso temporário** (link com prazo de validade). Configure permissões granulares por dashboard.",
+        tags: ["compartilhamento", "dashboard", "exportar", "stakeholders", "link"],
+        relatedQuestions: ["exportar-dashboard", "dashboards-customizados"]
       }
     ]
   },
@@ -289,6 +317,34 @@ export const faqCategories: FAQCategory[] = [
         answer: "Acesse Metas > Relatórios. Gere relatórios consolidados com: visão geral de todas as metas, % de atingimento, metas atrasadas, ações concluídas vs pendentes, gráficos de evolução temporal e análise de desvios. Exporte em PDF executivo ou Excel para análise detalhada.",
         tags: ["relatórios", "análise", "exportar", "consolidado"],
         relatedQuestions: ["acompanhar-progresso", "criar-metas"]
+      },
+      {
+        id: "metas-financeiras-esg",
+        question: "Como criar metas financeiras ESG?",
+        answer: "Defina metas que combinam performance financeira e ESG: **ROI de projetos sustentáveis** (ex: 15% retorno em energia solar), **Redução de custos ambientais** (ex: -20% despesas com resíduos), **Investimento ESG** (ex: 5% do CAPEX em iniciativas sustentáveis), **Custo-carbono** (ex: R$ 50/tCO2e máximo). Vincule metas a orçamentos e acompanhe realizado vs planejado.",
+        tags: ["metas", "financeiro", "esg", "roi", "investimento"],
+        relatedQuestions: ["criar-metas", "roi-projetos-esg"]
+      },
+      {
+        id: "analise-preditiva-metas",
+        question: "Como a análise preditiva ajuda no atingimento de metas?",
+        answer: "O sistema de IA analisa tendências históricas e prevê: **Probabilidade de atingir a meta** (% de chance baseado em ritmo atual), **Data estimada de conclusão** (considerando sazonalidade), **Ações corretivas recomendadas** (se meta está em risco), **Simulações de cenários** (o que acontece se mudarmos X?). Receba alertas proativos quando desvios significativos são detectados.",
+        tags: ["preditivo", "ia", "análise", "previsão", "probabilidade"],
+        relatedQuestions: ["acompanhar-progresso", "analise-preditiva"]
+      },
+      {
+        id: "roi-metas",
+        question: "Como calcular ROI de metas ESG?",
+        answer: "O cálculo de ROI de metas ESG considera: **Investimento inicial** (CAPEX + OPEX), **Economia gerada** (redução de custos operacionais, eficiência, incentivos fiscais), **Benefícios intangíveis** (reputação, acesso a crédito verde, atração de talentos) e **Riscos evitados** (multas, passivos ambientais). A plataforma gera análise de payback, TIR e VPL automaticamente.",
+        tags: ["roi", "retorno", "investimento", "análise", "financeiro"],
+        relatedQuestions: ["metas-financeiras-esg", "roi-projetos-esg"]
+      },
+      {
+        id: "metas-smart",
+        question: "Como criar metas SMART?",
+        answer: "O sistema guia você a criar metas SMART: **S**pecíficas (objetivo claro), **M**ensuráveis (indicador quantificável), **A**tingíveis (realista com recursos disponíveis), **R**elevantes (alinhada à estratégia ESG) e **T**emporal (prazo definido). Use o assistente de criação que valida cada critério e sugere melhorias para tornar metas mais eficazes.",
+        tags: ["smart", "metas", "metodologia", "planejamento", "objetivos"],
+        relatedQuestions: ["criar-metas", "tipos-metas"]
       }
     ]
   },
@@ -504,6 +560,34 @@ export const faqCategories: FAQCategory[] = [
         answer: "Acesse Documentos > Explorador. Crie pastas e subpastas hierárquicas para organizar documentos (ex: Emissões/2024, Resíduos/MTRs). Mova documentos arrastando ou usando menu contextual. Use tags adicionais para categorização cruzada. A busca funciona em todas pastas simultaneamente.",
         tags: ["pastas", "organização", "estrutura", "categorias"],
         relatedQuestions: ["upload-documentos", "buscar-documentos"]
+      },
+      {
+        id: "upload-documentos-financeiros",
+        question: "Como fazer upload de documentos financeiros?",
+        answer: "Faça upload de documentos financeiros em Financeiro > Documentos: **Notas Fiscais** (compras, vendas), **Boletos** (pagamentos), **Extratos Bancários**, **DARFs**, **Contratos**, **Recibos**. A IA extrai automaticamente: fornecedor, valor, vencimento, CFOP, impostos e categorização ESG sugerida. Documentos são vinculados automaticamente às transações correspondentes.",
+        tags: ["financeiro", "documentos", "notas fiscais", "upload", "ia"],
+        relatedQuestions: ["extracao-ia-notas-fiscais", "upload-documentos"]
+      },
+      {
+        id: "extracao-ia-notas-fiscais",
+        question: "Como funciona a extração IA de notas fiscais?",
+        answer: "Faça upload de NF-e (XML ou PDF) e a IA extrai: **Dados do fornecedor** (CNPJ, nome, endereço), **Itens** (descrição, quantidade, valor unitário), **Impostos** (ICMS, IPI, PIS, COFINS), **Totais**, **Natureza da operação**, **CFOP** e sugere **categorização ESG** automática (ex: combustível = Escopo 1, energia = Escopo 2). Taxa de precisão: >95%.",
+        tags: ["ia", "notas fiscais", "extração", "nfe", "automação"],
+        relatedQuestions: ["upload-documentos-financeiros", "extracao-ia"]
+      },
+      {
+        id: "ocr-documentos",
+        question: "Como funciona o OCR de documentos?",
+        answer: "O sistema de OCR (Reconhecimento Óptico de Caracteres) processa: **Documentos escaneados**, **Fotos de documentos**, **PDFs não pesquisáveis** e **Documentos manuscritos** (com limitações). Reconhece múltiplos idiomas, tabelas, layouts complexos e até assinaturas. Use para digitalizar arquivos antigos, contratos físicos e documentos de campo.",
+        tags: ["ocr", "reconhecimento", "digitalização", "scanner", "ia"],
+        relatedQuestions: ["extracao-ia", "upload-documentos"]
+      },
+      {
+        id: "validacao-automatica-dados",
+        question: "Como funciona a validação automática de dados?",
+        answer: "O sistema valida automaticamente: **Consistência** (valores esperados vs recebidos), **Duplicatas** (detecta lançamentos repetidos), **Regras de negócio** (ex: emissões Escopo 2 devem ter consumo de energia), **Limites** (alerta quando valor excede histórico), **Integridade referencial** (vínculos entre tabelas). Dados inválidos são sinalizados para revisão antes de serem salvos definitivamente.",
+        tags: ["validação", "dados", "qualidade", "consistência", "automação"],
+        relatedQuestions: ["revisar-extracoes", "importar-planilhas"]
       }
     ]
   },
@@ -547,6 +631,34 @@ export const faqCategories: FAQCategory[] = [
         answer: "Cobrimos todos os **GRI Universal Standards 2021**: GRI 2 (Disclosures gerais), GRI 3 (Tópicos materiais). **Série 200 (Econômicos)**: Desempenho, presença mercado, impactos indiretos, práticas de compras. **Série 300 (Ambientais)**: Materiais, energia, água, emissões, resíduos, biodiversidade, fornecedores. **Série 400 (Sociais)**: Emprego, relações, SST, treinamento, diversidade, não discriminação, direitos humanos.",
         tags: ["gri", "indicadores", "standards", "esg"],
         relatedQuestions: ["relatorios-disponiveis", "gerar-relatorio"]
+      },
+      {
+        id: "relatorios-financeiros-integrados",
+        question: "O que são relatórios financeiros integrados?",
+        answer: "Relatórios que combinam dados financeiros tradicionais (DRE, Balanço, Fluxo de Caixa) com métricas ESG em um único documento. Mostram: **Impacto financeiro de iniciativas ESG**, **Custos evitados** (ex: multas, acidentes), **Receitas ESG** (produtos verdes, certificações), **Investimentos sustentáveis** e **ROI ambiental/social**. Seguem frameworks como IR (Relato Integrado) e SASB.",
+        tags: ["relatórios", "financeiro", "integrado", "esg", "ir"],
+        relatedQuestions: ["gerar-relatorio", "dashboard-esg-financeiro"]
+      },
+      {
+        id: "exportar-multiplos-formatos",
+        question: "Em quais formatos posso exportar relatórios?",
+        answer: "Exporte relatórios em múltiplos formatos: **PDF** (publicação), **Word** (.docx para edição), **Excel** (.xlsx com dados brutos), **PowerPoint** (.pptx para apresentações), **HTML** (website), **JSON** (integração API), **CSV** (análise de dados) e **iXBRL** (relatórios regulatórios digitais). Cada formato pode ser customizado com logo, cores e layout próprios.",
+        tags: ["exportar", "formatos", "pdf", "excel", "word", "html"],
+        relatedQuestions: ["exportar-pdf", "gerar-relatorio"]
+      },
+      {
+        id: "agendar-relatorios",
+        question: "Como agendar envio automático de relatórios?",
+        answer: "Configure relatórios recorrentes em Relatórios > Agendamento: **Frequência** (diário, semanal, mensal, trimestral), **Destinatários** (e-mails múltiplos), **Formato** (PDF, Excel), **Conteúdo** (dashboard, relatório GRI, financeiro) e **Horário de envio**. Útil para: relatórios executivos mensais, dashboards semanais para board, indicadores diários para operação.",
+        tags: ["agendamento", "automação", "relatórios", "envio", "e-mail"],
+        relatedQuestions: ["gerar-relatorio", "compartilhar-dashboards"]
+      },
+      {
+        id: "relatorios-comparativos",
+        question: "Como gerar relatórios comparativos ano a ano?",
+        answer: "Selecione múltiplos períodos em Relatórios > Comparativo. O sistema gera análises lado a lado: **Evolução de emissões** (2022 vs 2023 vs 2024), **Progresso de metas** (atingimento ano a ano), **Variação de custos ESG**, **Tendências de indicadores** e **Benchmarking temporal**. Visualize em gráficos de barras, linhas de tendência e tabelas delta (% variação). Exporte para apresentações executivas.",
+        tags: ["comparativo", "análise", "temporal", "evolução", "tendências"],
+        relatedQuestions: ["gerar-relatorio", "dashboards-customizados"]
       }
     ]
   },
