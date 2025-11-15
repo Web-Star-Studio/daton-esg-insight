@@ -8,6 +8,8 @@ import { DataTable } from '@/components/ui/data-table';
 
 export default function PlanoContas() {
   const queryClient = useQueryClient();
+  const [showDialog, setShowDialog] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | undefined>();
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
 
   const { data: accounts = [], isLoading } = useQuery({
@@ -28,6 +30,22 @@ export default function PlanoContas() {
     { accessorKey: 'account_type', header: 'Tipo' },
     { accessorKey: 'account_nature', header: 'Natureza' },
     { accessorKey: 'status', header: 'Status' },
+    {
+      id: 'actions',
+      header: 'Ações',
+      cell: ({ row }: any) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setSelectedAccount(row.original);
+            setShowDialog(true);
+          }}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    },
   ];
 
   return (
