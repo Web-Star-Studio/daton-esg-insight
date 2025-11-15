@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { budgetManagement } from '@/services/budgetManagement';
@@ -6,8 +7,11 @@ import { financialReports } from '@/services/financialReports';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ESGCostCenterToggle } from '@/components/financial/ESGCostCenterToggle';
+import { FinancialAlertsPanel } from '@/components/financial/FinancialAlertsPanel';
 
 export default function DashboardFinanceiro() {
+  const [esgCostCenterEnabled, setEsgCostCenterEnabled] = useState(false);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
@@ -37,6 +41,11 @@ export default function DashboardFinanceiro() {
         <h1 className="text-3xl font-bold text-foreground">Dashboard Financeiro</h1>
         <p className="text-muted-foreground">Visão geral consolidada das finanças</p>
       </div>
+
+      <ESGCostCenterToggle 
+        onToggle={setEsgCostCenterEnabled}
+        defaultEnabled={esgCostCenterEnabled}
+      />
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -139,6 +148,9 @@ export default function DashboardFinanceiro() {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Financial Alerts Panel */}
+      <FinancialAlertsPanel />
 
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
