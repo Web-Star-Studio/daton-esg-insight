@@ -115,7 +115,7 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pr-2">
           {/* Informações do Indicador */}
           <div className="bg-muted/50 p-4 rounded-lg">
             <div className="grid grid-cols-2 gap-4 text-sm">
