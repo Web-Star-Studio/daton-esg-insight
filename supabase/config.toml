@@ -150,3 +150,12 @@ verify_jwt = true
 
 [functions.approve-extracted-data]
 verify_jwt = true
+
+[functions.manage-platform]
+verify_jwt = true
+
+[functions.platform-analytics]
+verify_jwt = true
+
+[functions.company-health-score]
+verify_jwt = true
