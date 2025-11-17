@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,9 @@ import {
   Brain,
   BarChart3,
   Grid3X3,
-  Activity
+  Activity,
+  ListTodo,
+  ClipboardList
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
@@ -30,6 +33,7 @@ import SGQDashboardWidget from './SGQDashboardWidget';
 
 export const UnifiedQualityDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const navigate = useNavigate();
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['unified-quality-dashboard'],
@@ -189,22 +193,54 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Button variant="outline" className="h-20 flex-col gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => navigate('/relatorios-integrados')}
+                >
                   <FileText className="h-6 w-6" />
                   <span className="text-xs">Ver Relatórios</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => navigate('/gestao-funcionarios')}
+                >
                   <Users className="h-6 w-6" />
                   <span className="text-xs">Equipe</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => setSelectedTab('insights')}
+                >
                   <Brain className="h-6 w-6" />
                   <span className="text-xs">IA Insights</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => setSelectedTab('indicators')}
+                >
                   <TrendingUp className="h-6 w-6" />
                   <span className="text-xs">Métricas</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => navigate('/nao-conformidades')}
+                >
+                  <ListTodo className="h-6 w-6" />
+                  <span className="text-xs">Não Conformidades</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => navigate('/plano-acao-5w2h')}
+                >
+                  <ClipboardList className="h-6 w-6" />
+                  <span className="text-xs">Planos de Ação</span>
                 </Button>
               </div>
             </CardContent>
