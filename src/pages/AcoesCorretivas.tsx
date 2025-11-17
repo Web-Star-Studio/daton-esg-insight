@@ -12,9 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Eye, CheckSquare, Calendar, AlertCircle, Clock, User } from "lucide-react";
+import { Plus, Search, Eye, CheckSquare, Calendar, AlertCircle, Clock, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getUserAndCompany } from '@/utils/auth';
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import {
   Dialog,
@@ -50,6 +51,7 @@ const AcoesCorretivas = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
   const [newActionPlan, setNewActionPlan] = useState({
@@ -87,22 +89,31 @@ const AcoesCorretivas = () => {
 
   const handleCreateActionPlan = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .single();
+      // Validar campos obrigatórios
+      if (!newActionPlan.title.trim()) {
+        toast({
+          title: "Atenção",
+          description: "O título do plano de ação é obrigatório.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (!profile?.company_id || !user) {
-        throw new Error('Company ID ou usuário não encontrado');
+      setIsCreating(true);
+
+      // Usar função utilitária getUserAndCompany()
+      const userAndCompany = await getUserAndCompany();
+      
+      if (!userAndCompany?.company_id || !userAndCompany?.id) {
+        throw new Error('Usuário não autenticado ou sem empresa vinculada');
       }
 
       const { error } = await supabase
         .from('action_plans')
         .insert([{
           ...newActionPlan,
-          company_id: profile.company_id,
-          created_by_user_id: user.id
+          company_id: userAndCompany.company_id,
+          created_by_user_id: userAndCompany.id
         }]);
 
       if (error) throw error;
@@ -124,11 +135,26 @@ const AcoesCorretivas = () => {
       loadActionPlans();
     } catch (error) {
       console.error('Erro ao criar plano de ação:', error);
+      
+      let errorMessage = "Não foi possível criar o plano de ação.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('não autenticado')) {
+          errorMessage = "Sessão expirada. Faça login novamente.";
+        } else if (error.message.includes('empresa vinculada')) {
+          errorMessage = "Seu usuário não está vinculado a uma empresa. Entre em contato com o suporte.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Erro",
-        description: "Não foi possível criar o plano de ação.",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -274,8 +300,18 @@ const AcoesCorretivas = () => {
                 <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleCreateActionPlan} disabled={!newActionPlan.title}>
-                  Criar Ação
+                <Button 
+                  onClick={handleCreateActionPlan} 
+                  disabled={isCreating || !newActionPlan.title.trim()}
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Criando...
+                    </>
+                  ) : (
+                    'Criar Ação'
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
