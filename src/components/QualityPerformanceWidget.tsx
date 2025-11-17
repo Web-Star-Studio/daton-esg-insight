@@ -1,25 +1,20 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
   TrendingDown, 
   Target, 
-  Clock, 
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Database,
+  ListChecks
 } from 'lucide-react';
-
-interface QualityMetric {
-  id: string;
-  name: string;
-  value: number;
-  target: number;
-  unit: string;
-  trend: number;
-  status: 'excellent' | 'good' | 'warning' | 'critical';
-}
+import { fetchQualityPerformanceData, type QualityMetric } from '@/services/qualityPerformanceService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QualityPerformanceWidgetProps {
   className?: string;
@@ -28,63 +23,38 @@ interface QualityPerformanceWidgetProps {
 export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> = ({ 
   className 
 }) => {
-  // Mock data with performance calculations
-  const qualityMetrics: QualityMetric[] = useMemo(() => [
-    {
-      id: 'resolution-rate',
-      name: 'Taxa de Resolução',
-      value: 87.5,
-      target: 85,
-      unit: '%',
-      trend: 2.3,
-      status: 'excellent'
+  // Buscar company_id do usuário atual
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
     },
-    {
-      id: 'avg-resolution-time',
-      name: 'Tempo Médio Resolução',
-      value: 5.2,
-      target: 7,
-      unit: 'dias',
-      trend: -0.8,
-      status: 'good'
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', session.user.id)
+        .single();
+      return data;
     },
-    {
-      id: 'customer-satisfaction',
-      name: 'Satisfação Cliente',
-      value: 4.3,
-      target: 4.0,
-      unit: '/5',
-      trend: 0.2,
-      status: 'good'
-    },
-    {
-      id: 'first-pass-yield',
-      name: 'First Pass Yield',
-      value: 92.1,
-      target: 95,
-      unit: '%',
-      trend: -1.2,
-      status: 'warning'
-    },
-    {
-      id: 'defect-rate',
-      name: 'Taxa de Defeitos',
-      value: 2.1,
-      target: 1.5,
-      unit: '%',
-      trend: 0.3,
-      status: 'warning'
-    },
-    {
-      id: 'cost-of-quality',
-      name: 'Custo da Qualidade',
-      value: 3.8,
-      target: 3.0,
-      unit: '% receita',
-      trend: 0.2,
-      status: 'critical'
-    }
-  ], []);
+    enabled: !!session?.user?.id,
+  });
+
+  // Buscar dados de performance
+  const { data: performanceData, isLoading } = useQuery({
+    queryKey: ['quality-performance', profile?.company_id],
+    queryFn: () => fetchQualityPerformanceData(profile!.company_id),
+    enabled: !!profile?.company_id,
+  });
+
+  const qualityMetrics = performanceData?.metrics || [];
+  const overallScore = Math.round(performanceData?.overallScore || 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -110,7 +80,12 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
   };
 
   const getProgressValue = (metric: QualityMetric) => {
-    if (metric.id === 'defect-rate' || metric.id === 'cost-of-quality' || metric.id === 'avg-resolution-time') {
+    // Determinar se menor é melhor baseado no nome
+    const lowerIsBetter = ['tempo', 'custo', 'defeito'].some(term => 
+      metric.name.toLowerCase().includes(term)
+    );
+    
+    if (lowerIsBetter) {
       // Para métricas onde menor é melhor
       return Math.max(0, Math.min(100, ((metric.target / metric.value) * 100)));
     }
@@ -118,10 +93,57 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
     return Math.max(0, Math.min(100, (metric.value / metric.target) * 100));
   };
 
-  const overallScore = useMemo(() => {
-    const scores = qualityMetrics.map(getProgressValue);
-    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  }, [qualityMetrics]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+          </CardHeader>
+        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (qualityMetrics.length === 0) {
+    return (
+      <div className={`space-y-6 ${className}`}>
+        <Card className="border-l-4 border-l-muted">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Performance da Qualidade</span>
+              <Database className="h-6 w-6 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-2">
+                Nenhum indicador de qualidade configurado
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Configure indicadores de qualidade e registre medições para visualizar a performance.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -143,24 +165,24 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Progress value={overallScore} className="mb-2" />
-          <p className="text-sm text-muted-foreground">
-            {overallScore >= 90 ? 'Excelente performance' : 
-             overallScore >= 70 ? 'Performance satisfatória' : 
-             'Performance precisa melhorar'}
+          <Progress value={overallScore} className="h-3" />
+          <p className="text-sm text-muted-foreground mt-2">
+            Pontuação baseada em {qualityMetrics.length} indicadores ativos
           </p>
         </CardContent>
       </Card>
 
       {/* Individual Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {qualityMetrics.map((metric) => (
           <Card key={metric.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center justify-between">
-                <span className="truncate">{metric.name}</span>
-                <div className={`${getStatusColor(metric.status)}`}>
-                  {getStatusIcon(metric.status)}
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>{metric.name}</span>
+                <div className="flex items-center space-x-2">
+                  <span className={`text-sm ${metric.trend === 'up' ? 'text-success' : metric.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {metric.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : metric.trend === 'down' ? <TrendingDown className="h-4 w-4" /> : <Target className="h-4 w-4" />}
+                  </span>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -169,22 +191,6 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
                 <span className="text-2xl font-bold">
                   {metric.value}{metric.unit}
                 </span>
-                <div className="flex items-center space-x-1">
-                  {metric.trend > 0 ? (
-                    <TrendingUp className={`h-3 w-3 ${
-                      metric.id === 'defect-rate' || metric.id === 'cost-of-quality' || metric.id === 'avg-resolution-time'
-                        ? 'text-destructive' : 'text-success'
-                    }`} />
-                  ) : (
-                    <TrendingDown className={`h-3 w-3 ${
-                      metric.id === 'defect-rate' || metric.id === 'cost-of-quality' || metric.id === 'avg-resolution-time'
-                        ? 'text-success' : 'text-destructive'
-                    }`} />
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {Math.abs(metric.trend)}
-                  </span>
-                </div>
               </div>
               
               <div className="space-y-1">
@@ -213,7 +219,7 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Clock className="h-5 w-5" />
+            <ListChecks className="h-5 w-5" />
             <span>Ações Recomendadas</span>
           </CardTitle>
         </CardHeader>
@@ -222,26 +228,25 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
             {qualityMetrics
               .filter(m => m.status === 'warning' || m.status === 'critical')
               .map(metric => (
-                <div key={metric.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div key={metric.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
+                  <div className={getStatusColor(metric.status)}>
+                    {getStatusIcon(metric.status)}
+                  </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm">{metric.name}</h4>
+                    <p className="font-medium text-sm">{metric.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {metric.status === 'critical' ? 
-                        'Requer ação imediata para corrigir desvio crítico' :
-                        'Monitorar tendência e implementar melhorias'
+                      {metric.status === 'critical' 
+                        ? 'Ação imediata necessária - valor crítico' 
+                        : 'Requer atenção - abaixo da meta'
                       }
                     </p>
                   </div>
-                  <Badge variant={metric.status === 'critical' ? 'destructive' : 'secondary'}>
-                    {metric.status === 'critical' ? 'Urgente' : 'Atenção'}
-                  </Badge>
                 </div>
-              ))
-            }
+              ))}
             {qualityMetrics.filter(m => m.status === 'warning' || m.status === 'critical').length === 0 && (
-              <div className="text-center py-4 text-muted-foreground">
-                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Todos os indicadores estão em níveis satisfatórios</p>
+              <div className="text-center py-4 text-success">
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Todos os indicadores estão dentro das metas! 🎉</p>
               </div>
             )}
           </div>
@@ -250,5 +255,3 @@ export const QualityPerformanceWidget: React.FC<QualityPerformanceWidgetProps> =
     </div>
   );
 };
-
-export default QualityPerformanceWidget;

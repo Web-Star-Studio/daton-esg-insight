@@ -26,7 +26,7 @@ import { unifiedQualityService } from '@/services/unifiedQualityService';
 import QualityMatrix from './QualityMatrix';
 import AIQualityInsights from './AIQualityInsights';
 import QualityIndicatorDashboard from './QualityIndicatorDashboard';
-import QualityPerformanceWidget from './QualityPerformanceWidget';
+import { QualityPerformanceWidget } from './QualityPerformanceWidget';
 import QualityTrendsAnalyzer from './QualityTrendsAnalyzer';
 import { PredictiveQualityWidget } from './PredictiveQualityWidget';
 import SGQDashboardWidget from './SGQDashboardWidget';
