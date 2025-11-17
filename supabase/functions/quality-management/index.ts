@@ -172,14 +172,25 @@ async function getQualityDashboard(supabase: any, company_id: string) {
       .limit(5);
 
     // Action plans progress
-    const { data: plansProgress } = await supabase
+    console.log('Fetching action plans for company:', company_id);
+    const { data: plansProgress, error: plansError } = await supabase
       .from('action_plans')
       .select(`
         id, title, status,
-        action_plan_items(progress_percentage)
+        action_plan_items(id, status, progress_percentage, when_deadline)
       `)
       .eq('company_id', company_id)
       .limit(5);
+
+    console.log('Action plans query result:', {
+      count: plansProgress?.length || 0,
+      error: plansError,
+      data: plansProgress
+    });
+
+    if (plansError) {
+      console.error('Error fetching action plans:', plansError);
+    }
 
     const dashboard = {
       metrics: {
@@ -191,12 +202,29 @@ async function getQualityDashboard(supabase: any, company_id: string) {
         overdueActions: overdueActionsCount || 0
       },
       recentNCs: recentNCs || [],
-      plansProgress: plansProgress?.map((plan: any) => ({
-        ...plan,
-        avgProgress: plan.action_plan_items?.length > 0 
-          ? plan.action_plan_items.reduce((sum: number, item: any) => sum + (item.progress_percentage || 0), 0) / plan.action_plan_items.length
-          : 0
-      })) || []
+      plansProgress: plansProgress?.map((plan: any) => {
+        const items = plan.action_plan_items || [];
+        const totalItems = items.length;
+        const completedItems = items.filter((item: any) => item.status === 'Concluída').length;
+        const overdueItems = items.filter((item: any) => 
+          item.when_deadline && 
+          new Date(item.when_deadline) < new Date() && 
+          item.status !== 'Concluída'
+        ).length;
+        const avgProgress = totalItems > 0 
+          ? items.reduce((sum: number, item: any) => sum + (item.progress_percentage || 0), 0) / totalItems
+          : 0;
+
+        return {
+          id: plan.id,
+          title: plan.title,
+          status: plan.status,
+          totalItems,
+          completedItems,
+          avgProgress: Math.round(avgProgress),
+          overdueItems
+        };
+      }) || []
     };
 
     return new Response(JSON.stringify(dashboard), {
