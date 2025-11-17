@@ -95,12 +95,24 @@ export interface IndicatorOccurrence {
 class QualityIndicatorsService {
   // CRUD Indicadores
   async getIndicators() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.company_id) throw new Error('Company not found');
+
     const { data, error } = await supabase
       .from('quality_indicators')
       .select(`
         *,
-        indicator_targets!inner(*)
+        indicator_targets(*)
       `)
+      .eq('company_id', profile.company_id)
       .eq('is_active', true)
       .order('name');
 
@@ -372,7 +384,7 @@ export const qualityIndicatorsService = new QualityIndicatorsService();
 // React Query Hooks
 export const useQualityIndicators = () => {
   return useQuery({
-    queryKey: ['quality-indicators'],
+    queryKey: ['quality-indicators-list'],
     queryFn: () => qualityIndicatorsService.getIndicators(),
     refetchInterval: 30000
   });
@@ -393,7 +405,7 @@ export const useCreateIndicator = () => {
   return useMutation({
     mutationFn: qualityIndicatorsService.createIndicator,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quality-indicators'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-indicators-list'] });
       queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Indicador criado",
@@ -427,6 +439,7 @@ export const useCreateMeasurement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['indicator-measurements'] });
       queryClient.invalidateQueries({ queryKey: ['indicator-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-indicators-list'] });
       queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Medição registrada",

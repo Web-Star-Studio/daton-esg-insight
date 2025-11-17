@@ -29,7 +29,7 @@ const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView
   });
 
   const { data: indicators, isLoading: isIndicatorsLoading, error: indicatorsError } = useQuery({
-    queryKey: ['sgq-indicators-widget'],
+    queryKey: ['quality-indicators-metrics'],
     queryFn: () => unifiedQualityService.getQualityIndicators(),
     refetchInterval: 30000,
     retry: 1,

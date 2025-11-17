@@ -37,7 +37,7 @@ const AIQualityInsights = () => {
   });
 
   const { data: indicators, isLoading: isIndicatorsLoading } = useQuery({
-    queryKey: ['quality-indicators'],
+    queryKey: ['quality-indicators-metrics'],
     queryFn: () => unifiedQualityService.getQualityIndicators(),
     refetchInterval: 60000, // Reduced frequency
     staleTime: 5 * 60 * 1000, // 5 minutes

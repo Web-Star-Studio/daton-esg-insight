@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCreateIndicator } from '@/services/qualityIndicators';
 import { useCreateTarget } from '@/services/indicatorTargets';
 import { useEmployeesAsOptions } from '@/services/employees';
@@ -63,6 +64,7 @@ type IndicatorFormData = z.infer<typeof indicatorSchema>;
 interface IndicatorCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: (indicatorId: string) => void;
 }
 
 const CATEGORIES = [
@@ -98,8 +100,10 @@ const MEASUREMENT_UNITS = [
 export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
   isOpen,
   onClose,
+  onCreated,
 }) => {
   const { data: employeeOptions } = useEmployeesAsOptions();
+  const queryClient = useQueryClient();
   const createIndicator = useCreateIndicator();
   const createTarget = useCreateTarget();
 
@@ -145,12 +149,20 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
           lower_limit: lower_limit || undefined,
           critical_upper_limit: critical_upper_limit || undefined,
           critical_lower_limit: critical_lower_limit || undefined,
-          valid_from: new Date().toISOString()
+          valid_from: new Date().toISOString().split('T')[0],
         });
+
+        // Invalidar cache para atualização imediata
+        queryClient.invalidateQueries({ queryKey: ['quality-indicators-list'] });
+        
+        reset();
+        onClose();
+        
+        // Notificar criação com ID para abrir modal de medição
+        if (onCreated) {
+          onCreated(createdIndicator.id);
+        }
       }
-      
-      reset();
-      onClose();
     } catch (error: any) {
       console.error('Erro ao criar indicador:', error);
       // O erro já é tratado pelo useCreateIndicator com toast
