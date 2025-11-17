@@ -51,6 +51,7 @@ export interface QualityIndicatorData {
   };
   overdueActions: number;
   qualityScore: number;
+  hasRealIndicators?: boolean;
 }
 
 export interface QualityInsight {

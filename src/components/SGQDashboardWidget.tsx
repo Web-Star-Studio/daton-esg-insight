@@ -52,7 +52,7 @@ const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView
   };
 
   const data = dashboard || fallbackData;
-  const indicatorData = indicators || { qualityScore: 78 };
+  const indicatorData = indicators || { qualityScore: 78, hasRealIndicators: false };
 
   if (isLoading) {
     return (
@@ -96,8 +96,16 @@ const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView
                 Modo Offline
               </Badge>
             )}
+            {indicatorData?.hasRealIndicators && (
+              <Badge variant="secondary" className="text-xs">
+                Indicadores Ativos
+              </Badge>
+            )}
           </h3>
-          <p className="text-sm text-muted-foreground mt-2">Visão geral do SGQ da organização</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Visão geral do SGQ da organização
+            {indicatorData?.hasRealIndicators && ' • Score baseado em medições reais'}
+          </p>
         </div>
         <Link to={inDashboardView ? "/nao-conformidades" : "/quality-dashboard"}>
           <Button variant="outline" size="sm">
