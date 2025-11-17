@@ -189,7 +189,7 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper">
                       {CATEGORIES.map((category) => (
                         <SelectItem key={category} value={category}>
                           {category}
@@ -220,7 +220,7 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a unidade" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper">
                       {MEASUREMENT_UNITS.map((unit) => (
                         <SelectItem key={unit} value={unit}>
                           {unit}
@@ -239,7 +239,7 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Tipo de medição" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper">
                       <SelectItem value="manual">Manual</SelectItem>
                       <SelectItem value="automatic">Automática</SelectItem>
                       <SelectItem value="calculated">Calculada</SelectItem>
@@ -253,7 +253,7 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Frequência de coleta" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper">
                       <SelectItem value="daily">Diária</SelectItem>
                       <SelectItem value="weekly">Semanal</SelectItem>
                       <SelectItem value="monthly">Mensal</SelectItem>
@@ -295,7 +295,7 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o responsável" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper">
                       {employeeOptions?.map((employee) => (
                         <SelectItem key={employee.value} value={employee.value}>
                           {employee.label}
