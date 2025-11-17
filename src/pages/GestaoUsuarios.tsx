@@ -117,6 +117,7 @@ export default function GestaoUsuarios() {
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
+      case 'platform_admin': return 'bg-indigo-600';
       case 'super_admin': return 'bg-purple-500';
       case 'admin': return 'bg-red-500';
       case 'manager': return 'bg-blue-500';
@@ -130,6 +131,7 @@ export default function GestaoUsuarios() {
 
   const getRoleLabel = (role: UserRole) => {
     const labels: Record<UserRole, string> = {
+      platform_admin: 'Administrador da Plataforma',
       super_admin: 'Super Administrador',
       admin: 'Administrador',
       manager: 'Gerente',

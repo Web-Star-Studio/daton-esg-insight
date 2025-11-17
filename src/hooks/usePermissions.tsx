@@ -12,6 +12,7 @@ export type PermissionCode =
   | 'audit.view' | 'audit.export';
 
 export type UserRole = 
+  | 'platform_admin'
   | 'super_admin' 
   | 'admin' 
   | 'manager' 
@@ -84,8 +85,8 @@ export const usePermissions = () => {
   });
 
   const hasPermission = (permissionCode: PermissionCode): boolean => {
-    // Super admin has all permissions
-    if (userRole === 'super_admin') return true;
+    // Platform admin and Super admin have all permissions
+    if (userRole === 'platform_admin' || userRole === 'super_admin') return true;
 
     // Check custom permissions first (overrides)
     const customPerm = customPermissions?.find(
@@ -114,7 +115,8 @@ export const usePermissions = () => {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    isAdmin: userRole === 'super_admin' || userRole === 'admin',
-    isSuperAdmin: userRole === 'super_admin'
+    isAdmin: userRole === 'platform_admin' || userRole === 'super_admin' || userRole === 'admin',
+    isSuperAdmin: userRole === 'super_admin',
+    isPlatformAdmin: userRole === 'platform_admin'
   };
 };

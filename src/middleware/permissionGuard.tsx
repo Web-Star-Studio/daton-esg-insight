@@ -71,6 +71,7 @@ export enum Permission {
  * Higher roles inherit all permissions from lower roles
  */
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  platform_admin: Object.values(Permission), // All permissions - Platform owner
   super_admin: Object.values(Permission), // All permissions
   
   admin: [
