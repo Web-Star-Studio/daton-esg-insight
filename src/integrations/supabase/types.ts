@@ -14086,6 +14086,89 @@ export type Database = {
           },
         ]
       }
+      platform_admin_actions: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown
+          target_company_id: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          target_company_id?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          target_company_id?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_admin_actions_target_company_id_fkey"
+            columns: ["target_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_admins: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          notes: string | null
+          permissions: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          notes?: string | null
+          permissions?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          notes?: string | null
+          permissions?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       positions: {
         Row: {
           company_id: string
@@ -18336,6 +18419,7 @@ export type Database = {
         Args: { term_id: string }
         Returns: undefined
       }
+      is_platform_admin: { Args: never; Returns: boolean }
       log_activity: {
         Args: {
           p_action_type: string
@@ -18356,6 +18440,15 @@ export type Database = {
           p_resource_type: string
           p_severity?: string
           p_user_id: string
+        }
+        Returns: string
+      }
+      log_platform_admin_action: {
+        Args: {
+          p_action_type: string
+          p_details?: Json
+          p_target_company_id?: string
+          p_target_user_id?: string
         }
         Returns: string
       }
@@ -18477,6 +18570,7 @@ export type Database = {
         | "operator"
         | "viewer"
         | "auditor"
+        | "platform_admin"
       waste_class_enum:
         | "Classe I - Perigoso"
         | "Classe II A - Não Inerte"
@@ -18710,6 +18804,7 @@ export const Constants = {
         "operator",
         "viewer",
         "auditor",
+        "platform_admin",
       ],
       waste_class_enum: [
         "Classe I - Perigoso",
