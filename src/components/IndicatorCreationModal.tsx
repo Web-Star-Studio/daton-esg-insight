@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreateIndicator } from '@/services/qualityIndicators';
+import { useCreateTarget } from '@/services/indicatorTargets';
 import { useEmployeesAsOptions } from '@/services/employees';
 
 const indicatorSchema = z.object({
@@ -100,6 +101,7 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
 }) => {
   const { data: employeeOptions } = useEmployeesAsOptions();
   const createIndicator = useCreateIndicator();
+  const createTarget = useCreateTarget();
 
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<IndicatorFormData>({
     resolver: zodResolver(indicatorSchema),
@@ -132,10 +134,20 @@ export const IndicatorCreationModal: React.FC<IndicatorCreationModalProps> = ({
       };
       
       // Criar o indicador primeiro
-      await createIndicator.mutateAsync(sanitizedData);
+      const createdIndicator = await createIndicator.mutateAsync(sanitizedData);
       
-      // TODO: Criar a meta do indicador
-      // Isso seria feito em um serviço separado para targets
+      // Criar a meta do indicador automaticamente
+      if (createdIndicator?.id) {
+        await createTarget.mutateAsync({
+          indicator_id: createdIndicator.id,
+          target_value,
+          upper_limit: upper_limit || undefined,
+          lower_limit: lower_limit || undefined,
+          critical_upper_limit: critical_upper_limit || undefined,
+          critical_lower_limit: critical_lower_limit || undefined,
+          valid_from: new Date().toISOString()
+        });
+      }
       
       reset();
       onClose();

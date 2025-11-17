@@ -394,6 +394,7 @@ export const useCreateIndicator = () => {
     mutationFn: qualityIndicatorsService.createIndicator,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quality-indicators'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Indicador criado",
         description: "Indicador de qualidade criado com sucesso"
@@ -426,6 +427,7 @@ export const useCreateMeasurement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['indicator-measurements'] });
       queryClient.invalidateQueries({ queryKey: ['indicator-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Medição registrada",
         description: "Medição registrada com sucesso"
