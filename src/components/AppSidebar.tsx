@@ -30,6 +30,7 @@ import { NavigationTooltip } from "@/components/navigation/NavigationTooltip"
 import { useFavorites } from "@/hooks/useFavorites"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
+import { useHasRole } from "@/middleware/roleGuard"
 import datonLogo from "@/assets/daton-logo-header.png"
 
 // Importações de ícones organizadas por categoria
@@ -43,7 +44,7 @@ import {
   Settings, Bell, Clock, Building2, MapPin,
   Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
-  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud
+  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown
 } from "lucide-react"
 
 // Nova estrutura ESG completa reorganizada
@@ -311,6 +312,14 @@ const menuSections: MenuSection[] = [
     ]
   },
   {
+    id: "platform-admin",
+    title: "ADMINISTRAÇÃO DA PLATAFORMA",
+    hasDivider: true,
+    items: [
+      { id: "platform-admin-dashboard", title: "Dashboard Platform Admin", icon: Crown, path: "/platform-admin", description: "Gestão de empresas e analytics da plataforma" }
+    ]
+  },
+  {
     id: "help",
     title: "AJUDA",
     items: [
@@ -327,6 +336,7 @@ export function AppSidebar() {
   const { user, restartOnboarding } = useAuth()
   const { toast } = useToast()
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
+  const isPlatformAdmin = useHasRole('platform_admin')
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'environmental-category': true,
     'social-category': false,
@@ -587,11 +597,14 @@ export function AppSidebar() {
   }
 
   const filteredSections = searchQuery.trim() 
-    ? menuSections.map(section => ({
-        ...section,
-        items: filterMenuItems(section.items)
-      })).filter(section => section.items.length > 0)
-    : menuSections
+    ? menuSections
+        .filter(section => isPlatformAdmin || section.id !== 'platform-admin')
+        .map(section => ({
+          ...section,
+          items: filterMenuItems(section.items)
+        }))
+        .filter(section => section.items.length > 0)
+    : menuSections.filter(section => isPlatformAdmin || section.id !== 'platform-admin')
 
   return (
     <Sidebar 
