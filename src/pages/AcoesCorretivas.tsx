@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Eye, CheckSquare, Calendar, AlertCircle, Clock, User, Loader2 } from "lucide-react";
+import { Plus, Search, Eye, Pencil, CheckSquare, Calendar, AlertCircle, Clock, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserAndCompany } from '@/utils/auth';
@@ -59,6 +59,18 @@ const AcoesCorretivas = () => {
     description: '',
     status: 'Planejado',
     plan_type: 'Corretiva',
+    objective: ''
+  });
+
+  const [selectedPlan, setSelectedPlan] = useState<ActionPlan | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    status: '',
+    plan_type: '',
     objective: ''
   });
 
@@ -155,6 +167,84 @@ const AcoesCorretivas = () => {
       });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleViewPlan = (plan: ActionPlan) => {
+    setSelectedPlan(plan);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEditPlan = (plan: ActionPlan) => {
+    setSelectedPlan(plan);
+    setEditFormData({
+      title: plan.title,
+      description: plan.description || '',
+      status: plan.status,
+      plan_type: plan.plan_type,
+      objective: plan.objective || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateActionPlan = async () => {
+    if (!selectedPlan) return;
+    
+    try {
+      // Validar campos obrigatórios
+      if (!editFormData.title.trim()) {
+        toast({
+          title: "Atenção",
+          description: "O título do plano de ação é obrigatório.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsUpdating(true);
+
+      const { error } = await supabase
+        .from('action_plans')
+        .update({
+          title: editFormData.title,
+          description: editFormData.description,
+          status: editFormData.status,
+          plan_type: editFormData.plan_type,
+          objective: editFormData.objective,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedPlan.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Plano de ação atualizado com sucesso!",
+      });
+
+      setIsEditModalOpen(false);
+      setSelectedPlan(null);
+      loadActionPlans();
+    } catch (error) {
+      console.error('Erro ao atualizar plano de ação:', error);
+      
+      let errorMessage = "Não foi possível atualizar o plano de ação.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('não autenticado')) {
+          errorMessage = "Sessão expirada. Faça login novamente.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -316,6 +406,179 @@ const AcoesCorretivas = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Modal de Visualização */}
+          <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Detalhes da Ação</DialogTitle>
+                <DialogDescription>
+                  Informações completas do plano de ação
+                </DialogDescription>
+              </DialogHeader>
+              {selectedPlan && (
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-semibold">Título</Label>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedPlan.title}</p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-semibold">Descrição</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {selectedPlan.description || 'Sem descrição'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-semibold">Objetivo</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {selectedPlan.objective || 'Sem objetivo definido'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-semibold">Tipo</Label>
+                      <div className="mt-1">
+                        <Badge className={getTypeColor(selectedPlan.plan_type)}>
+                          {selectedPlan.plan_type}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-semibold">Status</Label>
+                      <div className="mt-1">
+                        <Badge className={`gap-1 ${getStatusColor(selectedPlan.status)}`}>
+                          {getStatusIcon(selectedPlan.status)}
+                          {selectedPlan.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-semibold">Data de Criação</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {new Date(selectedPlan.created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-semibold">Última Atualização</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {new Date(selectedPlan.updated_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
+                  Fechar
+                </Button>
+                <Button onClick={() => {
+                  setIsViewModalOpen(false);
+                  if (selectedPlan) handleEditPlan(selectedPlan);
+                }}>
+                  Editar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Modal de Edição */}
+          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Editar Ação</DialogTitle>
+                <DialogDescription>
+                  Atualize as informações do plano de ação
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-title">Título da Ação</Label>
+                  <Input
+                    id="edit-title"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    placeholder="Ex: Correção de não conformidade no processo..."
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-description">Descrição</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    placeholder="Descreva detalhadamente a ação a ser executada..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-objective">Objetivo</Label>
+                  <Textarea
+                    id="edit-objective"
+                    value={editFormData.objective}
+                    onChange={(e) => setEditFormData({ ...editFormData, objective: e.target.value })}
+                    placeholder="Qual o objetivo desta ação?"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-plan_type">Tipo</Label>
+                    <Select value={editFormData.plan_type} onValueChange={(value) => setEditFormData({ ...editFormData, plan_type: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Corretiva">Corretiva</SelectItem>
+                        <SelectItem value="Preventiva">Preventiva</SelectItem>
+                        <SelectItem value="Melhoria">Melhoria</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-status">Status</Label>
+                    <Select value={editFormData.status} onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Planejado">Planejado</SelectItem>
+                        <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                        <SelectItem value="Concluído">Concluído</SelectItem>
+                        <SelectItem value="Cancelado">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)} disabled={isUpdating}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateActionPlan} disabled={isUpdating || !editFormData.title.trim()}>
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Alterações'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
         
         <div className="flex gap-4">
@@ -396,8 +659,21 @@ const AcoesCorretivas = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewPlan(plan)}
+                            title="Visualizar detalhes"
+                          >
                             <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditPlan(plan)}
+                            title="Editar ação"
+                          >
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
