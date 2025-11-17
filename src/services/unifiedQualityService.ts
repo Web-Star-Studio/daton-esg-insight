@@ -493,7 +493,48 @@ class UnifiedQualityService {
   }
 
   async getRiskMatrix(id: string): Promise<any> {
-    return { matrix: [], riskCounts: { total: 0, critical: 0, high: 0, medium: 0, low: 0 } };
+    try {
+      const { data: risks, error } = await supabase
+        .from('risk_assessments')
+        .select('*')
+        .eq('risk_matrix_id', id)
+        .eq('status', 'Ativo');
+
+      if (error) throw error;
+
+      // Organizar riscos em matriz 5x5
+      const probabilityLevels = ['Muito Baixa', 'Baixa', 'Média', 'Alta', 'Muito Alta'];
+      const impactLevels = ['Muito Baixo', 'Baixo', 'Médio', 'Alto', 'Muito Alto'];
+      
+      const matrix: any[] = [];
+      probabilityLevels.forEach(prob => {
+        impactLevels.forEach(imp => {
+          const cellRisks = (risks || []).filter(
+            r => r.probability === prob && r.impact === imp
+          );
+          matrix.push({
+            probability: prob,
+            impact: imp,
+            risks: cellRisks,
+            count: cellRisks.length
+          });
+        });
+      });
+
+      // Calcular contagens por nível
+      const riskCounts = {
+        total: risks?.length || 0,
+        critical: (risks || []).filter(r => r.risk_level === 'Crítico').length,
+        high: (risks || []).filter(r => r.risk_level === 'Alto').length,
+        medium: (risks || []).filter(r => r.risk_level === 'Médio').length,
+        low: (risks || []).filter(r => r.risk_level === 'Baixo' || r.risk_level === 'Muito Baixo').length
+      };
+
+      return { matrix, riskCounts };
+    } catch (error) {
+      console.error('Error fetching risk matrix:', error);
+      return { matrix: [], riskCounts: { total: 0, critical: 0, high: 0, medium: 0, low: 0 } };
+    }
   }
 
   async getProcessEfficiency(): Promise<any[]> {
@@ -525,7 +566,30 @@ class UnifiedQualityService {
   }
 
   async getRiskMatrices(): Promise<any[]> {
-    return [];
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) throw new Error('Company not found');
+
+      const { data, error } = await supabase
+        .from('risk_matrices')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching risk matrices:', error);
+      return [];
+    }
   }
 
   async createRiskMatrix(data: any): Promise<any> {
