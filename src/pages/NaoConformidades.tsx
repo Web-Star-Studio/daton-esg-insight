@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ interface NonConformity {
 }
 
 export default function NaoConformidades() {
+  const queryClient = useQueryClient();
   const [isCreateNCOpen, setIsCreateNCOpen] = useState(false);
   const [selectedNCId, setSelectedNCId] = useState<string | null>(null);
   const [isWorkflowManagerOpen, setIsWorkflowManagerOpen] = useState(false);
@@ -97,19 +98,11 @@ export default function NaoConformidades() {
       
       return enrichedNCs as NonConformity[];
     },
+    staleTime: 30 * 1000, // 30 segundos
   });
 
-  const generateNCNumber = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const timestamp = now.getTime().toString().slice(-4);
-    return `NC-${year}${month}${day}-${timestamp}`;
-  };
-
-  const handleCreateNC = async () => {
-    try {
+  const createNCMutation = useMutation({
+    mutationFn: async (ncData: typeof newNCData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
@@ -122,17 +115,33 @@ export default function NaoConformidades() {
       if (!profile?.company_id) throw new Error("Company ID não encontrado");
 
       const ncNumber = generateNCNumber();
-      const { error } = await supabase
+      
+      // Limpar dados antes de enviar
+      const cleanData = {
+        title: ncData.title.trim(),
+        description: ncData.description.trim(),
+        category: ncData.category.trim() || null,
+        severity: ncData.severity,
+        source: ncData.source,
+        detected_date: ncData.detected_date,
+        damage_level: ncData.damage_level,
+        responsible_user_id: ncData.responsible_user_id || null,
+        nc_number: ncNumber,
+        company_id: profile.company_id
+      };
+
+      const { data, error } = await supabase
         .from("non_conformities")
-        .insert([{
-          ...newNCData,
-          nc_number: ncNumber,
-          company_id: profile.company_id
-        }]);
+        .insert([cleanData])
+        .select()
+        .single();
 
       if (error) throw error;
-
+      return data;
+    },
+    onSuccess: () => {
       toast.success("Não conformidade registrada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
       setIsCreateNCOpen(false);
       setNewNCData({
         title: "",
@@ -144,10 +153,46 @@ export default function NaoConformidades() {
         damage_level: "Baixo",
         responsible_user_id: ""
       });
-    } catch (error) {
-      toast.error("Erro ao registrar não conformidade");
-      console.error(error);
+    },
+    onError: (error: any) => {
+      console.error("Erro ao criar NC:", error);
+      toast.error(error.message || "Erro ao registrar não conformidade");
     }
+  });
+
+  const generateNCNumber = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const timestamp = now.getTime().toString().slice(-4);
+    return `NC-${year}${month}${day}-${timestamp}`;
+  };
+
+  const handleCreateNC = () => {
+    // Validações
+    if (!newNCData.title.trim()) {
+      toast.error("Por favor, preencha o título da não conformidade");
+      return;
+    }
+
+    if (!newNCData.description.trim()) {
+      toast.error("Por favor, preencha a descrição da não conformidade");
+      return;
+    }
+
+    if (newNCData.title.trim().length < 5) {
+      toast.error("O título deve ter pelo menos 5 caracteres");
+      return;
+    }
+
+    if (newNCData.description.trim().length < 10) {
+      toast.error("A descrição deve ter pelo menos 10 caracteres");
+      return;
+    }
+
+    // Se passou nas validações, executa a mutation
+    createNCMutation.mutate(newNCData);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -218,16 +263,23 @@ export default function NaoConformidades() {
             <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Registrar Não Conformidade</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Campos marcados com * são obrigatórios
+              </p>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Título</Label>
+                  <Label htmlFor="title">Título *</Label>
                   <Input
                     id="title"
                     value={newNCData.title}
                     onChange={(e) => setNewNCData({...newNCData, title: e.target.value})}
                     placeholder="Título da não conformidade"
+                    required
+                    autoFocus
+                    disabled={createNCMutation.isPending}
+                    minLength={5}
                   />
                 </div>
                 <div>
@@ -237,6 +289,7 @@ export default function NaoConformidades() {
                     value={newNCData.category}
                     onChange={(e) => setNewNCData({...newNCData, category: e.target.value})}
                     placeholder="Ex: Qualidade, Segurança"
+                    disabled={createNCMutation.isPending}
                   />
                 </div>
               </div>
@@ -247,6 +300,7 @@ export default function NaoConformidades() {
                   <Select
                     value={newNCData.severity}
                     onValueChange={(value) => setNewNCData({...newNCData, severity: value})}
+                    disabled={createNCMutation.isPending}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -264,6 +318,7 @@ export default function NaoConformidades() {
                   <Select
                     value={newNCData.source}
                     onValueChange={(value) => setNewNCData({...newNCData, source: value})}
+                    disabled={createNCMutation.isPending}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -283,23 +338,41 @@ export default function NaoConformidades() {
                     type="date"
                     value={newNCData.detected_date}
                     onChange={(e) => setNewNCData({...newNCData, detected_date: e.target.value})}
+                    disabled={createNCMutation.isPending}
                   />
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description">Descrição *</Label>
                 <Textarea
                   id="description"
                   value={newNCData.description}
                   onChange={(e) => setNewNCData({...newNCData, description: e.target.value})}
-                  placeholder="Descrição detalhada da não conformidade"
+                  placeholder="Descrição detalhada da não conformidade (mínimo 10 caracteres)"
                   rows={4}
+                  required
+                  disabled={createNCMutation.isPending}
+                  minLength={10}
                 />
               </div>
               
-              <Button onClick={handleCreateNC} className="w-full">
-                Registrar Não Conformidade
+              <Button 
+                onClick={handleCreateNC} 
+                className="w-full"
+                disabled={createNCMutation.isPending}
+              >
+                {createNCMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Registrando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Registrar Não Conformidade
+                  </>
+                )}
               </Button>
             </div>
           </DialogContent>
