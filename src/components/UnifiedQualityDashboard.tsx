@@ -41,7 +41,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
   });
 
   const { data: indicators } = useQuery({
-    queryKey: ['quality-indicators'],
+    queryKey: ['quality-indicators-metrics'],
     queryFn: () => unifiedQualityService.getQualityIndicators()
   });
 

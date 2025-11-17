@@ -26,6 +26,12 @@ const QualityIndicatorDashboard = () => {
     setIsMeasurementModalOpen(true);
   };
 
+  const handleIndicatorCreated = (indicatorId: string) => {
+    // Abrir modal de medição para o indicador recém-criado
+    setSelectedIndicatorId(indicatorId);
+    setIsMeasurementModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -145,7 +151,8 @@ const QualityIndicatorDashboard = () => {
       {/* Modals */}
       <IndicatorCreationModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => setIsModalOpen(false)}
+        onCreated={handleIndicatorCreated}
       />
       
       {selectedIndicatorId && (

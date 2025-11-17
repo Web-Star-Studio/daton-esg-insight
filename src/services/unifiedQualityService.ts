@@ -551,9 +551,9 @@ export const useQualityDashboard = () => {
   });
 };
 
-export const useQualityIndicators = () => {
+export const useQualityIndicatorsMetrics = () => {
   return useQuery({
-    queryKey: ['quality-indicators'],
+    queryKey: ['quality-indicators-metrics'],
     queryFn: () => unifiedQualityService.getQualityIndicators(),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });

@@ -137,6 +137,8 @@ export const useCreateTarget = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['indicator-targets', variables.indicator_id] });
       queryClient.invalidateQueries({ queryKey: ['active-target', variables.indicator_id] });
+      queryClient.invalidateQueries({ queryKey: ['quality-indicators-list'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Meta criada",
         description: "Meta do indicador definida com sucesso"
