@@ -63,6 +63,24 @@ export default function NaoConformidades() {
     responsible_user_id: ""
   });
 
+  // Etapa 3: Função de prefetch
+  const prefetchNCDetails = (ncId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ["non-conformity", ncId],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("non_conformities")
+          .select("*")
+          .eq("id", ncId)
+          .single();
+        
+        if (error) throw error;
+        return data;
+      },
+      staleTime: 2 * 60 * 1000,
+    });
+  };
+
   const { data: nonConformities, isLoading } = useQuery({
     queryKey: ["non-conformities"],
     queryFn: async () => {
@@ -581,6 +599,7 @@ export default function NaoConformidades() {
                         <Button 
                           variant="outline" 
                           size="sm"
+                          onMouseEnter={() => prefetchNCDetails(nc.id)}
                           onClick={() => setSelectedNCId(nc.id)}
                         >
                           <Eye className="h-4 w-4" />
@@ -588,6 +607,7 @@ export default function NaoConformidades() {
                         <Button 
                           variant="outline" 
                           size="sm"
+                          onMouseEnter={() => prefetchNCDetails(nc.id)}
                           onClick={() => setSelectedNCId(nc.id)}
                         >
                           <Edit className="h-4 w-4" />

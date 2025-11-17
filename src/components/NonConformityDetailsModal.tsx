@@ -42,45 +42,51 @@ export function NonConformityDetailsModal({
   const [editData, setEditData] = useState<any>({});
   const queryClient = useQueryClient();
 
+  // Etapa 1: Query otimizada com Promise.all e cache
   const { data: nonConformity, isLoading } = useQuery({
     queryKey: ["non-conformity", nonConformityId],
     queryFn: async () => {
-      const { data: nc, error } = await supabase
-        .from("non_conformities")
-        .select(`
-          *,
-          corrective_actions(*)
-        `)
-        .eq("id", nonConformityId)
-        .single();
-      
-      if (error) throw error;
-      
-      // Get user profiles for responsible and approved_by users
-      const userIds = [nc.responsible_user_id, nc.approved_by_user_id].filter(Boolean);
-      let profiles = [];
-      
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
+      // Query paralela - NC + perfis ao mesmo tempo
+      const [ncResult, profilesResult] = await Promise.all([
+        // Buscar NC completo
+        supabase
+          .from("non_conformities")
+          .select("*")
+          .eq("id", nonConformityId)
+          .single(),
+        
+        // Pré-carregar perfis comuns
+        supabase
           .from("profiles")
           .select("id, full_name")
-          .in("id", userIds);
-        profiles = profilesData || [];
-      }
+          .limit(50)
+      ]);
+
+      if (ncResult.error) throw ncResult.error;
       
-      // Enrich with user data
-      const enrichedNC = {
+      const nc = ncResult.data;
+      const profiles = profilesResult.data || [];
+      
+      // Enriquecer com dados de usuário
+      return {
         ...nc,
         responsible: profiles.find(p => p.id === nc.responsible_user_id),
         approved_by: profiles.find(p => p.id === nc.approved_by_user_id)
       };
-      
-      return enrichedNC;
     },
     enabled: open && !!nonConformityId,
+    staleTime: 2 * 60 * 1000, // 2 minutos - dados "frescos"
+    gcTime: 5 * 60 * 1000, // 5 minutos - cache mantido
   });
 
+  // Etapa 6: Optimistic updates
   const handleSave = async () => {
+    // Atualiza UI imediatamente (optimistic)
+    queryClient.setQueryData(["non-conformity", nonConformityId], editData);
+    
+    setIsEditing(false);
+    toast.success("Salvando alterações...");
+
     try {
       const { error } = await supabase
         .from("non_conformities")
@@ -89,12 +95,12 @@ export function NonConformityDetailsModal({
 
       if (error) throw error;
 
-      toast.success("Não conformidade atualizada com sucesso!");
-      setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ["non-conformity", nonConformityId] });
+      toast.success("Não conformidade atualizada!");
       queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
     } catch (error) {
-      toast.error("Erro ao atualizar não conformidade");
+      // Reverter em caso de erro
+      queryClient.invalidateQueries({ queryKey: ["non-conformity", nonConformityId] });
+      toast.error("Erro ao atualizar. Revertendo mudanças...");
       console.error(error);
     }
   };
@@ -144,12 +150,22 @@ export function NonConformityDetailsModal({
     }
   };
 
+  // Etapa 4: Skeleton loading melhorado
   if (isLoading || !nonConformity) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl">
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <DialogContent className="max-w-6xl max-h-[90vh]">
+          <DialogHeader>
+            <div className="h-6 bg-muted animate-pulse rounded w-48" />
+            <div className="h-4 bg-muted animate-pulse rounded w-96 mt-2" />
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-24 bg-muted animate-pulse rounded" />
+              ))}
+            </div>
+            <div className="h-48 bg-muted animate-pulse rounded" />
           </div>
         </DialogContent>
       </Dialog>
@@ -166,6 +182,13 @@ export function NonConformityDetailsModal({
                 <DialogTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
                   NC {nonConformity.nc_number}
+                  {/* Etapa 5: Cache indicator */}
+                  <Badge variant="outline" className="text-xs ml-2">
+                    {queryClient.getQueryState(["non-conformity", nonConformityId])?.dataUpdatedAt 
+                      ? `Cache: ${format(new Date(queryClient.getQueryState(["non-conformity", nonConformityId])!.dataUpdatedAt), 'HH:mm:ss')}`
+                      : 'Carregando...'
+                    }
+                  </Badge>
                 </DialogTitle>
                 <p className="text-muted-foreground mt-1">{nonConformity.title}</p>
               </div>
