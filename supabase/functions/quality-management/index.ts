@@ -375,6 +375,82 @@ async function getQualityIndicators(supabase: any, company_id: string) {
     supabase.from('action_plan_items').select('*', { count: 'exact', head: true }).lt('when_deadline', now.toISOString().split('T')[0]).eq('status', 'Pendente')
   ]);
 
+  // Fetch active quality indicators and their measurements
+  const { data: activeIndicators } = await supabase
+    .from('quality_indicators')
+    .select(`
+      id,
+      name,
+      category,
+      indicator_targets!inner(
+        id,
+        target_value,
+        critical_lower_limit,
+        critical_upper_limit,
+        lower_limit,
+        upper_limit
+      )
+    `)
+    .eq('company_id', company_id)
+    .eq('is_active', true)
+    .eq('indicator_targets.is_active', true);
+
+  let qualityScore = 0;
+  let hasRealIndicators = false;
+
+  if (activeIndicators && activeIndicators.length > 0) {
+    hasRealIndicators = true;
+    let totalScore = 0;
+    let indicatorCount = 0;
+
+    for (const indicator of activeIndicators) {
+      // Get latest measurement for this indicator
+      const { data: latestMeasurement } = await supabase
+        .from('indicator_measurements')
+        .select('measured_value')
+        .eq('indicator_id', indicator.id)
+        .order('measurement_date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (latestMeasurement && indicator.indicator_targets[0]) {
+        const target = indicator.indicator_targets[0];
+        const value = latestMeasurement.measured_value;
+        const targetValue = target.target_value;
+
+        // Calculate score based on limits
+        let indicatorScore = 100;
+
+        // Check critical limits first
+        if (target.critical_lower_limit !== null && value < target.critical_lower_limit) {
+          indicatorScore = 20;
+        } else if (target.critical_upper_limit !== null && value > target.critical_upper_limit) {
+          indicatorScore = 20;
+        } else if (target.lower_limit !== null && value < target.lower_limit) {
+          indicatorScore = 50;
+        } else if (target.upper_limit !== null && value > target.upper_limit) {
+          indicatorScore = 50;
+        } else if (Math.abs(value - targetValue) / targetValue <= 0.05) {
+          indicatorScore = 100; // Within 5% of target = excellent
+        } else if (Math.abs(value - targetValue) / targetValue <= 0.15) {
+          indicatorScore = 80; // Within 15% of target = good
+        }
+
+        totalScore += indicatorScore;
+        indicatorCount++;
+      }
+    }
+
+    if (indicatorCount > 0) {
+      qualityScore = Math.round(totalScore / indicatorCount);
+    }
+  }
+
+  // Fallback to simplified calculation if no indicators
+  if (!hasRealIndicators) {
+    qualityScore = Math.max(0, 100 - ((thisMonthCount || 0) * 5) - ((overdueActionsCount || 0) * 3));
+  }
+
   const indicators = {
     ncTrend: {
       current: thisMonthCount || 0,
@@ -389,7 +465,8 @@ async function getQualityIndicators(supabase: any, company_id: string) {
         : 0
     },
     overdueActions: overdueActionsCount || 0,
-    qualityScore: Math.max(0, 100 - ((thisMonthCount || 0) * 5) - ((overdueActionsCount || 0) * 3))
+    qualityScore,
+    hasRealIndicators
   };
 
   return new Response(JSON.stringify(indicators), {

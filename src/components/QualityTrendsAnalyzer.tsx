@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -24,6 +25,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TrendDataPoint {
   period: string;
@@ -41,25 +43,82 @@ interface QualityTrendsAnalyzerProps {
 export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({ 
   className 
 }) => {
-  // Generate mock trend data for the last 12 months
+  // Fetch real historical data from database
+  const { data: ncsData, isLoading } = useQuery({
+    queryKey: ['quality-trends-history'],
+    queryFn: async () => {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      const { data, error } = await supabase
+        .from('non_conformities')
+        .select('created_at, status, severity')
+        .gte('created_at', oneYearAgo.toISOString())
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Process historical data into monthly trends
   const trendData: TrendDataPoint[] = useMemo(() => {
+    if (!ncsData) return [];
+
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
                    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
     
-    return months.map((month, index) => {
-      const seasonalFactor = Math.sin((index / 12) * 2 * Math.PI) * 0.3 + 1;
-      const baseLine = 15;
+    // Generate last 12 months labels
+    const last12Months = [...Array(12)].map((_, i) => {
+      const monthIndex = (currentMonth - 11 + i + 12) % 12;
+      return months[monthIndex];
+    });
+
+    // Group NCs by month
+    const monthlyStats: Record<string, { total: number; resolved: number; critical: number }> = {};
+    
+    ncsData.forEach(nc => {
+      const date = new Date(nc.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyStats[monthKey]) {
+        monthlyStats[monthKey] = { total: 0, resolved: 0, critical: 0 };
+      }
+      
+      monthlyStats[monthKey].total++;
+      
+      if (nc.status === 'Fechada' || nc.status === 'Resolvida') {
+        monthlyStats[monthKey].resolved++;
+      }
+      
+      if (nc.severity === 'Crítica' || nc.severity === 'Alta') {
+        monthlyStats[monthKey].critical++;
+      }
+    });
+
+    // Build trend data for last 12 months
+    return last12Months.map((month, index) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - 11 + index);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const stats = monthlyStats[monthKey] || { total: 0, resolved: 0, critical: 0 };
+      
+      // Calculate quality score based on NCs
+      const qualityScore = Math.max(0, 100 - (stats.total * 4) - (stats.critical * 6));
       
       return {
         period: month,
-        nonConformities: Math.round((baseLine + Math.random() * 8) * seasonalFactor),
-        resolved: Math.round((baseLine + Math.random() * 6 + 5) * seasonalFactor),
-        customer_complaints: Math.round((8 + Math.random() * 4) * seasonalFactor),
-        quality_score: Math.round((75 + Math.random() * 20) * 100) / 100,
+        nonConformities: stats.total,
+        resolved: stats.resolved,
+        customer_complaints: stats.critical,
+        quality_score: qualityScore,
         target_line: 85
       };
     });
-  }, []);
+  }, [ncsData]);
 
   // Analyze trends
   const trendAnalysis = useMemo(() => {
@@ -98,6 +157,46 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
     }
     return trend > 0 ? 'text-success' : trend < 0 ? 'text-destructive' : 'text-muted-foreground';
   };
+
+  if (isLoading) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <BarChart3 className="h-5 w-5" />
+            <span>Análise de Tendências</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-pulse text-muted-foreground">Carregando dados históricos...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!trendData || trendData.length === 0 || trendData.every(d => d.nonConformities === 0)) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <BarChart3 className="h-5 w-5" />
+            <span>Análise de Tendências</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Ainda não há dados históricos suficientes para análise de tendências.
+              Continue registrando não conformidades para visualizar as tendências ao longo do tempo.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const insights = useMemo(() => {
     const alerts = [];
