@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleGuard } from "@/middleware/roleGuard";
 import { LazyPageWrapper } from "@/components/LazyPageWrapper";
 import { ProtectedLazyPageWrapper } from "@/components/ProtectedLazyPageWrapper";
 import { SmartToastProvider } from "@/components/feedback/SmartToastProvider";
@@ -141,6 +142,7 @@ const MonitoramentoResiduos = lazy(() => import("./pages/MonitoramentoResiduos")
 // Páginas específicas mantidas
 const EmissoesGEE = lazy(() => import("./pages/EmissoesGEE"));
 const SystemStatus = lazy(() => import("./pages/SystemStatus"));
+const PlatformAdminDashboard = lazy(() => import("./pages/PlatformAdminDashboard"));
 
 // Backward-compat alias
 const RegistrarCreditosCarbono = RegistrarAtividadeConservacao;
@@ -540,6 +542,20 @@ const AppContent = () => {
             
             {/* System Status - Production Readiness */}
             <Route path="/system-status" element={<ProtectedLazyPageWrapper><SystemStatus /></ProtectedLazyPageWrapper>} />
+            
+            {/* Platform Admin Dashboard - Only accessible to platform admins */}
+            <Route 
+              path="/platform-admin" 
+              element={
+                <ProtectedRoute>
+                  <RoleGuard requiredRole="platform_admin">
+                    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <PlatformAdminDashboard />
+                    </Suspense>
+                  </RoleGuard>
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Catch-all deve ser sempre a última rota */}
             <Route path="*" element={<NotFound />} />
