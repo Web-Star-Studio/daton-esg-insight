@@ -86,7 +86,7 @@ const QualityIndicatorDashboard = () => {
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               <SelectItem value="week">Semana</SelectItem>
               <SelectItem value="month">Mês</SelectItem>
               <SelectItem value="quarter">Trimestre</SelectItem>
@@ -124,7 +124,7 @@ const QualityIndicatorDashboard = () => {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a categoria" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         <SelectItem value="quality">Qualidade</SelectItem>
                         <SelectItem value="efficiency">Eficiência</SelectItem>
                         <SelectItem value="client">Cliente</SelectItem>
@@ -159,7 +159,7 @@ const QualityIndicatorDashboard = () => {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper">
                         <SelectItem value="daily">Diário</SelectItem>
                         <SelectItem value="weekly">Semanal</SelectItem>
                         <SelectItem value="monthly">Mensal</SelectItem>
