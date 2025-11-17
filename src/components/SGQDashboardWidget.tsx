@@ -16,7 +16,11 @@ import {
 } from 'lucide-react';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
 
-const SGQDashboardWidget = () => {
+interface SGQDashboardWidgetProps {
+  inDashboardView?: boolean;
+}
+
+const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView = false }) => {
   const { data: dashboard, isLoading: isDashboardLoading, error: dashboardError } = useQuery({
     queryKey: ['sgq-dashboard-widget'],
     queryFn: () => unifiedQualityService.getQualityDashboard(),
@@ -95,9 +99,9 @@ const SGQDashboardWidget = () => {
           </h3>
           <p className="text-sm text-muted-foreground mt-2">Visão geral do SGQ da organização</p>
         </div>
-        <Link to="/quality-dashboard">
+        <Link to={inDashboardView ? "/nao-conformidades" : "/quality-dashboard"}>
           <Button variant="outline" size="sm">
-            Ver Detalhes
+            {inDashboardView ? "Ver NCs" : "Ver Detalhes"}
             <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </Link>
