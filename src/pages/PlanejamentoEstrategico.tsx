@@ -35,6 +35,7 @@ interface BSCPerspective {
 export default function PlanejamentoEstrategico() {
   const [isCreateMapOpen, setIsCreateMapOpen] = useState(false);
   const [newMapData, setNewMapData] = useState({ name: "", description: "" });
+  const queryClient = useQueryClient();
 
   const { data: strategicMaps, isLoading } = useQuery({
     queryKey: ["strategic-maps"],
@@ -47,30 +48,44 @@ export default function PlanejamentoEstrategico() {
       if (error) throw error;
       return data as StrategicMap[];
     },
+    staleTime: 30 * 1000,
   });
 
-  const handleCreateMap = async () => {
-    return formErrorHandler.createRecord(async () => {
+  const createMapMutation = useMutation({
+    mutationFn: async (mapData: { name: string; description: string }) => {
       const { profile } = await formErrorHandler.checkAuth();
 
       const { data, error } = await supabase
         .from("strategic_maps")
         .insert([{ 
-          ...newMapData, 
+          ...mapData, 
           company_id: profile.company_id 
         }])
         .select()
         .single();
 
       if (error) throw error;
-
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Mapa estratégico criado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["strategic-maps"] });
       setIsCreateMapOpen(false);
       setNewMapData({ name: "", description: "" });
-      return data;
-    }, { 
-      formType: 'Mapa Estratégico',
-      successMessage: 'Mapa estratégico criado com sucesso!'
-    });
+    },
+    onError: (error: any) => {
+      console.error("Error creating map:", error);
+      toast.error(error.message || "Erro ao criar mapa estratégico");
+    }
+  });
+
+  const handleCreateMap = async () => {
+    if (!newMapData.name.trim()) {
+      toast.error("Por favor, preencha o nome do mapa estratégico");
+      return;
+    }
+
+    createMapMutation.mutate(newMapData);
   };
 
   if (isLoading) {
@@ -110,6 +125,9 @@ export default function PlanejamentoEstrategico() {
                   value={newMapData.name}
                   onChange={(e) => setNewMapData({...newMapData, name: e.target.value})}
                   placeholder="Nome do mapa estratégico"
+                  required
+                  autoFocus
+                  disabled={createMapMutation.isPending}
                 />
               </div>
               <div>
@@ -118,11 +136,24 @@ export default function PlanejamentoEstrategico() {
                   id="description"
                   value={newMapData.description}
                   onChange={(e) => setNewMapData({...newMapData, description: e.target.value})}
-                  placeholder="Descrição do mapa estratégico"
+                  placeholder="Descrição do mapa estratégico (opcional)"
+                  rows={4}
+                  disabled={createMapMutation.isPending}
                 />
               </div>
-              <Button onClick={handleCreateMap} className="w-full">
-                Criar Mapa
+              <Button 
+                onClick={handleCreateMap} 
+                className="w-full"
+                disabled={createMapMutation.isPending}
+              >
+                {createMapMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar Mapa'
+                )}
               </Button>
             </div>
           </DialogContent>
