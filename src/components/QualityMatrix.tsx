@@ -24,6 +24,7 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
     queryKey: ['risk-matrices'],
     queryFn: () => unifiedQualityService.getRiskMatrices(),
     retry: 1,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: riskMatrix, isLoading, error: matrixError } = useQuery({
@@ -31,6 +32,7 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
     queryFn: () => unifiedQualityService.getRiskMatrix(selectedMatrixId),
     enabled: !!selectedMatrixId,
     retry: 1,
+    staleTime: 2 * 60 * 1000,
   });
 
   React.useEffect(() => {
@@ -153,6 +155,18 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
 
       {riskMatrix && (
         <>
+          {riskMatrix.riskCounts.total === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertTriangle className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum risco cadastrado</h3>
+                <p className="text-sm text-muted-foreground text-center mb-6">
+                  Adicione riscos a esta matriz para visualizar a análise de probabilidade e impacto.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
           {/* Risk Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card>
@@ -304,6 +318,8 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
         </>
       )}
     </div>
