@@ -495,13 +495,20 @@ class UnifiedQualityService {
 
   async getRiskMatrix(id: string): Promise<any> {
     try {
+      console.log('🔍 getRiskMatrix: Fetching for matrix ID:', id);
+
       const { data: risks, error } = await supabase
         .from('risk_assessments')
         .select('*')
         .eq('risk_matrix_id', id)
         .eq('status', 'Ativo');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ getRiskMatrix: Supabase error', error);
+        throw error;
+      }
+
+      console.log('✅ getRiskMatrix: Found', risks?.length || 0, 'active risk assessments');
 
       // Organizar riscos em matriz 5x5
       const probabilityLevels = ['Muito Baixa', 'Baixa', 'Média', 'Alta', 'Muito Alta'];
@@ -531,9 +538,11 @@ class UnifiedQualityService {
         low: (risks || []).filter(r => r.risk_level === 'Baixo' || r.risk_level === 'Muito Baixo').length
       };
 
+      console.log('✅ getRiskMatrix: Risk counts', riskCounts);
+
       return { matrix, riskCounts };
     } catch (error) {
-      console.error('Error fetching risk matrix:', error);
+      console.error('❌ getRiskMatrix: Unexpected error', error);
       return { matrix: [], riskCounts: { total: 0, critical: 0, high: 0, medium: 0, low: 0 } };
     }
   }
@@ -569,7 +578,12 @@ class UnifiedQualityService {
   async getRiskMatrices(): Promise<any[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) {
+        console.error('❌ getRiskMatrices: User not authenticated');
+        throw new Error('User not authenticated');
+      }
+
+      console.log('✅ getRiskMatrices: User authenticated', user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -577,7 +591,12 @@ class UnifiedQualityService {
         .eq('id', user.id)
         .single();
 
-      if (!profile?.company_id) throw new Error('Company not found');
+      if (!profile?.company_id) {
+        console.error('❌ getRiskMatrices: Company not found for user', user.id);
+        throw new Error('Company not found');
+      }
+
+      console.log('✅ getRiskMatrices: Company found', profile.company_id);
 
       const { data, error } = await supabase
         .from('risk_matrices')
@@ -585,10 +604,15 @@ class UnifiedQualityService {
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ getRiskMatrices: Supabase error', error);
+        throw error;
+      }
+
+      console.log('✅ getRiskMatrices: Found', data?.length || 0, 'matrices');
       return data || [];
     } catch (error) {
-      console.error('Error fetching risk matrices:', error);
+      console.error('❌ getRiskMatrices: Unexpected error', error);
       return [];
     }
   }

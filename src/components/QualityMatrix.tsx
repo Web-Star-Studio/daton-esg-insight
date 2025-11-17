@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Activity, Shield, TrendingUp, Bell } from 'lucide-react';
+import { AlertTriangle, Activity, Shield, TrendingUp, Bell, Grid3X3, Plus } from 'lucide-react';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
 import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
 import { useToast } from '@/hooks/use-toast';
@@ -19,17 +20,31 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
   const [selectedMatrixId, setSelectedMatrixId] = useState(matrixId || '');
   const { toast } = useToast();
   const { triggerQualityIssueDetected } = useNotificationTriggers();
+  const navigate = useNavigate();
   
-  const { data: matrices, error: matricesError } = useQuery({
+  const { data: matrices, isLoading: isLoadingMatrices, error: matricesError } = useQuery({
     queryKey: ['risk-matrices'],
-    queryFn: () => unifiedQualityService.getRiskMatrices(),
+    queryFn: async () => {
+      console.log('🔍 Fetching risk matrices...');
+      const result = await unifiedQualityService.getRiskMatrices();
+      console.log('✅ Risk matrices fetched:', result?.length || 0, 'matrices');
+      return result;
+    },
     retry: 1,
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: riskMatrix, isLoading, error: matrixError } = useQuery({
     queryKey: ['risk-matrix', selectedMatrixId],
-    queryFn: () => unifiedQualityService.getRiskMatrix(selectedMatrixId),
+    queryFn: async () => {
+      console.log('🔍 Fetching risk matrix data for:', selectedMatrixId);
+      const result = await unifiedQualityService.getRiskMatrix(selectedMatrixId);
+      console.log('✅ Risk matrix data:', {
+        totalRisks: result?.riskCounts?.total || 0,
+        matrixCells: result?.matrix?.length || 0
+      });
+      return result;
+    },
     enabled: !!selectedMatrixId,
     retry: 1,
     staleTime: 2 * 60 * 1000,
@@ -37,9 +52,20 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
 
   React.useEffect(() => {
     if (!selectedMatrixId && matrices && matrices.length > 0) {
+      console.log('🎯 Auto-selecting first matrix:', matrices[0].id);
       setSelectedMatrixId(matrices[0].id);
     }
   }, [matrices, selectedMatrixId]);
+
+  // Log errors
+  React.useEffect(() => {
+    if (matricesError) {
+      console.error('❌ Error loading matrices:', matricesError);
+    }
+    if (matrixError) {
+      console.error('❌ Error loading matrix data:', matrixError);
+    }
+  }, [matricesError, matrixError]);
 
   const probabilityLevels = ['Muito Baixa', 'Baixa', 'Média', 'Alta', 'Muito Alta'];
   const impactLevels = ['Muito Baixo', 'Baixo', 'Médio', 'Alto', 'Muito Alto'];
@@ -89,6 +115,59 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
     }
   };
 
+  // Loading state for matrices list
+  if (isLoadingMatrices) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Skeleton className="h-16 w-16 rounded-full mx-auto mb-4" />
+              <Skeleton className="h-4 w-48 mx-auto" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Empty state - no matrices found
+  if (!matrices || matrices.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Matriz de Riscos</h3>
+            <p className="text-sm text-muted-foreground">
+              Visualize e analise os riscos por probabilidade e impacto
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Grid3X3 className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma matriz de risco encontrada</h3>
+            <p className="text-sm text-muted-foreground text-center mb-6 max-w-md">
+              Crie sua primeira matriz de risco para começar a analisar probabilidades e impactos dos riscos da sua empresa.
+            </p>
+            <Button onClick={() => navigate('/gestao-riscos')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Criar Matriz de Risco
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading state for specific matrix data
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -134,8 +213,14 @@ const QualityMatrix: React.FC<QualityMatrixProps> = ({ matrixId }) => {
         </div>
         <div className="flex items-center gap-2">
           {(matricesError || matrixError) && (
+            <Badge variant="destructive" className="text-xs gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Erro ao Carregar
+            </Badge>
+          )}
+          {matrices && matrices.length > 0 && (
             <Badge variant="outline" className="text-xs">
-              Modo Demonstração
+              {matrices.length} {matrices.length === 1 ? 'matriz' : 'matrizes'}
             </Badge>
           )}
           <Select value={selectedMatrixId} onValueChange={setSelectedMatrixId}>
