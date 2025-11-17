@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Brain, 
   TrendingUp, 
@@ -18,11 +19,13 @@ import {
   Lightbulb,
   BarChart3,
   Users,
-  Zap
+  Zap,
+  Info
 } from 'lucide-react';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
 import { useNotificationTriggers } from '@/hooks/useNotificationTriggers';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AIQualityInsights = () => {
   const { toast } = useToast();
@@ -44,25 +47,50 @@ const AIQualityInsights = () => {
     retry: 1,
   });
 
+  // Real AI analysis using edge function
   const { data: aiInsights, isLoading: isAILoading } = useQuery({
-    queryKey: ['ai-insights'],
+    queryKey: ['ai-insights', dashboard?.recentNCs],
     queryFn: async () => {
-      // Simulate advanced AI analysis
-      const analysis = {
-        patterns: [
-          { type: 'seasonal', confidence: 87, description: 'NCs aumentam 23% no final do trimestre' },
-          { type: 'correlation', confidence: 92, description: 'Falhas de equipamento correlacionadas com manutenção' },
-          { type: 'predictive', confidence: 78, description: 'Risco de aumento de NCs em 15 dias' }
-        ],
+      // Get recent NC descriptions for analysis
+      const ncDescriptions = dashboard?.recentNCs?.slice(0, 10)
+        .map((nc: any) => nc.description)
+        .filter((desc: string) => desc && desc.length > 10) || [];
+
+      let realAIAnalysis = null;
+      
+      // Only call AI if we have meaningful data
+      if (ncDescriptions.length >= 3) {
+        try {
+          const { data, error } = await supabase.functions.invoke('analyze-nc-text', {
+            body: { ncDescriptions }
+          });
+          
+          if (!error && data) {
+            realAIAnalysis = data;
+          }
+        } catch (error) {
+          console.log('AI analysis unavailable, using rule-based insights:', error);
+        }
+      }
+
+      // Calculate predictions based on real data
+      const baseNCs = dashboard?.metrics?.openNCs || 5;
+      const trendMultiplier = 1 + ((indicators?.ncTrend?.change || 0) / 100);
+      
+      return {
+        realAI: realAIAnalysis,
+        patterns: realAIAnalysis?.patterns || [],
         predictions: {
-          nextMonthNCs: Math.floor(Math.random() * 5) + 3,
-          riskLevel: Math.random() > 0.7 ? 'high' : 'medium',
-          efficiency: Math.floor(Math.random() * 20) + 75
+          nextMonthNCs: Math.round(baseNCs * trendMultiplier),
+          riskLevel: (indicators?.overdueActions || 0) > 3 ? 'high' : 
+                     (indicators?.overdueActions || 0) > 1 ? 'medium' : 'low',
+          efficiency: indicators?.qualityScore || 75
         }
       };
-      return analysis;
     },
-    refetchInterval: 60000, // Refresh every minute
+    enabled: !!dashboard && !!indicators,
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+    staleTime: 3 * 60 * 1000,
   });
 
   // Auto-trigger notifications for critical insights
@@ -98,6 +126,7 @@ const AIQualityInsights = () => {
 
     // NC Trend Analysis
     if (indicators.ncTrend.change > 0) {
+      const trendPriority = Math.min(95, 75 + Math.abs(indicators.ncTrend.change * 2));
       insights.push({
         type: 'warning',
         category: 'Tendências',
@@ -105,33 +134,38 @@ const AIQualityInsights = () => {
         description: `Houve um aumento de ${indicators.ncTrend.change}% nas NCs este mês. Recomenda-se revisar processos críticos.`,
         impact: 'Alto',
         action: 'Realizar análise de causa raiz das NCs recentes',
-        confidence: 85
+        confidence: Math.round(trendPriority),
+        priority: trendPriority >= 85 ? 'high' : 'medium'
       });
     }
 
     // Resolution Rate Analysis
     if (indicators.resolutionRate.percentage < 70) {
+      const resolutionPriority = 100 - indicators.resolutionRate.percentage;
       insights.push({
         type: 'critical',
         category: 'Performance',
         title: 'Taxa de Resolução Baixa',
-        description: `Apenas ${indicators.resolutionRate.percentage}% das NCs foram resolvidas. Meta ideal: 80%+`,
+        description: `Apenas ${indicators.resolutionRate.percentage}% das NCs estão sendo resolvidas. Meta: acima de 80%.`,
         impact: 'Crítico',
-        action: 'Acelerar planos de ação corretiva',
-        confidence: 92
+        action: 'Priorizar resolução de NCs abertas e alocar recursos',
+        confidence: Math.round(resolutionPriority),
+        priority: 'high'
       });
     }
 
     // Overdue Actions
     if (indicators.overdueActions > 0) {
+      const overduePriority = Math.min(98, 80 + (indicators.overdueActions * 3));
       insights.push({
-        type: 'warning',
-        category: 'Prazos',
+        type: 'urgent',
+        category: 'Gestão',
         title: 'Ações em Atraso',
-        description: `${indicators.overdueActions} ações estão em atraso. Isso pode impactar a eficácia do SGQ.`,
-        impact: 'Médio',
-        action: 'Redistribuir responsabilidades e definir novos prazos',
-        confidence: 90
+        description: `${indicators.overdueActions} ações estão atrasadas. Isso pode impactar a eficácia do SGQ.`,
+        impact: indicators.overdueActions > 5 ? 'Crítico' : 'Alto',
+        action: 'Revisar e reagendar ações em atraso imediatamente',
+        confidence: Math.round(overduePriority),
+        priority: 'high'
       });
     }
 
@@ -144,17 +178,20 @@ const AIQualityInsights = () => {
         description: `Índice atual de ${indicators.qualityScore}% indica SGQ maduro e eficaz.`,
         impact: 'Positivo',
         action: 'Manter práticas atuais e considerar certificações',
-        confidence: 95
+        confidence: 95,
+        priority: 'low'
       });
-    } else if (indicators.qualityScore < 60) {
+    } else if (indicators.qualityScore < 70) {
+      const scorePriority = 100 - indicators.qualityScore;
       insights.push({
-        type: 'critical',
-        category: 'Desempenho',
-        title: 'Índice de Qualidade Crítico',
-        description: `Índice atual de ${indicators.qualityScore}% requer atenção imediata.`,
-        impact: 'Crítico',
-        action: 'Revisar estratégia de qualidade e aumentar recursos',
-        confidence: 88
+        type: 'warning',
+        category: 'Performance',
+        title: 'Score de Qualidade Abaixo do Esperado',
+        description: `Score atual: ${indicators.qualityScore}/100. Recomendado: acima de 80.`,
+        impact: 'Médio',
+        action: 'Implementar melhorias nos processos com menor performance',
+        confidence: Math.round(scorePriority),
+        priority: scorePriority >= 30 ? 'medium' : 'low'
       });
     }
 
@@ -267,12 +304,21 @@ const AIQualityInsights = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-2">
-        <Brain className="h-6 w-6 text-primary" />
+      <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">Insights de IA</h2>
-          <p className="text-muted-foreground">Análises inteligentes do seu Sistema de Gestão da Qualidade</p>
+          <h2 className="text-2xl font-bold">Insights Inteligentes</h2>
+          <p className="text-muted-foreground">
+            Análises automáticas baseadas nos dados do seu Sistema de Gestão da Qualidade
+          </p>
         </div>
+        
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+          <Brain className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-sm">
+            Os insights são gerados automaticamente através de análise de padrões e regras de negócio.
+            {aiInsights?.realAI && ' Análises de texto utilizam IA generativa para detectar padrões mais complexos.'}
+          </AlertDescription>
+        </Alert>
       </div>
 
       <Tabs defaultValue="insights" className="space-y-4">
@@ -280,6 +326,12 @@ const AIQualityInsights = () => {
           <TabsTrigger value="insights">Insights Automáticos</TabsTrigger>
           <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
           <TabsTrigger value="predictions">Predições</TabsTrigger>
+          {aiInsights?.realAI && (
+            <TabsTrigger value="ai-analysis">
+              <Brain className="h-3 w-3 mr-1" />
+              Análise IA
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="insights" className="space-y-4">
@@ -300,7 +352,28 @@ const AIQualityInsights = () => {
                                    insight.impact === 'Alto' ? 'default' : 'secondary'}>
                         {insight.impact}
                       </Badge>
-                      <Badge variant="outline">{insight.confidence}% confiança</Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge 
+                          variant={
+                            insight.confidence >= 90 ? 'default' : 
+                            insight.confidence >= 80 ? 'secondary' : 'outline'
+                          }
+                          className="cursor-help"
+                        >
+                          <Info className="h-3 w-3 mr-1" />
+                          Prioridade {
+                            insight.confidence >= 90 ? 'Alta' : 
+                            insight.confidence >= 80 ? 'Média' : 'Baixa'
+                          }
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Baseado no impacto e urgência detectados nos dados</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                     </div>
                   </div>
                 </CardHeader>
@@ -361,11 +434,12 @@ const AIQualityInsights = () => {
         </TabsContent>
 
         <TabsContent value="predictions" className="space-y-4">
-          {aiInsights && (
-            <Alert className="mb-6">
-              <Brain className="h-4 w-4" />
-              <AlertDescription>
-                <strong>IA Detectou:</strong> {aiInsights.patterns[0]?.description} (Confiança: {aiInsights.patterns[0]?.confidence}%)
+          {aiInsights?.realAI && (
+            <Alert className="mb-6 border-purple-200 bg-purple-50 dark:bg-purple-950/20">
+              <Brain className="h-4 w-4 text-purple-600" />
+              <AlertDescription className="text-sm">
+                <strong>IA Detectou:</strong> Análise realizada em {dashboard?.recentNCs?.length || 0} não conformidades recentes.
+                {aiInsights.realAI.confidence && ` (Confiança: ${aiInsights.realAI.confidence}%)`}
               </AlertDescription>
             </Alert>
           )}
@@ -383,12 +457,12 @@ const AIQualityInsights = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Próximo mês</span>
                     <span className="text-sm font-medium">
-                      {aiInsights?.predictions.nextMonthNCs || 3}-{(aiInsights?.predictions.nextMonthNCs || 3) + 2} NCs esperadas
+                      ~{aiInsights?.predictions.nextMonthNCs || 3} NCs esperadas
                     </span>
                   </div>
                   <Progress value={aiInsights?.predictions.riskLevel === 'high' ? 85 : 65} />
                   <p className="text-xs text-muted-foreground">
-                    Baseado em padrões históricos, sazonalidade e análise preditiva por IA
+                    Baseado em tendências e dados históricos do SGQ
                   </p>
                   {aiInsights?.predictions.riskLevel === 'high' && (
                     <Badge variant="destructive" className="text-xs">
@@ -463,6 +537,65 @@ const AIQualityInsights = () => {
             </Card>
           </div>
         </TabsContent>
+
+        {/* New AI Analysis Tab */}
+        {aiInsights?.realAI && (
+          <TabsContent value="ai-analysis" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                    <CardTitle className="text-lg">Análise de IA das Não Conformidades</CardTitle>
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="default" className="cursor-help">
+                          <Zap className="h-3 w-3 mr-1" />
+                          {aiInsights.realAI.confidence}% confiança
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Confiança do modelo de IA na análise</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <CardDescription>
+                  Análise gerada por IA a partir das descrições reais das NCs usando Gemini
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <p className="whitespace-pre-wrap text-sm">{aiInsights.realAI.analysis}</p>
+                </div>
+                
+                {aiInsights.realAI.patterns && aiInsights.realAI.patterns.length > 0 && (
+                  <div className="space-y-2 pt-4 border-t">
+                    <p className="text-sm font-semibold">Padrões Identificados:</p>
+                    <ul className="space-y-1">
+                      {aiInsights.realAI.patterns.map((pattern: string, i: number) => (
+                        <li key={i} className="text-sm text-muted-foreground flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-green-500" />
+                          {pattern}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <Alert>
+                  <Lightbulb className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Esta análise foi gerada usando IA generativa (Google Gemini) para identificar padrões complexos
+                    nas descrições das não conformidades.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

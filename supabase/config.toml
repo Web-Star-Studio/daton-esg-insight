@@ -159,3 +159,6 @@ verify_jwt = true
 
 [functions.company-health-score]
 verify_jwt = true
+
+[functions.analyze-nc-text]
+verify_jwt = true

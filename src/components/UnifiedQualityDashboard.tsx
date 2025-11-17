@@ -115,8 +115,8 @@ export const UnifiedQualityDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center space-x-2">
             <Brain className="h-4 w-4" />
-            <span className="hidden lg:inline">IA</span>
-            <span className="lg:hidden">IA</span>
+            <span className="hidden lg:inline">Insights</span>
+            <span className="lg:hidden">Insights</span>
           </TabsTrigger>
           <TabsTrigger value="actions" className="flex items-center space-x-2">
             <Zap className="h-4 w-4" />
