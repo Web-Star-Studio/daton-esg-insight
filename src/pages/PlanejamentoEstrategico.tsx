@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Target, TrendingUp, Users, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import SWOTMatrix from "@/components/SWOTMatrix";
 import OKRManagement from "@/components/OKRManagement";
 import StrategicDashboard from "@/components/StrategicDashboard";
@@ -35,6 +36,8 @@ interface BSCPerspective {
 export default function PlanejamentoEstrategico() {
   const [isCreateMapOpen, setIsCreateMapOpen] = useState(false);
   const [newMapData, setNewMapData] = useState({ name: "", description: "" });
+  const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("maps");
   const queryClient = useQueryClient();
 
   const { data: strategicMaps, isLoading } = useQuery({
@@ -87,6 +90,13 @@ export default function PlanejamentoEstrategico() {
 
     createMapMutation.mutate(newMapData);
   };
+
+  // Auto-selecionar o primeiro mapa quando os dados carregarem
+  useEffect(() => {
+    if (strategicMaps?.length && !selectedMapId) {
+      setSelectedMapId(strategicMaps[0].id);
+    }
+  }, [strategicMaps, selectedMapId]);
 
   if (isLoading) {
     return (
@@ -160,7 +170,32 @@ export default function PlanejamentoEstrategico() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="maps" className="w-full">
+      {selectedMapId && (
+        <Card className="mb-4">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Target className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Mapa Estratégico Ativo:</p>
+                  <p className="text-lg font-semibold">
+                    {strategicMaps?.find(m => m.id === selectedMapId)?.name}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab("maps")}
+              >
+                Trocar Mapa
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="maps">Mapas</TabsTrigger>
           <TabsTrigger value="bsc">BSC</TabsTrigger>
@@ -173,7 +208,14 @@ export default function PlanejamentoEstrategico() {
         <TabsContent value="maps" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {strategicMaps?.map((map) => (
-              <Card key={map.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={map.id} 
+                className={cn(
+                  "hover:shadow-lg transition-all cursor-pointer",
+                  selectedMapId === map.id && "ring-2 ring-primary shadow-xl"
+                )}
+                onClick={() => setSelectedMapId(map.id)}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Target className="h-5 w-5 text-primary" />
@@ -183,9 +225,27 @@ export default function PlanejamentoEstrategico() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center">
-                    <Badge variant="secondary">Ativo</Badge>
-                    <Button variant="outline" size="sm">
-                      Visualizar
+                    <Badge variant={selectedMapId === map.id ? "default" : "secondary"}>
+                      {selectedMapId === map.id ? "Ativo" : "Disponível"}
+                    </Badge>
+                    <Button 
+                      variant={selectedMapId === map.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedMapId(map.id);
+                        setActiveTab("bsc");
+                        toast.success(`Visualizando: ${map.name}`);
+                      }}
+                    >
+                      {selectedMapId === map.id ? (
+                        <>
+                          <Target className="h-4 w-4 mr-1" />
+                          Selecionado
+                        </>
+                      ) : (
+                        'Visualizar'
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -211,15 +271,15 @@ export default function PlanejamentoEstrategico() {
         </TabsContent>
 
         <TabsContent value="bsc" className="space-y-4">
-          <EnhancedBSC strategicMapId={strategicMaps?.[0]?.id} />
+          <EnhancedBSC strategicMapId={selectedMapId || undefined} />
         </TabsContent>
 
         <TabsContent value="swot" className="space-y-4">
-          <SWOTMatrix />
+          <SWOTMatrix strategicMapId={selectedMapId || undefined} />
         </TabsContent>
 
         <TabsContent value="initiatives" className="space-y-4">
-          <StrategicInitiatives />
+          <StrategicInitiatives strategicMapId={selectedMapId || undefined} />
         </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-4">
@@ -227,7 +287,7 @@ export default function PlanejamentoEstrategico() {
         </TabsContent>
 
         <TabsContent value="okrs" className="space-y-4">
-          <OKRManagement />
+          <OKRManagement strategicMapId={selectedMapId || undefined} />
         </TabsContent>
       </Tabs>
     </>
