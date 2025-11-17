@@ -19,7 +19,8 @@ import {
   Grid3X3,
   Activity,
   ListTodo,
-  ClipboardList
+  ClipboardList,
+  Plus
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
@@ -35,15 +36,43 @@ export const UnifiedQualityDashboard: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const navigate = useNavigate();
 
-  const { data: dashboardData, isLoading } = useQuery({
+  const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ['unified-quality-dashboard'],
-    queryFn: () => unifiedQualityService.getQualityDashboard()
+    queryFn: async () => {
+      const data = await unifiedQualityService.getQualityDashboard();
+      console.log('Dashboard data received:', {
+        hasPlansProgress: !!data?.plansProgress,
+        plansCount: data?.plansProgress?.length || 0,
+        plans: data?.plansProgress
+      });
+      return data;
+    }
   });
 
   const { data: indicators } = useQuery({
     queryKey: ['quality-indicators-metrics'],
     queryFn: () => unifiedQualityService.getQualityIndicators()
   });
+
+  if (error) {
+    console.error('Error loading dashboard:', error);
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertTriangle className="h-16 w-16 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar dashboard</h3>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              {error instanceof Error ? error.message : 'Erro desconhecido'}
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Tentar Novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -307,32 +336,66 @@ export const UnifiedQualityDashboard: React.FC = () => {
         <TabsContent value="actions">
           <Card>
             <CardHeader>
-              <CardTitle>Planos de Ação</CardTitle>
-              <CardDescription>Acompanhe o progresso dos planos de ação</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Planos de Ação</CardTitle>
+                  <CardDescription>Acompanhe o progresso dos planos de ação</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/acoes-corretivas')}
+                >
+                  Ver Todos
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {dashboardData?.plansProgress && dashboardData.plansProgress.length > 0 ? (
+              {isLoading ? (
                 <div className="space-y-4">
-                  {dashboardData.plansProgress.map((plan) => (
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="p-4 border rounded-lg animate-pulse">
+                      <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
+                      <div className="h-2 bg-muted rounded w-full mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-1/4"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : dashboardData?.plansProgress && dashboardData.plansProgress.length > 0 ? (
+                <div className="space-y-4">
+                  {dashboardData.plansProgress.map((plan: any) => (
                     <div key={plan.id} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium">{plan.title}</h4>
                         <Badge variant="outline">{plan.status}</Badge>
                       </div>
                       <Progress value={plan.avgProgress} className="mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Progresso: {plan.avgProgress}%
-                      </p>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
+                        <span>Progresso: {plan.avgProgress}%</span>
+                        <div className="flex items-center gap-4">
+                          <span>{plan.completedItems}/{plan.totalItems} itens</span>
+                          {plan.overdueItems > 0 && (
+                            <span className="text-destructive flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {plan.overdueItems} atrasado{plan.overdueItems > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum plano de ação</h3>
-                  <p className="text-muted-foreground">
-                    Crie planos de ação para gerenciar não conformidades
+                  <h3 className="text-lg font-medium mb-2">Nenhum plano de ação encontrado</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Crie planos de ação para gerenciar não conformidades e ações corretivas
                   </p>
+                  <Button onClick={() => navigate('/acoes-corretivas')}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Criar Plano de Ação
+                  </Button>
                 </div>
               )}
             </CardContent>
