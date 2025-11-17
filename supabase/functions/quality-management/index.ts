@@ -171,25 +171,69 @@ async function getQualityDashboard(supabase: any, company_id: string) {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    // Action plans progress
+    // Action plans progress - Query otimizada com busca separada
     console.log('Fetching action plans for company:', company_id);
-    const { data: plansProgress, error: plansError } = await supabase
+    
+    // Buscar planos primeiro
+    const { data: plans, error: plansError } = await supabase
       .from('action_plans')
-      .select(`
-        id, title, status,
-        action_plan_items(id, status, progress_percentage, when_deadline)
-      `)
+      .select('id, title, status')
       .eq('company_id', company_id)
       .limit(5);
 
     console.log('Action plans query result:', {
-      count: plansProgress?.length || 0,
+      count: plans?.length || 0,
       error: plansError,
-      data: plansProgress
+      data: plans
     });
 
     if (plansError) {
       console.error('Error fetching action plans:', plansError);
+    }
+
+    // Buscar itens separadamente
+    let plansProgress = [];
+    if (plans && plans.length > 0) {
+      const planIds = plans.map(p => p.id);
+      const { data: items, error: itemsError } = await supabase
+        .from('action_plan_items')
+        .select('id, action_plan_id, status, progress_percentage, when_deadline')
+        .in('action_plan_id', planIds);
+
+      console.log('Action plan items query result:', {
+        count: items?.length || 0,
+        error: itemsError,
+        data: items
+      });
+
+      if (itemsError) {
+        console.error('Error fetching action plan items:', itemsError);
+      }
+
+      // Mapear itens para cada plano
+      plansProgress = plans.map(plan => {
+        const planItems = items?.filter(item => item.action_plan_id === plan.id) || [];
+        const totalItems = planItems.length;
+        const completedItems = planItems.filter(item => item.status === 'Concluída').length;
+        const overdueItems = planItems.filter(item => 
+          item.when_deadline && 
+          new Date(item.when_deadline) < new Date() && 
+          item.status !== 'Concluída'
+        ).length;
+        const avgProgress = totalItems > 0 
+          ? planItems.reduce((sum, item) => sum + (item.progress_percentage || 0), 0) / totalItems
+          : 0;
+
+        return {
+          id: plan.id,
+          title: plan.title,
+          status: plan.status,
+          totalItems,
+          completedItems,
+          avgProgress: Math.round(avgProgress),
+          overdueItems
+        };
+      });
     }
 
     const dashboard = {
@@ -202,29 +246,7 @@ async function getQualityDashboard(supabase: any, company_id: string) {
         overdueActions: overdueActionsCount || 0
       },
       recentNCs: recentNCs || [],
-      plansProgress: plansProgress?.map((plan: any) => {
-        const items = plan.action_plan_items || [];
-        const totalItems = items.length;
-        const completedItems = items.filter((item: any) => item.status === 'Concluída').length;
-        const overdueItems = items.filter((item: any) => 
-          item.when_deadline && 
-          new Date(item.when_deadline) < new Date() && 
-          item.status !== 'Concluída'
-        ).length;
-        const avgProgress = totalItems > 0 
-          ? items.reduce((sum: number, item: any) => sum + (item.progress_percentage || 0), 0) / totalItems
-          : 0;
-
-        return {
-          id: plan.id,
-          title: plan.title,
-          status: plan.status,
-          totalItems,
-          completedItems,
-          avgProgress: Math.round(avgProgress),
-          overdueItems
-        };
-      }) || []
+      plansProgress: plansProgress || []
     };
 
     return new Response(JSON.stringify(dashboard), {

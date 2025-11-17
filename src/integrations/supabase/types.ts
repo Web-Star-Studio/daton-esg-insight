@@ -477,7 +477,15 @@ export type Database = {
           who_responsible_user_id?: string | null
           why_reason?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "action_plan_items_action_plan_id_fkey"
+            columns: ["action_plan_id"]
+            isOneToOne: false
+            referencedRelation: "action_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       action_plans: {
         Row: {
