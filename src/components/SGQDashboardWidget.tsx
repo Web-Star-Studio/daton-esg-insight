@@ -170,21 +170,23 @@ const SGQDashboardWidget: React.FC<SGQDashboardWidgetProps> = ({ inDashboardView
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="flex space-x-2">
-          <Link to="/nao-conformidades" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full">
-              <AlertTriangle className="h-4 w-4 mr-1" />
-              NCs
-            </Button>
-          </Link>
-          <Link to="/plano-acao-5w2h" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full">
-              <FileText className="h-4 w-4 mr-1" />
-              Ações
-            </Button>
-          </Link>
-        </div>
+        {/* Quick Actions - só mostrar quando NÃO está no dashboard view */}
+        {!inDashboardView && (
+          <div className="flex space-x-2">
+            <Link to="/nao-conformidades" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                NCs
+              </Button>
+            </Link>
+            <Link to="/plano-acao-5w2h" className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                <FileText className="h-4 w-4 mr-1" />
+                Ações
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </Card>
   );
