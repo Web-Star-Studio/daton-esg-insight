@@ -277,7 +277,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
 
         <TabsContent value="sgq" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SGQDashboardWidget />
+            <SGQDashboardWidget inDashboardView={true} />
             <div className="space-y-6">
               <PredictiveQualityWidget className="h-auto" />
             </div>
