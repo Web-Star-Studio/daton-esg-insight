@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { uploadDocument, downloadDocument } from "@/services/documents";
+import { DocumentPreviewModal } from "@/components/DocumentPreviewModal";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +71,8 @@ const ControleDocumentos = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const documentCategories = [
     'Manual',
@@ -231,30 +234,9 @@ const ControleDocumentos = () => {
     }
   };
 
-  const handlePreview = async (doc: Document) => {
-    try {
-      toast({
-        title: "Abrindo documento...",
-        description: `Carregando ${doc.file_name}`,
-      });
-
-      const { url } = await downloadDocument(doc.id);
-      
-      // Abrir em nova aba
-      window.open(url, '_blank');
-
-      toast({
-        title: "Documento aberto!",
-        description: "O documento foi aberto em uma nova aba.",
-      });
-    } catch (error: any) {
-      console.error('Erro ao abrir documento:', error);
-      toast({
-        title: "Erro ao visualizar",
-        description: error.message || "Não foi possível abrir o documento.",
-        variant: "destructive",
-      });
-    }
+  const handlePreview = (doc: Document) => {
+    setPreviewDocument(doc);
+    setIsPreviewModalOpen(true);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -537,6 +519,16 @@ const ControleDocumentos = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Preview de Documento */}
+      <DocumentPreviewModal
+        document={previewDocument as any}
+        isOpen={isPreviewModalOpen}
+        onClose={() => {
+          setIsPreviewModalOpen(false);
+          setPreviewDocument(null);
+        }}
+      />
     </div>
   );
 };
