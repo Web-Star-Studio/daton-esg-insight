@@ -161,12 +161,21 @@ export const useUpdateTarget = () => {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<IndicatorTarget> }) =>
       indicatorTargetsService.updateTarget(id, updates),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['indicator-targets'] });
       queryClient.invalidateQueries({ queryKey: ['active-target'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-indicators-list'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Meta atualizada",
         description: "Meta do indicador atualizada com sucesso"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar meta",
+        variant: "destructive"
       });
     }
   });
