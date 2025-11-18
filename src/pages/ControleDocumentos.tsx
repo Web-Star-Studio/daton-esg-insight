@@ -16,7 +16,8 @@ import { Plus, Search, Download, Eye, FileText, Calendar, User, Archive, CheckCi
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
-import { uploadDocument } from "@/services/documents";
+import { uploadDocument, downloadDocument } from "@/services/documents";
+import { DocumentPreviewModal } from "@/components/DocumentPreviewModal";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +71,8 @@ const ControleDocumentos = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const documentCategories = [
     'Manual',
@@ -193,6 +196,47 @@ const ControleDocumentos = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleDownload = async (doc: Document) => {
+    try {
+      toast({
+        title: "Preparando download...",
+        description: `Baixando ${doc.file_name}`,
+      });
+
+      const { url, fileName } = await downloadDocument(doc.id);
+      
+      // Criar link temporário e clicar automaticamente
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpar URL se for blob
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+
+      toast({
+        title: "Download concluído!",
+        description: `${fileName} baixado com sucesso.`,
+      });
+    } catch (error: any) {
+      console.error('Erro no download:', error);
+      toast({
+        title: "Erro no download",
+        description: error.message || "Não foi possível baixar o documento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePreview = (doc: Document) => {
+    setPreviewDocument(doc);
+    setIsPreviewModalOpen(true);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -447,16 +491,26 @@ const ControleDocumentos = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handlePreview(doc)}
+                        title="Visualizar documento"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownload(doc)}
+                        title="Baixar documento"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -465,6 +519,16 @@ const ControleDocumentos = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Preview de Documento */}
+      <DocumentPreviewModal
+        document={previewDocument as any}
+        isOpen={isPreviewModalOpen}
+        onClose={() => {
+          setIsPreviewModalOpen(false);
+          setPreviewDocument(null);
+        }}
+      />
     </div>
   );
 };
