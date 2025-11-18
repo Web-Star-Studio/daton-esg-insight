@@ -152,8 +152,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
           {/* Data da Medição */}
           <div className="space-y-2">
             <Label>Data da Medição *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
+              <Popover modal={false}>
+                <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
@@ -209,7 +209,7 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm">Início do Período</Label>
-                  <Popover>
+                  <Popover modal={false}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -243,7 +243,7 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
 
                 <div className="space-y-2">
                   <Label className="text-sm">Fim do Período</Label>
-                  <Popover>
+                  <Popover modal={false}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
