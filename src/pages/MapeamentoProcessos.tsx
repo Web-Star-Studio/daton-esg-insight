@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,15 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Map, FileText, Users, Target, GitBranch, Eye, CheckCircle, Clock, AlertCircle, Network, Settings, BarChart3 } from 'lucide-react';
+import { Plus, Edit, Map, FileText, Users, Target, GitBranch, Eye, CheckCircle, Clock, AlertCircle, Network, Settings, BarChart3, ArrowRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import ProcessMapEditor from '@/components/ProcessMapEditor';
 import { getProcessMaps, createProcessMap, ProcessMap } from '@/services/processMapping';
+import { ProcessTemplateLibraryModal } from '@/components/ProcessTemplateLibraryModal';
+import { ProcessMappingGuideModal } from '@/components/ProcessMappingGuideModal';
 
 const MapeamentoProcessos = () => {
+  const navigate = useNavigate();
   const [isCreateProcessOpen, setIsCreateProcessOpen] = useState(false);
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
+  const [isMappingGuideOpen, setIsMappingGuideOpen] = useState(false);
   const [newProcessData, setNewProcessData] = useState({
     name: '',
     description: '',
@@ -514,32 +520,44 @@ const MapeamentoProcessos = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div 
+                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => navigate('/gestao-stakeholders')}
+                  >
                     <Users className="h-5 w-5 text-primary" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">Gestão de Stakeholders</p>
                       <p className="text-sm text-muted-foreground">
                         Vincule partes interessadas aos processos
                       </p>
                     </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div 
+                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => navigate('/gestao-riscos')}
+                  >
                     <AlertCircle className="h-5 w-5 text-primary" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">Gestão de Riscos</p>
                       <p className="text-sm text-muted-foreground">
                         Identifique e monitore riscos por processo
                       </p>
                     </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div 
+                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => navigate('/quality-dashboard')}
+                  >
                     <BarChart3 className="h-5 w-5 text-primary" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">Indicadores de Performance</p>
                       <p className="text-sm text-muted-foreground">
                         Monitore KPIs específicos por processo
                       </p>
                     </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -554,19 +572,39 @@ const MapeamentoProcessos = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setIsTemplateLibraryOpen(true)}
+                  >
                     <Map className="h-4 w-4" />
                     Biblioteca de Templates
                   </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setIsMappingGuideOpen(true)}
+                  >
                     <FileText className="h-4 w-4" />
                     Guia de Mapeamento
                   </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => {
+                      toast.info('Relatórios de processo em desenvolvimento');
+                    }}
+                  >
                     <BarChart3 className="h-4 w-4" />
                     Relatórios de Processo
                   </Button>
-                  <Button variant="outline" className="w-full justify-start gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => {
+                      toast.info('Configurações avançadas em desenvolvimento');
+                    }}
+                  >
                     <Settings className="h-4 w-4" />
                     Configurações Avançadas
                   </Button>
@@ -574,10 +612,25 @@ const MapeamentoProcessos = () => {
               </CardContent>
              </Card>
            </div>
-         </TabsContent>
-       </Tabs>
-     </div>
-   );
- };
- 
- export default MapeamentoProcessos;
+        </TabsContent>
+      </Tabs>
+
+      {/* Modals */}
+      <ProcessTemplateLibraryModal 
+        open={isTemplateLibraryOpen}
+        onOpenChange={setIsTemplateLibraryOpen}
+        onSelectTemplate={(templateId) => {
+          toast.success(`Template ${templateId} selecionado!`);
+          setIsTemplateLibraryOpen(false);
+        }}
+      />
+      
+      <ProcessMappingGuideModal 
+        open={isMappingGuideOpen}
+        onOpenChange={setIsMappingGuideOpen}
+      />
+    </div>
+  );
+};
+
+export default MapeamentoProcessos;
