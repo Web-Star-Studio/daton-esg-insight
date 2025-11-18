@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,17 +30,26 @@ interface NonConformityDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   nonConformityId: string;
+  mode?: 'view' | 'edit';
 }
 
 export function NonConformityDetailsModal({ 
   open, 
   onOpenChange, 
-  nonConformityId 
+  nonConformityId,
+  mode = 'view'
 }: NonConformityDetailsModalProps) {
   const [showTimeline, setShowTimeline] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(mode === 'edit');
   const [editData, setEditData] = useState<any>({});
   const queryClient = useQueryClient();
+
+  // Resetar modo quando o modal abrir
+  useEffect(() => {
+    if (open) {
+      setIsEditing(mode === 'edit');
+    }
+  }, [open, mode]);
 
   // Etapa 1: Query otimizada com Promise.all e cache
   const { data: nonConformity, isLoading } = useQuery({
@@ -79,18 +88,39 @@ export function NonConformityDetailsModal({
     gcTime: 5 * 60 * 1000, // 5 minutos - cache mantido
   });
 
-  // Etapa 6: Optimistic updates
+  // Optimistic updates com sanitização
   const handleSave = async () => {
-    // Atualiza UI imediatamente (optimistic)
-    queryClient.setQueryData(["non-conformity", nonConformityId], editData);
-    
     setIsEditing(false);
     toast.success("Salvando alterações...");
 
     try {
+      // SANITIZAR dados - remover campos enriquecidos e não pertencentes ao schema
+      const allowedFields = [
+        'title', 'description', 'category', 'severity', 'source',
+        'detected_date', 'status', 'root_cause_analysis', 'damage_level',
+        'impact_analysis', 'corrective_actions', 'preventive_actions',
+        'effectiveness_evaluation', 'effectiveness_date', 'responsible_user_id',
+        'approved_by_user_id', 'approval_date', 'approval_notes',
+        'attachments', 'due_date', 'completion_date', 'recurrence_count',
+        'similar_nc_ids'
+      ];
+
+      const sanitizedData = Object.keys(editData)
+        .filter(key => allowedFields.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = editData[key];
+          return obj;
+        }, {} as any);
+
+      // Optimistic update com dados sanitizados
+      queryClient.setQueryData(["non-conformity", nonConformityId], {
+        ...nonConformity,
+        ...sanitizedData
+      });
+
       const { error } = await supabase
         .from("non_conformities")
-        .update(editData)
+        .update(sanitizedData)
         .eq("id", nonConformityId);
 
       if (error) throw error;
@@ -182,7 +212,10 @@ export function NonConformityDetailsModal({
                 <DialogTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
                   NC {nonConformity.nc_number}
-                  {/* Etapa 5: Cache indicator */}
+                  <Badge variant={isEditing ? "default" : "secondary"} className="text-xs">
+                    {isEditing ? "Modo Edição" : "Modo Visualização"}
+                  </Badge>
+                  {/* Cache indicator */}
                   <Badge variant="outline" className="text-xs ml-2">
                     {queryClient.getQueryState(["non-conformity", nonConformityId])?.dataUpdatedAt 
                       ? `Cache: ${format(new Date(queryClient.getQueryState(["non-conformity", nonConformityId])!.dataUpdatedAt), 'HH:mm:ss')}`
@@ -313,6 +346,7 @@ export function NonConformityDetailsModal({
                         <Textarea
                           value={editData.description || ""}
                           onChange={(e) => setEditData({...editData, description: e.target.value})}
+                          disabled={!isEditing}
                           rows={6}
                         />
                       ) : (
@@ -334,6 +368,7 @@ export function NonConformityDetailsModal({
                         placeholder="Descreva o impacto da não conformidade..."
                         value={editData.impact_analysis || ""}
                         onChange={(e) => setEditData({...editData, impact_analysis: e.target.value})}
+                        disabled={!isEditing}
                         rows={4}
                       />
                     ) : (
@@ -354,6 +389,7 @@ export function NonConformityDetailsModal({
                         placeholder="Identifique a causa raiz da não conformidade..."
                         value={editData.root_cause_analysis || ""}
                         onChange={(e) => setEditData({...editData, root_cause_analysis: e.target.value})}
+                        disabled={!isEditing}
                         rows={4}
                       />
                     ) : (
@@ -376,6 +412,7 @@ export function NonConformityDetailsModal({
                         placeholder="Descreva as ações corretivas a serem implementadas..."
                         value={editData.corrective_actions || ""}
                         onChange={(e) => setEditData({...editData, corrective_actions: e.target.value})}
+                        disabled={!isEditing}
                         rows={4}
                       />
                     ) : (
@@ -396,6 +433,7 @@ export function NonConformityDetailsModal({
                         placeholder="Descreva as ações preventivas para evitar recorrência..."
                         value={editData.preventive_actions || ""}
                         onChange={(e) => setEditData({...editData, preventive_actions: e.target.value})}
+                        disabled={!isEditing}
                         rows={4}
                       />
                     ) : (
@@ -417,6 +455,7 @@ export function NonConformityDetailsModal({
                           type="date"
                           value={editData.due_date || ""}
                           onChange={(e) => setEditData({...editData, due_date: e.target.value})}
+                          disabled={!isEditing}
                         />
                       ) : (
                         <p className="text-sm">
@@ -439,6 +478,7 @@ export function NonConformityDetailsModal({
                           type="date"
                           value={editData.completion_date || ""}
                           onChange={(e) => setEditData({...editData, completion_date: e.target.value})}
+                          disabled={!isEditing}
                         />
                       ) : (
                         <p className="text-sm">
@@ -464,6 +504,7 @@ export function NonConformityDetailsModal({
                         placeholder="Avalie a eficácia das ações implementadas..."
                         value={editData.effectiveness_evaluation || ""}
                         onChange={(e) => setEditData({...editData, effectiveness_evaluation: e.target.value})}
+                        disabled={!isEditing}
                         rows={4}
                       />
                     ) : (
@@ -485,6 +526,7 @@ export function NonConformityDetailsModal({
                           type="date"
                           value={editData.effectiveness_date || ""}
                           onChange={(e) => setEditData({...editData, effectiveness_date: e.target.value})}
+                          disabled={!isEditing}
                         />
                       ) : (
                         <p className="text-sm">

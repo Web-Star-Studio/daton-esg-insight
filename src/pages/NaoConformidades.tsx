@@ -51,6 +51,7 @@ export default function NaoConformidades() {
   const queryClient = useQueryClient();
   const [isCreateNCOpen, setIsCreateNCOpen] = useState(false);
   const [selectedNCId, setSelectedNCId] = useState<string | null>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
   const [isWorkflowManagerOpen, setIsWorkflowManagerOpen] = useState(false);
   const [newNCData, setNewNCData] = useState({
     title: "",
@@ -600,17 +601,25 @@ export default function NaoConformidades() {
                           variant="outline" 
                           size="sm"
                           onMouseEnter={() => prefetchNCDetails(nc.id)}
-                          onClick={() => setSelectedNCId(nc.id)}
+                          onClick={() => {
+                            setModalMode('view');
+                            setSelectedNCId(nc.id);
+                          }}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Visualizar</span>
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
                           onMouseEnter={() => prefetchNCDetails(nc.id)}
-                          onClick={() => setSelectedNCId(nc.id)}
+                          onClick={() => {
+                            setModalMode('edit');
+                            setSelectedNCId(nc.id);
+                          }}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Editar</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -638,8 +647,14 @@ export default function NaoConformidades() {
 
     <NonConformityDetailsModal
       open={!!selectedNCId}
-      onOpenChange={(open) => !open && setSelectedNCId(null)}
+      onOpenChange={(open) => {
+        if (!open) {
+          setSelectedNCId(null);
+          setModalMode('view');
+        }
+      }}
       nonConformityId={selectedNCId || ""}
+      mode={modalMode}
     />
 
     <ApprovalWorkflowManager
