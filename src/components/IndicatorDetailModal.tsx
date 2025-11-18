@@ -12,9 +12,12 @@ import {
   TrendingUp, 
   AlertTriangle,
   Calendar,
-  FileText
+  FileText,
+  Edit
 } from 'lucide-react';
 import { qualityIndicatorsService } from '@/services/qualityIndicators';
+import { useUpdateTarget } from '@/services/indicatorTargets';
+import { EditTargetModal } from './EditTargetModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface IndicatorDetailModalProps {
@@ -30,11 +33,27 @@ export const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({
   indicatorId,
   onAddMeasurement
 }) => {
+  const [isEditTargetOpen, setIsEditTargetOpen] = useState(false);
+  const updateTargetMutation = useUpdateTarget();
+  
   const { data: indicator, isLoading } = useQuery({
     queryKey: ['indicator-detail', indicatorId],
     queryFn: () => qualityIndicatorsService.getIndicator(indicatorId),
     enabled: isOpen && !!indicatorId
   });
+
+  const handleUpdateTarget = (updates: any) => {
+    if (!activeTarget) return;
+    
+    updateTargetMutation.mutate(
+      { id: activeTarget.id, updates },
+      {
+        onSuccess: () => {
+          setIsEditTargetOpen(false);
+        },
+      }
+    );
+  };
 
   const activeTarget = indicator?.indicator_targets?.find((t: any) => t.is_active);
   const measurements = indicator?.indicator_measurements?.sort((a: any, b: any) => 
@@ -315,10 +334,22 @@ export const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({
                 {activeTarget ? (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Meta Atual</CardTitle>
-                      <CardDescription>
-                        Válida desde {new Date(activeTarget.valid_from).toLocaleDateString('pt-BR')}
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-base">Meta Atual</CardTitle>
+                          <CardDescription>
+                            Válida desde {new Date(activeTarget.valid_from).toLocaleDateString('pt-BR')}
+                          </CardDescription>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsEditTargetOpen(true)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar Meta
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -395,6 +426,17 @@ export const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({
           </>
         ) : null}
       </DialogContent>
+
+      {activeTarget && (
+        <EditTargetModal
+          open={isEditTargetOpen}
+          onOpenChange={setIsEditTargetOpen}
+          target={activeTarget}
+          measurementUnit={indicator?.measurement_unit || ''}
+          onSave={handleUpdateTarget}
+          isLoading={updateTargetMutation.isPending}
+        />
+      )}
     </Dialog>
   );
 };
