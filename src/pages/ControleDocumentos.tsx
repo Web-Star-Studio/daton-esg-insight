@@ -16,6 +16,7 @@ import { Plus, Search, Download, Eye, FileText, Calendar, User, Archive, CheckCi
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
+import { uploadDocument } from "@/services/documents";
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,8 @@ const ControleDocumentos = () => {
     tags: [] as string[],
     controlled_copy: false
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const documentCategories = [
     'Manual',
@@ -124,6 +127,74 @@ const ControleDocumentos = () => {
     }
   };
 
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Erro",
+        description: "Selecione um arquivo para upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      console.log('Iniciando upload:', selectedFile.name);
+
+      const uploadedDoc = await uploadDocument(selectedFile, {
+        tags: uploadData.tags,
+        related_model: 'quality_document',
+        related_id: crypto.randomUUID(),
+        onProgress: (progress) => {
+          console.log(`Upload progress: ${progress}%`);
+        }
+      });
+
+      console.log('Documento uploaded:', uploadedDoc);
+
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({
+          controlled_copy: uploadData.controlled_copy,
+          requires_approval: true,
+          approval_status: 'em_aprovacao' as const,
+          master_list_included: uploadData.controlled_copy
+        })
+        .eq('id', uploadedDoc.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar metadados:', updateError);
+        throw updateError;
+      }
+
+      toast({
+        title: "Sucesso!",
+        description: `Documento "${selectedFile.name}" enviado com sucesso.`,
+      });
+
+      setSelectedFile(null);
+      setUploadData({
+        document_type: 'Manual',
+        tags: [],
+        controlled_copy: false
+      });
+      setIsUploadModalOpen(false);
+
+      await loadDocuments();
+
+    } catch (error: any) {
+      console.error('Erro no upload:', error);
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Não foi possível fazer upload do documento.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -171,7 +242,20 @@ const ControleDocumentos = () => {
             <h1 className="text-3xl font-bold text-foreground">Controle de Documentos</h1>
             <p className="text-muted-foreground">Sistema de gestão documental do SGQ</p>
           </div>
-          <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+        <Dialog 
+          open={isUploadModalOpen} 
+          onOpenChange={(open) => {
+            setIsUploadModalOpen(open);
+            if (!open) {
+              setSelectedFile(null);
+              setUploadData({
+                document_type: 'Manual',
+                tags: [],
+                controlled_copy: false
+              });
+            }
+          }}
+        >
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -192,7 +276,30 @@ const ControleDocumentos = () => {
                     id="file"
                     type="file"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setSelectedFile(file);
+                      }
+                    }}
                   />
+                  {selectedFile && (
+                    <div className="flex items-center gap-2 p-2 bg-muted rounded-md mt-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <span className="text-sm flex-1">{selectedFile.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatFileSize(selectedFile.size)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedFile(null)}
+                        className="h-6 w-6 p-0"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid gap-2">
@@ -226,8 +333,18 @@ const ControleDocumentos = () => {
                 <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button>
-                  Fazer Upload
+                <Button 
+                  onClick={handleUpload}
+                  disabled={isUploading || !selectedFile}
+                >
+                  {isUploading ? (
+                    <>
+                      <EnhancedLoading size="sm" className="mr-2" />
+                      Enviando...
+                    </>
+                  ) : (
+                    'Fazer Upload'
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
