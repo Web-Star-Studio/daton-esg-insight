@@ -141,19 +141,19 @@ export const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({
                       <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                         <div className="text-center">
                           <p className="text-2xl font-bold">
-                            {measurements[0].measured_value}
+                            {measurements[0].measured_value} {indicator.measurement_unit}
                           </p>
                           <p className="text-xs text-muted-foreground">Última Medição</p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold">
-                            {(measurements.reduce((acc: number, m: any) => acc + m.measured_value, 0) / measurements.length).toFixed(2)}
+                            {(measurements.reduce((acc: number, m: any) => acc + m.measured_value, 0) / measurements.length).toFixed(2)} {indicator.measurement_unit}
                           </p>
                           <p className="text-xs text-muted-foreground">Média</p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold">
-                            {activeTarget?.target_value || '-'}
+                            {activeTarget ? `${activeTarget.target_value} ${indicator.measurement_unit}` : '-'}
                           </p>
                           <p className="text-xs text-muted-foreground">Meta Atual</p>
                         </div>
@@ -258,7 +258,13 @@ export const IndicatorDetailModal: React.FC<IndicatorDetailModalProps> = ({
                           />
                           <Tooltip 
                             labelFormatter={(value) => chartData.find(d => d.date === value)?.fullDate || value}
-                            formatter={(value: any) => [value, indicator.measurement_unit]}
+                            formatter={(value: any, name: string) => {
+                              const label = name === 'valor' ? 'Valor Medido' : 
+                                           name === 'meta' ? 'Meta' : 
+                                           name === 'limiteInferior' ? 'Limite Inferior' : 
+                                           name === 'limiteSuperior' ? 'Limite Superior' : name;
+                              return [`${value} ${indicator.measurement_unit}`, label];
+                            }}
                           />
                           <Legend />
                           
