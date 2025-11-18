@@ -11,12 +11,16 @@ import {
 import { useQualityIndicators } from '@/services/qualityIndicators';
 import { IndicatorCreationModal } from './IndicatorCreationModal';
 import { IndicatorMeasurementModal } from './IndicatorMeasurementModal';
+import { IndicatorDetailModal } from './IndicatorDetailModal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { BarChart3 } from 'lucide-react';
 
 const QualityIndicatorDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMeasurementModalOpen, setIsMeasurementModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string | null>(null);
+  const [detailsIndicatorId, setDetailsIndicatorId] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   const { data: indicators = [], isLoading } = useQualityIndicators();
@@ -29,6 +33,16 @@ const QualityIndicatorDashboard = () => {
   const handleIndicatorCreated = (indicatorId: string) => {
     // Abrir modal de medição para o indicador recém-criado
     setSelectedIndicatorId(indicatorId);
+    setIsMeasurementModalOpen(true);
+  };
+
+  const handleViewDetails = (indicatorId: string) => {
+    setDetailsIndicatorId(indicatorId);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleAddMeasurementFromDetails = () => {
+    setIsDetailsModalOpen(false);
     setIsMeasurementModalOpen(true);
   };
 
@@ -107,11 +121,18 @@ const QualityIndicatorDashboard = () => {
                       {indicator.category}
                     </CardDescription>
                   </div>
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    {indicator.frequency === 'daily' ? 'Diário' : 
-                     indicator.frequency === 'weekly' ? 'Semanal' :
-                     indicator.frequency === 'monthly' ? 'Mensal' : 'Trimestral'}
-                  </Badge>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs">
+                      {indicator.frequency === 'daily' ? 'Diário' : 
+                       indicator.frequency === 'weekly' ? 'Semanal' :
+                       indicator.frequency === 'monthly' ? 'Mensal' : 'Trimestral'}
+                    </Badge>
+                    {indicator.measurementsCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {indicator.measurementsCount} {indicator.measurementsCount === 1 ? 'medição' : 'medições'}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -131,15 +152,61 @@ const QualityIndicatorDashboard = () => {
                     {indicator.description}
                   </p>
                 )}
+                
+                {/* Última Medição */}
+                {indicator.lastMeasurement ? (
+                  <div className="border-t pt-3 space-y-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm text-muted-foreground">Última Medição:</span>
+                      <span className="font-semibold text-lg">
+                        {indicator.lastMeasurement.measured_value} {indicator.measurement_unit}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {new Date(indicator.lastMeasurement.measurement_date).toLocaleDateString('pt-BR')}
+                      </span>
+                      <Badge variant={
+                        indicator.lastMeasurement.deviation_level === 'none' ? 'default' :
+                        indicator.lastMeasurement.deviation_level === 'warning' ? 'outline' : 'destructive'
+                      }>
+                        {indicator.lastMeasurement.deviation_level === 'none' ? 'Dentro da meta' :
+                         indicator.lastMeasurement.deviation_level === 'warning' ? 'Atenção' : 'Crítico'}
+                      </Badge>
+                    </div>
+                    {indicator.measurementsCount > 1 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        + {indicator.measurementsCount - 1} medições anteriores
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border-t pt-3">
+                    <div className="flex items-center justify-center py-2 text-muted-foreground">
+                      <Activity className="h-4 w-4 mr-2" />
+                      <span className="text-sm">Nenhuma medição registrada</span>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="pt-2 flex gap-2">
                   <Button 
                     size="sm" 
                     variant="outline" 
                     className="flex-1"
+                    onClick={() => handleViewDetails(indicator.id)}
+                  >
+                    <BarChart3 className="h-3 w-3 mr-1" />
+                    Ver Detalhes
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="default" 
+                    className="flex-1"
                     onClick={() => handleAddMeasurement(indicator.id)}
                   >
                     <Activity className="h-3 w-3 mr-1" />
-                    Registrar Medição
+                    Nova Medição
                   </Button>
                 </div>
               </CardContent>
@@ -163,6 +230,18 @@ const QualityIndicatorDashboard = () => {
             setSelectedIndicatorId(null);
           }}
           indicatorId={selectedIndicatorId}
+        />
+      )}
+
+      {detailsIndicatorId && (
+        <IndicatorDetailModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setDetailsIndicatorId(null);
+          }}
+          indicatorId={detailsIndicatorId}
+          onAddMeasurement={handleAddMeasurementFromDetails}
         />
       )}
     </div>
