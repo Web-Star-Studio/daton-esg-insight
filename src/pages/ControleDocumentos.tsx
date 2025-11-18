@@ -12,12 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Download, Eye, FileText, Calendar, User, Archive, CheckCircle } from "lucide-react";
+import { Plus, Search, Download, FileText, Calendar, User, Archive, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EnhancedLoading } from "@/components/ui/enhanced-loading";
 import { uploadDocument, downloadDocument } from "@/services/documents";
-import { DocumentPreviewModal } from "@/components/DocumentPreviewModal";
 import {
   Dialog,
   DialogContent,
@@ -71,8 +70,6 @@ const ControleDocumentos = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const documentCategories = [
     'Manual',
@@ -234,10 +231,6 @@ const ControleDocumentos = () => {
     }
   };
 
-  const handlePreview = (doc: Document) => {
-    setPreviewDocument(doc);
-    setIsPreviewModalOpen(true);
-  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -496,14 +489,6 @@ const ControleDocumentos = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handlePreview(doc)}
-                        title="Visualizar documento"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
                         onClick={() => handleDownload(doc)}
                         title="Baixar documento"
                       >
@@ -519,16 +504,6 @@ const ControleDocumentos = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Modal de Preview de Documento */}
-      <DocumentPreviewModal
-        document={previewDocument as any}
-        isOpen={isPreviewModalOpen}
-        onClose={() => {
-          setIsPreviewModalOpen(false);
-          setPreviewDocument(null);
-        }}
-      />
     </div>
   );
 };
