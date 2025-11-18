@@ -7,13 +7,16 @@ import { AlertCircle, FileText, Plus, Calendar, DollarSign } from "lucide-react"
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SupplierContractModal } from "./SupplierContractModal";
+import { SupplierContractDetailsModal } from "./SupplierContractDetailsModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getSupplierContracts } from "@/services/supplierContracts";
+import { getSupplierContracts, SupplierContract } from "@/services/supplierContracts";
 import { getSuppliers } from "@/services/supplierService";
 import { toast } from "sonner";
 
 export function SupplierContractsTab() {
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<SupplierContract | null>(null);
   const queryClient = useQueryClient();
 
   const { data: contracts = [], isLoading } = useQuery({
@@ -86,6 +89,11 @@ export function SupplierContractsTab() {
   const handleContractSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["supplier-contracts"] });
     setIsContractModalOpen(false);
+  };
+
+  const handleViewDetails = (contract: SupplierContract) => {
+    setSelectedContract(contract);
+    setIsDetailsModalOpen(true);
   };
 
   if (isLoading) {
@@ -241,7 +249,11 @@ export function SupplierContractsTab() {
                               {getStatusBadge(status)}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleViewDetails(contract)}
+                              >
                                 Ver Detalhes
                               </Button>
                             </TableCell>
@@ -272,6 +284,16 @@ export function SupplierContractsTab() {
         isOpen={isContractModalOpen}
         onClose={() => setIsContractModalOpen(false)}
         onSuccess={handleContractSuccess}
+      />
+
+      <SupplierContractDetailsModal
+        contract={selectedContract}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedContract(null);
+        }}
+        suppliers={suppliers}
       />
     </>
   );
