@@ -110,14 +110,29 @@ class QualityIndicatorsService {
       .from('quality_indicators')
       .select(`
         *,
-        indicator_targets(*)
+        indicator_targets(*),
+        indicator_measurements(
+          id,
+          measured_value,
+          measurement_date,
+          status,
+          deviation_level,
+          notes
+        )
       `)
       .eq('company_id', profile.company_id)
       .eq('is_active', true)
       .order('name');
 
     if (error) throw error;
-    return data;
+    
+    // Processar dados para incluir última medição e contagem
+    return data?.map(indicator => ({
+      ...indicator,
+      lastMeasurement: indicator.indicator_measurements
+        ?.sort((a: any, b: any) => new Date(b.measurement_date).getTime() - new Date(a.measurement_date).getTime())[0],
+      measurementsCount: indicator.indicator_measurements?.length || 0
+    }));
   }
 
   async getIndicator(id: string) {
@@ -440,6 +455,8 @@ export const useCreateMeasurement = () => {
       queryClient.invalidateQueries({ queryKey: ['indicator-measurements'] });
       queryClient.invalidateQueries({ queryKey: ['indicator-alerts'] });
       queryClient.invalidateQueries({ queryKey: ['quality-indicators-list'] });
+      queryClient.invalidateQueries({ queryKey: ['quality-indicators'] });
+      queryClient.invalidateQueries({ queryKey: ['indicator-detail'] });
       queryClient.invalidateQueries({ queryKey: ['quality-performance'] });
       toast({
         title: "Medição registrada",
