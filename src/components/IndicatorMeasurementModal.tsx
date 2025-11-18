@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreateMeasurement, useQualityIndicator } from '@/services/qualityIndicators';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const measurementSchema = z.object({
   measurement_date: z.date({
@@ -102,7 +103,21 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
   };
 
   if (!indicator) {
-    return null;
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </DialogHeader>
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (
@@ -115,7 +130,7 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pr-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Informações do Indicador */}
           <div className="bg-muted/50 p-4 rounded-lg">
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -143,7 +158,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !measurementDate && "text-muted-foreground"
+                    !measurementDate && "text-muted-foreground",
+                    errors.measurement_date && "border-destructive"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -160,6 +176,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
                   selected={measurementDate}
                   onSelect={(date) => setValue('measurement_date', date || new Date())}
                   initialFocus
+                  locale={ptBR}
+                  disabled={(date) => date > new Date()}
                   className="pointer-events-auto"
                 />
               </PopoverContent>
@@ -197,7 +215,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !periodStart && "text-muted-foreground"
+                          !periodStart && "text-muted-foreground",
+                          errors.measurement_period_start && "border-destructive"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -214,6 +233,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
                         selected={periodStart}
                         onSelect={(date) => setValue('measurement_period_start', date)}
                         initialFocus
+                        locale={ptBR}
+                        disabled={(date) => date > new Date()}
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
@@ -228,7 +249,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !periodEnd && "text-muted-foreground"
+                          !periodEnd && "text-muted-foreground",
+                          errors.measurement_period_end && "border-destructive"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -245,6 +267,8 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
                         selected={periodEnd}
                         onSelect={(date) => setValue('measurement_period_end', date)}
                         initialFocus
+                        locale={ptBR}
+                        disabled={(date) => date > new Date()}
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
@@ -281,7 +305,14 @@ export const IndicatorMeasurementModal: React.FC<IndicatorMeasurementModalProps>
               Cancelar
             </Button>
             <Button type="submit" disabled={createMeasurement.isPending}>
-              {createMeasurement.isPending ? 'Registrando...' : 'Registrar Medição'}
+              {createMeasurement.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                'Registrar Medição'
+              )}
             </Button>
           </div>
         </form>
