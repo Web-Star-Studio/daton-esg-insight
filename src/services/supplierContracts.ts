@@ -190,3 +190,21 @@ export const getContractsStats = async () => {
     throw error;
   }
 };
+
+export const downloadContractFile = async (filePath: string): Promise<{ url: string; fileName: string }> => {
+  try {
+    const { data, error } = await supabase.storage
+      .from('contract-files')
+      .download(filePath);
+
+    if (error) throw error;
+
+    const url = URL.createObjectURL(data);
+    const fileName = filePath.split('/').pop() || 'contrato.pdf';
+
+    return { url, fileName };
+  } catch (error) {
+    console.error('Error downloading contract file:', error);
+    throw error;
+  }
+};
