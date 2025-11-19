@@ -51,7 +51,7 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
 
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCNPJ(e.target.value);
-    setFormData({ ...formData, cnpj: formatted });
+    setFormData(prev => ({ ...prev, cnpj: formatted }));
   };
 
   useEffect(() => {
@@ -177,6 +177,17 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
                   type="text"
                   value={formData.cnpj}
                   onChange={handleCNPJChange}
+                  onKeyPress={(e) => {
+                    if (!/[\d]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData.getData('text');
+                    const formatted = formatCNPJ(pastedText);
+                    setFormData(prev => ({ ...prev, cnpj: formatted }));
+                  }}
                   placeholder="00.000.000/0000-00"
                   maxLength={18}
                 />
