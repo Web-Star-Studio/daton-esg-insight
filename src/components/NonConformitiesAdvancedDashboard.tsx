@@ -46,7 +46,6 @@ export function NonConformitiesAdvancedDashboard() {
         .from("non_conformities")
         .select(`
           *,
-          corrective_actions(*),
           responsible:responsible_user_id(full_name)
         `)
         .eq('company_id', userAndCompany.company_id)
