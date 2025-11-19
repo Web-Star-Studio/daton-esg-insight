@@ -44,10 +44,7 @@ export function NonConformitiesAdvancedDashboard() {
       // Fetch non-conformities with all related data
       const { data: nonConformities, error } = await supabase
         .from("non_conformities")
-        .select(`
-          *,
-          responsible:responsible_user_id(full_name)
-        `)
+        .select('*')
         .eq('company_id', userAndCompany.company_id)
         .order("created_at", { ascending: false });
 
