@@ -4,6 +4,8 @@ import { getUserAndCompany } from "@/utils/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { 
   BarChart, 
   Bar, 
@@ -39,6 +41,8 @@ import {
 } from "@/components/ui/tooltip";
 
 export function NonConformitiesAdvancedDashboard() {
+  const navigate = useNavigate();
+  
   const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ["nc-advanced-dashboard"],
     queryFn: async () => {
@@ -56,6 +60,39 @@ export function NonConformitiesAdvancedDashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
+      // Debug info
+      console.log('🔍 Debug NC Dashboard:', {
+        company_id: userAndCompany.company_id,
+        company_name: userAndCompany.company?.name,
+        ncs_found: nonConformities?.length || 0,
+        has_data: nonConformities && nonConformities.length > 0
+      });
+
+      // Check if empty
+      if (!nonConformities || nonConformities.length === 0) {
+        return {
+          metrics: {
+            total: 0,
+            currentMonth: 0,
+            lastMonth: 0,
+            trend: 0,
+            resolutionRate: 0,
+            overdue: 0,
+            avgResolutionTime: 0,
+            critical: 0
+          },
+          charts: {
+            severity: [],
+            status: [],
+            source: [],
+            monthly: []
+          },
+          recentNCs: [],
+          isEmpty: true,
+          companyInfo: userAndCompany.company
+        };
+      }
 
       // Calculate dashboard metrics
       const now = new Date();
@@ -234,6 +271,39 @@ export function NonConformitiesAdvancedDashboard() {
               }
             </p>
             <Badge variant="outline">{errorMessage}</Badge>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show empty state if no data
+  if (dashboardData?.isEmpty) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="rounded-full bg-muted p-6">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Nenhuma Não Conformidade Cadastrada</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Sua empresa ainda não possui registros de não conformidades no sistema.
+                  {dashboardData.companyInfo?.name && (
+                    <span className="block mt-1 text-sm">
+                      Empresa: {dashboardData.companyInfo.name}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Button onClick={() => navigate('/nao-conformidades')} className="mt-4">
+                Cadastrar Primeira NC
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
