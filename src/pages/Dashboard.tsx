@@ -301,6 +301,13 @@ export default function Dashboard() {
           const Icon = kpi.icon;
           const ChangeIcon = getChangeIcon(kpi.changeType);
           
+          const routeMap: Record<string, string> = {
+            emissions: '/inventario-gee',
+            compliance: '/compliance',
+            employees: '/gestao-funcionarios',
+            quality: '/quality-dashboard'
+          };
+          
           return (
             <EnhancedCard
               key={kpi.id}
@@ -316,6 +323,14 @@ export default function Dashboard() {
               variant="stat"
               className="group animate-fade-in"
               style={{ animationDelay: `${0.4 + index * 0.1}s` }}
+              onClick={() => navigate(routeMap[kpi.id] || '/dashboard')}
+              onMenuClick={(action) => {
+                if (action === 'details') {
+                  navigate(routeMap[kpi.id] || '/dashboard');
+                } else if (action === 'export') {
+                  console.log('Export data for:', kpi.id);
+                }
+              }}
             />
           );
         })}
@@ -409,6 +424,15 @@ export default function Dashboard() {
                   <div 
                     key={activity.id} 
                     className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
+                    onClick={() => console.log('Activity clicked:', activity)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        console.log('Activity clicked:', activity);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Ver detalhes de ${activity.title}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
                       <Icon className="w-4 h-4" />
@@ -445,7 +469,11 @@ export default function Dashboard() {
 
       {/* Quick Stats & System Health */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '1s' }}>
-        <EnhancedCard variant="minimal" className="group">
+        <EnhancedCard 
+          variant="minimal" 
+          className="group"
+          onClick={() => navigate('/monitoramento-energia')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center">
@@ -460,7 +488,11 @@ export default function Dashboard() {
           </CardContent>
         </EnhancedCard>
 
-        <EnhancedCard variant="minimal" className="group">
+        <EnhancedCard 
+          variant="minimal" 
+          className="group"
+          onClick={() => navigate('/inventario-gee')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-r from-success to-primary rounded-xl flex items-center justify-center">
@@ -475,7 +507,11 @@ export default function Dashboard() {
           </CardContent>
         </EnhancedCard>
 
-        <EnhancedCard variant="minimal" className="group">
+        <EnhancedCard 
+          variant="minimal" 
+          className="group"
+          onClick={() => navigate('/gestao-funcionarios')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-r from-accent to-warning rounded-xl flex items-center justify-center">

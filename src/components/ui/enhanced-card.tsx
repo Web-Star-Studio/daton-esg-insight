@@ -3,6 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string;
@@ -15,6 +21,7 @@ interface EnhancedCardProps extends React.HTMLAttributes<HTMLDivElement> {
   changeType?: 'positive' | 'negative' | 'neutral';
   trend?: React.ReactNode;
   actions?: React.ReactNode;
+  onMenuClick?: (action: string) => void;
   variant?: 'default' | 'minimal' | 'premium' | 'stat';
   loading?: boolean;
   hoverable?: boolean;
@@ -31,6 +38,7 @@ export function EnhancedCard({
   changeType = 'neutral',
   trend,
   actions,
+  onMenuClick,
   variant = 'default',
   loading = false,
   hoverable = true,
@@ -90,9 +98,28 @@ export function EnhancedCard({
           )}
           
           {actions || (
-            <Button variant="ghost" size="sm" className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-              <MoreVertical className="w-4 h-4 text-muted-foreground" />
-            </Button>
+            onMenuClick && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={() => onMenuClick('details')}>
+                    Ver detalhes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onMenuClick('export')}>
+                    Exportar dados
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
           )}
         </div>
         
