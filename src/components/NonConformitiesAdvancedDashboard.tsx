@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getUserAndCompany } from "@/utils/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,12 @@ export function NonConformitiesAdvancedDashboard() {
   const { data: dashboardData, isLoading, error } = useQuery({
     queryKey: ["nc-advanced-dashboard"],
     queryFn: async () => {
+      // Get user's company
+      const userAndCompany = await getUserAndCompany();
+      if (!userAndCompany?.company_id) {
+        throw new Error('Company ID not found');
+      }
+
       // Fetch non-conformities with all related data
       const { data: nonConformities, error } = await supabase
         .from("non_conformities")
@@ -42,6 +49,7 @@ export function NonConformitiesAdvancedDashboard() {
           corrective_actions(*),
           responsible:responsible_user_id(full_name)
         `)
+        .eq('company_id', userAndCompany.company_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -137,6 +145,7 @@ export function NonConformitiesAdvancedDashboard() {
         metrics: {
           total: totalNCs,
           currentMonth: currentMonthCount,
+          lastMonth: lastMonthCount,
           trend,
           resolutionRate,
           overdue: overdueNCs.length,
@@ -204,17 +213,24 @@ export function NonConformitiesAdvancedDashboard() {
   }
 
   if (error || !dashboardData) {
+    const errorMessage = error?.message || 'Erro desconhecido';
+    const isCompanyError = errorMessage.includes('Company ID');
+    
     return (
       <div className="space-y-6">
         <Card>
           <CardContent className="text-center py-12">
             <AlertTriangle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">Dados Indisponíveis</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {isCompanyError ? 'Acesso Negado' : 'Dados Indisponíveis'}
+            </h3>
             <p className="text-muted-foreground mb-4">
-              Não foi possível carregar os dados das não conformidades. 
-              Usando dados de demonstração.
+              {isCompanyError 
+                ? 'Você precisa estar associado a uma empresa para visualizar os dados.'
+                : 'Não foi possível carregar os dados das não conformidades.'
+              }
             </p>
-            <Badge variant="outline">Modo Offline</Badge>
+            <Badge variant="outline">{errorMessage}</Badge>
           </CardContent>
         </Card>
       </div>
@@ -225,6 +241,7 @@ export function NonConformitiesAdvancedDashboard() {
     metrics: {
       total: 0,
       currentMonth: 0,
+      lastMonth: 0,
       trend: 0,
       resolutionRate: 0,
       overdue: 0,
@@ -251,7 +268,12 @@ export function NonConformitiesAdvancedDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{metrics.total}</div>
             <p className="text-xs text-muted-foreground">
-              {metrics.currentMonth} neste mês
+              {metrics.currentMonth} {metrics.currentMonth === 1 ? 'nova' : 'novas'} em {new Date().toLocaleDateString('pt-BR', { month: 'long' })}
+              {metrics.total > 0 && metrics.currentMonth === 0 && (
+                <span className="block text-muted-foreground/70">
+                  ({metrics.total} histórico)
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -270,7 +292,7 @@ export function NonConformitiesAdvancedDashboard() {
               {metrics.trend >= 0 ? '+' : ''}{metrics.trend.toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              vs. mês anterior
+              vs. mês anterior ({metrics.lastMonth || 0} NCs)
             </p>
           </CardContent>
         </Card>
