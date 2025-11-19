@@ -55,21 +55,36 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
   };
 
   useEffect(() => {
-    if (editingSupplier) {
-      setFormData({
-        supplier_name: editingSupplier.supplier_name || '',
-        cnpj: formatCNPJ(editingSupplier.cnpj || ''),
-        category: editingSupplier.category || 'goods',
-        contact_email: editingSupplier.contact_email || '',
-        contact_phone: editingSupplier.contact_phone || '',
-        has_inventory: editingSupplier.has_inventory || false,
-        scope_3_category: editingSupplier.scope_3_category || '1',
-        annual_emissions_estimate: editingSupplier.annual_emissions_estimate || '',
-        data_quality_score: editingSupplier.data_quality_score || '3',
-        notes: editingSupplier.notes || '',
-      });
+    if (isOpen) {
+      if (editingSupplier) {
+        setFormData({
+          supplier_name: editingSupplier.supplier_name || '',
+          cnpj: formatCNPJ(editingSupplier.cnpj || ''),
+          category: editingSupplier.category || 'goods',
+          contact_email: editingSupplier.contact_email || '',
+          contact_phone: editingSupplier.contact_phone || '',
+          has_inventory: editingSupplier.has_inventory || false,
+          scope_3_category: editingSupplier.scope_3_category || '1',
+          annual_emissions_estimate: editingSupplier.annual_emissions_estimate || '',
+          data_quality_score: editingSupplier.data_quality_score || '3',
+          notes: editingSupplier.notes || '',
+        });
+      } else {
+        setFormData({
+          supplier_name: '',
+          cnpj: '',
+          category: 'goods',
+          contact_email: '',
+          contact_phone: '',
+          has_inventory: false,
+          scope_3_category: '1',
+          annual_emissions_estimate: '',
+          data_quality_score: '3',
+          notes: '',
+        });
+      }
     }
-  }, [editingSupplier]);
+  }, [isOpen, editingSupplier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,6 +174,7 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
                 <Label htmlFor="cnpj">CNPJ</Label>
                 <Input
                   id="cnpj"
+                  type="text"
                   value={formData.cnpj}
                   onChange={handleCNPJChange}
                   placeholder="00.000.000/0000-00"
