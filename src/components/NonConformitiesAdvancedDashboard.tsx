@@ -28,8 +28,15 @@ import {
   Clock,
   CheckCircle,
   Target,
-  AlertCircle
+  AlertCircle,
+  Info
 } from "lucide-react";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function NonConformitiesAdvancedDashboard() {
   const { data: dashboardData, isLoading, error } = useQuery({
@@ -276,19 +283,49 @@ export function NonConformitiesAdvancedDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tendência Mensal</CardTitle>
-            {metrics.trend >= 0 ? (
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Tendência Mensal</CardTitle>
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">↑ Vermelho = Mais NCs (preocupante)</p>
+                    <p className="text-xs">↓ Verde = Menos NCs (positivo)</p>
+                    <p className="text-xs">→ Azul = Primeira comparação</p>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+            </div>
+            {metrics.lastMonth === 0 ? (
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            ) : metrics.trend >= 0 ? (
               <TrendingUp className="h-4 w-4 text-red-600" />
             ) : (
               <TrendingDown className="h-4 w-4 text-green-600" />
             )}
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${metrics.trend >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {metrics.trend >= 0 ? '+' : ''}{metrics.trend.toFixed(1)}%
+            <div className={`text-2xl font-bold ${
+              metrics.lastMonth === 0 
+                ? 'text-blue-600' 
+                : metrics.trend >= 0 
+                  ? 'text-red-600' 
+                  : 'text-green-600'
+            }`}>
+              {metrics.lastMonth === 0 
+                ? metrics.currentMonth > 0 
+                  ? `${metrics.currentMonth} ${metrics.currentMonth === 1 ? 'nova' : 'novas'}`
+                  : '0 NCs'
+                : `${metrics.trend >= 0 ? '+' : ''}${metrics.trend.toFixed(1)}%`
+              }
             </div>
             <p className="text-xs text-muted-foreground">
-              vs. mês anterior ({metrics.lastMonth || 0} NCs)
+              {metrics.lastMonth === 0 
+                ? 'Sem dados do mês anterior para comparação'
+                : `vs. mês anterior (${metrics.lastMonth} ${metrics.lastMonth === 1 ? 'NC' : 'NCs'})`
+              }
             </p>
           </CardContent>
         </Card>
