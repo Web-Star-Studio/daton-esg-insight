@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,45 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
     data_quality_score: editingSupplier?.data_quality_score || '3',
     notes: editingSupplier?.notes || '',
   });
+
+  const formatCNPJ = (value: string): string => {
+    const numbers = value.replace(/\D/g, '');
+    const limitedNumbers = numbers.slice(0, 14);
+    
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers;
+    } else if (limitedNumbers.length <= 5) {
+      return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2)}`;
+    } else if (limitedNumbers.length <= 8) {
+      return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5)}`;
+    } else if (limitedNumbers.length <= 12) {
+      return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}/${limitedNumbers.slice(8)}`;
+    } else {
+      return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}/${limitedNumbers.slice(8, 12)}-${limitedNumbers.slice(12)}`;
+    }
+  };
+
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCNPJ(e.target.value);
+    setFormData({ ...formData, cnpj: formatted });
+  };
+
+  useEffect(() => {
+    if (editingSupplier) {
+      setFormData({
+        supplier_name: editingSupplier.supplier_name || '',
+        cnpj: formatCNPJ(editingSupplier.cnpj || ''),
+        category: editingSupplier.category || 'goods',
+        contact_email: editingSupplier.contact_email || '',
+        contact_phone: editingSupplier.contact_phone || '',
+        has_inventory: editingSupplier.has_inventory || false,
+        scope_3_category: editingSupplier.scope_3_category || '1',
+        annual_emissions_estimate: editingSupplier.annual_emissions_estimate || '',
+        data_quality_score: editingSupplier.data_quality_score || '3',
+        notes: editingSupplier.notes || '',
+      });
+    }
+  }, [editingSupplier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,8 +160,9 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
                 <Input
                   id="cnpj"
                   value={formData.cnpj}
-                  onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                  onChange={handleCNPJChange}
                   placeholder="00.000.000/0000-00"
+                  maxLength={18}
                 />
               </div>
             </div>
