@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getUserAndCompany } from "@/utils/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -85,10 +86,17 @@ export default function NaoConformidades() {
   const { data: nonConformities, isLoading } = useQuery({
     queryKey: ["non-conformities"],
     queryFn: async () => {
-      // First get the non-conformities
+      // Get user's company
+      const userAndCompany = await getUserAndCompany();
+      if (!userAndCompany?.company_id) {
+        throw new Error('Company ID not found');
+      }
+
+      // First get the non-conformities filtered by company
       const { data: ncs, error } = await supabase
         .from("non_conformities")
         .select("*")
+        .eq('company_id', userAndCompany.company_id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
