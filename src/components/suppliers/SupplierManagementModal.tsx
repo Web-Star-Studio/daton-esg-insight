@@ -50,7 +50,8 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
   };
 
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCNPJ(e.target.value);
+    const rawValue = e.target.value;
+    const formatted = formatCNPJ(rawValue);
     setFormData(prev => ({ ...prev, cnpj: formatted }));
   };
 
@@ -176,9 +177,17 @@ export function SupplierManagementModal({ isOpen, onClose, onSuccess, editingSup
                   id="cnpj"
                   type="text"
                   value={formData.cnpj}
-                  onChange={handleCNPJChange}
-                  onKeyPress={(e) => {
-                    if (!/[\d]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                  onChange={(e) => {
+                    const onlyNumbers = e.target.value.replace(/[^\d.-/]/g, '');
+                    e.target.value = onlyNumbers;
+                    handleCNPJChange(e);
+                  }}
+                  onKeyDown={(e) => {
+                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+                    const isNumber = /^[0-9]$/.test(e.key);
+                    const isControlKey = e.ctrlKey || e.metaKey;
+                    
+                    if (!isNumber && !allowedKeys.includes(e.key) && !isControlKey) {
                       e.preventDefault();
                     }
                   }}
