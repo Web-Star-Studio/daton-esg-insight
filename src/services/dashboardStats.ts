@@ -59,19 +59,35 @@ export async function getDashboardStats(timeframe: 'week' | 'month' | 'quarter' 
   try {
     const { startDate, endDate, previousStartDate, previousEndDate } = getDateRange(timeframe);
     
+    // Get activity data IDs for current period
+    const { data: currentActivityData } = await supabase
+      .from('activity_data')
+      .select('id')
+      .gte('period_start_date', startDate)
+      .lte('period_start_date', endDate);
+
+    const currentActivityIds = currentActivityData?.map(a => a.id) || [];
+
     // Get emissions for current period
     const { data: currentEmissions } = await supabase
       .from('calculated_emissions')
-      .select('total_co2e, activity_data!inner(period_start_date)')
-      .gte('activity_data.period_start_date', startDate)
-      .lte('activity_data.period_start_date', endDate);
+      .select('total_co2e')
+      .in('activity_data_id', currentActivityIds);
+
+    // Get activity data IDs for previous period
+    const { data: previousActivityData } = await supabase
+      .from('activity_data')
+      .select('id')
+      .gte('period_start_date', previousStartDate)
+      .lte('period_start_date', previousEndDate);
+
+    const previousActivityIds = previousActivityData?.map(a => a.id) || [];
 
     // Get emissions for previous period
     const { data: previousEmissions } = await supabase
       .from('calculated_emissions')
       .select('total_co2e')
-      .gte('activity_data.period_start_date', previousStartDate)
-      .lte('activity_data.period_start_date', previousEndDate);
+      .in('activity_data_id', previousActivityIds);
 
     const currentTotal = currentEmissions?.reduce((sum, e) => sum + (Number(e.total_co2e) || 0), 0) || 0;
     const previousTotal = previousEmissions?.reduce((sum, e) => sum + (Number(e.total_co2e) || 0), 0) || 0;
@@ -100,13 +116,25 @@ export async function getDashboardStats(timeframe: 'week' | 'month' | 'quarter' 
     const previousComplianceRate = totalPreviousNCs > 0 ? (resolvedPreviousNCs / totalPreviousNCs) * 100 : 94;
     const complianceChange = previousComplianceRate > 0 ? currentComplianceRate - previousComplianceRate : 0;
 
-    // Get employees
+    // Get employees for current period
     const employeesResult = await supabase
       .from('employees')
       .select('id', { count: 'exact' })
       .eq('status', 'Ativo');
 
     const employeesCount = employeesResult.count || 0;
+
+    // Get employees for previous period to calculate change
+    const previousEmployeesResult = await supabase
+      .from('employees')
+      .select('id', { count: 'exact' })
+      .eq('status', 'Ativo')
+      .lte('created_at', previousEndDate);
+
+    const previousEmployeesCount = previousEmployeesResult.count || 0;
+    const employeesChange = previousEmployeesCount > 0 
+      ? ((employeesCount - previousEmployeesCount) / previousEmployeesCount) * 100 
+      : 0;
 
     return {
       emissions: {
@@ -121,22 +149,27 @@ export async function getDashboardStats(timeframe: 'week' | 'month' | 'quarter' 
       },
       employees: {
         value: employeesCount,
-        change: 5.8,
-        changeType: 'positive'
+        change: employeesChange,
+        changeType: employeesChange >= 0 ? 'positive' : 'negative'
       },
       quality: {
-        value: 98.5,
-        change: -0.5,
-        changeType: 'negative'
+        value: currentComplianceRate, // Using compliance rate as quality indicator
+        change: complianceChange,
+        changeType: complianceChange >= 0 ? 'positive' : 'negative'
       }
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+    }
+    
+    // Return zeroed values on error instead of fake data
     return {
-      emissions: { value: 1247, change: -12.5, changeType: 'positive' },
-      compliance: { value: 94, change: 3.2, changeType: 'positive' },
-      employees: { value: 1234, change: 5.8, changeType: 'positive' },
-      quality: { value: 98.5, change: -0.5, changeType: 'negative' }
+      emissions: { value: 0, change: 0, changeType: 'neutral' },
+      compliance: { value: 0, change: 0, changeType: 'neutral' },
+      employees: { value: 0, change: 0, changeType: 'neutral' },
+      quality: { value: 0, change: 0, changeType: 'neutral' }
     };
   }
 }
