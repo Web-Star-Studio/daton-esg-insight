@@ -127,49 +127,71 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
     
     const recentAvgNCs = recent3Months.reduce((a, b) => a + b.nonConformities, 0) / 3;
     const previousAvgNCs = previous3Months.reduce((a, b) => a + b.nonConformities, 0) / 3;
-    const ncTrend = ((recentAvgNCs - previousAvgNCs) / previousAvgNCs) * 100;
+    
+    // Proteção contra divisão por zero
+    const ncTrend = previousAvgNCs === 0 
+      ? (recentAvgNCs > 0 ? 100 : 0)
+      : ((recentAvgNCs - previousAvgNCs) / previousAvgNCs) * 100;
     
     const recentQualityScore = recent3Months.reduce((a, b) => a + b.quality_score, 0) / 3;
     const previousQualityScore = previous3Months.reduce((a, b) => a + b.quality_score, 0) / 3;
-    const qualityTrend = ((recentQualityScore - previousQualityScore) / previousQualityScore) * 100;
+    
+    // Proteção contra divisão por zero
+    const qualityTrend = previousQualityScore === 0
+      ? 0
+      : ((recentQualityScore - previousQualityScore) / previousQualityScore) * 100;
     
     const totalNCs = trendData.reduce((a, b) => a + b.nonConformities, 0);
     const totalResolved = trendData.reduce((a, b) => a + b.resolved, 0);
-    const resolutionRate = (totalResolved / totalNCs) * 100;
+    
+    // Proteção contra divisão por zero
+    const resolutionRate = totalNCs === 0 ? 0 : (totalResolved / totalNCs) * 100;
     
     return {
       ncTrend: Number(ncTrend.toFixed(1)),
       qualityTrend: Number(qualityTrend.toFixed(1)),
       resolutionRate: Number(resolutionRate.toFixed(1)),
-      avgQualityScore: Number(recentQualityScore.toFixed(1))
+      avgQualityScore: Number(recentQualityScore.toFixed(1)),
+      totalNCs,
+      totalResolved
     };
   }, [trendData]);
 
   const insights = useMemo(() => {
     const alerts = [];
     
-    if (trendAnalysis.ncTrend > 15) {
+    // Só mostrar alerta se houver dados comparáveis
+    if (trendAnalysis.ncTrend > 15 && isFinite(trendAnalysis.ncTrend)) {
       alerts.push({
         type: 'warning',
         message: `Aumento significativo de ${trendAnalysis.ncTrend}% nas NCs nos últimos 3 meses`
       });
     }
     
-    if (trendAnalysis.qualityTrend < -5) {
+    // Alerta para primeiras NCs registradas
+    const previousNCs = trendData.slice(-6, -3).reduce((a, b) => a + b.nonConformities, 0);
+    if (previousNCs === 0 && trendAnalysis.totalNCs > 0) {
+      alerts.push({
+        type: 'info',
+        message: `Primeiras NCs registradas no período de análise. Continue monitorando para identificar tendências.`
+      });
+    }
+    
+    if (trendAnalysis.qualityTrend < -5 && isFinite(trendAnalysis.qualityTrend)) {
       alerts.push({
         type: 'error',
         message: `Queda no índice de qualidade: ${Math.abs(trendAnalysis.qualityTrend)}%`
       });
     }
     
-    if (trendAnalysis.resolutionRate < 70) {
+    if (trendAnalysis.resolutionRate < 70 && trendAnalysis.totalNCs > 0) {
       alerts.push({
         type: 'warning',
         message: `Taxa de resolução baixa: ${trendAnalysis.resolutionRate}%`
       });
     }
     
-    if (trendAnalysis.qualityTrend > 10) {
+    if (trendAnalysis.qualityTrend > 10 && isFinite(trendAnalysis.qualityTrend)) {
       alerts.push({
         type: 'success',
         message: `Melhoria consistente na qualidade: +${trendAnalysis.qualityTrend}%`
@@ -177,7 +199,7 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
     }
     
     return alerts;
-  }, [trendAnalysis]);
+  }, [trendAnalysis, trendData]);
 
   const getTrendIcon = (trend: number) => {
     if (trend > 0) return <TrendingUp className="h-4 w-4 text-success" />;
@@ -272,9 +294,11 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{trendAnalysis.resolutionRate}%</div>
+            <div className={`text-2xl font-bold ${trendAnalysis.resolutionRate === 0 && trendAnalysis.totalNCs > 0 ? 'text-warning' : ''}`}>
+              {trendAnalysis.resolutionRate}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              dos casos resolvidos
+              {trendAnalysis.totalResolved} de {trendAnalysis.totalNCs} casos resolvidos
             </p>
           </CardContent>
         </Card>
@@ -333,8 +357,16 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
                 <ComposedChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="period" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
+                  <YAxis 
+                    yAxisId="left"
+                    label={{ value: 'Não Conformidades', angle: -90, position: 'insideLeft' }}
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right"
+                    domain={[0, 100]}
+                    label={{ value: 'Score Qualidade', angle: 90, position: 'insideRight' }}
+                  />
                   <Tooltip />
                   <Legend />
                   
