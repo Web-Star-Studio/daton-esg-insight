@@ -145,6 +145,40 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
     };
   }, [trendData]);
 
+  const insights = useMemo(() => {
+    const alerts = [];
+    
+    if (trendAnalysis.ncTrend > 15) {
+      alerts.push({
+        type: 'warning',
+        message: `Aumento significativo de ${trendAnalysis.ncTrend}% nas NCs nos últimos 3 meses`
+      });
+    }
+    
+    if (trendAnalysis.qualityTrend < -5) {
+      alerts.push({
+        type: 'error',
+        message: `Queda no índice de qualidade: ${Math.abs(trendAnalysis.qualityTrend)}%`
+      });
+    }
+    
+    if (trendAnalysis.resolutionRate < 70) {
+      alerts.push({
+        type: 'warning',
+        message: `Taxa de resolução baixa: ${trendAnalysis.resolutionRate}%`
+      });
+    }
+    
+    if (trendAnalysis.qualityTrend > 10) {
+      alerts.push({
+        type: 'success',
+        message: `Melhoria consistente na qualidade: +${trendAnalysis.qualityTrend}%`
+      });
+    }
+    
+    return alerts;
+  }, [trendAnalysis]);
+
   const getTrendIcon = (trend: number) => {
     if (trend > 0) return <TrendingUp className="h-4 w-4 text-success" />;
     if (trend < 0) return <TrendingDown className="h-4 w-4 text-destructive" />;
@@ -197,40 +231,6 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
       </Card>
     );
   }
-
-  const insights = useMemo(() => {
-    const alerts = [];
-    
-    if (trendAnalysis.ncTrend > 15) {
-      alerts.push({
-        type: 'warning',
-        message: `Aumento significativo de ${trendAnalysis.ncTrend}% nas NCs nos últimos 3 meses`
-      });
-    }
-    
-    if (trendAnalysis.qualityTrend < -5) {
-      alerts.push({
-        type: 'error',
-        message: `Queda no índice de qualidade: ${Math.abs(trendAnalysis.qualityTrend)}%`
-      });
-    }
-    
-    if (trendAnalysis.resolutionRate < 70) {
-      alerts.push({
-        type: 'warning',
-        message: `Taxa de resolução baixa: ${trendAnalysis.resolutionRate}%`
-      });
-    }
-    
-    if (trendAnalysis.qualityTrend > 10) {
-      alerts.push({
-        type: 'success',
-        message: `Melhoria consistente na qualidade: +${trendAnalysis.qualityTrend}%`
-      });
-    }
-    
-    return alerts;
-  }, [trendAnalysis]);
 
   return (
     <div className={`space-y-6 ${className}`}>
