@@ -3,14 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { 
   LineChart, 
   Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
-  Legend, 
   ResponsiveContainer,
   ReferenceLine,
   Area,
@@ -61,6 +60,25 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  const chartConfig = {
+    nonConformities: {
+      label: "Não Conformidades",
+      color: "hsl(var(--destructive))",
+    },
+    resolved: {
+      label: "Resolvidas",
+      color: "hsl(var(--success))",
+    },
+    qualityScore: {
+      label: "Score Qualidade",
+      color: "hsl(var(--primary))",
+    },
+    pending: {
+      label: "Pendentes",
+      color: "hsl(var(--warning))",
+    },
+  };
 
   // Process historical data into monthly trends
   const trendData: TrendDataPoint[] = useMemo(() => {
@@ -348,35 +366,55 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
         </TabsList>
 
         <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tendências dos Últimos 12 Meses</CardTitle>
+          <Card className="border-muted/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium">Tendências dos Últimos 12 Meses</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
+            <CardContent className="pb-4">
+              <ChartContainer config={chartConfig} className="h-[400px] w-full">
                 <ComposedChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis 
+                  <defs>
+                    <linearGradient id="colorNCs" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                  <XAxis 
+                    dataKey="period"
+                    axisLine={false}
+                    tickLine={false}
+                    className="text-xs"
+                  />
+                  <YAxis
                     yAxisId="left"
+                    axisLine={false}
+                    tickLine={false}
                     label={{ value: 'Não Conformidades', angle: -90, position: 'insideLeft' }}
                   />
-                  <YAxis 
-                    yAxisId="right" 
+                  <YAxis
+                    yAxisId="right"
                     orientation="right"
                     domain={[0, 100]}
+                    axisLine={false}
+                    tickLine={false}
                     label={{ value: 'Score Qualidade', angle: 90, position: 'insideRight' }}
                   />
-                  <Tooltip />
-                  <Legend />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) => `Período: ${value}`}
+                      />
+                    }
+                  />
                   
                   <Area
                     yAxisId="left"
                     type="monotone"
                     dataKey="nonConformities"
-                    fill="#ef4444"
-                    fillOpacity={0.3}
-                    stroke="#ef4444"
+                    fill="url(#colorNCs)"
+                    stroke="hsl(var(--destructive))"
+                    strokeWidth={2}
                     name="Não Conformidades"
                   />
                   
@@ -384,8 +422,9 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
                     yAxisId="left"
                     type="monotone"
                     dataKey="resolved"
-                    stroke="#22c55e"
-                    strokeWidth={2}
+                    stroke="hsl(var(--success))"
+                    strokeWidth={3}
+                    dot={{ fill: "hsl(var(--success))", strokeWidth: 0, r: 4 }}
                     name="Resolvidas"
                   />
                   
@@ -393,84 +432,142 @@ export const QualityTrendsAnalyzer: React.FC<QualityTrendsAnalyzerProps> = ({
                     yAxisId="right"
                     type="monotone"
                     dataKey="quality_score"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 4 }}
                     name="Score Qualidade"
                   />
                   
                   <ReferenceLine 
                     yAxisId="right" 
                     y={85} 
-                    stroke="#f59e0b" 
+                    stroke="hsl(var(--warning))" 
                     strokeDasharray="5 5" 
                     label="Meta Qualidade" 
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
+              </ChartContainer>
+              
+              <div className="flex items-center justify-center gap-6 mt-4 text-sm flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-destructive"></div>
+                  <span className="text-muted-foreground">Não Conformidades</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-0.5 bg-success rounded"></div>
+                  <span className="text-muted-foreground">Resolvidas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-0.5 bg-primary rounded"></div>
+                  <span className="text-muted-foreground">Score Qualidade</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-0.5 bg-warning rounded border border-warning"></div>
+                  <span className="text-muted-foreground">Meta (85)</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="detailed">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Não Conformidades vs Resoluções</CardTitle>
+            <Card className="border-muted/40">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium">Não Conformidades vs Resoluções</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <CardContent className="pb-4">
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
                   <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                    <XAxis 
+                      dataKey="period"
+                      axisLine={false}
+                      tickLine={false}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
                     <Line 
                       type="monotone" 
                       dataKey="nonConformities" 
-                      stroke="#ef4444" 
-                      strokeWidth={2}
+                      stroke="hsl(var(--destructive))" 
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--destructive))", strokeWidth: 0, r: 4 }}
                       name="Abertas"
                     />
                     <Line 
                       type="monotone" 
                       dataKey="resolved" 
-                      stroke="#22c55e" 
-                      strokeWidth={2}
+                      stroke="hsl(var(--success))" 
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--success))", strokeWidth: 0, r: 4 }}
                       name="Resolvidas"
                     />
                   </LineChart>
-                </ResponsiveContainer>
+                </ChartContainer>
+                <div className="flex items-center justify-center gap-6 mt-4 text-sm flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-0.5 bg-destructive rounded"></div>
+                    <span className="text-muted-foreground">Abertas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-0.5 bg-success rounded"></div>
+                    <span className="text-muted-foreground">Resolvidas</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Score de Qualidade</CardTitle>
+            <Card className="border-muted/40">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium">Score de Qualidade</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <CardContent className="pb-4">
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
                   <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis domain={[60, 100]} />
-                    <Tooltip />
-                    <Legend />
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                    <XAxis 
+                      dataKey="period"
+                      axisLine={false}
+                      tickLine={false}
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      domain={[60, 100]}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
                     <Line 
                       type="monotone" 
                       dataKey="quality_score" 
-                      stroke="#3b82f6" 
+                      stroke="hsl(var(--primary))" 
                       strokeWidth={3}
+                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 5 }}
                       name="Score Qualidade"
                     />
                     <ReferenceLine 
                       y={85} 
-                      stroke="#f59e0b" 
+                      stroke="hsl(var(--warning))" 
                       strokeDasharray="5 5" 
                       label="Meta" 
                     />
                   </LineChart>
-                </ResponsiveContainer>
+                </ChartContainer>
+                <div className="flex items-center justify-center gap-6 mt-4 text-sm flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-0.5 bg-primary rounded"></div>
+                    <span className="text-muted-foreground">Score</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-0.5 bg-warning rounded border border-warning"></div>
+                    <span className="text-muted-foreground">Meta (85)</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
