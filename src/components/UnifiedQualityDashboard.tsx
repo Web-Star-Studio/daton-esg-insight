@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
+import { ROUTE_PATHS } from '@/constants/routePaths';
 import QualityMatrix from './QualityMatrix';
 import AIQualityInsights from './AIQualityInsights';
 import QualityIndicatorDashboard from './QualityIndicatorDashboard';
@@ -157,7 +158,18 @@ export const UnifiedQualityDashboard: React.FC = () => {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+              onClick={() => navigate(ROUTE_PATHS.QUALITY.NON_CONFORMITIES)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(ROUTE_PATHS.QUALITY.NON_CONFORMITIES);
+                }
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de NCs</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -165,12 +177,23 @@ export const UnifiedQualityDashboard: React.FC = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{metrics?.totalNCs || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  Todas as NCs
+                  Clique para ver todas
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+              onClick={() => navigate(ROUTE_PATHS.QUALITY.NON_CONFORMITIES + '?status=Aberta')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(ROUTE_PATHS.QUALITY.NON_CONFORMITIES + '?status=Aberta');
+                }
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">NCs Abertas</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -183,7 +206,18 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+              onClick={() => navigate('/plano-acao-5w2h')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate('/plano-acao-5w2h');
+                }
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Planos Ativos</CardTitle>
                 <Target className="h-4 w-4 text-warning" />
@@ -196,7 +230,18 @@ export const UnifiedQualityDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+              onClick={() => setSelectedTab('indicators')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedTab('indicators');
+                }
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Taxa Resolução</CardTitle>
                 <TrendingUp className="h-4 w-4 text-success" />
@@ -205,11 +250,22 @@ export const UnifiedQualityDashboard: React.FC = () => {
                 <div className="text-2xl font-bold text-success">
                   {indicators?.resolutionRate?.percentage || 0}%
                 </div>
-                <p className="text-xs text-muted-foreground">Meta: 80%</p>
+                <p className="text-xs text-muted-foreground">Clique para detalhes</p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              className="hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+              onClick={() => setSelectedTab('indicators')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedTab('indicators');
+                }
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Qualidade Geral</CardTitle>
                 <CheckCircle className="h-4 w-4 text-success" />
@@ -218,7 +274,7 @@ export const UnifiedQualityDashboard: React.FC = () => {
                 <div className="text-2xl font-bold text-success">
                   {indicators?.qualityScore || 0}%
                 </div>
-                <p className="text-xs text-muted-foreground">Índice consolidado</p>
+                <p className="text-xs text-muted-foreground">Ver indicadores</p>
               </CardContent>
             </Card>
           </div>
