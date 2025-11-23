@@ -1,73 +1,107 @@
-# Welcome to your Lovable project
+# Daton ESG Insight
 
-## Project info
+Daton ESG Insight is a comprehensive, AI-powered Environmental, Social, and Governance (ESG) management platform designed to help organizations track, analyze, and report on their sustainability performance.
 
-**URL**: https://lovable.dev/projects/0c961165-e4b2-4936-9358-b3d86e9624cf
+## 🚀 Key Features
 
-## How can I edit this code?
+### 🌱 Environmental Management
+- **GHG Inventory**: Complete tracking of Scope 1, 2, and 3 emissions with automatic calculation based on emission factors.
+- **Waste Management**: End-to-end tracking of waste generation, transportation, and destination (MTR integration).
+- **Resource Monitoring**: Real-time monitoring of water and energy consumption.
+- **Biodiversity**: Management of conservation areas and carbon credit projects.
 
-There are several ways of editing your application.
+### ⚖️ Compliance & Governance
+- **Licensing Management**: Proactive monitoring of environmental licenses with expiration alerts and risk scoring.
+- **Audits & Inspections**: Management of internal and external audits, non-conformities, and corrective actions.
+- **Stakeholder Management**: Tools for materiality analysis and stakeholder engagement.
+- **Risk Management**: Identification and mitigation of ESG risks.
 
-**Use Lovable**
+### 💰 Financial Integration
+- **ESG Finance**: Tracking of costs and revenues related to ESG initiatives.
+- **Budgeting**: Management of budgets for sustainability projects.
+- **ROI Analysis**: Calculation of return on investment for ESG actions.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0c961165-e4b2-4936-9358-b3d86e9624cf) and start prompting.
+### 🤖 Daton AI Chat
+A sophisticated AI assistant integrated throughout the platform that offers:
+- **Predictive Analytics**: Forecasts for goal achievement and emissions trends.
+- **Proactive Insights**: Automatic identification of risks, expiring licenses, and anomalies.
+- **Document Processing**: Intelligent extraction of data from PDFs, images, and spreadsheets.
+- **Context-Aware Assistance**: Provides relevant information based on the current page and user role.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 📊 Reporting
+- **GRI Standards**: Automated generation of reports following Global Reporting Initiative standards.
+- **Custom Reports**: Flexible report builder for specific stakeholder needs.
+- **Dashboards**: Interactive visualizations for real-time performance monitoring.
 
-**Use your preferred IDE**
+## 🛠️ Technology Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Frontend
+- **Framework**: React with Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn UI, Radix UI
+- **State Management**: React Query, Context API
+- **Routing**: React Router
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Backend & Infrastructure
+- **Platform**: Supabase
+- **Database**: PostgreSQL
+- **Edge Functions**: Deno (TypeScript) for AI logic and complex processing
+- **Authentication**: Supabase Auth
+- **Storage**: Supabase Storage
 
-Follow these steps:
+## 📂 Project Structure
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── contexts/       # Global state providers (Auth, Company, etc.)
+│   ├── hooks/          # Custom React hooks
+│   ├── pages/          # Application pages (Dashboard, Inventory, etc.)
+│   ├── services/       # API interaction layers
+│   ├── types/          # TypeScript definitions
+│   └── utils/          # Helper functions
+├── supabase/
+│   ├── functions/      # Edge Functions (AI Chat, Document Processor, etc.)
+│   ├── migrations/     # Database schema definitions
+│   └── config.toml     # Supabase configuration
+└── public/             # Static assets
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Getting Started
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Prerequisites
+- Node.js (v18+)
+- npm or bun
+- Supabase CLI (for local backend development)
 
-**Use GitHub Codespaces**
+### Installation
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd daton-esg-insight
+   ```
 
-## What technologies are used for this project?
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   bun install
+   ```
 
-This project is built with:
+3. **Environment Setup**
+   Create a `.env` file based on `.env.example` and add your Supabase credentials.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-## How can I deploy this project?
+## 🤝 Contributing
 
-Simply open [Lovable](https://lovable.dev/projects/0c961165-e4b2-4936-9358-b3d86e9624cf) and click on Share -> Publish.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
-## Can I connect a custom domain to my Lovable project?
+## 📄 License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
