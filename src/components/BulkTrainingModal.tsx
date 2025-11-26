@@ -50,6 +50,11 @@ interface BulkTrainingModalProps {
 export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  
+  // Conditional rendering to prevent ref conflicts with Radix Dialog
+  if (!open) {
+    return null;
+  }
   const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -352,14 +357,14 @@ export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
                             {statusOptions.map((status) => (
                               <SelectItem key={status} value={status}>
                                 {status}
@@ -378,7 +383,7 @@ export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Data de Conclusão</FormLabel>
-                        <Popover>
+                        <Popover modal={false}>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
