@@ -188,14 +188,13 @@ export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps
     form.reset();
   };
 
-  // Track previous open state to avoid resetting on initial mount
+  // Track previous open state
   const prevOpenRef = useRef(open);
 
-  // Reset modal state only when it actually closes (was open, now closed)
+  // Reset modal state when it OPENS (not when it closes)
   useEffect(() => {
-    if (prevOpenRef.current && !open) {
-      const timer = setTimeout(resetModal, 200);
-      return () => clearTimeout(timer);
+    if (!prevOpenRef.current && open) {
+      resetModal();
     }
     prevOpenRef.current = open;
   }, [open]);
