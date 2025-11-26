@@ -23,9 +23,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { TrainingProgram, createTrainingProgram, updateTrainingProgram } from "@/services/trainingPrograms";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const trainingProgramSchema = z.object({
   name: z.string()
@@ -60,6 +64,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!program;
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [categoryInput, setCategoryInput] = useState("");
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   const form = useForm<z.infer<typeof trainingProgramSchema>>({
     resolver: zodResolver(trainingProgramSchema),
@@ -162,11 +169,14 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     "Administrativo"
   ];
 
+  const allCategories = [...categories, ...customCategories];
+
   const statusOptions = [
-    "Ativo",
-    "Inativo", 
-    "Planejado",
-    "Suspenso"
+    { value: "Ativo", label: "Ativo", color: "bg-green-500" },
+    { value: "Inativo", label: "Inativo", color: "bg-gray-500" },
+    { value: "Planejado", label: "Planejado", color: "bg-blue-500" },
+    { value: "Suspenso", label: "Suspenso", color: "bg-yellow-500" },
+    { value: "Arquivado", label: "Arquivado", color: "bg-red-500" },
   ];
 
   return (
@@ -207,20 +217,71 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background border z-50">
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value || "Selecione ou crie uma categoria"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-background border z-[100]" align="start">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Buscar ou criar categoria..." 
+                            value={categoryInput}
+                            onValueChange={setCategoryInput}
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              {categoryInput && (
+                                <Button 
+                                  variant="ghost" 
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    setCustomCategories([...customCategories, categoryInput]);
+                                    field.onChange(categoryInput);
+                                    setCategoryInput("");
+                                    setCategoryOpen(false);
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Criar "{categoryInput}"
+                                </Button>
+                              )}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {allCategories.map((category) => (
+                                <CommandItem
+                                  key={category}
+                                  value={category}
+                                  onSelect={() => {
+                                    field.onChange(category);
+                                    setCategoryOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === category ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {category}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -283,7 +344,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Status" />
@@ -291,8 +352,11 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                       </FormControl>
                       <SelectContent className="bg-background border z-50">
                         {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
+                          <SelectItem key={status.value} value={status.value}>
+                            <div className="flex items-center gap-2">
+                              <span className={cn("w-2 h-2 rounded-full", status.color)} />
+                              {status.label}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
