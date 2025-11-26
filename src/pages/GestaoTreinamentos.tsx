@@ -444,7 +444,7 @@ export default function GestaoTreinamentos() {
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
+                  <SelectContent>
                     <SelectItem value="all">Todas as Categorias</SelectItem>
                     <SelectItem value="Segurança">Segurança</SelectItem>
                     <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
@@ -459,7 +459,7 @@ export default function GestaoTreinamentos() {
                   <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
+                  <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="Ativo">Ativo</SelectItem>
                     <SelectItem value="Inativo">Inativo</SelectItem>

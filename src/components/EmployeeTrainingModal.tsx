@@ -197,13 +197,13 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Funcionário</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o funcionário" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-background border z-50">
+                      <SelectContent>
                         {employees.map((employee) => (
                           <SelectItem key={employee.id} value={employee.id}>
                             {employee.full_name} ({employee.employee_code})
@@ -222,13 +222,13 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Programa de Treinamento</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o programa" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-background border z-50">
+                      <SelectContent>
                         {programs.map((program) => (
                           <SelectItem key={program.id} value={program.id}>
                             {program.name} ({program.category})
@@ -249,13 +249,13 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-background border z-50">
+                      <SelectContent>
                         {statusOptions.map((status) => (
                           <SelectItem key={status} value={status}>
                             {status}
@@ -278,7 +278,8 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant={"outline"}
+                            type="button"
+                            variant="outline"
                             className={cn(
                               "w-full pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
@@ -302,7 +303,6 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
                             date > new Date() || date < new Date("1900-01-01")
                           }
                           initialFocus
-                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
