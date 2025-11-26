@@ -188,19 +188,10 @@ export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps
     form.reset();
   };
 
-  // Handle modal close to reset state after animation completes
-  const handleOpenChange = (newOpen: boolean) => {
-    onOpenChange(newOpen);
-    if (!newOpen) {
-      // Reset after dialog animation completes
-      setTimeout(resetModal, 300);
-    }
-  };
-
   const statusOptions = ["Inscrito", "Em Andamento", "Concluído", "Cancelado", "Reprovado"];
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Registrar Treinamento em Lote</DialogTitle>
