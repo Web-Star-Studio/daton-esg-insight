@@ -233,19 +233,19 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0 bg-background border z-[100]" align="start">
-                        <Command>
+                      <PopoverContent className="w-[280px] p-0 bg-background border z-[100] pointer-events-auto" align="start">
+                        <Command className="pointer-events-auto">
                           <CommandInput 
                             placeholder="Buscar ou criar categoria..." 
                             value={categoryInput}
                             onValueChange={setCategoryInput}
                           />
-                          <CommandList>
+                          <CommandList className="pointer-events-auto">
                             <CommandEmpty>
                               {categoryInput && (
                                 <Button 
                                   variant="ghost" 
-                                  className="w-full justify-start"
+                                  className="w-full justify-start pointer-events-auto"
                                   onClick={() => {
                                     setCustomCategories([...customCategories, categoryInput]);
                                     field.onChange(categoryInput);
@@ -267,6 +267,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                     field.onChange(category);
                                     setCategoryOpen(false);
                                   }}
+                                  className="pointer-events-auto cursor-pointer"
                                 >
                                   <Check
                                     className={cn(
@@ -350,9 +351,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-background border z-50">
+                      <SelectContent className="bg-background border z-[100] pointer-events-auto">
                         {statusOptions.map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
+                          <SelectItem key={status.value} value={status.value} className="pointer-events-auto cursor-pointer">
                             <div className="flex items-center gap-2">
                               <span className={cn("w-2 h-2 rounded-full", status.color)} />
                               {status.label}
