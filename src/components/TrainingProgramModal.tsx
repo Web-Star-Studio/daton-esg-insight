@@ -215,25 +215,37 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 control={form.control}
                 name="category"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Categoria</FormLabel>
-                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                    <Popover open={categoryOpen} onOpenChange={(open) => {
+                      console.log('Category popover state change:', open);
+                      setCategoryOpen(open);
+                    }} modal={true}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             role="combobox"
+                            aria-expanded={categoryOpen}
                             className={cn(
                               "w-full justify-between",
                               !field.value && "text-muted-foreground"
                             )}
+                            onClick={() => {
+                              console.log('Category button clicked');
+                              setCategoryOpen(!categoryOpen);
+                            }}
                           >
                             {field.value || "Selecione ou crie uma categoria"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[280px] p-0 bg-background border z-[100] pointer-events-auto" align="start">
+                      <PopoverContent 
+                        className="w-[280px] p-0 bg-popover border z-[200] pointer-events-auto" 
+                        align="start"
+                        sideOffset={4}
+                      >
                         <Command className="pointer-events-auto">
                           <CommandInput 
                             placeholder="Buscar ou criar categoria..." 
@@ -247,6 +259,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                   variant="ghost" 
                                   className="w-full justify-start pointer-events-auto"
                                   onClick={() => {
+                                    console.log('Creating category:', categoryInput);
                                     setCustomCategories([...customCategories, categoryInput]);
                                     field.onChange(categoryInput);
                                     setCategoryInput("");
@@ -264,6 +277,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                   key={category}
                                   value={category}
                                   onSelect={() => {
+                                    console.log('Category selected:', category);
                                     field.onChange(category);
                                     setCategoryOpen(false);
                                   }}
@@ -345,15 +359,26 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={(value) => {
+                        console.log('Status changed:', value);
+                        field.onChange(value);
+                      }} 
+                      value={field.value}
+                    >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger onClick={() => console.log('Status trigger clicked')}>
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-background border z-[100] pointer-events-auto">
+                      <SelectContent className="bg-popover border z-[200] pointer-events-auto">
                         {statusOptions.map((status) => (
-                          <SelectItem key={status.value} value={status.value} className="pointer-events-auto cursor-pointer">
+                          <SelectItem 
+                            key={status.value} 
+                            value={status.value} 
+                            className="pointer-events-auto cursor-pointer"
+                            onClick={() => console.log('Status item clicked:', status.value)}
+                          >
                             <div className="flex items-center gap-2">
                               <span className={cn("w-2 h-2 rounded-full", status.color)} />
                               {status.label}
