@@ -231,7 +231,7 @@ export const getTrainingMetrics = async () => {
 
   const { data: employees, error: employeesError } = await supabase
     .from('employees')
-    .select('id')
+    .select('id, full_name, department')
     .eq('status', 'Ativo');
 
   if (employeesError) throw employeesError;
@@ -258,6 +258,152 @@ export const getTrainingMetrics = async () => {
     return acc;
   }, {} as Record<string, number>);
 
+  // Enhanced metrics
+  const now = new Date();
+  
+  // Expiring certifications
+  const expiringIn30Days = trainings.filter(t => {
+    if (t.status !== 'Concluído' || !t.completion_date) return false;
+    const program = programs.find(p => p.id === t.training_program_id);
+    if (!program?.valid_for_months) return false;
+    
+    const completionDate = new Date(t.completion_date);
+    const expirationDate = new Date(completionDate);
+    expirationDate.setMonth(expirationDate.getMonth() + program.valid_for_months);
+    
+    const daysUntilExpiration = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiration <= 30 && daysUntilExpiration > 0;
+  }).length;
+
+  const expiringIn60Days = trainings.filter(t => {
+    if (t.status !== 'Concluído' || !t.completion_date) return false;
+    const program = programs.find(p => p.id === t.training_program_id);
+    if (!program?.valid_for_months) return false;
+    
+    const completionDate = new Date(t.completion_date);
+    const expirationDate = new Date(completionDate);
+    expirationDate.setMonth(expirationDate.getMonth() + program.valid_for_months);
+    
+    const daysUntilExpiration = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiration <= 60 && daysUntilExpiration > 0;
+  }).length;
+
+  const expiredCount = trainings.filter(t => {
+    if (t.status !== 'Concluído' || !t.completion_date) return false;
+    const program = programs.find(p => p.id === t.training_program_id);
+    if (!program?.valid_for_months) return false;
+    
+    const completionDate = new Date(t.completion_date);
+    const expirationDate = new Date(completionDate);
+    expirationDate.setMonth(expirationDate.getMonth() + program.valid_for_months);
+    
+    return expirationDate < now;
+  }).length;
+
+  // Trainings by department
+  const trainingsByDepartment = trainings.reduce((acc, training) => {
+    const employee = employees.find(e => e.id === training.employee_id);
+    const dept = employee?.department || 'Não Especificado';
+    acc[dept] = (acc[dept] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Monthly trend (last 6 months)
+  const monthlyTrend = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date();
+    date.setMonth(date.getMonth() - i);
+    const monthKey = date.toLocaleDateString('pt-BR', { month: 'short' });
+    
+    const completed = trainings.filter(t => {
+      if (!t.completion_date) return false;
+      const completionDate = new Date(t.completion_date);
+      return completionDate.getMonth() === date.getMonth() && 
+             completionDate.getFullYear() === date.getFullYear() &&
+             t.status === 'Concluído';
+    }).length;
+
+    const enrolled = trainings.filter(t => {
+      const createdDate = new Date(t.created_at);
+      return createdDate.getMonth() === date.getMonth() && 
+             createdDate.getFullYear() === date.getFullYear();
+    }).length;
+
+    monthlyTrend.push({ month: monthKey, completed, enrolled });
+  }
+
+  // Top performers
+  const employeeScores = trainings
+    .filter(t => t.score && t.status === 'Concluído')
+    .reduce((acc, t) => {
+      if (!acc[t.employee_id]) {
+        acc[t.employee_id] = { total: 0, count: 0, employee: null };
+      }
+      acc[t.employee_id].total += t.score!;
+      acc[t.employee_id].count += 1;
+      acc[t.employee_id].employee = employees.find(e => e.id === t.employee_id);
+      return acc;
+    }, {} as Record<string, { total: number; count: number; employee: any }>);
+
+  const topPerformers = Object.entries(employeeScores)
+    .map(([id, data]) => ({
+      employee: data.employee?.full_name || 'N/A',
+      avgScore: Number((data.total / data.count).toFixed(1)),
+      count: data.count,
+    }))
+    .sort((a, b) => b.avgScore - a.avgScore)
+    .slice(0, 5);
+
+  // Department ranking
+  const deptScores = trainings
+    .filter(t => t.score && t.status === 'Concluído')
+    .reduce((acc, t) => {
+      const employee = employees.find(e => e.id === t.employee_id);
+      const dept = employee?.department || 'Não Especificado';
+      if (!acc[dept]) {
+        acc[dept] = { totalScore: 0, count: 0, completed: 0, total: 0 };
+      }
+      acc[dept].totalScore += t.score!;
+      acc[dept].count += 1;
+      return acc;
+    }, {} as Record<string, { totalScore: number; count: number; completed: number; total: number }>);
+
+  trainings.forEach(t => {
+    const employee = employees.find(e => e.id === t.employee_id);
+    const dept = employee?.department || 'Não Especificado';
+    if (!deptScores[dept]) {
+      deptScores[dept] = { totalScore: 0, count: 0, completed: 0, total: 0 };
+    }
+    deptScores[dept].total += 1;
+    if (t.status === 'Concluído') {
+      deptScores[dept].completed += 1;
+    }
+  });
+
+  const departmentRanking = Object.entries(deptScores)
+    .map(([dept, data]) => ({
+      department: dept,
+      avgScore: data.count > 0 ? Number((data.totalScore / data.count).toFixed(1)) : 0,
+      completionRate: data.total > 0 ? Number(((data.completed / data.total) * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => b.avgScore - a.avgScore);
+
+  // Compliance rate
+  const mandatoryPrograms = programs.filter(p => p.is_mandatory);
+  const totalMandatory = employees.length * mandatoryPrograms.length;
+  const completedMandatory = mandatoryPrograms.reduce((sum, prog) => {
+    return sum + trainings.filter(t => 
+      t.training_program_id === prog.id && t.status === 'Concluído'
+    ).length;
+  }, 0);
+  const complianceRate = totalMandatory > 0 ? (completedMandatory / totalMandatory) * 100 : 100;
+
+  // Status distribution
+  const statusDistribution = trainings.reduce((acc, training) => {
+    acc[training.status] = (acc[training.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return {
     totalTrainings,
     completedTrainings,
@@ -265,6 +411,15 @@ export const getTrainingMetrics = async () => {
     averageScore: Number(averageScore.toFixed(1)),
     totalHoursTrained,
     averageHoursPerEmployee: Number(averageHoursPerEmployee.toFixed(1)),
-    categoryDistribution
+    categoryDistribution,
+    expiringIn30Days,
+    expiringIn60Days,
+    expiredCount,
+    complianceRate: Number(complianceRate.toFixed(1)),
+    trainingsByDepartment,
+    monthlyTrend,
+    topPerformers,
+    departmentRanking,
+    statusDistribution,
   };
 };
