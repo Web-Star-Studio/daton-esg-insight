@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuditReportsTab } from "@/components/AuditReportsTab";
+import { AuditProgramDashboard } from "@/components/audit/AuditProgramDashboard";
+import { AuditCalendar } from "@/components/audit/AuditCalendar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -276,16 +278,38 @@ export default function Auditoria() {
         </Card>
       </div>
 
-      <Tabs defaultValue="audits" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="program" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="program">Programa ISO</TabsTrigger>
           <TabsTrigger value="audits">Auditorias Gerais</TabsTrigger>
           <TabsTrigger value="sgq" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            Auditorias SGQ
+            SGQ
           </TabsTrigger>
-          <TabsTrigger value="reports">Relatórios de Auditoria</TabsTrigger>
-          <TabsTrigger value="activity">Log de Atividades</TabsTrigger>
+          <TabsTrigger value="calendar">Calendário</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="activity">Atividades</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="program" className="space-y-4">
+          <AuditProgramDashboard />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="space-y-4">
+          <AuditCalendar 
+            audits={[...audits, ...sgqAudits].map(a => ({
+              id: a.id,
+              title: a.title,
+              date: a.start_date || a.created_at,
+              type: a.audit_type,
+              status: a.status
+            }))}
+            onAuditClick={(audit) => {
+              const foundAudit = audits.find(a => a.id === audit.id);
+              if (foundAudit) setSelectedAudit(foundAudit);
+            }}
+          />
+        </TabsContent>
 
         <TabsContent value="audits" className="space-y-4">
           {/* Filters */}

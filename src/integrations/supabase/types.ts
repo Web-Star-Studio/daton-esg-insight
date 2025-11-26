@@ -1626,6 +1626,186 @@ export type Database = {
           },
         ]
       }
+      audit_areas: {
+        Row: {
+          active: boolean
+          applicable_standards: Json | null
+          company_id: string
+          created_at: string
+          department: string | null
+          description: string | null
+          id: string
+          last_audit_date: string | null
+          name: string
+          next_audit_date: string | null
+          process_owner_id: string | null
+          risk_level: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          applicable_standards?: Json | null
+          company_id: string
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          id?: string
+          last_audit_date?: string | null
+          name: string
+          next_audit_date?: string | null
+          process_owner_id?: string | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          applicable_standards?: Json | null
+          company_id?: string
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          id?: string
+          last_audit_date?: string | null
+          name?: string
+          next_audit_date?: string | null
+          process_owner_id?: string | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_areas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_areas_process_owner_id_fkey"
+            columns: ["process_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_checklist_responses: {
+        Row: {
+          audit_id: string
+          audited_by: string | null
+          auditor_id: string | null
+          checklist_id: string
+          created_at: string
+          evidence_documents: Json | null
+          evidence_notes: string | null
+          id: string
+          question_id: string
+          response: string
+          response_date: string
+          updated_at: string
+        }
+        Insert: {
+          audit_id: string
+          audited_by?: string | null
+          auditor_id?: string | null
+          checklist_id: string
+          created_at?: string
+          evidence_documents?: Json | null
+          evidence_notes?: string | null
+          id?: string
+          question_id: string
+          response: string
+          response_date?: string
+          updated_at?: string
+        }
+        Update: {
+          audit_id?: string
+          audited_by?: string | null
+          auditor_id?: string | null
+          checklist_id?: string
+          created_at?: string
+          evidence_documents?: Json | null
+          evidence_notes?: string | null
+          id?: string
+          question_id?: string
+          response?: string
+          response_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_checklist_responses_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_checklist_responses_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_checklist_responses_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "audit_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_checklists: {
+        Row: {
+          active: boolean
+          clause_reference: string | null
+          company_id: string
+          created_at: string
+          id: string
+          is_template: boolean
+          name: string
+          questions: Json
+          standard: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          active?: boolean
+          clause_reference?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          is_template?: boolean
+          name: string
+          questions: Json
+          standard: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          active?: boolean
+          clause_reference?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_template?: boolean
+          name?: string
+          questions?: Json
+          standard?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_checklists_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_findings: {
         Row: {
           action_plan: string | null
@@ -1706,6 +1886,316 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      audit_notifications: {
+        Row: {
+          action_url: string | null
+          audit_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          message: string
+          notification_type: string
+          priority: string
+          read_at: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          audit_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          message: string
+          notification_type: string
+          priority?: string
+          read_at?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          audit_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          notification_type?: string
+          priority?: string
+          read_at?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_notifications_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_plans: {
+        Row: {
+          audit_id: string
+          audit_type: string
+          closing_meeting_date: string | null
+          company_id: string
+          created_at: string
+          criteria: Json | null
+          duration_hours: number | null
+          id: string
+          lead_auditor_id: string | null
+          location: string | null
+          methodology: string | null
+          objective: string | null
+          opening_meeting_date: string | null
+          planned_date: string | null
+          program_id: string | null
+          sampling_plan: string | null
+          scope_areas: string[] | null
+          status: string
+          team_members: Json | null
+          updated_at: string
+        }
+        Insert: {
+          audit_id: string
+          audit_type?: string
+          closing_meeting_date?: string | null
+          company_id: string
+          created_at?: string
+          criteria?: Json | null
+          duration_hours?: number | null
+          id?: string
+          lead_auditor_id?: string | null
+          location?: string | null
+          methodology?: string | null
+          objective?: string | null
+          opening_meeting_date?: string | null
+          planned_date?: string | null
+          program_id?: string | null
+          sampling_plan?: string | null
+          scope_areas?: string[] | null
+          status?: string
+          team_members?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          audit_id?: string
+          audit_type?: string
+          closing_meeting_date?: string | null
+          company_id?: string
+          created_at?: string
+          criteria?: Json | null
+          duration_hours?: number | null
+          id?: string
+          lead_auditor_id?: string | null
+          location?: string | null
+          methodology?: string | null
+          objective?: string | null
+          opening_meeting_date?: string | null
+          planned_date?: string | null
+          program_id?: string | null
+          sampling_plan?: string | null
+          scope_areas?: string[] | null
+          status?: string
+          team_members?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_plans_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_plans_lead_auditor_id_fkey"
+            columns: ["lead_auditor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_plans_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "audit_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_programs: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          company_id: string
+          created_at: string
+          end_date: string
+          id: string
+          objectives: string | null
+          resources_budget: number | null
+          responsible_user_id: string | null
+          risk_criteria: Json | null
+          scope_description: string | null
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          company_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          objectives?: string | null
+          resources_budget?: number | null
+          responsible_user_id?: string | null
+          risk_criteria?: Json | null
+          scope_description?: string | null
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          company_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          objectives?: string | null
+          resources_budget?: number | null
+          responsible_user_id?: string | null
+          risk_criteria?: Json | null
+          scope_description?: string | null
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_programs_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_programs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_programs_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditor_profiles: {
+        Row: {
+          active: boolean
+          audit_hours_logged: number | null
+          certifications: Json | null
+          company_id: string
+          competencies: Json | null
+          created_at: string
+          id: string
+          independence_declarations: string | null
+          last_training_date: string | null
+          max_audits_per_year: number | null
+          qualification_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          audit_hours_logged?: number | null
+          certifications?: Json | null
+          company_id: string
+          competencies?: Json | null
+          created_at?: string
+          id?: string
+          independence_declarations?: string | null
+          last_training_date?: string | null
+          max_audits_per_year?: number | null
+          qualification_level?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          audit_hours_logged?: number | null
+          certifications?: Json | null
+          company_id?: string
+          competencies?: Json | null
+          created_at?: string
+          id?: string
+          independence_declarations?: string | null
+          last_training_date?: string | null
+          max_audits_per_year?: number | null
+          qualification_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditor_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditor_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audits: {
         Row: {
@@ -11041,6 +11531,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      iso_requirements: {
+        Row: {
+          active: boolean
+          clause_number: string
+          clause_title: string
+          created_at: string
+          description: string
+          evidence_examples: string[] | null
+          guidance_notes: string | null
+          id: string
+          standard: string
+          version: string
+        }
+        Insert: {
+          active?: boolean
+          clause_number: string
+          clause_title: string
+          created_at?: string
+          description: string
+          evidence_examples?: string[] | null
+          guidance_notes?: string | null
+          id?: string
+          standard: string
+          version: string
+        }
+        Update: {
+          active?: boolean
+          clause_number?: string
+          clause_title?: string
+          created_at?: string
+          description?: string
+          evidence_examples?: string[] | null
+          guidance_notes?: string | null
+          id?: string
+          standard?: string
+          version?: string
+        }
+        Relationships: []
       }
       job_applications: {
         Row: {
