@@ -74,7 +74,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    if (!userRole || !['admin', 'manager', 'super_admin'].includes(userRole.role)) {
+    if (!userRole || !['admin', 'manager', 'super_admin', 'platform_admin'].includes(userRole.role)) {
       console.error('Insufficient permissions for user:', user.id, 'role:', userRole?.role)
       return new Response('Insufficient permissions', { status: 403, headers: corsHeaders })
     }
