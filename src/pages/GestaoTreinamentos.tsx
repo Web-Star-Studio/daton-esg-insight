@@ -22,6 +22,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -30,12 +31,15 @@ import { useToast } from '@/hooks/use-toast';
 // Import components
 import { TrainingProgramModal } from '@/components/TrainingProgramModal';
 import { EmployeeTrainingModal } from '@/components/EmployeeTrainingModal';
+import { BulkTrainingModal } from '@/components/BulkTrainingModal';
 import { TrainingCalendar } from '@/components/TrainingCalendar';
 import { TrainingCertificationModal } from '@/components/TrainingCertificationModal';
 import { TrainingReportsModal } from '@/components/TrainingReportsModal';
 import { TrainingScheduleModal } from '@/components/TrainingScheduleModal';
 import { BenefitManagementModal } from '@/components/BenefitManagementModal';
 import { BenefitConfigurationModal } from '@/components/BenefitConfigurationModal';
+import { TrainingDashboardCharts } from '@/components/TrainingDashboardCharts';
+import { TrainingComplianceMatrix } from '@/components/TrainingComplianceMatrix';
 
 // Import services
 import { 
@@ -56,6 +60,7 @@ export default function GestaoTreinamentos() {
   // Modal states
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [isEmployeeTrainingModalOpen, setIsEmployeeTrainingModalOpen] = useState(false);
+  const [isBulkTrainingModalOpen, setIsBulkTrainingModalOpen] = useState(false);
   const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
   const [isBenefitConfigModalOpen, setIsBenefitConfigModalOpen] = useState(false);
   const [isCertificationModalOpen, setIsCertificationModalOpen] = useState(false);
@@ -175,6 +180,20 @@ export default function GestaoTreinamentos() {
     setIsEmployeeTrainingModalOpen(true);
   };
 
+  const handleBulkTraining = () => {
+    setIsBulkTrainingModalOpen(true);
+  };
+
+  const handleComplianceRegisterTraining = (employeeId: string, programId: string) => {
+    // Pre-fill the training modal with employee and program
+    setSelectedTraining({
+      employee_id: employeeId,
+      training_program_id: programId,
+      status: "Inscrito",
+    } as any);
+    setIsEmployeeTrainingModalOpen(true);
+  };
+
   const handleViewTraining = (training: EmployeeTraining) => {
     setSelectedTraining(training);
     setIsEmployeeTrainingModalOpen(true);
@@ -237,28 +256,32 @@ export default function GestaoTreinamentos() {
       value: programs.length,
       icon: BookOpen,
       trend: programs.filter(p => p.status === 'Ativo').length + ' ativos',
-      description: 'programas cadastrados'
+      description: 'programas cadastrados',
+      color: 'text-blue-600'
     },
     {
       title: 'Participantes',
       value: employeeTrainings.length,
       icon: Users,
       trend: '+' + employeeTrainings.filter(t => t.status === 'Concluído').length + ' concluídos',
-      description: 'participações registradas'
+      description: 'participações registradas',
+      color: 'text-green-600'
     },
     {
-      title: 'Taxa de Conclusão',
-      value: trainingMetrics?.completionRate ? `${Math.round(trainingMetrics.completionRate)}%` : '0%',
+      title: 'Taxa de Compliance',
+      value: trainingMetrics?.complianceRate ? `${Math.round(trainingMetrics.complianceRate)}%` : '0%',
       icon: Target,
-      trend: trainingMetrics?.completedTrainings + '/' + trainingMetrics?.totalTrainings,
-      description: 'média de aproveitamento'
+      trend: trainingMetrics?.expiringIn30Days ? `${trainingMetrics.expiringIn30Days} expirando` : 'Todos em dia',
+      description: 'treinamentos obrigatórios',
+      color: 'text-purple-600'
     },
     {
       title: 'Horas de Treinamento',
       value: trainingMetrics?.totalHoursTrained || 0,
       icon: Clock,
       trend: trainingMetrics?.averageHoursPerEmployee?.toFixed(1) + 'h/funcionário',
-      description: 'horas totais ministradas'
+      description: 'horas totais ministradas',
+      color: 'text-orange-600'
     }
   ];
 
@@ -280,6 +303,10 @@ export default function GestaoTreinamentos() {
             <Calendar className="w-4 h-4 mr-2" />
             Agendar
           </Button>
+          <Button onClick={handleBulkTraining} variant="outline">
+            <Users className="w-4 h-4 mr-2" />
+            Registro em Lote
+          </Button>
           <Button onClick={handleNewProgram}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Programa
@@ -288,10 +315,14 @@ export default function GestaoTreinamentos() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
+          </TabsTrigger>
+          <TabsTrigger value="compliance" className="flex items-center space-x-2">
+            <Target className="w-4 h-4" />
+            <span>Compliance</span>
           </TabsTrigger>
           <TabsTrigger value="programas" className="flex items-center space-x-2">
             <BookOpen className="w-4 h-4" />
@@ -323,17 +354,30 @@ export default function GestaoTreinamentos() {
                   <CardTitle className="text-sm font-medium">
                     {stat.title}
                   </CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  <stat.icon className={cn("h-4 w-4", stat.color)} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
                   <p className="text-xs text-muted-foreground">
-                    {stat.trend} {stat.description}
+                    {stat.trend}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stat.description}
                   </p>
                 </CardContent>
               </Card>
             ))}
           </div>
+
+          {/* Advanced Charts */}
+          {trainingMetrics && (
+            <TrainingDashboardCharts
+              trainingsByDepartment={trainingMetrics.trainingsByDepartment || {}}
+              monthlyTrend={trainingMetrics.monthlyTrend || []}
+              categoryDistribution={trainingMetrics.categoryDistribution || {}}
+              statusDistribution={trainingMetrics.statusDistribution || {}}
+            />
+          )}
 
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
@@ -412,6 +456,10 @@ export default function GestaoTreinamentos() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="compliance" className="space-y-4">
+          <TrainingComplianceMatrix onRegisterTraining={handleComplianceRegisterTraining} />
         </TabsContent>
 
         <TabsContent value="programas" className="space-y-4">
@@ -830,6 +878,11 @@ export default function GestaoTreinamentos() {
         open={isEmployeeTrainingModalOpen}
         onOpenChange={setIsEmployeeTrainingModalOpen}
         training={selectedTraining}
+      />
+
+      <BulkTrainingModal
+        open={isBulkTrainingModalOpen}
+        onOpenChange={setIsBulkTrainingModalOpen}
       />
 
       <TrainingCertificationModal
