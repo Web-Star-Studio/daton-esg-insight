@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -188,12 +188,16 @@ export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps
     form.reset();
   };
 
-  // Reset modal state when it closes (with delay for animation)
+  // Track previous open state to avoid resetting on initial mount
+  const prevOpenRef = useRef(open);
+
+  // Reset modal state only when it actually closes (was open, now closed)
   useEffect(() => {
-    if (!open) {
+    if (prevOpenRef.current && !open) {
       const timer = setTimeout(resetModal, 200);
       return () => clearTimeout(timer);
     }
+    prevOpenRef.current = open;
   }, [open]);
 
   const statusOptions = ["Inscrito", "Em Andamento", "Concluído", "Cancelado", "Reprovado"];
