@@ -26,9 +26,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { TrainingProgram, createTrainingProgram, updateTrainingProgram } from "@/services/trainingPrograms";
+import { getTrainingCategories, createTrainingCategory, deleteTrainingCategory } from "@/services/trainingCategories";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const trainingProgramSchema = z.object({
@@ -64,9 +65,55 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!program;
-  const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [categoryInput, setCategoryInput] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
+
+  // Fetch categories from database
+  const { data: dbCategories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['training-categories'],
+    queryFn: getTrainingCategories,
+  });
+
+  // Create category mutation
+  const createCategoryMutation = useMutation({
+    mutationFn: (name: string) => createTrainingCategory(name),
+    onSuccess: (newCategory) => {
+      queryClient.invalidateQueries({ queryKey: ['training-categories'] });
+      form.setValue('category', newCategory.name);
+      setCategoryInput("");
+      setCategoryOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Categoria criada com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar categoria",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete category mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: deleteTrainingCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['training-categories'] });
+      toast({
+        title: "Sucesso",
+        description: "Categoria deletada com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao deletar categoria",
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<z.infer<typeof trainingProgramSchema>>({
     resolver: zodResolver(trainingProgramSchema),
@@ -158,18 +205,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     }
   };
 
-  const categories = [
-    "Segurança",
-    "Desenvolvimento",
-    "Técnico",
-    "Compliance",
-    "Liderança",
-    "Qualidade",
-    "Operacional",
-    "Administrativo"
-  ];
-
-  const allCategories = [...categories, ...customCategories];
 
   const statusOptions = [
     { value: "Ativo", label: "Ativo", color: "bg-green-500" },
@@ -217,13 +252,11 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Categoria</FormLabel>
-                    <Popover open={categoryOpen} onOpenChange={(open) => {
-                      console.log('Category popover state change:', open);
-                      setCategoryOpen(open);
-                    }} modal={true}>
+                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
+                            type="button"
                             variant="outline"
                             role="combobox"
                             aria-expanded={categoryOpen}
@@ -231,65 +264,70 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                               "w-full justify-between",
                               !field.value && "text-muted-foreground"
                             )}
-                            onClick={() => {
-                              console.log('Category button clicked');
-                              setCategoryOpen(!categoryOpen);
-                            }}
+                            disabled={categoriesLoading}
                           >
-                            {field.value || "Selecione ou crie uma categoria"}
+                            {categoriesLoading ? "Carregando..." : field.value || "Selecione ou crie uma categoria"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent 
-                        className="w-[280px] p-0 bg-popover border z-[200] pointer-events-auto" 
-                        align="start"
-                        sideOffset={4}
-                      >
-                        <Command className="pointer-events-auto">
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
                           <CommandInput 
                             placeholder="Buscar ou criar categoria..." 
                             value={categoryInput}
                             onValueChange={setCategoryInput}
                           />
-                          <CommandList className="pointer-events-auto">
+                          <CommandList>
                             <CommandEmpty>
                               {categoryInput && (
-                                <Button 
-                                  variant="ghost" 
-                                  className="w-full justify-start pointer-events-auto"
-                                  onClick={() => {
-                                    console.log('Creating category:', categoryInput);
-                                    setCustomCategories([...customCategories, categoryInput]);
-                                    field.onChange(categoryInput);
-                                    setCategoryInput("");
-                                    setCategoryOpen(false);
-                                  }}
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Criar "{categoryInput}"
-                                </Button>
+                                <div className="p-2">
+                                  <Button 
+                                    type="button"
+                                    variant="ghost" 
+                                    className="w-full justify-start"
+                                    onClick={() => createCategoryMutation.mutate(categoryInput)}
+                                    disabled={createCategoryMutation.isPending}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Criar "{categoryInput}"
+                                  </Button>
+                                </div>
                               )}
                             </CommandEmpty>
                             <CommandGroup>
-                              {allCategories.map((category) => (
+                              {dbCategories.map((category) => (
                                 <CommandItem
-                                  key={category}
-                                  value={category}
+                                  key={category.id}
+                                  value={category.name}
                                   onSelect={() => {
-                                    console.log('Category selected:', category);
-                                    field.onChange(category);
+                                    field.onChange(category.name);
                                     setCategoryOpen(false);
                                   }}
-                                  className="pointer-events-auto cursor-pointer"
+                                  className="flex items-center justify-between group"
                                 >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      field.value === category ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {category}
+                                  <div className="flex items-center">
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === category.name ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {category.name}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteCategoryMutation.mutate(category.id);
+                                    }}
+                                    disabled={deleteCategoryMutation.isPending}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -359,26 +397,15 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        console.log('Status changed:', value);
-                        field.onChange(value);
-                      }} 
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger onClick={() => console.log('Status trigger clicked')}>
+                        <SelectTrigger>
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-popover border z-[200] pointer-events-auto">
+                      <SelectContent>
                         {statusOptions.map((status) => (
-                          <SelectItem 
-                            key={status.value} 
-                            value={status.value} 
-                            className="pointer-events-auto cursor-pointer"
-                            onClick={() => console.log('Status item clicked:', status.value)}
-                          >
+                          <SelectItem key={status.value} value={status.value}>
                             <div className="flex items-center gap-2">
                               <span className={cn("w-2 h-2 rounded-full", status.color)} />
                               {status.label}
