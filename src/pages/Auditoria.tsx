@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuditReportsTab } from "@/components/AuditReportsTab";
 import { AuditProgramDashboard } from "@/components/audit/AuditProgramDashboard";
 import { AuditCalendar } from "@/components/audit/AuditCalendar";
+import { AuditAreasManagement } from "@/components/audit/AuditAreasManagement";
+import { ISORequirementsLibrary } from "@/components/audit/ISORequirementsLibrary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -279,13 +281,12 @@ export default function Auditoria() {
       </div>
 
       <Tabs defaultValue="program" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="program">Programa ISO</TabsTrigger>
-          <TabsTrigger value="audits">Auditorias Gerais</TabsTrigger>
-          <TabsTrigger value="sgq" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            SGQ
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="program">Programa</TabsTrigger>
+          <TabsTrigger value="areas">Áreas</TabsTrigger>
+          <TabsTrigger value="requirements">Requisitos ISO</TabsTrigger>
+          <TabsTrigger value="audits">Auditorias</TabsTrigger>
+          <TabsTrigger value="sgq">SGQ</TabsTrigger>
           <TabsTrigger value="calendar">Calendário</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
           <TabsTrigger value="activity">Atividades</TabsTrigger>
@@ -309,6 +310,14 @@ export default function Auditoria() {
               if (foundAudit) setSelectedAudit(foundAudit);
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="areas" className="space-y-4">
+          <AuditAreasManagement />
+        </TabsContent>
+
+        <TabsContent value="requirements" className="space-y-4">
+          <ISORequirementsLibrary />
         </TabsContent>
 
         <TabsContent value="audits" className="space-y-4">
