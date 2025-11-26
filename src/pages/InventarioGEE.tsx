@@ -568,7 +568,7 @@ const InventarioGEE = () => {
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Escopo" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
+                    <SelectContent>
                       <SelectItem value="all">Todos Escopos</SelectItem>
                       <SelectItem value="1">Escopo 1</SelectItem>
                       <SelectItem value="2">Escopo 2</SelectItem>
@@ -580,7 +580,7 @@ const InventarioGEE = () => {
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
+                    <SelectContent>
                       <SelectItem value="all">Todos Status</SelectItem>
                       <SelectItem value="Ativo">Ativo</SelectItem>
                       <SelectItem value="Inativo">Inativo</SelectItem>
@@ -592,7 +592,7 @@ const InventarioGEE = () => {
                       <Calendar className="h-4 w-4 mr-2" />
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
+                    <SelectContent>
                       <SelectItem value="3months">Últimos 3 meses</SelectItem>
                       <SelectItem value="6months">Últimos 6 meses</SelectItem>
                       <SelectItem value="12months">Último ano</SelectItem>
