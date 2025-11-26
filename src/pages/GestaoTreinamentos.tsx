@@ -89,17 +89,12 @@ export default function GestaoTreinamentos() {
   });
 
   // Fetch employee trainings
-  const { data: employeeTrainings = [], refetch: refetchTrainings } = useQuery({
+  const { data: employeeTrainings = [] } = useQuery({
     queryKey: ['employee-trainings'],
     queryFn: getEmployeeTrainings,
     retry: 3,
-    staleTime: 0, // Force fresh data
+    staleTime: 30000, // 30 seconds
   });
-
-  // Force refresh on mount to clear any cached errors
-  React.useEffect(() => {
-    refetchTrainings();
-  }, [refetchTrainings]);
 
   // Fetch training metrics
   const { data: trainingMetrics } = useQuery({
