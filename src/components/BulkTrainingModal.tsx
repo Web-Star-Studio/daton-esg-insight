@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -188,21 +188,19 @@ export function BulkTrainingModal({ open, onOpenChange }: BulkTrainingModalProps
     form.reset();
   };
 
-  // Track previous open state
-  const prevOpenRef = useRef(open);
-
-  // Reset modal state when it OPENS (not when it closes)
-  useEffect(() => {
-    if (!prevOpenRef.current && open) {
-      resetModal();
+  // Handle modal close to reset state after animation completes
+  const handleOpenChange = (newOpen: boolean) => {
+    onOpenChange(newOpen);
+    if (!newOpen) {
+      // Reset after dialog animation completes
+      setTimeout(resetModal, 300);
     }
-    prevOpenRef.current = open;
-  }, [open]);
+  };
 
   const statusOptions = ["Inscrito", "Em Andamento", "Concluído", "Cancelado", "Reprovado"];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Registrar Treinamento em Lote</DialogTitle>
