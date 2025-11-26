@@ -10,6 +10,8 @@ import { AuditCalendar } from "@/components/audit/AuditCalendar";
 import { AuditAreasManagement } from "@/components/audit/AuditAreasManagement";
 import { ISORequirementsLibrary } from "@/components/audit/ISORequirementsLibrary";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Users, AlertTriangle, Activity, Plus, Calendar, Filter, BarChart3, Search, Eye, Clock, CheckCircle } from "lucide-react";
+import { FileText, Users, AlertTriangle, Activity, Plus, Calendar, Filter, BarChart3, Search, Clock, CheckCircle } from "lucide-react";
 import { auditService, type Audit, type ActivityLog } from "@/services/audit";
 import { AuditModal } from "@/components/AuditModal";
 import { AuditDetailsModal } from "@/components/AuditDetailsModal";
@@ -281,7 +283,7 @@ export default function Auditoria() {
       </div>
 
       <Tabs defaultValue="program" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="program">Programa</TabsTrigger>
           <TabsTrigger value="areas">Áreas</TabsTrigger>
           <TabsTrigger value="requirements">Requisitos ISO</TabsTrigger>
@@ -289,7 +291,6 @@ export default function Auditoria() {
           <TabsTrigger value="sgq">SGQ</TabsTrigger>
           <TabsTrigger value="calendar">Calendário</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
-          <TabsTrigger value="activity">Atividades</TabsTrigger>
         </TabsList>
 
         <TabsContent value="program" className="space-y-4">
