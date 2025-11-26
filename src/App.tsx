@@ -74,6 +74,7 @@ const FormulariosCustomizados = lazy(() => import("./pages/FormulariosCustomizad
 const PublicForm = lazy(() => import("./pages/PublicForm"));
 const DocumentosHub = lazy(() => import("./pages/DocumentosHub"));
 const Auditoria = lazy(() => import("./pages/Auditoria"));
+const AuditDetails = lazy(() => import("./pages/AuditDetails"));
 const Compliance = lazy(() => import("./pages/Compliance"));
 
 // Lazy loading para componentes de sistema
@@ -464,6 +465,7 @@ const AppContent = () => {
             <Route path="/coleta-dados" element={<ProtectedLazyPageWrapper><ColetaDados /></ProtectedLazyPageWrapper>} />
             <Route path="/formularios-customizados" element={<ProtectedLazyPageWrapper><FormulariosCustomizados /></ProtectedLazyPageWrapper>} />
             <Route path="/auditoria" element={<ProtectedLazyPageWrapper><Auditoria /></ProtectedLazyPageWrapper>} />
+            <Route path="/auditoria/:id" element={<ProtectedLazyPageWrapper><AuditDetails /></ProtectedLazyPageWrapper>} />
             <Route path="/compliance" element={<ProtectedLazyPageWrapper><Compliance /></ProtectedLazyPageWrapper>} />
             
             {/* Sistema e alertas */}

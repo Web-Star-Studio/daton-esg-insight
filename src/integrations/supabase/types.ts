@@ -1626,6 +1626,64 @@ export type Database = {
           },
         ]
       }
+      audit_area_assignments: {
+        Row: {
+          area_id: string
+          audit_id: string
+          audited_at: string | null
+          auditor_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          area_id: string
+          audit_id: string
+          audited_at?: string | null
+          auditor_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string
+          audit_id?: string
+          audited_at?: string | null
+          auditor_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_area_assignments_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "audit_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_area_assignments_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_area_assignments_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_areas: {
         Row: {
           active: boolean
@@ -1802,6 +1860,77 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_evidence: {
+        Row: {
+          audit_id: string
+          checklist_response_id: string | null
+          created_at: string
+          description: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          finding_id: string | null
+          id: string
+          uploaded_by_user_id: string
+        }
+        Insert: {
+          audit_id: string
+          checklist_response_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          finding_id?: string | null
+          id?: string
+          uploaded_by_user_id: string
+        }
+        Update: {
+          audit_id?: string
+          checklist_response_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          finding_id?: string | null
+          id?: string
+          uploaded_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_evidence_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_evidence_checklist_response_id_fkey"
+            columns: ["checklist_response_id"]
+            isOneToOne: false
+            referencedRelation: "audit_checklist_responses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_evidence_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "audit_findings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_evidence_uploaded_by_user_id_fkey"
+            columns: ["uploaded_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
