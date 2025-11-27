@@ -57,6 +57,33 @@ export function CreateFindingDialog({ open, onOpenChange, auditId }: CreateFindi
         .single();
       
       if (error) throw error;
+
+      // If critical finding, create notification
+      if (findingData.severity === 'critical' && data) {
+        const { data: audit } = await supabase
+          .from('audits')
+          .select('title, company_id')
+          .eq('id', auditId)
+          .single();
+
+        const { data: users } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('company_id', audit?.company_id);
+
+        if (audit && users) {
+          const { AuditNotificationService } = await import('@/services/auditNotifications');
+          await AuditNotificationService.notifyCriticalFinding(
+            data.id,
+            auditId,
+            audit.title,
+            findingData.description,
+            audit.company_id,
+            users.map((u: any) => u.id)
+          );
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
