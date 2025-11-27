@@ -10,6 +10,7 @@ import { AuditCalendar } from "@/components/audit/AuditCalendar";
 import { AuditAreasManagement } from "@/components/audit/AuditAreasManagement";
 import { ISORequirementsLibrary } from "@/components/audit/ISORequirementsLibrary";
 import { AuditorsManagement } from "@/components/audit/AuditorsManagement";
+import { ISOTemplatesLibrary } from "@/components/audit/ISOTemplatesLibrary";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Eye } from "lucide-react";
@@ -48,6 +49,7 @@ export default function Auditoria() {
   const { toast } = useToast();
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
+  const [isTemplatesLibraryOpen, setIsTemplatesLibraryOpen] = useState(false);
   const [editingAudit, setEditingAudit] = useState<Audit | null>(null);
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
   const [filters, setFilters] = useState({
@@ -77,6 +79,22 @@ export default function Auditoria() {
     queryFn: auditService.getAudits,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2
+  });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      return data;
+    }
   });
 
   const { data: activityLogs = [], isLoading: loadingLogs } = useQuery({
@@ -320,6 +338,18 @@ export default function Auditoria() {
         </TabsContent>
 
         <TabsContent value="requirements" className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Requisitos ISO</h3>
+              <p className="text-sm text-muted-foreground">
+                Gerencie os requisitos das normas ISO
+              </p>
+            </div>
+            <Button onClick={() => setIsTemplatesLibraryOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Biblioteca de Templates
+            </Button>
+          </div>
           <ISORequirementsLibrary />
         </TabsContent>
 
@@ -738,6 +768,16 @@ export default function Auditoria() {
           onClose={() => setSelectedAudit(null)}
         />
       )}
+
+      {/* ISO Templates Library */}
+      <ISOTemplatesLibrary
+        open={isTemplatesLibraryOpen}
+        onOpenChange={setIsTemplatesLibraryOpen}
+        companyId={userProfile?.company_id || ''}
+        onTemplateImported={() => {
+          toast({ title: "Template importado", description: "Checklist criado com sucesso" });
+        }}
+      />
     </div>
   );
 }
