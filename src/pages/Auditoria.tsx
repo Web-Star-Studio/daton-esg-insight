@@ -9,6 +9,7 @@ import { AuditProgramDashboard } from "@/components/audit/AuditProgramDashboard"
 import { AuditCalendar } from "@/components/audit/AuditCalendar";
 import { AuditAreasManagement } from "@/components/audit/AuditAreasManagement";
 import { ISORequirementsLibrary } from "@/components/audit/ISORequirementsLibrary";
+import { AuditorsManagement } from "@/components/audit/AuditorsManagement";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Eye } from "lucide-react";
@@ -283,10 +284,11 @@ export default function Auditoria() {
       </div>
 
       <Tabs defaultValue="program" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="program">Programa</TabsTrigger>
           <TabsTrigger value="areas">Áreas</TabsTrigger>
           <TabsTrigger value="requirements">Requisitos ISO</TabsTrigger>
+          <TabsTrigger value="auditors">Auditores</TabsTrigger>
           <TabsTrigger value="audits">Auditorias</TabsTrigger>
           <TabsTrigger value="sgq">SGQ</TabsTrigger>
           <TabsTrigger value="calendar">Calendário</TabsTrigger>
@@ -319,6 +321,10 @@ export default function Auditoria() {
 
         <TabsContent value="requirements" className="space-y-4">
           <ISORequirementsLibrary />
+        </TabsContent>
+
+        <TabsContent value="auditors" className="space-y-4">
+          <AuditorsManagement />
         </TabsContent>
 
         <TabsContent value="audits" className="space-y-4">
