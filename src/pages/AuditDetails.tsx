@@ -18,6 +18,7 @@ import { AuditFindingsTab } from "@/components/audit/tabs/AuditFindingsTab";
 import { AuditEvidenceTab } from "@/components/audit/tabs/AuditEvidenceTab";
 import { AuditReportTab } from "@/components/audit/tabs/AuditReportTab";
 import { AuditTimelineTab } from "@/components/audit/tabs/AuditTimelineTab";
+import { AuditTeamTab } from "@/components/audit/tabs/AuditTeamTab";
 
 export default function AuditDetails() {
   const { id } = useParams();
@@ -151,9 +152,10 @@ export default function AuditDetails() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="plan">Plano</TabsTrigger>
+          <TabsTrigger value="team">Equipe</TabsTrigger>
           <TabsTrigger value="areas">Áreas</TabsTrigger>
           <TabsTrigger value="checklist">Checklist</TabsTrigger>
           <TabsTrigger value="findings">Achados</TabsTrigger>
@@ -168,6 +170,10 @@ export default function AuditDetails() {
 
         <TabsContent value="plan">
           <AuditPlanTab audit={audit} plan={plan} />
+        </TabsContent>
+
+        <TabsContent value="team">
+          <AuditTeamTab auditId={audit.id} />
         </TabsContent>
 
         <TabsContent value="areas">
