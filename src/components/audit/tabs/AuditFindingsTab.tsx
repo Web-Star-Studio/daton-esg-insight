@@ -8,12 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { DataTable } from "@/components/ui/data-table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CreateFindingDialog } from "../CreateFindingDialog";
 
 interface AuditFindingsTabProps {
   auditId: string;
 }
 
 export function AuditFindingsTab({ auditId }: AuditFindingsTabProps) {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  
   const { data: findings } = useQuery({
     queryKey: ['audit-findings', auditId],
     queryFn: async () => {
@@ -88,6 +91,10 @@ export function AuditFindingsTab({ auditId }: AuditFindingsTabProps) {
             Gerencie não conformidades, observações e oportunidades de melhoria
           </p>
         </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Achado
+        </Button>
       </div>
 
       {findings && findings.length > 0 ? (
@@ -107,6 +114,12 @@ export function AuditFindingsTab({ auditId }: AuditFindingsTabProps) {
           </CardContent>
         </Card>
       )}
+
+      <CreateFindingDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        auditId={auditId}
+      />
     </div>
   );
 }
