@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,9 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Users, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, Users, FileText, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { EditAuditDialog } from "@/components/audit/EditAuditDialog";
 import { AuditOverviewTab } from "@/components/audit/tabs/AuditOverviewTab";
 import { AuditPlanTab } from "@/components/audit/tabs/AuditPlanTab";
 import { AuditAreasTab } from "@/components/audit/tabs/AuditAreasTab";
@@ -20,6 +22,7 @@ import { AuditTimelineTab } from "@/components/audit/tabs/AuditTimelineTab";
 export default function AuditDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const { data: audit, isLoading } = useQuery({
     queryKey: ['audit', id],
@@ -108,6 +111,10 @@ export default function AuditDetails() {
                 <p className="text-muted-foreground">{audit.scope}</p>
               )}
             </div>
+            <Button onClick={() => setIsEditDialogOpen(true)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3 mt-4">
@@ -187,6 +194,12 @@ export default function AuditDetails() {
           <AuditTimelineTab auditId={audit.id} />
         </TabsContent>
       </Tabs>
+
+      <EditAuditDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        audit={audit}
+      />
     </div>
   );
 }
