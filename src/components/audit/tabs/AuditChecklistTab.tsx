@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, XCircle, AlertCircle, FileQuestion } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, FileQuestion, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast as sonnerToast } from "sonner";
 
 interface AuditChecklistTabProps {
   auditId: string;
@@ -51,7 +53,7 @@ export function AuditChecklistTab({ auditId }: AuditChecklistTabProps) {
   });
 
   const saveResponse = useMutation({
-    mutationFn: async ({ questionId, checklistId, response, notes }: any) => {
+    mutationFn: async ({ questionId, checklistId, response, notes, question }: any) => {
       const existing = responses?.find(r => r.question_id === questionId);
 
       if (existing) {
@@ -72,9 +74,36 @@ export function AuditChecklistTab({ auditId }: AuditChecklistTabProps) {
           });
         if (error) throw error;
       }
+
+      // Se for não conforme, criar achado automaticamente
+      if (response === 'nao_conforme' && (!existing || existing.response !== 'nao_conforme')) {
+        const { data: audit } = await supabase
+          .from('audits')
+          .select('title')
+          .eq('id', auditId)
+          .single();
+
+        const findingDescription = `Não conformidade identificada: ${question?.question || 'Item do checklist'}\n\nEvidências: ${notes || 'Não fornecidas'}`;
+
+        const { error: findingError } = await supabase
+          .from('audit_findings')
+          .insert({
+            audit_id: auditId,
+            description: findingDescription,
+            severity: 'major',
+            status: 'open',
+          });
+
+        if (!findingError) {
+          sonnerToast.success('Achado criado automaticamente', {
+            description: 'Uma não conformidade foi registrada como achado de auditoria'
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checklist-responses', auditId] });
+      queryClient.invalidateQueries({ queryKey: ['audit-findings', auditId] });
       toast({ title: "Resposta salva", description: "Resposta do checklist registrada." });
     },
   });
@@ -211,12 +240,22 @@ export function AuditChecklistTab({ auditId }: AuditChecklistTabProps) {
                             />
                           </div>
 
+                          {localResponse === 'nao_conforme' && !existingResponse && (
+                            <Alert variant="destructive">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertDescription>
+                                Atenção: Um achado de auditoria será criado automaticamente para esta não conformidade.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
                           <Button
                             onClick={() => saveResponse.mutate({
                               questionId: question.id,
                               checklistId: checklist.id,
                               response: localResponse,
                               notes: localNotes,
+                              question: question,
                             })}
                             disabled={!localResponse}
                           >
