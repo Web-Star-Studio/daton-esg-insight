@@ -23,6 +23,8 @@ export interface Employee {
   manager_id?: string;
   location?: string;
   branch_id?: string;
+  termination_date?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
