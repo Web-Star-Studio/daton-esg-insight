@@ -29,6 +29,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { SocialProjectModal } from "@/components/social/SocialProjectModal";
 import { QuickActionModal } from "@/components/social/QuickActionModal";
 import { format } from "date-fns";
+import { useSocialDashboardFilters } from "@/hooks/useSocialDashboardFilters";
+import { SocialDashboardFilters } from "@/components/social/SocialDashboardFilters";
+import { TrainingByLocationChart } from "@/components/social/TrainingByLocationChart";
+import { TrainingBySectorChart } from "@/components/social/TrainingBySectorChart";
+import { EmployeeTrainingTable } from "@/components/social/EmployeeTrainingTable";
+import { getFilteredTrainingMetrics } from "@/services/socialDashboard";
 
 
 export default function SocialESG() {
@@ -39,6 +45,8 @@ export default function SocialESG() {
   const [selectedProject, setSelectedProject] = useState<SocialProject | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  const { filters, updateFilter, resetFilters, hasActiveFilters } = useSocialDashboardFilters();
 
   // Check for action parameter in URL
   useEffect(() => {
@@ -72,6 +80,12 @@ export default function SocialESG() {
   const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['social-projects'],
     queryFn: getSocialProjects
+  });
+
+  const { data: filteredMetrics } = useQuery({
+    queryKey: ['filtered-training-metrics', filters],
+    queryFn: () => getFilteredTrainingMetrics(filters),
+    enabled: hasActiveFilters,
   });
 
   const handleProjectSuccess = () => {
@@ -172,6 +186,79 @@ export default function SocialESG() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Filtros de Dashboard */}
+          <SocialDashboardFilters
+            filters={filters}
+            onUpdateFilter={updateFilter}
+            onResetFilters={resetFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+
+          {/* Métricas Filtradas - Somente quando há filtros ativos */}
+          {hasActiveFilters && filteredMetrics && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Funcionários Filtrados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{filteredMetrics.totalEmployees}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredMetrics.totalHours} horas totais
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Média de Horas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{filteredMetrics.avgHours}h</div>
+                    <p className="text-xs text-muted-foreground">
+                      por funcionário
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Filtros Aplicados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-1">
+                      {filters.location && (
+                        <Badge variant="secondary" className="text-xs">
+                          {filters.location}
+                        </Badge>
+                      )}
+                      {filters.department && (
+                        <Badge variant="secondary" className="text-xs">
+                          {filters.department}
+                        </Badge>
+                      )}
+                      {filters.position && (
+                        <Badge variant="secondary" className="text-xs">
+                          {filters.position}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Gráficos de Análise */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <TrainingByLocationChart data={filteredMetrics.hoursByLocation} />
+                <TrainingBySectorChart data={filteredMetrics.hoursByDepartment} />
+              </div>
+
+              {/* Tabela de Funcionários */}
+              <EmployeeTrainingTable data={filteredMetrics.employeeDetails} />
+            </>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
