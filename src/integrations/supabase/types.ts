@@ -6014,6 +6014,7 @@ export type Database = {
           is_pcd: boolean | null
           location: string | null
           manager_id: string | null
+          notes: string | null
           pcd_cid: string | null
           pcd_type: string | null
           phone: string | null
@@ -6021,6 +6022,7 @@ export type Database = {
           position_id: string | null
           salary: number | null
           status: string | null
+          termination_date: string | null
           updated_at: string
         }
         Insert: {
@@ -6041,6 +6043,7 @@ export type Database = {
           is_pcd?: boolean | null
           location?: string | null
           manager_id?: string | null
+          notes?: string | null
           pcd_cid?: string | null
           pcd_type?: string | null
           phone?: string | null
@@ -6048,6 +6051,7 @@ export type Database = {
           position_id?: string | null
           salary?: number | null
           status?: string | null
+          termination_date?: string | null
           updated_at?: string
         }
         Update: {
@@ -6068,6 +6072,7 @@ export type Database = {
           is_pcd?: boolean | null
           location?: string | null
           manager_id?: string | null
+          notes?: string | null
           pcd_cid?: string | null
           pcd_type?: string | null
           phone?: string | null
@@ -6075,6 +6080,7 @@ export type Database = {
           position_id?: string | null
           salary?: number | null
           status?: string | null
+          termination_date?: string | null
           updated_at?: string
         }
         Relationships: [

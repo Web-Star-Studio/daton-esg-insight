@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Textarea } from './ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -52,6 +53,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     status: 'Ativo',
     location: '',
     branch_id: '',
+    education_level: '',
+    termination_date: '',
+    notes: '',
   });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -151,6 +155,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           status: employee.status || 'Ativo',
           location: employee.location || '',
           branch_id: employee.branch_id || '',
+          education_level: employee.education_level || '',
+          termination_date: employee.termination_date || '',
+          notes: employee.notes || '',
         });
       } else {
         setFormData({
@@ -168,6 +175,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           status: 'Ativo',
           location: '',
           branch_id: '',
+          education_level: '',
+          termination_date: '',
+          notes: '',
         });
       }
     }
@@ -581,6 +591,18 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             </div>
 
             <div>
+              <Label htmlFor="termination_date">Data de Demissão</Label>
+              <Input
+                id="termination_date"
+                type="date"
+                value={formData.termination_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, termination_date: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="birth_date">Data de Nascimento</Label>
               <Input
                 id="birth_date"
@@ -588,6 +610,27 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                 value={formData.birth_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, birth_date: e.target.value }))}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="education_level">Escolaridade</Label>
+              <Select value={formData.education_level} onValueChange={(value) => setFormData(prev => ({ ...prev, education_level: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar escolaridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Ensino Fundamental">Ensino Fundamental</SelectItem>
+                  <SelectItem value="Ensino Fundamental Incompleto">Ensino Fundamental Incompleto</SelectItem>
+                  <SelectItem value="Ensino Médio">Ensino Médio</SelectItem>
+                  <SelectItem value="Ensino Médio Incompleto">Ensino Médio Incompleto</SelectItem>
+                  <SelectItem value="Técnico">Técnico</SelectItem>
+                  <SelectItem value="Superior">Superior</SelectItem>
+                  <SelectItem value="Superior Incompleto">Superior Incompleto</SelectItem>
+                  <SelectItem value="Pós-Graduação">Pós-Graduação</SelectItem>
+                  <SelectItem value="Mestrado">Mestrado</SelectItem>
+                  <SelectItem value="Doutorado">Doutorado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -658,6 +701,23 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
               />
             </div>
           </div>
+
+          <div>
+            <Label htmlFor="notes">Informações Adicionais</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              placeholder="Observações ou informações adicionais sobre o funcionário..."
+              rows={3}
+            />
+          </div>
+
+          {!employee && (
+            <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-md">
+              ℹ️ Experiências profissionais e educação podem ser adicionadas após salvar o funcionário.
+            </div>
+          )}
 
           {employee && (
             <>
