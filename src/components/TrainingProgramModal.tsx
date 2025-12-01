@@ -35,7 +35,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BranchSelect } from "@/components/BranchSelect";
-import { useEmployeesAsOptions } from "@/services/employees";
 
 const trainingProgramSchema = z.object({
   name: z.string()
@@ -55,16 +54,12 @@ const trainingProgramSchema = z.object({
     .number()
     .min(0, "Minutos deve ser 0 ou maior")
     .max(59, "Minutos deve ser entre 0 e 59"),
-  scheduled_date: z.date().optional().nullable(),
+  start_date: z.date().optional().nullable(),
+  end_date: z.date().optional().nullable(),
   is_mandatory: z.boolean(),
-  valid_for_months: z.coerce
-    .number()
-    .min(1, "Validade deve ser maior que 0")
-    .max(120, "Validade deve ser menor que 120 meses")
-    .optional(),
   status: z.string().min(1, "Status é obrigatório"),
   branch_id: z.string().optional().nullable(),
-  responsible_id: z.string().optional().nullable(),
+  responsible_name: z.string().optional(),
 });
 
 interface TrainingProgramModalProps {
@@ -85,9 +80,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     queryKey: ['training-categories'],
     queryFn: getTrainingCategories,
   });
-
-  // Fetch employees for responsible field
-  const { data: employees = [], isLoading: loadingEmployees } = useEmployeesAsOptions();
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -138,12 +130,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       category: "",
       duration_hours: 0,
       duration_minutes: 0,
-      scheduled_date: null,
+      start_date: null,
+      end_date: null,
       is_mandatory: false,
-      valid_for_months: 12,
       status: "Ativo",
       branch_id: "",
-      responsible_id: "",
+      responsible_name: "",
     },
   });
 
@@ -158,12 +150,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         category: program.category || "",
         duration_hours: hours,
         duration_minutes: minutes,
-        scheduled_date: program.scheduled_date ? new Date(program.scheduled_date) : null,
+        start_date: program.start_date ? new Date(program.start_date) : null,
+        end_date: program.end_date ? new Date(program.end_date) : null,
         is_mandatory: program.is_mandatory,
-        valid_for_months: program.valid_for_months || 12,
         status: program.status,
         branch_id: program.branch_id || "",
-        responsible_id: program.responsible_id || "",
+        responsible_name: program.responsible_name || "",
       });
     } else {
       form.reset({
@@ -172,12 +164,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         category: "",
         duration_hours: 0,
         duration_minutes: 0,
-        scheduled_date: null,
+        start_date: null,
+        end_date: null,
         is_mandatory: false,
-        valid_for_months: 12,
         status: "Ativo",
         branch_id: "",
-        responsible_id: "",
+        responsible_name: "",
       });
     }
   }, [program, form]);
@@ -193,12 +185,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         description: values.description?.trim() || null,
         category: values.category,
         duration_hours: totalDurationHours,
-        scheduled_date: values.scheduled_date ? format(values.scheduled_date, 'yyyy-MM-dd') : null,
+        start_date: values.start_date ? format(values.start_date, 'yyyy-MM-dd') : null,
+        end_date: values.end_date ? format(values.end_date, 'yyyy-MM-dd') : null,
         is_mandatory: values.is_mandatory,
-        valid_for_months: values.valid_for_months || null,
         status: values.status,
         branch_id: values.branch_id || null,
-        responsible_id: values.responsible_id || null,
+        responsible_name: values.responsible_name?.trim() || null,
       };
       
       if (isEditing && program?.id) {
@@ -398,25 +390,14 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
               <FormField
                 control={form.control}
-                name="responsible_id"
+                name="responsible_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o responsável" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {employees.map((emp) => (
-                          <SelectItem key={emp.value} value={emp.value}>
-                            {emp.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>Pessoa responsável pelo treinamento</FormDescription>
+                    <FormLabel>Responsável pelo Treinamento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome da pessoa responsável" {...field} />
+                    </FormControl>
+                    <FormDescription>Digite o nome do colaborador responsável</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -472,93 +453,112 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="scheduled_date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Data de Realização</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value || undefined}
-                          onSelect={field.onChange}
-                          locale={ptBR}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormDescription>
-                      Data prevista ou realizada do treinamento
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="start_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Data Inicial</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value || undefined}
+                            onSelect={field.onChange}
+                            locale={ptBR}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="end_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Data Final</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value || undefined}
+                            onSelect={field.onChange}
+                            locale={ptBR}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="valid_for_months"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Validade (meses)</FormLabel>
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input type="number" min="1" placeholder="12" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormDescription>
-                      Tempo de validade da certificação
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
-                            <div className="flex items-center gap-2">
-                              <span className={cn("w-2 h-2 rounded-full", status.color)} />
-                              {status.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {statusOptions.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("w-2 h-2 rounded-full", status.color)} />
+                            {status.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

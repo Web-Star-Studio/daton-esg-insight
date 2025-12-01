@@ -18293,11 +18293,14 @@ export type Database = {
           created_by_user_id: string
           description: string | null
           duration_hours: number | null
+          end_date: string | null
           id: string
           is_mandatory: boolean | null
           name: string
           responsible_id: string | null
+          responsible_name: string | null
           scheduled_date: string | null
+          start_date: string | null
           status: string | null
           updated_at: string
           valid_for_months: number | null
@@ -18310,11 +18313,14 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           duration_hours?: number | null
+          end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
           name: string
           responsible_id?: string | null
+          responsible_name?: string | null
           scheduled_date?: string | null
+          start_date?: string | null
           status?: string | null
           updated_at?: string
           valid_for_months?: number | null
@@ -18327,11 +18333,14 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           duration_hours?: number | null
+          end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
           name?: string
           responsible_id?: string | null
+          responsible_name?: string | null
           scheduled_date?: string | null
+          start_date?: string | null
           status?: string | null
           updated_at?: string
           valid_for_months?: number | null

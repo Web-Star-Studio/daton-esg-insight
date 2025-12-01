@@ -10,12 +10,15 @@ export interface TrainingProgram {
   is_mandatory: boolean;
   valid_for_months?: number;
   scheduled_date?: string;
+  start_date?: string;
+  end_date?: string;
   created_by_user_id: string;
   status: string;
   created_at: string;
   updated_at: string;
   branch_id?: string;
   responsible_id?: string;
+  responsible_name?: string;
 }
 
 export interface EmployeeTraining {
@@ -75,11 +78,11 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     category: program.category ?? null,
     duration_hours: program.duration_hours ?? null,
     is_mandatory: program.is_mandatory ?? false,
-    valid_for_months: program.valid_for_months ?? null,
     status: program.status ?? 'Ativo',
-    scheduled_date: program.scheduled_date ?? null,
+    start_date: program.start_date ?? null,
+    end_date: program.end_date ?? null,
     branch_id: program.branch_id || null,
-    responsible_id: program.responsible_id || null,
+    responsible_name: program.responsible_name ?? null,
     company_id: companyId as string,
     created_by_user_id: userData.user.id as string,
   };
