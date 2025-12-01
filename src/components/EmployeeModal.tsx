@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
@@ -13,6 +13,14 @@ import { getDepartments, getPositions, createDepartment, createPosition, type De
 import { formErrorHandler } from '@/utils/formErrorHandler';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { BranchSelect } from './BranchSelect';
+import { AddExperienceDialog } from './AddExperienceDialog';
+import { AddEducationDialog } from './AddEducationDialog';
+import { useEmployeeExperiences, useDeleteEmployeeExperience } from '@/services/employeeExperiences';
+import { useEmployeeEducation, useDeleteEmployeeEducation } from '@/services/employeeEducation';
+import { Badge } from './ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -43,6 +51,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     employment_type: 'CLT',
     status: 'Ativo',
     location: '',
+    branch_id: '',
   });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -55,6 +64,16 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [newPositionTitle, setNewPositionTitle] = useState('');
   const [creatingDepartment, setCreatingDepartment] = useState(false);
   const [creatingPosition, setCreatingPosition] = useState(false);
+
+  // Experience and Education dialogs
+  const [showExperienceDialog, setShowExperienceDialog] = useState(false);
+  const [showEducationDialog, setShowEducationDialog] = useState(false);
+
+  // Load experiences and education if editing
+  const { data: experiences } = useEmployeeExperiences(employee?.id || '');
+  const { data: education } = useEmployeeEducation(employee?.id || '');
+  const deleteExperience = useDeleteEmployeeExperience();
+  const deleteEducation = useDeleteEmployeeEducation();
 
   // Code validation state
   const [codeValidation, setCodeValidation] = useState<{
@@ -124,13 +143,14 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           phone: employee.phone || '',
           department: employee.department || '',
           position: employee.position || '',
-          position_id: employee.position_id || '', // Include position_id
+          position_id: employee.position_id || '',
           hire_date: employee.hire_date || '',
           birth_date: employee.birth_date || '',
           gender: employee.gender || '',
           employment_type: employee.employment_type || 'CLT',
           status: employee.status || 'Ativo',
           location: employee.location || '',
+          branch_id: employee.branch_id || '',
         });
       } else {
         setFormData({
@@ -140,13 +160,14 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           phone: '',
           department: '',
           position: '',
-          position_id: '', // Include position_id
+          position_id: '',
           hire_date: '',
           birth_date: '',
           gender: '',
           employment_type: 'CLT',
           status: 'Ativo',
           location: '',
+          branch_id: '',
         });
       }
     }
@@ -618,15 +639,174 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="location">Localização</Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="Ex: Sede SP, Filial RJ"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="branch_id">Filial</Label>
+              <BranchSelect
+                value={formData.branch_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, branch_id: value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="location">Localização Adicional</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="Ex: Sala 201, Andar 3"
+              />
+            </div>
           </div>
+
+          {employee && (
+            <>
+              {/* Experiências Profissionais */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Experiências Profissionais</h3>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowExperienceDialog(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {experiences && experiences.length > 0 ? (
+                    experiences.map((exp) => (
+                      <div
+                        key={exp.id}
+                        className="flex items-start justify-between p-3 border rounded-lg bg-muted/30"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-medium">{exp.company_name}</h4>
+                              <p className="text-sm text-muted-foreground">{exp.position_title}</p>
+                              {exp.department && (
+                                <p className="text-xs text-muted-foreground">{exp.department}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(exp.start_date), 'MMM yyyy', { locale: ptBR })} -{' '}
+                                {exp.is_current
+                                  ? 'Atual'
+                                  : exp.end_date
+                                  ? format(new Date(exp.end_date), 'MMM yyyy', { locale: ptBR })
+                                  : 'N/A'}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (confirm('Tem certeza que deseja remover esta experiência?')) {
+                                  deleteExperience.mutate(exp.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                          {exp.description && (
+                            <p className="text-sm text-muted-foreground mt-2">{exp.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma experiência cadastrada
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Educação e Certificações */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold">Educação e Certificações</h3>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEducationDialog(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {education && education.length > 0 ? (
+                    education.map((edu) => (
+                      <div
+                        key={edu.id}
+                        className="flex items-start justify-between p-3 border rounded-lg bg-muted/30"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium">{edu.course_name}</h4>
+                                <Badge variant="secondary" className="text-xs">
+                                  {edu.education_type}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{edu.institution_name}</p>
+                              {edu.field_of_study && (
+                                <p className="text-xs text-muted-foreground">{edu.field_of_study}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                {edu.start_date && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(edu.start_date), 'yyyy')} -{' '}
+                                    {edu.end_date
+                                      ? format(new Date(edu.end_date), 'yyyy')
+                                      : 'Em andamento'}
+                                  </p>
+                                )}
+                                {edu.is_completed && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Concluído
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (confirm('Tem certeza que deseja remover esta formação?')) {
+                                  deleteEducation.mutate(edu.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma formação cadastrada
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
@@ -641,6 +821,22 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           </div>
         </form>
       </DialogContent>
+
+      {/* Dialogs for adding experiences and education */}
+      {employee && (
+        <>
+          <AddExperienceDialog
+            open={showExperienceDialog}
+            onOpenChange={setShowExperienceDialog}
+            employeeId={employee.id}
+          />
+          <AddEducationDialog
+            open={showEducationDialog}
+            onOpenChange={setShowEducationDialog}
+            employeeId={employee.id}
+          />
+        </>
+      )}
     </Dialog>
   );
 }

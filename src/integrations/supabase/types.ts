@@ -2603,6 +2603,72 @@ export type Database = {
         }
         Relationships: []
       }
+      branches: {
+        Row: {
+          address: string | null
+          city: string | null
+          code: string | null
+          company_id: string
+          country: string | null
+          created_at: string | null
+          id: string
+          is_headquarters: boolean | null
+          manager_id: string | null
+          name: string
+          phone: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          code?: string | null
+          company_id: string
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_headquarters?: boolean | null
+          manager_id?: string | null
+          name: string
+          phone?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          code?: string | null
+          company_id?: string
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_headquarters?: boolean | null
+          manager_id?: string | null
+          name?: string
+          phone?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branches_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bsc_objectives: {
         Row: {
           created_at: string
@@ -5677,6 +5743,150 @@ export type Database = {
           },
         ]
       }
+      employee_education: {
+        Row: {
+          certificate_number: string | null
+          certificate_url: string | null
+          company_id: string
+          course_name: string
+          created_at: string | null
+          description: string | null
+          education_type: string
+          employee_id: string
+          end_date: string | null
+          expiration_date: string | null
+          field_of_study: string | null
+          grade: string | null
+          id: string
+          institution_name: string
+          is_completed: boolean | null
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          certificate_number?: string | null
+          certificate_url?: string | null
+          company_id: string
+          course_name: string
+          created_at?: string | null
+          description?: string | null
+          education_type: string
+          employee_id: string
+          end_date?: string | null
+          expiration_date?: string | null
+          field_of_study?: string | null
+          grade?: string | null
+          id?: string
+          institution_name: string
+          is_completed?: boolean | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          certificate_number?: string | null
+          certificate_url?: string | null
+          company_id?: string
+          course_name?: string
+          created_at?: string | null
+          description?: string | null
+          education_type?: string
+          employee_id?: string
+          end_date?: string | null
+          expiration_date?: string | null
+          field_of_study?: string | null
+          grade?: string | null
+          id?: string
+          institution_name?: string
+          is_completed?: boolean | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_education_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_education_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_experiences: {
+        Row: {
+          company_id: string
+          company_name: string
+          contact_reference: string | null
+          created_at: string | null
+          department: string | null
+          description: string | null
+          employee_id: string
+          end_date: string | null
+          id: string
+          is_current: boolean | null
+          position_title: string
+          reason_for_leaving: string | null
+          salary: number | null
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          company_name: string
+          contact_reference?: string | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          position_title: string
+          reason_for_leaving?: string | null
+          salary?: number | null
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          company_name?: string
+          contact_reference?: string | null
+          created_at?: string | null
+          department?: string | null
+          description?: string | null
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          position_title?: string
+          reason_for_leaving?: string | null
+          salary?: number | null
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_experiences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_experiences_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_schedules: {
         Row: {
           company_id: string
@@ -5788,6 +5998,7 @@ export type Database = {
       employees: {
         Row: {
           birth_date: string | null
+          branch_id: string | null
           company_id: string
           created_at: string
           department: string | null
@@ -5814,6 +6025,7 @@ export type Database = {
         }
         Insert: {
           birth_date?: string | null
+          branch_id?: string | null
           company_id: string
           created_at?: string
           department?: string | null
@@ -5840,6 +6052,7 @@ export type Database = {
         }
         Update: {
           birth_date?: string | null
+          branch_id?: string | null
           company_id?: string
           created_at?: string
           department?: string | null
@@ -5865,6 +6078,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "employees_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "employees_position_id_fkey"
             columns: ["position_id"]
