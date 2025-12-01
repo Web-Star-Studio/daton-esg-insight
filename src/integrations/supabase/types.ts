@@ -18280,6 +18280,7 @@ export type Database = {
       }
       training_programs: {
         Row: {
+          branch_id: string | null
           category: string | null
           company_id: string
           created_at: string
@@ -18289,12 +18290,14 @@ export type Database = {
           id: string
           is_mandatory: boolean | null
           name: string
+          responsible_id: string | null
           scheduled_date: string | null
           status: string | null
           updated_at: string
           valid_for_months: number | null
         }
         Insert: {
+          branch_id?: string | null
           category?: string | null
           company_id: string
           created_at?: string
@@ -18304,12 +18307,14 @@ export type Database = {
           id?: string
           is_mandatory?: boolean | null
           name: string
+          responsible_id?: string | null
           scheduled_date?: string | null
           status?: string | null
           updated_at?: string
           valid_for_months?: number | null
         }
         Update: {
+          branch_id?: string | null
           category?: string | null
           company_id?: string
           created_at?: string
@@ -18319,12 +18324,28 @@ export type Database = {
           id?: string
           is_mandatory?: boolean | null
           name?: string
+          responsible_id?: string | null
           scheduled_date?: string | null
           status?: string | null
           updated_at?: string
           valid_for_months?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "training_programs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_programs_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transport_distribution: {
         Row: {
