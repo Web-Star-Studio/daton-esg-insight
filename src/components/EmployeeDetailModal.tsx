@@ -17,12 +17,14 @@ import {
   Gift,
   TrendingUp,
   Edit,
-  History
+  History,
+  GraduationCap
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeBenefitsModal } from './EmployeeBenefitsModal';
 import { EmployeeDocumentsTab } from './EmployeeDocumentsTab';
+import { EmployeeTrainingsTab } from './EmployeeTrainingsTab';
 
 interface EmployeeDetailModalProps {
   isOpen: boolean;
@@ -149,9 +151,13 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="benefits">Benefícios</TabsTrigger>
+              <TabsTrigger value="trainings">
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Treinamentos
+              </TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
               <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
@@ -365,6 +371,13 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="trainings" className="space-y-6">
+              <EmployeeTrainingsTab 
+                employeeId={employee.id}
+                employeeName={employee.full_name}
+              />
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-6">
