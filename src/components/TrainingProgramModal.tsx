@@ -34,6 +34,8 @@ import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BranchSelect } from "@/components/BranchSelect";
+import { useEmployeesAsOptions } from "@/services/employees";
 
 const trainingProgramSchema = z.object({
   name: z.string()
@@ -61,6 +63,8 @@ const trainingProgramSchema = z.object({
     .max(120, "Validade deve ser menor que 120 meses")
     .optional(),
   status: z.string().min(1, "Status é obrigatório"),
+  branch_id: z.string().optional().nullable(),
+  responsible_id: z.string().optional().nullable(),
 });
 
 interface TrainingProgramModalProps {
@@ -81,6 +85,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     queryKey: ['training-categories'],
     queryFn: getTrainingCategories,
   });
+
+  // Fetch employees for responsible field
+  const { data: employees = [], isLoading: loadingEmployees } = useEmployeesAsOptions();
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -135,6 +142,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       is_mandatory: false,
       valid_for_months: 12,
       status: "Ativo",
+      branch_id: "",
+      responsible_id: "",
     },
   });
 
@@ -153,6 +162,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         is_mandatory: program.is_mandatory,
         valid_for_months: program.valid_for_months || 12,
         status: program.status,
+        branch_id: program.branch_id || "",
+        responsible_id: program.responsible_id || "",
       });
     } else {
       form.reset({
@@ -165,6 +176,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         is_mandatory: false,
         valid_for_months: 12,
         status: "Ativo",
+        branch_id: "",
+        responsible_id: "",
       });
     }
   }, [program, form]);
@@ -184,6 +197,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         is_mandatory: values.is_mandatory,
         valid_for_months: values.valid_for_months || null,
         status: values.status,
+        branch_id: values.branch_id || null,
+        responsible_id: values.responsible_id || null,
       };
       
       if (isEditing && program?.id) {
@@ -356,6 +371,52 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                         </Command>
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="branch_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Filial</FormLabel>
+                    <FormControl>
+                      <BranchSelect
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormDescription>Filial onde o treinamento será realizado</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="responsible_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Responsável</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o responsável" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {employees.map((emp) => (
+                          <SelectItem key={emp.value} value={emp.value}>
+                            {emp.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>Pessoa responsável pelo treinamento</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

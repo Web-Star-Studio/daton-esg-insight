@@ -14,6 +14,8 @@ export interface TrainingProgram {
   status: string;
   created_at: string;
   updated_at: string;
+  branch_id?: string;
+  responsible_id?: string;
 }
 
 export interface EmployeeTraining {
@@ -75,6 +77,9 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     is_mandatory: program.is_mandatory ?? false,
     valid_for_months: program.valid_for_months ?? null,
     status: program.status ?? 'Ativo',
+    scheduled_date: program.scheduled_date ?? null,
+    branch_id: program.branch_id || null,
+    responsible_id: program.responsible_id || null,
     company_id: companyId as string,
     created_by_user_id: userData.user.id as string,
   };
