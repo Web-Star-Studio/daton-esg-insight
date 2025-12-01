@@ -23,7 +23,7 @@ interface EmployeeModalProps {
 
 // Validation schema
 const employeeSchema = z.object({
-  employee_code: z.string().trim().min(1, 'Código do funcionário é obrigatório').max(50, 'Código muito longo'),
+  employee_code: z.string().trim().max(50, 'Código muito longo').optional().or(z.literal('')),
   full_name: z.string().trim().min(1, 'Nome completo é obrigatório').max(255, 'Nome muito longo'),
   email: z.string().trim().email('E-mail inválido').optional().or(z.literal('')),
 });
@@ -69,7 +69,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   // Check if employee code exists
   useEffect(() => {
     const checkEmployeeCodeExists = async () => {
-      if (!debouncedEmployeeCode.trim() || employee) {
+      if (!debouncedEmployeeCode.trim()) {
+        setCodeValidation({ checking: false, exists: false });
+        return;
+      }
+
+      if (employee) {
         setCodeValidation({ checking: false, exists: false });
         return;
       }
@@ -272,7 +277,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       return;
     }
 
-    if (sanitizedData.employee_code.length > 50) {
+    if (sanitizedData.employee_code && sanitizedData.employee_code.length > 50) {
       toast.error('Código do funcionário muito longo (máximo 50 caracteres)');
       return;
     }
@@ -328,7 +333,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="employee_code">Código do Funcionário*</Label>
+              <Label htmlFor="employee_code">Código do Funcionário</Label>
               <div className="relative">
                 <Input
                   id="employee_code"
@@ -336,7 +341,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                   onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
                   placeholder="Ex: EMP001"
                   className={codeValidation.exists ? "border-destructive focus-visible:ring-destructive" : ""}
-                  required
                   disabled={!!employee}
                 />
                 {codeValidation.checking && (
