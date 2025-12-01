@@ -9,6 +9,7 @@ export interface TrainingProgram {
   duration_hours?: number;
   is_mandatory: boolean;
   valid_for_months?: number;
+  scheduled_date?: string;
   created_by_user_id: string;
   status: string;
   created_at: string;
