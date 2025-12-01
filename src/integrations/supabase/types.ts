@@ -18289,6 +18289,7 @@ export type Database = {
           id: string
           is_mandatory: boolean | null
           name: string
+          scheduled_date: string | null
           status: string | null
           updated_at: string
           valid_for_months: number | null
@@ -18303,6 +18304,7 @@ export type Database = {
           id?: string
           is_mandatory?: boolean | null
           name: string
+          scheduled_date?: string | null
           status?: string | null
           updated_at?: string
           valid_for_months?: number | null
@@ -18317,6 +18319,7 @@ export type Database = {
           id?: string
           is_mandatory?: boolean | null
           name?: string
+          scheduled_date?: string | null
           status?: string | null
           updated_at?: string
           valid_for_months?: number | null

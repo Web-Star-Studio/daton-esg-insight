@@ -24,13 +24,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { TrainingProgram, createTrainingProgram, updateTrainingProgram } from "@/services/trainingPrograms";
 import { getTrainingCategories, createTrainingCategory, deleteTrainingCategory } from "@/services/trainingCategories";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const trainingProgramSchema = z.object({
   name: z.string()
@@ -44,8 +47,13 @@ const trainingProgramSchema = z.object({
   category: z.string().min(1, "Categoria é obrigatória"),
   duration_hours: z.coerce
     .number()
-    .min(0.5, "Duração deve ser maior que 0")
-    .max(1000, "Duração deve ser menor que 1000 horas"),
+    .min(0, "Horas deve ser 0 ou maior")
+    .max(999, "Horas deve ser menor que 1000"),
+  duration_minutes: z.coerce
+    .number()
+    .min(0, "Minutos deve ser 0 ou maior")
+    .max(59, "Minutos deve ser entre 0 e 59"),
+  scheduled_date: z.date().optional().nullable(),
   is_mandatory: z.boolean(),
   valid_for_months: z.coerce
     .number()
@@ -121,7 +129,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       name: "",
       description: "",
       category: "",
-      duration_hours: 1,
+      duration_hours: 0,
+      duration_minutes: 0,
+      scheduled_date: null,
       is_mandatory: false,
       valid_for_months: 12,
       status: "Ativo",
@@ -130,11 +140,16 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   useEffect(() => {
     if (program) {
+      const hours = Math.floor(program.duration_hours || 0);
+      const minutes = Math.round(((program.duration_hours || 0) - hours) * 60);
+      
       form.reset({
         name: program.name,
         description: program.description || "",
         category: program.category || "",
-        duration_hours: program.duration_hours || 1,
+        duration_hours: hours,
+        duration_minutes: minutes,
+        scheduled_date: program.scheduled_date ? new Date(program.scheduled_date) : null,
         is_mandatory: program.is_mandatory,
         valid_for_months: program.valid_for_months || 12,
         status: program.status,
@@ -144,7 +159,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         name: "",
         description: "",
         category: "",
-        duration_hours: 1,
+        duration_hours: 0,
+        duration_minutes: 0,
+        scheduled_date: null,
         is_mandatory: false,
         valid_for_months: 12,
         status: "Ativo",
@@ -154,12 +171,16 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   const onSubmit = async (values: z.infer<typeof trainingProgramSchema>) => {
     try {
+      // Converter horas e minutos para decimal
+      const totalDurationHours = values.duration_hours + (values.duration_minutes / 60);
+      
       // Sanitizar dados
       const sanitizedValues = {
         name: values.name.trim(),
         description: values.description?.trim() || null,
         category: values.category,
-        duration_hours: values.duration_hours,
+        duration_hours: totalDurationHours,
+        scheduled_date: values.scheduled_date ? format(values.scheduled_date, 'yyyy-MM-dd') : null,
         is_mandatory: values.is_mandatory,
         valid_for_months: values.valid_for_months || null,
         status: values.status,
@@ -359,21 +380,79 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
+                <FormField
+                  control={form.control}
+                  name="duration_hours"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Horas</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" max="999" placeholder="0" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="duration_minutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Minutos</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" max="59" placeholder="0" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="duration_hours"
+                name="scheduled_date"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duração (horas)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1" placeholder="40" {...field} />
-                    </FormControl>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Realização</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined}
+                          onSelect={field.onChange}
+                          locale={ptBR}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      Data prevista ou realizada do treinamento
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="valid_for_months"
