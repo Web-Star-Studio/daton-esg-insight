@@ -280,7 +280,21 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Sanitizar e validar dados - converter strings vazias para null em campos DATE e UUID
+    // 1. PRIMEIRO: Validar com dados originais do formulário (strings)
+    try {
+      employeeSchema.parse({
+        employee_code: formData.employee_code,
+        full_name: formData.full_name,
+        email: formData.email,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+        return;
+      }
+    }
+    
+    // 2. DEPOIS: Sanitizar para enviar ao banco (converter "" para null)
     const sanitizedData = {
       ...formData,
       employee_code: formData.employee_code.trim() || null,
@@ -301,16 +315,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       branch_id: formData.branch_id || null,
       position_id: formData.position_id || null,
     };
-    
-    // Validate form data
-    try {
-      employeeSchema.parse(sanitizedData);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.issues[0].message);
-        return;
-      }
-    }
 
     // Validações adicionais
     if (sanitizedData.full_name.length > 255) {
