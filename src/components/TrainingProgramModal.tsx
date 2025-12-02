@@ -849,7 +849,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                   </Select>
                 </div>
                 
-                <ScrollArea className="h-[200px] rounded-lg border bg-background">
+                <div className="h-[200px] rounded-lg border bg-background overflow-y-auto">
                   {filteredEmployees.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                       Nenhum funcionário encontrado
@@ -879,7 +879,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                       ))}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
                 
                 {pendingParticipants.size > 0 && (
                   <div className="flex flex-wrap gap-1">
