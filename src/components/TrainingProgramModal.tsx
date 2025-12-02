@@ -498,22 +498,19 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                             />
                             <CommandList>
                               <CommandEmpty>
-                                {categoryInput && (
-                                  <div className="p-2">
-                                    <Button 
-                                      type="button"
-                                      variant="ghost" 
-                                      className="w-full justify-start"
-                                      onClick={() => createCategoryMutation.mutate(categoryInput)}
-                                      disabled={createCategoryMutation.isPending}
-                                    >
-                                      <Plus className="mr-2 h-4 w-4" />
-                                      Criar "{categoryInput}"
-                                    </Button>
-                                  </div>
-                                )}
+                                Nenhuma categoria encontrada.
                               </CommandEmpty>
                               <CommandGroup>
+                                {/* Opção de criar nova categoria - sempre visível quando há texto */}
+                                {categoryInput && !dbCategories.some(c => c.name.toLowerCase() === categoryInput.toLowerCase()) && (
+                                  <CommandItem
+                                    onSelect={() => createCategoryMutation.mutate(categoryInput)}
+                                    className="text-primary"
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Criar "{categoryInput}"
+                                  </CommandItem>
+                                )}
                                 {dbCategories.map((category) => (
                                   <CommandItem
                                     key={category.id}

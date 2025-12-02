@@ -81,8 +81,12 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
         <Command>
           <CommandInput placeholder="Buscar filial..." />
           <CommandEmpty>
+            Nenhuma filial encontrada.
+          </CommandEmpty>
+          <CommandGroup>
+            {/* Opção de criar nova filial - sempre visível */}
             {showNewBranch ? (
-              <div className="p-2 space-y-2">
+              <div className="p-2 space-y-2 border-b">
                 <input
                   type="text"
                   placeholder="Nome da filial"
@@ -93,7 +97,7 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
                       handleCreateBranch();
                     }
                   }}
-                  className="w-full px-2 py-1 text-sm border rounded"
+                  className="w-full px-2 py-1 text-sm border rounded bg-background"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -116,17 +120,14 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
                 </div>
               </div>
             ) : (
-              <Button
-                variant="ghost"
-                className="w-full justify-start"
-                onClick={() => setShowNewBranch(true)}
+              <CommandItem
+                onSelect={() => setShowNewBranch(true)}
+                className="text-primary"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Criar nova filial
-              </Button>
+              </CommandItem>
             )}
-          </CommandEmpty>
-          <CommandGroup>
             {branches?.map((branch) => (
               <CommandItem
                 key={branch.id}
