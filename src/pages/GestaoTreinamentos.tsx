@@ -16,7 +16,6 @@ import {
   Target,
   Plus,
   Search,
-  Settings,
   Download,
   Eye,
   Edit,
@@ -36,8 +35,6 @@ import { TrainingCalendar } from '@/components/TrainingCalendar';
 import { TrainingCertificationModal } from '@/components/TrainingCertificationModal';
 import { TrainingReportsModal } from '@/components/TrainingReportsModal';
 import { TrainingScheduleModal } from '@/components/TrainingScheduleModal';
-import { BenefitManagementModal } from '@/components/BenefitManagementModal';
-import { BenefitConfigurationModal } from '@/components/BenefitConfigurationModal';
 import { TrainingDashboardCharts } from '@/components/TrainingDashboardCharts';
 import { TrainingComplianceMatrix } from '@/components/TrainingComplianceMatrix';
 
@@ -50,7 +47,6 @@ import {
   EmployeeTraining,
   deleteTrainingProgram 
 } from '@/services/trainingPrograms';
-import { useBenefits, getBenefitStats } from '@/services/benefits';
 
 export default function GestaoTreinamentos() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,8 +57,6 @@ export default function GestaoTreinamentos() {
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [isEmployeeTrainingModalOpen, setIsEmployeeTrainingModalOpen] = useState(false);
   const [isBulkTrainingModalOpen, setIsBulkTrainingModalOpen] = useState(false);
-  const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
-  const [isBenefitConfigModalOpen, setIsBenefitConfigModalOpen] = useState(false);
   const [isCertificationModalOpen, setIsCertificationModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -70,7 +64,6 @@ export default function GestaoTreinamentos() {
   // Selected items
   const [selectedProgram, setSelectedProgram] = useState<TrainingProgram | null>(null);
   const [selectedTraining, setSelectedTraining] = useState<EmployeeTraining | null>(null);
-  const [selectedBenefit, setSelectedBenefit] = useState<any>(null);
   const [selectedCertification, setSelectedCertification] = useState<any>(null);
   
   const { toast } = useToast();
@@ -100,19 +93,6 @@ export default function GestaoTreinamentos() {
   const { data: trainingMetrics } = useQuery({
     queryKey: ['training-metrics'],
     queryFn: getTrainingMetrics,
-  });
-
-  // Fetch benefits
-  const { queryKey: benefitsQueryKey, queryFn: benefitsQueryFn } = useBenefits();
-  const { data: benefits = [] } = useQuery({
-    queryKey: benefitsQueryKey,
-    queryFn: benefitsQueryFn,
-  });
-
-  // Fetch benefit stats
-  const { data: benefitStats } = useQuery({
-    queryKey: ['benefit-stats'],
-    queryFn: getBenefitStats,
   });
 
   const filteredPrograms = programs.filter(program => {
@@ -310,7 +290,7 @@ export default function GestaoTreinamentos() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
@@ -334,10 +314,6 @@ export default function GestaoTreinamentos() {
           <TabsTrigger value="certificacoes" className="flex items-center space-x-2">
             <Award className="w-4 h-4" />
             <span>Certificações</span>
-          </TabsTrigger>
-          <TabsTrigger value="beneficios" className="flex items-center space-x-2">
-            <Settings className="w-4 h-4" />
-            <span>Benefícios</span>
           </TabsTrigger>
         </TabsList>
 
@@ -447,6 +423,14 @@ export default function GestaoTreinamentos() {
                       </div>
                     );
                   })}
+                  
+                  {Object.keys(trainingMetrics?.categoryDistribution || {}).length === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground text-sm">
+                        Nenhum dado de categoria disponível
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -464,133 +448,116 @@ export default function GestaoTreinamentos() {
                 <div>
                   <CardTitle>Programas de Treinamento</CardTitle>
                   <CardDescription>
-                    Gerencie todos os programas de treinamento da organização
+                    Gerencie os programas de treinamento disponíveis
                   </CardDescription>
                 </div>
+                <Button onClick={handleNewProgram}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Programa
+                </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar programas..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+            <CardContent>
+              <div className="flex gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Buscar programas..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-                
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-48">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas as Categorias</SelectItem>
+                    <SelectItem value="all">Todas Categorias</SelectItem>
                     <SelectItem value="Segurança">Segurança</SelectItem>
-                    <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
                     <SelectItem value="Técnico">Técnico</SelectItem>
+                    <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
                     <SelectItem value="Compliance">Compliance</SelectItem>
                     <SelectItem value="Liderança">Liderança</SelectItem>
                     <SelectItem value="Qualidade">Qualidade</SelectItem>
                   </SelectContent>
                 </Select>
-                
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-40">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">Todos Status</SelectItem>
                     <SelectItem value="Ativo">Ativo</SelectItem>
                     <SelectItem value="Inativo">Inativo</SelectItem>
                     <SelectItem value="Planejado">Planejado</SelectItem>
-                    <SelectItem value="Suspenso">Suspenso</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </CardContent>
-          </Card>
 
-          <div className="grid gap-4">
-            {filteredPrograms.map((program) => (
-              <Card key={program.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                {filteredPrograms.map((program) => (
+                  <div key={program.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <GraduationCap className="w-6 h-6 text-primary" />
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center",
+                        program.is_mandatory ? "bg-red-100" : "bg-blue-100"
+                      )}>
+                        <BookOpen className={cn(
+                          "w-5 h-5",
+                          program.is_mandatory ? "text-red-600" : "text-blue-600"
+                        )} />
                       </div>
-                      
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-lg">{program.name}</h3>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{program.name}</p>
                           {program.is_mandatory && (
-                            <Badge variant="destructive" className="text-xs">Obrigatório</Badge>
+                            <Badge variant="destructive" className="text-xs">
+                              Obrigatório
+                            </Badge>
                           )}
                         </div>
-                        
-                        <p className="text-muted-foreground">{program.description || "Sem descrição"}</p>
-                        
-                        <div className="flex items-center gap-4 text-sm">
-                          <Badge className={getCategoryColor(program.category || 'Outros')}>
-                            {program.category || 'Outros'}
+                        <p className="text-sm text-muted-foreground">{program.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={getCategoryColor(program.category)}>
+                            {program.category}
                           </Badge>
-                          <Badge className={getStatusColor(program.status)}>
-                            {program.status}
+                          <Badge className={getStatusColor(program.status || 'Ativo')}>
+                            {program.status || 'Ativo'}
                           </Badge>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            {program.duration_hours || 0}h
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Users className="w-3 h-3" />
-                            {employeeTrainings.filter(t => t.training_program_id === program.id).length} participantes
-                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {program.duration_hours}h de duração
+                          </span>
                         </div>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditProgram(program)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleEditProgram(program)}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => handleDeleteProgram(program.id, program.name)}
-                        className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-            
-            {filteredPrograms.length === 0 && (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-muted-foreground">
-                    {searchTerm || filterCategory !== 'all' || filterStatus !== 'all' 
-                      ? "Nenhum programa encontrado com os filtros aplicados." 
-                      : "Nenhum programa de treinamento cadastrado."}
-                  </p>
-                  <Button className="mt-4" onClick={handleNewProgram}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeiro Programa
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                ))}
+                
+                {filteredPrograms.length === 0 && (
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Nenhum programa encontrado
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="participantes" className="space-y-4">
@@ -598,15 +565,21 @@ export default function GestaoTreinamentos() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Participantes em Treinamentos</CardTitle>
+                  <CardTitle>Registro de Participantes</CardTitle>
                   <CardDescription>
-                    Acompanhe o progresso e registre participações
+                    Visualize e gerencie as participações em treinamentos
                   </CardDescription>
                 </div>
-                <Button onClick={handleNewEmployeeTraining}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Registrar Participação
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleBulkTraining}>
+                    <Users className="w-4 h-4 mr-2" />
+                    Registro em Lote
+                  </Button>
+                  <Button onClick={handleNewEmployeeTraining}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Novo Registro
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -626,46 +599,28 @@ export default function GestaoTreinamentos() {
                           <Badge className={getTrainingStatusColor(training.status)}>
                             {training.status}
                           </Badge>
-                          {training.score && (
+                          {training.completion_date && (
                             <span className="text-sm text-muted-foreground">
-                              Nota: {training.score}
+                              Concluído em {format(new Date(training.completion_date), "dd/MM/yyyy", { locale: ptBR })}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      {training.status === 'Concluído' && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewCertification(training)}
-                        >
-                          <Award className="w-4 h-4 mr-1" />
-                          Certificado
-                        </Button>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleViewTraining(training)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleViewTraining(training)}>
+                      <Eye className="w-4 h-4 mr-1" />
+                      Detalhes
+                    </Button>
                   </div>
                 ))}
                 
                 {employeeTrainings.length === 0 && (
                   <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">
-                      Nenhuma participação registrada
+                      Nenhum registro de treinamento encontrado
                     </p>
-                    <Button className="mt-4" onClick={handleNewEmployeeTraining}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Registrar Primeira Participação
-                    </Button>
                   </div>
                 )}
               </div>
@@ -674,19 +629,15 @@ export default function GestaoTreinamentos() {
         </TabsContent>
 
         <TabsContent value="calendario" className="space-y-4">
-          <TrainingCalendar 
-            events={calendarEvents}
-            onEventClick={(event) => console.log('Event clicked:', event)}
-            onNewEventClick={() => setIsScheduleModalOpen(true)}
-          />
+          <TrainingCalendar events={calendarEvents} />
         </TabsContent>
 
         <TabsContent value="certificacoes" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Certificações e Diplomas</CardTitle>
+              <CardTitle>Certificações Emitidas</CardTitle>
               <CardDescription>
-                Certificados emitidos e controle de validades
+                Certificados de conclusão de treinamentos
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -735,131 +686,6 @@ export default function GestaoTreinamentos() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="beneficios" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Gestão de Benefícios</CardTitle>
-                  <CardDescription>
-                    Configure e gerencie benefícios oferecidos aos funcionários
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setIsBenefitModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Benefício
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Benefícios</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{benefits.length}</div>
-                    <p className="text-xs text-muted-foreground">
-                      benefícios cadastrados
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Custo Total</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      R$ {(benefitStats?.totalBenefitsCost || 0).toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      custo mensal
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Participação</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {benefitStats?.benefitParticipation || 0}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      taxa de adesão
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-4">
-                {benefits.map((benefit: any) => (
-                  <div key={benefit.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <Settings className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{benefit.name}</p>
-                        <p className="text-sm text-muted-foreground">{benefit.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={benefit.is_active ? "default" : "secondary"}>
-                            {benefit.is_active ? "Ativo" : "Inativo"}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            R$ {(benefit.monthly_cost || 0).toLocaleString()}/mês
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {benefit.participants || 0} participantes
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedBenefit(benefit);
-                          setIsBenefitConfigModalOpen(true);
-                        }}
-                      >
-                        <Settings className="w-4 h-4 mr-1" />
-                        Configurar
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedBenefit(benefit);
-                          setIsBenefitModalOpen(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                
-                {benefits.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Nenhum benefício cadastrado
-                    </p>
-                    <Button className="mt-4" onClick={() => setIsBenefitModalOpen(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar Primeiro Benefício
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Modals */}
@@ -884,22 +710,6 @@ export default function GestaoTreinamentos() {
         open={isCertificationModalOpen}
         onOpenChange={setIsCertificationModalOpen}
         certification={selectedCertification}
-      />
-
-      <BenefitManagementModal
-        open={isBenefitModalOpen}
-        onOpenChange={setIsBenefitModalOpen}
-        benefit={selectedBenefit}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['benefits'] });
-          queryClient.invalidateQueries({ queryKey: ['benefit-stats'] });
-        }}
-      />
-
-      <BenefitConfigurationModal
-        open={isBenefitConfigModalOpen}
-        onOpenChange={setIsBenefitConfigModalOpen}
-        benefit={selectedBenefit}
       />
 
       <TrainingReportsModal
