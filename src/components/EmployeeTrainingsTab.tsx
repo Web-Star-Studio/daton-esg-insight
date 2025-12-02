@@ -10,10 +10,28 @@ import {
   Clock, 
   Award, 
   AlertTriangle,
-  Calendar,
-  User
+  Edit,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { AddEmployeeTrainingDialog } from './AddEmployeeTrainingDialog';
+import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
 import { toast } from 'sonner';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -25,6 +43,9 @@ interface EmployeeTrainingsTabProps {
 
 export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrainingsTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const queryClient = useQueryClient();
 
   // Fetch employee trainings
@@ -51,6 +72,43 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
       return data || [];
     },
   });
+
+  // Delete training mutation
+  const deleteTrainingMutation = useMutation({
+    mutationFn: async (trainingId: string) => {
+      const { error } = await supabase
+        .from('employee_trainings')
+        .delete()
+        .eq('id', trainingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employee-trainings', employeeId] });
+      toast.success('Treinamento excluído com sucesso!');
+      setIsDeleteDialogOpen(false);
+      setSelectedTraining(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erro ao excluir treinamento');
+    },
+  });
+
+  // Helper functions
+  const handleEdit = (training: any) => {
+    setSelectedTraining(training);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = (training: any) => {
+    setSelectedTraining(training);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedTraining) {
+      deleteTrainingMutation.mutate(selectedTraining.id);
+    }
+  };
 
   // Calculate metrics
   const totalHours = trainings.reduce((sum, t: any) => 
@@ -219,7 +277,29 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
                           )}
                         </div>
                       </div>
-                      {getStatusBadge(training.status)}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(training.status)}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover">
+                            <DropdownMenuItem onClick={() => handleEdit(training)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteConfirm(training)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-3 border-t text-sm">
@@ -280,12 +360,45 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
         </Card>
       </div>
 
+      {/* Dialogs */}
       <AddEmployeeTrainingDialog
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         employeeId={employeeId}
         employeeName={employeeName}
       />
+
+      <EditEmployeeTrainingDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedTraining(null);
+        }}
+        employeeId={employeeId}
+        employeeName={employeeName}
+        training={selectedTraining}
+      />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o treinamento "{selectedTraining?.training_program?.name}"?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteTrainingMutation.isPending ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
