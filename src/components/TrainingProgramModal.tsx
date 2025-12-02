@@ -26,20 +26,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { TrainingProgram, createTrainingProgram, updateTrainingProgram, createEmployeeTraining } from "@/services/trainingPrograms";
+import { TrainingProgram, createTrainingProgram, updateTrainingProgram, createEmployeeTraining, getTrainingPrograms } from "@/services/trainingPrograms";
 import { getTrainingCategories, createTrainingCategory, deleteTrainingCategory } from "@/services/trainingCategories";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon, Users, Search, X } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon, Users, Search, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BranchSelect } from "@/components/BranchSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 const trainingProgramSchema = z.object({
   name: z.string()
@@ -65,7 +65,8 @@ const trainingProgramSchema = z.object({
   status: z.string().min(1, "Status é obrigatório"),
   branch_id: z.string().optional().nullable(),
   responsible_name: z.string().optional(),
-  // Novos campos para avaliação de eficácia
+  // Campos para avaliação de eficácia
+  requires_efficacy_evaluation: z.boolean().default(false),
   efficacy_evaluation_deadline: z.date().optional().nullable(),
   notify_responsible_email: z.boolean().default(false),
   responsible_email: z.string().email("Email inválido").optional().nullable().or(z.literal("")),
@@ -88,6 +89,13 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   const [pendingParticipants, setPendingParticipants] = useState<Set<string>>(new Set());
   const [participantSearchTerm, setParticipantSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+
+  // Query para buscar programas existentes (para funcionalidade de cópia)
+  const { data: existingPrograms = [] } = useQuery({
+    queryKey: ["training-programs-for-copy"],
+    queryFn: getTrainingPrograms,
+    enabled: open && !isEditing,
+  });
 
   // Query para buscar funcionários ativos
   const { data: employees = [] } = useQuery({
@@ -147,6 +155,30 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         filteredIds.forEach(id => newSet.add(id));
       }
       return newSet;
+    });
+  };
+
+  // Função para copiar de um programa existente
+  const handleCopyFromProgram = (programId: string) => {
+    const sourceProg = existingPrograms.find(p => p.id === programId);
+    if (!sourceProg) return;
+
+    const hours = Math.floor(sourceProg.duration_hours || 0);
+    const minutes = Math.round(((sourceProg.duration_hours || 0) - hours) * 60);
+
+    form.setValue('name', sourceProg.name);
+    form.setValue('description', sourceProg.description || '');
+    form.setValue('category', sourceProg.category || '');
+    form.setValue('duration_hours', hours);
+    form.setValue('duration_minutes', minutes);
+    form.setValue('is_mandatory', sourceProg.is_mandatory);
+    form.setValue('branch_id', sourceProg.branch_id || '');
+    form.setValue('requires_efficacy_evaluation', !!sourceProg.efficacy_evaluation_deadline);
+    // Não copiar: datas, instrutor, participantes, email
+
+    toast({
+      title: "Programa copiado",
+      description: "Informações do programa foram copiadas. Ajuste as datas, instrutor e participantes.",
     });
   };
 
@@ -211,6 +243,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       status: "Ativo",
       branch_id: "",
       responsible_name: "",
+      requires_efficacy_evaluation: false,
       efficacy_evaluation_deadline: null,
       notify_responsible_email: false,
       responsible_email: "",
@@ -234,6 +267,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         status: program.status,
         branch_id: program.branch_id || "",
         responsible_name: program.responsible_name || "",
+        requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
         efficacy_evaluation_deadline: program.efficacy_evaluation_deadline ? new Date(program.efficacy_evaluation_deadline) : null,
         notify_responsible_email: program.notify_responsible_email || false,
         responsible_email: program.responsible_email || "",
@@ -251,6 +285,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         status: "Ativo",
         branch_id: "",
         responsible_name: "",
+        requires_efficacy_evaluation: false,
         efficacy_evaluation_deadline: null,
         notify_responsible_email: false,
         responsible_email: "",
@@ -284,9 +319,13 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         status: values.status,
         branch_id: values.branch_id || null,
         responsible_name: values.responsible_name?.trim() || null,
-        efficacy_evaluation_deadline: values.efficacy_evaluation_deadline ? format(values.efficacy_evaluation_deadline, 'yyyy-MM-dd') : null,
-        notify_responsible_email: values.notify_responsible_email,
-        responsible_email: values.responsible_email?.trim() || null,
+        efficacy_evaluation_deadline: values.requires_efficacy_evaluation && values.efficacy_evaluation_deadline 
+          ? format(values.efficacy_evaluation_deadline, 'yyyy-MM-dd') 
+          : null,
+        notify_responsible_email: values.requires_efficacy_evaluation && values.notify_responsible_email,
+        responsible_email: values.requires_efficacy_evaluation && values.responsible_email?.trim() 
+          ? values.responsible_email.trim() 
+          : null,
       };
       
       if (isEditing && program?.id) {
@@ -298,7 +337,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       } else {
         const programData = {
           ...sanitizedValues,
-          // These will be set by database triggers
           company_id: "",
           created_by_user_id: "",
         };
@@ -354,7 +392,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     }
   };
 
-
   const statusOptions = [
     { value: "Ativo", label: "Ativo", color: "bg-green-500" },
     { value: "Inativo", label: "Inativo", color: "bg-gray-500" },
@@ -363,9 +400,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     { value: "Arquivado", label: "Arquivado", color: "bg-red-500" },
   ];
 
+  const watchRequiresEfficacy = form.watch("requires_efficacy_evaluation");
+  const watchNotifyEmail = form.watch("notify_responsible_email");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Programa de Treinamento" : "Novo Programa de Treinamento"}
@@ -373,186 +413,51 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
           <DialogDescription>
             {isEditing 
               ? "Atualize as informações do programa de treinamento."
-              : "Crie um novo programa de treinamento para sua organização."
+              : "Crie um novo programa de treinamento com todas as informações necessárias."
             }
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Programa</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Segurança do Trabalho - NR35" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            
+            {/* Copiar de treinamento existente - apenas na criação */}
+            {!isEditing && existingPrograms.length > 0 && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-dashed bg-muted/30">
+                <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Select onValueChange={handleCopyFromProgram}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Copiar de treinamento existente (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingPrograms.map((prog) => (
+                      <SelectItem key={prog.id} value={prog.id}>
+                        {prog.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Categoria</FormLabel>
-                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={categoryOpen}
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={categoriesLoading}
-                          >
-                            {categoriesLoading ? "Carregando..." : field.value || "Selecione ou crie uma categoria"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0">
-                        <Command>
-                          <CommandInput 
-                            placeholder="Buscar ou criar categoria..." 
-                            value={categoryInput}
-                            onValueChange={setCategoryInput}
-                          />
-                          <CommandList>
-                            <CommandEmpty>
-                              {categoryInput && (
-                                <div className="p-2">
-                                  <Button 
-                                    type="button"
-                                    variant="ghost" 
-                                    className="w-full justify-start"
-                                    onClick={() => createCategoryMutation.mutate(categoryInput)}
-                                    disabled={createCategoryMutation.isPending}
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Criar "{categoryInput}"
-                                  </Button>
-                                </div>
-                              )}
-                            </CommandEmpty>
-                            <CommandGroup>
-                              {dbCategories.map((category) => (
-                                <CommandItem
-                                  key={category.id}
-                                  value={category.name}
-                                  onSelect={() => {
-                                    field.onChange(category.name);
-                                    setCategoryOpen(false);
-                                  }}
-                                  className="flex items-center justify-between group"
-                                >
-                                  <div className="flex items-center">
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        field.value === category.name ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {category.name}
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteCategoryMutation.mutate(category.id);
-                                    }}
-                                    disabled={deleteCategoryMutation.isPending}
-                                  >
-                                    <Trash2 className="h-3 w-3 text-destructive" />
-                                  </Button>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="branch_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Filial</FormLabel>
-                    <FormControl>
-                      <BranchSelect
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormDescription>Filial onde o treinamento será realizado</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="responsible_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsável pelo Treinamento</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome da pessoa responsável" {...field} />
-                    </FormControl>
-                    <FormDescription>Digite o nome do colaborador responsável</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Descreva o conteúdo e objetivos do treinamento"
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid grid-cols-2 gap-2">
+            {/* ============ SEÇÃO: INFORMAÇÕES BÁSICAS ============ */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Informações Básicas
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="duration_hours"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Horas</FormLabel>
+                      <FormLabel>Nome do Programa *</FormLabel>
                       <FormControl>
-                        <Input type="number" min="0" max="999" placeholder="0" {...field} />
+                        <Input placeholder="Ex: Segurança do Trabalho - NR35" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -561,13 +466,93 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
                 <FormField
                   control={form.control}
-                  name="duration_minutes"
+                  name="category"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Minutos</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" max="59" placeholder="0" {...field} />
-                      </FormControl>
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Categoria *</FormLabel>
+                      <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={categoryOpen}
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                              disabled={categoriesLoading}
+                            >
+                              {categoriesLoading ? "Carregando..." : field.value || "Selecione ou crie uma categoria"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                          <Command>
+                            <CommandInput 
+                              placeholder="Buscar ou criar categoria..." 
+                              value={categoryInput}
+                              onValueChange={setCategoryInput}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {categoryInput && (
+                                  <div className="p-2">
+                                    <Button 
+                                      type="button"
+                                      variant="ghost" 
+                                      className="w-full justify-start"
+                                      onClick={() => createCategoryMutation.mutate(categoryInput)}
+                                      disabled={createCategoryMutation.isPending}
+                                    >
+                                      <Plus className="mr-2 h-4 w-4" />
+                                      Criar "{categoryInput}"
+                                    </Button>
+                                  </div>
+                                )}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {dbCategories.map((category) => (
+                                  <CommandItem
+                                    key={category.id}
+                                    value={category.name}
+                                    onSelect={() => {
+                                      field.onChange(category.name);
+                                      setCategoryOpen(false);
+                                    }}
+                                    className="flex items-center justify-between group"
+                                  >
+                                    <div className="flex items-center">
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === category.name ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {category.name}
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteCategoryMutation.mutate(category.id);
+                                      }}
+                                      disabled={deleteCategoryMutation.isPending}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -575,6 +560,70 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="branch_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Filial</FormLabel>
+                      <FormControl>
+                        <BranchSelect
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsible_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Instrutor Responsável</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do instrutor/responsável" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Objetivo / Descrição</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Descreva o conteúdo e objetivos do treinamento"
+                        className="resize-none"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Separator />
+
+            {/* ============ SEÇÃO: CRONOGRAMA ============ */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Cronograma
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-4">
                 <FormField
                   control={form.control}
                   name="start_date"
@@ -592,7 +641,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -630,7 +679,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                              {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -650,268 +699,327 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                     </FormItem>
                   )}
                 />
-              </div>
-            </div>
 
-            {/* Seção de Avaliação de Eficácia */}
-            <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
-              <h4 className="font-medium text-sm text-muted-foreground">Avaliação de Eficácia</h4>
-              
-              <FormField
-                control={form.control}
-                name="efficacy_evaluation_deadline"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Prazo para Avaliação de Eficácia</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data limite"}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value || undefined}
-                          onSelect={field.onChange}
-                          locale={ptBR}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormDescription>
-                      Data limite para o responsável realizar a avaliação de eficácia
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="notify_responsible_email"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">
-                        Notificar Responsável por Email
-                      </FormLabel>
-                      <FormDescription>
-                        O responsável receberá um email quando a avaliação de eficácia estiver próxima do prazo
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {form.watch("notify_responsible_email") && (
                 <FormField
                   control={form.control}
-                  name="responsible_email"
+                  name="duration_hours"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email do Responsável</FormLabel>
+                      <FormLabel>Horas</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email"
-                          placeholder="email@empresa.com" 
-                          {...field} 
-                          value={field.value || ""}
-                        />
+                        <Input type="number" min="0" max="999" placeholder="0" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Email para onde serão enviadas as notificações de avaliação
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
+
+                <FormField
+                  control={form.control}
+                  name="duration_minutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Minutos</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" max="59" placeholder="0" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {statusOptions.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          <div className="flex items-center gap-2">
-                            <span className={cn("w-2 h-2 rounded-full", status.color)} />
-                            {status.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <Separator />
 
-            <FormField
-              control={form.control}
-              name="is_mandatory"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      Treinamento Obrigatório
-                    </FormLabel>
-                    <FormDescription>
-                      Este treinamento é obrigatório para todos os funcionários
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+            {/* ============ SEÇÃO: CONFIGURAÇÕES ============ */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Configurações
+                </h3>
+              </div>
 
-            {/* Seção de Participantes - apenas na criação */}
-            {!isEditing && (
-              <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <Label className="text-base font-medium">
-                      Participantes
-                    </Label>
-                    {pendingParticipants.size > 0 && (
-                      <Badge variant="secondary">
-                        {pendingParticipants.size} selecionado(s)
-                      </Badge>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleAllFiltered}
-                  >
-                    {filteredEmployees.every(e => pendingParticipants.has(e.id)) && filteredEmployees.length > 0
-                      ? "Desmarcar todos"
-                      : "Selecionar todos"}
-                  </Button>
-                </div>
-                
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar funcionários..."
-                      value={participantSearchTerm}
-                      onChange={(e) => setParticipantSearchTerm(e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Departamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os departamentos</SelectItem>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept || "sem-dept"}>
-                          {dept || "Sem departamento"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="h-[200px] rounded-lg border bg-background overflow-y-auto">
-                  {filteredEmployees.length === 0 ? (
-                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                      Nenhum funcionário encontrado
-                    </div>
-                  ) : (
-                    <div className="p-2 space-y-1">
-                      {filteredEmployees.map((employee) => (
-                        <div
-                          key={employee.id}
-                          className={cn(
-                            "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
-                            pendingParticipants.has(employee.id) && "bg-primary/10"
-                          )}
-                          onClick={() => toggleParticipant(employee.id)}
-                        >
-                          <Checkbox
-                            checked={pendingParticipants.has(employee.id)}
-                            className="pointer-events-none"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{employee.full_name}</p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {employee.employee_code} • {employee.department || "Sem departamento"}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              <div className="flex items-center gap-2">
+                                <span className={cn("w-2 h-2 rounded-full", status.color)} />
+                                {status.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
+
+                <FormField
+                  control={form.control}
+                  name="is_mandatory"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm">Treinamento Obrigatório</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Avaliação de Eficácia */}
+              <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+                <FormField
+                  control={form.control}
+                  name="requires_efficacy_evaluation"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm font-medium cursor-pointer">
+                          Necessita Avaliação de Eficácia
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          Marque se este treinamento requer avaliação de eficácia após conclusão
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 
-                {pendingParticipants.size > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {Array.from(pendingParticipants).slice(0, 5).map((id) => {
-                      const emp = employees.find(e => e.id === id);
-                      return emp ? (
-                        <Badge key={id} variant="outline" className="gap-1">
-                          {emp.full_name.split(" ")[0]}
-                          <X 
-                            className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleParticipant(id);
-                            }}
-                          />
-                        </Badge>
-                      ) : null;
-                    })}
-                    {pendingParticipants.size > 5 && (
-                      <Badge variant="outline">+{pendingParticipants.size - 5} mais</Badge>
+                {watchRequiresEfficacy && (
+                  <div className="space-y-4 pt-3 border-t">
+                    <FormField
+                      control={form.control}
+                      name="efficacy_evaluation_deadline"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Prazo para Avaliação de Eficácia</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data limite"}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value || undefined}
+                                onSelect={field.onChange}
+                                locale={ptBR}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="notify_responsible_email"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Notificar por Email</FormLabel>
+                            <FormDescription className="text-xs">
+                              Enviar lembrete quando a avaliação estiver próxima do prazo
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchNotifyEmail && (
+                      <FormField
+                        control={form.control}
+                        name="responsible_email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email do Responsável</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="email"
+                                placeholder="email@empresa.com" 
+                                {...field} 
+                                value={field.value || ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* ============ SEÇÃO: PARTICIPANTES (apenas na criação) ============ */}
+            {!isEditing && (
+              <>
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 w-1 rounded-full bg-primary" />
+                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                        Participantes
+                      </h3>
+                      {pendingParticipants.size > 0 && (
+                        <Badge variant="secondary">
+                          {pendingParticipants.size} selecionado(s)
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleAllFiltered}
+                    >
+                      {filteredEmployees.every(e => pendingParticipants.has(e.id)) && filteredEmployees.length > 0
+                        ? "Desmarcar todos"
+                        : "Selecionar todos"}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar funcionários..."
+                        value={participantSearchTerm}
+                        onChange={(e) => setParticipantSearchTerm(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                    <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Departamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os departamentos</SelectItem>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept} value={dept || "sem-dept"}>
+                            {dept || "Sem departamento"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="h-[200px] rounded-lg border bg-background overflow-y-auto">
+                    {filteredEmployees.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                        Nenhum funcionário encontrado
+                      </div>
+                    ) : (
+                      <div className="p-2 space-y-1">
+                        {filteredEmployees.map((employee) => (
+                          <div
+                            key={employee.id}
+                            className={cn(
+                              "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
+                              pendingParticipants.has(employee.id) && "bg-primary/10"
+                            )}
+                            onClick={() => toggleParticipant(employee.id)}
+                          >
+                            <Checkbox
+                              checked={pendingParticipants.has(employee.id)}
+                              className="pointer-events-none"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{employee.full_name}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {employee.employee_code} • {employee.department || "Sem departamento"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {pendingParticipants.size > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {Array.from(pendingParticipants).slice(0, 5).map((id) => {
+                        const emp = employees.find(e => e.id === id);
+                        return emp ? (
+                          <Badge key={id} variant="secondary" className="text-xs">
+                            {emp.full_name}
+                          </Badge>
+                        ) : null;
+                      })}
+                      {pendingParticipants.size > 5 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{pendingParticipants.size - 5} mais
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Separator />
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
               <Button type="submit">
-                {isEditing ? "Atualizar" : "Criar"} Programa
+                {isEditing ? "Atualizar" : "Criar Treinamento"}
               </Button>
             </div>
           </form>
