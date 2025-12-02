@@ -22,6 +22,7 @@ import { useEmployeeEducation, useDeleteEmployeeEducation } from '@/services/emp
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { generateNextEmployeeCode } from '@/services/employeeCodeGenerator';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ const employeeSchema = z.object({
 });
 
 export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: EmployeeModalProps) {
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     employee_code: '',
     full_name: '',
@@ -88,6 +90,24 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
 
   // Debounce employee code for validation
   const debouncedEmployeeCode = useDebounce(formData.employee_code, 500);
+
+  // Fetch company_id on mount
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+        if (profile?.company_id) {
+          setCompanyId(profile.company_id);
+        }
+      }
+    };
+    fetchCompanyId();
+  }, []);
 
   // Check if employee code exists
   useEffect(() => {
@@ -295,9 +315,21 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     }
     
     // 2. DEPOIS: Sanitizar para enviar ao banco (converter "" para null)
+    // Gerar código automaticamente se estiver vazio
+    let employeeCode = formData.employee_code.trim();
+    if (!employeeCode && companyId) {
+      try {
+        employeeCode = await generateNextEmployeeCode(companyId);
+      } catch (error) {
+        console.error('Erro ao gerar código do funcionário:', error);
+        toast.error('Erro ao gerar código do funcionário automaticamente');
+        return;
+      }
+    }
+    
     const sanitizedData = {
       ...formData,
-      employee_code: formData.employee_code.trim() || null,
+      employee_code: employeeCode,
       full_name: formData.full_name.trim(),
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
