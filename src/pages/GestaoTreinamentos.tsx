@@ -19,8 +19,7 @@ import {
   Download,
   Eye,
   Edit,
-  Trash2,
-  MapPin
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -529,7 +528,7 @@ export default function GestaoTreinamentos() {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{program.description}</p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1">
                           <Badge className={getCategoryColor(program.category)}>
                             {program.category}
                           </Badge>
@@ -539,30 +538,6 @@ export default function GestaoTreinamentos() {
                           <span className="text-sm text-muted-foreground">
                             {program.duration_hours}h de duração
                           </span>
-                        </div>
-                        
-                        <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          {(program.start_date || program.end_date) && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              <span>
-                                {program.start_date 
-                                  ? format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })
-                                  : 'Início não definido'}
-                                {' - '}
-                                {program.end_date 
-                                  ? format(new Date(program.end_date), "dd/MM/yyyy", { locale: ptBR })
-                                  : 'Fim não definido'}
-                              </span>
-                            </div>
-                          )}
-                          
-                          {program.branch_name && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span>{program.branch_name}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>

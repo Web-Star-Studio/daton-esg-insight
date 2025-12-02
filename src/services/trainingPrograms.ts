@@ -23,8 +23,6 @@ export interface TrainingProgram {
   efficacy_evaluation_deadline?: string;
   notify_responsible_email?: boolean;
   responsible_email?: string;
-  // Campo adicional do join com branches
-  branch_name?: string | null;
 }
 
 export interface EmployeeTraining {
@@ -45,19 +43,11 @@ export interface EmployeeTraining {
 export const getTrainingPrograms = async () => {
   const { data, error } = await supabase
     .from('training_programs')
-    .select(`
-      *,
-      branch:branches!left(id, name)
-    `)
-    .order('created_at', { ascending: false });
+    .select('*')
+    .order('name');
 
   if (error) throw error;
-  
-  // Mapear para incluir branch_name para facilitar uso
-  return (data || []).map(program => ({
-    ...program,
-    branch_name: (program.branch as any)?.name || null
-  }));
+  return data;
 };
 
 export const getTrainingProgram = async (id: string) => {
