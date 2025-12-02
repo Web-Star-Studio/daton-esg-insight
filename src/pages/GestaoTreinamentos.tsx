@@ -37,6 +37,7 @@ import { TrainingReportsModal } from '@/components/TrainingReportsModal';
 import { TrainingScheduleModal } from '@/components/TrainingScheduleModal';
 import { TrainingDashboardCharts } from '@/components/TrainingDashboardCharts';
 import { TrainingComplianceMatrix } from '@/components/TrainingComplianceMatrix';
+import { TrainingProgramDetailModal } from '@/components/TrainingProgramDetailModal';
 
 // Import services
 import { 
@@ -65,6 +66,10 @@ export default function GestaoTreinamentos() {
   const [selectedProgram, setSelectedProgram] = useState<TrainingProgram | null>(null);
   const [selectedTraining, setSelectedTraining] = useState<EmployeeTraining | null>(null);
   const [selectedCertification, setSelectedCertification] = useState<any>(null);
+  
+  // Detail modal state
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedProgramForDetail, setSelectedProgramForDetail] = useState<TrainingProgram | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -148,6 +153,11 @@ export default function GestaoTreinamentos() {
   const handleEditProgram = (program: TrainingProgram) => {
     setSelectedProgram(program);
     setIsProgramModalOpen(true);
+  };
+
+  const handleViewProgram = (program: TrainingProgram) => {
+    setSelectedProgramForDetail(program);
+    setIsDetailModalOpen(true);
   };
 
   const handleNewEmployeeTraining = () => {
@@ -533,6 +543,9 @@ export default function GestaoTreinamentos() {
                     </div>
                     
                     <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleViewProgram(program)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditProgram(program)}>
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -721,6 +734,25 @@ export default function GestaoTreinamentos() {
         open={isScheduleModalOpen}
         onOpenChange={setIsScheduleModalOpen}
         schedule={null}
+      />
+
+      <TrainingProgramDetailModal
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        program={selectedProgramForDetail}
+        onEdit={() => {
+          setIsDetailModalOpen(false);
+          if (selectedProgramForDetail) {
+            handleEditProgram(selectedProgramForDetail);
+          }
+        }}
+        onAddParticipant={() => {
+          setIsDetailModalOpen(false);
+          setSelectedTraining({
+            training_program_id: selectedProgramForDetail?.id,
+          } as any);
+          setIsEmployeeTrainingModalOpen(true);
+        }}
       />
     </div>
   );
