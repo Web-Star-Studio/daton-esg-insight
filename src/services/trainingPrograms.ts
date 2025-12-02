@@ -47,7 +47,7 @@ export const getTrainingPrograms = async () => {
     .from('training_programs')
     .select(`
       *,
-      branch:branches(id, name)
+      branch:branches!left(id, name)
     `)
     .order('created_at', { ascending: false });
 
