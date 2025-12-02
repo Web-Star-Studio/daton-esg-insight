@@ -18284,6 +18284,83 @@ export type Database = {
           },
         ]
       }
+      training_efficacy_evaluations: {
+        Row: {
+          comments: string | null
+          company_id: string
+          created_at: string | null
+          employee_training_id: string
+          evaluation_date: string
+          evaluator_id: string | null
+          evaluator_name: string | null
+          id: string
+          is_effective: boolean | null
+          score: number | null
+          status: string | null
+          training_program_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          comments?: string | null
+          company_id: string
+          created_at?: string | null
+          employee_training_id: string
+          evaluation_date?: string
+          evaluator_id?: string | null
+          evaluator_name?: string | null
+          id?: string
+          is_effective?: boolean | null
+          score?: number | null
+          status?: string | null
+          training_program_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          comments?: string | null
+          company_id?: string
+          created_at?: string | null
+          employee_training_id?: string
+          evaluation_date?: string
+          evaluator_id?: string | null
+          evaluator_name?: string | null
+          id?: string
+          is_effective?: boolean | null
+          score?: number | null
+          status?: string | null
+          training_program_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_efficacy_evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_efficacy_evaluations_employee_training_id_fkey"
+            columns: ["employee_training_id"]
+            isOneToOne: false
+            referencedRelation: "employee_trainings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_efficacy_evaluations_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_efficacy_evaluations_training_program_id_fkey"
+            columns: ["training_program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_programs: {
         Row: {
           branch_id: string | null
@@ -18293,10 +18370,13 @@ export type Database = {
           created_by_user_id: string
           description: string | null
           duration_hours: number | null
+          efficacy_evaluation_deadline: string | null
           end_date: string | null
           id: string
           is_mandatory: boolean | null
           name: string
+          notify_responsible_email: boolean | null
+          responsible_email: string | null
           responsible_id: string | null
           responsible_name: string | null
           scheduled_date: string | null
@@ -18313,10 +18393,13 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           duration_hours?: number | null
+          efficacy_evaluation_deadline?: string | null
           end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
           name: string
+          notify_responsible_email?: boolean | null
+          responsible_email?: string | null
           responsible_id?: string | null
           responsible_name?: string | null
           scheduled_date?: string | null
@@ -18333,10 +18416,13 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           duration_hours?: number | null
+          efficacy_evaluation_deadline?: string | null
           end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
           name?: string
+          notify_responsible_email?: boolean | null
+          responsible_email?: string | null
           responsible_id?: string | null
           responsible_name?: string | null
           scheduled_date?: string | null

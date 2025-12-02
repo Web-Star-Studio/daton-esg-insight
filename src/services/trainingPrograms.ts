@@ -19,6 +19,10 @@ export interface TrainingProgram {
   branch_id?: string;
   responsible_id?: string;
   responsible_name?: string;
+  // Novos campos para avaliação de eficácia
+  efficacy_evaluation_deadline?: string;
+  notify_responsible_email?: boolean;
+  responsible_email?: string;
 }
 
 export interface EmployeeTraining {
@@ -83,6 +87,9 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     end_date: program.end_date ?? null,
     branch_id: program.branch_id || null,
     responsible_name: program.responsible_name ?? null,
+    efficacy_evaluation_deadline: program.efficacy_evaluation_deadline ?? null,
+    notify_responsible_email: program.notify_responsible_email ?? false,
+    responsible_email: program.responsible_email ?? null,
     company_id: companyId as string,
     created_by_user_id: userData.user.id as string,
   };
