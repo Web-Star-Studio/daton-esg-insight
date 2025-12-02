@@ -280,16 +280,26 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Sanitizar e validar dados
+    // Sanitizar e validar dados - converter strings vazias para null em campos DATE e UUID
     const sanitizedData = {
       ...formData,
-      employee_code: formData.employee_code.trim(),
+      employee_code: formData.employee_code.trim() || null,
       full_name: formData.full_name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      department: formData.department.trim(),
-      position: formData.position.trim(),
-      location: formData.location.trim()
+      email: formData.email.trim() || null,
+      phone: formData.phone.trim() || null,
+      department: formData.department.trim() || null,
+      position: formData.position.trim() || null,
+      location: formData.location.trim() || null,
+      notes: formData.notes.trim() || null,
+      gender: formData.gender || null,
+      education_level: formData.education_level || null,
+      // Converter strings vazias para null em campos DATE
+      hire_date: formData.hire_date || null,
+      birth_date: formData.birth_date || null,
+      termination_date: formData.termination_date || null,
+      // Converter strings vazias para null em campos UUID
+      branch_id: formData.branch_id || null,
+      position_id: formData.position_id || null,
     };
     
     // Validate form data
