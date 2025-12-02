@@ -48,6 +48,7 @@ import {
   EmployeeTraining,
   deleteTrainingProgram 
 } from '@/services/trainingPrograms';
+import { getTrainingCategories } from '@/services/trainingCategories';
 
 export default function GestaoTreinamentos() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,6 +77,7 @@ export default function GestaoTreinamentos() {
 
   // Force fresh data on component mount
   React.useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['training-programs'] });
     queryClient.invalidateQueries({ queryKey: ['employee-trainings'] });
     queryClient.invalidateQueries({ queryKey: ['training-metrics'] });
   }, [queryClient]);
@@ -84,6 +86,14 @@ export default function GestaoTreinamentos() {
   const { data: programs = [], isLoading: isLoadingPrograms } = useQuery({
     queryKey: ['training-programs'],
     queryFn: getTrainingPrograms,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  // Fetch training categories for dynamic filter
+  const { data: categories = [] } = useQuery({
+    queryKey: ['training-categories'],
+    queryFn: getTrainingCategories,
   });
 
   // Fetch employee trainings
@@ -484,12 +494,11 @@ export default function GestaoTreinamentos() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas Categorias</SelectItem>
-                    <SelectItem value="Segurança">Segurança</SelectItem>
-                    <SelectItem value="Técnico">Técnico</SelectItem>
-                    <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
-                    <SelectItem value="Compliance">Compliance</SelectItem>
-                    <SelectItem value="Liderança">Liderança</SelectItem>
-                    <SelectItem value="Qualidade">Qualidade</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
