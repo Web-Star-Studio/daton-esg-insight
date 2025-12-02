@@ -2,23 +2,28 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar, FileText, Gift, BarChart3 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar, FileText, Gift, BarChart3, Settings, Plus, Edit } from 'lucide-react';
 import { EmployeesList } from '@/components/EmployeesList';
 import { EmployeeModal } from '@/components/EmployeeModal';
 import { EmployeeDetailModal } from '@/components/EmployeeDetailModal';
 import { EmployeeReportsModal } from '@/components/EmployeeReportsModal';
 import { BenefitManagementModal } from '@/components/BenefitManagementModal';
+import { BenefitConfigurationModal } from '@/components/BenefitConfigurationModal';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getEmployeesStats, type Employee } from '@/services/employees';
+import { useBenefits, getBenefitStats } from '@/services/benefits';
 
 export default function GestaoFuncionarios() {
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isEmployeeDetailModalOpen, setIsEmployeeDetailModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
+  const [isBenefitConfigModalOpen, setIsBenefitConfigModalOpen] = useState(false);
   const [reportType, setReportType] = useState<string>('employees');
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
+  const [selectedBenefit, setSelectedBenefit] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const handleEditEmployee = (employee: Employee) => {
@@ -60,6 +65,19 @@ export default function GestaoFuncionarios() {
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['employees-stats'],
     queryFn: getEmployeesStats,
+  });
+
+  // Fetch benefits
+  const { queryKey: benefitsQueryKey, queryFn: benefitsQueryFn } = useBenefits();
+  const { data: benefits = [] } = useQuery({
+    queryKey: benefitsQueryKey,
+    queryFn: benefitsQueryFn,
+  });
+
+  // Fetch benefit stats
+  const { data: benefitStats } = useQuery({
+    queryKey: ['benefit-stats'],
+    queryFn: getBenefitStats,
   });
 
   const statsCards = [
@@ -109,7 +127,7 @@ export default function GestaoFuncionarios() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
@@ -121,6 +139,10 @@ export default function GestaoFuncionarios() {
           <TabsTrigger value="diversidade" className="flex items-center space-x-2">
             <Building2 className="w-4 h-4" />
             <span>Diversidade</span>
+          </TabsTrigger>
+          <TabsTrigger value="beneficios" className="flex items-center space-x-2">
+            <Gift className="w-4 h-4" />
+            <span>Benefícios</span>
           </TabsTrigger>
           <TabsTrigger value="relatorios" className="flex items-center space-x-2">
             <Calendar className="w-4 h-4" />
@@ -216,24 +238,148 @@ export default function GestaoFuncionarios() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Gestão de Benefícios</h3>
+                  <h3 className="text-lg font-semibold mb-4">Métricas de Inclusão</h3>
                   <div className="space-y-4">
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => setIsBenefitModalOpen(true)}
-                    >
-                      <Gift className="w-4 h-4 mr-2" />
-                      Gerenciar Benefícios
-                    </Button>
                     <div className="text-center p-6 border rounded-lg bg-muted/10">
                       <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">
-                        Configure e gerencie os benefícios dos funcionários
+                        Análises detalhadas de diversidade e inclusão
                       </p>
                     </div>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="beneficios" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Gestão de Benefícios</CardTitle>
+                  <CardDescription>
+                    Configure e gerencie benefícios oferecidos aos funcionários
+                  </CardDescription>
+                </div>
+                <Button onClick={() => {
+                  setSelectedBenefit(null);
+                  setIsBenefitModalOpen(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Benefício
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Benefícios</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{benefits.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      benefícios cadastrados
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Custo Total</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      R$ {(benefitStats?.totalBenefitsCost || 0).toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      custo mensal
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Participação</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {benefitStats?.benefitParticipation || 0}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      taxa de adesão
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-4">
+                {benefits.map((benefit: any) => (
+                  <div key={benefit.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Gift className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{benefit.name}</p>
+                        <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant={benefit.is_active ? "default" : "secondary"}>
+                            {benefit.is_active ? "Ativo" : "Inativo"}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            R$ {(benefit.monthly_cost || 0).toLocaleString()}/mês
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {benefit.participants || 0} participantes
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedBenefit(benefit);
+                          setIsBenefitConfigModalOpen(true);
+                        }}
+                      >
+                        <Settings className="w-4 h-4 mr-1" />
+                        Configurar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedBenefit(benefit);
+                          setIsBenefitModalOpen(true);
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                {benefits.length === 0 && (
+                  <div className="text-center py-8">
+                    <Gift className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Nenhum benefício cadastrado
+                    </p>
+                    <Button className="mt-4" onClick={() => {
+                      setSelectedBenefit(null);
+                      setIsBenefitModalOpen(true);
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Criar Primeiro Benefício
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -344,10 +490,18 @@ export default function GestaoFuncionarios() {
       <BenefitManagementModal
         open={isBenefitModalOpen}
         onOpenChange={(open) => setIsBenefitModalOpen(open)}
+        benefit={selectedBenefit}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['benefits'] });
+          queryClient.invalidateQueries({ queryKey: ['benefit-stats'] });
           setIsBenefitModalOpen(false);
         }}
+      />
+
+      <BenefitConfigurationModal
+        open={isBenefitConfigModalOpen}
+        onOpenChange={setIsBenefitConfigModalOpen}
+        benefit={selectedBenefit}
       />
     </div>
   );
