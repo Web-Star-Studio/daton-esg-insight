@@ -44,6 +44,9 @@ serve(async (req) => {
       case 'check_emission_spikes':
         result = await checkEmissionSpikes(supabase)
         break
+      case 'check_efficacy_evaluations':
+        result = await checkEfficacyEvaluations(supabase)
+        break
       default:
         return new Response(
           JSON.stringify({ error: `Invalid action: ${action}` }),
@@ -281,6 +284,88 @@ async function checkEmissionSpikes(supabase: any) {
     return { processed: emissions.length, created: notificationsCreated }
   } catch (error) {
     console.error('Error in checkEmissionSpikes:', error)
+    throw error
+  }
+}
+
+async function checkEfficacyEvaluations(supabase: any) {
+  try {
+    console.log('Checking efficacy evaluation deadlines...')
+    
+    // Get training programs with efficacy evaluation deadlines
+    const { data: programs, error: programsError } = await supabase
+      .from('training_programs')
+      .select('id, name, efficacy_evaluation_deadline, notify_responsible_email, responsible_email, responsible_name, created_by_user_id, company_id')
+      .not('efficacy_evaluation_deadline', 'is', null)
+      .eq('status', 'Ativo')
+
+    if (programsError) {
+      console.error('Error fetching training programs:', programsError)
+      throw programsError
+    }
+
+    console.log(`Found ${programs?.length || 0} programs with efficacy deadlines`)
+    let notificationsCreated = 0
+
+    const now = new Date()
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+    for (const program of programs || []) {
+      try {
+        const deadlineDate = new Date(program.efficacy_evaluation_deadline)
+        const daysUntilDeadline = Math.ceil(
+          (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        )
+
+        // Only notify if deadline is within 7 days and not past
+        if (daysUntilDeadline <= 7 && daysUntilDeadline >= 0) {
+          // Check if we already sent a notification for this program recently
+          const { data: existingAlert } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('category', 'training')
+            .ilike('message', `%${program.name}%`)
+            .ilike('title', '%eficácia%')
+            .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
+            .maybeSingle()
+
+          if (!existingAlert && program.created_by_user_id) {
+            // Create in-app notification
+            const { error: insertError } = await supabase.from('notifications').insert({
+              user_id: program.created_by_user_id,
+              company_id: program.company_id,
+              title: 'Avaliação de Eficácia Pendente',
+              message: `O treinamento "${program.name}" precisa de avaliação de eficácia até ${deadlineDate.toLocaleDateString('pt-BR')}`,
+              type: daysUntilDeadline <= 2 ? 'error' : 'warning',
+              category: 'training',
+              priority: daysUntilDeadline <= 2 ? 'urgent' : 'high',
+              is_read: false,
+              action_url: '/gestao-treinamentos',
+              action_label: 'Ver Treinamentos',
+              metadata: { 
+                program_id: program.id, 
+                days_remaining: daysUntilDeadline,
+                responsible_name: program.responsible_name
+              }
+            })
+
+            if (insertError) {
+              console.error('Error creating efficacy notification:', insertError)
+            } else {
+              notificationsCreated++
+              console.log(`Created efficacy notification for program: ${program.name}`)
+            }
+          }
+        }
+      } catch (programError) {
+        console.error(`Error processing program ${program.id}:`, programError)
+        continue
+      }
+    }
+
+    return { processed: programs?.length || 0, created: notificationsCreated }
+  } catch (error) {
+    console.error('Error in checkEfficacyEvaluations:', error)
     throw error
   }
 }

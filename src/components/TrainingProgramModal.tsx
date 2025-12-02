@@ -60,6 +60,10 @@ const trainingProgramSchema = z.object({
   status: z.string().min(1, "Status é obrigatório"),
   branch_id: z.string().optional().nullable(),
   responsible_name: z.string().optional(),
+  // Novos campos para avaliação de eficácia
+  efficacy_evaluation_deadline: z.date().optional().nullable(),
+  notify_responsible_email: z.boolean().default(false),
+  responsible_email: z.string().email("Email inválido").optional().nullable().or(z.literal("")),
 });
 
 interface TrainingProgramModalProps {
@@ -136,6 +140,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       status: "Ativo",
       branch_id: "",
       responsible_name: "",
+      efficacy_evaluation_deadline: null,
+      notify_responsible_email: false,
+      responsible_email: "",
     },
   });
 
@@ -156,6 +163,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         status: program.status,
         branch_id: program.branch_id || "",
         responsible_name: program.responsible_name || "",
+        efficacy_evaluation_deadline: program.efficacy_evaluation_deadline ? new Date(program.efficacy_evaluation_deadline) : null,
+        notify_responsible_email: program.notify_responsible_email || false,
+        responsible_email: program.responsible_email || "",
       });
     } else {
       form.reset({
@@ -170,6 +180,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         status: "Ativo",
         branch_id: "",
         responsible_name: "",
+        efficacy_evaluation_deadline: null,
+        notify_responsible_email: false,
+        responsible_email: "",
       });
     }
   }, [program, form]);
@@ -191,6 +204,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         status: values.status,
         branch_id: values.branch_id || null,
         responsible_name: values.responsible_name?.trim() || null,
+        efficacy_evaluation_deadline: values.efficacy_evaluation_deadline ? format(values.efficacy_evaluation_deadline, 'yyyy-MM-dd') : null,
+        notify_responsible_email: values.notify_responsible_email,
+        responsible_email: values.responsible_email?.trim() || null,
       };
       
       if (isEditing && program?.id) {
@@ -530,6 +546,99 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                   )}
                 />
               </div>
+            </div>
+
+            {/* Seção de Avaliação de Eficácia */}
+            <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
+              <h4 className="font-medium text-sm text-muted-foreground">Avaliação de Eficácia</h4>
+              
+              <FormField
+                control={form.control}
+                name="efficacy_evaluation_deadline"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Prazo para Avaliação de Eficácia</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data limite"}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined}
+                          onSelect={field.onChange}
+                          locale={ptBR}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      Data limite para o responsável realizar a avaliação de eficácia
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notify_responsible_email"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Notificar Responsável por Email
+                      </FormLabel>
+                      <FormDescription>
+                        O responsável receberá um email quando a avaliação de eficácia estiver próxima do prazo
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch("notify_responsible_email") && (
+                <FormField
+                  control={form.control}
+                  name="responsible_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email do Responsável</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email"
+                          placeholder="email@empresa.com" 
+                          {...field} 
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Email para onde serão enviadas as notificações de avaliação
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <FormField
