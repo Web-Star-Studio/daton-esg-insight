@@ -28,6 +28,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { TrainingProgram, createTrainingProgram, updateTrainingProgram, createEmployeeTraining, getTrainingPrograms } from "@/services/trainingPrograms";
 import { getTrainingCategories, createTrainingCategory, deleteTrainingCategory } from "@/services/trainingCategories";
+import { getTrainingStatuses, createTrainingStatus } from "@/services/trainingStatuses";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon, Users, Search, Copy } from "lucide-react";
@@ -84,6 +85,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   const isEditing = !!program;
   const [categoryInput, setCategoryInput] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [statusInput, setStatusInput] = useState("");
+  const [statusOpen, setStatusOpen] = useState(false);
   
   // Estados para seleção de participantes (apenas na criação)
   const [pendingParticipants, setPendingParticipants] = useState<Set<string>>(new Set());
@@ -188,6 +191,25 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     queryFn: getTrainingCategories,
   });
 
+  // Fetch statuses from database
+  const { data: dbStatuses = [] } = useQuery({
+    queryKey: ['training-statuses'],
+    queryFn: () => getTrainingStatuses(),
+  });
+
+  // Fallback status options when database is empty
+  const defaultStatusOptions = [
+    { name: "Ativo", color: "bg-green-500" },
+    { name: "Inativo", color: "bg-gray-500" },
+    { name: "Planejado", color: "bg-blue-500" },
+    { name: "Suspenso", color: "bg-yellow-500" },
+    { name: "Arquivado", color: "bg-red-500" },
+  ];
+
+  const statusOptions = dbStatuses.length > 0 
+    ? dbStatuses.map(s => ({ name: s.name, color: s.color }))
+    : defaultStatusOptions;
+
   // Create category mutation
   const createCategoryMutation = useMutation({
     mutationFn: (name: string) => createTrainingCategory(name),
@@ -198,13 +220,36 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       setCategoryOpen(false);
       toast({
         title: "Sucesso",
-        description: "Categoria criada com sucesso!",
+        description: "Categoria criada com sucesso.",
+      });
+    },
+  });
+
+  // Create status mutation
+  const createStatusMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', userData.user?.id)
+        .single();
+      return createTrainingStatus(name, profile?.company_id || '');
+    },
+    onSuccess: (newStatus) => {
+      queryClient.invalidateQueries({ queryKey: ['training-statuses'] });
+      form.setValue('status', newStatus.name);
+      setStatusInput("");
+      setStatusOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Status criado com sucesso!",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Erro",
-        description: error.message || "Erro ao criar categoria",
+        description: error.message || "Erro ao criar status",
         variant: "destructive",
       });
     },
@@ -391,14 +436,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       });
     }
   };
-
-  const statusOptions = [
-    { value: "Ativo", label: "Ativo", color: "bg-green-500" },
-    { value: "Inativo", label: "Inativo", color: "bg-gray-500" },
-    { value: "Planejado", label: "Planejado", color: "bg-blue-500" },
-    { value: "Suspenso", label: "Suspenso", color: "bg-yellow-500" },
-    { value: "Arquivado", label: "Arquivado", color: "bg-red-500" },
-  ];
 
   const watchRequiresEfficacy = form.watch("requires_efficacy_evaluation");
   const watchNotifyEmail = form.watch("notify_responsible_email");
@@ -743,25 +780,83 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                   control={form.control}
                   name="status"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {statusOptions.map((status) => (
-                            <SelectItem key={status.value} value={status.value}>
-                              <div className="flex items-center gap-2">
-                                <span className={cn("w-2 h-2 rounded-full", status.color)} />
-                                {status.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={statusOpen} onOpenChange={setStatusOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    "w-2 h-2 rounded-full",
+                                    statusOptions.find(s => s.name === field.value)?.color || "bg-gray-500"
+                                  )} />
+                                  {field.value}
+                                </div>
+                              ) : (
+                                "Selecione o status..."
+                              )}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0" align="start">
+                          <Command>
+                            <CommandInput 
+                              placeholder="Buscar ou criar status..." 
+                              value={statusInput}
+                              onValueChange={setStatusInput}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                Nenhum status encontrado.
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {/* Opção de criar novo status - sempre visível quando há texto */}
+                                {statusInput && !statusOptions.some(s => 
+                                  s.name.toLowerCase() === statusInput.toLowerCase()
+                                ) && (
+                                  <CommandItem
+                                    onSelect={() => createStatusMutation.mutate(statusInput)}
+                                    className="text-primary"
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Criar "{statusInput}"
+                                  </CommandItem>
+                                )}
+                                {statusOptions.map((status) => (
+                                  <CommandItem
+                                    key={status.name}
+                                    value={status.name}
+                                    onSelect={() => {
+                                      field.onChange(status.name);
+                                      setStatusOpen(false);
+                                      setStatusInput("");
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === status.name ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className={cn("w-2 h-2 rounded-full mr-2", status.color)} />
+                                    {status.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}

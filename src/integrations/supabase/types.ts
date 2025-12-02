@@ -18448,6 +18448,44 @@ export type Database = {
           },
         ]
       }
+      training_statuses: {
+        Row: {
+          color: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_statuses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transport_distribution: {
         Row: {
           company_id: string
