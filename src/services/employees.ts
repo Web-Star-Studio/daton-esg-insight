@@ -11,7 +11,7 @@ export interface Employee {
   phone?: string;
   department?: string;
   position?: string;
-  position_id?: string; // Add position_id to link with organizational structure
+  position_id?: string;
   hire_date: string;
   birth_date?: string;
   gender?: string;
@@ -28,6 +28,38 @@ export interface Employee {
   created_at: string;
   updated_at: string;
 }
+
+// Helper function to sanitize employee data - convert empty strings to null for DATE and UUID fields
+const sanitizeEmployeeData = (data: Record<string, any>): Record<string, any> => {
+  const sanitized = { ...data };
+  
+  // Campos DATE - converter "" para null
+  const dateFields = ['hire_date', 'birth_date', 'termination_date'];
+  dateFields.forEach(field => {
+    if (sanitized[field] === '' || sanitized[field] === undefined) {
+      sanitized[field] = null;
+    }
+  });
+  
+  // Campos UUID - converter "" para null
+  const uuidFields = ['branch_id', 'position_id', 'manager_id'];
+  uuidFields.forEach(field => {
+    if (sanitized[field] === '' || sanitized[field] === undefined) {
+      sanitized[field] = null;
+    }
+  });
+  
+  // Campos de texto opcionais - converter "" para null
+  const optionalTextFields = ['employee_code', 'email', 'phone', 'department', 'position', 'location', 'notes', 'gender', 'ethnicity', 'education_level'];
+  optionalTextFields.forEach(field => {
+    if (sanitized[field] !== undefined && sanitized[field] !== null) {
+      const trimmed = String(sanitized[field]).trim();
+      sanitized[field] = trimmed === '' ? null : trimmed;
+    }
+  });
+  
+  return sanitized;
+};
 
 export const getEmployees = async () => {
   const { data, error } = await supabase
@@ -57,16 +89,20 @@ export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at
     // Get authenticated user and company_id
     const { profile } = await formErrorHandler.checkAuth();
     
+    // Sanitizar dados antes de enviar ao banco
+    const sanitizedEmployee = sanitizeEmployeeData(employee);
+    
     // Prepare employee data with company_id and fallback hire_date
     const employeeData = {
-      ...employee,
+      ...sanitizedEmployee,
       company_id: profile.company_id,
-      hire_date: employee.hire_date || new Date().toISOString().split('T')[0]
+      // hire_date é obrigatório - usar data atual se não informada
+      hire_date: sanitizedEmployee.hire_date || new Date().toISOString().split('T')[0]
     };
 
     const { data, error } = await supabase
       .from('employees')
-      .insert(employeeData)
+      .insert(employeeData as any)
       .select()
       .maybeSingle();
 
@@ -81,9 +117,12 @@ export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at
 
 export const updateEmployee = async (id: string, updates: Partial<Employee>) => {
   return formErrorHandler.updateRecord(async () => {
+    // Sanitizar dados antes de enviar ao banco
+    const sanitizedUpdates = sanitizeEmployeeData(updates);
+    
     const { data, error } = await supabase
       .from('employees')
-      .update(updates)
+      .update(sanitizedUpdates as any)
       .eq('id', id)
       .select()
       .maybeSingle();
