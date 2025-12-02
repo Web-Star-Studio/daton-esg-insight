@@ -313,15 +313,19 @@ export function TrainingProgramDetailModal({
               <CardContent className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Criado em</p>
-                  <p className="font-medium">
-                    {format(new Date(program.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </p>
+              <p className="font-medium">
+                {program.created_at 
+                  ? format(new Date(program.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                  : 'Não disponível'}
+              </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Última atualização</p>
-                  <p className="font-medium">
-                    {format(new Date(program.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </p>
+              <p className="font-medium">
+                {program.updated_at 
+                  ? format(new Date(program.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                  : 'Não disponível'}
+              </p>
                 </div>
               </CardContent>
             </Card>
