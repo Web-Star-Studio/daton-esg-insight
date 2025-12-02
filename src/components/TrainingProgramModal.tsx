@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,15 +26,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { TrainingProgram, createTrainingProgram, updateTrainingProgram } from "@/services/trainingPrograms";
+import { TrainingProgram, createTrainingProgram, updateTrainingProgram, createEmployeeTraining } from "@/services/trainingPrograms";
 import { getTrainingCategories, createTrainingCategory, deleteTrainingCategory } from "@/services/trainingCategories";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Trash2, CalendarIcon, Users, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BranchSelect } from "@/components/BranchSelect";
+import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 const trainingProgramSchema = z.object({
   name: z.string()
@@ -78,6 +83,72 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
   const isEditing = !!program;
   const [categoryInput, setCategoryInput] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
+  
+  // Estados para seleção de participantes (apenas na criação)
+  const [pendingParticipants, setPendingParticipants] = useState<Set<string>>(new Set());
+  const [participantSearchTerm, setParticipantSearchTerm] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+
+  // Query para buscar funcionários ativos
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees-for-training-modal"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("id, full_name, employee_code, department")
+        .eq("status", "Ativo")
+        .order("full_name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !isEditing,
+  });
+
+  // Departamentos únicos para filtro
+  const departments = useMemo(() => {
+    const depts = new Set(employees.map(e => e.department).filter(Boolean));
+    return Array.from(depts).sort();
+  }, [employees]);
+
+  // Funcionários filtrados
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(emp => {
+      const matchesSearch = !participantSearchTerm || 
+        emp.full_name?.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
+        emp.employee_code?.toLowerCase().includes(participantSearchTerm.toLowerCase());
+      const matchesDepartment = departmentFilter === "all" || emp.department === departmentFilter;
+      return matchesSearch && matchesDepartment;
+    });
+  }, [employees, participantSearchTerm, departmentFilter]);
+
+  // Toggle participante
+  const toggleParticipant = (employeeId: string) => {
+    setPendingParticipants(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(employeeId)) {
+        newSet.delete(employeeId);
+      } else {
+        newSet.add(employeeId);
+      }
+      return newSet;
+    });
+  };
+
+  // Selecionar/Deselecionar todos (filtrados)
+  const toggleAllFiltered = () => {
+    const filteredIds = filteredEmployees.map(e => e.id);
+    const allSelected = filteredIds.every(id => pendingParticipants.has(id));
+    
+    setPendingParticipants(prev => {
+      const newSet = new Set(prev);
+      if (allSelected) {
+        filteredIds.forEach(id => newSet.delete(id));
+      } else {
+        filteredIds.forEach(id => newSet.add(id));
+      }
+      return newSet;
+    });
+  };
 
   // Fetch categories from database
   const { data: dbCategories = [], isLoading: categoriesLoading } = useQuery({
@@ -187,6 +258,15 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     }
   }, [program, form]);
 
+  // Limpar participantes pendentes quando o modal abrir para criação
+  useEffect(() => {
+    if (open && !program) {
+      setPendingParticipants(new Set());
+      setParticipantSearchTerm("");
+      setDepartmentFilter("all");
+    }
+  }, [open, program]);
+
   const onSubmit = async (values: z.infer<typeof trainingProgramSchema>) => {
     try {
       // Converter horas e minutos para decimal
@@ -223,12 +303,37 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
           created_by_user_id: "",
         };
         
-        await createTrainingProgram(programData);
+        const newProgram = await createTrainingProgram(programData);
         
-        toast({
-          title: "Sucesso",
-          description: "Programa de treinamento criado com sucesso!",
-        });
+        // Criar participantes pendentes após criar o programa
+        if (pendingParticipants.size > 0 && newProgram?.id) {
+          const participantArray = Array.from(pendingParticipants);
+          let successCount = 0;
+          
+          for (const employeeId of participantArray) {
+            try {
+              await createEmployeeTraining({
+                employee_id: employeeId,
+                training_program_id: newProgram.id,
+                status: "Inscrito",
+                company_id: "",
+              });
+              successCount++;
+            } catch (err) {
+              console.error(`Erro ao inscrever funcionário ${employeeId}:`, err);
+            }
+          }
+          
+          toast({
+            title: "Sucesso",
+            description: `Programa criado com ${successCount} participante(s) inscrito(s)!`,
+          });
+        } else {
+          toast({
+            title: "Sucesso",
+            description: "Programa de treinamento criado com sucesso!",
+          });
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["training-programs"] });
@@ -260,7 +365,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Programa de Treinamento" : "Novo Programa de Treinamento"}
@@ -691,6 +796,115 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 </FormItem>
               )}
             />
+
+            {/* Seção de Participantes - apenas na criação */}
+            {!isEditing && (
+              <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <Label className="text-base font-medium">
+                      Participantes
+                    </Label>
+                    {pendingParticipants.size > 0 && (
+                      <Badge variant="secondary">
+                        {pendingParticipants.size} selecionado(s)
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleAllFiltered}
+                  >
+                    {filteredEmployees.every(e => pendingParticipants.has(e.id)) && filteredEmployees.length > 0
+                      ? "Desmarcar todos"
+                      : "Selecionar todos"}
+                  </Button>
+                </div>
+                
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar funcionários..."
+                      value={participantSearchTerm}
+                      onChange={(e) => setParticipantSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Departamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os departamentos</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept || "sem-dept"}>
+                          {dept || "Sem departamento"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <ScrollArea className="h-[200px] rounded-lg border bg-background">
+                  {filteredEmployees.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      Nenhum funcionário encontrado
+                    </div>
+                  ) : (
+                    <div className="p-2 space-y-1">
+                      {filteredEmployees.map((employee) => (
+                        <div
+                          key={employee.id}
+                          className={cn(
+                            "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
+                            pendingParticipants.has(employee.id) && "bg-primary/10"
+                          )}
+                          onClick={() => toggleParticipant(employee.id)}
+                        >
+                          <Checkbox
+                            checked={pendingParticipants.has(employee.id)}
+                            onCheckedChange={() => toggleParticipant(employee.id)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{employee.full_name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {employee.employee_code} • {employee.department || "Sem departamento"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                
+                {pendingParticipants.size > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from(pendingParticipants).slice(0, 5).map((id) => {
+                      const emp = employees.find(e => e.id === id);
+                      return emp ? (
+                        <Badge key={id} variant="outline" className="gap-1">
+                          {emp.full_name.split(" ")[0]}
+                          <X 
+                            className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleParticipant(id);
+                            }}
+                          />
+                        </Badge>
+                      ) : null;
+                    })}
+                    {pendingParticipants.size > 5 && (
+                      <Badge variant="outline">+{pendingParticipants.size - 5} mais</Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
