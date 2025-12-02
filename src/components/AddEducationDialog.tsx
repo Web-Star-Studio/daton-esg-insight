@@ -8,13 +8,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateEmployeeEducation, EmployeeEducation, EDUCATION_TYPES } from '@/services/employeeEducation';
 
+export type PendingEducation = Omit<EmployeeEducation, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'employee_id'>;
+
 interface AddEducationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employeeId: string;
+  employeeId?: string; // Optional - if not provided, use onAddPending
+  onAddPending?: (education: PendingEducation) => void; // For creation mode
 }
 
-export const AddEducationDialog = ({ open, onOpenChange, employeeId }: AddEducationDialogProps) => {
+export const AddEducationDialog = ({ open, onOpenChange, employeeId, onAddPending }: AddEducationDialogProps) => {
   const [formData, setFormData] = useState({
     education_type: '',
     institution_name: '',
@@ -30,39 +33,58 @@ export const AddEducationDialog = ({ open, onOpenChange, employeeId }: AddEducat
 
   const createEducation = useCreateEmployeeEducation();
 
+  const resetForm = () => {
+    setFormData({
+      education_type: '',
+      institution_name: '',
+      course_name: '',
+      field_of_study: '',
+      start_date: '',
+      end_date: '',
+      is_completed: false,
+      grade: '',
+      certificate_number: '',
+      description: '',
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      await createEducation.mutateAsync({
-        employee_id: employeeId,
-        education_type: formData.education_type,
-        institution_name: formData.institution_name,
-        course_name: formData.course_name,
-        field_of_study: formData.field_of_study || undefined,
-        start_date: formData.start_date || undefined,
-        end_date: formData.end_date || undefined,
-        is_completed: formData.is_completed,
-        grade: formData.grade || undefined,
-        certificate_number: formData.certificate_number || undefined,
-        description: formData.description || undefined,
-      } as Omit<EmployeeEducation, 'id' | 'created_at' | 'updated_at' | 'company_id'>);
-      
-      setFormData({
-        education_type: '',
-        institution_name: '',
-        course_name: '',
-        field_of_study: '',
-        start_date: '',
-        end_date: '',
-        is_completed: false,
-        grade: '',
-        certificate_number: '',
-        description: '',
-      });
+    const educationData: PendingEducation = {
+      education_type: formData.education_type,
+      institution_name: formData.institution_name,
+      course_name: formData.course_name,
+      field_of_study: formData.field_of_study || undefined,
+      start_date: formData.start_date || undefined,
+      end_date: formData.end_date || undefined,
+      is_completed: formData.is_completed,
+      grade: formData.grade || undefined,
+      certificate_number: formData.certificate_number || undefined,
+      description: formData.description || undefined,
+    };
+
+    // If no employeeId, add to pending list (creation mode)
+    if (!employeeId && onAddPending) {
+      onAddPending(educationData);
+      resetForm();
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error creating education:', error);
+      return;
+    }
+
+    // If employeeId exists, save directly to database (edit mode)
+    if (employeeId) {
+      try {
+        await createEducation.mutateAsync({
+          ...educationData,
+          employee_id: employeeId,
+        } as Omit<EmployeeEducation, 'id' | 'created_at' | 'updated_at' | 'company_id'>);
+        
+        resetForm();
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Error creating education:', error);
+      }
     }
   };
 
@@ -190,7 +212,7 @@ export const AddEducationDialog = ({ open, onOpenChange, employeeId }: AddEducat
               Cancelar
             </Button>
             <Button type="submit" disabled={createEducation.isPending}>
-              {createEducation.isPending ? 'Salvando...' : 'Salvar Educação'}
+              {createEducation.isPending ? 'Salvando...' : 'Adicionar Educação'}
             </Button>
           </DialogFooter>
         </form>

@@ -7,13 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCreateEmployeeExperience, EmployeeExperience } from '@/services/employeeExperiences';
 
+export type PendingExperience = Omit<EmployeeExperience, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'employee_id'>;
+
 interface AddExperienceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  employeeId: string;
+  employeeId?: string; // Optional - if not provided, use onAddPending
+  onAddPending?: (experience: PendingExperience) => void; // For creation mode
 }
 
-export const AddExperienceDialog = ({ open, onOpenChange, employeeId }: AddExperienceDialogProps) => {
+export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPending }: AddExperienceDialogProps) => {
   const [formData, setFormData] = useState({
     company_name: '',
     position_title: '',
@@ -27,35 +30,54 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId }: AddExper
 
   const createExperience = useCreateEmployeeExperience();
 
+  const resetForm = () => {
+    setFormData({
+      company_name: '',
+      position_title: '',
+      department: '',
+      start_date: '',
+      end_date: '',
+      is_current: false,
+      description: '',
+      reason_for_leaving: '',
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      await createExperience.mutateAsync({
-        employee_id: employeeId,
-        company_name: formData.company_name,
-        position_title: formData.position_title,
-        department: formData.department || undefined,
-        start_date: formData.start_date,
-        end_date: formData.is_current ? undefined : (formData.end_date || undefined),
-        is_current: formData.is_current,
-        description: formData.description || undefined,
-        reason_for_leaving: formData.reason_for_leaving || undefined,
-      } as Omit<EmployeeExperience, 'id' | 'created_at' | 'updated_at' | 'company_id'>);
-      
-      setFormData({
-        company_name: '',
-        position_title: '',
-        department: '',
-        start_date: '',
-        end_date: '',
-        is_current: false,
-        description: '',
-        reason_for_leaving: '',
-      });
+    const experienceData: PendingExperience = {
+      company_name: formData.company_name,
+      position_title: formData.position_title,
+      department: formData.department || undefined,
+      start_date: formData.start_date,
+      end_date: formData.is_current ? undefined : (formData.end_date || undefined),
+      is_current: formData.is_current,
+      description: formData.description || undefined,
+      reason_for_leaving: formData.reason_for_leaving || undefined,
+    };
+
+    // If no employeeId, add to pending list (creation mode)
+    if (!employeeId && onAddPending) {
+      onAddPending(experienceData);
+      resetForm();
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error creating experience:', error);
+      return;
+    }
+
+    // If employeeId exists, save directly to database (edit mode)
+    if (employeeId) {
+      try {
+        await createExperience.mutateAsync({
+          ...experienceData,
+          employee_id: employeeId,
+        } as Omit<EmployeeExperience, 'id' | 'created_at' | 'updated_at' | 'company_id'>);
+        
+        resetForm();
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Error creating experience:', error);
+      }
     }
   };
 
@@ -158,7 +180,7 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId }: AddExper
               Cancelar
             </Button>
             <Button type="submit" disabled={createExperience.isPending}>
-              {createExperience.isPending ? 'Salvando...' : 'Salvar Experiência'}
+              {createExperience.isPending ? 'Salvando...' : 'Adicionar Experiência'}
             </Button>
           </DialogFooter>
         </form>
