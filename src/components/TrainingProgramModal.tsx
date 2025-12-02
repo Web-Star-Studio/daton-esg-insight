@@ -37,7 +37,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BranchSelect } from "@/components/BranchSelect";
 import { supabase } from "@/integrations/supabase/client";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -889,7 +889,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center gap-3">
                       <FormControl>
-                        <Checkbox
+                        <Switch
                           checked={field.value}
                           onCheckedChange={field.onChange}
                         />
@@ -1061,15 +1061,26 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                               "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
                               pendingParticipants.has(employee.id) && "bg-primary/10"
                             )}
-                            onClick={(e) => {
-                              if ((e.target as HTMLElement).closest('[role="checkbox"]')) return;
-                              toggleParticipant(employee.id);
+                            onClick={() => toggleParticipant(employee.id)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                toggleParticipant(employee.id);
+                              }
                             }}
                           >
-                            <Checkbox
-                              checked={pendingParticipants.has(employee.id)}
-                              onCheckedChange={() => toggleParticipant(employee.id)}
-                            />
+                            <div 
+                              className={cn(
+                                "h-4 w-4 shrink-0 rounded-sm border border-primary flex items-center justify-center",
+                                pendingParticipants.has(employee.id) && "bg-primary text-primary-foreground"
+                              )}
+                            >
+                              {pendingParticipants.has(employee.id) && (
+                                <Check className="h-3 w-3" />
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{employee.full_name}</p>
                               <p className="text-xs text-muted-foreground truncate">
