@@ -867,7 +867,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                         >
                           <Checkbox
                             checked={pendingParticipants.has(employee.id)}
-                            onCheckedChange={() => toggleParticipant(employee.id)}
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{employee.full_name}</p>
