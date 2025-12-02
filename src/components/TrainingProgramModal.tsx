@@ -867,6 +867,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                         >
                           <Checkbox
                             checked={pendingParticipants.has(employee.id)}
+                            className="pointer-events-none"
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{employee.full_name}</p>
