@@ -1061,11 +1061,14 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                               "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
                               pendingParticipants.has(employee.id) && "bg-primary/10"
                             )}
-                            onClick={() => toggleParticipant(employee.id)}
+                            onClick={(e) => {
+                              if ((e.target as HTMLElement).closest('[role="checkbox"]')) return;
+                              toggleParticipant(employee.id);
+                            }}
                           >
                             <Checkbox
                               checked={pendingParticipants.has(employee.id)}
-                              className="pointer-events-none"
+                              onCheckedChange={() => toggleParticipant(employee.id)}
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{employee.full_name}</p>
