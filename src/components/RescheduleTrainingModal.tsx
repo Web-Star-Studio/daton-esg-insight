@@ -618,6 +618,7 @@ export function RescheduleTrainingModal({
                             >
                               <Checkbox
                                 checked={participantsToAdd.has(employee.id)}
+                                onClick={(e) => e.stopPropagation()}
                                 onCheckedChange={() => toggleAddParticipant(employee.id)}
                               />
                               <div className="flex-1">
