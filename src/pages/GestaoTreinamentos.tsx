@@ -559,6 +559,24 @@ export default function GestaoTreinamentos() {
                             {program.duration_hours}h de duração
                           </span>
                         </div>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          {(program.start_date || program.end_date) && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>
+                                {program.start_date && format(new Date(program.start_date), "dd/MM/yyyy", { locale: ptBR })}
+                                {program.start_date && program.end_date && " - "}
+                                {program.end_date && format(new Date(program.end_date), "dd/MM/yyyy", { locale: ptBR })}
+                              </span>
+                            </div>
+                          )}
+                          {program.responsible_name && (
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5" />
+                              <span>{program.responsible_name}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
