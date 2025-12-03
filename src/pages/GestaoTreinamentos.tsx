@@ -19,7 +19,8 @@ import {
   Download,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  CalendarClock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -38,6 +39,7 @@ import { TrainingScheduleModal } from '@/components/TrainingScheduleModal';
 import { TrainingDashboardCharts } from '@/components/TrainingDashboardCharts';
 import { TrainingComplianceMatrix } from '@/components/TrainingComplianceMatrix';
 import { TrainingProgramDetailModal } from '@/components/TrainingProgramDetailModal';
+import { RescheduleTrainingModal } from '@/components/RescheduleTrainingModal';
 
 // Import services
 import { 
@@ -71,6 +73,10 @@ export default function GestaoTreinamentos() {
   // Detail modal state
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedProgramForDetail, setSelectedProgramForDetail] = useState<TrainingProgram | null>(null);
+  
+  // Reschedule modal state
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [programToReschedule, setProgramToReschedule] = useState<TrainingProgram | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -168,6 +174,11 @@ export default function GestaoTreinamentos() {
   const handleViewProgram = (program: TrainingProgram) => {
     setSelectedProgramForDetail(program);
     setIsDetailModalOpen(true);
+  };
+
+  const handleRescheduleProgram = (program: TrainingProgram) => {
+    setProgramToReschedule(program);
+    setIsRescheduleModalOpen(true);
   };
 
   const handleNewEmployeeTraining = () => {
@@ -555,6 +566,14 @@ export default function GestaoTreinamentos() {
                       <Button variant="outline" size="sm" onClick={() => handleViewProgram(program)}>
                         <Eye className="w-4 h-4" />
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRescheduleProgram(program)}
+                        title="Reagendar"
+                      >
+                        <CalendarClock className="w-4 h-4 text-blue-600" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditProgram(program)}>
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -762,6 +781,12 @@ export default function GestaoTreinamentos() {
           } as any);
           setIsEmployeeTrainingModalOpen(true);
         }}
+      />
+
+      <RescheduleTrainingModal
+        open={isRescheduleModalOpen}
+        onOpenChange={setIsRescheduleModalOpen}
+        program={programToReschedule}
       />
     </div>
   );
