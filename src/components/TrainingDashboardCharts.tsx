@@ -41,9 +41,9 @@ export function TrainingDashboardCharts({
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Trainings by Department */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Treinamentos por Departamento</CardTitle>
+      <Card className="shadow-md border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">Treinamentos por Departamento</CardTitle>
           <CardDescription>
             Distribuição de treinamentos entre departamentos
           </CardDescription>
@@ -59,18 +59,39 @@ export function TrainingDashboardCharts({
             className="h-[300px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={departmentData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <BarChart data={departmentData} margin={{ top: 20, right: 20, bottom: 60, left: 20 }}>
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                 <XAxis 
                   dataKey="name" 
-                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={{ stroke: 'hsl(var(--border))' }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
-                <YAxis className="text-xs" />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="value" fill="hsl(var(--chart-1))" radius={[8, 8, 0, 0]} />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <ChartTooltip 
+                  content={<ChartTooltipContent />}
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                />
+                <Bar 
+                  dataKey="value" 
+                  fill="url(#barGradient)" 
+                  radius={[8, 8, 0, 0]}
+                  animationDuration={800}
+                  animationBegin={0}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -78,9 +99,9 @@ export function TrainingDashboardCharts({
       </Card>
 
       {/* Monthly Trend */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Evolução Mensal</CardTitle>
+      <Card className="shadow-md border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">Evolução Mensal</CardTitle>
           <CardDescription>
             Treinamentos concluídos vs inscritos por mês
           </CardDescription>
@@ -90,37 +111,63 @@ export function TrainingDashboardCharts({
             config={{
               completed: {
                 label: "Concluídos",
-                color: "hsl(var(--chart-2))",
+                color: "hsl(var(--chart-1))",
               },
               enrolled: {
                 label: "Inscritos",
-                color: "hsl(var(--chart-3))",
+                color: "hsl(var(--chart-2))",
               },
             }}
             className="h-[300px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" />
-                <YAxis className="text-xs" />
+              <LineChart data={monthlyTrend} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <defs>
+                  <linearGradient id="lineGradient1" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+                    <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+                  </linearGradient>
+                  <linearGradient id="lineGradient2" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(var(--chart-2))" />
+                    <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={{ stroke: 'hsl(var(--border))' }}
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '10px' }}
+                  formatter={(value) => <span style={{ color: 'hsl(var(--foreground))' }}>{value}</span>}
+                />
                 <Line 
                   type="monotone" 
                   dataKey="completed" 
-                  stroke="hsl(var(--chart-2))" 
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  name="Concluídos"
+                  stroke="url(#lineGradient1)" 
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: "hsl(var(--chart-1))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                  activeDot={{ r: 8, strokeWidth: 2, stroke: "hsl(var(--chart-1))", fill: "hsl(var(--background))" }}
+                  animationDuration={1000}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="enrolled" 
-                  stroke="hsl(var(--chart-3))" 
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  name="Inscritos"
+                  stroke="url(#lineGradient2)" 
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: "hsl(var(--chart-2))", strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                  activeDot={{ r: 8, strokeWidth: 2, stroke: "hsl(var(--chart-2))", fill: "hsl(var(--background))" }}
+                  animationDuration={1000}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -129,9 +176,9 @@ export function TrainingDashboardCharts({
       </Card>
 
       {/* Category Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Distribuição por Categoria</CardTitle>
+      <Card className="shadow-md border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">Distribuição por Categoria</CardTitle>
           <CardDescription>
             Tipos de treinamento realizados
           </CardDescription>
@@ -148,18 +195,29 @@ export function TrainingDashboardCharts({
           >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
+                <defs>
+                  {COLORS.map((color, index) => (
+                    <linearGradient key={`pieGradient${index}`} id={`pieGradient${index}`} x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={1} />
+                      <stop offset="100%" stopColor={color} stopOpacity={0.75} />
+                    </linearGradient>
+                  ))}
+                </defs>
                 <Pie
                   data={categoryData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
+                  labelLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
-                  fill="hsl(var(--chart-1))"
+                  innerRadius={40}
                   dataKey="value"
+                  animationDuration={800}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
                 >
                   {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={`url(#pieGradient${index % COLORS.length})`} />
                   ))}
                 </Pie>
                 <ChartTooltip content={<ChartTooltipContent />} />
@@ -170,9 +228,9 @@ export function TrainingDashboardCharts({
       </Card>
 
       {/* Status Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Distribuição por Status</CardTitle>
+      <Card className="shadow-md border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold">Distribuição por Status</CardTitle>
           <CardDescription>
             Status atual dos treinamentos
           </CardDescription>
@@ -188,17 +246,33 @@ export function TrainingDashboardCharts({
             className="h-[300px]"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={statusData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="name" className="text-xs" />
-                <YAxis className="text-xs" />
+              <AreaChart data={statusData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <defs>
+                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--chart-4))" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="hsl(var(--chart-4))" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={{ stroke: 'hsl(var(--border))' }}
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area 
                   type="monotone" 
                   dataKey="value" 
                   stroke="hsl(var(--chart-4))" 
-                  fill="hsl(var(--chart-4))" 
-                  fillOpacity={0.6}
+                  strokeWidth={3}
+                  fill="url(#areaGradient)"
+                  animationDuration={800}
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -101,6 +101,13 @@ All colors MUST be HSL.
     --spacing-lg: 1.5rem;  /* 24px */
     --spacing-xl: 2rem;    /* 32px */
     --spacing-2xl: 3rem;   /* 48px */
+
+    /* Cores para gráficos - Paleta moderna e profissional */
+    --chart-1: 151 100% 37%;  /* Verde Daton (primário) */
+    --chart-2: 199 89% 48%;   /* Azul vibrante */
+    --chart-3: 280 67% 52%;   /* Roxo */
+    --chart-4: 38 92% 50%;    /* Laranja/Amarelo */
+    --chart-5: 341 77% 49%;   /* Rosa/Magenta */
   }
 
   .dark {
@@ -154,6 +161,13 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 10%;
     --sidebar-ring: 151 100% 37%;
+
+    /* Cores para gráficos - Modo escuro */
+    --chart-1: 151 100% 45%;  /* Verde Daton mais claro */
+    --chart-2: 199 89% 55%;   /* Azul mais claro */
+    --chart-3: 280 67% 60%;   /* Roxo mais claro */
+    --chart-4: 38 92% 55%;    /* Laranja mais claro */
+    --chart-5: 341 77% 55%;   /* Rosa mais claro */
   }
 }
 
