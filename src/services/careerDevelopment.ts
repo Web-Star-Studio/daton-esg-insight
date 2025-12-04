@@ -183,9 +183,35 @@ export const createCareerDevelopmentPlan = async (plan: Omit<CareerDevelopmentPl
 };
 
 export const updateCareerDevelopmentPlan = async (id: string, updates: Partial<CareerDevelopmentPlan>) => {
+  // Normalizar e limpar dados antes de enviar
+  const normalizedMentorId = updates.mentor_id !== undefined 
+    ? (updates.mentor_id && updates.mentor_id.trim() !== '' ? updates.mentor_id : null)
+    : undefined;
+  
+  const withNormalizedFields: Record<string, any> = {
+    ...updates,
+  };
+  
+  // Só incluir mentor_id se foi passado
+  if (updates.mentor_id !== undefined) {
+    withNormalizedFields.mentor_id = normalizedMentorId;
+  }
+  
+  // Normalizar notes
+  if (updates.notes !== undefined) {
+    withNormalizedFields.notes = updates.notes && updates.notes.trim() !== '' ? updates.notes : null;
+  }
+  
+  // Remover campos de relacionamento que não devem ser enviados
+  delete withNormalizedFields.employee;
+  delete withNormalizedFields.mentor;
+  delete withNormalizedFields.id;
+  delete withNormalizedFields.created_at;
+  delete withNormalizedFields.updated_at;
+  
   const { data, error } = await supabase
     .from('career_development_plans')
-    .update(updates)
+    .update(withNormalizedFields)
     .eq('id', id)
     .select()
     .maybeSingle();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Target, Award } from "lucide-react";
 import { useEmployeesAsOptions } from "@/services/employees";
-import { useCreateCareerPlan, type CareerDevelopmentPlan } from "@/services/careerDevelopment";
+import { useCreateCareerPlan, useUpdateCareerPlan, type CareerDevelopmentPlan } from "@/services/careerDevelopment";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logFormSubmission, createPerformanceLogger } from '@/utils/formLogging';
@@ -42,6 +42,7 @@ interface PDIFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  plan?: CareerDevelopmentPlan | null; // PDI existente para editar
 }
 
 interface Goal {
@@ -63,7 +64,9 @@ interface Activity {
   deadline: string;
 }
 
-export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) {
+export function PDIFormModal({ isOpen, onClose, onSuccess, plan }: PDIFormModalProps) {
+  const isEditing = !!plan;
+  
   const [formData, setFormData] = useState({
     employee_id: "",
     current_position: "",
@@ -72,6 +75,8 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
     target_date: "",
     mentor_id: "",
     notes: "",
+    status: "Em Andamento",
+    progress_percentage: 0,
   });
 
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -84,7 +89,30 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
 
   const { data: employeeOptions } = useEmployeesAsOptions();
   const createCareerPlan = useCreateCareerPlan();
+  const updateCareerPlan = useUpdateCareerPlan();
   const { user } = useAuth();
+
+  // Preencher formulário quando editando
+  useEffect(() => {
+    if (plan && isOpen) {
+      setFormData({
+        employee_id: plan.employee_id || "",
+        current_position: plan.current_position || "",
+        target_position: plan.target_position || "",
+        start_date: plan.start_date || "",
+        target_date: plan.target_date || "",
+        mentor_id: plan.mentor_id || "",
+        notes: plan.notes || "",
+        status: plan.status || "Em Andamento",
+        progress_percentage: plan.progress_percentage || 0,
+      });
+      setGoals(Array.isArray(plan.goals) ? plan.goals : []);
+      setSkills(Array.isArray(plan.skills_to_develop) ? plan.skills_to_develop : []);
+      setActivities(Array.isArray(plan.development_activities) ? plan.development_activities : []);
+    } else if (!isOpen) {
+      resetForm();
+    }
+  }, [plan, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,8 +157,8 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       target_position: formData.target_position.trim(),
       start_date: formData.start_date,
       target_date: formData.target_date,
-      status: "Em Andamento",
-      progress_percentage: 0,
+      status: isEditing ? formData.status : "Em Andamento",
+      progress_percentage: isEditing ? formData.progress_percentage : 0,
       mentor_id: mentorId,
       goals: goals.length ? goals : [],
       skills_to_develop: skills.length ? skills : [],
@@ -184,7 +212,14 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       });
       
       console.log('🧾 PDI payload final:', pdiData);
-      await createCareerPlan.mutateAsync(pdiData);
+      
+      if (isEditing && plan?.id) {
+        await updateCareerPlan.mutateAsync({ id: plan.id, updates: pdiData });
+        toast.success("PDI atualizado com sucesso!");
+      } else {
+        await createCareerPlan.mutateAsync(pdiData);
+        toast.success("PDI criado com sucesso!");
+      }
       
       logFormSubmission('PDIFormModal', pdiData, true, undefined, { 
         goalsCount: goals.length,
@@ -193,12 +228,11 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       });
       perfLogger.end(true);
       
-      toast.success("PDI criado com sucesso!");
       onSuccess?.();
       onClose();
       resetForm();
     } catch (error: any) {
-      console.error("❌ Erro ao criar PDI:", error);
+      console.error("❌ Erro ao salvar PDI:", error);
       
       let errorMessage = "Erro ao criar PDI. ";
       
@@ -230,6 +264,8 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       target_date: "",
       mentor_id: "",
       notes: "",
+      status: "Em Andamento",
+      progress_percentage: 0,
     });
     setGoals([]);
     setSkills([]);
@@ -280,7 +316,7 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="w-5 h-5" />
-            Criar Novo PDI
+            {isEditing ? "Editar PDI" : "Criar Novo PDI"}
           </DialogTitle>
         </DialogHeader>
 
@@ -289,9 +325,11 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
             <div className="space-y-4">
               <div>
                 <Label htmlFor="employee_id">Funcionário</Label>
-                <Select value={formData.employee_id} onValueChange={(value) => 
-                  setFormData({ ...formData, employee_id: value })
-                }>
+                <Select 
+                  value={formData.employee_id} 
+                  onValueChange={(value) => setFormData({ ...formData, employee_id: value })}
+                  disabled={isEditing}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar funcionário" />
                   </SelectTrigger>
@@ -485,12 +523,48 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
             />
           </div>
 
+          {/* Status e Progresso - apenas no modo de edição */}
+          {isEditing && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
+                    <SelectItem value="Pausado">Pausado</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="progress_percentage">Progresso (%)</Label>
+                <Input
+                  id="progress_percentage"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={formData.progress_percentage}
+                  onChange={(e) => setFormData({ ...formData, progress_percentage: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createCareerPlan.isPending}>
-              {createCareerPlan.isPending ? "Criando..." : "Criar PDI"}
+            <Button type="submit" disabled={createCareerPlan.isPending || updateCareerPlan.isPending}>
+              {(createCareerPlan.isPending || updateCareerPlan.isPending) 
+                ? (isEditing ? "Salvando..." : "Criando...") 
+                : (isEditing ? "Salvar Alterações" : "Criar PDI")}
             </Button>
           </div>
         </form>

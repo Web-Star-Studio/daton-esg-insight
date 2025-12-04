@@ -87,6 +87,7 @@ export default function DesenvolvimentoCarreira() {
   const [isNewPDIModalOpen, setIsNewPDIModalOpen] = useState(false);
   const [isMentorshipModalOpen, setIsMentorshipModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<CareerDevelopmentPlan | null>(null);
+  const [editingPDI, setEditingPDI] = useState<CareerDevelopmentPlan | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCompetencyMatrixModalOpen, setIsCompetencyMatrixModalOpen] = useState(false);
   const [isNewSuccessionPlanOpen, setIsNewSuccessionPlanOpen] = useState(false);
@@ -123,7 +124,9 @@ export default function DesenvolvimentoCarreira() {
   };
 
   const handleEditPDI = (plan: CareerDevelopmentPlan) => {
-    toast.info(`Abrindo editor do PDI de ${plan.employee?.full_name}`);
+    setIsDetailsModalOpen(false); // Fechar modal de detalhes
+    setEditingPDI(plan);
+    setIsNewPDIModalOpen(true);
   };
 
   const filteredPlans = careerPlans?.filter(plan => {
@@ -864,8 +867,12 @@ export default function DesenvolvimentoCarreira() {
       {/* Modals */}
       <PDIFormModal
         isOpen={isNewPDIModalOpen}
-        onClose={() => setIsNewPDIModalOpen(false)}
+        onClose={() => {
+          setIsNewPDIModalOpen(false);
+          setEditingPDI(null);
+        }}
         onSuccess={handlePDISuccess}
+        plan={editingPDI}
       />
 
       <PDIDetailsModal
