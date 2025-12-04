@@ -130,10 +130,18 @@ export const getCareerDevelopmentPlans = async () => {
   return data;
 };
 
+// Helper para normalizar UUIDs - converte strings vazias para null
+const normalizeUUID = (value: string | null | undefined): string | null => {
+  if (!value || value === '' || value === 'undefined' || value === 'null') {
+    return null;
+  }
+  return value.trim();
+};
+
 export const createCareerDevelopmentPlan = async (plan: Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>) => {
   const normalized = {
     ...plan,
-    mentor_id: plan.mentor_id ? plan.mentor_id : null,
+    mentor_id: normalizeUUID(plan.mentor_id),
     notes: plan.notes && plan.notes.trim() !== '' ? plan.notes : null,
   } as typeof plan;
 
