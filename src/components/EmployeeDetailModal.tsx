@@ -38,7 +38,7 @@ interface EmployeeDetailModalProps {
     phone?: string;
     department?: string;
     position?: string;
-    hire_date: string;
+    hire_date?: string;
     birth_date?: string;
     gender?: string;
     ethnicity?: string;
@@ -103,9 +103,19 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
     return age;
   };
 
-  const calculateTenure = (hireDate: string) => {
-    const today = new Date();
+  const isValidDate = (dateString: string | undefined | null): boolean => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  };
+
+  const calculateTenure = (hireDate: string | undefined | null) => {
+    if (!hireDate) return 'Não informado';
+    
     const hire = new Date(hireDate);
+    if (isNaN(hire.getTime())) return 'Data inválida';
+    
+    const today = new Date();
     const diffTime = Math.abs(today.getTime() - hire.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const years = Math.floor(diffDays / 365);
@@ -281,7 +291,10 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                         <div>
                           <p className="text-sm font-medium">Data de Contratação</p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(employee.hire_date).toLocaleDateString('pt-BR')}
+                            {isValidDate(employee.hire_date) 
+                              ? new Date(employee.hire_date!).toLocaleDateString('pt-BR')
+                              : 'Não informado'
+                            }
                           </p>
                         </div>
                       </div>

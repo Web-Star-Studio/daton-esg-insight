@@ -79,11 +79,14 @@ export function EmployeeBenefitsModal({ isOpen, onClose, employee }: EmployeeBen
   });
 
   // Update selected benefits when enrollments load
+  const enrollmentIds = React.useMemo(() => {
+    if (!enrollments || enrollments.length === 0) return [];
+    return enrollments.map((e: BenefitEnrollment) => e.benefit_id);
+  }, [JSON.stringify(enrollments?.map((e: BenefitEnrollment) => e.benefit_id))]);
+
   React.useEffect(() => {
-    if (enrollments) {
-      setSelectedBenefits(enrollments.map((enrollment: BenefitEnrollment) => enrollment.benefit_id));
-    }
-  }, [enrollments]);
+    setSelectedBenefits(enrollmentIds);
+  }, [enrollmentIds]);
 
   const enrollMutation = useMutation({
     mutationFn: async ({ benefitId, shouldEnroll }: { benefitId: string; shouldEnroll: boolean }) => {
