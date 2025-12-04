@@ -5,6 +5,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +22,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/data-table';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -33,6 +45,7 @@ import {
   Search,
   Target,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TrainingProgram } from '@/services/trainingPrograms';
@@ -41,6 +54,7 @@ import {
   getTrainingProgramStats,
   TrainingParticipant 
 } from '@/services/trainingProgramParticipants';
+import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
 
 interface TrainingProgramDetailModalProps {
   open: boolean;
@@ -57,8 +71,12 @@ export function TrainingProgramDetailModal({
   onEdit,
   onAddParticipant,
 }: TrainingProgramDetailModalProps) {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedParticipant, setSelectedParticipant] = useState<TrainingParticipant | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Fetch participants
   const { data: participants = [], isLoading: isLoadingParticipants } = useQuery({
@@ -73,6 +91,37 @@ export function TrainingProgramDetailModal({
     queryFn: () => getTrainingProgramStats(program!.id),
     enabled: !!program?.id && open,
   });
+
+  // Delete participant mutation
+  const deleteParticipantMutation = useMutation({
+    mutationFn: async (participantId: string) => {
+      const { error } = await supabase
+        .from('employee_trainings')
+        .delete()
+        .eq('id', participantId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['training-program-participants', program?.id] });
+      queryClient.invalidateQueries({ queryKey: ['training-program-stats', program?.id] });
+      toast.success('Participante removido com sucesso!');
+      setIsDeleteDialogOpen(false);
+      setSelectedParticipant(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Erro ao remover participante');
+    },
+  });
+
+  const handleEditParticipant = (participant: TrainingParticipant) => {
+    setSelectedParticipant(participant);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteParticipant = (participant: TrainingParticipant) => {
+    setSelectedParticipant(participant);
+    setIsDeleteDialogOpen(true);
+  };
 
   if (!program) return null;
 
@@ -171,9 +220,34 @@ export function TrainingProgramDetailModal({
         <span>{row.original.trainer || '-'}</span>
       ),
     },
+    {
+      id: 'actions',
+      header: 'Ações',
+      cell: ({ row }: { row: { original: TrainingParticipant } }) => (
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => handleEditParticipant(row.original)}
+            title="Editar participante"
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleDeleteParticipant(row.original)}
+            title="Remover participante"
+          >
+            <Trash2 className="w-4 h-4 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -536,5 +610,53 @@ export function TrainingProgramDetailModal({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Edit Participant Dialog */}
+    {selectedParticipant && (
+      <EditEmployeeTrainingDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedParticipant(null);
+        }}
+        employeeId={selectedParticipant.employee_id}
+        employeeName={selectedParticipant.employee_name}
+        training={{
+          id: selectedParticipant.id,
+          training_program_id: program.id,
+          status: selectedParticipant.status,
+          completion_date: selectedParticipant.completion_date,
+          score: selectedParticipant.score,
+          instructor: selectedParticipant.trainer,
+          notes: '',
+        }}
+        programId={program.id}
+      />
+    )}
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remover Participante</AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja remover <strong>{selectedParticipant?.employee_name}</strong> deste programa de treinamento? 
+            Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setSelectedParticipant(null)}>
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => selectedParticipant && deleteParticipantMutation.mutate(selectedParticipant.id)}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleteParticipantMutation.isPending ? 'Removendo...' : 'Remover'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

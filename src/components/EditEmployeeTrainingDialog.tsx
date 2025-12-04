@@ -16,6 +16,7 @@ interface EditEmployeeTrainingDialogProps {
   employeeId: string;
   employeeName: string;
   training: any;
+  programId?: string; // Optional: for invalidating program participants query
 }
 
 export function EditEmployeeTrainingDialog({
@@ -24,6 +25,7 @@ export function EditEmployeeTrainingDialog({
   employeeId,
   employeeName,
   training,
+  programId,
 }: EditEmployeeTrainingDialogProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
@@ -119,6 +121,11 @@ export function EditEmployeeTrainingDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employee-trainings', employeeId] });
+      // Also invalidate program participants if programId is provided
+      if (programId) {
+        queryClient.invalidateQueries({ queryKey: ['training-program-participants', programId] });
+        queryClient.invalidateQueries({ queryKey: ['training-program-stats', programId] });
+      }
       toast.success('Treinamento atualizado com sucesso!');
       handleClose();
     },
