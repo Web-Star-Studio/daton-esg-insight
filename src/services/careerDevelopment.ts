@@ -121,8 +121,8 @@ export const getCareerDevelopmentPlans = async () => {
     .from('career_development_plans')
     .select(`
       *,
-      employee:employees!employee_id(id, full_name, employee_code, department),
-      mentor:employees!mentor_id(id, full_name)
+      employee:employees!career_development_plans_employee_id_fkey(id, full_name, employee_code, department),
+      mentor:employees!career_development_plans_mentor_id_fkey(id, full_name)
     `)
     .order('created_at', { ascending: false });
 
