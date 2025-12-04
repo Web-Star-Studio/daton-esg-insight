@@ -96,12 +96,13 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
       return;
     }
     
-    // Validar e normalizar UUIDs
+    // Validar e normalizar UUIDs - sanitizeUUID agora retorna null para valores inválidos
     const employeeId = sanitizeUUID(formData.employee_id);
     const companyId = sanitizeUUID(user.company.id);
-    const mentorId = formData.mentor_id && formData.mentor_id.trim() !== '' ? sanitizeUUID(formData.mentor_id) : null;
+    const mentorId = sanitizeUUID(formData.mentor_id); // sanitizeUUID já trata "" e undefined como null
     const userId = sanitizeUUID(user.id);
     
+    // Validações obrigatórias - campos que não podem ser null
     if (!employeeId) {
       toast.error("Por favor, selecione um funcionário.");
       perfLogger.end(false, new Error('Invalid employee_id'));

@@ -108,12 +108,13 @@ export const validateUrl = (url: string): boolean => {
   }
 };
 
-// Sanitize UUID helper - converts invalid/placeholder values to undefined and ensures valid UUID format
-export const sanitizeUUID = (value: string | undefined | null): string | undefined => {
+// Sanitize UUID helper - converts invalid/placeholder values to null and ensures valid UUID format
+// IMPORTANT: Returns null (not undefined) to prevent Supabase from serializing as empty string ""
+export const sanitizeUUID = (value: string | undefined | null): string | null => {
   const v = (value ?? '').toString().trim();
-  if (!v || v === 'none' || v === 'undefined' || v === 'null') return undefined;
+  if (!v || v === 'none' || v === 'undefined' || v === 'null' || v === '') return null;
   const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-  return uuidRegex.test(v) ? v : undefined;
+  return uuidRegex.test(v) ? v : null;
 };
 
 // Validate company context for forms
