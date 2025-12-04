@@ -135,15 +135,41 @@ const normalizeUUID = (value: string | null | undefined): string | null => {
   if (!value || value === '' || value === 'undefined' || value === 'null') {
     return null;
   }
-  return value.trim();
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+};
+
+// Remove propriedades undefined e converte "" para null em campos UUID
+const cleanDataForSupabase = (data: Record<string, any>): Record<string, any> => {
+  const uuidFields = ['company_id', 'employee_id', 'mentor_id', 'created_by_user_id'];
+  const cleaned: Record<string, any> = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    // Não incluir undefined - Supabase pode serializar como ""
+    if (value === undefined) {
+      continue;
+    }
+    // Converter "" para null em campos UUID
+    if (uuidFields.includes(key) && value === '') {
+      cleaned[key] = null;
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  
+  return cleaned;
 };
 
 export const createCareerDevelopmentPlan = async (plan: Omit<CareerDevelopmentPlan, 'id' | 'created_at' | 'updated_at'>) => {
-  const normalized = {
+  // Primeiro normalizar os campos específicos
+  const withNormalizedFields = {
     ...plan,
     mentor_id: normalizeUUID(plan.mentor_id),
     notes: plan.notes && plan.notes.trim() !== '' ? plan.notes : null,
-  } as typeof plan;
+  };
+  
+  // Depois limpar dados para Supabase (remove undefined, converte "" para null)
+  const normalized = cleanDataForSupabase(withNormalizedFields) as typeof plan;
 
   const { data, error } = await supabase
     .from('career_development_plans')
