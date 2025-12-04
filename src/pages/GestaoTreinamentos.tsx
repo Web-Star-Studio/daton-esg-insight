@@ -20,7 +20,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  CalendarClock
+  CalendarClock,
+  UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -313,6 +314,10 @@ export default function GestaoTreinamentos() {
             <Users className="w-4 h-4 mr-2" />
             Registro em Lote
           </Button>
+          <Button onClick={handleNewEmployeeTraining} variant="outline">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Novo Registro
+          </Button>
           <Button onClick={handleNewProgram}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Programa
@@ -321,7 +326,7 @@ export default function GestaoTreinamentos() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
@@ -333,10 +338,6 @@ export default function GestaoTreinamentos() {
           <TabsTrigger value="programas" className="flex items-center space-x-2">
             <BookOpen className="w-4 h-4" />
             <span>Programas</span>
-          </TabsTrigger>
-          <TabsTrigger value="participantes" className="flex items-center space-x-2">
-            <Users className="w-4 h-4" />
-            <span>Participantes</span>
           </TabsTrigger>
           <TabsTrigger value="calendario" className="flex items-center space-x-2">
             <Calendar className="w-4 h-4" />
@@ -611,74 +612,6 @@ export default function GestaoTreinamentos() {
                     <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">
                       Nenhum programa encontrado
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="participantes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Registro de Participantes</CardTitle>
-                  <CardDescription>
-                    Visualize e gerencie as participações em treinamentos
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleBulkTraining}>
-                    <Users className="w-4 h-4 mr-2" />
-                    Registro em Lote
-                  </Button>
-                  <Button onClick={handleNewEmployeeTraining}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Registro
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {employeeTrainings.map((training) => (
-                  <div key={training.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{training.employee?.full_name || 'N/A'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {training.training_program?.name || 'N/A'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge className={getTrainingStatusColor(training.status)}>
-                            {training.status}
-                          </Badge>
-                          {training.completion_date && (
-                            <span className="text-sm text-muted-foreground">
-                              Concluído em {format(new Date(training.completion_date), "dd/MM/yyyy", { locale: ptBR })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button variant="outline" size="sm" onClick={() => handleViewTraining(training)}>
-                      <Eye className="w-4 h-4 mr-1" />
-                      Detalhes
-                    </Button>
-                  </div>
-                ))}
-                
-                {employeeTrainings.length === 0 && (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Nenhum registro de treinamento encontrado
                     </p>
                   </div>
                 )}
