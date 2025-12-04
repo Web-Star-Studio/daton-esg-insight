@@ -3110,20 +3110,6 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_cdp_employee"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cdp_mentor"
-            columns: ["mentor_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cash_flow_transactions: {
