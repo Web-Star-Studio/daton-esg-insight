@@ -27,7 +27,7 @@ const pdiSchema = z.object({
   target_date: z.string().min(1, "Data meta é obrigatória"),
   status: z.string().min(1, "Status é obrigatório"),
   progress_percentage: z.number().min(0).max(100),
-  mentor_id: z.string().uuid("ID do mentor inválido").nullable(),
+  mentor_id: z.string().uuid("ID do mentor inválido").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
   notes: z.string().max(2000, "Observações muito longas").nullable(),
   goals: z.array(z.any()),
   skills_to_develop: z.array(z.any()),
@@ -99,7 +99,7 @@ export function PDIFormModal({ isOpen, onClose, onSuccess }: PDIFormModalProps) 
     // Validar e normalizar UUIDs
     const employeeId = sanitizeUUID(formData.employee_id);
     const companyId = sanitizeUUID(user.company.id);
-    const mentorId = sanitizeUUID(formData.mentor_id) || null;
+    const mentorId = formData.mentor_id && formData.mentor_id.trim() !== '' ? sanitizeUUID(formData.mentor_id) : null;
     const userId = sanitizeUUID(user.id);
     
     if (!employeeId) {
