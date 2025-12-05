@@ -16572,6 +16572,89 @@ export type Database = {
         }
         Relationships: []
       }
+      safety_inspections: {
+        Row: {
+          accompanied_by: string | null
+          area_location: string | null
+          checklist_items: Json | null
+          company_id: string
+          corrective_actions: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          due_date: string | null
+          id: string
+          inspection_date: string | null
+          inspection_type: string
+          inspector_name: string
+          inspector_user_id: string | null
+          non_conformities: string | null
+          observations: string | null
+          photos_urls: string[] | null
+          result: string | null
+          scheduled_date: string | null
+          score: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          accompanied_by?: string | null
+          area_location?: string | null
+          checklist_items?: Json | null
+          company_id: string
+          corrective_actions?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          due_date?: string | null
+          id?: string
+          inspection_date?: string | null
+          inspection_type: string
+          inspector_name: string
+          inspector_user_id?: string | null
+          non_conformities?: string | null
+          observations?: string | null
+          photos_urls?: string[] | null
+          result?: string | null
+          scheduled_date?: string | null
+          score?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          accompanied_by?: string | null
+          area_location?: string | null
+          checklist_items?: Json | null
+          company_id?: string
+          corrective_actions?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          due_date?: string | null
+          id?: string
+          inspection_date?: string | null
+          inspection_type?: string
+          inspector_name?: string
+          inspector_user_id?: string | null
+          non_conformities?: string | null
+          observations?: string | null
+          photos_urls?: string[] | null
+          result?: string | null
+          scheduled_date?: string | null
+          score?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_inspections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sasb_metrics: {
         Row: {
           accounting_metric: string
