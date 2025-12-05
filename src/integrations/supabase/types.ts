@@ -5923,6 +5923,9 @@ export type Database = {
       }
       employee_trainings: {
         Row: {
+          attendance_marked_at: string | null
+          attendance_marked_by: string | null
+          attended: boolean | null
           company_id: string
           completion_date: string | null
           created_at: string
@@ -5937,6 +5940,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendance_marked_at?: string | null
+          attendance_marked_by?: string | null
+          attended?: boolean | null
           company_id: string
           completion_date?: string | null
           created_at?: string
@@ -5951,6 +5957,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendance_marked_at?: string | null
+          attendance_marked_by?: string | null
+          attended?: boolean | null
           company_id?: string
           completion_date?: string | null
           created_at?: string

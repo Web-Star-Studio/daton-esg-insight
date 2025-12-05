@@ -13,6 +13,8 @@ export interface TrainingParticipant {
   trainer: string | null;
   notes: string | null;
   created_at: string;
+  attended: boolean | null;
+  attendance_marked_at: string | null;
 }
 
 export interface TrainingProgramStats {
@@ -24,6 +26,9 @@ export interface TrainingProgramStats {
   failed: number;
   completionRate: number;
   averageScore: number;
+  present: number;
+  absent: number;
+  notMarked: number;
 }
 
 export const getTrainingProgramParticipants = async (programId: string): Promise<TrainingParticipant[]> => {
@@ -66,6 +71,8 @@ export const getTrainingProgramParticipants = async (programId: string): Promise
       trainer: training.trainer,
       notes: training.notes,
       created_at: training.created_at,
+      attended: (training as any).attended ?? null,
+      attendance_marked_at: (training as any).attendance_marked_at ?? null,
     };
   });
 };
@@ -73,7 +80,7 @@ export const getTrainingProgramParticipants = async (programId: string): Promise
 export const getTrainingProgramStats = async (programId: string): Promise<TrainingProgramStats> => {
   const { data: trainings, error } = await supabase
     .from('employee_trainings')
-    .select('status, score')
+    .select('status, score, attended')
     .eq('training_program_id', programId);
 
   if (error) throw error;
@@ -84,6 +91,11 @@ export const getTrainingProgramStats = async (programId: string): Promise<Traini
   const enrolled = trainings?.filter(t => t.status === 'Inscrito').length || 0;
   const cancelled = trainings?.filter(t => t.status === 'Cancelado').length || 0;
   const failed = trainings?.filter(t => t.status === 'Reprovado').length || 0;
+
+  // Attendance stats
+  const present = trainings?.filter(t => (t as any).attended === true).length || 0;
+  const absent = trainings?.filter(t => (t as any).attended === false).length || 0;
+  const notMarked = trainings?.filter(t => (t as any).attended === null || (t as any).attended === undefined).length || 0;
 
   const scores = trainings?.filter(t => t.score !== null).map(t => t.score!) || [];
   const averageScore = scores.length > 0 
@@ -101,5 +113,42 @@ export const getTrainingProgramStats = async (programId: string): Promise<Traini
     failed,
     completionRate: Number(completionRate.toFixed(1)),
     averageScore: Number(averageScore.toFixed(1)),
+    present,
+    absent,
+    notMarked,
   };
+};
+
+export const markAttendance = async (
+  participantId: string, 
+  attended: boolean | null,
+  userId?: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('employee_trainings')
+    .update({ 
+      attended,
+      attendance_marked_at: attended !== null ? new Date().toISOString() : null,
+      attendance_marked_by: userId || null
+    } as any)
+    .eq('id', participantId);
+
+  if (error) throw error;
+};
+
+export const markAllAttendance = async (
+  participantIds: string[], 
+  attended: boolean | null,
+  userId?: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('employee_trainings')
+    .update({ 
+      attended,
+      attendance_marked_at: attended !== null ? new Date().toISOString() : null,
+      attendance_marked_by: userId || null
+    } as any)
+    .in('id', participantIds);
+
+  if (error) throw error;
 };
