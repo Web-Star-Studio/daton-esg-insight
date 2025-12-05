@@ -140,8 +140,8 @@ export default function SeguracaTrabalho() {
     safetyTrainingCompliance: safetyTrainingMetrics?.overallCompliance || 0,
     activeInspections: inspectionMetrics?.pending || 0,
     resolvedIncidents,
-    avgResolutionTime: 5.2, // Could be calculated from incident resolution times
-    safetyScore: safetyMetrics?.ltifr ? Math.max(0, 100 - safetyMetrics.ltifr * 10) : 87
+    avgResolutionTime: safetyMetrics?.avgResolutionTime || 0,
+    safetyScore: safetyMetrics?.ltifr !== undefined ? Math.max(0, 100 - safetyMetrics.ltifr * 10) : 0
   };
   
   // Filter inspections
@@ -443,7 +443,9 @@ export default function SeguracaTrabalho() {
               {metricsLoading ? "..." : Math.round(safetyStats.safetyScore)}
             </div>
             <p className="text-xs text-muted-foreground">
-              +5 pontos este mês
+              {safetyStats.avgResolutionTime > 0 
+                ? `Resolução média: ${safetyStats.avgResolutionTime} dias`
+                : "Baseado no LTIFR"}
             </p>
           </CardContent>
         </Card>
@@ -1069,20 +1071,20 @@ export default function SeguracaTrabalho() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span>Taxa de Frequência</span>
-                  <span className="font-bold">2.1</span>
+                  <span>Taxa de Frequência (LTIFR)</span>
+                  <span className="font-bold">{safetyMetrics?.ltifr || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Taxa de Gravidade</span>
-                  <span className="font-bold">15.4</span>
+                  <span className="font-bold">{safetyMetrics?.severityRate || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Dias Perdidos</span>
-                  <span className="font-bold">8</span>
+                  <span className="font-bold">{safetyMetrics?.daysLostTotal || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Horas Treinamento</span>
-                  <span className="font-bold">1,245h</span>
+                  <span className="font-bold">{safetyTrainingMetrics?.totalHours || 0}h</span>
                 </div>
               </CardContent>
             </Card>

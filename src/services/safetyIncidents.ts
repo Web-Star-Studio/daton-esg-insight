@@ -119,6 +119,24 @@ export const getSafetyMetrics = async () => {
     ? (accidentsWithLostTime * 1000000) / workedHoursData.total_hours 
     : 0;
   
+  // ✅ TAXA DE GRAVIDADE (TG) - OIT
+  // Fórmula: (Dias Perdidos × 1.000.000) / Horas Trabalhadas
+  const severityRate = workedHoursData.total_hours > 0 
+    ? (daysLostTotal * 1000000) / workedHoursData.total_hours 
+    : 0;
+  
+  // ✅ TEMPO MÉDIO DE RESOLUÇÃO (em dias)
+  const resolvedIncidents = currentYearIncidents.filter(inc => 
+    inc.status === 'Resolvido' && inc.investigation_completed_at
+  );
+  const avgResolutionTime = resolvedIncidents.length > 0
+    ? resolvedIncidents.reduce((sum, inc) => {
+        const created = new Date(inc.created_at);
+        const resolved = new Date(inc.investigation_completed_at!);
+        return sum + (resolved.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+      }, 0) / resolvedIncidents.length
+    : 0;
+  
   const severityDistribution = currentYearIncidents.reduce((acc, inc) => {
     acc[inc.severity] = (acc[inc.severity] || 0) + 1;
     return acc;
@@ -130,10 +148,12 @@ export const getSafetyMetrics = async () => {
     withMedicalTreatment,
     accidentsWithLostTime,
     ltifr: Number(ltifr.toFixed(2)),
+    severityRate: Number(severityRate.toFixed(2)),
+    avgResolutionTime: Number(avgResolutionTime.toFixed(1)),
     severityDistribution,
     incidentTrend: calculateMonthlyTrend(currentYearIncidents),
     
-    // ✅ ADICIONAR METADATA SOBRE QUALIDADE DO CÁLCULO
+    // ✅ METADATA SOBRE QUALIDADE DO CÁLCULO
     ltifr_metadata: {
       worked_hours: workedHoursData.total_hours,
       calculation_method: workedHoursData.calculation_method,
