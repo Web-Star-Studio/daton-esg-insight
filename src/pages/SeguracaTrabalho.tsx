@@ -941,10 +941,10 @@ export default function SeguracaTrabalho() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={handleGenerateAuditsReport}
+                  onClick={handleGenerateInspectionsReport}
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Relatório de Auditorias
+                  Relatório de Inspeções
                 </Button>
                 <Button 
                   variant="outline" 
