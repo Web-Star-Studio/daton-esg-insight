@@ -10,6 +10,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Form,
   FormControl,
   FormField,
@@ -29,11 +39,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, Search, Users, CheckCircle2, AlertCircle, Check } from "lucide-react";
+import { CalendarIcon, Search, Users, CheckCircle2, AlertCircle, Check, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { EmployeeTraining, createEmployeeTraining, updateEmployeeTraining } from "@/services/trainingPrograms";
+import { EmployeeTraining, createEmployeeTraining, updateEmployeeTraining, checkExistingEnrollments } from "@/services/trainingPrograms";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +77,14 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [bulkResults, setBulkResults] = useState<{ success: number; failed: number } | null>(null);
+  
+  // Duplicate check states
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [enrollmentConflicts, setEnrollmentConflicts] = useState<{
+    alreadyEnrolled: Array<{ id: string; name: string }>;
+    notEnrolled: Array<{ id: string; name: string }>;
+  } | null>(null);
+  const [pendingFormValues, setPendingFormValues] = useState<z.infer<typeof employeeTrainingSchema> | null>(null);
 
   const form = useForm<z.infer<typeof employeeTrainingSchema>>({
     resolver: zodResolver(employeeTrainingSchema),
@@ -161,6 +179,9 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
       setProgress(0);
       setBulkResults(null);
       setIsSubmitting(false);
+      setShowConflictDialog(false);
+      setEnrollmentConflicts(null);
+      setPendingFormValues(null);
       if (!isEditing) {
         setIsBulkMode(false);
       }
@@ -185,58 +206,108 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
     }
   };
 
+  // Execute bulk enrollment (called after duplicate check)
+  const executeBulkEnrollment = async (
+    employeeIds: string[],
+    values: z.infer<typeof employeeTrainingSchema>
+  ) => {
+    setIsSubmitting(true);
+    setBulkResults(null);
+    
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < employeeIds.length; i++) {
+      try {
+        await createEmployeeTraining({
+          employee_id: employeeIds[i],
+          training_program_id: values.training_program_id,
+          completion_date: values.completion_date?.toISOString(),
+          status: values.status,
+          trainer: values.trainer,
+          notes: values.notes,
+          company_id: "",
+        });
+        successCount++;
+      } catch (error) {
+        failedCount++;
+      }
+      
+      setProgress(((i + 1) / employeeIds.length) * 100);
+    }
+
+    setIsSubmitting(false);
+    setBulkResults({ success: successCount, failed: failedCount });
+    
+    if (failedCount === 0) {
+      toast({
+        title: "Sucesso",
+        description: `${successCount} treinamentos registrados com sucesso!`,
+      });
+    } else {
+      toast({
+        title: "Concluído com avisos",
+        description: `${successCount} registrados, ${failedCount} falharam`,
+        variant: "destructive",
+      });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["employee-trainings"] });
+    queryClient.invalidateQueries({ queryKey: ["training-metrics"] });
+    
+    setTimeout(() => {
+      onOpenChange(false);
+    }, 2000);
+  };
+
+  // Proceed with only non-enrolled employees
+  const proceedWithValidEnrollments = async () => {
+    setShowConflictDialog(false);
+    if (pendingFormValues && enrollmentConflicts && enrollmentConflicts.notEnrolled.length > 0) {
+      await executeBulkEnrollment(
+        enrollmentConflicts.notEnrolled.map(e => e.id),
+        pendingFormValues
+      );
+    }
+    setPendingFormValues(null);
+    setEnrollmentConflicts(null);
+  };
+
   const onSubmit = async (values: z.infer<typeof employeeTrainingSchema>) => {
     try {
       if (isBulkMode && selectedEmployees.size > 0) {
-        // Bulk mode - register multiple employees
-        setIsSubmitting(true);
-        setBulkResults(null);
-        
+        // Bulk mode - check for duplicates first
         const employeeArray = Array.from(selectedEmployees);
-        let successCount = 0;
-        let failedCount = 0;
+        
+        // Check for existing enrollments
+        const { alreadyEnrolled, notEnrolled } = await checkExistingEnrollments(
+          values.training_program_id,
+          employeeArray
+        );
 
-        for (let i = 0; i < employeeArray.length; i++) {
-          try {
-            await createEmployeeTraining({
-              employee_id: employeeArray[i],
-              training_program_id: values.training_program_id,
-              completion_date: values.completion_date?.toISOString(),
-              status: values.status,
-              trainer: values.trainer,
-              notes: values.notes,
-              company_id: "",
-            });
-            successCount++;
-          } catch (error) {
-            failedCount++;
-          }
+        if (alreadyEnrolled.length > 0) {
+          // Map IDs to names for better UX
+          const alreadyEnrolledWithNames = alreadyEnrolled.map(id => {
+            const emp = employees.find(e => e.id === id);
+            return { id, name: emp?.full_name || 'Funcionário desconhecido' };
+          });
           
-          setProgress(((i + 1) / employeeArray.length) * 100);
+          const notEnrolledWithNames = notEnrolled.map(id => {
+            const emp = employees.find(e => e.id === id);
+            return { id, name: emp?.full_name || 'Funcionário desconhecido' };
+          });
+
+          setEnrollmentConflicts({
+            alreadyEnrolled: alreadyEnrolledWithNames,
+            notEnrolled: notEnrolledWithNames
+          });
+          setPendingFormValues(values);
+          setShowConflictDialog(true);
+          return;
         }
 
-        setIsSubmitting(false);
-        setBulkResults({ success: successCount, failed: failedCount });
-        
-        if (failedCount === 0) {
-          toast({
-            title: "Sucesso",
-            description: `${successCount} treinamentos registrados com sucesso!`,
-          });
-        } else {
-          toast({
-            title: "Concluído com avisos",
-            description: `${successCount} registrados, ${failedCount} falharam`,
-            variant: "destructive",
-          });
-        }
-
-        queryClient.invalidateQueries({ queryKey: ["employee-trainings"] });
-        queryClient.invalidateQueries({ queryKey: ["training-metrics"] });
-        
-        setTimeout(() => {
-          onOpenChange(false);
-        }, 2000);
+        // No duplicates, proceed with enrollment
+        await executeBulkEnrollment(employeeArray, values);
       } else {
         // Single mode - original behavior
         if (!values.employee_id) {
@@ -658,6 +729,51 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
           </Form>
         )}
       </DialogContent>
+
+      {/* Conflict Dialog for duplicate enrollments */}
+      <AlertDialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Funcionários já inscritos
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Os seguintes funcionários já estão inscritos neste programa:</p>
+                <ul className="list-disc pl-5 space-y-1 max-h-[150px] overflow-y-auto">
+                  {enrollmentConflicts?.alreadyEnrolled.map(emp => (
+                    <li key={emp.id} className="text-foreground">{emp.name}</li>
+                  ))}
+                </ul>
+                {enrollmentConflicts && enrollmentConflicts.notEnrolled.length > 0 ? (
+                  <p className="pt-2 text-foreground font-medium">
+                    Deseja prosseguir inscrevendo apenas os {enrollmentConflicts.notEnrolled.length} funcionário(s) não inscrito(s)?
+                  </p>
+                ) : (
+                  <p className="pt-2 text-amber-600 font-medium">
+                    Todos os funcionários selecionados já estão inscritos neste programa.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowConflictDialog(false);
+              setPendingFormValues(null);
+              setEnrollmentConflicts(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            {enrollmentConflicts && enrollmentConflicts.notEnrolled.length > 0 && (
+              <AlertDialogAction onClick={proceedWithValidEnrollments}>
+                Prosseguir ({enrollmentConflicts.notEnrolled.length})
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

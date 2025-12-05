@@ -439,3 +439,24 @@ export const getTrainingMetrics = async () => {
     statusDistribution,
   };
 };
+
+// Check for existing enrollments to prevent duplicates
+export const checkExistingEnrollments = async (
+  programId: string,
+  employeeIds: string[]
+): Promise<{ alreadyEnrolled: string[]; notEnrolled: string[] }> => {
+  const { data, error } = await supabase
+    .from('employee_trainings')
+    .select('employee_id')
+    .eq('training_program_id', programId)
+    .in('employee_id', employeeIds);
+
+  if (error) throw error;
+
+  const enrolledSet = new Set(data?.map(d => d.employee_id) || []);
+
+  return {
+    alreadyEnrolled: employeeIds.filter(id => enrolledSet.has(id)),
+    notEnrolled: employeeIds.filter(id => !enrolledSet.has(id))
+  };
+};
