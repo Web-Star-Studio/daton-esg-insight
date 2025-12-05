@@ -148,10 +148,10 @@ export default function DescricaoCargos() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <Briefcase className="h-8 w-8 text-primary" />
-              Descrição de Cargos
+              Gestão de Cargos
             </h1>
             <p className="text-muted-foreground mt-1">
-              Consulte e gerencie as descrições de cargos da organização
+              Gerencie os cargos e funções da organização
             </p>
           </div>
           <Dialog open={isNewPositionModalOpen} onOpenChange={setIsNewPositionModalOpen}>
