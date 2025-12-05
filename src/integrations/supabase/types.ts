@@ -13696,20 +13696,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_mr_mentee"
-            columns: ["mentee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_mr_mentor"
-            columns: ["mentor_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "mentoring_relationships_mentee_id_fkey"
             columns: ["mentee_id"]
             isOneToOne: false
