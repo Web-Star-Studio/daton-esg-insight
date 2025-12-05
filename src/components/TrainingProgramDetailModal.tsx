@@ -47,6 +47,7 @@ import {
   TrendingUp,
   Trash2,
   UserCheck,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TrainingProgram } from '@/services/trainingPrograms';
@@ -57,6 +58,7 @@ import {
 } from '@/services/trainingProgramParticipants';
 import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
 import { TrainingAttendanceTab } from './TrainingAttendanceTab';
+import { TrainingDocumentsTab } from './TrainingDocumentsTab';
 
 interface TrainingProgramDetailModalProps {
   open: boolean;
@@ -285,13 +287,17 @@ export function TrainingProgramDetailModal({
         </div>
 
         <Tabs defaultValue="info" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="stats">Estatísticas</TabsTrigger>
             <TabsTrigger value="participants">Participantes ({stats?.total || 0})</TabsTrigger>
             <TabsTrigger value="attendance" className="flex items-center gap-1">
               <UserCheck className="w-3 h-3" />
               Presença
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              Documentos
             </TabsTrigger>
           </TabsList>
 
@@ -606,10 +612,17 @@ export function TrainingProgramDetailModal({
           <TabsContent value="attendance" className="mt-4">
             <TrainingAttendanceTab
               programId={program.id}
+              programName={program.name}
+              programDate={program.scheduled_date || program.start_date}
+              instructor={program.responsible_name}
               participants={participants}
               stats={stats}
               isLoading={isLoadingParticipants}
             />
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-4">
+            <TrainingDocumentsTab programId={program.id} />
           </TabsContent>
         </Tabs>
 

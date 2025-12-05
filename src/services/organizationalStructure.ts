@@ -36,6 +36,8 @@ export interface Position {
   requirements?: string[];
   responsibilities?: string[];
   reports_to_position_id?: string;
+  required_education_level?: string;
+  required_experience_years?: number;
   created_at: string;
   updated_at: string;
   department?: {

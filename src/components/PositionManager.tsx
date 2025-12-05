@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Briefcase, Edit, Trash2, DollarSign, Building2, Users } from 'lucide-react';
+import { Plus, Briefcase, Edit, Trash2, DollarSign, Building2, Users, GraduationCap, Clock } from 'lucide-react';
 import { 
   getPositions, 
   createPosition, 
@@ -38,7 +38,9 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
     salary_range_max: '',
     requirements: [] as string[],
     responsibilities: [] as string[],
-    reports_to_position_id: ''
+    reports_to_position_id: '',
+    required_education_level: '',
+    required_experience_years: ''
   });
   const [requirementInput, setRequirementInput] = useState('');
   const [responsibilityInput, setResponsibilityInput] = useState('');
@@ -74,7 +76,9 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
         salary_range_min: formData.salary_range_min ? parseFloat(formData.salary_range_min) : null,
         salary_range_max: formData.salary_range_max ? parseFloat(formData.salary_range_max) : null,
         department_id: formData.department_id || null,
-        reports_to_position_id: formData.reports_to_position_id || null
+        reports_to_position_id: formData.reports_to_position_id || null,
+        required_education_level: formData.required_education_level || null,
+        required_experience_years: formData.required_experience_years ? parseFloat(formData.required_experience_years) : null
       };
 
       if (editingPosition) {
@@ -123,7 +127,9 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
       salary_range_max: '',
       requirements: [],
       responsibilities: [],
-      reports_to_position_id: ''
+      reports_to_position_id: '',
+      required_education_level: '',
+      required_experience_years: ''
     });
     setRequirementInput('');
     setResponsibilityInput('');
@@ -140,7 +146,9 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
       salary_range_max: position.salary_range_max?.toString() || '',
       requirements: position.requirements || [],
       responsibilities: position.responsibilities || [],
-      reports_to_position_id: position.reports_to_position_id || ''
+      reports_to_position_id: position.reports_to_position_id || '',
+      required_education_level: position.required_education_level || '',
+      required_experience_years: position.required_experience_years?.toString() || ''
     });
     setIsModalOpen(true);
   };
@@ -358,6 +366,43 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="required_education_level">Escolaridade Exigida</Label>
+                      <Select
+                        value={formData.required_education_level}
+                        onValueChange={(value) => setFormData({ ...formData, required_education_level: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a escolaridade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ensino Fundamental">Ensino Fundamental</SelectItem>
+                          <SelectItem value="Ensino Médio">Ensino Médio</SelectItem>
+                          <SelectItem value="Ensino Técnico">Ensino Técnico</SelectItem>
+                          <SelectItem value="Ensino Superior Incompleto">Ensino Superior Incompleto</SelectItem>
+                          <SelectItem value="Ensino Superior Completo">Ensino Superior Completo</SelectItem>
+                          <SelectItem value="Pós-Graduação">Pós-Graduação</SelectItem>
+                          <SelectItem value="Mestrado">Mestrado</SelectItem>
+                          <SelectItem value="Doutorado">Doutorado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="required_experience_years">Tempo de Experiência (anos)</Label>
+                      <Input
+                        id="required_experience_years"
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={formData.required_experience_years}
+                        onChange={(e) => setFormData({ ...formData, required_experience_years: e.target.value })}
+                        placeholder="Ex: 2"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <Label>Requisitos</Label>
                     <div className="flex space-x-2 mb-2">
@@ -496,6 +541,20 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
                     <div className="flex items-center space-x-2 text-sm">
                       <Users className="w-4 h-4 text-muted-foreground" />
                       <span>Reporta para: {position.reports_to_position.title}</span>
+                    </div>
+                  )}
+
+                  {position.required_education_level && (
+                    <div className="flex items-center space-x-2 text-sm">
+                      <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                      <span>{position.required_education_level}</span>
+                    </div>
+                  )}
+
+                  {position.required_experience_years && (
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span>{position.required_experience_years} {position.required_experience_years === 1 ? 'ano' : 'anos'} de experiência</span>
                     </div>
                   )}
                 </div>
