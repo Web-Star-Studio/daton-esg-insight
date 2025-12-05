@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,13 @@ export function PositionDetailModal({
 }: PositionDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Reset edit mode when modal opens or position changes
+  useEffect(() => {
+    if (isOpen) {
+      setIsEditMode(false);
+    }
+  }, [isOpen, position?.id]);
 
   if (!position) return null;
 
