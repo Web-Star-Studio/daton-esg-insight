@@ -29,7 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, Search, Users, CheckCircle2, AlertCircle } from "lucide-react";
+import { CalendarIcon, Search, Users, CheckCircle2, AlertCircle, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -423,10 +423,16 @@ export function EmployeeTrainingModal({ open, onOpenChange, training }: Employee
                           )}
                           onClick={() => toggleEmployee(employee.id)}
                         >
-                          <Checkbox
-                            checked={selectedEmployees.has(employee.id)}
-                            onCheckedChange={() => toggleEmployee(employee.id)}
-                          />
+                          <div 
+                            className={cn(
+                              "h-4 w-4 shrink-0 rounded-sm border border-primary flex items-center justify-center",
+                              selectedEmployees.has(employee.id) && "bg-primary text-primary-foreground"
+                            )}
+                          >
+                            {selectedEmployees.has(employee.id) && (
+                              <Check className="h-3 w-3" />
+                            )}
+                          </div>
                           <div className="flex-1">
                             <p className="font-medium">{employee.full_name}</p>
                             <p className="text-sm text-muted-foreground">
