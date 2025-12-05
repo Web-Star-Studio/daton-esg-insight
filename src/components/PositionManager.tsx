@@ -23,9 +23,10 @@ import {
 
 interface PositionManagerProps {
   onRefresh?: () => void;
+  initialEditPosition?: Position | null;
 }
 
-export function PositionManager({ onRefresh }: PositionManagerProps) {
+export function PositionManager({ onRefresh, initialEditPosition }: PositionManagerProps) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,26 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-populate form when initialEditPosition is provided
+  useEffect(() => {
+    if (initialEditPosition) {
+      setEditingPosition(initialEditPosition);
+      setFormData({
+        title: initialEditPosition.title,
+        description: initialEditPosition.description || '',
+        department_id: initialEditPosition.department_id || '',
+        level: initialEditPosition.level || '',
+        salary_range_min: initialEditPosition.salary_range_min?.toString() || '',
+        salary_range_max: initialEditPosition.salary_range_max?.toString() || '',
+        requirements: initialEditPosition.requirements || [],
+        responsibilities: initialEditPosition.responsibilities || [],
+        reports_to_position_id: initialEditPosition.reports_to_position_id || '',
+        required_education_level: initialEditPosition.required_education_level || '',
+        required_experience_years: initialEditPosition.required_experience_years?.toString() || ''
+      });
+    }
+  }, [initialEditPosition]);
 
   const loadData = async () => {
     try {
@@ -260,7 +281,7 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
     }
   };
 
-  if (loading) {
+  if (loading && !initialEditPosition) {
     return (
       <Card>
         <CardHeader>
@@ -275,6 +296,277 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Direct edit mode - render only the form without Card wrapper
+  if (initialEditPosition) {
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="title">Título</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Título do cargo"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="level">Nível</Label>
+            <Select
+              value={formData.level}
+              onValueChange={(value) => setFormData({ ...formData, level: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o nível" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Trainee">Trainee</SelectItem>
+                <SelectItem value="Junior">Junior</SelectItem>
+                <SelectItem value="Pleno">Pleno</SelectItem>
+                <SelectItem value="Senior">Senior</SelectItem>
+                <SelectItem value="Gerente">Gerente</SelectItem>
+                <SelectItem value="Diretor">Diretor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="description">Descrição</Label>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Descrição do cargo"
+            rows={3}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="department_id">Departamento</Label>
+            <div className="flex gap-2">
+              <Select
+                value={formData.department_id}
+                onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((department) => (
+                    <SelectItem key={department.id} value={department.id}>
+                      {department.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Popover open={showNewDepartment} onOpenChange={setShowNewDepartment}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    title="Criar novo departamento"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72" align="end">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Novo Departamento</h4>
+                    <Input
+                      placeholder="Nome do departamento"
+                      value={newDepartmentName}
+                      onChange={(e) => setNewDepartmentName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCreateDepartment();
+                        }
+                      }}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowNewDepartment(false);
+                          setNewDepartmentName('');
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleCreateDepartment}
+                        disabled={creatingDepartment}
+                      >
+                        {creatingDepartment ? 'Criando...' : 'Criar'}
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="reports_to_position_id">Reporta para</Label>
+            <Select
+              value={formData.reports_to_position_id}
+              onValueChange={(value) => setFormData({ ...formData, reports_to_position_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o cargo superior" />
+              </SelectTrigger>
+              <SelectContent>
+                {positions
+                  .filter(pos => pos.id !== editingPosition?.id)
+                  .map((position) => (
+                  <SelectItem key={position.id} value={position.id}>
+                    {position.title} - {position.department?.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="salary_range_min">Salário Mínimo</Label>
+            <Input
+              id="salary_range_min"
+              type="number"
+              step="0.01"
+              value={formData.salary_range_min}
+              onChange={(e) => setFormData({ ...formData, salary_range_min: e.target.value })}
+              placeholder="0.00"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="salary_range_max">Salário Máximo</Label>
+            <Input
+              id="salary_range_max"
+              type="number"
+              step="0.01"
+              value={formData.salary_range_max}
+              onChange={(e) => setFormData({ ...formData, salary_range_max: e.target.value })}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="required_education_level">Escolaridade Exigida</Label>
+            <Select
+              value={formData.required_education_level}
+              onValueChange={(value) => setFormData({ ...formData, required_education_level: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a escolaridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Ensino Fundamental">Ensino Fundamental</SelectItem>
+                <SelectItem value="Ensino Médio">Ensino Médio</SelectItem>
+                <SelectItem value="Ensino Técnico">Ensino Técnico</SelectItem>
+                <SelectItem value="Ensino Superior Incompleto">Ensino Superior Incompleto</SelectItem>
+                <SelectItem value="Ensino Superior Completo">Ensino Superior Completo</SelectItem>
+                <SelectItem value="Pós-Graduação">Pós-Graduação</SelectItem>
+                <SelectItem value="Mestrado">Mestrado</SelectItem>
+                <SelectItem value="Doutorado">Doutorado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="required_experience_years">Tempo de Experiência (anos)</Label>
+            <Input
+              id="required_experience_years"
+              type="number"
+              step="0.5"
+              min="0"
+              value={formData.required_experience_years}
+              onChange={(e) => setFormData({ ...formData, required_experience_years: e.target.value })}
+              placeholder="Ex: 2"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label>Requisitos</Label>
+          <div className="flex space-x-2 mb-2">
+            <Input
+              value={requirementInput}
+              onChange={(e) => setRequirementInput(e.target.value)}
+              placeholder="Adicionar requisito"
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
+            />
+            <Button type="button" onClick={addRequirement}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.requirements.map((req, index) => (
+              <Badge key={index} variant="secondary" className="cursor-pointer">
+                {req}
+                <button
+                  type="button"
+                  onClick={() => removeRequirement(index)}
+                  className="ml-2 text-muted-foreground hover:text-foreground"
+                >
+                  ×
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label>Responsabilidades</Label>
+          <div className="flex space-x-2 mb-2">
+            <Input
+              value={responsibilityInput}
+              onChange={(e) => setResponsibilityInput(e.target.value)}
+              placeholder="Adicionar responsabilidade"
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addResponsibility())}
+            />
+            <Button type="button" onClick={addResponsibility}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.responsibilities.map((resp, index) => (
+              <Badge key={index} variant="secondary" className="cursor-pointer">
+                {resp}
+                <button
+                  type="button"
+                  onClick={() => removeResponsibility(index)}
+                  className="ml-2 text-muted-foreground hover:text-foreground"
+                >
+                  ×
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-2">
+          <Button type="submit">
+            Atualizar
+          </Button>
+        </div>
+      </form>
     );
   }
 
