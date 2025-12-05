@@ -13,6 +13,7 @@ import {
   CheckCheck,
   XCircle,
   RotateCcw,
+  FileDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -21,9 +22,13 @@ import {
   markAttendance,
   markAllAttendance 
 } from '@/services/trainingProgramParticipants';
+import { generateAttendanceListPDF } from '@/utils/generateAttendanceListPDF';
 
 interface TrainingAttendanceTabProps {
   programId: string;
+  programName: string;
+  programDate?: string;
+  instructor?: string;
   participants: TrainingParticipant[];
   stats: TrainingProgramStats | undefined;
   isLoading: boolean;
@@ -31,11 +36,24 @@ interface TrainingAttendanceTabProps {
 
 export function TrainingAttendanceTab({
   programId,
+  programName,
+  programDate,
+  instructor,
   participants,
   stats,
   isLoading,
 }: TrainingAttendanceTabProps) {
   const queryClient = useQueryClient();
+
+  const handleGeneratePDF = () => {
+    generateAttendanceListPDF({
+      programName,
+      programDate,
+      instructor,
+      participants,
+    });
+    toast.success('Lista de presença gerada com sucesso!');
+  };
 
   const markAttendanceMutation = useMutation({
     mutationFn: async ({ participantId, attended }: { participantId: string; attended: boolean | null }) => {
@@ -185,6 +203,14 @@ export function TrainingAttendanceTab({
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Limpar Marcações
+          </Button>
+          <Button 
+            variant="default"
+            onClick={handleGeneratePDF}
+            disabled={participants.length === 0}
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Gerar Lista de Presença (PDF)
           </Button>
         </div>
 

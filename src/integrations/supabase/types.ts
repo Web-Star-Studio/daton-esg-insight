@@ -15051,6 +15051,8 @@ export type Database = {
           id: string
           level: string | null
           reports_to_position_id: string | null
+          required_education_level: string | null
+          required_experience_years: number | null
           requirements: string[] | null
           responsibilities: string[] | null
           salary_range_max: number | null
@@ -15066,6 +15068,8 @@ export type Database = {
           id?: string
           level?: string | null
           reports_to_position_id?: string | null
+          required_education_level?: string | null
+          required_experience_years?: number | null
           requirements?: string[] | null
           responsibilities?: string[] | null
           salary_range_max?: number | null
@@ -15081,6 +15085,8 @@ export type Database = {
           id?: string
           level?: string | null
           reports_to_position_id?: string | null
+          required_education_level?: string | null
+          required_experience_years?: number | null
           requirements?: string[] | null
           responsibilities?: string[] | null
           salary_range_max?: number | null
@@ -18344,6 +18350,63 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_documents: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          training_program_id: string
+          updated_at: string
+          uploaded_by_user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          training_program_id: string
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          training_program_id?: string
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_documents_training_program_id_fkey"
+            columns: ["training_program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
             referencedColumns: ["id"]
           },
         ]
