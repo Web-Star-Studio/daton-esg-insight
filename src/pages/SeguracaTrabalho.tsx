@@ -5,16 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Shield, Heart, FileText, Calendar, TrendingUp, Users, Clock, Target, Plus, Search, Filter, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { AlertTriangle, Shield, Heart, FileText, Calendar, TrendingUp, Users, Clock, Target, Plus, Search, Filter, Download, Eye, Edit, Trash2, ClipboardCheck } from "lucide-react";
 import { useSafetyIncidents, useSafetyMetrics, useDeleteSafetyIncident } from "@/hooks/useSafetyIncidents";
-import { auditService } from "@/services/audit";
-import { useQuery } from "@tanstack/react-query";
+import { useSafetyInspections, useSafetyInspectionMetrics, useDeleteSafetyInspection } from "@/hooks/useSafetyInspections";
 import SafetyIncidentModal from "@/components/SafetyIncidentModal";
-import { AuditModal } from "@/components/AuditModal";
+import SafetyInspectionModal from "@/components/SafetyInspectionModal";
 import { SafetyIncident } from "@/services/safetyIncidents";
+import { SafetyInspection } from "@/services/safetyInspections";
 import { toast } from "sonner";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
@@ -22,6 +21,7 @@ import { startOfYear, endOfYear, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { exportToCSV } from "@/services/reportService";
 import { LTIFRDashboard } from "@/components/safety/LTIFRDashboard";
+import { INSPECTION_TYPES, getInspectionTypeLabel } from "@/constants/safetyInspectionTypes";
 
 export default function SeguracaTrabalho() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -30,8 +30,8 @@ export default function SeguracaTrabalho() {
   });
   const [newIncidentOpen, setNewIncidentOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<SafetyIncident | null>(null);
-  const [newAuditOpen, setNewAuditOpen] = useState(false);
-  const [editingAudit, setEditingAudit] = useState<any>(null);
+  const [newInspectionOpen, setNewInspectionOpen] = useState(false);
+  const [editingInspection, setEditingInspection] = useState<SafetyInspection | null>(null);
   
   // Estados para filtros de incidentes
   const [showFilters, setShowFilters] = useState(false);
@@ -39,16 +39,20 @@ export default function SeguracaTrabalho() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Estados para filtros de inspeções
+  const [inspectionSearch, setInspectionSearch] = useState("");
+  const [inspectionTypeFilter, setInspectionTypeFilter] = useState("all");
+  const [inspectionStatusFilter, setInspectionStatusFilter] = useState("all");
 
   // Real data from API
   const { data: incidents = [], isLoading: incidentsLoading } = useSafetyIncidents();
   const { data: safetyMetrics, isLoading: metricsLoading } = useSafetyMetrics();
-  const { data: audits = [], isLoading: auditsLoading } = useQuery({
-    queryKey: ['audits'],
-    queryFn: auditService.getAudits,
-  });
+  const { data: inspections = [], isLoading: inspectionsLoading } = useSafetyInspections();
+  const { data: inspectionMetrics } = useSafetyInspectionMetrics();
   
   const deleteMutation = useDeleteSafetyIncident();
+  const deleteInspectionMutation = useDeleteSafetyInspection();
 
   // Filter incidents by selected date range and all filters
   const filteredIncidents = incidents.filter(incident => {
@@ -131,11 +135,33 @@ export default function SeguracaTrabalho() {
     incidentsLastMonth: lastMonthIncidents,
     daysWithoutIncidents: daysSinceLastIncident,
     safetyTrainingCompliance: 92, // This could come from training system
-    activeAudits: audits.filter(audit => audit.status === 'Em Andamento' || audit.status === 'Agendada').length,
+    activeInspections: inspectionMetrics?.pending || 0,
     resolvedIncidents,
     avgResolutionTime: 5.2, // Could be calculated from incident resolution times
     safetyScore: safetyMetrics?.ltifr ? Math.max(0, 100 - safetyMetrics.ltifr * 10) : 87
   };
+  
+  // Filter inspections
+  const filteredInspections = inspections.filter(inspection => {
+    if (inspectionSearch) {
+      const searchLower = inspectionSearch.toLowerCase();
+      const matchesSearch = 
+        inspection.title.toLowerCase().includes(searchLower) ||
+        inspection.inspector_name.toLowerCase().includes(searchLower) ||
+        (inspection.area_location && inspection.area_location.toLowerCase().includes(searchLower));
+      if (!matchesSearch) return false;
+    }
+    
+    if (inspectionTypeFilter !== "all" && inspection.inspection_type !== inspectionTypeFilter) {
+      return false;
+    }
+    
+    if (inspectionStatusFilter !== "all" && inspection.status !== inspectionStatusFilter) {
+      return false;
+    }
+    
+    return true;
+  });
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -168,12 +194,19 @@ export default function SeguracaTrabalho() {
     setEditingIncident(incident);
   };
 
-  const handleAuditSuccess = () => {
-    setNewAuditOpen(false);
+  const handleDeleteInspection = (inspection: SafetyInspection) => {
+    if (confirm('Tem certeza que deseja excluir esta inspeção?')) {
+      deleteInspectionMutation.mutate(inspection.id);
+    }
   };
 
-  const handleCreateAudit = () => {
-    setNewAuditOpen(false);
+  const getInspectionResultColor = (result: string | undefined) => {
+    switch (result) {
+      case "Conforme": return "bg-success text-success-foreground";
+      case "Não Conforme": return "bg-destructive text-destructive-foreground";
+      case "Parcialmente Conforme": return "bg-warning text-warning-foreground";
+      default: return "bg-muted text-muted-foreground";
+    }
   };
 
   // Funções para geração de relatórios
@@ -201,25 +234,26 @@ export default function SeguracaTrabalho() {
     toast.success("Relatório de Incidentes exportado com sucesso!");
   };
 
-  const handleGenerateAuditsReport = () => {
-    if (audits.length === 0) {
-      toast.error("Nenhuma auditoria disponível para gerar relatório");
+  const handleGenerateInspectionsReport = () => {
+    if (inspections.length === 0) {
+      toast.error("Nenhuma inspeção disponível para gerar relatório");
       return;
     }
 
-    const reportData = audits.map(audit => ({
-      Título: audit.title,
-      Tipo: audit.audit_type || "N/A",
-      Status: audit.status || "N/A",
-      Auditor: audit.auditor || "N/A",
-      "Data Início": audit.start_date ? format(new Date(audit.start_date), "dd/MM/yyyy", { locale: ptBR }) : "N/A",
-      "Data Fim": audit.end_date ? format(new Date(audit.end_date), "dd/MM/yyyy", { locale: ptBR }) : "N/A",
-      Escopo: audit.scope || "N/A",
-      "Criado em": format(new Date(audit.created_at), "dd/MM/yyyy", { locale: ptBR })
+    const reportData = inspections.map(inspection => ({
+      Título: inspection.title,
+      Tipo: getInspectionTypeLabel(inspection.inspection_type),
+      Status: inspection.status || "N/A",
+      Inspetor: inspection.inspector_name || "N/A",
+      "Área/Local": inspection.area_location || "N/A",
+      "Data Inspeção": inspection.inspection_date ? format(new Date(inspection.inspection_date), "dd/MM/yyyy", { locale: ptBR }) : "N/A",
+      Resultado: inspection.result || "N/A",
+      Score: inspection.score || "N/A",
+      "Criado em": format(new Date(inspection.created_at), "dd/MM/yyyy", { locale: ptBR })
     }));
 
-    exportToCSV(reportData, "relatorio_auditorias");
-    toast.success("Relatório de Auditorias exportado com sucesso!");
+    exportToCSV(reportData, "relatorio_inspecoes");
+    toast.success("Relatório de Inspeções exportado com sucesso!");
   };
 
   const handleGenerateMetricsReport = () => {
@@ -242,8 +276,8 @@ export default function SeguracaTrabalho() {
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
       {
-        Indicador: "Total de Auditorias",
-        Valor: audits.length,
+        Indicador: "Total de Inspeções",
+        Valor: inspections.length,
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
       {
@@ -422,7 +456,7 @@ export default function SeguracaTrabalho() {
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="incidents">Incidentes</TabsTrigger>
-          <TabsTrigger value="audits">Auditorias</TabsTrigger>
+          <TabsTrigger value="inspections">Inspeções</TabsTrigger>
           <TabsTrigger value="training">Treinamentos</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
         </TabsList>
@@ -470,27 +504,27 @@ export default function SeguracaTrabalho() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Auditorias Recentes</CardTitle>
-                <CardDescription>Status das últimas auditorias realizadas</CardDescription>
+                <CardTitle>Inspeções Recentes</CardTitle>
+                <CardDescription>Status das últimas inspeções realizadas</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {auditsLoading && <p className="text-center py-4">Carregando auditorias...</p>}
-                  {!auditsLoading && audits.length === 0 && (
+                  {inspectionsLoading && <p className="text-center py-4">Carregando inspeções...</p>}
+                  {!inspectionsLoading && inspections.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhuma auditoria encontrada
+                      Nenhuma inspeção encontrada
                     </p>
                   )}
-                  {audits.slice(0, 3).map((audit) => (
-                    <div key={audit.id} className="flex justify-between items-center p-3 border rounded-lg">
+                  {inspections.slice(0, 3).map((inspection) => (
+                    <div key={inspection.id} className="flex justify-between items-center p-3 border rounded-lg">
                       <div>
-                        <div className="font-medium">{audit.title}</div>
+                        <div className="font-medium">{inspection.title}</div>
                         <div className="text-sm text-muted-foreground">
-                          {audit.auditor} • {new Date(audit.start_date || '').toLocaleDateString('pt-BR')}
+                          {inspection.inspector_name} • {inspection.inspection_date ? new Date(inspection.inspection_date).toLocaleDateString('pt-BR') : 'Agendada'}
                         </div>
                       </div>
-                      <Badge className={getStatusColor(audit.status)}>
-                        {audit.status}
+                      <Badge className={getStatusColor(inspection.status)}>
+                        {inspection.status}
                       </Badge>
                     </div>
                   ))}
@@ -663,86 +697,94 @@ export default function SeguracaTrabalho() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="audits" className="space-y-4">
+        <TabsContent value="inspections" className="space-y-4">
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar auditorias..." className="pl-8 w-64" />
+                <Input 
+                  placeholder="Buscar inspeções..." 
+                  className="pl-8 w-64"
+                  value={inspectionSearch}
+                  onChange={(e) => setInspectionSearch(e.target.value)}
+                />
               </div>
-              <Select>
+              <Select value={inspectionTypeFilter} onValueChange={setInspectionTypeFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  {INSPECTION_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={inspectionStatusFilter} onValueChange={setInspectionStatusFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="scheduled">Agendada</SelectItem>
-                  <SelectItem value="progress">Em Andamento</SelectItem>
-                  <SelectItem value="completed">Concluída</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                  <SelectItem value="Concluída">Concluída</SelectItem>
+                  <SelectItem value="Cancelada">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Dialog open={newAuditOpen} onOpenChange={setNewAuditOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agendar Auditoria
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Agendar Nova Auditoria</DialogTitle>
-                  <DialogDescription>
-                    Agende uma nova auditoria de segurança
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Título da Auditoria</Label>
-                    <Input placeholder="Ex: Auditoria de EPIs - Setor A" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tipo de Auditoria</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="epi">EPI</SelectItem>
-                        <SelectItem value="safety">Segurança</SelectItem>
-                        <SelectItem value="risks">Avaliação de Riscos</SelectItem>
-                        <SelectItem value="procedures">Procedimentos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Auditor Responsável</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o auditor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="maria">Maria Santos</SelectItem>
-                        <SelectItem value="carlos">Carlos Lima</SelectItem>
-                        <SelectItem value="ana">Ana Costa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data Agendada</Label>
-                    <Input type="date" />
+            <Button onClick={() => setNewInspectionOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Inspeção
+            </Button>
+          </div>
+
+          {/* Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{inspectionMetrics?.total || 0}</p>
+                    <p className="text-xs text-muted-foreground">Total de Inspeções</p>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setNewAuditOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateAudit}>
-                    Agendar Auditoria
-                  </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-warning" />
+                  <div>
+                    <p className="text-2xl font-bold">{inspectionMetrics?.pending || 0}</p>
+                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                  </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-success" />
+                  <div>
+                    <p className="text-2xl font-bold">{inspectionMetrics?.completed || 0}</p>
+                    <p className="text-xs text-muted-foreground">Concluídas</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{Math.round(inspectionMetrics?.conformeRate || 0)}%</p>
+                    <p className="text-xs text-muted-foreground">Taxa de Conformidade</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <Card>
@@ -751,45 +793,84 @@ export default function SeguracaTrabalho() {
                 <table className="w-full">
                   <thead className="border-b">
                     <tr>
-                      <th className="text-left p-4">ID</th>
                       <th className="text-left p-4">Título</th>
                       <th className="text-left p-4">Tipo</th>
-                      <th className="text-left p-4">Auditor</th>
+                      <th className="text-left p-4">Área/Local</th>
+                      <th className="text-left p-4">Inspetor</th>
                       <th className="text-left p-4">Data</th>
                       <th className="text-left p-4">Status</th>
+                      <th className="text-left p-4">Resultado</th>
                       <th className="text-left p-4">Score</th>
                       <th className="text-left p-4">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {audits.map((audit) => (
-                      <tr key={audit.id} className="border-b">
-                        <td className="p-4 font-mono text-sm">{audit.id}</td>
-                        <td className="p-4">{audit.title}</td>
-                        <td className="p-4">{audit.audit_type}</td>
-                        <td className="p-4">{audit.auditor}</td>
-                        <td className="p-4">{new Date(audit.start_date || '').toLocaleDateString('pt-BR')}</td>
-                        <td className="p-4">
-                          <Badge className={getStatusColor(audit.status)}>
-                            {audit.status}
-                          </Badge>
-                        </td>
-                        <td className="p-4">-</td>
-                        <td className="p-4">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingAudit(audit);
-                            }}
-                            title="Visualizar/Editar auditoria"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                    {inspectionsLoading ? (
+                      <tr>
+                        <td colSpan={9} className="p-4 text-center text-muted-foreground">
+                          Carregando inspeções...
                         </td>
                       </tr>
-                    ))}
+                    ) : filteredInspections.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-4 text-center text-muted-foreground">
+                          Nenhuma inspeção encontrada
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredInspections.map((inspection) => (
+                        <tr key={inspection.id} className="border-b hover:bg-muted/50">
+                          <td className="p-4 font-medium">{inspection.title}</td>
+                          <td className="p-4">{getInspectionTypeLabel(inspection.inspection_type)}</td>
+                          <td className="p-4">{inspection.area_location || '-'}</td>
+                          <td className="p-4">{inspection.inspector_name}</td>
+                          <td className="p-4">
+                            {inspection.inspection_date 
+                              ? new Date(inspection.inspection_date).toLocaleDateString('pt-BR')
+                              : inspection.scheduled_date 
+                                ? new Date(inspection.scheduled_date).toLocaleDateString('pt-BR')
+                                : '-'}
+                          </td>
+                          <td className="p-4">
+                            <Badge className={getStatusColor(inspection.status)}>
+                              {inspection.status}
+                            </Badge>
+                          </td>
+                          <td className="p-4">
+                            {inspection.result ? (
+                              <Badge className={getInspectionResultColor(inspection.result)}>
+                                {inspection.result}
+                              </Badge>
+                            ) : '-'}
+                          </td>
+                          <td className="p-4">
+                            {inspection.score !== null && inspection.score !== undefined 
+                              ? `${inspection.score}%` 
+                              : '-'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setEditingInspection(inspection)}
+                                title="Ver/Editar inspeção"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleDeleteInspection(inspection)}
+                                title="Excluir inspeção"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -922,17 +1003,13 @@ export default function SeguracaTrabalho() {
         incident={editingIncident || undefined}
       />
 
-      <AuditModal
-        isOpen={newAuditOpen || editingAudit !== null}
+      <SafetyInspectionModal
+        isOpen={newInspectionOpen || editingInspection !== null}
         onClose={() => {
-          setNewAuditOpen(false);
-          setEditingAudit(null);
+          setNewInspectionOpen(false);
+          setEditingInspection(null);
         }}
-        onSuccess={() => {
-          handleAuditSuccess();
-          setEditingAudit(null);
-        }}
-        audit={editingAudit || undefined}
+        inspection={editingInspection || undefined}
       />
     </div>
   );
