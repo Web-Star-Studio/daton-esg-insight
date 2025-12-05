@@ -1,15 +1,8 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TrainingParticipant } from '@/services/trainingProgramParticipants';
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
 
 interface AttendanceListOptions {
   programName: string;
@@ -70,7 +63,7 @@ export const generateAttendanceListPDF = ({
     '', // Assinatura (empty for signature)
   ]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [['#', 'Nome', 'Matrícula', 'Departamento', 'Assinatura']],
     body: tableData,
@@ -86,7 +79,7 @@ export const generateAttendanceListPDF = ({
       1: { cellWidth: 50 },
       2: { cellWidth: 25, halign: 'center' },
       3: { cellWidth: 35 },
-      4: { cellWidth: 60 }, // Larger for signature
+      4: { cellWidth: 60 },
     },
     styles: {
       fontSize: 9,
@@ -99,7 +92,7 @@ export const generateAttendanceListPDF = ({
   });
   
   // Footer with signature lines
-  const finalY = doc.lastAutoTable.finalY + 25;
+  const finalY = (doc as any).lastAutoTable.finalY + 25;
   
   if (finalY < doc.internal.pageSize.getHeight() - 50) {
     doc.setFontSize(10);

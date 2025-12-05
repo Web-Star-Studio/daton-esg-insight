@@ -46,13 +46,23 @@ export function TrainingAttendanceTab({
   const queryClient = useQueryClient();
 
   const handleGeneratePDF = () => {
-    generateAttendanceListPDF({
-      programName,
-      programDate,
-      instructor,
-      participants,
-    });
-    toast.success('Lista de presença gerada com sucesso!');
+    try {
+      if (participants.length === 0) {
+        toast.error('Não há participantes para gerar a lista de presença.');
+        return;
+      }
+      
+      generateAttendanceListPDF({
+        programName,
+        programDate,
+        instructor,
+        participants,
+      });
+      toast.success('Lista de presença gerada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar a lista de presença. Tente novamente.');
+    }
   };
 
   const markAttendanceMutation = useMutation({
