@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { toast } from 'sonner';
 import { Plus, Briefcase, Edit, Trash2, DollarSign, Building2, Users, GraduationCap, Clock } from 'lucide-react';
 import { 
@@ -15,6 +16,7 @@ import {
   updatePosition, 
   deletePosition,
   getDepartments,
+  createDepartment,
   type Position,
   type Department 
 } from '@/services/organizationalStructure';
@@ -44,6 +46,11 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
   });
   const [requirementInput, setRequirementInput] = useState('');
   const [responsibilityInput, setResponsibilityInput] = useState('');
+  
+  // Inline department creation
+  const [showNewDepartment, setShowNewDepartment] = useState(false);
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [creatingDepartment, setCreatingDepartment] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -187,6 +194,46 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
     });
   };
 
+  const handleCreateDepartment = async () => {
+    const trimmedName = newDepartmentName.trim();
+    if (!trimmedName) {
+      toast.error('Nome do departamento é obrigatório');
+      return;
+    }
+
+    // Check if department already exists (case-insensitive)
+    const existingDepartment = departments.find(
+      d => d.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (existingDepartment) {
+      setFormData({ ...formData, department_id: existingDepartment.id });
+      setNewDepartmentName('');
+      setShowNewDepartment(false);
+      toast.info('Departamento já existe, selecionado automaticamente');
+      return;
+    }
+
+    try {
+      setCreatingDepartment(true);
+      const newDept = await createDepartment({
+        name: trimmedName,
+        company_id: ''
+      });
+
+      setDepartments(prev => [...prev, newDept]);
+      setFormData({ ...formData, department_id: newDept.id });
+      setNewDepartmentName('');
+      setShowNewDepartment(false);
+      toast.success('Departamento criado com sucesso');
+    } catch (error) {
+      console.error('Error creating department:', error);
+      toast.error('Erro ao criar departamento');
+    } finally {
+      setCreatingDepartment(false);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -301,21 +348,72 @@ export function PositionManager({ onRefresh }: PositionManagerProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="department_id">Departamento</Label>
-                      <Select
-                        value={formData.department_id}
-                        onValueChange={(value) => setFormData({ ...formData, department_id: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o departamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departments.map((department) => (
-                            <SelectItem key={department.id} value={department.id}>
-                              {department.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex gap-2">
+                        <Select
+                          value={formData.department_id}
+                          onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Selecione o departamento" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map((department) => (
+                              <SelectItem key={department.id} value={department.id}>
+                                {department.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Popover open={showNewDepartment} onOpenChange={setShowNewDepartment}>
+                          <PopoverTrigger asChild>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="icon"
+                              title="Criar novo departamento"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72" align="end">
+                            <div className="space-y-3">
+                              <h4 className="font-medium text-sm">Novo Departamento</h4>
+                              <Input
+                                placeholder="Nome do departamento"
+                                value={newDepartmentName}
+                                onChange={(e) => setNewDepartmentName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleCreateDepartment();
+                                  }
+                                }}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShowNewDepartment(false);
+                                    setNewDepartmentName('');
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={handleCreateDepartment}
+                                  disabled={creatingDepartment}
+                                >
+                                  {creatingDepartment ? 'Criando...' : 'Criar'}
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
 
                     <div>
