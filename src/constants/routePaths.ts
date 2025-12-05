@@ -65,6 +65,7 @@ export const ROUTE_PATHS = {
   // HR Module
   HR: {
     ORGANIZATIONAL_STRUCTURE: '/estrutura-organizacional',
+    JOB_DESCRIPTIONS: '/descricao-cargos',
     EMPLOYEES: '/gestao-funcionarios',
     TRAINING: '/gestao-treinamentos',
     PERFORMANCE: '/gestao-desempenho',

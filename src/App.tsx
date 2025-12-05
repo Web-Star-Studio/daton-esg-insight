@@ -116,6 +116,7 @@ const Materialidade = lazy(() => import("./pages/Materialidade"));
 
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
+const DescricaoCargos = lazy(() => import("./pages/DescricaoCargos"));
 const GestaoFuncionarios = lazy(() => import("./pages/GestaoFuncionarios"));
 const GestaoTreinamentos = lazy(() => import("./pages/GestaoTreinamentos"));
 const GestaoDesempenho = lazy(() => import("./pages/GestaoDesempenho"));
@@ -508,6 +509,7 @@ const AppContent = () => {
             
             {/* RH modules */}
             <Route path="/estrutura-organizacional" element={<ProtectedLazyPageWrapper><EstruturaOrganizacional /></ProtectedLazyPageWrapper>} />
+            <Route path="/descricao-cargos" element={<ProtectedLazyPageWrapper><DescricaoCargos /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-funcionarios" element={<ProtectedLazyPageWrapper><GestaoFuncionarios /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-treinamentos" element={<ProtectedLazyPageWrapper><GestaoTreinamentos /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-desempenho" element={<ProtectedLazyPageWrapper><GestaoDesempenho /></ProtectedLazyPageWrapper>} />
