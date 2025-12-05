@@ -46,6 +46,7 @@ import {
   Target,
   TrendingUp,
   Trash2,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TrainingProgram } from '@/services/trainingPrograms';
@@ -55,6 +56,7 @@ import {
   TrainingParticipant 
 } from '@/services/trainingProgramParticipants';
 import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
+import { TrainingAttendanceTab } from './TrainingAttendanceTab';
 
 interface TrainingProgramDetailModalProps {
   open: boolean;
@@ -283,10 +285,14 @@ export function TrainingProgramDetailModal({
         </div>
 
         <Tabs defaultValue="info" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="stats">Estatísticas</TabsTrigger>
             <TabsTrigger value="participants">Participantes ({stats?.total || 0})</TabsTrigger>
+            <TabsTrigger value="attendance" className="flex items-center gap-1">
+              <UserCheck className="w-3 h-3" />
+              Presença
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-4">
@@ -595,6 +601,15 @@ export function TrainingProgramDetailModal({
             ) : (
               <DataTable columns={participantColumns} data={filteredParticipants} />
             )}
+          </TabsContent>
+
+          <TabsContent value="attendance" className="mt-4">
+            <TrainingAttendanceTab
+              programId={program.id}
+              participants={participants}
+              stats={stats}
+              isLoading={isLoadingParticipants}
+            />
           </TabsContent>
         </Tabs>
 
