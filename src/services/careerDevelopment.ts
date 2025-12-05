@@ -257,8 +257,8 @@ export const getMentoringRelationships = async () => {
     .from('mentoring_relationships')
     .select(`
       *,
-      mentor:employees!mentor_id(id, full_name),
-      mentee:employees!mentee_id(id, full_name)
+      mentor:employees!mentoring_relationships_mentor_id_fkey(id, full_name),
+      mentee:employees!mentoring_relationships_mentee_id_fkey(id, full_name)
     `)
     .order('created_at', { ascending: false });
 
