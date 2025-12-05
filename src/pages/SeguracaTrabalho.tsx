@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Shield, Heart, FileText, Calendar, TrendingUp, Users, Clock, Target, Plus, Search, Filter, Download, Eye, Edit, Trash2, ClipboardCheck } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { AlertTriangle, Shield, Heart, FileText, Calendar, TrendingUp, Users, Clock, Target, Plus, Search, Filter, Download, Eye, Edit, Trash2, ClipboardCheck, GraduationCap } from "lucide-react";
 import { useSafetyIncidents, useSafetyMetrics, useDeleteSafetyIncident } from "@/hooks/useSafetyIncidents";
 import { useSafetyInspections, useSafetyInspectionMetrics, useDeleteSafetyInspection } from "@/hooks/useSafetyInspections";
+import { useSafetyTrainingMetrics } from "@/hooks/useSafetyTrainingMetrics";
 import SafetyIncidentModal from "@/components/SafetyIncidentModal";
 import SafetyInspectionModal from "@/components/SafetyInspectionModal";
 import { SafetyIncident } from "@/services/safetyIncidents";
@@ -50,6 +52,7 @@ export default function SeguracaTrabalho() {
   const { data: safetyMetrics, isLoading: metricsLoading } = useSafetyMetrics();
   const { data: inspections = [], isLoading: inspectionsLoading } = useSafetyInspections();
   const { data: inspectionMetrics } = useSafetyInspectionMetrics();
+  const { data: safetyTrainingMetrics, isLoading: trainingMetricsLoading } = useSafetyTrainingMetrics();
   
   const deleteMutation = useDeleteSafetyIncident();
   const deleteInspectionMutation = useDeleteSafetyInspection();
@@ -134,7 +137,7 @@ export default function SeguracaTrabalho() {
     incidentsThisMonth: thisMonthIncidents,
     incidentsLastMonth: lastMonthIncidents,
     daysWithoutIncidents: daysSinceLastIncident,
-    safetyTrainingCompliance: 92, // This could come from training system
+    safetyTrainingCompliance: safetyTrainingMetrics?.overallCompliance || 0,
     activeInspections: inspectionMetrics?.pending || 0,
     resolvedIncidents,
     avgResolutionTime: 5.2, // Could be calculated from incident resolution times
@@ -312,46 +315,51 @@ export default function SeguracaTrabalho() {
   };
 
   const handleGenerateTrainingComplianceReport = () => {
-    // Gerar relatório de compliance de treinamentos baseado nos incidentes
-    const incidentsWithTraining = incidents.filter(inc => 
-      inc.corrective_actions?.toLowerCase().includes("treinamento") ||
-      inc.corrective_actions?.toLowerCase().includes("capacitação")
-    );
+    if (!safetyTrainingMetrics) {
+      toast.error("Dados de treinamento não disponíveis");
+      return;
+    }
 
     const reportData = [
       {
         Indicador: "Horas de Treinamento",
-        Valor: "1,245h",
+        Valor: `${safetyTrainingMetrics.totalHours}h`,
         Status: "Concluído",
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
       {
         Indicador: "Treinamentos Pendentes",
-        Valor: 3,
+        Valor: safetyTrainingMetrics.pendingTrainings,
         Status: "Em Andamento",
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
       {
-        Indicador: "Treinamentos por Incidentes",
-        Valor: incidentsWithTraining.length,
-        Status: "Necessário",
+        Indicador: "Treinamentos Vencidos",
+        Valor: safetyTrainingMetrics.expiredTrainings,
+        Status: safetyTrainingMetrics.expiredTrainings > 0 ? "Atenção" : "Adequado",
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
       {
         Indicador: "Taxa de Compliance",
-        Valor: "92%",
-        Status: "Adequado",
+        Valor: `${safetyTrainingMetrics.overallCompliance}%`,
+        Status: safetyTrainingMetrics.overallCompliance >= 90 ? "Adequado" : "Atenção",
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
       },
       {
         Indicador: "Colaboradores Treinados",
-        Valor: 145,
+        Valor: safetyTrainingMetrics.totalEmployeesTrained,
         Status: "Concluído",
         Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
-      }
+      },
+      ...safetyTrainingMetrics.programs.map(p => ({
+        Indicador: `Programa: ${p.programName}`,
+        Valor: `${p.completionRate}%`,
+        Status: p.completionRate >= 90 ? "Adequado" : p.expired > 0 ? "Vencidos: " + p.expired : "Atenção",
+        Período: format(new Date(), "MMMM yyyy", { locale: ptBR })
+      }))
     ];
 
-    exportToCSV(reportData, "compliance_treinamentos");
+    exportToCSV(reportData, "compliance_treinamentos_seguranca");
     toast.success("Relatório de Compliance exportado com sucesso!");
   };
 
@@ -879,47 +887,136 @@ export default function SeguracaTrabalho() {
         </TabsContent>
 
         <TabsContent value="training" className="space-y-4">
+          {/* Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">{safetyTrainingMetrics?.overallCompliance || 0}%</p>
+                    <p className="text-xs text-muted-foreground">Compliance Geral</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-secondary-foreground" />
+                  <div>
+                    <p className="text-2xl font-bold">{safetyTrainingMetrics?.totalHours || 0}h</p>
+                    <p className="text-xs text-muted-foreground">Total de Horas</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-success" />
+                  <div>
+                    <p className="text-2xl font-bold">{safetyTrainingMetrics?.totalEmployeesTrained || 0}</p>
+                    <p className="text-xs text-muted-foreground">Colaboradores Treinados</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-warning" />
+                  <div>
+                    <p className="text-2xl font-bold">{safetyTrainingMetrics?.pendingTrainings || 0}</p>
+                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Training Programs List */}
           <Card>
             <CardHeader>
-              <CardTitle>Treinamentos de Segurança</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5" />
+                Programas de Treinamento de Segurança
+              </CardTitle>
               <CardDescription>
-                Acompanhe o progresso dos treinamentos obrigatórios de segurança
+                Treinamentos com categorias de Segurança, EPI, SST ou NRs
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <Shield className="h-8 w-8 mx-auto mb-2 text-primary" />
-                        <div className="text-2xl font-bold">92%</div>
-                        <div className="text-sm text-muted-foreground">NR-10 Elétrica</div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-warning" />
-                        <div className="text-2xl font-bold">87%</div>
-                        <div className="text-sm text-muted-foreground">NR-12 Máquinas</div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <Heart className="h-8 w-8 mx-auto mb-2 text-success" />
-                        <div className="text-2xl font-bold">95%</div>
-                        <div className="text-sm text-muted-foreground">Primeiros Socorros</div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              {trainingMetricsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando dados de treinamento...
                 </div>
-              </div>
+              ) : !safetyTrainingMetrics?.programs || safetyTrainingMetrics.programs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>Nenhum treinamento de segurança cadastrado.</p>
+                  <p className="text-sm mt-2">
+                    Cadastre treinamentos com categoria "Segurança", "EPI" ou "SST" na página de Gestão de Treinamentos.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {safetyTrainingMetrics.programs.map(program => (
+                    <div key={program.programId} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1">
+                        <p className="font-medium">{program.programName}</p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Badge variant="outline" className="text-xs">{program.category}</Badge>
+                          <span>{program.completed}/{program.totalEnrolled} concluídos</span>
+                          {program.durationHours > 0 && (
+                            <span>• {program.durationHours}h</span>
+                          )}
+                          {program.expired > 0 && (
+                            <span className="text-destructive font-medium">
+                              • {program.expired} vencido{program.expired > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-32">
+                          <Progress 
+                            value={program.completionRate} 
+                            className="h-2"
+                          />
+                        </div>
+                        <span className={`font-bold w-12 text-right ${
+                          program.completionRate >= 90 ? 'text-success' : 
+                          program.completionRate >= 70 ? 'text-warning' : 'text-destructive'
+                        }`}>
+                          {program.completionRate}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* Expired Trainings Alert */}
+          {safetyTrainingMetrics?.expiredTrainings && safetyTrainingMetrics.expiredTrainings > 0 && (
+            <Card className="border-destructive">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                  <div>
+                    <p className="font-medium text-destructive">
+                      {safetyTrainingMetrics.expiredTrainings} treinamento{safetyTrainingMetrics.expiredTrainings > 1 ? 's' : ''} vencido{safetyTrainingMetrics.expiredTrainings > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Providencie a reciclagem dos treinamentos vencidos para manter a conformidade.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">
