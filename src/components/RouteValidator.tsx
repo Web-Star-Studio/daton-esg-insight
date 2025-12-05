@@ -19,7 +19,7 @@ const VALID_ROUTES = [
   '/quality-dashboard', '/gerenciamento-projetos',
   '/sgq-dashboard', '/auditorias-internas', '/acoes-corretivas',
   '/controle-documentos', '/avaliacao-fornecedores',
-  '/estrutura-organizacional', '/gestao-funcionarios',
+  '/estrutura-organizacional', '/descricao-cargos', '/gestao-funcionarios',
   '/gestao-treinamentos', '/gestao-desempenho',
   '/beneficios-remuneracao', '/recrutamento',
   '/seguranca-trabalho', '/ponto-frequencia',
