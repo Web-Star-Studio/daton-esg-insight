@@ -32,7 +32,6 @@ import { useToast } from '@/hooks/use-toast';
 // Import components
 import { TrainingProgramModal } from '@/components/TrainingProgramModal';
 import { EmployeeTrainingModal } from '@/components/EmployeeTrainingModal';
-import { BulkTrainingModal } from '@/components/BulkTrainingModal';
 import { TrainingCalendar } from '@/components/TrainingCalendar';
 import { TrainingCertificationModal } from '@/components/TrainingCertificationModal';
 import { TrainingReportsModal } from '@/components/TrainingReportsModal';
@@ -61,7 +60,6 @@ export default function GestaoTreinamentos() {
   // Modal states
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   const [isEmployeeTrainingModalOpen, setIsEmployeeTrainingModalOpen] = useState(false);
-  const [isBulkTrainingModalOpen, setIsBulkTrainingModalOpen] = useState(false);
   const [isCertificationModalOpen, setIsCertificationModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -187,10 +185,6 @@ export default function GestaoTreinamentos() {
     setIsEmployeeTrainingModalOpen(true);
   };
 
-  const handleBulkTraining = () => {
-    setIsBulkTrainingModalOpen(true);
-  };
-
   const handleComplianceRegisterTraining = (employeeId: string, programId: string) => {
     // Pre-fill the training modal with employee and program
     setSelectedTraining({
@@ -309,10 +303,6 @@ export default function GestaoTreinamentos() {
           <Button onClick={() => setIsScheduleModalOpen(true)} variant="outline">
             <Calendar className="w-4 h-4 mr-2" />
             Agendar
-          </Button>
-          <Button onClick={handleBulkTraining} variant="outline">
-            <Users className="w-4 h-4 mr-2" />
-            Registro em Lote
           </Button>
           <Button onClick={handleNewEmployeeTraining} variant="outline">
             <UserPlus className="w-4 h-4 mr-2" />
@@ -691,11 +681,6 @@ export default function GestaoTreinamentos() {
         open={isEmployeeTrainingModalOpen}
         onOpenChange={setIsEmployeeTrainingModalOpen}
         training={selectedTraining}
-      />
-
-      <BulkTrainingModal
-        open={isBulkTrainingModalOpen}
-        onOpenChange={setIsBulkTrainingModalOpen}
       />
 
       <TrainingCertificationModal
