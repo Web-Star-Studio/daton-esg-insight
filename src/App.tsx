@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from "react";
+import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -606,28 +607,30 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <CompanyProvider>
-          <TooltipProvider>
-            <SmartToastProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter 
-                future={{ 
-                  v7_startTransition: true, 
-                  v7_relativeSplatPath: true 
-                }}
-              >
-                <AppContent />
-              </BrowserRouter>
-            </SmartToastProvider>
-          </TooltipProvider>
-        </CompanyProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
+  <HelmetProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CompanyProvider>
+            <TooltipProvider>
+              <SmartToastProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter 
+                  future={{ 
+                    v7_startTransition: true, 
+                    v7_relativeSplatPath: true 
+                  }}
+                >
+                  <AppContent />
+                </BrowserRouter>
+              </SmartToastProvider>
+            </TooltipProvider>
+          </CompanyProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  </HelmetProvider>
 );
 
 export default App;
