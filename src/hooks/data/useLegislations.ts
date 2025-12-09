@@ -33,7 +33,7 @@ export const useLegislations = (filters?: {
   status?: string;
   search?: string;
 }) => {
-  const { currentCompany } = useCompany();
+  const { selectedCompany: currentCompany } = useCompany();
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -103,7 +103,7 @@ export const useLegislation = (id: string | undefined) => {
 };
 
 export const useLegislationThemes = () => {
-  const { currentCompany } = useCompany();
+  const { selectedCompany: currentCompany } = useCompany();
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -145,7 +145,7 @@ export const useLegislationThemes = () => {
 };
 
 export const useLegislationSubthemes = (themeId?: string) => {
-  const { currentCompany } = useCompany();
+  const { selectedCompany: currentCompany } = useCompany();
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -241,7 +241,7 @@ export const useLegislationEvidences = (legislationId: string | undefined) => {
 };
 
 export const useLegislationStats = () => {
-  const { currentCompany } = useCompany();
+  const { selectedCompany: currentCompany } = useCompany();
 
   return useQuery({
     queryKey: ['legislation-stats', currentCompany?.id],

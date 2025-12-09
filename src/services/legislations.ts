@@ -110,7 +110,7 @@ export const fetchLegislationThemes = async (companyId: string): Promise<Legisla
 export const createLegislationTheme = async (theme: Partial<LegislationTheme>): Promise<LegislationTheme> => {
   const { data, error } = await supabase
     .from('legislation_themes')
-    .insert(theme)
+    .insert([theme] as any)
     .select()
     .single();
 
@@ -151,7 +151,7 @@ export const fetchLegislationSubthemes = async (companyId: string, themeId?: str
 export const createLegislationSubtheme = async (subtheme: Partial<LegislationSubtheme>): Promise<LegislationSubtheme> => {
   const { data, error } = await supabase
     .from('legislation_subthemes')
-    .insert(subtheme)
+    .insert([subtheme] as any)
     .select()
     .single();
 
@@ -229,7 +229,7 @@ export const fetchLegislationById = async (id: string): Promise<Legislation | nu
 export const createLegislation = async (legislation: Partial<Legislation>): Promise<Legislation> => {
   const { data, error } = await supabase
     .from('legislations')
-    .insert(legislation)
+    .insert([legislation] as any)
     .select()
     .single();
 
@@ -275,7 +275,7 @@ export const fetchUnitCompliances = async (legislationId: string): Promise<Legis
 export const upsertUnitCompliance = async (compliance: Partial<LegislationUnitCompliance>): Promise<LegislationUnitCompliance> => {
   const { data, error } = await supabase
     .from('legislation_unit_compliance')
-    .upsert(compliance, { onConflict: 'legislation_id,branch_id' })
+    .upsert([compliance] as any, { onConflict: 'legislation_id,branch_id' })
     .select()
     .single();
 
@@ -298,7 +298,7 @@ export const fetchLegislationEvidences = async (legislationId: string): Promise<
 export const createLegislationEvidence = async (evidence: Partial<LegislationEvidence>): Promise<LegislationEvidence> => {
   const { data, error } = await supabase
     .from('legislation_evidences')
-    .insert(evidence)
+    .insert([evidence] as any)
     .select()
     .single();
 
