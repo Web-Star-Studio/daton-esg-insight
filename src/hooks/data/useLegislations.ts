@@ -124,6 +124,14 @@ export const useLegislationThemes = () => {
     },
   });
 
+  const createMutateAsync = useMutation({
+    mutationFn: (data: Partial<LegislationTheme>) => 
+      createLegislationTheme({ ...data, company_id: currentCompany!.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['legislation-themes'] });
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<LegislationTheme> }) => 
       updateLegislationTheme(id, data),
@@ -163,6 +171,14 @@ export const useLegislationSubthemes = (themeId?: string) => {
     },
     onError: (error: Error) => {
       toast.error("Erro ao criar subtema: " + error.message);
+    },
+  });
+
+  const createMutateAsync = useMutation({
+    mutationFn: (data: Partial<LegislationSubtheme>) => 
+      createLegislationSubtheme({ ...data, company_id: currentCompany!.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['legislation-subthemes'] });
     },
   });
 
