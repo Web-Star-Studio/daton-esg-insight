@@ -44,6 +44,7 @@ const ProcessarLicenca = lazy(() => import("./pages/ProcessarLicenca"));
 const LegislationsHub = lazy(() => import("./pages/LegislationsHub"));
 const LegislationForm = lazy(() => import("./pages/LegislationForm"));
 const LegislationDetail = lazy(() => import("./pages/LegislationDetail"));
+const LegislationReports = lazy(() => import("./pages/LegislationReports"));
 const Residuos = lazy(() => import("./pages/Residuos"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
 const RelatoriosPGRS = lazy(() => import("./pages/RelatoriosPGRS"));
@@ -322,6 +323,11 @@ const AppContent = () => {
             <Route path="/licenciamento/legislacoes/:id/editar" element={
               <ProtectedLazyPageWrapper>
                 <LegislationForm />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/relatorios" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationReports />
               </ProtectedLazyPageWrapper>
             } />
 
