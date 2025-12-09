@@ -2,8 +2,11 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, User } from "lucide-react";
 import { useLegislationThemes } from "@/hooks/data/useLegislations";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/contexts/CompanyContext";
 
 interface LegislationFiltersProps {
   filters: {
@@ -12,6 +15,7 @@ interface LegislationFiltersProps {
     themeId: string;
     applicability: string;
     status: string;
+    responsibleUserId?: string;
   };
   onFiltersChange: (filters: any) => void;
   onClearFilters: () => void;
@@ -23,8 +27,38 @@ export const LegislationFilters: React.FC<LegislationFiltersProps> = ({
   onClearFilters,
 }) => {
   const { themes } = useLegislationThemes();
+  const { selectedCompany } = useCompany();
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all');
+  // Fetch users who are responsible for legislations
+  const { data: responsibleUsers } = useQuery({
+    queryKey: ['legislation-responsible-users', selectedCompany?.id],
+    queryFn: async () => {
+      if (!selectedCompany?.id) return [];
+      
+      // Get distinct responsible users from legislations
+      const { data, error } = await supabase
+        .from('legislations')
+        .select('responsible_user_id, responsible_user:profiles!legislations_responsible_user_id_fkey(id, full_name)')
+        .eq('company_id', selectedCompany.id)
+        .eq('is_active', true)
+        .not('responsible_user_id', 'is', null);
+      
+      if (error) return [];
+      
+      // Remove duplicates
+      const uniqueUsers = new Map();
+      data?.forEach(item => {
+        if (item.responsible_user && !uniqueUsers.has(item.responsible_user_id)) {
+          uniqueUsers.set(item.responsible_user_id, item.responsible_user);
+        }
+      });
+      
+      return Array.from(uniqueUsers.values());
+    },
+    enabled: !!selectedCompany?.id,
+  });
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all' && v !== undefined);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -103,6 +137,26 @@ export const LegislationFilters: React.FC<LegislationFiltersProps> = ({
           <SelectItem value="adequacao">Adequação</SelectItem>
           <SelectItem value="plano_acao">Plano de Ação</SelectItem>
           <SelectItem value="pending">Pendente</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.responsibleUserId || "all"}
+        onValueChange={(value) => onFiltersChange({ ...filters, responsibleUserId: value === "all" ? "" : value })}
+      >
+        <SelectTrigger className="w-[180px]">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Responsável" />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {responsibleUsers?.map((user: any) => (
+            <SelectItem key={user.id} value={user.id}>
+              {user.full_name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
