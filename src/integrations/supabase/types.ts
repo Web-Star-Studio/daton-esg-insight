@@ -12389,6 +12389,469 @@ export type Database = {
           },
         ]
       }
+      legislation_evidences: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          description: string | null
+          evidence_type: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          legislation_id: string
+          title: string
+          unit_compliance_id: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          evidence_type?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          legislation_id: string
+          title: string
+          unit_compliance_id?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          evidence_type?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          legislation_id?: string
+          title?: string
+          unit_compliance_id?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_evidences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_evidences_legislation_id_fkey"
+            columns: ["legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_evidences_unit_compliance_id_fkey"
+            columns: ["unit_compliance_id"]
+            isOneToOne: false
+            referencedRelation: "legislation_unit_compliance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_evidences_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legislation_history: {
+        Row: {
+          action: string
+          changed_at: string | null
+          changed_by: string | null
+          company_id: string
+          id: string
+          legislation_id: string
+          new_values: Json | null
+          notes: string | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string | null
+          changed_by?: string | null
+          company_id: string
+          id?: string
+          legislation_id: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          company_id?: string
+          id?: string
+          legislation_id?: string
+          new_values?: Json | null
+          notes?: string | null
+          old_values?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_history_legislation_id_fkey"
+            columns: ["legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legislation_subthemes: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          theme_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          theme_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          theme_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_subthemes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_subthemes_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "legislation_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legislation_themes: {
+        Row: {
+          code: string | null
+          color: string | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          color?: string | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          color?: string | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_themes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legislation_unit_compliance: {
+        Row: {
+          action_plan: string | null
+          action_plan_deadline: string | null
+          applicability: string
+          branch_id: string
+          company_id: string
+          compliance_status: string | null
+          created_at: string | null
+          evaluated_at: string | null
+          evaluated_by: string | null
+          evidence_notes: string | null
+          has_pending_requirements: boolean | null
+          id: string
+          legislation_id: string
+          pending_description: string | null
+          unit_responsible_user_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_plan?: string | null
+          action_plan_deadline?: string | null
+          applicability?: string
+          branch_id: string
+          company_id: string
+          compliance_status?: string | null
+          created_at?: string | null
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          evidence_notes?: string | null
+          has_pending_requirements?: boolean | null
+          id?: string
+          legislation_id: string
+          pending_description?: string | null
+          unit_responsible_user_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_plan?: string | null
+          action_plan_deadline?: string | null
+          applicability?: string
+          branch_id?: string
+          company_id?: string
+          compliance_status?: string | null
+          created_at?: string | null
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          evidence_notes?: string | null
+          has_pending_requirements?: boolean | null
+          id?: string
+          legislation_id?: string
+          pending_description?: string | null
+          unit_responsible_user_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_unit_compliance_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_unit_compliance_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_unit_compliance_evaluated_by_fkey"
+            columns: ["evaluated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_unit_compliance_legislation_id_fkey"
+            columns: ["legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_unit_compliance_unit_responsible_user_id_fkey"
+            columns: ["unit_responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legislations: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          full_text_url: string | null
+          has_alert: boolean | null
+          id: string
+          is_active: boolean | null
+          issuing_body: string | null
+          jurisdiction: string
+          last_review_date: string | null
+          municipality: string | null
+          next_review_date: string | null
+          norm_number: string | null
+          norm_type: string
+          observations: string | null
+          overall_applicability: string | null
+          overall_status: string | null
+          publication_date: string | null
+          related_legislation_ids: string[] | null
+          responsible_user_id: string | null
+          review_frequency_days: number | null
+          revoked_by_legislation_id: string | null
+          revokes_legislation_id: string | null
+          state: string | null
+          subtheme_id: string | null
+          summary: string | null
+          theme_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          full_text_url?: string | null
+          has_alert?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          issuing_body?: string | null
+          jurisdiction?: string
+          last_review_date?: string | null
+          municipality?: string | null
+          next_review_date?: string | null
+          norm_number?: string | null
+          norm_type: string
+          observations?: string | null
+          overall_applicability?: string | null
+          overall_status?: string | null
+          publication_date?: string | null
+          related_legislation_ids?: string[] | null
+          responsible_user_id?: string | null
+          review_frequency_days?: number | null
+          revoked_by_legislation_id?: string | null
+          revokes_legislation_id?: string | null
+          state?: string | null
+          subtheme_id?: string | null
+          summary?: string | null
+          theme_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          full_text_url?: string | null
+          has_alert?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          issuing_body?: string | null
+          jurisdiction?: string
+          last_review_date?: string | null
+          municipality?: string | null
+          next_review_date?: string | null
+          norm_number?: string | null
+          norm_type?: string
+          observations?: string | null
+          overall_applicability?: string | null
+          overall_status?: string | null
+          publication_date?: string | null
+          related_legislation_ids?: string[] | null
+          responsible_user_id?: string | null
+          review_frequency_days?: number | null
+          revoked_by_legislation_id?: string | null
+          revokes_legislation_id?: string | null
+          state?: string | null
+          subtheme_id?: string | null
+          summary?: string | null
+          theme_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislations_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislations_revoked_by_legislation_id_fkey"
+            columns: ["revoked_by_legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislations_revokes_legislation_id_fkey"
+            columns: ["revokes_legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislations_subtheme_id_fkey"
+            columns: ["subtheme_id"]
+            isOneToOne: false
+            referencedRelation: "legislation_subthemes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislations_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "legislation_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       license_action_history: {
         Row: {
           action_target_id: string
@@ -12786,6 +13249,68 @@ export type Database = {
             columns: ["related_alert_id"]
             isOneToOne: false
             referencedRelation: "license_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_legislation_links: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          legislation_id: string
+          license_id: string
+          link_type: string | null
+          notes: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          legislation_id: string
+          license_id: string
+          link_type?: string | null
+          notes?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          legislation_id?: string
+          license_id?: string
+          link_type?: string | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_legislation_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_legislation_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_legislation_links_legislation_id_fkey"
+            columns: ["legislation_id"]
+            isOneToOne: false
+            referencedRelation: "legislations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "license_legislation_links_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
             referencedColumns: ["id"]
           },
         ]
