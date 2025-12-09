@@ -38,6 +38,11 @@ const LicenseDetails = lazy(() => import("./pages/LicenseDetails"));
 const LicenseForm = lazy(() => import("./pages/LicenseForm"));
 const LicenseMonitoring = lazy(() => import("./pages/LicenseMonitoring"));
 const ProcessarLicenca = lazy(() => import("./pages/ProcessarLicenca"));
+
+// Legislações - Subpáginas do Licenciamento
+const LegislationsHub = lazy(() => import("./pages/LegislationsHub"));
+const LegislationForm = lazy(() => import("./pages/LegislationForm"));
+const LegislationDetail = lazy(() => import("./pages/LegislationDetail"));
 const Residuos = lazy(() => import("./pages/Residuos"));
 const RegistrarDestinacao = lazy(() => import("./pages/RegistrarDestinacao"));
 const RelatoriosPGRS = lazy(() => import("./pages/RelatoriosPGRS"));
@@ -296,6 +301,28 @@ const AppContent = () => {
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/licenciamento/reconciliacao" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
+
+            {/* Legislações - Subpáginas do Licenciamento */}
+            <Route path="/licenciamento/legislacoes" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationsHub />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/nova" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationForm />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/:id" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationDetail />
+              </ProtectedLazyPageWrapper>
+            } />
+            <Route path="/licenciamento/legislacoes/:id/editar" element={
+              <ProtectedLazyPageWrapper>
+                <LegislationForm />
+              </ProtectedLazyPageWrapper>
+            } />
 
             {/* Resíduos */}
             <Route path="/residuos" element={
