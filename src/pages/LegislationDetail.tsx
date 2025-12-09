@@ -1,8 +1,6 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,347 +32,328 @@ const LegislationDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-background">
-          <AppSidebar />
-          <SidebarInset className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (!legislation) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-background">
-          <AppSidebar />
-          <SidebarInset className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-muted-foreground mb-4">Legislação não encontrada</p>
-              <Button onClick={() => navigate('/licenciamento/legislacoes')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-            </div>
-          </SidebarInset>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Legislação não encontrada</p>
+          <Button onClick={() => navigate('/licenciamento/legislacoes')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
         </div>
-      </SidebarProvider>
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <SidebarInset className="flex-1">
-          <Helmet>
-            <title>{legislation.title} | Legislações</title>
-            <meta name="description" content={legislation.summary || legislation.title} />
-          </Helmet>
+    <div className="space-y-6">
+      <Helmet>
+        <title>{legislation.title} | Legislações</title>
+        <meta name="description" content={legislation.summary || legislation.title} />
+      </Helmet>
 
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-6xl mx-auto space-y-6">
-              {/* Header */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => navigate('/licenciamento/legislacoes')}
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="font-mono">
-                        {legislation.norm_type} {legislation.norm_number && `nº ${legislation.norm_number}`}
-                      </Badge>
-                      <JurisdictionBadge value={legislation.jurisdiction} />
-                      {legislation.theme && (
-                        <Badge 
-                          style={{ 
-                            backgroundColor: `${legislation.theme.color}20`,
-                            color: legislation.theme.color,
-                            borderColor: legislation.theme.color 
-                          }}
-                        >
-                          {legislation.theme.name}
-                        </Badge>
-                      )}
-                    </div>
-                    <h1 className="text-2xl font-bold max-w-2xl">
-                      {legislation.title}
-                    </h1>
-                    {legislation.issuing_body && (
-                      <p className="text-muted-foreground flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        {legislation.issuing_body}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {legislation.full_text_url && (
-                    <Button variant="outline" onClick={() => window.open(legislation.full_text_url, '_blank')}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Texto Completo
-                    </Button>
-                  )}
-                  <Button onClick={() => navigate(`/licenciamento/legislacoes/${id}/editar`)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
-              </div>
-
-              {/* Status Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground mb-2">Aplicabilidade</p>
-                    <LegislationStatusBadge type="applicability" value={legislation.overall_applicability} />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground mb-2">Status de Atendimento</p>
-                    <LegislationStatusBadge type="status" value={legislation.overall_status} />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground mb-2">Próxima Revisão</p>
-                    <p className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {legislation.next_review_date 
-                        ? format(new Date(legislation.next_review_date), "dd/MM/yyyy", { locale: ptBR })
-                        : "Não definida"
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Tabs */}
-              <Tabs defaultValue="details">
-                <TabsList>
-                  <TabsTrigger value="details">Detalhes</TabsTrigger>
-                  <TabsTrigger value="units">Avaliação por Unidade</TabsTrigger>
-                  <TabsTrigger value="evidences">Evidências</TabsTrigger>
-                  <TabsTrigger value="history">Histórico</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="details" className="space-y-6 mt-6">
-                  {/* Summary */}
-                  {legislation.summary && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Ementa / Resumo</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground whitespace-pre-wrap">
-                          {legislation.summary}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Metadata */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Informações</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Publicação</p>
-                          <p className="font-medium">
-                            {legislation.publication_date 
-                              ? format(new Date(legislation.publication_date), "dd/MM/yyyy", { locale: ptBR })
-                              : "-"
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Jurisdição</p>
-                          <p className="font-medium capitalize">
-                            {legislation.jurisdiction}
-                            {legislation.state && ` - ${legislation.state}`}
-                            {legislation.municipality && ` / ${legislation.municipality}`}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Subtema</p>
-                          <p className="font-medium">
-                            {legislation.subtheme?.name || "-"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Responsável</p>
-                          <p className="font-medium flex items-center gap-1">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            {legislation.responsible_user?.full_name || "-"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Última Revisão</p>
-                          <p className="font-medium">
-                            {legislation.last_review_date 
-                              ? format(new Date(legislation.last_review_date), "dd/MM/yyyy", { locale: ptBR })
-                              : "-"
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Frequência de Revisão</p>
-                          <p className="font-medium">
-                            {legislation.review_frequency_days} dias
-                          </p>
-                        </div>
-                      </div>
-
-                      {legislation.observations && (
-                        <>
-                          <Separator className="my-6" />
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-2">Observações</p>
-                            <p className="whitespace-pre-wrap">{legislation.observations}</p>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="units" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Avaliação por Unidade</CardTitle>
-                      <CardDescription>
-                        Avalie a aplicabilidade e conformidade desta legislação em cada unidade
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoadingCompliances ? (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                      ) : compliances.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground">
-                            Nenhuma unidade avaliada ainda. Cadastre unidades em Configuração Organizacional.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {compliances.map((compliance) => (
-                            <div 
-                              key={compliance.id}
-                              className="flex items-center justify-between p-4 border rounded-lg"
-                            >
-                              <div>
-                                <p className="font-medium">{compliance.branch?.name}</p>
-                                {compliance.pending_description && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {compliance.pending_description}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <LegislationStatusBadge 
-                                  type="applicability" 
-                                  value={compliance.applicability} 
-                                />
-                                <LegislationStatusBadge 
-                                  type="status" 
-                                  value={compliance.compliance_status} 
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="evidences" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Evidências
-                      </CardTitle>
-                      <CardDescription>
-                        Documentos e evidências de conformidade
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoadingEvidences ? (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        </div>
-                      ) : evidences.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground mb-4">
-                            Nenhuma evidência cadastrada ainda.
-                          </p>
-                          <Button variant="outline">
-                            Adicionar Evidência
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {evidences.map((evidence) => (
-                            <div 
-                              key={evidence.id}
-                              className="flex items-center justify-between p-3 border rounded-lg"
-                            >
-                              <div className="flex items-center gap-3">
-                                <FileText className="h-5 w-5 text-muted-foreground" />
-                                <div>
-                                  <p className="font-medium">{evidence.title}</p>
-                                  {evidence.description && (
-                                    <p className="text-sm text-muted-foreground">
-                                      {evidence.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <Badge variant="outline">{evidence.evidence_type}</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="history" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <History className="h-5 w-5" />
-                        Histórico de Alterações
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground">
-                          O histórico de alterações será exibido aqui.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate('/licenciamento/legislacoes')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="font-mono">
+                {legislation.norm_type} {legislation.norm_number && `nº ${legislation.norm_number}`}
+              </Badge>
+              <JurisdictionBadge value={legislation.jurisdiction} />
+              {legislation.theme && (
+                <Badge 
+                  style={{ 
+                    backgroundColor: `${legislation.theme.color}20`,
+                    color: legislation.theme.color,
+                    borderColor: legislation.theme.color 
+                  }}
+                >
+                  {legislation.theme.name}
+                </Badge>
+              )}
             </div>
-          </main>
-        </SidebarInset>
+            <h1 className="text-2xl font-bold max-w-2xl">
+              {legislation.title}
+            </h1>
+            {legislation.issuing_body && (
+              <p className="text-muted-foreground flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                {legislation.issuing_body}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {legislation.full_text_url && (
+            <Button variant="outline" onClick={() => window.open(legislation.full_text_url, '_blank')}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Texto Completo
+            </Button>
+          )}
+          <Button onClick={() => navigate(`/licenciamento/legislacoes/${id}/editar`)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+        </div>
       </div>
-    </SidebarProvider>
+
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground mb-2">Aplicabilidade</p>
+            <LegislationStatusBadge type="applicability" value={legislation.overall_applicability} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground mb-2">Status de Atendimento</p>
+            <LegislationStatusBadge type="status" value={legislation.overall_status} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground mb-2">Próxima Revisão</p>
+            <p className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              {legislation.next_review_date 
+                ? format(new Date(legislation.next_review_date), "dd/MM/yyyy", { locale: ptBR })
+                : "Não definida"
+              }
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="details">
+        <TabsList>
+          <TabsTrigger value="details">Detalhes</TabsTrigger>
+          <TabsTrigger value="units">Avaliação por Unidade</TabsTrigger>
+          <TabsTrigger value="evidences">Evidências</TabsTrigger>
+          <TabsTrigger value="history">Histórico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details" className="space-y-6 mt-6">
+          {/* Summary */}
+          {legislation.summary && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Ementa / Resumo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {legislation.summary}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Metadata */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground">Publicação</p>
+                  <p className="font-medium">
+                    {legislation.publication_date 
+                      ? format(new Date(legislation.publication_date), "dd/MM/yyyy", { locale: ptBR })
+                      : "-"
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Jurisdição</p>
+                  <p className="font-medium capitalize">
+                    {legislation.jurisdiction}
+                    {legislation.state && ` - ${legislation.state}`}
+                    {legislation.municipality && ` / ${legislation.municipality}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Subtema</p>
+                  <p className="font-medium">
+                    {legislation.subtheme?.name || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Responsável</p>
+                  <p className="font-medium flex items-center gap-1">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    {legislation.responsible_user?.full_name || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Última Revisão</p>
+                  <p className="font-medium">
+                    {legislation.last_review_date 
+                      ? format(new Date(legislation.last_review_date), "dd/MM/yyyy", { locale: ptBR })
+                      : "-"
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Frequência de Revisão</p>
+                  <p className="font-medium">
+                    {legislation.review_frequency_days} dias
+                  </p>
+                </div>
+              </div>
+
+              {legislation.observations && (
+                <>
+                  <Separator className="my-6" />
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Observações</p>
+                    <p className="whitespace-pre-wrap">{legislation.observations}</p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="units" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Avaliação por Unidade</CardTitle>
+              <CardDescription>
+                Avalie a aplicabilidade e conformidade desta legislação em cada unidade
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingCompliances ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : compliances.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    Nenhuma unidade avaliada ainda. Cadastre unidades em Configuração Organizacional.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {compliances.map((compliance) => (
+                    <div 
+                      key={compliance.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">{compliance.branch?.name}</p>
+                        {compliance.pending_description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {compliance.pending_description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <LegislationStatusBadge 
+                          type="applicability" 
+                          value={compliance.applicability} 
+                        />
+                        <LegislationStatusBadge 
+                          type="status" 
+                          value={compliance.compliance_status} 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="evidences" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Evidências
+              </CardTitle>
+              <CardDescription>
+                Documentos e evidências de conformidade
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingEvidences ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : evidences.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    Nenhuma evidência cadastrada ainda.
+                  </p>
+                  <Button variant="outline">
+                    Adicionar Evidência
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {evidences.map((evidence) => (
+                    <div 
+                      key={evidence.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{evidence.title}</p>
+                          {evidence.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {evidence.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="outline">{evidence.evidence_type}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de Alterações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  O histórico de alterações será exibido aqui.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

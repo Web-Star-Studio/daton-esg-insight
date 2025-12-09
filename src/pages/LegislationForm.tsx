@@ -4,8 +4,6 @@ import { Helmet } from "react-helmet-async";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -130,49 +128,39 @@ const LegislationForm: React.FC = () => {
 
   if (isEditing && isLoadingLegislation) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-background">
-          <AppSidebar />
-          <SidebarInset className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <SidebarInset className="flex-1">
-          <Helmet>
-            <title>{isEditing ? 'Editar Legislação' : 'Nova Legislação'} | Licenciamento</title>
-          </Helmet>
+    <div className="space-y-6">
+      <Helmet>
+        <title>{isEditing ? 'Editar Legislação' : 'Nova Legislação'} | Licenciamento</title>
+      </Helmet>
 
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-4xl mx-auto space-y-6">
-              {/* Header */}
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => navigate(-1)}
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold">
-                    {isEditing ? 'Editar Legislação' : 'Nova Legislação'}
-                  </h1>
-                  <p className="text-muted-foreground">
-                    {isEditing ? 'Atualize os dados da legislação' : 'Cadastre uma nova legislação'}
-                  </p>
-                </div>
-              </div>
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">
+            {isEditing ? 'Editar Legislação' : 'Nova Legislação'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isEditing ? 'Atualize os dados da legislação' : 'Cadastre uma nova legislação'}
+          </p>
+        </div>
+      </div>
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
                   {/* Identificação */}
                   <Card>
                     <CardHeader>
@@ -534,10 +522,6 @@ const LegislationForm: React.FC = () => {
                 </form>
               </Form>
             </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
   );
 };
 
