@@ -14,6 +14,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useLegislation, useLegislations, useLegislationThemes, useLegislationSubthemes } from "@/hooks/data/useLegislations";
 import { NORM_TYPES, ISSUING_BODIES } from "@/services/legislations";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
 
 const formSchema = z.object({
   norm_type: z.string().min(1, "Tipo de norma é obrigatório"),
@@ -32,6 +33,9 @@ const formSchema = z.object({
   full_text_url: z.string().url().optional().or(z.literal('')),
   review_frequency_days: z.coerce.number().min(1).default(365),
   observations: z.string().optional(),
+  responsible_user_id: z.string().optional(),
+  revokes_legislation_id: z.string().optional(),
+  revoked_by_legislation_id: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -43,9 +47,10 @@ const LegislationForm: React.FC = () => {
   const isEditing = !!id;
 
   const { data: legislation, isLoading: isLoadingLegislation } = useLegislation(id);
-  const { createLegislation, updateLegislation, isCreating, isUpdating } = useLegislations();
+  const { legislations, createLegislation, updateLegislation, isCreating, isUpdating } = useLegislations();
   const { themes } = useLegislationThemes();
   const { subthemes } = useLegislationSubthemes();
+  const { data: users } = useCompanyUsers();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,6 +71,9 @@ const LegislationForm: React.FC = () => {
       full_text_url: '',
       review_frequency_days: 365,
       observations: '',
+      responsible_user_id: '',
+      revokes_legislation_id: '',
+      revoked_by_legislation_id: '',
     },
   });
 
@@ -97,6 +105,9 @@ const LegislationForm: React.FC = () => {
         full_text_url: legislation.full_text_url || '',
         review_frequency_days: legislation.review_frequency_days,
         observations: legislation.observations || '',
+        responsible_user_id: legislation.responsible_user_id || '',
+        revokes_legislation_id: legislation.revokes_legislation_id || '',
+        revoked_by_legislation_id: legislation.revoked_by_legislation_id || '',
       });
     }
   }, [legislation, form]);
@@ -110,6 +121,9 @@ const LegislationForm: React.FC = () => {
       full_text_url: data.full_text_url || null,
       state: data.jurisdiction === 'estadual' || data.jurisdiction === 'municipal' ? data.state : null,
       municipality: data.jurisdiction === 'municipal' ? data.municipality : null,
+      responsible_user_id: data.responsible_user_id || null,
+      revokes_legislation_id: data.revokes_legislation_id || null,
+      revoked_by_legislation_id: data.revoked_by_legislation_id || null,
       created_by: user?.id,
     };
 
@@ -489,6 +503,102 @@ const LegislationForm: React.FC = () => {
                                 {...field} 
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="responsible_user_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Responsável</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o responsável" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {users?.map((user) => (
+                                  <SelectItem key={user.id} value={user.id}>
+                                    {user.full_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Pessoa responsável por acompanhar esta legislação
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Revogações */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Vinculações e Revogações</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="revokes_legislation_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Esta legislação revoga</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione uma legislação" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {legislations
+                                  .filter(l => l.id !== id)
+                                  .map((leg) => (
+                                    <SelectItem key={leg.id} value={leg.id}>
+                                      {leg.norm_type} {leg.norm_number ? `nº ${leg.norm_number}` : ''} - {leg.title.substring(0, 50)}...
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Se esta legislação revoga outra, selecione-a aqui
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="revoked_by_legislation_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Revogada por</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione uma legislação" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {legislations
+                                  .filter(l => l.id !== id)
+                                  .map((leg) => (
+                                    <SelectItem key={leg.id} value={leg.id}>
+                                      {leg.norm_type} {leg.norm_number ? `nº ${leg.norm_number}` : ''} - {leg.title.substring(0, 50)}...
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Se esta legislação foi revogada por outra, selecione-a aqui
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
