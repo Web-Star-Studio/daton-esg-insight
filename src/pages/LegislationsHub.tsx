@@ -1,0 +1,128 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Scale, ArrowLeft } from "lucide-react";
+import { LegislationKPIs } from "@/components/legislation/LegislationKPIs";
+import { LegislationFilters } from "@/components/legislation/LegislationFilters";
+import { LegislationList } from "@/components/legislation/LegislationList";
+import { useLegislations } from "@/hooks/data/useLegislations";
+
+const LegislationsHub: React.FC = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("all");
+  const [filters, setFilters] = useState({
+    search: "",
+    jurisdiction: "",
+    themeId: "",
+    applicability: "",
+    status: "",
+  });
+
+  // Combine tab filter with other filters
+  const effectiveFilters = {
+    ...filters,
+    jurisdiction: activeTab !== "all" ? activeTab : filters.jurisdiction,
+  };
+
+  const { legislations, isLoading, deleteLegislation } = useLegislations(effectiveFilters);
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: "",
+      jurisdiction: "",
+      themeId: "",
+      applicability: "",
+      status: "",
+    });
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <Helmet>
+            <title>Gestão de Legislações | Licenciamento</title>
+            <meta name="description" content="Gestão de conformidade legal e regulatória por unidade" />
+          </Helmet>
+
+          <main className="flex-1 p-6 overflow-auto">
+            <div className="max-w-7xl mx-auto space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => navigate('/licenciamento')}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                  <div>
+                    <h1 className="text-3xl font-bold flex items-center gap-3">
+                      <Scale className="h-8 w-8 text-primary" />
+                      Gestão de Legislações
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                      Controle de conformidade legal por unidade
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => navigate('/licenciamento/legislacoes/nova')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Legislação
+                </Button>
+              </div>
+
+              {/* KPIs */}
+              <LegislationKPIs />
+
+              {/* Main Content */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>Legislações</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Tabs by Jurisdiction */}
+                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="all">Todas</TabsTrigger>
+                      <TabsTrigger value="federal">Federal</TabsTrigger>
+                      <TabsTrigger value="estadual">Estadual</TabsTrigger>
+                      <TabsTrigger value="municipal">Municipal</TabsTrigger>
+                      <TabsTrigger value="nbr">NBR</TabsTrigger>
+                      <TabsTrigger value="internacional">Internacional</TabsTrigger>
+                    </TabsList>
+
+                    {/* Filters */}
+                    <LegislationFilters
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      onClearFilters={handleClearFilters}
+                    />
+
+                    {/* Content */}
+                    <TabsContent value={activeTab} className="mt-4">
+                      <LegislationList
+                        legislations={legislations}
+                        isLoading={isLoading}
+                        onDelete={deleteLegislation}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default LegislationsHub;
