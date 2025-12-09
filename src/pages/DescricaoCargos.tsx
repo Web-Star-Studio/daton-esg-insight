@@ -13,8 +13,6 @@ import {
   Clock, 
   Building2, 
   DollarSign,
-  Eye,
-  Edit,
   Users,
   ChevronRight
 } from 'lucide-react';
@@ -171,7 +169,7 @@ export default function DescricaoCargos() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -209,22 +207,6 @@ export default function DescricaoCargos() {
                 <div>
                   <p className="text-2xl font-bold">{filteredPositions.length}</p>
                   <p className="text-sm text-muted-foreground">Resultados</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/10">
-                  <GraduationCap className="h-5 w-5 text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {positions.filter(p => p.required_education_level).length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Com Escolaridade</p>
                 </div>
               </div>
             </CardContent>
