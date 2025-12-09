@@ -47,6 +47,9 @@ serve(async (req) => {
       case 'check_efficacy_evaluations':
         result = await checkEfficacyEvaluations(supabase)
         break
+      case 'check_legislation_reviews':
+        result = await checkLegislationReviews(supabase)
+        break
       default:
         return new Response(
           JSON.stringify({ error: `Invalid action: ${action}` }),
@@ -95,7 +98,6 @@ async function checkGoalDeadlines(supabase: any) {
         )
 
         if (daysUntilDeadline <= 30 && daysUntilDeadline > 0) {
-          // Check if alert already sent
           const { data: existingAlert } = await supabase
             .from('notifications')
             .select('id')
@@ -292,7 +294,6 @@ async function checkEfficacyEvaluations(supabase: any) {
   try {
     console.log('Checking efficacy evaluation deadlines...')
     
-    // Get training programs with efficacy evaluation deadlines
     const { data: programs, error: programsError } = await supabase
       .from('training_programs')
       .select('id, name, efficacy_evaluation_deadline, notify_responsible_email, responsible_email, responsible_name, created_by_user_id, company_id')
@@ -308,7 +309,6 @@ async function checkEfficacyEvaluations(supabase: any) {
     let notificationsCreated = 0
 
     const now = new Date()
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
     for (const program of programs || []) {
       try {
@@ -317,9 +317,7 @@ async function checkEfficacyEvaluations(supabase: any) {
           (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
         )
 
-        // Only notify if deadline is within 7 days and not past
         if (daysUntilDeadline <= 7 && daysUntilDeadline >= 0) {
-          // Check if we already sent a notification for this program recently
           const { data: existingAlert } = await supabase
             .from('notifications')
             .select('id')
@@ -330,7 +328,6 @@ async function checkEfficacyEvaluations(supabase: any) {
             .maybeSingle()
 
           if (!existingAlert && program.created_by_user_id) {
-            // Create in-app notification
             const { error: insertError } = await supabase.from('notifications').insert({
               user_id: program.created_by_user_id,
               company_id: program.company_id,
@@ -366,6 +363,237 @@ async function checkEfficacyEvaluations(supabase: any) {
     return { processed: programs?.length || 0, created: notificationsCreated }
   } catch (error) {
     console.error('Error in checkEfficacyEvaluations:', error)
+    throw error
+  }
+}
+
+async function checkLegislationReviews(supabase: any) {
+  try {
+    console.log('Checking legislation review deadlines...')
+    
+    // Get legislations with next_review_date approaching or overdue
+    const { data: legislations, error: legislationsError } = await supabase
+      .from('legislations')
+      .select('id, title, next_review_date, responsible_user_id, created_by, company_id, overall_applicability')
+      .not('next_review_date', 'is', null)
+      .neq('overall_applicability', 'revogada')
+
+    if (legislationsError) {
+      console.error('Error fetching legislations:', legislationsError)
+      throw legislationsError
+    }
+
+    console.log(`Found ${legislations?.length || 0} legislations with review dates`)
+    let notificationsCreated = 0
+
+    const now = new Date()
+
+    for (const legislation of legislations || []) {
+      try {
+        const reviewDate = new Date(legislation.next_review_date)
+        const daysUntilReview = Math.ceil(
+          (reviewDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        )
+
+        const userId = legislation.responsible_user_id || legislation.created_by
+        if (!userId) continue
+
+        // Check for overdue reviews
+        if (daysUntilReview < 0) {
+          const { data: existingAlert } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('category', 'legislation')
+            .ilike('title', '%vencida%')
+            .ilike('message', `%${legislation.title}%`)
+            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+            .maybeSingle()
+
+          if (!existingAlert) {
+            const { error: insertError } = await supabase.from('notifications').insert({
+              user_id: userId,
+              company_id: legislation.company_id,
+              title: 'Revisão de legislação vencida',
+              message: `A revisão da legislação "${legislation.title}" está ${Math.abs(daysUntilReview)} dias atrasada`,
+              type: 'error',
+              category: 'legislation',
+              priority: 'urgent',
+              is_read: false,
+              action_url: `/licenciamento/legislacoes/${legislation.id}`,
+              action_label: 'Ver Legislação',
+              metadata: { 
+                legislation_id: legislation.id, 
+                days_overdue: Math.abs(daysUntilReview),
+                review_date: legislation.next_review_date
+              }
+            })
+
+            if (insertError) {
+              console.error('Error creating overdue review notification:', insertError)
+            } else {
+              notificationsCreated++
+              console.log(`Created overdue notification for legislation: ${legislation.title}`)
+            }
+          }
+        }
+        // Check for reviews due in 30 days
+        else if (daysUntilReview <= 30 && daysUntilReview > 7) {
+          const { data: existingAlert } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('category', 'legislation')
+            .ilike('title', '%próxima%')
+            .ilike('message', `%${legislation.title}%`)
+            .gte('created_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString())
+            .maybeSingle()
+
+          if (!existingAlert) {
+            const { error: insertError } = await supabase.from('notifications').insert({
+              user_id: userId,
+              company_id: legislation.company_id,
+              title: 'Revisão de legislação próxima',
+              message: `A legislação "${legislation.title}" precisa ser revisada em ${daysUntilReview} dias`,
+              type: 'info',
+              category: 'legislation',
+              priority: 'medium',
+              is_read: false,
+              action_url: `/licenciamento/legislacoes/${legislation.id}`,
+              action_label: 'Ver Legislação',
+              metadata: { 
+                legislation_id: legislation.id, 
+                days_remaining: daysUntilReview,
+                review_date: legislation.next_review_date
+              }
+            })
+
+            if (insertError) {
+              console.error('Error creating upcoming review notification:', insertError)
+            } else {
+              notificationsCreated++
+              console.log(`Created 30-day notification for legislation: ${legislation.title}`)
+            }
+          }
+        }
+        // Check for reviews due in 7 days
+        else if (daysUntilReview <= 7 && daysUntilReview >= 0) {
+          const { data: existingAlert } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('category', 'legislation')
+            .ilike('title', '%urgente%')
+            .ilike('message', `%${legislation.title}%`)
+            .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
+            .maybeSingle()
+
+          if (!existingAlert) {
+            const { error: insertError } = await supabase.from('notifications').insert({
+              user_id: userId,
+              company_id: legislation.company_id,
+              title: 'Revisão de legislação urgente',
+              message: `A legislação "${legislation.title}" precisa ser revisada em ${daysUntilReview} dias`,
+              type: 'warning',
+              category: 'legislation',
+              priority: 'high',
+              is_read: false,
+              action_url: `/licenciamento/legislacoes/${legislation.id}`,
+              action_label: 'Ver Legislação',
+              metadata: { 
+                legislation_id: legislation.id, 
+                days_remaining: daysUntilReview,
+                review_date: legislation.next_review_date
+              }
+            })
+
+            if (insertError) {
+              console.error('Error creating urgent review notification:', insertError)
+            } else {
+              notificationsCreated++
+              console.log(`Created 7-day notification for legislation: ${legislation.title}`)
+            }
+          }
+        }
+      } catch (legError) {
+        console.error(`Error processing legislation ${legislation.id}:`, legError)
+        continue
+      }
+    }
+
+    // Also check for pending requirements in unit compliance
+    const { data: pendingCompliances, error: complianceError } = await supabase
+      .from('legislation_unit_compliance')
+      .select(`
+        id,
+        legislation_id,
+        unit_id,
+        pending_requirements,
+        unit_responsible_id,
+        legislations!inner (
+          id,
+          title,
+          company_id,
+          responsible_user_id,
+          created_by
+        )
+      `)
+      .not('pending_requirements', 'is', null)
+      .neq('pending_requirements', '')
+
+    if (!complianceError && pendingCompliances) {
+      console.log(`Found ${pendingCompliances.length} pending compliance items`)
+      
+      for (const compliance of pendingCompliances) {
+        try {
+          const legislation = compliance.legislations as any
+          const userId = compliance.unit_responsible_id || legislation?.responsible_user_id || legislation?.created_by
+          
+          if (!userId || !legislation) continue
+
+          // Check if notification already exists
+          const { data: existingAlert } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('category', 'legislation')
+            .ilike('title', '%pendência%')
+            .eq('metadata->>legislation_id', legislation.id)
+            .eq('metadata->>unit_id', compliance.unit_id)
+            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+            .maybeSingle()
+
+          if (!existingAlert) {
+            const { error: insertError } = await supabase.from('notifications').insert({
+              user_id: userId,
+              company_id: legislation.company_id,
+              title: 'Pendência em legislação',
+              message: `Há pendências a resolver para "${legislation.title}"`,
+              type: 'warning',
+              category: 'legislation',
+              priority: 'high',
+              is_read: false,
+              action_url: `/licenciamento/legislacoes/${legislation.id}`,
+              action_label: 'Ver Legislação',
+              metadata: { 
+                legislation_id: legislation.id, 
+                unit_id: compliance.unit_id,
+                pending: compliance.pending_requirements
+              }
+            })
+
+            if (insertError) {
+              console.error('Error creating pending compliance notification:', insertError)
+            } else {
+              notificationsCreated++
+            }
+          }
+        } catch (compError) {
+          console.error(`Error processing compliance ${compliance.id}:`, compError)
+          continue
+        }
+      }
+    }
+
+    return { processed: legislations?.length || 0, created: notificationsCreated }
+  } catch (error) {
+    console.error('Error in checkLegislationReviews:', error)
     throw error
   }
 }
