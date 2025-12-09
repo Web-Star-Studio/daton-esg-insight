@@ -19579,15 +19579,15 @@ export type Database = {
       exec_sql: { Args: { query: string }; Returns: Json }
       get_conversion_factor:
         | {
+            Args: { p_emission_source_id: string; p_unit: string }
+            Returns: number
+          }
+        | {
             Args: {
               p_category?: string
               p_from_unit: string
               p_to_unit: string
             }
-            Returns: number
-          }
-        | {
-            Args: { p_emission_source_id: string; p_unit: string }
             Returns: number
           }
       get_dashboard_analytics: { Args: { p_company_id: string }; Returns: Json }
