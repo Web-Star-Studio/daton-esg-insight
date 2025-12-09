@@ -60,6 +60,7 @@ interface MenuItem {
 interface MenuSection {
   id: string
   title: string
+  icon?: React.ComponentType<{ className?: string }>
   items: MenuItem[]
   isCollapsible?: boolean
   defaultOpen?: boolean
@@ -170,6 +171,7 @@ const menuSections: MenuSection[] = [
   {
     id: "financial",
     title: "FINANCEIRO",
+    icon: DollarSign,
     isCollapsible: true,
     defaultOpen: false,
     items: [
@@ -276,6 +278,7 @@ const menuSections: MenuSection[] = [
   {
     id: "sgq",
     title: "QUALIDADE",
+    icon: Award,
     isCollapsible: true,
     defaultOpen: false,
     items: [
@@ -721,7 +724,10 @@ export function AppSidebar() {
                 <SidebarGroup className="px-0">
                   <CollapsibleTrigger asChild>
                     <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-all duration-200 flex items-center justify-between group">
-                      <span>{section.title}</span>
+                      <div className="flex items-center gap-2">
+                        {section.icon && <section.icon className="h-4 w-4" />}
+                        <span>{section.title}</span>
+                      </div>
                       {!collapsed && (
                         <ChevronRight className={`h-3 w-3 transition-all duration-200 group-hover:text-foreground ${expandedSections[section.id] || searchQuery ? 'rotate-90' : ''}`} />
                       )}
