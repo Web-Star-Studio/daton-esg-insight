@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useForm } from "react-hook-form";
@@ -15,7 +15,7 @@ import { useLegislation, useLegislations, useLegislationThemes, useLegislationSu
 import { NORM_TYPES, ISSUING_BODIES } from "@/services/legislations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
-
+import { CreatableSelect } from "@/components/ui/creatable-select";
 const formSchema = z.object({
   norm_type: z.string().min(1, "Tipo de norma é obrigatório"),
   norm_number: z.string().optional(),
@@ -48,8 +48,12 @@ const LegislationForm: React.FC = () => {
 
   const { data: legislation, isLoading: isLoadingLegislation } = useLegislation(id);
   const { legislations, createLegislation, updateLegislation, isCreating, isUpdating } = useLegislations();
-  const { themes } = useLegislationThemes();
-  const { subthemes } = useLegislationSubthemes();
+  const { themes, createTheme } = useLegislationThemes();
+  const { subthemes, createSubtheme } = useLegislationSubthemes();
+
+  // Local state for custom norm types and issuing bodies
+  const [customNormTypes, setCustomNormTypes] = useState<string[]>([]);
+  const [customIssuingBodies, setCustomIssuingBodies] = useState<string[]>([]);
   const { data: users } = useCompanyUsers();
 
   const form = useForm<FormData>({
@@ -187,18 +191,22 @@ const LegislationForm: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Tipo de Norma *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o tipo" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {NORM_TYPES.map(type => (
-                                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <CreatableSelect
+                                options={[...NORM_TYPES, ...customNormTypes].map(type => ({
+                                  value: type,
+                                  label: type,
+                                }))}
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                onCreate={(newType) => {
+                                  setCustomNormTypes(prev => [...prev, newType]);
+                                  field.onChange(newType);
+                                }}
+                                placeholder="Selecione ou crie um tipo"
+                                searchPlaceholder="Buscar tipo..."
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -242,18 +250,22 @@ const LegislationForm: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Órgão Emissor</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o órgão" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {ISSUING_BODIES.map(body => (
-                                  <SelectItem key={body} value={body}>{body}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <CreatableSelect
+                                options={[...ISSUING_BODIES, ...customIssuingBodies].map(body => ({
+                                  value: body,
+                                  label: body,
+                                }))}
+                                value={field.value || ""}
+                                onValueChange={field.onChange}
+                                onCreate={(newBody) => {
+                                  setCustomIssuingBodies(prev => [...prev, newBody]);
+                                  field.onChange(newBody);
+                                }}
+                                placeholder="Selecione ou crie um órgão"
+                                searchPlaceholder="Buscar órgão..."
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -344,26 +356,28 @@ const LegislationForm: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Macrotema</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o macrotema" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {themes.map(theme => (
-                                  <SelectItem key={theme.id} value={theme.id}>
-                                    <div className="flex items-center gap-2">
-                                      <span 
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: theme.color }}
-                                      />
-                                      {theme.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <CreatableSelect
+                                options={themes.map(theme => ({
+                                  value: theme.id,
+                                  label: theme.name,
+                                  color: theme.color,
+                                }))}
+                                value={field.value || ""}
+                                onValueChange={field.onChange}
+                                onCreate={(newThemeName) => {
+                                  createTheme({ name: newThemeName, color: '#6366f1' }, {
+                                    onSuccess: (data: any) => {
+                                      if (data?.id) {
+                                        field.onChange(data.id);
+                                      }
+                                    }
+                                  });
+                                }}
+                                placeholder="Selecione ou crie um macrotema"
+                                searchPlaceholder="Buscar macrotema..."
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -375,24 +389,30 @@ const LegislationForm: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Subtema</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              value={field.value}
-                              disabled={!selectedThemeId}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o subtema" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {filteredSubthemes.map(subtheme => (
-                                  <SelectItem key={subtheme.id} value={subtheme.id}>
-                                    {subtheme.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <CreatableSelect
+                                options={filteredSubthemes.map(subtheme => ({
+                                  value: subtheme.id,
+                                  label: subtheme.name,
+                                }))}
+                                value={field.value || ""}
+                                onValueChange={field.onChange}
+                                onCreate={(newSubthemeName) => {
+                                  if (selectedThemeId) {
+                                    createSubtheme({ name: newSubthemeName, theme_id: selectedThemeId }, {
+                                      onSuccess: (data: any) => {
+                                        if (data?.id) {
+                                          field.onChange(data.id);
+                                        }
+                                      }
+                                    });
+                                  }
+                                }}
+                                placeholder="Selecione ou crie um subtema"
+                                searchPlaceholder="Buscar subtema..."
+                                disabled={!selectedThemeId}
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
