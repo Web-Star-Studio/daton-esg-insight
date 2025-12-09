@@ -14487,8 +14487,10 @@ export type Database = {
       notifications: {
         Row: {
           action_data: Json | null
+          action_label: string | null
           action_type: string | null
           action_url: string | null
+          category: string | null
           company_id: string
           created_at: string
           id: string
@@ -14503,8 +14505,10 @@ export type Database = {
         }
         Insert: {
           action_data?: Json | null
+          action_label?: string | null
           action_type?: string | null
           action_url?: string | null
+          category?: string | null
           company_id: string
           created_at?: string
           id?: string
@@ -14519,8 +14523,10 @@ export type Database = {
         }
         Update: {
           action_data?: Json | null
+          action_label?: string | null
           action_type?: string | null
           action_url?: string | null
+          category?: string | null
           company_id?: string
           created_at?: string
           id?: string

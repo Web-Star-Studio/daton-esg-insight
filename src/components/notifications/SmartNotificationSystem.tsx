@@ -1,4 +1,4 @@
-import { Bell, AlertCircle, Info, CheckCircle, X, ExternalLink } from 'lucide-react';
+import { Bell, AlertCircle, Info, CheckCircle, X, ExternalLink, Scale, Target, ClipboardCheck, Cloud, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useSmartNotifications } from '@/hooks/data/useSmartNotifications';
+import { useSmartNotifications, getCategoryConfig } from '@/hooks/data/useSmartNotifications';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -24,23 +24,50 @@ export function SmartNotificationSystem() {
   } = useSmartNotifications();
   const navigate = useNavigate();
 
-  const getPriorityIcon = (priority: string) => {
+  const getPriorityIcon = (priority: string, category?: string) => {
+    // Use category-specific icon if available
+    const categoryConfig = getCategoryConfig(category);
+    
     switch (priority) {
       case 'critical':
+      case 'urgent':
         return <AlertCircle className="h-4 w-4 text-destructive" />;
       case 'important':
-        return <Info className="h-4 w-4 text-warning" />;
+      case 'high':
+        return <AlertCircle className="h-4 w-4 text-amber-500" />;
       default:
-        return <CheckCircle className="h-4 w-4 text-primary" />;
+        // Use category icon for non-critical notifications
+        return getCategoryIcon(category);
+    }
+  };
+
+  const getCategoryIcon = (category?: string) => {
+    switch (category) {
+      case 'legislation':
+        return <Scale className="h-4 w-4 text-blue-500" />;
+      case 'goal':
+        return <Target className="h-4 w-4 text-green-500" />;
+      case 'compliance':
+        return <ClipboardCheck className="h-4 w-4 text-purple-500" />;
+      case 'ghg':
+        return <Cloud className="h-4 w-4 text-orange-500" />;
+      case 'training':
+        return <GraduationCap className="h-4 w-4 text-indigo-500" />;
+      default:
+        return <Info className="h-4 w-4 text-primary" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
+      case 'urgent':
         return 'bg-destructive/10 border-destructive/20';
       case 'important':
-        return 'bg-warning/10 border-warning/20';
+      case 'high':
+        return 'bg-amber-500/10 border-amber-500/20';
+      case 'medium':
+        return 'bg-blue-500/10 border-blue-500/20';
       default:
         return 'bg-primary/10 border-primary/20';
     }
@@ -49,6 +76,13 @@ export function SmartNotificationSystem() {
   const handleAction = (notification: any) => {
     markAsRead(notification.id);
     
+    // Check for action_url first (from database triggers)
+    if (notification.action_url) {
+      navigate(notification.action_url);
+      return;
+    }
+    
+    // Fallback to action_data.url
     if (notification.action_type === 'view' && notification.action_data?.url) {
       navigate(notification.action_data.url);
     }
@@ -110,16 +144,23 @@ export function SmartNotificationSystem() {
                   onClick={() => handleAction(notification)}
                 >
                   <div className="flex items-start gap-3">
-                    {getPriorityIcon(notification.priority)}
+                    {getPriorityIcon(notification.priority, notification.category)}
                     <div className="flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-sm leading-tight">
-                          {notification.title}
-                        </p>
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-sm leading-tight">
+                            {notification.title}
+                          </p>
+                          {notification.category && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">
+                              {getCategoryConfig(notification.category).label}
+                            </Badge>
+                          )}
+                        </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-6 w-6 shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             markAsRead(notification.id);
@@ -138,7 +179,7 @@ export function SmartNotificationSystem() {
                             locale: ptBR
                           })}
                         </span>
-                        {notification.action_type && (
+                        {(notification.action_url || notification.action_type) && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -148,7 +189,7 @@ export function SmartNotificationSystem() {
                               handleAction(notification);
                             }}
                           >
-                            Ver detalhes
+                            {notification.action_label || 'Ver detalhes'}
                             <ExternalLink className="h-3 w-3 ml-1" />
                           </Button>
                         )}
