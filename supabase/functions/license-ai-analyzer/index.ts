@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface LicenseProcessRequest {
-  action: 'upload' | 'analyze' | 'reconcile';
+  action: 'upload' | 'analyze' | 'reconcile' | 'retry';
   file?: {
     name: string;
     type: string;
@@ -140,6 +140,9 @@ serve(async (req) => {
       
       case 'reconcile':
         return await handleReconcile(supabaseClient, licenseId!, reconciliationData);
+      
+      case 'retry':
+        return await handleRetry(supabaseClient, licenseId!);
       
       default:
         throw new Error('Invalid action');
@@ -841,6 +844,231 @@ async function handleReconcile(supabaseClient: any, licenseId: string, reconcili
   return new Response(JSON.stringify({
     success: true,
     message: 'Reconciliação aprovada com sucesso'
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// Handle retry analysis for failed licenses
+async function handleRetry(supabaseClient: any, licenseId: string) {
+  console.log('Handling retry for license:', licenseId);
+  
+  // Get the license and its document
+  const { data: license, error: licenseError } = await supabaseClient
+    .from('licenses')
+    .select('*, company_id')
+    .eq('id', licenseId)
+    .single();
+
+  if (licenseError || !license) {
+    throw new Error('License not found');
+  }
+
+  const { data: documents } = await supabaseClient
+    .from('documents')
+    .select('*')
+    .eq('related_id', licenseId)
+    .eq('related_model', 'license')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  const document = documents?.[0];
+  if (!document) {
+    throw new Error('No document found for license');
+  }
+
+  // Reset processing status
+  await supabaseClient
+    .from('licenses')
+    .update({ 
+      ai_processing_status: 'processing',
+      ai_extracted_data: null,
+      ai_confidence_score: 0
+    })
+    .eq('id', licenseId);
+
+  // Delete old conditions and alerts to allow fresh extraction
+  await supabaseClient
+    .from('license_conditions')
+    .delete()
+    .eq('license_id', licenseId)
+    .eq('ai_extracted', true);
+
+  await supabaseClient
+    .from('license_alerts')
+    .delete()
+    .eq('license_id', licenseId);
+
+  // Download the file from storage and re-process
+  const { data: fileData, error: downloadError } = await supabaseClient
+    .storage
+    .from('documents')
+    .download(document.file_path);
+
+  if (downloadError || !fileData) {
+    // Mark as failed if we can't download
+    await supabaseClient
+      .from('licenses')
+      .update({ ai_processing_status: 'failed' })
+      .eq('id', licenseId);
+    throw new Error('Could not download document for reprocessing');
+  }
+
+  // Convert to array buffer
+  const arrayBuffer = await fileData.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  
+  // Start AI analysis
+  let finalStatus: 'completed' | 'failed' | 'needs_review' = 'failed';
+  let extractedData: any = {};
+  let confidenceScore = 0;
+
+  try {
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    // Upload file to OpenAI
+    const formData = new FormData();
+    formData.append('file', new Blob([uint8Array], { type: document.file_type }), document.file_name);
+    formData.append('purpose', 'assistants');
+
+    const fileResponse = await withTimeout(
+      fetch('https://api.openai.com/v1/files', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+        body: formData,
+      }),
+      30000,
+      'File upload timeout'
+    );
+
+    if (!fileResponse.ok) {
+      throw new Error(`OpenAI file upload failed: ${await fileResponse.text()}`);
+    }
+
+    const openAIFile = await fileResponse.json();
+    console.log('OpenAI file created for retry:', openAIFile.id);
+
+    // Phase 1: Extract license info
+    const basicInfo = await extractPhase(openAIApiKey, openAIFile.id, 'license_info', 45000);
+    if (basicInfo) {
+      extractedData.license_info = basicInfo;
+    }
+
+    // Phase 2: Extract condicionantes
+    const condicionantes = await extractPhase(openAIApiKey, openAIFile.id, 'condicionantes', 60000);
+    if (condicionantes && Array.isArray(condicionantes)) {
+      extractedData.condicionantes = condicionantes;
+    } else {
+      extractedData.condicionantes = [];
+    }
+
+    // Phase 3: Extract alertas
+    const alertas = await extractPhase(openAIApiKey, openAIFile.id, 'alertas', 45000);
+    if (alertas && Array.isArray(alertas)) {
+      extractedData.alertas = alertas;
+    } else {
+      extractedData.alertas = [];
+    }
+
+    // Determine final status
+    const hasBasicInfo = extractedData.license_info && Object.keys(extractedData.license_info).length > 0;
+    const hasCondicionantes = extractedData.condicionantes && extractedData.condicionantes.length > 0;
+    const hasAlertas = extractedData.alertas && extractedData.alertas.length > 0;
+
+    if (hasBasicInfo && (hasCondicionantes || hasAlertas)) {
+      finalStatus = 'completed';
+    } else if (hasBasicInfo) {
+      finalStatus = 'needs_review';
+    } else {
+      finalStatus = 'failed';
+    }
+
+    confidenceScore = calculateConfidenceScore(extractedData);
+
+    // Cleanup OpenAI file
+    try {
+      await fetch(`https://api.openai.com/v1/files/${openAIFile.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${openAIApiKey}` },
+      });
+    } catch {}
+
+  } catch (error) {
+    console.error('Retry AI analysis error:', error);
+    finalStatus = 'failed';
+  }
+
+  // Update license with results
+  const licenseInfo = extractedData.license_info || {};
+  
+  const licenseUpdateData: any = {
+    name: licenseInfo.company_name || licenseInfo.license_number || license.name || document.file_name.replace('.pdf', ''),
+    type: licenseInfo.license_type || license.type || 'LO',
+    ai_processing_status: finalStatus,
+    ai_confidence_score: confidenceScore,
+    ai_extracted_data: extractedData,
+    ai_last_analysis_at: new Date().toISOString(),
+    compliance_score: Math.max(50, confidenceScore * 100)
+  };
+
+  if (licenseInfo.process_number) licenseUpdateData.process_number = licenseInfo.process_number;
+  if (licenseInfo.issue_date) licenseUpdateData.issue_date = licenseInfo.issue_date;
+  if (licenseInfo.expiration_date) licenseUpdateData.expiration_date = licenseInfo.expiration_date;
+  if (licenseInfo.issuer) licenseUpdateData.issuing_body = licenseInfo.issuer;
+
+  await supabaseClient
+    .from('licenses')
+    .update(licenseUpdateData)
+    .eq('id', licenseId);
+
+  // Save condicionantes if extracted
+  if (extractedData.condicionantes && extractedData.condicionantes.length > 0) {
+    const conditionsToInsert = extractedData.condicionantes.map((c: any) => ({
+      license_id: licenseId,
+      company_id: license.company_id,
+      condition_text: c.descricao_detalhada || c.titulo_resumido || 'Condição não especificada',
+      condition_category: c.categoria || 'Outros',
+      priority: mapPrioridade(c.prioridade || 'media'),
+      status: 'pending',
+      ai_extracted: true,
+      ai_confidence: confidenceScore
+    }));
+
+    await supabaseClient
+      .from('license_conditions')
+      .insert(conditionsToInsert);
+  }
+
+  // Save alertas if extracted
+  if (extractedData.alertas && extractedData.alertas.length > 0) {
+    const alertsToInsert = extractedData.alertas.map((a: any) => ({
+      license_id: licenseId,
+      company_id: license.company_id,
+      alert_type: a.tipo_alerta || 'observacao_geral',
+      title: a.titulo || 'Alerta sem título',
+      message: a.mensagem || 'Mensagem não especificada',
+      severity: mapSeveridade(a.severidade || 'baixa'),
+      action_required: (a.severidade === 'crítica' || a.severidade === 'alta'),
+      is_resolved: false
+    }));
+
+    await supabaseClient
+      .from('license_alerts')
+      .insert(alertsToInsert);
+  }
+
+  return new Response(JSON.stringify({
+    success: true,
+    status: finalStatus,
+    confidence: confidenceScore,
+    message: finalStatus === 'completed' 
+      ? 'Reprocessamento concluído com sucesso!' 
+      : finalStatus === 'needs_review'
+      ? 'Reprocessamento parcial - requer revisão'
+      : 'Reprocessamento falhou - documento pode estar ilegível'
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });

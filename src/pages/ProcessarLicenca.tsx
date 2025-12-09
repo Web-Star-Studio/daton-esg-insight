@@ -28,11 +28,14 @@ import {
   Eye,
   FileText,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LicenseReconciliationModal } from '@/components/LicenseReconciliationModal';
+import { LicenseErrorCard } from '@/components/LicenseErrorCard';
+import { getUploadErrorMessage } from '@/utils/licenseErrorMessages';
 
 interface License {
   id: string;
@@ -42,6 +45,7 @@ interface License {
   ai_processing_status?: string;
   ai_confidence_score?: number;
   ai_extracted_data?: any;
+  created_at?: string;
   documents?: Array<{
     id: string;
     file_name: string;
@@ -61,6 +65,7 @@ export default function ProcessarLicenca() {
   const [selectedLicenses, setSelectedLicenses] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [retryingIds, setRetryingIds] = useState<string[]>([]);
 
   React.useEffect(() => {
     loadLicenses();
@@ -160,14 +165,55 @@ export default function ProcessarLicenca() {
       }
     } catch (error) {
       console.error('Upload error:', error);
+      const errorMsg = getUploadErrorMessage(error);
       toast({
         variant: "destructive",
-        title: "Erro durante upload",
-        description: "Tente novamente"
+        title: errorMsg.title,
+        description: errorMsg.description
       });
     } finally {
       setUploadingFile(false);
     }
+  };
+
+  const handleRetryAnalysis = async (licenseId: string) => {
+    setRetryingIds(prev => [...prev, licenseId]);
+    
+    try {
+      // Call edge function to re-analyze
+      const { data, error } = await supabase.functions.invoke('license-ai-analyzer', {
+        body: {
+          action: 'retry',
+          licenseId: licenseId
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Reprocessamento iniciado!",
+          description: "A análise IA foi reiniciada. Aguarde a conclusão."
+        });
+        loadLicenses();
+      } else {
+        throw new Error(data.error || 'Retry failed');
+      }
+    } catch (error) {
+      console.error('Retry error:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao reprocessar",
+        description: "Não foi possível reiniciar a análise. Tente novamente."
+      });
+    } finally {
+      setRetryingIds(prev => prev.filter(id => id !== licenseId));
+    }
+  };
+
+  const handleDeleteSingleLicense = (licenseId: string) => {
+    setSelectedLicenses([licenseId]);
+    setDeleteDialogOpen(true);
   };
 
   const handleReconciliation = (license: License) => {
@@ -282,6 +328,10 @@ export default function ProcessarLicenca() {
     l.ai_processing_status === 'processing'
   );
   
+  const failedLicenses = licenses.filter(l => 
+    l.ai_processing_status === 'failed' || l.ai_processing_status === 'needs_review'
+  );
+  
   const pendingReview = licenses.filter(l => 
     l.ai_processing_status === 'completed' && l.status !== 'Ativa'
   );
@@ -289,6 +339,8 @@ export default function ProcessarLicenca() {
   const completedLicenses = licenses.filter(l => 
     l.status === 'Ativa' && l.ai_processing_status === 'completed'
   );
+
+  const processingTabCount = processingLicenses.length + pendingReview.length + failedLicenses.length;
 
   return (
     <>
@@ -316,7 +368,7 @@ export default function ProcessarLicenca() {
             </TabsTrigger>
             <TabsTrigger value="processing" className="gap-2">
               <Brain className="w-4 h-4" />
-              2. Análise IA ({processingLicenses.length + pendingReview.length})
+              2. Análise IA ({processingTabCount})
             </TabsTrigger>
             <TabsTrigger value="completed" className="gap-2">
               <CheckCircle className="w-4 h-4" />
@@ -579,7 +631,46 @@ export default function ProcessarLicenca() {
               </Card>
             )}
 
-            {(processingLicenses.length === 0 && pendingReview.length === 0) && (
+            {/* Failed Licenses Section */}
+            {failedLicenses.length > 0 && (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-destructive">
+                      <XCircle className="w-5 h-5" />
+                      Falhas no Processamento ({failedLicenses.length})
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="select-all-failed"
+                        checked={failedLicenses.every(l => selectedLicenses.includes(l.id))}
+                        onCheckedChange={(checked) => handleSelectAll(failedLicenses, checked as boolean)}
+                      />
+                      <label htmlFor="select-all-failed" className="text-sm text-muted-foreground cursor-pointer">
+                        Selecionar todas
+                      </label>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {failedLicenses.map((license) => (
+                      <LicenseErrorCard
+                        key={license.id}
+                        license={license}
+                        onRetry={handleRetryAnalysis}
+                        onDelete={handleDeleteSingleLicense}
+                        isRetrying={retryingIds.includes(license.id)}
+                        isSelected={selectedLicenses.includes(license.id)}
+                        onSelect={handleSelectLicense}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {(processingLicenses.length === 0 && pendingReview.length === 0 && failedLicenses.length === 0) && (
               <Card>
                 <CardContent className="py-12">
                   <div className="text-center text-muted-foreground">
