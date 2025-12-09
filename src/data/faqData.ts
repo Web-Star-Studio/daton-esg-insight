@@ -596,7 +596,7 @@ export const faqCategories: FAQCategory[] = [
   },
   {
     id: "licenciamento",
-    title: "Licenciamento Ambiental",
+    title: "Licenciamento",
     icon: "FileCheck",
     description: "Controle de licenças e autorizações",
     questions: [

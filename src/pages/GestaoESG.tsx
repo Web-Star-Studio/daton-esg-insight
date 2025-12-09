@@ -390,7 +390,7 @@ export default function GestaoESG() {
                   <li>• Gestão de Emissões GEE</li>
                   <li>• Eficiência Energética</li>
                   <li>• Gestão de Resíduos</li>
-                  <li>• Licenciamento Ambiental</li>
+                  <li>• Licenciamento</li>
                 </ul>
               </div>
               <div className="space-y-2">

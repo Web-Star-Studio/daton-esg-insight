@@ -221,7 +221,7 @@ export default function Contato() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="emissoes">Gestão de Emissões GEE</SelectItem>
-                        <SelectItem value="licenciamento">Licenciamento Ambiental</SelectItem>
+                        <SelectItem value="licenciamento">Licenciamento</SelectItem>
                         <SelectItem value="residuos">Gestão de Resíduos</SelectItem>
                         <SelectItem value="carbono">Projetos de Carbono</SelectItem>
                         <SelectItem value="compliance">Compliance ESG</SelectItem>
