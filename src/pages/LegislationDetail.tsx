@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
@@ -15,20 +15,51 @@ import {
   User,
   FileText,
   History,
-  Loader2 
+  Loader2,
+  Plus,
+  Trash2,
+  Download
 } from "lucide-react";
 import { useLegislation, useUnitCompliances, useLegislationEvidences } from "@/hooks/data/useLegislations";
+import { useBranches } from "@/services/branches";
 import { LegislationStatusBadge, JurisdictionBadge } from "@/components/legislation/LegislationStatusBadge";
+import { UnitComplianceModal } from "@/components/legislation/UnitComplianceModal";
+import { EvidenceUploadModal } from "@/components/legislation/EvidenceUploadModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useCompany } from "@/contexts/CompanyContext";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const LegislationDetail: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   
   const { data: legislation, isLoading } = useLegislation(id);
-  const { compliances, isLoading: isLoadingCompliances } = useUnitCompliances(id);
-  const { evidences, isLoading: isLoadingEvidences } = useLegislationEvidences(id);
+  const { compliances, isLoading: isLoadingCompliances, upsertCompliance, isUpserting } = useUnitCompliances(id);
+  const { evidences, isLoading: isLoadingEvidences, createEvidence, deleteEvidence } = useLegislationEvidences(id);
+  const { data: branches } = useBranches();
+
+  const [complianceModal, setComplianceModal] = useState<{
+    open: boolean;
+    branchId: string;
+    branchName: string;
+    existing?: any;
+  }>({ open: false, branchId: '', branchName: '' });
+
+  const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
+  const [deleteEvidenceId, setDeleteEvidenceId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -51,6 +82,45 @@ const LegislationDetail: React.FC = () => {
       </div>
     );
   }
+
+  const handleOpenComplianceModal = (branchId: string, branchName: string) => {
+    const existing = compliances.find(c => c.branch_id === branchId);
+    setComplianceModal({
+      open: true,
+      branchId,
+      branchName,
+      existing,
+    });
+  };
+
+  const handleSaveCompliance = (data: any) => {
+    upsertCompliance(data, {
+      onSuccess: () => setComplianceModal({ open: false, branchId: '', branchName: '' }),
+    });
+  };
+
+  const handleSaveEvidence = (data: any) => {
+    createEvidence({
+      ...data,
+      legislation_id: id,
+      company_id: selectedCompany?.id,
+      uploaded_by: user?.id,
+    }, {
+      onSuccess: () => setEvidenceModalOpen(false),
+    });
+  };
+
+  const handleDeleteEvidence = (evidenceId: string) => {
+    deleteEvidence(evidenceId, {
+      onSuccess: () => setDeleteEvidenceId(null),
+    });
+  };
+
+  // Get branches that don't have compliance records yet
+  const branchesWithCompliance = branches?.map(branch => {
+    const compliance = compliances.find(c => c.branch_id === branch.id);
+    return { ...branch, compliance };
+  }) || [];
 
   return (
     <div className="space-y-6">
@@ -244,36 +314,53 @@ const LegislationDetail: React.FC = () => {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : compliances.length === 0 ? (
+              ) : branchesWithCompliance.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">
-                    Nenhuma unidade avaliada ainda. Cadastre unidades em Configuração Organizacional.
+                    Nenhuma unidade cadastrada. Cadastre unidades em Configuração Organizacional.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {compliances.map((compliance) => (
+                <div className="space-y-3">
+                  {branchesWithCompliance.map((branch) => (
                     <div 
-                      key={compliance.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      key={branch.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => handleOpenComplianceModal(branch.id, branch.name)}
                     >
                       <div>
-                        <p className="font-medium">{compliance.branch?.name}</p>
-                        {compliance.pending_description && (
+                        <p className="font-medium">{branch.name}</p>
+                        {branch.compliance?.pending_description && (
                           <p className="text-sm text-muted-foreground mt-1">
-                            {compliance.pending_description}
+                            {branch.compliance.pending_description}
+                          </p>
+                        )}
+                        {branch.compliance?.action_plan && (
+                          <p className="text-sm text-amber-600 mt-1">
+                            Plano de ação: {branch.compliance.action_plan.substring(0, 80)}...
                           </p>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
-                        <LegislationStatusBadge 
-                          type="applicability" 
-                          value={compliance.applicability} 
-                        />
-                        <LegislationStatusBadge 
-                          type="status" 
-                          value={compliance.compliance_status} 
-                        />
+                        {branch.compliance ? (
+                          <>
+                            <LegislationStatusBadge 
+                              type="applicability" 
+                              value={branch.compliance.applicability} 
+                            />
+                            <LegislationStatusBadge 
+                              type="status" 
+                              value={branch.compliance.compliance_status} 
+                            />
+                          </>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            Não avaliada
+                          </Badge>
+                        )}
+                        <Button variant="ghost" size="sm">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -285,14 +372,20 @@ const LegislationDetail: React.FC = () => {
 
         <TabsContent value="evidences" className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Evidências
-              </CardTitle>
-              <CardDescription>
-                Documentos e evidências de conformidade
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Evidências
+                </CardTitle>
+                <CardDescription>
+                  Documentos e evidências de conformidade
+                </CardDescription>
+              </div>
+              <Button onClick={() => setEvidenceModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Evidência
+              </Button>
             </CardHeader>
             <CardContent>
               {isLoadingEvidences ? (
@@ -304,9 +397,6 @@ const LegislationDetail: React.FC = () => {
                   <p className="text-muted-foreground mb-4">
                     Nenhuma evidência cadastrada ainda.
                   </p>
-                  <Button variant="outline">
-                    Adicionar Evidência
-                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -324,9 +414,32 @@ const LegislationDetail: React.FC = () => {
                               {evidence.description}
                             </p>
                           )}
+                          {evidence.file_name && (
+                            <p className="text-xs text-muted-foreground">
+                              {evidence.file_name}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <Badge variant="outline">{evidence.evidence_type}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{evidence.evidence_type}</Badge>
+                        {evidence.file_url && !evidence.file_url.startsWith('local://') && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => window.open(evidence.file_url, '_blank')}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteEvidenceId(evidence.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -344,15 +457,76 @@ const LegislationDetail: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  O histórico de alterações será exibido aqui.
-                </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 text-sm">
+                  <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                  <div>
+                    <p className="font-medium">Legislação criada</p>
+                    <p className="text-muted-foreground">
+                      {legislation.created_at 
+                        ? format(new Date(legislation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                        : "-"
+                      }
+                    </p>
+                  </div>
+                </div>
+                {legislation.updated_at && legislation.updated_at !== legislation.created_at && (
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground mt-2" />
+                    <div>
+                      <p className="font-medium">Última atualização</p>
+                      <p className="text-muted-foreground">
+                        {format(new Date(legislation.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Unit Compliance Modal */}
+      <UnitComplianceModal
+        open={complianceModal.open}
+        onOpenChange={(open) => setComplianceModal({ ...complianceModal, open })}
+        legislationId={id!}
+        branchId={complianceModal.branchId}
+        branchName={complianceModal.branchName}
+        existingCompliance={complianceModal.existing}
+        onSave={handleSaveCompliance}
+        isSaving={isUpserting}
+      />
+
+      {/* Evidence Upload Modal */}
+      <EvidenceUploadModal
+        open={evidenceModalOpen}
+        onOpenChange={setEvidenceModalOpen}
+        legislationId={id!}
+        onSave={handleSaveEvidence}
+      />
+
+      {/* Delete Evidence Confirmation */}
+      <AlertDialog open={!!deleteEvidenceId} onOpenChange={() => setDeleteEvidenceId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta evidência? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteEvidenceId && handleDeleteEvidence(deleteEvidenceId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
