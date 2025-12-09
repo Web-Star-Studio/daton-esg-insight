@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Scale, ArrowLeft } from "lucide-react";
+import { Plus, Scale, ArrowLeft, FileText } from "lucide-react";
 import { LegislationKPIs } from "@/components/legislation/LegislationKPIs";
 import { LegislationFilters } from "@/components/legislation/LegislationFilters";
 import { LegislationList } from "@/components/legislation/LegislationList";
@@ -66,10 +66,16 @@ const LegislationsHub: React.FC = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => navigate('/licenciamento/legislacoes/nova')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Legislação
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/licenciamento/legislacoes/relatorios')}>
+            <FileText className="h-4 w-4 mr-2" />
+            Relatórios
+          </Button>
+          <Button onClick={() => navigate('/licenciamento/legislacoes/nova')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Legislação
+          </Button>
+        </div>
       </div>
 
       {/* KPIs */}
