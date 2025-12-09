@@ -43,7 +43,7 @@ export function usePageContext(): PageContext {
       '/licenciamento': {
         tables: ['licenses', 'license_conditions', 'license_observations'],
         relevantColumns: ['license_name', 'license_number', 'expiry_date', 'status', 'license_type'],
-        pageTitle: 'Licenciamento Ambiental',
+        pageTitle: 'Licenciamento',
         dataType: 'licenses'
       },
       '/gestao-residuos': {

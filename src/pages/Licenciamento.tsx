@@ -79,7 +79,7 @@ export default function Licenciamento() {
     {
       id: 1,
       title: "Análise Automática de Documentos",
-      description: "Upload e processamento inteligente de licenças ambientais com IA",
+      description: "Upload e processamento inteligente de licenças com IA",
       icon: Brain,
       action: () => navigate('/licenciamento/processar'),
       color: "bg-blue-500",
@@ -197,9 +197,9 @@ export default function Licenciamento() {
         {/* Header */}
         <div className="flex items-center justify-between" data-tour="licenciamento-header">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Licenciamento Ambiental</h1>
+            <h1 className="text-3xl font-bold text-foreground">Licenciamento</h1>
             <p className="text-muted-foreground">
-              Gestão completa de licenças ambientais com análise inteligente
+              Gestão completa de licenças e autorizações com análise inteligente
             </p>
           </div>
           <div className="flex gap-3">
@@ -347,7 +347,7 @@ export default function Licenciamento() {
               <CardHeader>
                 <CardTitle>Lista de Licenças</CardTitle>
                 <CardDescription>
-                  Gerencie todas as licenças ambientais da organização
+                  Gerencie todas as licenças e autorizações da organização
                 </CardDescription>
               </CardHeader>
               <CardContent>

@@ -33,7 +33,7 @@ const searchData: SearchResult[] = [
   { id: 'ghg-inventory', title: 'Inventário de Emissões', path: '/inventario-gee', description: 'Controle completo do inventário GEE', category: 'Ambiental', icon: 'FileText', keywords: ['inventario', 'emissoes', 'carbono', 'gee', 'co2'] },
   { id: 'carbon-projects', title: 'Projetos de Carbono', path: '/projetos-carbono', description: 'Gestão de projetos de redução', category: 'Ambiental', icon: 'Leaf', keywords: ['carbono', 'projetos', 'reducao', 'offset', 'neutralizacao'] },
   { id: 'waste-management', title: 'Gestão de Resíduos', path: '/residuos', description: 'Controle e destinação de resíduos', category: 'Ambiental', icon: 'Leaf', keywords: ['residuos', 'lixo', 'reciclagem', 'destinacao'] },
-  { id: 'environmental-licensing', title: 'Licenciamento Ambiental', path: '/licenciamento', description: 'Gestão de licenças ambientais', category: 'Ambiental', icon: 'FileText', keywords: ['licenca', 'ambiental', 'regulatorio', 'permissoes'] },
+  { id: 'licensing', title: 'Licenciamento', path: '/licenciamento', description: 'Gestão de licenças e autorizações', category: 'Qualidade', icon: 'FileText', keywords: ['licenca', 'autorizacao', 'regulatorio', 'permissoes', 'alvara'] },
 
   // SOCIAL (S)
   { id: 'social-dashboard', title: 'Dashboard Social', path: '/social-esg', description: 'Visão geral consolidada dos aspectos sociais', category: 'Social', icon: 'Users', keywords: ['social', 'dashboard', 'aspectos', 'painel'] },

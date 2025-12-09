@@ -335,7 +335,7 @@ Como posso ajudar você hoje? Experimente perguntar sobre:
 
   const getPageContext = () => {
     const path = location.pathname;
-    if (path.includes('licenciamento')) return 'Módulo de Licenciamento Ambiental';
+    if (path.includes('licenciamento')) return 'Módulo de Licenciamento';
     if (path.includes('metas')) return 'Sistema de Metas ESG';
     if (path.includes('inventario')) return 'Inventário de Emissões GEE';
     if (path.includes('documentos')) return 'Gestão Documental';

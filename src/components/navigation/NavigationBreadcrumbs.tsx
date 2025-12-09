@@ -87,7 +87,7 @@ export const useBreadcrumbs = () => {
       '/dashboard-ghg': [{ label: 'Ambiental', href: '/gestao-esg' }, { label: 'Emissões de GEE', href: '/emissoes' }, { label: 'Dashboard GHG' }],
       '/projetos-carbono': [{ label: 'Ambiental', href: '/gestao-esg' }, { label: 'Emissões de GEE', href: '/emissoes' }, { label: 'Projetos de Carbono' }],
       '/residuos': [{ label: 'Ambiental', href: '/gestao-esg' }, { label: 'Gestão de Resíduos' }],
-      '/licenciamento': [{ label: 'Ambiental', href: '/gestao-esg' }, { label: 'Licenciamento Ambiental' }],
+      '/licenciamento': [{ label: 'Qualidade', href: '/quality-dashboard' }, { label: 'Licenciamento' }],
       '/social-esg': [{ label: 'Social' }],
       '/gestao-funcionarios': [{ label: 'Social', href: '/social-esg' }, { label: 'Gestão de Funcionários' }],
       '/seguranca-trabalho': [{ label: 'Social', href: '/social-esg' }, { label: 'Segurança do Trabalho' }],

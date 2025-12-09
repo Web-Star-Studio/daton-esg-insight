@@ -27,7 +27,7 @@ const Funcionalidades = () => {
         },
         {
           icon: Shield,
-          title: "Licenciamento Ambiental",
+          title: "Licenciamento",
           description: "Mantenha conformidade regulatória com acompanhamento inteligente de licenças",
           items: [
             "Controle de prazos e renovações",
