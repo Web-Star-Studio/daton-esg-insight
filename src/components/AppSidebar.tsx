@@ -289,7 +289,17 @@ const menuSections: MenuSection[] = [
       { id: "corrective-actions", title: "Ações Corretivas", icon: CheckSquare, path: "/acoes-corretivas", description: "Planos de ação e melhorias" },
       { id: "document-control", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Versionamento e controle documental" },
       { id: "supplier-evaluation", title: "Avaliação de Fornecedores", icon: Users2, path: "/avaliacao-fornecedores", description: "Qualificação e monitoramento de fornecedores" },
-      { id: "licensing", title: "Licenciamento", icon: Gavel, path: "/licenciamento", description: "Gestão de licenças e autorizações" }
+      { 
+        id: "licensing", 
+        title: "Licenciamento", 
+        icon: Gavel, 
+        path: "/licenciamento", 
+        description: "Gestão de licenças e autorizações",
+        subItems: [
+          { id: "licensing-dashboard", title: "Dashboard", icon: BarChart3, path: "/licenciamento", description: "Visão geral de licenciamento" },
+          { id: "licensing-legislations", title: "Legislações", icon: Scale, path: "/licenciamento/legislacoes", description: "Gestão de legislações aplicáveis" }
+        ]
+      }
     ]
   },
   {
