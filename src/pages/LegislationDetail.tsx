@@ -18,13 +18,16 @@ import {
   Loader2,
   Plus,
   Trash2,
-  Download
+  Download,
+  Bell
 } from "lucide-react";
 import { useLegislation, useUnitCompliances, useLegislationEvidences } from "@/hooks/data/useLegislations";
 import { useBranches } from "@/services/branches";
 import { LegislationStatusBadge, JurisdictionBadge } from "@/components/legislation/LegislationStatusBadge";
 import { UnitComplianceModal } from "@/components/legislation/UnitComplianceModal";
 import { EvidenceUploadModal } from "@/components/legislation/EvidenceUploadModal";
+import { LegislationHistoryTimeline } from "@/components/legislation/LegislationHistoryTimeline";
+import { LegislationRelatedLinks } from "@/components/legislation/LegislationRelatedLinks";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCompany } from "@/contexts/CompanyContext";
@@ -183,7 +186,7 @@ const LegislationDetail: React.FC = () => {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground mb-2">Aplicabilidade</p>
@@ -205,6 +208,15 @@ const LegislationDetail: React.FC = () => {
                 ? format(new Date(legislation.next_review_date), "dd/MM/yyyy", { locale: ptBR })
                 : "Não definida"
               }
+            </p>
+          </CardContent>
+        </Card>
+        <Card className={legislation.has_alert ? "border-red-500 bg-red-50 dark:bg-red-900/10" : ""}>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground mb-2">Alerta</p>
+            <p className={`flex items-center gap-2 font-medium ${legislation.has_alert ? "text-red-600" : "text-green-600"}`}>
+              <Bell className={`h-4 w-4 ${legislation.has_alert ? "text-red-600" : "text-green-600"}`} />
+              {legislation.has_alert ? "Requer atenção" : "OK"}
             </p>
           </CardContent>
         </Card>
@@ -299,6 +311,9 @@ const LegislationDetail: React.FC = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Related Legislations */}
+          <LegislationRelatedLinks legislation={legislation} />
         </TabsContent>
 
         <TabsContent value="units" className="mt-6">
@@ -457,31 +472,7 @@ const LegislationDetail: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 text-sm">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                  <div>
-                    <p className="font-medium">Legislação criada</p>
-                    <p className="text-muted-foreground">
-                      {legislation.created_at 
-                        ? format(new Date(legislation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-                        : "-"
-                      }
-                    </p>
-                  </div>
-                </div>
-                {legislation.updated_at && legislation.updated_at !== legislation.created_at && (
-                  <div className="flex items-start gap-3 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-muted-foreground mt-2" />
-                    <div>
-                      <p className="font-medium">Última atualização</p>
-                      <p className="text-muted-foreground">
-                        {format(new Date(legislation.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <LegislationHistoryTimeline legislationId={id!} />
             </CardContent>
           </Card>
         </TabsContent>
