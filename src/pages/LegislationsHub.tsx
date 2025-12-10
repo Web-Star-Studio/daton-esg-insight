@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Scale, ArrowLeft, FileText, ClipboardList } from "lucide-react";
 import { LegislationKPIs } from "@/components/legislation/LegislationKPIs";
+import { LegislationDashboardCharts } from "@/components/legislation/LegislationDashboardCharts";
 import { LegislationFilters } from "@/components/legislation/LegislationFilters";
 import { LegislationList } from "@/components/legislation/LegislationList";
 import { useLegislations } from "@/hooks/data/useLegislations";
@@ -84,6 +85,9 @@ const LegislationsHub: React.FC = () => {
 
       {/* KPIs */}
       <LegislationKPIs />
+
+      {/* Dashboard Visual */}
+      <LegislationDashboardCharts />
 
       {/* Main Content */}
       <Card>
