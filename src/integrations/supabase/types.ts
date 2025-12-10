@@ -12389,6 +12389,99 @@ export type Database = {
           },
         ]
       }
+      legislation_compliance_profiles: {
+        Row: {
+          activities: Json | null
+          activity_sectors: Json | null
+          branch_id: string | null
+          certifications: string[] | null
+          company_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          employee_count_range: string | null
+          has_air_emissions: boolean | null
+          has_environmental_license: boolean | null
+          has_fleet: boolean | null
+          has_hazardous_materials: boolean | null
+          has_solid_waste: boolean | null
+          has_wastewater_treatment: boolean | null
+          id: string
+          industry_type: string | null
+          notes: string | null
+          operating_municipalities: string[] | null
+          operating_states: string[] | null
+          risk_level: string | null
+          updated_at: string | null
+          waste_types: Json | null
+        }
+        Insert: {
+          activities?: Json | null
+          activity_sectors?: Json | null
+          branch_id?: string | null
+          certifications?: string[] | null
+          company_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          employee_count_range?: string | null
+          has_air_emissions?: boolean | null
+          has_environmental_license?: boolean | null
+          has_fleet?: boolean | null
+          has_hazardous_materials?: boolean | null
+          has_solid_waste?: boolean | null
+          has_wastewater_treatment?: boolean | null
+          id?: string
+          industry_type?: string | null
+          notes?: string | null
+          operating_municipalities?: string[] | null
+          operating_states?: string[] | null
+          risk_level?: string | null
+          updated_at?: string | null
+          waste_types?: Json | null
+        }
+        Update: {
+          activities?: Json | null
+          activity_sectors?: Json | null
+          branch_id?: string | null
+          certifications?: string[] | null
+          company_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          employee_count_range?: string | null
+          has_air_emissions?: boolean | null
+          has_environmental_license?: boolean | null
+          has_fleet?: boolean | null
+          has_hazardous_materials?: boolean | null
+          has_solid_waste?: boolean | null
+          has_wastewater_treatment?: boolean | null
+          id?: string
+          industry_type?: string | null
+          notes?: string | null
+          operating_municipalities?: string[] | null
+          operating_states?: string[] | null
+          risk_level?: string | null
+          updated_at?: string | null
+          waste_types?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legislation_compliance_profiles_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: true
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legislation_compliance_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legislation_evidences: {
         Row: {
           company_id: string
@@ -12708,6 +12801,7 @@ export type Database = {
       }
       legislations: {
         Row: {
+          applicability_tags: Json | null
           company_id: string
           created_at: string | null
           created_by: string | null
@@ -12739,6 +12833,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          applicability_tags?: Json | null
           company_id: string
           created_at?: string | null
           created_by?: string | null
@@ -12770,6 +12865,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          applicability_tags?: Json | null
           company_id?: string
           created_at?: string | null
           created_by?: string | null
