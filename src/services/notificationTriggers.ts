@@ -62,7 +62,7 @@ class NotificationTriggersService {
           actionUrl: '/inventario-gee',
           actionLabel: 'Ver Inventário',
           category: 'emissions',
-          priority: 'medium'
+          priority: 'info'
         };
 
       case 'goal_updated':
@@ -74,7 +74,7 @@ class NotificationTriggersService {
           actionUrl: '/metas',
           actionLabel: 'Ver Metas',
           category: 'goals',
-          priority: 'medium'
+          priority: 'info'
         };
 
       case 'license_expiring':
@@ -86,7 +86,7 @@ class NotificationTriggersService {
           actionUrl: '/licenciamento',
           actionLabel: 'Ver Licenças',
           category: 'compliance',
-          priority: daysToExpiry <= 30 ? 'critical' : 'high'
+          priority: daysToExpiry <= 30 ? 'critical' : 'important'
         };
 
       case 'audit_finding_created':
@@ -97,7 +97,7 @@ class NotificationTriggersService {
           actionUrl: '/auditoria',
           actionLabel: 'Ver Auditoria',
           category: 'audit',
-          priority: event.severity === 'critical' ? 'critical' : 'high'
+          priority: event.severity === 'critical' ? 'critical' : 'important'
         };
 
       case 'compliance_task_overdue':
@@ -119,7 +119,7 @@ class NotificationTriggersService {
           actionUrl: '/documentos',
           actionLabel: 'Ver Documentos',
           category: 'documents',
-          priority: 'low'
+          priority: 'info'
         };
 
       case 'quality_issue_detected':
@@ -130,7 +130,7 @@ class NotificationTriggersService {
           actionUrl: '/quality-dashboard',
           actionLabel: 'Ver Qualidade',
           category: 'quality',
-          priority: 'high'
+          priority: 'important'
         };
 
       case 'gri_indicator_updated':
@@ -141,7 +141,7 @@ class NotificationTriggersService {
           actionUrl: '/indicadores-gri',
           actionLabel: 'Ver Indicadores',
           category: 'gri',
-          priority: 'medium'
+          priority: 'info'
         };
 
       case 'risk_assessment_completed':
@@ -152,7 +152,7 @@ class NotificationTriggersService {
           actionUrl: '/gestao-riscos',
           actionLabel: 'Ver Riscos',
           category: 'risk',
-          priority: 'medium'
+          priority: 'info'
         };
 
       default:

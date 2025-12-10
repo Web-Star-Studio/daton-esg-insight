@@ -105,7 +105,7 @@ export const createNotification = async (
       message,
       type,
       category,
-      priority: priority || 'medium',
+      priority: priority || 'info',
       action_url: actionUrl,
       action_label: actionLabel,
       metadata,
