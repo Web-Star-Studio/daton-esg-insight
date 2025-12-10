@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useLegislationReports } from "@/hooks/useLegislationReports";
 import { useLegislationStats, useLegislationThemes } from "@/hooks/data/useLegislations";
+import { useBranches } from "@/services/branches";
+import { useUnitComplianceStats } from "@/hooks/useUnitComplianceStats";
 import { 
   ApplicabilityPieChart, 
   StatusBarChart, 
@@ -27,6 +29,13 @@ import {
   ComplianceOverviewChart,
   AlertsSummaryCard 
 } from "@/components/legislation/LegislationReportCharts";
+import {
+  UnitComplianceSummaryCard,
+  UnitStatusPieChart,
+  UnitApplicabilityChart,
+  UnitPendingRequirementsTable,
+  UnitActionPlansTable,
+} from "@/components/legislation/UnitComplianceReportCharts";
 import { LEGISLATION_REPORT_TEMPLATES, LegislationReportConfig } from "@/services/legislationReportExport";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -35,9 +44,11 @@ const LegislationReports: React.FC = () => {
   const { generateReport, isGenerating } = useLegislationReports();
   const { data: stats, isLoading: isLoadingStats } = useLegislationStats();
   const { themes, isLoading: isLoadingThemes } = useLegislationThemes();
+  const { data: branches, isLoading: isLoadingBranches } = useBranches();
   
   const [activeTab, setActiveTab] = useState<'global' | 'unit' | 'theme'>('global');
   const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [format, setFormat] = useState<'pdf' | 'excel' | 'both'>('pdf');
   const [sections, setSections] = useState({
     summary: true,
@@ -48,6 +59,12 @@ const LegislationReports: React.FC = () => {
     detailedList: true,
   });
 
+  const { data: unitStats, isLoading: isLoadingUnitStats } = useUnitComplianceStats(
+    activeTab === 'unit' ? selectedBranch : undefined
+  );
+  
+  const selectedBranchData = branches?.find(b => b.id === selectedBranch);
+
   const handleSectionChange = (section: keyof typeof sections) => {
     setSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -56,13 +73,16 @@ const LegislationReports: React.FC = () => {
     const config: LegislationReportConfig = {
       reportType: activeTab,
       format,
+      branchId: activeTab === 'unit' ? selectedBranch : undefined,
       themeId: activeTab === 'theme' ? selectedTheme : undefined,
       sections,
       includeCharts: true,
     };
     
-    await generateReport(config);
+    await generateReport(config, selectedBranch, selectedBranchData?.name);
   };
+
+  const canGenerateUnitReport = activeTab !== 'unit' || (activeTab === 'unit' && selectedBranch);
 
   const reportTypes = [
     {
@@ -144,9 +164,23 @@ const LegislationReports: React.FC = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     {LEGISLATION_REPORT_TEMPLATES.unit.description}
                   </p>
-                  <p className="text-xs text-muted-foreground italic">
-                    * Funcionalidade completa em desenvolvimento
-                  </p>
+                  <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma unidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches?.map(branch => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name} {branch.is_headquarters ? '(Matriz)' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!selectedBranch && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Selecione uma unidade para visualizar os dados
+                    </p>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="theme" className="mt-4">
@@ -266,7 +300,7 @@ const LegislationReports: React.FC = () => {
               
               <Button 
                 onClick={handleGenerateReport} 
-                disabled={isGenerating}
+                disabled={isGenerating || !canGenerateUnitReport}
                 className="w-full"
               >
                 {isGenerating ? (
@@ -295,58 +329,99 @@ const LegislationReports: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingStats ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-[280px]" />
-                  ))}
-                </div>
-              ) : stats ? (
-                <div className="space-y-6">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Total</p>
-                        <p className="text-2xl font-bold">{stats.total}</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Reais</p>
-                        <p className="text-2xl font-bold text-pink-600">{stats.byApplicability.real}</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Conformes</p>
-                        <p className="text-2xl font-bold text-green-600">{stats.byStatus.conforme}</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Alertas</p>
-                        <p className={`text-2xl font-bold ${stats.alerts > 0 ? 'text-destructive' : 'text-green-600'}`}>
-                          {stats.alerts}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
+              {/* Unit-specific preview */}
+              {activeTab === 'unit' && (
+                <>
+                  {!selectedBranch ? (
+                    <div className="flex items-center justify-center h-[300px]">
+                      <p className="text-muted-foreground">Selecione uma unidade para visualizar os dados</p>
+                    </div>
+                  ) : isLoadingUnitStats ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-[280px]" />
+                      ))}
+                    </div>
+                  ) : unitStats ? (
+                    <div className="space-y-6">
+                      <UnitComplianceSummaryCard 
+                        stats={unitStats} 
+                        branchName={selectedBranchData?.name || 'Unidade'} 
+                      />
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <UnitStatusPieChart stats={unitStats} />
+                        <UnitApplicabilityChart stats={unitStats} />
+                      </div>
 
-                  {/* Charts */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {sections.byApplicability && <ApplicabilityPieChart stats={stats} />}
-                    {sections.byStatus && <StatusBarChart stats={stats} />}
-                    {sections.byJurisdiction && <JurisdictionPieChart stats={stats} />}
-                    {sections.summary && <ComplianceOverviewChart stats={stats} />}
-                  </div>
+                      <UnitPendingRequirementsTable pendencias={unitStats.pendencias} />
+                      <UnitActionPlansTable planosAcao={unitStats.planosAcao} />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px]">
+                      <p className="text-muted-foreground">Nenhum dado disponível para esta unidade</p>
+                    </div>
+                  )}
+                </>
+              )}
 
-                  {sections.alerts && <AlertsSummaryCard stats={stats} />}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-[300px]">
-                  <p className="text-muted-foreground">Nenhum dado disponível</p>
-                </div>
+              {/* Global/Theme preview */}
+              {activeTab !== 'unit' && (
+                <>
+                  {isLoadingStats ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} className="h-[280px]" />
+                      ))}
+                    </div>
+                  ) : stats ? (
+                    <div className="space-y-6">
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Card>
+                          <CardContent className="pt-4">
+                            <p className="text-sm text-muted-foreground">Total</p>
+                            <p className="text-2xl font-bold">{stats.total}</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-4">
+                            <p className="text-sm text-muted-foreground">Reais</p>
+                            <p className="text-2xl font-bold text-pink-600">{stats.byApplicability.real}</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-4">
+                            <p className="text-sm text-muted-foreground">Conformes</p>
+                            <p className="text-2xl font-bold text-green-600">{stats.byStatus.conforme}</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-4">
+                            <p className="text-sm text-muted-foreground">Alertas</p>
+                            <p className={`text-2xl font-bold ${stats.alerts > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                              {stats.alerts}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Charts */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {sections.byApplicability && <ApplicabilityPieChart stats={stats} />}
+                        {sections.byStatus && <StatusBarChart stats={stats} />}
+                        {sections.byJurisdiction && <JurisdictionPieChart stats={stats} />}
+                        {sections.summary && <ComplianceOverviewChart stats={stats} />}
+                      </div>
+
+                      {sections.alerts && <AlertsSummaryCard stats={stats} />}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px]">
+                      <p className="text-muted-foreground">Nenhum dado disponível</p>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
