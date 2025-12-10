@@ -283,6 +283,40 @@ export const upsertUnitCompliance = async (compliance: Partial<LegislationUnitCo
   return data as unknown as LegislationUnitCompliance;
 };
 
+// Bulk Upsert for batch editing
+export const bulkUpsertUnitCompliance = async (
+  legislationId: string,
+  branchIds: string[],
+  companyId: string,
+  data: {
+    applicability: 'real' | 'potential' | 'na' | 'revoked' | 'pending';
+    compliance_status: 'conforme' | 'para_conhecimento' | 'adequacao' | 'plano_acao' | 'pending';
+    unit_responsible_user_id?: string;
+    observations?: string;
+  },
+  evaluatedBy?: string
+): Promise<LegislationUnitCompliance[]> => {
+  const records = branchIds.map(branchId => ({
+    legislation_id: legislationId,
+    branch_id: branchId,
+    company_id: companyId,
+    applicability: data.applicability,
+    compliance_status: data.compliance_status,
+    ...(data.unit_responsible_user_id && { unit_responsible_user_id: data.unit_responsible_user_id }),
+    ...(data.observations && { evidence_notes: data.observations }),
+    evaluated_at: new Date().toISOString(),
+    evaluated_by: evaluatedBy,
+  }));
+
+  const { data: result, error } = await supabase
+    .from('legislation_unit_compliance')
+    .upsert(records as any, { onConflict: 'legislation_id,branch_id' })
+    .select();
+
+  if (error) throw error;
+  return (result || []) as unknown as LegislationUnitCompliance[];
+};
+
 // Evidences CRUD
 export const fetchLegislationEvidences = async (legislationId: string): Promise<LegislationEvidence[]> => {
   const { data, error } = await supabase

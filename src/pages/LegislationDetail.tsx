@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ArrowLeft, 
   Pencil, 
@@ -19,7 +20,9 @@ import {
   Plus,
   Trash2,
   Download,
-  Bell
+  Bell,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import { useLegislation, useUnitCompliances, useLegislationEvidences } from "@/hooks/data/useLegislations";
 import { useBranches } from "@/services/branches";
@@ -28,6 +31,8 @@ import { UnitComplianceModal } from "@/components/legislation/UnitComplianceModa
 import { EvidenceUploadModal } from "@/components/legislation/EvidenceUploadModal";
 import { LegislationHistoryTimeline } from "@/components/legislation/LegislationHistoryTimeline";
 import { LegislationRelatedLinks } from "@/components/legislation/LegislationRelatedLinks";
+import { BulkComplianceModal, BulkComplianceData } from "@/components/legislation/BulkComplianceModal";
+import { useBulkUnitCompliance } from "@/hooks/useBulkUnitCompliance";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCompany } from "@/contexts/CompanyContext";
@@ -53,6 +58,7 @@ const LegislationDetail: React.FC = () => {
   const { compliances, isLoading: isLoadingCompliances, upsertCompliance, isUpserting } = useUnitCompliances(id);
   const { evidences, isLoading: isLoadingEvidences, createEvidence, deleteEvidence } = useLegislationEvidences(id);
   const { data: branches } = useBranches();
+  const { bulkUpsert, isBulkUpserting } = useBulkUnitCompliance(id);
 
   const [complianceModal, setComplianceModal] = useState<{
     open: boolean;
@@ -63,6 +69,10 @@ const LegislationDetail: React.FC = () => {
 
   const [evidenceModalOpen, setEvidenceModalOpen] = useState(false);
   const [deleteEvidenceId, setDeleteEvidenceId] = useState<string | null>(null);
+  
+  // Bulk editing state
+  const [selectedBranchIds, setSelectedBranchIds] = useState<Set<string>>(new Set());
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -119,11 +129,53 @@ const LegislationDetail: React.FC = () => {
     });
   };
 
+  // Bulk selection handlers
+  const handleToggleBranchSelection = (branchId: string) => {
+    setSelectedBranchIds(prev => {
+      const next = new Set(prev);
+      if (next.has(branchId)) {
+        next.delete(branchId);
+      } else {
+        next.add(branchId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedBranchIds.size === branchesWithCompliance.length) {
+      setSelectedBranchIds(new Set());
+    } else {
+      setSelectedBranchIds(new Set(branchesWithCompliance.map(b => b.id)));
+    }
+  };
+
+  const handleBulkConfirm = (data: BulkComplianceData) => {
+    if (!selectedCompany?.id) return;
+    
+    bulkUpsert(
+      Array.from(selectedBranchIds),
+      selectedCompany.id,
+      data,
+      user?.id,
+      {
+        onSuccess: () => {
+          setBulkModalOpen(false);
+          setSelectedBranchIds(new Set());
+        },
+      }
+    );
+  };
+
   // Get branches that don't have compliance records yet
   const branchesWithCompliance = branches?.map(branch => {
     const compliance = compliances.find(c => c.branch_id === branch.id);
     return { ...branch, compliance };
   }) || [];
+
+  const selectedBranchesForModal = branchesWithCompliance
+    .filter(b => selectedBranchIds.has(b.id))
+    .map(b => ({ id: b.id, name: b.name }));
 
   return (
     <div className="space-y-6">
@@ -318,11 +370,48 @@ const LegislationDetail: React.FC = () => {
 
         <TabsContent value="units" className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Avaliação por Unidade</CardTitle>
-              <CardDescription>
-                Avalie a aplicabilidade e conformidade desta legislação em cada unidade
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-lg">Avaliação por Unidade</CardTitle>
+                <CardDescription>
+                  Avalie a aplicabilidade e conformidade desta legislação em cada unidade
+                </CardDescription>
+              </div>
+              {branchesWithCompliance.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAll}
+                    className="gap-2"
+                  >
+                    {selectedBranchIds.size === branchesWithCompliance.length ? (
+                      <>
+                        <Square className="h-4 w-4" />
+                        Desmarcar Todas
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="h-4 w-4" />
+                        Selecionar Todas
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={selectedBranchIds.size === 0}
+                    onClick={() => setBulkModalOpen(true)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edição em Lote
+                    {selectedBranchIds.size > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {selectedBranchIds.size}
+                      </Badge>
+                    )}
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {isLoadingCompliances ? (
@@ -340,42 +429,54 @@ const LegislationDetail: React.FC = () => {
                   {branchesWithCompliance.map((branch) => (
                     <div 
                       key={branch.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => handleOpenComplianceModal(branch.id, branch.name)}
+                      className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                     >
-                      <div>
-                        <p className="font-medium">{branch.name}</p>
-                        {branch.compliance?.pending_description && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {branch.compliance.pending_description}
-                          </p>
-                        )}
-                        {branch.compliance?.action_plan && (
-                          <p className="text-sm text-amber-600 mt-1">
-                            Plano de ação: {branch.compliance.action_plan.substring(0, 80)}...
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {branch.compliance ? (
-                          <>
-                            <LegislationStatusBadge 
-                              type="applicability" 
-                              value={branch.compliance.applicability} 
-                            />
-                            <LegislationStatusBadge 
-                              type="status" 
-                              value={branch.compliance.compliance_status} 
-                            />
-                          </>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            Não avaliada
-                          </Badge>
-                        )}
-                        <Button variant="ghost" size="sm">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                      {/* Checkbox for selection */}
+                      <Checkbox
+                        checked={selectedBranchIds.has(branch.id)}
+                        onCheckedChange={() => handleToggleBranchSelection(branch.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      
+                      {/* Branch info - clickable */}
+                      <div 
+                        className="flex-1 flex items-center justify-between cursor-pointer"
+                        onClick={() => handleOpenComplianceModal(branch.id, branch.name)}
+                      >
+                        <div>
+                          <p className="font-medium">{branch.name}</p>
+                          {branch.compliance?.pending_description && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {branch.compliance.pending_description}
+                            </p>
+                          )}
+                          {branch.compliance?.action_plan && (
+                            <p className="text-sm text-amber-600 mt-1">
+                              Plano de ação: {branch.compliance.action_plan.substring(0, 80)}...
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {branch.compliance ? (
+                            <>
+                              <LegislationStatusBadge 
+                                type="applicability" 
+                                value={branch.compliance.applicability} 
+                              />
+                              <LegislationStatusBadge 
+                                type="status" 
+                                value={branch.compliance.compliance_status} 
+                              />
+                            </>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Não avaliada
+                            </Badge>
+                          )}
+                          <Button variant="ghost" size="sm">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -496,6 +597,15 @@ const LegislationDetail: React.FC = () => {
         onOpenChange={setEvidenceModalOpen}
         legislationId={id!}
         onSave={handleSaveEvidence}
+      />
+
+      {/* Bulk Compliance Modal */}
+      <BulkComplianceModal
+        open={bulkModalOpen}
+        onOpenChange={setBulkModalOpen}
+        selectedBranches={selectedBranchesForModal}
+        onConfirm={handleBulkConfirm}
+        isLoading={isBulkUpserting}
       />
 
       {/* Delete Evidence Confirmation */}
