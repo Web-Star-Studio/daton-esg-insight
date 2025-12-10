@@ -50,7 +50,7 @@ export const fetchUnitComplianceStats = async (
         norm_type, 
         jurisdiction
       ),
-      responsible_user:responsible_user_id (
+      responsible_user:profiles!unit_responsible_user_id (
         full_name
       )
     `)

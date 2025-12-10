@@ -406,7 +406,7 @@ export const exportUnitReportToPDF = async (
     .select(`
       *,
       legislation:legislation_id (id, title, norm_number, norm_type, jurisdiction),
-      responsible_user:responsible_user_id (full_name)
+      responsible_user:profiles!unit_responsible_user_id (full_name)
     `)
     .eq('branch_id', branchId);
 
