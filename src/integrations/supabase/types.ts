@@ -14597,6 +14597,7 @@ export type Database = {
           read_at: string | null
           title: string
           type: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -14615,6 +14616,7 @@ export type Database = {
           read_at?: string | null
           title: string
           type?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -14633,6 +14635,7 @@ export type Database = {
           read_at?: string | null
           title?: string
           type?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
