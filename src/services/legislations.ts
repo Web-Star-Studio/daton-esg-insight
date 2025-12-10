@@ -383,6 +383,10 @@ export const fetchLegislationStats = async (companyId: string) => {
       internacional: data?.filter(l => l.jurisdiction === 'internacional').length || 0,
     },
     alerts: data?.filter(l => l.has_alert).length || 0,
+    // Pendentes totais: applicability OU status pendente
+    pendingTotal: data?.filter(l => 
+      l.overall_applicability === 'pending' || l.overall_status === 'pending'
+    ).length || 0,
   };
 
   return stats;

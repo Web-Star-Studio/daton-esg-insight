@@ -36,7 +36,7 @@ export const LegislationKPIs: React.FC = () => {
   const conformeCount = stats?.byStatus.conforme || 0;
   const adequacaoCount = stats?.byStatus.adequacao || 0;
   const planoAcaoCount = stats?.byStatus.plano_acao || 0;
-  const pendingCount = stats?.byApplicability.pending || 0;
+  const pendingCount = stats?.pendingTotal || 0;
   const alertsCount = stats?.alerts || 0;
   
   // Calculate percentages
