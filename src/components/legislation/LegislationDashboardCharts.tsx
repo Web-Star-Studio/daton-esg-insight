@@ -136,15 +136,18 @@ const CompactComplianceChart: React.FC<{ stats: any }> = ({ stats }) => {
   );
 };
 
-// Compact Status Bar Chart
+// Compact Status List with Progress Bars
 const CompactStatusChart: React.FC<{ stats: any }> = ({ stats }) => {
   const data = Object.entries(stats?.byStatus || {})
     .filter(([_, value]) => (value as number) > 0)
     .map(([key, value]) => ({
       name: STATUS_LABELS[key] || key,
       value: value as number,
-      fill: STATUS_COLORS[key] || '#6b7280',
-    }));
+      color: STATUS_COLORS[key] || '#6b7280',
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const maxValue = Math.max(...data.map(d => d.value), 1);
 
   if (data.length === 0) {
     return (
@@ -156,26 +159,28 @@ const CompactStatusChart: React.FC<{ stats: any }> = ({ stats }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <h4 className="text-sm font-medium text-muted-foreground mb-2 text-center">Por Status</h4>
-      <ResponsiveContainer width="100%" height={130}>
-        <BarChart data={data} layout="vertical" margin={{ left: 0, right: 10 }}>
-          <XAxis type="number" hide />
-          <YAxis 
-            dataKey="name" 
-            type="category" 
-            width={70} 
-            tick={{ fontSize: 10 }} 
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14}>
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <h4 className="text-sm font-medium text-muted-foreground mb-3 text-center">Por Status</h4>
+      <div className="flex flex-col gap-2.5 flex-1 justify-center px-1">
+        {data.map((item, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground w-20 truncate" title={item.name}>
+              {item.name}
+            </span>
+            <div className="flex-1 h-4 bg-muted rounded-sm overflow-hidden">
+              <div
+                className="h-full rounded-sm transition-all duration-300"
+                style={{
+                  width: `${(item.value / maxValue) * 100}%`,
+                  backgroundColor: item.color,
+                }}
+              />
+            </div>
+            <span className="text-xs font-semibold w-6 text-right tabular-nums">
+              {item.value}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
