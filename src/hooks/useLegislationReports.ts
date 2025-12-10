@@ -12,7 +12,7 @@ export const useLegislationReports = () => {
   const { selectedCompany } = useCompany();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateReport = async (config: LegislationReportConfig) => {
+  const generateReport = async (config: LegislationReportConfig, branchId?: string, branchName?: string) => {
     if (!selectedCompany?.id) {
       toast.error("Empresa não encontrada");
       return;
@@ -23,7 +23,9 @@ export const useLegislationReports = () => {
       await generateLegislationReport(
         selectedCompany.id,
         selectedCompany.name || "Empresa",
-        config
+        config,
+        branchId,
+        branchName
       );
       
       const formatLabel = config.format === 'both' ? 'PDF e Excel' : config.format.toUpperCase();
