@@ -127,13 +127,13 @@ export function DocumentUploadZone({ reportId }: DocumentUploadZoneProps) {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      Environmental: 'bg-green-100 text-green-800',
+      Ambiental: 'bg-green-100 text-green-800',
       Social: 'bg-blue-100 text-blue-800',
-      Economic: 'bg-yellow-100 text-yellow-800',
-      Governance: 'bg-purple-100 text-purple-800',
-      General: 'bg-gray-100 text-gray-800',
+      Econômico: 'bg-yellow-100 text-yellow-800',
+      Governança: 'bg-purple-100 text-purple-800',
+      Geral: 'bg-gray-100 text-gray-800',
     };
-    return colors[category] || colors.General;
+    return colors[category] || colors.Geral;
   };
 
   return (
