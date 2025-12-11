@@ -117,18 +117,45 @@ export const createNotification = async (
   return data;
 };
 
-export const triggerSmartNotifications = async (action: string): Promise<void> => {
+// Map event types to valid edge function actions
+const eventToActionMap: Record<string, string | null> = {
+  'emission_data_added': 'check_emission_spikes',
+  'goal_updated': 'check_goal_deadlines',
+  'license_expiring': 'check_legislation_reviews',
+  'audit_finding_created': null, // No batch action available
+  'compliance_task_overdue': 'check_compliance_tasks',
+  'document_uploaded': null, // No batch action available
+  'quality_issue_detected': null, // No batch action available
+  'gri_indicator_updated': null, // No batch action available
+  'risk_assessment_completed': null, // No batch action available
+  // Direct actions are also valid
+  'check_goal_deadlines': 'check_goal_deadlines',
+  'check_compliance_tasks': 'check_compliance_tasks',
+  'check_emission_spikes': 'check_emission_spikes',
+  'check_efficacy_evaluations': 'check_efficacy_evaluations',
+  'check_legislation_reviews': 'check_legislation_reviews',
+};
+
+export const triggerSmartNotifications = async (eventType: string): Promise<void> => {
   try {
+    const action = eventToActionMap[eventType];
+    
+    // Skip if no valid action for this event type
+    if (!action) {
+      console.log(`No smart notification action available for event: ${eventType}`);
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke('smart-notifications', {
       body: { action }
     });
 
     if (error) {
-      console.error(`Error triggering smart notifications for ${action}:`, error);
+      console.error(`Error triggering smart notifications for ${eventType} -> ${action}:`, error);
       throw error;
     }
 
-    console.log(`Smart notifications triggered for ${action}:`, data);
+    console.log(`Smart notifications triggered for ${eventType} -> ${action}:`, data);
   } catch (error) {
     console.error(`Failed to trigger smart notifications:`, error);
     throw error;
