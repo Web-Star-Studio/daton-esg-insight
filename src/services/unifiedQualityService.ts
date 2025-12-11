@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/utils/logger";
 
 // Unified interfaces for quality management
 export interface QualityDashboard {
@@ -120,15 +121,32 @@ export interface PredictiveAnalysis {
 }
 
 class UnifiedQualityService {
+  private debugMode = true; // Enable debug logging
+
+  private log(message: string, context?: any) {
+    if (this.debugMode) {
+      logger.debug(`[QualityService] ${message}`, 'api', context);
+    }
+  }
+
   async getQualityDashboard(): Promise<QualityDashboard> {
+    const startTime = Date.now();
+    this.log('getQualityDashboard: Starting request');
+
     try {
       // Use edge function for comprehensive dashboard data
+      this.log('getQualityDashboard: Calling edge function quality-management');
+      
       const { data, error } = await supabase.functions.invoke('quality-management', {
         body: { action: 'dashboard' }
       });
 
+      const duration = Date.now() - startTime;
+
       if (error) {
-        console.error('Error fetching quality dashboard:', error);
+        logger.warn(`[QualityService] Edge function error after ${duration}ms`, 'api', { error });
+        this.log('getQualityDashboard: Using fallback data due to edge function error');
+        
         // Return fallback data
         const fallbackData = {
           metrics: {
@@ -153,6 +171,11 @@ class UnifiedQualityService {
         return { ...fallbackData, insights };
       }
 
+      this.log(`getQualityDashboard: Edge function success in ${duration}ms`, { 
+        hasData: !!data,
+        metricsPresent: !!data?.metrics 
+      });
+
       // Enhance with AI insights
       const insights = await this.generateQualityInsights(data);
 
@@ -161,7 +184,9 @@ class UnifiedQualityService {
         insights
       };
     } catch (error) {
-      console.error('Error in getQualityDashboard:', error);
+      const duration = Date.now() - startTime;
+      logger.error(`[QualityService] getQualityDashboard exception after ${duration}ms`, 'api', { error });
+      
       // Return fallback data on error
       const fallbackData = {
         metrics: {
@@ -191,12 +216,22 @@ class UnifiedQualityService {
   }
 
   async getQualityIndicators(): Promise<QualityIndicatorData> {
+    const startTime = Date.now();
+    this.log('getQualityIndicators: Starting request');
+
     try {
       const { data, error } = await supabase.functions.invoke('quality-management', {
         body: { action: 'indicators' }
       });
 
-      if (error) throw error;
+      const duration = Date.now() - startTime;
+
+      if (error) {
+        logger.warn(`[QualityService] getQualityIndicators error after ${duration}ms`, 'api', { error });
+        throw error;
+      }
+
+      this.log(`getQualityIndicators: Success in ${duration}ms`, { hasData: !!data });
       
       return data || {
         ncTrend: { current: 7, previous: 9, change: -22 },
@@ -205,7 +240,7 @@ class UnifiedQualityService {
         qualityScore: 78
       };
     } catch (error) {
-      console.error('Error fetching quality indicators:', error);
+      logger.warn('[QualityService] getQualityIndicators: Using fallback data', 'api', { error });
       return {
         ncTrend: { current: 7, previous: 9, change: -22 },
         resolutionRate: { resolved: 17, total: 24, percentage: 70 },

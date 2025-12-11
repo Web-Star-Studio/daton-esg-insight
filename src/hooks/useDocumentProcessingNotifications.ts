@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/utils/logger';
 
 interface ProcessingNotification {
   jobId: string;
@@ -15,9 +16,40 @@ interface ProcessingNotification {
 export function useDocumentProcessingNotifications() {
   const queryClient = useQueryClient();
   const processedJobs = useRef(new Set<string>());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+
+  // Check authentication status before subscribing
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      
+      if (!session) {
+        logger.debug('Document processing notifications: User not authenticated, skipping subscription', 'api');
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
-    console.log('🔔 Setting up document processing notifications...');
+    // Only subscribe if authenticated
+    if (!isAuthenticated) {
+      logger.debug('Skipping realtime subscription - user not authenticated', 'api');
+      return;
+    }
+
+    logger.info('Setting up document processing notifications...', 'api');
 
     // Subscribe to extraction jobs updates
     const jobsChannel = supabase
@@ -31,13 +63,13 @@ export function useDocumentProcessingNotifications() {
           filter: 'status=in.(Concluído,Erro)'
         },
         async (payload) => {
-          console.log('📊 Job update received:', payload);
+          logger.debug('Job update received', 'api', { payload });
           
           const job = payload.new as any;
           
           // Evitar notificações duplicadas
           if (processedJobs.current.has(job.id)) {
-            console.log('⏭️ Skipping duplicate notification for job:', job.id);
+            logger.debug('Skipping duplicate notification for job', 'api', { jobId: job.id });
             return;
           }
           
@@ -117,7 +149,17 @@ export function useDocumentProcessingNotifications() {
         }
       )
       .subscribe((status) => {
-        console.log('🔌 Jobs channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          logger.info('Jobs channel connected successfully', 'api');
+          setConnectionStatus('connected');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.warn('Jobs channel connection error - will retry on next auth change', 'api');
+          setConnectionStatus('error');
+          // Don't show toast for channel errors - they're expected when not fully authenticated
+        } else if (status === 'TIMED_OUT') {
+          logger.warn('Jobs channel timed out', 'api');
+          setConnectionStatus('error');
+        }
       });
 
     // Subscribe to extracted data preview insertions (novos dados para revisar)
@@ -132,7 +174,7 @@ export function useDocumentProcessingNotifications() {
           filter: 'validation_status=eq.Pendente'
         },
         async (payload) => {
-          console.log('📋 New preview data available:', payload);
+          logger.debug('New preview data available', 'api', { payload });
           
           const preview = payload.new as any;
           
@@ -172,17 +214,21 @@ export function useDocumentProcessingNotifications() {
         }
       )
       .subscribe((status) => {
-        console.log('🔌 Preview channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          logger.info('Preview channel connected successfully', 'api');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.warn('Preview channel connection error - will retry on next auth change', 'api');
+        }
       });
 
     // Cleanup
     return () => {
-      console.log('🔕 Unsubscribing from processing notifications');
+      logger.debug('Unsubscribing from processing notifications', 'api');
       supabase.removeChannel(jobsChannel);
       supabase.removeChannel(previewChannel);
       processedJobs.current.clear();
     };
-  }, [queryClient]);
+  }, [queryClient, isAuthenticated]);
 
-  return null;
+  return { connectionStatus, isAuthenticated };
 }
