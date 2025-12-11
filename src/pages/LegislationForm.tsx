@@ -330,11 +330,9 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Jurisdição *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="federal">Federal</SelectItem>
                                 <SelectItem value="estadual">Estadual</SelectItem>
@@ -463,11 +461,9 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Aplicabilidade *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="pending">Pendente de Avaliação</SelectItem>
                                 <SelectItem value="real">Real (Aplicável)</SelectItem>
@@ -491,11 +487,9 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Status de Atendimento *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="pending">Pendente</SelectItem>
                                 <SelectItem value="conforme">Conforme</SelectItem>
@@ -565,11 +559,9 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Responsável</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o responsável" />
-                                </SelectTrigger>
-                              </FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o responsável" />
+                              </SelectTrigger>
                               <SelectContent>
                                 {users?.map((user) => (
                                   <SelectItem key={user.id} value={user.id}>
@@ -614,11 +606,9 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Esta legislação revoga</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione uma legislação" />
-                                </SelectTrigger>
-                              </FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma legislação" />
+                              </SelectTrigger>
                               <SelectContent>
                                 {legislations
                                   .filter(l => l.id !== id)
@@ -644,11 +634,9 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Revogada por</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione uma legislação" />
-                                </SelectTrigger>
-                              </FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma legislação" />
+                              </SelectTrigger>
                               <SelectContent>
                                 {legislations
                                   .filter(l => l.id !== id)
