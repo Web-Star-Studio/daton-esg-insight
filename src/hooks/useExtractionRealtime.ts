@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 interface ExtractionRealtimeConfig {
   enabled?: boolean;
@@ -15,9 +16,38 @@ export function useExtractionRealtime({
   onPreviewUpdate,
 }: ExtractionRealtimeConfig = {}) {
   const queryClient = useQueryClient();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+
+  // Check authentication status before subscribing
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    // Only subscribe if enabled AND authenticated
+    if (!enabled || !isAuthenticated) {
+      if (!isAuthenticated) {
+        logger.debug('Extraction realtime: Skipping subscription - user not authenticated', 'api');
+      }
+      return;
+    }
+
+    logger.info('Setting up extraction realtime subscriptions...', 'api');
 
     // Subscribe to approval logs
     const approvalChannel = supabase
@@ -30,7 +60,7 @@ export function useExtractionRealtime({
           table: 'extraction_approval_log',
         },
         (payload) => {
-          console.log('New approval log:', payload.new);
+          logger.debug('New approval log received', 'api', { payload: payload.new });
           
           // Invalidate queries to refresh data
           queryClient.invalidateQueries({ queryKey: ['extraction-previews'] });
@@ -63,7 +93,15 @@ export function useExtractionRealtime({
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          logger.info('Approval channel connected successfully', 'api');
+          setConnectionStatus('connected');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.warn('Approval channel connection error', 'api');
+          setConnectionStatus('error');
+        }
+      });
 
     // Subscribe to extracted_data_preview updates AND inserts
     const previewChannel = supabase
@@ -76,7 +114,7 @@ export function useExtractionRealtime({
           table: 'extracted_data_preview',
         },
         (payload) => {
-          console.log('New preview created:', payload.new);
+          logger.debug('New preview created', 'api', { payload: payload.new });
           
           // Show notification for new extractions ready for review
           toast({
@@ -101,7 +139,7 @@ export function useExtractionRealtime({
           table: 'extracted_data_preview',
         },
         (payload) => {
-          console.log('Preview updated:', payload.new);
+          logger.debug('Preview updated', 'api', { payload: payload.new });
           
           // Call custom handler
           if (onPreviewUpdate) {
@@ -112,12 +150,21 @@ export function useExtractionRealtime({
           queryClient.invalidateQueries({ queryKey: ['extracted-data-previews'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          logger.info('Preview channel connected successfully', 'api');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.warn('Preview channel connection error', 'api');
+        }
+      });
 
     // Cleanup
     return () => {
+      logger.debug('Unsubscribing from extraction realtime channels', 'api');
       supabase.removeChannel(approvalChannel);
       supabase.removeChannel(previewChannel);
     };
-  }, [enabled, queryClient, onApprovalLog, onPreviewUpdate]);
+  }, [enabled, queryClient, onApprovalLog, onPreviewUpdate, isAuthenticated]);
+
+  return { connectionStatus, isAuthenticated };
 }

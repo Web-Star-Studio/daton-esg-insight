@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export interface RealTimeConfig {
   table: string;
@@ -18,10 +19,39 @@ export const useRealTimeData = (configs: RealTimeConfig[]) => {
   const queryClient = useQueryClient();
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [lastActivity, setLastActivity] = useState<Date>(new Date());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const channelsRef = useRef<any[]>([]);
   const debounceTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const errorCountRef = useRef<number>(0);
+
+  // Check authentication status before subscribing
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      // Reset error count on auth change
+      errorCountRef.current = 0;
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
+    // Only subscribe if authenticated
+    if (!isAuthenticated) {
+      logger.debug('RealTimeData: Skipping subscription - user not authenticated', 'api');
+      setConnectionStatus('disconnected');
+      return;
+    }
+
     const channels: any[] = [];
 
     configs.forEach((config, index) => {
@@ -75,9 +105,26 @@ export const useRealTimeData = (configs: RealTimeConfig[]) => {
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             setConnectionStatus('connected');
+            errorCountRef.current = 0;
+            logger.info(`RealTimeData: Channel ${config.table} connected`, 'api');
           } else if (status === 'CHANNEL_ERROR') {
             setConnectionStatus('disconnected');
-            toast.error(`Erro na conexão em tempo real para ${config.table}`);
+            errorCountRef.current++;
+            
+            // Only log warning once per table, not spam
+            if (errorCountRef.current <= 3) {
+              logger.warn(`RealTimeData: Channel ${config.table} error (attempt ${errorCountRef.current})`, 'api');
+            }
+            
+            // Only show toast on first error
+            if (errorCountRef.current === 1) {
+              toast.error(`Erro na conexão em tempo real para ${config.table}`, {
+                duration: 3000,
+              });
+            }
+          } else if (status === 'TIMED_OUT') {
+            setConnectionStatus('disconnected');
+            logger.warn(`RealTimeData: Channel ${config.table} timed out`, 'api');
           }
         });
 
@@ -100,7 +147,7 @@ export const useRealTimeData = (configs: RealTimeConfig[]) => {
       
       setConnectionStatus('disconnected');
     };
-  }, [configs, queryClient]);
+  }, [configs, queryClient, isAuthenticated]);
 
   const showRealTimeNotification = (table: string, eventType: string, payload: any) => {
     const tableLabels: Record<string, string> = {
