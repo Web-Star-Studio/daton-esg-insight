@@ -25,6 +25,7 @@ import { getEmployees, getEmployeesStats } from "@/services/employees";
 import { BoardMemberModal } from "@/components/BoardMemberModal";
 import { CorporatePolicyModal } from "@/components/CorporatePolicyModal";
 import { WhistleblowerModal } from "@/components/WhistleblowerModal";
+import { ESGRiskModal } from "@/components/ESGRiskModal";
 import { GovernanceReportsModal } from "@/components/GovernanceReportsModal";
 import { EmployeeModal } from "@/components/EmployeeModal";
 import { EmployeeDetailModal } from "@/components/EmployeeDetailModal";
@@ -56,6 +57,9 @@ export default function GovernancaESG() {
   const [modalMode, setModalMode] = useState('create');
   const [isEmployeeDetailModalOpen, setIsEmployeeDetailModalOpen] = useState(false);
   const [viewingEmployee, setViewingEmployee] = useState(null);
+  const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
+  const [selectedRisk, setSelectedRisk] = useState<any>(null);
+  const [riskModalMode, setRiskModalMode] = useState<'create' | 'edit'>('create');
 
   // Optimized queries with caching and error handling
   const { data: governanceMetrics, isLoading: loadingGovernance, error: governanceError } = useOptimizedQuery({
@@ -153,6 +157,23 @@ export default function GovernancaESG() {
     setViewingEmployee(null);
   };
 
+  const handleCreateRisk = () => {
+    setSelectedRisk(null);
+    setRiskModalMode('create');
+    setIsRiskModalOpen(true);
+  };
+
+  const handleEditRisk = (risk: any) => {
+    setSelectedRisk(risk);
+    setRiskModalMode('edit');
+    setIsRiskModalOpen(true);
+  };
+
+  const handleCloseRiskModal = () => {
+    setIsRiskModalOpen(false);
+    setSelectedRisk(null);
+  };
+
   return (
     <ErrorBoundary>
       <div className="space-y-6">
@@ -234,8 +255,8 @@ export default function GovernancaESG() {
 
             <TabsContent value="risks">
               <ESGRisksMatrix 
-                onEditRisk={() => {}} 
-                onCreateRisk={() => {}}
+                onEditRisk={handleEditRisk} 
+                onCreateRisk={handleCreateRisk}
               />
             </TabsContent>
 
@@ -299,6 +320,13 @@ export default function GovernancaESG() {
           <GovernanceReportsModal
             isOpen={isReportsModalOpen}
             onClose={() => setIsReportsModalOpen(false)}
+          />
+
+          <ESGRiskModal
+            isOpen={isRiskModalOpen}
+            onClose={handleCloseRiskModal}
+            risk={selectedRisk}
+            mode={riskModalMode}
           />
         </div>
       </ErrorBoundary>
