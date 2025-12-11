@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats, formatEmissionValue, formatEmployeeCount, formatPercentage } from '@/services/dashboardStats';
+import { calculateESGScores, ESGScores } from '@/services/esgScoreService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedCard } from '@/components/ui/enhanced-card';
 import { Button } from '@/components/ui/button';
@@ -190,12 +191,19 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [selectedTimeframe, setSelectedTimeframe] = useState('month');
 
-  const { data: dashboardStats, isLoading } = useQuery({
+  const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['dashboard-stats', selectedTimeframe],
     queryFn: () => getDashboardStats(selectedTimeframe as any),
     refetchInterval: 60000, // Refresh every minute
   });
 
+  const { data: esgScores, isLoading: isLoadingESG } = useQuery({
+    queryKey: ['esg-scores'],
+    queryFn: calculateESGScores,
+    refetchInterval: 300000, // Refresh every 5 minutes
+  });
+
+  const isLoading = isLoadingStats || isLoadingESG;
   const kpiCards = getKPICards(dashboardStats);
 
   const getGreeting = () => {
@@ -366,38 +374,63 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-6">
               {/* Overall ESG Score */}
-              <ESGScoreGauge 
-                score={91}
-                label="Score ESG Geral"
-                showDetails={true}
-              />
+              {esgScores?.hasData ? (
+                <>
+                  <ESGScoreGauge 
+                    score={esgScores.overall}
+                    label="Score ESG Geral"
+                    showDetails={true}
+                  />
 
-              {/* Individual Pillar Breakdown */}
-              <div className="space-y-4 pt-4 border-t border-border/30">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
-                    <span className="text-sm font-bold text-success">87%</span>
+                  {/* Individual Pillar Breakdown */}
+                  <div className="space-y-4 pt-4 border-t border-border/30">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
+                        <span className="text-sm font-bold text-success">{esgScores.environmental}%</span>
+                      </div>
+                      <Progress value={esgScores.environmental} className="h-2" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Social (S)</span>
+                        <span className="text-sm font-bold text-primary">{esgScores.social}%</span>
+                      </div>
+                      <Progress value={esgScores.social} className="h-2" />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Governança (G)</span>
+                        <span className="text-sm font-bold text-accent">{esgScores.governance}%</span>
+                      </div>
+                      <Progress value={esgScores.governance} className="h-2" />
+                    </div>
                   </div>
-                  <Progress value={87} className="h-2" />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Social (S)</span>
-                    <span className="text-sm font-bold text-primary">92%</span>
+                </>
+              ) : (
+                <div className="text-center py-8 space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
+                    <BarChart3 className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <Progress value={92} className="h-2" />
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Governança (G)</span>
-                    <span className="text-sm font-bold text-accent">95%</span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">Sem dados ESG disponíveis</p>
+                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                      Comece cadastrando fontes de emissão, funcionários ou políticas para calcular seu Score ESG.
+                    </p>
                   </div>
-                  <Progress value={95} className="h-2" />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/inventario-gee')}
+                    className="gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Iniciar cadastro
+                  </Button>
                 </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </EnhancedCard>
