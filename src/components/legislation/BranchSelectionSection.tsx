@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,40 @@ interface BranchSelectionSectionProps {
   isLoading?: boolean;
 }
 
+// Helper to calculate auto-selection based on jurisdiction
+const calculateAutoSelection = (
+  jurisdiction: string,
+  branches: Branch[],
+  legislationState?: string,
+  legislationMunicipality?: string
+): string[] => {
+  switch (jurisdiction) {
+    case 'federal':
+    case 'nbr':
+    case 'internacional':
+      return branches.map(b => b.id);
+    case 'estadual':
+      if (legislationState) {
+        return branches
+          .filter(b => b.state?.toLowerCase() === legislationState.toLowerCase())
+          .map(b => b.id);
+      }
+      return [];
+    case 'municipal':
+      if (legislationState && legislationMunicipality) {
+        return branches
+          .filter(b => 
+            b.state?.toLowerCase() === legislationState.toLowerCase() &&
+            b.city?.toLowerCase() === legislationMunicipality.toLowerCase()
+          )
+          .map(b => b.id);
+      }
+      return [];
+    default:
+      return [];
+  }
+};
+
 export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
   branches,
   selectedBranchIds,
@@ -26,72 +60,55 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
   legislationMunicipality,
   isLoading,
 }) => {
-  // Track if we've done initial auto-selection and previous jurisdiction
-  const hasAutoSelected = useRef(false);
-  const prevJurisdiction = useRef(jurisdiction);
-  const prevState = useRef(legislationState);
-  const prevMunicipality = useRef(legislationMunicipality);
+  // Track if we've done initial auto-selection
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
+  // Track previous values using refs to detect changes
+  const prevValuesRef = useRef({
+    jurisdiction,
+    legislationState,
+    legislationMunicipality,
+  });
 
-  // Auto-select branches based on jurisdiction
-  useEffect(() => {
-    if (isLoading || branches.length === 0) return;
+  // Stable callback for auto-selection
+  const performAutoSelection = useCallback(() => {
+    const autoSelectedIds = calculateAutoSelection(
+      jurisdiction,
+      branches,
+      legislationState,
+      legislationMunicipality
+    );
     
-    // Check if jurisdiction or location changed
-    const jurisdictionChanged = prevJurisdiction.current !== jurisdiction;
-    const stateChanged = prevState.current !== legislationState;
-    const municipalityChanged = prevMunicipality.current !== legislationMunicipality;
-    
-    // Only auto-select if: first time OR jurisdiction/location changed
-    if (hasAutoSelected.current && !jurisdictionChanged && !stateChanged && !municipalityChanged) {
-      return;
-    }
-    
-    let autoSelectedIds: string[] = [];
-    
-    switch (jurisdiction) {
-      case 'federal':
-      case 'nbr':
-      case 'internacional':
-        // Select all branches for federal, NBR, and international
-        autoSelectedIds = branches.map(b => b.id);
-        break;
-      case 'estadual':
-        // Select branches matching the state
-        if (legislationState) {
-          autoSelectedIds = branches
-            .filter(b => b.state?.toLowerCase() === legislationState.toLowerCase())
-            .map(b => b.id);
-        }
-        break;
-      case 'municipal':
-        // Select branches matching the municipality and state
-        if (legislationState && legislationMunicipality) {
-          autoSelectedIds = branches
-            .filter(b => 
-              b.state?.toLowerCase() === legislationState.toLowerCase() &&
-              b.city?.toLowerCase() === legislationMunicipality.toLowerCase()
-            )
-            .map(b => b.id);
-        }
-        break;
-    }
-    
-    // Update refs
-    prevJurisdiction.current = jurisdiction;
-    prevState.current = legislationState;
-    prevMunicipality.current = legislationMunicipality;
-    hasAutoSelected.current = true;
-    
-    // Only update if selection would actually change
-    const currentSet = new Set(selectedBranchIds);
-    const newSet = new Set(autoSelectedIds);
-    const isDifferent = currentSet.size !== newSet.size || 
-      [...currentSet].some(id => !newSet.has(id));
-    
-    if (isDifferent && autoSelectedIds.length > 0) {
+    if (autoSelectedIds.length > 0) {
       onSelectionChange(autoSelectedIds);
     }
-  }, [jurisdiction, legislationState, legislationMunicipality, branches, isLoading]);
+  }, [jurisdiction, branches, legislationState, legislationMunicipality, onSelectionChange]);
+
+  // Initial auto-selection - runs ONCE when branches load
+  useEffect(() => {
+    if (hasInitialized || isLoading || branches.length === 0) return;
+    
+    performAutoSelection();
+    setHasInitialized(true);
+  }, [hasInitialized, isLoading, branches.length, performAutoSelection]);
+
+  // Re-calculate when jurisdiction/location changes AFTER initialization
+  useEffect(() => {
+    if (!hasInitialized) return;
+    
+    const prev = prevValuesRef.current;
+    const jurisdictionChanged = prev.jurisdiction !== jurisdiction;
+    const stateChanged = prev.legislationState !== legislationState;
+    const municipalityChanged = prev.legislationMunicipality !== legislationMunicipality;
+    
+    // Update refs
+    prevValuesRef.current = { jurisdiction, legislationState, legislationMunicipality };
+    
+    // Only recalculate if something relevant changed
+    if (jurisdictionChanged || stateChanged || municipalityChanged) {
+      performAutoSelection();
+    }
+  }, [hasInitialized, jurisdiction, legislationState, legislationMunicipality, performAutoSelection]);
 
   const handleToggleBranch = (branchId: string) => {
     if (selectedBranchIds.includes(branchId)) {
