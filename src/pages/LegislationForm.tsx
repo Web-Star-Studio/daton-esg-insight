@@ -12,10 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useLegislation, useLegislations, useLegislationThemes, useLegislationSubthemes } from "@/hooks/data/useLegislations";
-import { NORM_TYPES, ISSUING_BODIES } from "@/services/legislations";
+import { NORM_TYPES, ISSUING_BODIES, createInitialUnitCompliances } from "@/services/legislations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
 import { CreatableSelect } from "@/components/ui/creatable-select";
+import { useBranches } from "@/services/branches";
+import { BranchSelectionSection } from "@/components/legislation/BranchSelectionSection";
+import { useCompany } from "@/contexts/CompanyContext";
 const formSchema = z.object({
   norm_type: z.string().min(1, "Tipo de norma é obrigatório"),
   norm_number: z.string().optional(),
@@ -44,16 +47,19 @@ const LegislationForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const isEditing = !!id;
 
   const { data: legislation, isLoading: isLoadingLegislation } = useLegislation(id);
   const { legislations, createLegislation, updateLegislation, isCreating, isUpdating } = useLegislations();
   const { themes, createTheme } = useLegislationThemes();
   const { subthemes, createSubtheme } = useLegislationSubthemes();
+  const { data: branches, isLoading: isLoadingBranches } = useBranches();
 
   // Local state for custom norm types and issuing bodies
   const [customNormTypes, setCustomNormTypes] = useState<string[]>([]);
   const [customIssuingBodies, setCustomIssuingBodies] = useState<string[]>([]);
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const { data: users } = useCompanyUsers();
 
   const form = useForm<FormData>({
@@ -116,7 +122,7 @@ const LegislationForm: React.FC = () => {
     }
   }, [legislation, form]);
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     const payload = {
       ...data,
       theme_id: data.theme_id || null,
@@ -137,7 +143,19 @@ const LegislationForm: React.FC = () => {
       });
     } else {
       createLegislation(payload, {
-        onSuccess: () => navigate('/licenciamento/legislacoes'),
+        onSuccess: async (newLegislation: any) => {
+          // Create initial compliance records for selected branches
+          if (selectedBranchIds.length > 0 && selectedCompany?.id && newLegislation?.id) {
+            await createInitialUnitCompliances(
+              newLegislation.id,
+              selectedBranchIds,
+              selectedCompany.id,
+              data.overall_applicability,
+              data.overall_status
+            );
+          }
+          navigate('/licenciamento/legislacoes');
+        },
       });
     }
   };
@@ -557,6 +575,19 @@ const LegislationForm: React.FC = () => {
                       />
                     </CardContent>
                   </Card>
+
+                  {/* Aplicação por Unidade - Only show when creating */}
+                  {!isEditing && (
+                    <BranchSelectionSection
+                      branches={branches || []}
+                      selectedBranchIds={selectedBranchIds}
+                      onSelectionChange={setSelectedBranchIds}
+                      jurisdiction={selectedJurisdiction}
+                      legislationState={form.watch('state')}
+                      legislationMunicipality={form.watch('municipality')}
+                      isLoading={isLoadingBranches}
+                    />
+                  )}
 
                   {/* Revogações */}
                   <Card>

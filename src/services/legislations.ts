@@ -317,6 +317,35 @@ export const bulkUpsertUnitCompliance = async (
   return (result || []) as unknown as LegislationUnitCompliance[];
 };
 
+// Create initial compliance records when legislation is created
+export const createInitialUnitCompliances = async (
+  legislationId: string,
+  branchIds: string[],
+  companyId: string,
+  applicability: 'real' | 'potential' | 'na' | 'revoked' | 'pending' = 'pending',
+  complianceStatus: 'conforme' | 'para_conhecimento' | 'adequacao' | 'plano_acao' | 'pending' = 'pending'
+): Promise<void> => {
+  if (branchIds.length === 0) return;
+
+  const records = branchIds.map(branchId => ({
+    legislation_id: legislationId,
+    branch_id: branchId,
+    company_id: companyId,
+    applicability,
+    compliance_status: complianceStatus,
+    has_pending_requirements: false,
+  }));
+
+  const { error } = await supabase
+    .from('legislation_unit_compliance')
+    .insert(records as any);
+
+  if (error) {
+    console.error('Error creating initial unit compliances:', error);
+    // Don't throw - this is a non-critical operation
+  }
+};
+
 // Evidences CRUD
 export const fetchLegislationEvidences = async (legislationId: string): Promise<LegislationEvidence[]> => {
   const { data, error } = await supabase
