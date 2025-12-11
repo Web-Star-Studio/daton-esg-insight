@@ -43,9 +43,9 @@ export function RiskDetailsModal({ isOpen, onClose, risk, onEdit }: RiskDetailsM
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'Environmental': return 'bg-green-100 text-green-800 border-green-200';
+      case 'Ambiental': return 'bg-green-100 text-green-800 border-green-200';
       case 'Social': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Governance': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Governança': return 'bg-purple-100 text-purple-800 border-purple-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };

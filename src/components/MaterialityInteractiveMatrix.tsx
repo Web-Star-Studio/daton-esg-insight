@@ -156,10 +156,13 @@ export const MaterialityInteractiveMatrix = ({ themes, matrix, className }: Mate
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'environmental': return 'text-success bg-success/10 border-success/30';
+      case 'environmental':
+      case 'ambiental': return 'text-success bg-success/10 border-success/30';
       case 'social': return 'text-primary bg-primary/10 border-primary/30';
-      case 'governance': return 'text-secondary bg-secondary/10 border-secondary/30';
-      case 'economic': return 'text-warning bg-warning/10 border-warning/30';
+      case 'governance':
+      case 'governança': return 'text-secondary bg-secondary/10 border-secondary/30';
+      case 'economic':
+      case 'econômico': return 'text-warning bg-warning/10 border-warning/30';
       default: return 'text-muted-foreground bg-muted/10 border-muted/30';
     }
   };
