@@ -97,9 +97,10 @@ const LegislationForm: React.FC = () => {
       revoked_by_legislation_id: '',
     },
   });
-
   const selectedJurisdiction = form.watch('jurisdiction');
   const selectedThemeId = form.watch('theme_id');
+  const watchedState = form.watch('state');
+  const watchedMunicipality = form.watch('municipality');
 
   // Filter subthemes by selected theme
   const filteredSubthemes = selectedThemeId 
@@ -588,22 +589,17 @@ const LegislationForm: React.FC = () => {
                   </Card>
 
                   {/* Aplicação por Unidade - Only show when creating */}
-                  {!isEditing && (() => {
-                    // Extract watched values outside JSX to avoid creating new references each render
-                    const watchedState = form.watch('state');
-                    const watchedMunicipality = form.watch('municipality');
-                    return (
-                      <BranchSelectionSection
-                        branches={branches || []}
-                        selectedBranchIds={selectedBranchIds}
-                        onSelectionChange={handleBranchSelectionChange}
-                        jurisdiction={selectedJurisdiction}
-                        legislationState={watchedState}
-                        legislationMunicipality={watchedMunicipality}
-                        isLoading={isLoadingBranches}
-                      />
-                    );
-                  })()}
+                  {!isEditing && (
+                    <BranchSelectionSection
+                      branches={branches || []}
+                      selectedBranchIds={selectedBranchIds}
+                      onSelectionChange={handleBranchSelectionChange}
+                      jurisdiction={selectedJurisdiction}
+                      legislationState={watchedState}
+                      legislationMunicipality={watchedMunicipality}
+                      isLoading={isLoadingBranches}
+                    />
+                  )}
 
                   {/* Revogações */}
                   <Card>

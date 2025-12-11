@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +63,10 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
   // Track if we've done initial auto-selection
   const [hasInitialized, setHasInitialized] = useState(false);
   
+  // Use ref for onSelectionChange to break the dependency cycle
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
+  
   // Track previous values using refs to detect changes
   const prevValuesRef = useRef({
     jurisdiction,
@@ -70,8 +74,10 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
     legislationMunicipality,
   });
 
-  // Stable callback for auto-selection
-  const performAutoSelection = useCallback(() => {
+  // Initial auto-selection - runs ONCE when branches load
+  useEffect(() => {
+    if (hasInitialized || isLoading || branches.length === 0) return;
+    
     const autoSelectedIds = calculateAutoSelection(
       jurisdiction,
       branches,
@@ -80,17 +86,11 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
     );
     
     if (autoSelectedIds.length > 0) {
-      onSelectionChange(autoSelectedIds);
+      onSelectionChangeRef.current(autoSelectedIds);
     }
-  }, [jurisdiction, branches, legislationState, legislationMunicipality, onSelectionChange]);
-
-  // Initial auto-selection - runs ONCE when branches load
-  useEffect(() => {
-    if (hasInitialized || isLoading || branches.length === 0) return;
-    
-    performAutoSelection();
     setHasInitialized(true);
-  }, [hasInitialized, isLoading, branches.length, performAutoSelection]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasInitialized, isLoading, branches.length]);
 
   // Re-calculate when jurisdiction/location changes AFTER initialization
   useEffect(() => {
@@ -106,9 +106,15 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
     
     // Only recalculate if something relevant changed
     if (jurisdictionChanged || stateChanged || municipalityChanged) {
-      performAutoSelection();
+      const autoSelectedIds = calculateAutoSelection(
+        jurisdiction,
+        branches,
+        legislationState,
+        legislationMunicipality
+      );
+      onSelectionChangeRef.current(autoSelectedIds);
     }
-  }, [hasInitialized, jurisdiction, legislationState, legislationMunicipality, performAutoSelection]);
+  }, [hasInitialized, jurisdiction, legislationState, legislationMunicipality, branches]);
 
   const handleToggleBranch = (branchId: string) => {
     if (selectedBranchIds.includes(branchId)) {
