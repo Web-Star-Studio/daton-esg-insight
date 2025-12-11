@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,9 +24,10 @@ import { getWhistleblowerReports } from "@/services/governance";
 interface EthicsChannelProps {
   onViewReport: (report: any) => void;
   onInvestigateReport: (report: any) => void;
+  onCreateReport?: () => void;
 }
 
-export function EthicsChannel({ onViewReport, onInvestigateReport }: EthicsChannelProps) {
+export function EthicsChannel({ onViewReport, onInvestigateReport, onCreateReport }: EthicsChannelProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -188,13 +190,23 @@ export function EthicsChannel({ onViewReport, onInvestigateReport }: EthicsChann
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Canal de Ética e Integridade
-          </CardTitle>
-          <CardDescription>
-            Gerencie denúncias e relatórios do canal de ética
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Canal de Ética e Integridade
+              </CardTitle>
+              <CardDescription>
+                Gerencie denúncias e relatórios do canal de ética
+              </CardDescription>
+            </div>
+            {onCreateReport && (
+              <Button onClick={onCreateReport}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Denúncia
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-4">
