@@ -14,9 +14,9 @@ interface ESGCategorySelectorProps {
 }
 
 const ESG_CATEGORIES = [
-  { value: 'Environmental', label: 'Ambiental (E)', icon: Leaf, color: 'text-green-600' },
+  { value: 'Ambiental', label: 'Ambiental (E)', icon: Leaf, color: 'text-green-600' },
   { value: 'Social', label: 'Social (S)', icon: Users, color: 'text-blue-600' },
-  { value: 'Governance', label: 'Governança (G)', icon: Shield, color: 'text-purple-600' },
+  { value: 'Governança', label: 'Governança (G)', icon: Shield, color: 'text-purple-600' },
 ];
 
 export function ESGCategorySelector({
@@ -85,7 +85,7 @@ export function ESGCategorySelector({
               </p>
             </div>
 
-            {value === 'Environmental' && onCarbonImpactChange && (
+            {value === 'Ambiental' && onCarbonImpactChange && (
               <div className="space-y-2">
                 <Label htmlFor="carbon-impact">Impacto de Carbono (tCO2e)</Label>
                 <Input
