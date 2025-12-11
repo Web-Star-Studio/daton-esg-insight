@@ -11,11 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { useLegislation, useLegislations, useLegislationThemes, useLegislationSubthemes } from "@/hooks/data/useLegislations";
+import { useLegislation, useLegislations, useLegislationThemes, useLegislationSubthemes, useUnitCompliances } from "@/hooks/data/useLegislations";
 import { NORM_TYPES, ISSUING_BODIES } from "@/services/legislations";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCompany } from "@/contexts/CompanyContext";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
 import { CreatableSelect } from "@/components/ui/creatable-select";
+import { LegislationUnitSelector, UnitApplicability } from "@/components/legislation/LegislationUnitSelector";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
 const formSchema = z.object({
   norm_type: z.string().min(1, "Tipo de norma é obrigatório"),
   norm_number: z.string().optional(),
@@ -50,10 +55,15 @@ const LegislationForm: React.FC = () => {
   const { legislations, createLegislation, updateLegislation, isCreating, isUpdating } = useLegislations();
   const { themes, createTheme } = useLegislationThemes();
   const { subthemes, createSubtheme } = useLegislationSubthemes();
+  
+  // Get company from the first legislation or user context
+  const { selectedCompany } = useCompany();
 
   // Local state for custom norm types and issuing bodies
   const [customNormTypes, setCustomNormTypes] = useState<string[]>([]);
   const [customIssuingBodies, setCustomIssuingBodies] = useState<string[]>([]);
+  const [unitApplicabilities, setUnitApplicabilities] = useState<UnitApplicability[]>([]);
+  const [isSavingUnits, setIsSavingUnits] = useState(false);
   const { data: users } = useCompanyUsers();
 
   const form = useForm<FormData>({
@@ -116,7 +126,7 @@ const LegislationForm: React.FC = () => {
     }
   }, [legislation, form]);
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     const payload = {
       ...data,
       theme_id: data.theme_id || null,
@@ -137,12 +147,48 @@ const LegislationForm: React.FC = () => {
       });
     } else {
       createLegislation(payload, {
-        onSuccess: () => navigate('/licenciamento/legislacoes'),
+        onSuccess: async (newLegislation: any) => {
+          // Save unit applicabilities if any are selected
+          const applicableUnits = unitApplicabilities.filter(u => 
+            u.applicability === 'real' || u.applicability === 'potential' || u.applicability === 'na'
+          );
+          
+          if (applicableUnits.length > 0 && newLegislation?.id) {
+            setIsSavingUnits(true);
+            try {
+              const complianceRecords = applicableUnits.map(unit => ({
+                legislation_id: newLegislation.id,
+                branch_id: unit.branch_id,
+                company_id: selectedCompany!.id,
+                applicability: unit.applicability,
+                compliance_status: unit.compliance_status,
+                last_assessment_date: new Date().toISOString().split('T')[0],
+              }));
+
+              const { error } = await supabase
+                .from('legislation_unit_compliance')
+                .insert(complianceRecords);
+
+              if (error) {
+                console.error('Error saving unit compliances:', error);
+                toast.error('Legislação criada, mas houve erro ao salvar aplicabilidade das unidades');
+              } else {
+                toast.success(`Aplicabilidade definida para ${applicableUnits.length} unidade(s)`);
+              }
+            } catch (err) {
+              console.error('Error saving unit compliances:', err);
+            } finally {
+              setIsSavingUnits(false);
+            }
+          }
+          
+          navigate('/licenciamento/legislacoes');
+        },
       });
     }
   };
 
-  const isSaving = isCreating || isUpdating;
+  const isSaving = isCreating || isUpdating || isSavingUnits;
 
   if (isEditing && isLoadingLegislation) {
     return (
@@ -557,6 +603,16 @@ const LegislationForm: React.FC = () => {
                       />
                     </CardContent>
                   </Card>
+
+                  {/* Unit Applicability - Only show for new legislations */}
+                  {!isEditing && (
+                    <LegislationUnitSelector
+                      jurisdiction={selectedJurisdiction}
+                      legislationState={form.watch('state')}
+                      value={unitApplicabilities}
+                      onChange={setUnitApplicabilities}
+                    />
+                  )}
 
                   {/* Revogações */}
                   <Card>
