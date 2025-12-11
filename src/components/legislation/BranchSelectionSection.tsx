@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -26,9 +26,25 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
   legislationMunicipality,
   isLoading,
 }) => {
+  // Track if we've done initial auto-selection and previous jurisdiction
+  const hasAutoSelected = useRef(false);
+  const prevJurisdiction = useRef(jurisdiction);
+  const prevState = useRef(legislationState);
+  const prevMunicipality = useRef(legislationMunicipality);
+
   // Auto-select branches based on jurisdiction
   useEffect(() => {
     if (isLoading || branches.length === 0) return;
+    
+    // Check if jurisdiction or location changed
+    const jurisdictionChanged = prevJurisdiction.current !== jurisdiction;
+    const stateChanged = prevState.current !== legislationState;
+    const municipalityChanged = prevMunicipality.current !== legislationMunicipality;
+    
+    // Only auto-select if: first time OR jurisdiction/location changed
+    if (hasAutoSelected.current && !jurisdictionChanged && !stateChanged && !municipalityChanged) {
+      return;
+    }
     
     let autoSelectedIds: string[] = [];
     
@@ -60,8 +76,19 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
         break;
     }
     
-    // Only update if there are branches to auto-select
-    if (autoSelectedIds.length > 0) {
+    // Update refs
+    prevJurisdiction.current = jurisdiction;
+    prevState.current = legislationState;
+    prevMunicipality.current = legislationMunicipality;
+    hasAutoSelected.current = true;
+    
+    // Only update if selection would actually change
+    const currentSet = new Set(selectedBranchIds);
+    const newSet = new Set(autoSelectedIds);
+    const isDifferent = currentSet.size !== newSet.size || 
+      [...currentSet].some(id => !newSet.has(id));
+    
+    if (isDifferent && autoSelectedIds.length > 0) {
       onSelectionChange(autoSelectedIds);
     }
   }, [jurisdiction, legislationState, legislationMunicipality, branches, isLoading]);

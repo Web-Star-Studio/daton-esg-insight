@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useForm } from "react-hook-form";
@@ -60,6 +60,11 @@ const LegislationForm: React.FC = () => {
   const [customNormTypes, setCustomNormTypes] = useState<string[]>([]);
   const [customIssuingBodies, setCustomIssuingBodies] = useState<string[]>([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  
+  // Memoize callback to prevent infinite loops in child component
+  const handleBranchSelectionChange = useCallback((branchIds: string[]) => {
+    setSelectedBranchIds(branchIds);
+  }, []);
   const { data: users } = useCompanyUsers();
 
   const form = useForm<FormData>({
@@ -581,7 +586,7 @@ const LegislationForm: React.FC = () => {
                     <BranchSelectionSection
                       branches={branches || []}
                       selectedBranchIds={selectedBranchIds}
-                      onSelectionChange={setSelectedBranchIds}
+                      onSelectionChange={handleBranchSelectionChange}
                       jurisdiction={selectedJurisdiction}
                       legislationState={form.watch('state')}
                       legislationMunicipality={form.watch('municipality')}
