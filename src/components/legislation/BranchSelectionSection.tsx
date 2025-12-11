@@ -63,11 +63,15 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
   // Track if we've done initial auto-selection
   const [hasInitialized, setHasInitialized] = useState(false);
   
-  // Use ref for onSelectionChange to break the dependency cycle
+  // Use refs to break dependency cycles and prevent infinite loops
   const onSelectionChangeRef = useRef(onSelectionChange);
-  onSelectionChangeRef.current = onSelectionChange;
+  const branchesRef = useRef(branches);
   
-  // Track previous values using refs to detect changes
+  // Update refs on each render (but don't trigger effects)
+  onSelectionChangeRef.current = onSelectionChange;
+  branchesRef.current = branches;
+  
+  // Track previous values to detect actual changes
   const prevValuesRef = useRef({
     jurisdiction,
     legislationState,
@@ -88,11 +92,15 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
     if (autoSelectedIds.length > 0) {
       onSelectionChangeRef.current(autoSelectedIds);
     }
+    
+    // Initialize prev values ref here too
+    prevValuesRef.current = { jurisdiction, legislationState, legislationMunicipality };
     setHasInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasInitialized, isLoading, branches.length]);
 
   // Re-calculate when jurisdiction/location changes AFTER initialization
+  // IMPORTANT: branches is NOT in dependencies - we use branchesRef instead
   useEffect(() => {
     if (!hasInitialized) return;
     
@@ -101,20 +109,23 @@ export const BranchSelectionSection: React.FC<BranchSelectionSectionProps> = ({
     const stateChanged = prev.legislationState !== legislationState;
     const municipalityChanged = prev.legislationMunicipality !== legislationMunicipality;
     
-    // Update refs
+    // Exit early if nothing changed
+    if (!jurisdictionChanged && !stateChanged && !municipalityChanged) {
+      return;
+    }
+    
+    // Update refs ONLY when something actually changed
     prevValuesRef.current = { jurisdiction, legislationState, legislationMunicipality };
     
-    // Only recalculate if something relevant changed
-    if (jurisdictionChanged || stateChanged || municipalityChanged) {
-      const autoSelectedIds = calculateAutoSelection(
-        jurisdiction,
-        branches,
-        legislationState,
-        legislationMunicipality
-      );
-      onSelectionChangeRef.current(autoSelectedIds);
-    }
-  }, [hasInitialized, jurisdiction, legislationState, legislationMunicipality, branches]);
+    // Use branchesRef to access current branches without causing re-execution
+    const autoSelectedIds = calculateAutoSelection(
+      jurisdiction,
+      branchesRef.current,
+      legislationState,
+      legislationMunicipality
+    );
+    onSelectionChangeRef.current(autoSelectedIds);
+  }, [hasInitialized, jurisdiction, legislationState, legislationMunicipality]);
 
   const handleToggleBranch = (branchId: string) => {
     if (selectedBranchIds.includes(branchId)) {
