@@ -53,7 +53,7 @@ export function QuickActionModal({ open, onOpenChange }: QuickActionModalProps) 
       description: "Criar novo departamento",
       icon: Building2,
       onClick: () => {
-        navigate("/gestao-funcionarios?tab=departamentos");
+        navigate("/estrutura-organizacional");
         onOpenChange(false);
       }
     },
