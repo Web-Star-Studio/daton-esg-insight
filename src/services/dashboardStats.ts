@@ -108,12 +108,17 @@ export async function getDashboardStats(timeframe: 'week' | 'month' | 'quarter' 
       .lte('created_at', previousEndDate);
 
     const totalCurrentNCs = currentNCs?.length || 0;
-    const resolvedCurrentNCs = currentNCs?.filter(nc => nc.status === 'Resolvida').length || 0;
-    const currentComplianceRate = totalCurrentNCs > 0 ? (resolvedCurrentNCs / totalCurrentNCs) * 100 : 94;
+    // Fixed: Use correct statuses for resolved NCs (Fechada, Aprovada, or Resolvida)
+    const resolvedCurrentNCs = currentNCs?.filter(nc => 
+      nc.status === 'Fechada' || nc.status === 'Aprovada' || nc.status === 'Resolvida'
+    ).length || 0;
+    const currentComplianceRate = totalCurrentNCs > 0 ? (resolvedCurrentNCs / totalCurrentNCs) * 100 : 100;
 
     const totalPreviousNCs = previousNCs?.length || 0;
-    const resolvedPreviousNCs = previousNCs?.filter(nc => nc.status === 'Resolvida').length || 0;
-    const previousComplianceRate = totalPreviousNCs > 0 ? (resolvedPreviousNCs / totalPreviousNCs) * 100 : 94;
+    const resolvedPreviousNCs = previousNCs?.filter(nc => 
+      nc.status === 'Fechada' || nc.status === 'Aprovada' || nc.status === 'Resolvida'
+    ).length || 0;
+    const previousComplianceRate = totalPreviousNCs > 0 ? (resolvedPreviousNCs / totalPreviousNCs) * 100 : 100;
     const complianceChange = previousComplianceRate > 0 ? currentComplianceRate - previousComplianceRate : 0;
 
     // Get employees for current period
