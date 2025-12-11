@@ -61,9 +61,15 @@ const LegislationForm: React.FC = () => {
   const [customIssuingBodies, setCustomIssuingBodies] = useState<string[]>([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   
-  // Memoize callback to prevent infinite loops in child component
+  // Memoize callback with comparison to prevent unnecessary updates
   const handleBranchSelectionChange = useCallback((branchIds: string[]) => {
-    setSelectedBranchIds(branchIds);
+    setSelectedBranchIds(prev => {
+      // Compare arrays to avoid unnecessary state updates
+      if (prev.length === branchIds.length && prev.every((id, i) => id === branchIds[i])) {
+        return prev;
+      }
+      return branchIds;
+    });
   }, []);
   const { data: users } = useCompanyUsers();
 
@@ -582,17 +588,22 @@ const LegislationForm: React.FC = () => {
                   </Card>
 
                   {/* Aplicação por Unidade - Only show when creating */}
-                  {!isEditing && (
-                    <BranchSelectionSection
-                      branches={branches || []}
-                      selectedBranchIds={selectedBranchIds}
-                      onSelectionChange={handleBranchSelectionChange}
-                      jurisdiction={selectedJurisdiction}
-                      legislationState={form.watch('state')}
-                      legislationMunicipality={form.watch('municipality')}
-                      isLoading={isLoadingBranches}
-                    />
-                  )}
+                  {!isEditing && (() => {
+                    // Extract watched values outside JSX to avoid creating new references each render
+                    const watchedState = form.watch('state');
+                    const watchedMunicipality = form.watch('municipality');
+                    return (
+                      <BranchSelectionSection
+                        branches={branches || []}
+                        selectedBranchIds={selectedBranchIds}
+                        onSelectionChange={handleBranchSelectionChange}
+                        jurisdiction={selectedJurisdiction}
+                        legislationState={watchedState}
+                        legislationMunicipality={watchedMunicipality}
+                        isLoading={isLoadingBranches}
+                      />
+                    );
+                  })()}
 
                   {/* Revogações */}
                   <Card>
