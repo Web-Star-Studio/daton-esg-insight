@@ -15,15 +15,17 @@ import {
   Shield,
   Crown,
   Building2,
-  TrendingUp
+  TrendingUp,
+  Plus
 } from "lucide-react";
 import { getBoardMembers } from "@/services/governance";
 
 interface GovernanceStructureProps {
   onEditMember: (member: any) => void;
+  onCreateMember?: () => void;
 }
 
-export function GovernanceStructure({ onEditMember }: GovernanceStructureProps) {
+export function GovernanceStructure({ onEditMember, onCreateMember }: GovernanceStructureProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCommittee, setFilterCommittee] = useState("all");
@@ -138,13 +140,23 @@ export function GovernanceStructure({ onEditMember }: GovernanceStructureProps) 
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Estrutura do Conselho
-          </CardTitle>
-          <CardDescription>
-            Gerencie os membros do conselho de administração e comitês
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Estrutura do Conselho
+              </CardTitle>
+              <CardDescription>
+                Gerencie os membros do conselho de administração e comitês
+              </CardDescription>
+            </div>
+            {onCreateMember && (
+              <Button onClick={onCreateMember}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Conselheiro
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-4">

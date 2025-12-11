@@ -17,8 +17,15 @@ import {
   Settings,
   BarChart3,
   Edit,
-  UserPlus
+  UserPlus,
+  ChevronDown
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getBoardMembers, getCorporatePolicies, getWhistleblowerReports, getGovernanceMetrics } from "@/services/governance";
 import { getESGRisks, getRiskMetrics } from "@/services/esgRisks";
 import { getEmployees, getEmployeesStats } from "@/services/employees";
@@ -189,17 +196,53 @@ export default function GovernancaESG() {
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Relatórios
               </Button>
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  setSelectedMember(null);
-                  setModalMode('create');
-                  setIsBoardModalOpen(true);
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Registro
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo Registro
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => {
+                    setSelectedMember(null);
+                    setModalMode('create');
+                    setIsBoardModalOpen(true);
+                  }}>
+                    <Users className="mr-2 h-4 w-4" />
+                    Novo Conselheiro
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setSelectedPolicy(null);
+                    setModalMode('create');
+                    setIsPolicyModalOpen(true);
+                  }}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Nova Política
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCreateRisk}>
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Novo Risco ESG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setSelectedReport(null);
+                    setModalMode('create');
+                    setIsWhistleblowerModalOpen(true);
+                  }}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Nova Denúncia
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setSelectedEmployee(null);
+                    setModalMode('create');
+                    setIsEmployeeModalOpen(true);
+                  }}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Novo Funcionário
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -227,7 +270,14 @@ export default function GovernancaESG() {
             </TabsContent>
 
             <TabsContent value="structure">
-              <GovernanceStructure onEditMember={handleEditMember} />
+              <GovernanceStructure 
+                onEditMember={handleEditMember}
+                onCreateMember={() => {
+                  setSelectedMember(null);
+                  setModalMode('create');
+                  setIsBoardModalOpen(true);
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="policies">
@@ -264,6 +314,11 @@ export default function GovernancaESG() {
               <EthicsChannel 
                 onViewReport={handleViewReport}
                 onInvestigateReport={handleInvestigateReport}
+                onCreateReport={() => {
+                  setSelectedReport(null);
+                  setModalMode('create');
+                  setIsWhistleblowerModalOpen(true);
+                }}
               />
             </TabsContent>
           </Tabs>
