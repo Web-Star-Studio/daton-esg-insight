@@ -26,7 +26,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { BranchesManagement } from "@/components/settings/BranchesManagement";
 
 interface OrganizationalProfile {
   id: string;
@@ -202,9 +201,8 @@ export default function ConfiguracaoOrganizacional() {
         </div>
 
         <Tabs defaultValue="basico" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="basico">Informações Básicas</TabsTrigger>
-            <TabsTrigger value="filiais">Filiais / Unidades</TabsTrigger>
             <TabsTrigger value="estrutura">Estrutura Organizacional</TabsTrigger>
             <TabsTrigger value="escopo">Escopo de Relato</TabsTrigger>
             <TabsTrigger value="financeiro">Dados Financeiros</TabsTrigger>
@@ -302,10 +300,6 @@ export default function ConfiguracaoOrganizacional() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="filiais" className="space-y-6">
-            <BranchesManagement />
           </TabsContent>
 
           <TabsContent value="estrutura" className="space-y-6">

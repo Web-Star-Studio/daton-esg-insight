@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useForm } from "react-hook-form";
@@ -12,13 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useLegislation, useLegislations, useLegislationThemes, useLegislationSubthemes } from "@/hooks/data/useLegislations";
-import { NORM_TYPES, ISSUING_BODIES, createInitialUnitCompliances } from "@/services/legislations";
+import { NORM_TYPES, ISSUING_BODIES } from "@/services/legislations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
 import { CreatableSelect } from "@/components/ui/creatable-select";
-import { useBranches } from "@/services/branches";
-import { BranchSelectionSection } from "@/components/legislation/BranchSelectionSection";
-import { useCompany } from "@/contexts/CompanyContext";
 const formSchema = z.object({
   norm_type: z.string().min(1, "Tipo de norma é obrigatório"),
   norm_number: z.string().optional(),
@@ -47,30 +44,16 @@ const LegislationForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
-  const { selectedCompany } = useCompany();
   const isEditing = !!id;
 
   const { data: legislation, isLoading: isLoadingLegislation } = useLegislation(id);
   const { legislations, createLegislation, updateLegislation, isCreating, isUpdating } = useLegislations();
   const { themes, createTheme } = useLegislationThemes();
   const { subthemes, createSubtheme } = useLegislationSubthemes();
-  const { data: branches, isLoading: isLoadingBranches } = useBranches();
 
   // Local state for custom norm types and issuing bodies
   const [customNormTypes, setCustomNormTypes] = useState<string[]>([]);
   const [customIssuingBodies, setCustomIssuingBodies] = useState<string[]>([]);
-  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
-  
-  // Memoize callback with comparison to prevent unnecessary updates
-  const handleBranchSelectionChange = useCallback((branchIds: string[]) => {
-    setSelectedBranchIds(prev => {
-      // Compare arrays to avoid unnecessary state updates
-      if (prev.length === branchIds.length && prev.every((id, i) => id === branchIds[i])) {
-        return prev;
-      }
-      return branchIds;
-    });
-  }, []);
   const { data: users } = useCompanyUsers();
 
   const form = useForm<FormData>({
@@ -97,10 +80,9 @@ const LegislationForm: React.FC = () => {
       revoked_by_legislation_id: '',
     },
   });
+
   const selectedJurisdiction = form.watch('jurisdiction');
   const selectedThemeId = form.watch('theme_id');
-  const watchedState = form.watch('state');
-  const watchedMunicipality = form.watch('municipality');
 
   // Filter subthemes by selected theme
   const filteredSubthemes = selectedThemeId 
@@ -134,7 +116,7 @@ const LegislationForm: React.FC = () => {
     }
   }, [legislation, form]);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = (data: FormData) => {
     const payload = {
       ...data,
       theme_id: data.theme_id || null,
@@ -155,19 +137,7 @@ const LegislationForm: React.FC = () => {
       });
     } else {
       createLegislation(payload, {
-        onSuccess: async (newLegislation: any) => {
-          // Create initial compliance records for selected branches
-          if (selectedBranchIds.length > 0 && selectedCompany?.id && newLegislation?.id) {
-            await createInitialUnitCompliances(
-              newLegislation.id,
-              selectedBranchIds,
-              selectedCompany.id,
-              data.overall_applicability,
-              data.overall_status
-            );
-          }
-          navigate('/licenciamento/legislacoes');
-        },
+        onSuccess: () => navigate('/licenciamento/legislacoes'),
       });
     }
   };
@@ -330,9 +300,11 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Jurisdição *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
                               <SelectContent>
                                 <SelectItem value="federal">Federal</SelectItem>
                                 <SelectItem value="estadual">Estadual</SelectItem>
@@ -461,9 +433,11 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Aplicabilidade *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
                               <SelectContent>
                                 <SelectItem value="pending">Pendente de Avaliação</SelectItem>
                                 <SelectItem value="real">Real (Aplicável)</SelectItem>
@@ -487,9 +461,11 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Status de Atendimento *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
                               <SelectContent>
                                 <SelectItem value="pending">Pendente</SelectItem>
                                 <SelectItem value="conforme">Conforme</SelectItem>
@@ -559,9 +535,11 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Responsável</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o responsável" />
-                              </SelectTrigger>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o responsável" />
+                                </SelectTrigger>
+                              </FormControl>
                               <SelectContent>
                                 {users?.map((user) => (
                                   <SelectItem key={user.id} value={user.id}>
@@ -580,19 +558,6 @@ const LegislationForm: React.FC = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Aplicação por Unidade - Only show when creating */}
-                  {!isEditing && (
-                    <BranchSelectionSection
-                      branches={branches || []}
-                      selectedBranchIds={selectedBranchIds}
-                      onSelectionChange={handleBranchSelectionChange}
-                      jurisdiction={selectedJurisdiction}
-                      legislationState={watchedState}
-                      legislationMunicipality={watchedMunicipality}
-                      isLoading={isLoadingBranches}
-                    />
-                  )}
-
                   {/* Revogações */}
                   <Card>
                     <CardHeader>
@@ -606,9 +571,11 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Esta legislação revoga</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione uma legislação" />
-                              </SelectTrigger>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione uma legislação" />
+                                </SelectTrigger>
+                              </FormControl>
                               <SelectContent>
                                 {legislations
                                   .filter(l => l.id !== id)
@@ -634,9 +601,11 @@ const LegislationForm: React.FC = () => {
                           <FormItem>
                             <FormLabel>Revogada por</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione uma legislação" />
-                              </SelectTrigger>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione uma legislação" />
+                                </SelectTrigger>
+                              </FormControl>
                               <SelectContent>
                                 {legislations
                                   .filter(l => l.id !== id)
