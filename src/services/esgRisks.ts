@@ -5,7 +5,7 @@ export interface ESGRisk {
   company_id: string;
   risk_title: string;
   risk_description: string;
-  esg_category: 'Environmental' | 'Social' | 'Governance';
+  esg_category: 'Ambiental' | 'Social' | 'Governança';
   risk_category?: string;
   probability: 'Baixa' | 'Média' | 'Alta';
   impact: 'Baixo' | 'Médio' | 'Alto';

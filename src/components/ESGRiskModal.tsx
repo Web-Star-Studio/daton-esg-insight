@@ -215,7 +215,7 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
       company_id: companyId,
       risk_title: trimmedTitle,
       risk_description: trimmedDescription,
-      esg_category: formData.esg_category as 'Environmental' | 'Social' | 'Governance',
+      esg_category: formData.esg_category as 'Ambiental' | 'Social' | 'Governança',
       probability: formData.probability,
       impact: formData.impact,
       status: formData.status,
@@ -288,9 +288,9 @@ export function ESGRiskModal({ isOpen, onClose, risk, mode }: ESGRiskModalProps)
                     <SelectValue placeholder="Selecione a categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Environmental">Ambiental (Environmental)</SelectItem>
+                    <SelectItem value="Ambiental">Ambiental</SelectItem>
                     <SelectItem value="Social">Social</SelectItem>
-                    <SelectItem value="Governance">Governança (Governance)</SelectItem>
+                    <SelectItem value="Governança">Governança</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
