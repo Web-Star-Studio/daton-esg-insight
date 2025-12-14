@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { ScrollArea } from './ui/scroll-area';
+
 import { Separator } from './ui/separator';
 import { 
   User, 
@@ -198,8 +198,8 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="overview" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid w-full grid-cols-7">
+          <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-7 shrink-0">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="experiences">Experiências</TabsTrigger>
               <TabsTrigger value="education">Formação</TabsTrigger>
@@ -209,9 +209,8 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
               <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
 
-            <ScrollArea className="flex-1 mt-4">
-              <div className="pr-4">
-                <TabsContent value="overview" className="space-y-6 mt-0">
+            <div className="flex-1 min-h-0 mt-4 overflow-y-auto pr-4">
+              <TabsContent value="overview" className="space-y-6 mt-0">
                   {/* All Information in One Card */}
                   <Card>
                     <CardHeader className="pb-4">
@@ -664,8 +663,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                     </CardContent>
                   </Card>
                 </TabsContent>
-              </div>
-            </ScrollArea>
+            </div>
           </Tabs>
 
           <Separator className="my-4" />
