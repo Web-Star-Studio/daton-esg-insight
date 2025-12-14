@@ -212,190 +212,175 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
             <ScrollArea className="flex-1 mt-4">
               <div className="pr-4">
                 <TabsContent value="overview" className="space-y-6 mt-0">
-                  {/* Personal Information */}
+                  {/* All Information in One Card */}
                   <Card>
-                    <CardHeader>
+                    <CardHeader className="pb-4">
                       <CardTitle className="flex items-center gap-2">
                         <User className="h-5 w-5" />
-                        Informações Pessoais
+                        Informações do Funcionário
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <CardContent className="space-y-6">
+                      {/* Personal and Professional Info Grid */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Personal Information */}
                         <div className="space-y-4">
-                          {employee.email && (
-                            <div className="flex items-center gap-3">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
+                          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Dados Pessoais
+                          </h4>
+                          <Separator />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex items-start gap-3">
+                              <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium">E-mail</p>
-                                <p className="text-sm text-muted-foreground">{employee.email}</p>
+                                <p className="text-sm text-muted-foreground">{employee.email || 'Não informado'}</p>
                               </div>
                             </div>
-                          )}
-                          
-                          {employee.phone && (
-                            <div className="flex items-center gap-3">
-                              <Phone className="h-4 w-4 text-muted-foreground" />
+                            
+                            <div className="flex items-start gap-3">
+                              <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium">Telefone</p>
-                                <p className="text-sm text-muted-foreground">{employee.phone}</p>
+                                <p className="text-sm text-muted-foreground">{employee.phone || 'Não informado'}</p>
                               </div>
                             </div>
-                          )}
-                          
-                          {employee.birth_date && (
-                            <div className="flex items-center gap-3">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                            
+                            <div className="flex items-start gap-3">
+                              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium">Data de Nascimento</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {new Date(employee.birth_date).toLocaleDateString('pt-BR')}
-                                  {calculateAge(employee.birth_date) && (
-                                    <span className="ml-2">({calculateAge(employee.birth_date)} anos)</span>
-                                  )}
+                                  {employee.birth_date 
+                                    ? `${new Date(employee.birth_date).toLocaleDateString('pt-BR')}${calculateAge(employee.birth_date) ? ` (${calculateAge(employee.birth_date)} anos)` : ''}`
+                                    : 'Não informado'
+                                  }
                                 </p>
                               </div>
                             </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          {employee.location && (
-                            <div className="flex items-center gap-3">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                            
+                            <div className="flex items-start gap-3">
+                              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium">Localização</p>
-                                <p className="text-sm text-muted-foreground">{employee.location}</p>
+                                <p className="text-sm text-muted-foreground">{employee.location || 'Não informado'}</p>
                               </div>
                             </div>
-                          )}
-                          
-                          <div className="space-y-2">
-                            {employee.gender && (
-                              <Badge variant="secondary" className="mr-2">
-                                {employee.gender}
-                              </Badge>
-                            )}
-                            {employee.ethnicity && (
-                              <Badge variant="secondary" className="mr-2">
-                                {employee.ethnicity}
-                              </Badge>
-                            )}
-                            {employee.education_level && (
-                              <Badge variant="secondary" className="mr-2">
-                                {employee.education_level}
-                              </Badge>
-                            )}
                           </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Professional Information */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Briefcase className="h-5 w-5" />
-                        Informações Profissionais
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Filial</p>
-                              <p className="text-sm text-muted-foreground">{getBranchName(employee.branch_id)}</p>
+                          
+                          {/* Diversity Badges */}
+                          <div className="pt-2">
+                            <p className="text-sm font-medium mb-2">Informações de Diversidade</p>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="secondary">
+                                Gênero: {employee.gender || 'Não informado'}
+                              </Badge>
+                              <Badge variant="secondary">
+                                Etnia: {employee.ethnicity || 'Não informado'}
+                              </Badge>
+                              <Badge variant="secondary">
+                                Escolaridade: {employee.education_level || 'Não informado'}
+                              </Badge>
                             </div>
                           </div>
+                        </div>
 
-                          {employee.department && (
-                            <div className="flex items-center gap-3">
-                              <Building className="h-4 w-4 text-muted-foreground" />
+                        {/* Professional Information */}
+                        <div className="space-y-4">
+                          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                            <Briefcase className="h-4 w-4" />
+                            Dados Profissionais
+                          </h4>
+                          <Separator />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex items-start gap-3">
+                              <Building className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium">Departamento</p>
-                                <p className="text-sm text-muted-foreground">{employee.department}</p>
+                                <p className="text-sm text-muted-foreground">{employee.department || 'Não informado'}</p>
                               </div>
                             </div>
-                          )}
-                          
-                          {employee.position && (
-                            <div className="flex items-center gap-3">
-                              <Briefcase className="h-4 w-4 text-muted-foreground" />
+                            
+                            <div className="flex items-start gap-3">
+                              <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium">Cargo</p>
-                                <p className="text-sm text-muted-foreground">{employee.position}</p>
+                                <p className="text-sm text-muted-foreground">{employee.position || 'Não informado'}</p>
                               </div>
                             </div>
-                          )}
-
-                          <div className="flex items-center gap-3">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Salário</p>
-                              <p className="text-sm text-muted-foreground">{formatCurrency(employee.salary)}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Data de Contratação</p>
-                              <p className="text-sm text-muted-foreground">
-                                {isValidDate(employee.hire_date) 
-                                  ? new Date(employee.hire_date!).toLocaleDateString('pt-BR')
-                                  : 'Não informado'
-                                }
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-3">
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Tempo na Empresa</p>
-                              <p className="text-sm text-muted-foreground">
-                                {calculateTenure(employee.hire_date)}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {employee.status === 'Inativo' && employee.termination_date && (
-                            <div className="flex items-center gap-3">
-                              <FileX className="h-4 w-4 text-muted-foreground" />
+                            
+                            <div className="flex items-start gap-3">
+                              <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
                               <div>
-                                <p className="text-sm font-medium">Data de Rescisão</p>
-                                <p className="text-sm text-muted-foreground">{formatDate(employee.termination_date)}</p>
+                                <p className="text-sm font-medium">Filial</p>
+                                <p className="text-sm text-muted-foreground">{getBranchName(employee.branch_id)}</p>
                               </div>
                             </div>
-                          )}
-                          
-                          <Badge variant="outline" className="w-fit">
-                            {employee.employment_type}
-                          </Badge>
+                            
+                            <div className="flex items-start gap-3">
+                              <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Salário</p>
+                                <p className="text-sm text-muted-foreground">{formatCurrency(employee.salary)}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-3">
+                              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Data de Contratação</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {isValidDate(employee.hire_date) 
+                                    ? new Date(employee.hire_date!).toLocaleDateString('pt-BR')
+                                    : 'Não informado'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-3">
+                              <TrendingUp className="h-4 w-4 text-muted-foreground mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Tempo na Empresa</p>
+                                <p className="text-sm text-muted-foreground">{calculateTenure(employee.hire_date)}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-3">
+                              <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium">Tipo de Contrato</p>
+                                <Badge variant="outline" className="mt-1">{employee.employment_type}</Badge>
+                              </div>
+                            </div>
+                            
+                            {employee.status === 'Inativo' && (
+                              <div className="flex items-start gap-3">
+                                <FileX className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                <div>
+                                  <p className="text-sm font-medium">Data de Rescisão</p>
+                                  <p className="text-sm text-muted-foreground">{formatDate(employee.termination_date)}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Notes Section */}
+                      <div className="space-y-4 pt-4">
+                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                          <StickyNote className="h-4 w-4" />
+                          Observações
+                        </h4>
+                        <Separator />
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {employee.notes || 'Nenhuma observação cadastrada'}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
-
-                  {/* Notes */}
-                  {employee.notes && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <StickyNote className="h-5 w-5" />
-                          Observações
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{employee.notes}</p>
-                      </CardContent>
-                    </Card>
-                  )}
                 </TabsContent>
 
                 {/* Experiences Tab */}
