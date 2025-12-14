@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { calculateTrainingStatus, checkHasEfficacyEvaluation } from "@/utils/trainingStatusCalculator";
 
 export interface TrainingEfficacyEvaluation {
   id: string;
@@ -77,6 +78,39 @@ export const createEfficacyEvaluation = async (
   if (error) {
     console.error('Error creating efficacy evaluation:', error);
     throw new Error(`Erro ao criar avaliação de eficácia: ${error.message}`);
+  }
+
+  // Update the training program status after creating efficacy evaluation
+  if (evaluation.status === 'Concluída' && evaluation.training_program_id) {
+    try {
+      // Get the training program
+      const { data: program, error: programError } = await supabase
+        .from('training_programs')
+        .select('*')
+        .eq('id', evaluation.training_program_id)
+        .single();
+
+      if (!programError && program) {
+        // Recalculate status with efficacy evaluation now completed
+        const newStatus = calculateTrainingStatus({
+          start_date: program.start_date,
+          end_date: program.end_date,
+          efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+          hasEfficacyEvaluation: true,
+        });
+
+        // Update the program status
+        await supabase
+          .from('training_programs')
+          .update({ status: newStatus })
+          .eq('id', evaluation.training_program_id);
+        
+        console.log('Training program status updated to:', newStatus);
+      }
+    } catch (statusError) {
+      console.error('Error updating training program status:', statusError);
+      // Don't throw here - the evaluation was created successfully
+    }
   }
 
   console.log('Efficacy evaluation created successfully:', data);

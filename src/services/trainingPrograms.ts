@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { calculateTrainingStatus, checkHasEfficacyEvaluation } from "@/utils/trainingStatusCalculator";
 
 export interface TrainingProgram {
   id: string;
@@ -41,13 +42,33 @@ export interface EmployeeTraining {
 }
 
 export const getTrainingPrograms = async () => {
-  const { data, error } = await supabase
+  const { data: programs, error } = await supabase
     .from('training_programs')
     .select('*')
     .order('name');
 
   if (error) throw error;
-  return data;
+  if (!programs) return [];
+
+  // Calculate real-time status for each program
+  const programsWithCalculatedStatus = await Promise.all(
+    programs.map(async (program) => {
+      const hasEfficacy = await checkHasEfficacyEvaluation(supabase, program.id);
+      const calculatedStatus = calculateTrainingStatus({
+        start_date: program.start_date,
+        end_date: program.end_date,
+        efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+        hasEfficacyEvaluation: hasEfficacy,
+      });
+      
+      return {
+        ...program,
+        status: calculatedStatus, // Override with calculated status
+      };
+    })
+  );
+
+  return programsWithCalculatedStatus;
 };
 
 export const getTrainingProgram = async (id: string) => {
@@ -75,6 +96,14 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     throw new Error(`Empresa não encontrada para o usuário atual`);
   }
 
+  // Calculate automatic status based on dates
+  const calculatedStatus = calculateTrainingStatus({
+    start_date: program.start_date,
+    end_date: program.end_date,
+    efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+    hasEfficacyEvaluation: false, // New program, no evaluation yet
+  });
+
   // Build safe payload (avoid empty strings for UUID columns)
   const payload = {
     name: program.name,
@@ -82,7 +111,7 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     category: program.category ?? null,
     duration_hours: program.duration_hours ?? null,
     is_mandatory: program.is_mandatory ?? false,
-    status: program.status ?? 'Ativo',
+    status: calculatedStatus, // Use calculated status
     start_date: program.start_date ?? null,
     end_date: program.end_date ?? null,
     branch_id: program.branch_id || null,
@@ -112,9 +141,45 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
 export const updateTrainingProgram = async (id: string, updates: Partial<TrainingProgram>) => {
   console.log('Updating training program:', id, updates);
   
+  // Get current program data to merge with updates for status calculation
+  const { data: currentProgram, error: fetchError } = await supabase
+    .from('training_programs')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchError) {
+    console.error('Error fetching current program:', fetchError);
+    throw new Error(`Erro ao buscar programa atual: ${fetchError.message}`);
+  }
+
+  // Merge current data with updates for status calculation
+  const mergedData = {
+    start_date: updates.start_date !== undefined ? updates.start_date : currentProgram?.start_date,
+    end_date: updates.end_date !== undefined ? updates.end_date : currentProgram?.end_date,
+    efficacy_evaluation_deadline: updates.efficacy_evaluation_deadline !== undefined 
+      ? updates.efficacy_evaluation_deadline 
+      : currentProgram?.efficacy_evaluation_deadline,
+  };
+
+  // Check if efficacy evaluation exists
+  const hasEfficacyEvaluation = await checkHasEfficacyEvaluation(supabase, id);
+
+  // Calculate automatic status based on dates
+  const calculatedStatus = calculateTrainingStatus({
+    ...mergedData,
+    hasEfficacyEvaluation,
+  });
+
+  // Include calculated status in updates
+  const updatesWithStatus = {
+    ...updates,
+    status: calculatedStatus,
+  };
+  
   const { data, error } = await supabase
     .from('training_programs')
-    .update(updates)
+    .update(updatesWithStatus)
     .eq('id', id)
     .select()
     .single();
