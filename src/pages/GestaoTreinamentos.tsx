@@ -219,9 +219,12 @@ export default function GestaoTreinamentos() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'Planejado': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Em Andamento': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'Pendente Avaliação': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Concluído': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'Ativo': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'Inativo': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'Planejado': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'Suspenso': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -256,7 +259,7 @@ export default function GestaoTreinamentos() {
       title: 'Programas de Treinamento',
       value: programs.length,
       icon: BookOpen,
-      trend: programs.filter(p => p.status === 'Ativo').length + ' ativos',
+      trend: programs.filter(p => p.status === 'Em Andamento' || p.status === 'Planejado').length + ' em andamento/planejados',
       description: 'programas cadastrados',
       color: 'text-blue-600'
     },
@@ -504,14 +507,15 @@ export default function GestaoTreinamentos() {
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-48">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos Status</SelectItem>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Inativo">Inativo</SelectItem>
                     <SelectItem value="Planejado">Planejado</SelectItem>
+                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Pendente Avaliação">Pendente Avaliação</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
