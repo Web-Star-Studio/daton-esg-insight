@@ -9,6 +9,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMonths, format } from 'date-fns';
+import { calculateTrainingStatus, getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
+import { Badge } from './ui/badge';
 
 interface AddEmployeeTrainingDialogProps {
   isOpen: boolean;
@@ -26,7 +28,6 @@ export function AddEmployeeTrainingDialog({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     training_program_id: '',
-    status: 'Pendente',
     completion_date: '',
     score: '',
     instructor: '',
@@ -72,6 +73,17 @@ export function AddEmployeeTrainingDialog({
     }
   }, [formData.training_program_id, programs]);
 
+  // Calculate automatic status based on program dates
+  const getCalculatedStatus = () => {
+    if (!selectedProgram) return 'Planejado';
+    return calculateTrainingStatus({
+      start_date: selectedProgram.start_date,
+      end_date: selectedProgram.end_date,
+      efficacy_evaluation_deadline: selectedProgram.efficacy_evaluation_deadline,
+      hasEfficacyEvaluation: false
+    });
+  };
+
   // Calculate expiration date
   const calculateExpirationDate = () => {
     if (!formData.completion_date || !selectedProgram?.valid_for_months) {
@@ -96,6 +108,7 @@ export function AddEmployeeTrainingDialog({
       if (!profile?.company_id) throw new Error('Empresa não encontrada');
 
       const expirationDate = calculateExpirationDate();
+      const calculatedStatus = getCalculatedStatus();
 
       const { error } = await supabase
         .from('employee_trainings')
@@ -103,7 +116,7 @@ export function AddEmployeeTrainingDialog({
           employee_id: employeeId,
           company_id: profile.company_id,
           training_program_id: data.training_program_id,
-          status: data.status,
+          status: calculatedStatus,
           completion_date: data.completion_date || null,
           expiration_date: expirationDate,
           score: data.score ? parseFloat(data.score) : null,
@@ -131,7 +144,8 @@ export function AddEmployeeTrainingDialog({
       return;
     }
 
-    if (formData.status === 'Concluído' && !formData.completion_date) {
+    const calculatedStatus = getCalculatedStatus();
+    if (calculatedStatus === 'Concluído' && !formData.completion_date) {
       toast.error('Data de conclusão é obrigatória para treinamentos concluídos');
       return;
     }
@@ -147,7 +161,6 @@ export function AddEmployeeTrainingDialog({
   const handleClose = () => {
     setFormData({
       training_program_id: '',
-      status: 'Pendente',
       completion_date: '',
       score: '',
       instructor: '',
@@ -192,26 +205,24 @@ export function AddEmployeeTrainingDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="status">Status*</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Status (Automático)</Label>
+              <div className="mt-2">
+                {selectedProgram ? (
+                  <Badge className={`${getTrainingStatusColor(getCalculatedStatus())} border`}>
+                    {getCalculatedStatus()}
+                  </Badge>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Selecione um programa</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Calculado automaticamente baseado nas datas do programa
+              </p>
             </div>
 
             <div>
               <Label htmlFor="completion_date">
-                Data de Conclusão{formData.status === 'Concluído' ? '*' : ''}
+                Data de Conclusão{getCalculatedStatus() === 'Concluído' ? '*' : ''}
               </Label>
               <Input
                 id="completion_date"
