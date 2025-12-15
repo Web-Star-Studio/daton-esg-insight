@@ -32,18 +32,27 @@ export const getEmployeeExperiences = async (employeeId: string) => {
 };
 
 export const createEmployeeExperience = async (experience: Omit<EmployeeExperience, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
-  const { data: userData } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  
+  if (userError || !userData?.user) {
+    throw new Error('Usuário não autenticado');
+  }
+  
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('company_id')
-    .eq('id', userData?.user?.id)
+    .eq('id', userData.user.id)
     .single();
+
+  if (profileError || !profile?.company_id) {
+    throw new Error('Empresa do usuário não encontrada');
+  }
 
   const { data, error } = await supabase
     .from('employee_experiences')
     .insert({
       ...experience,
-      company_id: profile?.company_id,
+      company_id: profile.company_id,
     })
     .select()
     .single();

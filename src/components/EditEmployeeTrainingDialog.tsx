@@ -49,7 +49,7 @@ export function EditEmployeeTrainingDialog({
         isCancelled: training.status === 'Cancelado',
         completion_date: training.completion_date || '',
         score: training.score?.toString() || '',
-        instructor: training.instructor || '',
+        instructor: training.trainer || '',
         notes: training.notes || '',
       });
     }
@@ -127,7 +127,7 @@ export function EditEmployeeTrainingDialog({
           completion_date: data.completion_date || null,
           expiration_date: expirationDate,
           score: data.score ? parseFloat(data.score) : null,
-          instructor: data.instructor || null,
+          trainer: data.instructor || null,
           notes: data.notes || null,
         })
         .eq('id', training.id);
