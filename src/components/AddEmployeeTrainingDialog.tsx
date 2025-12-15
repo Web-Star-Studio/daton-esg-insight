@@ -122,6 +122,9 @@ export function AddEmployeeTrainingDialog({
           score: data.score ? parseFloat(data.score) : null,
           instructor: data.instructor || null,
           notes: data.notes || null,
+          // Marcar presença automaticamente ao cadastrar participante
+          attended: true,
+          attendance_marked_at: new Date().toISOString(),
         });
 
       if (error) throw error;

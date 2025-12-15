@@ -268,6 +268,9 @@ export const createEmployeeTraining = async (training: Omit<EmployeeTraining, 'i
     trainer: training.trainer ?? null,
     notes: training.notes ?? null,
     company_id: companyId as string,
+    // Marcar presença automaticamente ao cadastrar participante
+    attended: true,
+    attendance_marked_at: new Date().toISOString(),
   };
   
   const { data, error } = await supabase

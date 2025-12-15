@@ -243,12 +243,12 @@ export function RescheduleTrainingModal({
         if (deleteError) throw deleteError;
       }
 
-      // 3. Add new participants
+      // 3. Add new participants (presença já é marcada automaticamente no createEmployeeTraining)
       if (participantsToAdd.size > 0) {
         const addIds = Array.from(participantsToAdd);
-        for (const employeeId of addIds) {
+        for (const empId of addIds) {
           await createEmployeeTraining({
-            employee_id: employeeId,
+            employee_id: empId,
             training_program_id: program.id,
             status: "Inscrito",
             company_id: program.company_id,
