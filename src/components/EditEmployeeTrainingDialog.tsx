@@ -9,6 +9,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { addMonths, format } from 'date-fns';
+import { calculateTrainingStatus, getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
+import { Badge } from './ui/badge';
 
 interface EditEmployeeTrainingDialogProps {
   isOpen: boolean;
@@ -30,7 +32,7 @@ export function EditEmployeeTrainingDialog({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     training_program_id: '',
-    status: 'Pendente',
+    isCancelled: false,
     completion_date: '',
     score: '',
     instructor: '',
@@ -44,7 +46,7 @@ export function EditEmployeeTrainingDialog({
     if (training && isOpen) {
       setFormData({
         training_program_id: training.training_program_id || '',
-        status: training.status || 'Pendente',
+        isCancelled: training.status === 'Cancelado',
         completion_date: training.completion_date || '',
         score: training.score?.toString() || '',
         instructor: training.instructor || '',
@@ -90,6 +92,18 @@ export function EditEmployeeTrainingDialog({
     }
   }, [formData.training_program_id, programs]);
 
+  // Calculate automatic status based on program dates
+  const getCalculatedStatus = () => {
+    if (formData.isCancelled) return 'Cancelado';
+    if (!selectedProgram) return 'Planejado';
+    return calculateTrainingStatus({
+      start_date: selectedProgram.start_date,
+      end_date: selectedProgram.end_date,
+      efficacy_evaluation_deadline: selectedProgram.efficacy_evaluation_deadline,
+      hasEfficacyEvaluation: false
+    });
+  };
+
   // Calculate expiration date
   const calculateExpirationDate = () => {
     if (!formData.completion_date || !selectedProgram?.valid_for_months) {
@@ -103,12 +117,13 @@ export function EditEmployeeTrainingDialog({
   const updateTrainingMutation = useMutation({
     mutationFn: async (data: any) => {
       const expirationDate = calculateExpirationDate();
+      const calculatedStatus = getCalculatedStatus();
 
       const { error } = await supabase
         .from('employee_trainings')
         .update({
           training_program_id: data.training_program_id,
-          status: data.status,
+          status: calculatedStatus,
           completion_date: data.completion_date || null,
           expiration_date: expirationDate,
           score: data.score ? parseFloat(data.score) : null,
@@ -142,7 +157,8 @@ export function EditEmployeeTrainingDialog({
       return;
     }
 
-    if (formData.status === 'Concluído' && !formData.completion_date) {
+    const calculatedStatus = getCalculatedStatus();
+    if (calculatedStatus === 'Concluído' && !formData.completion_date) {
       toast.error('Data de conclusão é obrigatória para treinamentos concluídos');
       return;
     }
@@ -158,7 +174,7 @@ export function EditEmployeeTrainingDialog({
   const handleClose = () => {
     setFormData({
       training_program_id: '',
-      status: 'Pendente',
+      isCancelled: false,
       completion_date: '',
       score: '',
       instructor: '',
@@ -203,26 +219,29 @@ export function EditEmployeeTrainingDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="status">Status*</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Status (Automático)</Label>
+              <div className="mt-2">
+                <Badge className={`${getTrainingStatusColor(getCalculatedStatus())} border`}>
+                  {getCalculatedStatus()}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="isCancelled"
+                  checked={formData.isCancelled}
+                  onChange={(e) => setFormData({ ...formData, isCancelled: e.target.checked })}
+                  className="rounded border-border"
+                />
+                <label htmlFor="isCancelled" className="text-sm text-muted-foreground">
+                  Marcar como Cancelado
+                </label>
+              </div>
             </div>
 
             <div>
               <Label htmlFor="completion_date">
-                Data de Conclusão{formData.status === 'Concluído' ? '*' : ''}
+                Data de Conclusão{getCalculatedStatus() === 'Concluído' ? '*' : ''}
               </Label>
               <Input
                 id="completion_date"

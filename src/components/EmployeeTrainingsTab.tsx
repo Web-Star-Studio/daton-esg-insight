@@ -28,6 +28,7 @@ import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
 import { toast } from 'sonner';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { calculateTrainingStatus, getTrainingStatusColor } from '@/utils/trainingStatusCalculator';
 
 interface EmployeeTrainingsTabProps {
   employeeId: string;
@@ -41,7 +42,7 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const queryClient = useQueryClient();
 
-  // Fetch employee trainings
+  // Fetch employee trainings with program dates for automatic status calculation
   const { data: trainings = [], isLoading } = useQuery({
     queryKey: ['employee-trainings', employeeId],
     queryFn: async () => {
@@ -55,14 +56,38 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
             category,
             duration_hours,
             is_mandatory,
-            valid_for_months
+            valid_for_months,
+            start_date,
+            end_date,
+            efficacy_evaluation_deadline
           )
         `)
         .eq('employee_id', employeeId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Calculate automatic status for each training based on program dates
+      const trainingsWithCalculatedStatus = (data || []).map((training: any) => {
+        const program = training.training_program;
+        if (!program) return training;
+        
+        // Calculate status based on program dates
+        const calculatedStatus = calculateTrainingStatus({
+          start_date: program.start_date,
+          end_date: program.end_date,
+          efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+          hasEfficacyEvaluation: false // Could check DB if needed
+        });
+        
+        // Return training with calculated status (unless manually set to Cancelado)
+        return {
+          ...training,
+          status: training.status === 'Cancelado' ? 'Cancelado' : calculatedStatus
+        };
+      });
+      
+      return trainingsWithCalculatedStatus;
     },
   });
 
@@ -125,14 +150,20 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
   }).length;
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { variant: any; label: string }> = {
-      'Concluído': { variant: 'default', label: '🟢 Concluído' },
-      'Em Andamento': { variant: 'secondary', label: '🟡 Em Andamento' },
-      'Pendente': { variant: 'outline', label: '⚪ Pendente' },
-      'Cancelado': { variant: 'destructive', label: '🔴 Cancelado' },
+    const colorClass = getTrainingStatusColor(status);
+    const labelMap: Record<string, string> = {
+      'Planejado': '🔵 Planejado',
+      'Em Andamento': '🟡 Em Andamento',
+      'Pendente Avaliação': '🟣 Pendente Avaliação',
+      'Concluído': '🟢 Concluído',
+      'Cancelado': '🔴 Cancelado',
+      'Pendente': '⚪ Pendente',
     };
-    const config = statusMap[status] || statusMap['Pendente'];
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return (
+      <Badge className={`${colorClass} border`}>
+        {labelMap[status] || status}
+      </Badge>
+    );
   };
 
   const getExpiryStatus = (expirationDate: string | null) => {
