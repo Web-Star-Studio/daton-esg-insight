@@ -29,6 +29,14 @@ export const useNotificationTriggers = () => {
     staleTime: 50 * 60 * 1000, // 50 minutes
   });
 
+  // Verificação diária de prazos de avaliação de eficácia de treinamentos
+  const { data: trainingEfficacyCheck } = useQuery({
+    queryKey: ['training-efficacy-check'],
+    queryFn: () => notificationTriggers.checkTrainingEfficacyDeadlines(),
+    refetchInterval: 24 * 60 * 60 * 1000, // Verificar diariamente
+    staleTime: 23 * 60 * 60 * 1000, // 23 horas
+  });
+
   // Manual trigger functions for components
   const triggerEmissionDataAdded = useCallback((activityDataId: string, activityName: string, co2Amount: number) => {
     return notificationTriggers.onEmissionDataAdded(activityDataId, activityName, co2Amount);
@@ -58,6 +66,10 @@ export const useNotificationTriggers = () => {
     return notificationTriggers.onRiskAssessmentCompleted(assessmentId, assessmentName, riskLevel);
   }, []);
 
+  const triggerTrainingEfficacyPending = useCallback((trainingId: string, trainingName: string, daysRemaining: number) => {
+    return notificationTriggers.onTrainingEfficacyPending(trainingId, trainingName, daysRemaining);
+  }, []);
+
   return {
     // Manual trigger functions
     triggerEmissionDataAdded,
@@ -67,8 +79,10 @@ export const useNotificationTriggers = () => {
     triggerQualityIssueDetected,
     triggerGRIIndicatorUpdated,
     triggerRiskAssessmentCompleted,
+    triggerTrainingEfficacyPending,
     
     // Status
     isMonitoringActive: true,
+    trainingEfficacyCheck,
   };
 };
