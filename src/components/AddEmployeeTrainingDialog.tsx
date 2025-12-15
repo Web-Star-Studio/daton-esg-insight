@@ -120,7 +120,7 @@ export function AddEmployeeTrainingDialog({
           completion_date: data.completion_date || null,
           expiration_date: expirationDate,
           score: data.score ? parseFloat(data.score) : null,
-          instructor: data.instructor || null,
+          trainer: data.instructor || null,
           notes: data.notes || null,
           // Marcar presença automaticamente ao cadastrar participante
           attended: true,

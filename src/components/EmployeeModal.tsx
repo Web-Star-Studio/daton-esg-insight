@@ -61,6 +61,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
   
   // New department/position creation states
@@ -309,6 +310,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevenir duplo clique
+    if (isSubmitting || loading) return;
+    
     // 1. PRIMEIRO: Validar com dados originais do formulário (strings)
     try {
       employeeSchema.parse({
@@ -380,6 +384,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     }
 
     setLoading(true);
+    setIsSubmitting(true);
     try {
       if (employee) {
         await updateEmployee(employee.id, sanitizedData);
@@ -414,6 +419,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       });
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 

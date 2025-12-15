@@ -337,10 +337,10 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
                           <p className="font-medium">{training.score}</p>
                         </div>
                       )}
-                      {training.instructor && (
+                      {training.trainer && (
                         <div>
                           <p className="text-muted-foreground">Instrutor</p>
-                          <p className="font-medium">{training.instructor}</p>
+                          <p className="font-medium">{training.trainer}</p>
                         </div>
                       )}
                       {training.expiration_date && (

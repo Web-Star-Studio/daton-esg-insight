@@ -10,11 +10,13 @@ import { Separator } from '@/components/ui/separator';
 import { Building2, Mail, Lock, User, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/utils/logger';
+import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
 
 export default function Auth() {
   const { login, register, isLoading, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
 
   // Redirect to dashboard if already logged in
@@ -156,6 +158,16 @@ export default function Auth() {
                   >
                     {isLoading ? 'Entrando...' : 'Entrar'}
                   </Button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPasswordOpen(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
                 </form>
               </TabsContent>
 
@@ -291,11 +303,16 @@ export default function Auth() {
             </span>{' '}
             e{' '}
             <span className="text-primary cursor-pointer hover:underline">
-              Política de Privacidade
+            Política de Privacidade
             </span>
           </p>
         </div>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+      />
     </div>
   );
 }
