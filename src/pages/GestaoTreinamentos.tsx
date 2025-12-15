@@ -40,6 +40,7 @@ import { TrainingDashboardCharts } from '@/components/TrainingDashboardCharts';
 import { TrainingComplianceMatrix } from '@/components/TrainingComplianceMatrix';
 import { TrainingProgramDetailModal } from '@/components/TrainingProgramDetailModal';
 import { RescheduleTrainingModal } from '@/components/RescheduleTrainingModal';
+import { TrainingHoursExportModal } from '@/components/social/TrainingHoursExportModal';
 
 // Import services
 import { 
@@ -76,6 +77,9 @@ export default function GestaoTreinamentos() {
   // Reschedule modal state
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [programToReschedule, setProgramToReschedule] = useState<TrainingProgram | null>(null);
+  
+  // Export hours modal state
+  const [isExportHoursModalOpen, setIsExportHoursModalOpen] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -302,6 +306,10 @@ export default function GestaoTreinamentos() {
           <Button onClick={() => setIsReportsModalOpen(true)} variant="outline">
             <Download className="w-4 h-4 mr-2" />
             Relatórios
+          </Button>
+          <Button onClick={() => setIsExportHoursModalOpen(true)} variant="outline">
+            <Clock className="w-4 h-4 mr-2" />
+            Exportar Horas
           </Button>
           <Button onClick={() => setIsScheduleModalOpen(true)} variant="outline">
             <Calendar className="w-4 h-4 mr-2" />
@@ -727,6 +735,11 @@ export default function GestaoTreinamentos() {
         open={isRescheduleModalOpen}
         onOpenChange={setIsRescheduleModalOpen}
         program={programToReschedule}
+      />
+
+      <TrainingHoursExportModal
+        open={isExportHoursModalOpen}
+        onOpenChange={setIsExportHoursModalOpen}
       />
     </div>
   );
