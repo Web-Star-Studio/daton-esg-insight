@@ -18,7 +18,8 @@ import {
   Eye,
   Pencil,
   MapPin,
-  Calendar
+  Calendar,
+  Download
 } from "lucide-react";
 import { getEmployeesStats } from "@/services/employees";
 import { getSafetyMetrics } from "@/services/safetyIncidents";
@@ -35,6 +36,7 @@ import { TrainingByLocationChart } from "@/components/social/TrainingByLocationC
 import { TrainingBySectorChart } from "@/components/social/TrainingBySectorChart";
 import { EmployeeTrainingTable } from "@/components/social/EmployeeTrainingTable";
 import { getFilteredTrainingMetrics } from "@/services/socialDashboard";
+import { TrainingHoursExportModal } from "@/components/social/TrainingHoursExportModal";
 
 
 export default function SocialESG() {
@@ -42,6 +44,7 @@ export default function SocialESG() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isQuickActionModalOpen, setIsQuickActionModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<SocialProject | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -119,6 +122,10 @@ export default function SocialESG() {
         </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Horas
+          </Button>
           <Button onClick={() => setIsQuickActionModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Novo Registro
@@ -519,6 +526,11 @@ export default function SocialESG() {
       <QuickActionModal
         open={isQuickActionModalOpen}
         onOpenChange={setIsQuickActionModalOpen}
+      />
+
+      <TrainingHoursExportModal
+        open={isExportModalOpen}
+        onOpenChange={setIsExportModalOpen}
       />
     </div>
   );
