@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export interface BusinessEvent {
   type: 'emission_data_added' | 'goal_updated' | 'license_expiring' | 'audit_finding_created' | 
         'compliance_task_overdue' | 'document_uploaded' | 'quality_issue_detected' | 
-        'gri_indicator_updated' | 'risk_assessment_completed';
+        'gri_indicator_updated' | 'risk_assessment_completed' | 'training_efficacy_pending';
   entityId: string;
   entityType: string;
   entityName: string;
@@ -155,6 +155,21 @@ class NotificationTriggersService {
           priority: 'info'
         };
 
+      case 'training_efficacy_pending':
+        const daysRemaining = event.metadata?.daysRemaining || 0;
+        const isOverdue = daysRemaining < 0;
+        return {
+          title: isOverdue ? 'Avaliação de eficácia vencida' : 'Avaliação de eficácia pendente',
+          message: isOverdue 
+            ? `Prazo vencido há ${Math.abs(daysRemaining)} dia(s) para avaliar o treinamento "${event.entityName}"`
+            : `Faltam ${daysRemaining} dia(s) para avaliar a eficácia do treinamento "${event.entityName}"`,
+          type: (daysRemaining <= 1 || isOverdue) ? 'error' : daysRemaining <= 3 ? 'warning' : 'info' as const,
+          actionUrl: '/gestao-treinamentos',
+          actionLabel: 'Avaliar Treinamento',
+          category: 'training',
+          priority: (daysRemaining <= 3 || isOverdue) ? 'critical' : 'important'
+        };
+
       default:
         return null;
     }
@@ -258,6 +273,17 @@ class NotificationTriggersService {
       entityName: assessmentName,
       metadata: { riskLevel },
       severity: riskLevel === 'Alto' || riskLevel === 'Crítico' ? 'high' : 'medium'
+    });
+  }
+
+  async onTrainingEfficacyPending(trainingId: string, trainingName: string, daysRemaining: number) {
+    await this.triggerEvent({
+      type: 'training_efficacy_pending',
+      entityId: trainingId,
+      entityType: 'training_program',
+      entityName: trainingName,
+      metadata: { daysRemaining },
+      severity: daysRemaining <= 1 ? 'critical' : daysRemaining <= 3 ? 'high' : 'medium'
     });
   }
 
@@ -438,6 +464,78 @@ class NotificationTriggersService {
       };
     }
   }
+
+  // Training efficacy deadline checker
+  async checkTrainingEfficacyDeadlines() {
+    try {
+      // Buscar treinamentos que têm prazo de avaliação de eficácia definido
+      const { data: trainings, error: trainingsError } = await supabase
+        .from('training_programs')
+        .select('id, name, end_date, efficacy_evaluation_deadline, status')
+        .not('efficacy_evaluation_deadline', 'is', null);
+
+      if (trainingsError) {
+        console.error('Error fetching training programs:', trainingsError);
+        return { 
+          checked: 0, 
+          pending: 0,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      if (!trainings || trainings.length === 0) {
+        return { 
+          checked: 0, 
+          pending: 0,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const now = new Date();
+      let notificationsTriggered = 0;
+      const notifyDays = [7, 3, 1]; // Notificar 7, 3 e 1 dia antes
+
+      for (const training of trainings) {
+        // Verificar se já tem avaliação de eficácia concluída
+        const { data: evaluation } = await supabase
+          .from('training_efficacy_evaluations')
+          .select('id, status')
+          .eq('training_program_id', training.id)
+          .eq('status', 'Concluída')
+          .maybeSingle();
+
+        // Se já tem avaliação concluída, não notificar
+        if (evaluation) continue;
+
+        const deadline = new Date(training.efficacy_evaluation_deadline!);
+        const daysRemaining = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Notificar se está nos dias de alerta ou se já passou do prazo
+        if (notifyDays.includes(daysRemaining) || daysRemaining < 0) {
+          await this.onTrainingEfficacyPending(
+            training.id,
+            training.name,
+            daysRemaining
+          );
+          notificationsTriggered++;
+        }
+      }
+
+      return { 
+        checked: trainings.length, 
+        pending: notificationsTriggered,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error checking training efficacy deadlines:', error);
+      return { 
+        checked: 0, 
+        pending: 0, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 }
 
 // Export singleton instance
@@ -455,7 +553,9 @@ export const {
   onQualityIssueDetected,
   onGRIIndicatorUpdated,
   onRiskAssessmentCompleted,
+  onTrainingEfficacyPending,
   setupRealtimeMonitoring,
   checkLicenseExpirations,
-  checkOverdueTasks
+  checkOverdueTasks,
+  checkTrainingEfficacyDeadlines
 } = NotificationTriggersService.prototype;
