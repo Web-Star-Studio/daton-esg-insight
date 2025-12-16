@@ -288,7 +288,6 @@ const menuSections: MenuSection[] = [
       { id: "non-conformities", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades", description: "Gestão de não conformidades e ações corretivas" },
       { id: "corrective-actions", title: "Ações Corretivas", icon: CheckSquare, path: "/acoes-corretivas", description: "Planos de ação e melhorias" },
       { id: "document-control", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Versionamento e controle documental" },
-      { id: "supplier-evaluation", title: "Avaliação de Fornecedores", icon: Users2, path: "/avaliacao-fornecedores", description: "Qualificação e monitoramento de fornecedores" },
       { 
         id: "licensing", 
         title: "Licenciamento", 
@@ -300,6 +299,30 @@ const menuSections: MenuSection[] = [
           { id: "licensing-legislations", title: "Legislações", icon: Scale, path: "/licenciamento/legislacoes", description: "Gestão de legislações aplicáveis" }
         ]
       }
+    ]
+  },
+  {
+    id: "suppliers",
+    title: "FORNECEDORES",
+    icon: Truck,
+    isCollapsible: true,
+    defaultOpen: false,
+    items: [
+      { id: "supplier-dashboard", title: "Dashboard de Fornecedores", icon: LayoutDashboard, path: "/fornecedores/dashboard", description: "Visão geral da gestão de fornecedores" },
+      { id: "supplier-registration", title: "Cadastro de Fornecedores", icon: Users2, path: "/fornecedores/cadastro", description: "Registro e gestão de fornecedores" },
+      { 
+        id: "supplier-records", 
+        title: "Registros", 
+        icon: Database, 
+        path: "#", 
+        description: "Configurações de tipos e documentação",
+        subItems: [
+          { id: "required-documents", title: "Documentação Obrigatória", icon: FileText, path: "/fornecedores/documentacao", description: "Documentos exigidos por tipo" },
+          { id: "supplier-types", title: "Tipos de Fornecedor", icon: Layers, path: "/fornecedores/tipos", description: "Categorização de fornecedores" }
+        ]
+      },
+      { id: "supplier-connections", title: "Conexões", icon: Handshake, path: "/fornecedores/conexoes", description: "Vínculos entre fornecedores" },
+      { id: "supplier-evaluations", title: "Avaliações", icon: CheckSquare, path: "/fornecedores/avaliacoes", description: "Avaliação de documentos e qualificação" }
     ]
   },
   {

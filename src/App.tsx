@@ -123,6 +123,14 @@ const IndicadoresESG = lazy(() => import("./pages/IndicadoresESG"));
 const IndicadoresRecomendados = lazy(() => import("./pages/IndicadoresRecomendados"));
 const Materialidade = lazy(() => import("./pages/Materialidade"));
 
+// Supplier Management Module
+const SupplierManagementDashboard = lazy(() => import("./pages/SupplierManagementDashboard"));
+const RequiredDocuments = lazy(() => import("./pages/RequiredDocuments"));
+const SupplierTypesPage = lazy(() => import("./pages/SupplierTypesPage"));
+const SupplierRegistration = lazy(() => import("./pages/SupplierRegistration"));
+const SupplierConnections = lazy(() => import("./pages/SupplierConnections"));
+const SupplierEvaluations = lazy(() => import("./pages/SupplierEvaluations"));
+
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
 const DescricaoCargos = lazy(() => import("./pages/DescricaoCargos"));
@@ -492,6 +500,14 @@ const AppContent = () => {
                 <RegistrarAtividadeConservacao />
               </ProtectedLazyPageWrapper>
             } />
+            
+            {/* Supplier Management Module */}
+            <Route path="/fornecedores/dashboard" element={<ProtectedLazyPageWrapper><SupplierManagementDashboard /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/documentacao" element={<ProtectedLazyPageWrapper><RequiredDocuments /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/tipos" element={<ProtectedLazyPageWrapper><SupplierTypesPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/cadastro" element={<ProtectedLazyPageWrapper><SupplierRegistration /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/conexoes" element={<ProtectedLazyPageWrapper><SupplierConnections /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/avaliacoes" element={<ProtectedLazyPageWrapper><SupplierEvaluations /></ProtectedLazyPageWrapper>} />
             
             {/* Demais rotas com lazy loading */}
             <Route path="/gestao-esg" element={<ProtectedLazyPageWrapper><GestaoESG /></ProtectedLazyPageWrapper>} />
