@@ -320,7 +320,9 @@ const menuSections: MenuSection[] = [
           { id: "required-documents", title: "Documentação Obrigatória", icon: FileText, path: "/fornecedores/documentacao", description: "Documentos exigidos por tipo" },
           { id: "supplier-categories", title: "Categorias de Fornecedor", icon: FolderTree, path: "/fornecedores/categorias", description: "Agrupamento de tipos (2º nível)" },
           { id: "supplier-types", title: "Tipos de Fornecedor", icon: Layers, path: "/fornecedores/tipos", description: "Categorização de fornecedores" },
-          { id: "supplier-trainings", title: "Treinamentos e Informativos", icon: BookOpen, path: "/fornecedores/treinamentos", description: "Materiais, links e questionários" }
+          { id: "supplier-trainings", title: "Treinamentos e Informativos", icon: BookOpen, path: "/fornecedores/treinamentos", description: "Materiais, links e questionários" },
+          { id: "supplier-readings", title: "Leituras Obrigatórias", icon: BookMarked, path: "/fornecedores/leituras-obrigatorias", description: "Documentos para leitura" },
+          { id: "supplier-surveys", title: "Pesquisas/Questionários", icon: ClipboardCheck, path: "/fornecedores/pesquisas", description: "Pesquisas para fornecedores" }
         ]
       },
       { id: "supplier-doc-type-assoc", title: "Associação Doc ↔ Tipo", icon: Handshake, path: "/fornecedores/associacao-documentos", description: "Vincular documentos obrigatórios a tipos" },
