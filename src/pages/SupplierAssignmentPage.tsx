@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -160,31 +160,26 @@ export default function SupplierAssignmentPage() {
 
   if (loadingSupplier || loadingAssignments) {
     return (
-      <MainLayout>
-        <LoadingState loading={true}>
-          <div />
-        </LoadingState>
-      </MainLayout>
+      <LoadingState loading={true}>
+        <div />
+      </LoadingState>
     );
   }
 
   if (!supplier) {
     return (
-      <MainLayout>
-        <div className="flex flex-col items-center justify-center h-64">
-          <p className="text-muted-foreground">Fornecedor não encontrado</p>
-          <Button variant="ghost" onClick={() => navigate('/fornecedores/cadastro')} className="mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-        </div>
-      </MainLayout>
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-muted-foreground">Fornecedor não encontrado</p>
+        <Button variant="ghost" onClick={() => navigate('/fornecedores/cadastro')} className="mt-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -383,8 +378,7 @@ export default function SupplierAssignmentPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
-    </MainLayout>
+    </div>
   );
 }

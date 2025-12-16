@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -150,8 +150,7 @@ export default function SupplierPerformanceEvaluationPage() {
   const supplierCategories = assignments?.categories?.map(c => c.category?.name).filter(Boolean).join(", ") || "-";
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -368,7 +367,6 @@ export default function SupplierPerformanceEvaluationPage() {
             </LoadingState>
           </CardContent>
         </Card>
-      </div>
-    </MainLayout>
+    </div>
   );
 }

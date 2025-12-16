@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,8 +81,7 @@ export default function SupplierEvaluations() {
   });
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -265,7 +264,6 @@ export default function SupplierEvaluations() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </MainLayout>
+    </div>
   );
 }
