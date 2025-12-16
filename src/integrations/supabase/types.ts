@@ -18861,10 +18861,16 @@ export type Database = {
           full_address: string
           full_name: string | null
           id: string
+          is_locked: boolean | null
+          last_login_at: string | null
+          login_attempts: number | null
+          must_change_password: boolean | null
           nickname: string | null
+          password_hash: string | null
           person_type: string
           phone_1: string
           phone_2: string | null
+          portal_enabled: boolean | null
           registration_date: string
           responsible_name: string | null
           status: string
@@ -18882,10 +18888,16 @@ export type Database = {
           full_address: string
           full_name?: string | null
           id?: string
+          is_locked?: boolean | null
+          last_login_at?: string | null
+          login_attempts?: number | null
+          must_change_password?: boolean | null
           nickname?: string | null
+          password_hash?: string | null
           person_type: string
           phone_1: string
           phone_2?: string | null
+          portal_enabled?: boolean | null
           registration_date?: string
           responsible_name?: string | null
           status?: string
@@ -18903,10 +18915,16 @@ export type Database = {
           full_address?: string
           full_name?: string | null
           id?: string
+          is_locked?: boolean | null
+          last_login_at?: string | null
+          login_attempts?: number | null
+          must_change_password?: boolean | null
           nickname?: string | null
+          password_hash?: string | null
           person_type?: string
           phone_1?: string
           phone_2?: string | null
+          portal_enabled?: boolean | null
           registration_date?: string
           responsible_name?: string | null
           status?: string
@@ -18916,6 +18934,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "supplier_management_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_mandatory_readings: {
+        Row: {
+          category_id: string | null
+          company_id: string
+          content: string | null
+          created_at: string | null
+          description: string | null
+          file_path: string | null
+          id: string
+          is_active: boolean | null
+          requires_confirmation: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          company_id: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          requires_confirmation?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          company_id?: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          requires_confirmation?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_mandatory_readings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_mandatory_readings_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -19116,6 +19191,45 @@ export type Database = {
           },
         ]
       }
+      supplier_reading_confirmations: {
+        Row: {
+          confirmed_at: string | null
+          id: string
+          ip_address: string | null
+          reading_id: string
+          supplier_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          id?: string
+          ip_address?: string | null
+          reading_id: string
+          supplier_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          id?: string
+          ip_address?: string | null
+          reading_id?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_reading_confirmations_reading_id_fkey"
+            columns: ["reading_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_mandatory_readings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_reading_confirmations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_required_documents: {
         Row: {
           company_id: string
@@ -19153,6 +19267,162 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_valid: boolean | null
+          session_token: string
+          supplier_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          is_valid?: boolean | null
+          session_token: string
+          supplier_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_valid?: boolean | null
+          session_token?: string
+          supplier_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_sessions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_survey_responses: {
+        Row: {
+          completed_at: string | null
+          form_submission_id: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+          supplier_id: string
+          survey_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          form_submission_id?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          supplier_id: string
+          survey_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          form_submission_id?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          supplier_id?: string
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_survey_responses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_survey_responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_surveys: {
+        Row: {
+          category_id: string | null
+          company_id: string
+          created_at: string | null
+          custom_form_id: string | null
+          description: string | null
+          due_days: number | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          start_date: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          company_id: string
+          created_at?: string | null
+          custom_form_id?: string | null
+          description?: string | null
+          due_days?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          start_date?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          custom_form_id?: string | null
+          description?: string | null
+          due_days?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_surveys_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_surveys_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_surveys_custom_form_id_fkey"
+            columns: ["custom_form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
             referencedColumns: ["id"]
           },
         ]
