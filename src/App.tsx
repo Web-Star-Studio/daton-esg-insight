@@ -134,6 +134,17 @@ const SupplierRegistration = lazy(() => import("./pages/SupplierRegistration"));
 const SupplierAssignmentPage = lazy(() => import("./pages/SupplierAssignmentPage"));
 const SupplierConnections = lazy(() => import("./pages/SupplierConnections"));
 const SupplierEvaluations = lazy(() => import("./pages/SupplierEvaluations"));
+const SupplierMandatoryReadingsPage = lazy(() => import("./pages/SupplierMandatoryReadingsPage"));
+const SupplierSurveysManagementPage = lazy(() => import("./pages/SupplierSurveysManagementPage"));
+
+// Supplier Portal (External)
+const SupplierLogin = lazy(() => import("./pages/supplier-portal/SupplierLogin"));
+const SupplierChangePassword = lazy(() => import("./pages/supplier-portal/SupplierChangePassword"));
+const SupplierDashboard = lazy(() => import("./pages/supplier-portal/SupplierDashboard"));
+const SupplierTrainings = lazy(() => import("./pages/supplier-portal/SupplierTrainings"));
+const SupplierTrainingDetail = lazy(() => import("./pages/supplier-portal/SupplierTrainingDetail"));
+const SupplierReadings = lazy(() => import("./pages/supplier-portal/SupplierReadings"));
+const SupplierSurveys = lazy(() => import("./pages/supplier-portal/SupplierSurveys"));
 
 // Lazy loading para RH modules
 const EstruturaOrganizacional = lazy(() => import("./pages/EstruturaOrganizacional"));
@@ -239,6 +250,15 @@ const AppContent = () => {
                 <FAQ />
               </LazyPageWrapper>
             } />
+
+            {/* Portal do Fornecedor (público) */}
+            <Route path="/fornecedor/login" element={<LazyPageWrapper><SupplierLogin /></LazyPageWrapper>} />
+            <Route path="/fornecedor/alterar-senha" element={<LazyPageWrapper><SupplierChangePassword /></LazyPageWrapper>} />
+            <Route path="/fornecedor/dashboard" element={<LazyPageWrapper><SupplierDashboard /></LazyPageWrapper>} />
+            <Route path="/fornecedor/treinamentos" element={<LazyPageWrapper><SupplierTrainings /></LazyPageWrapper>} />
+            <Route path="/fornecedor/treinamento/:id" element={<LazyPageWrapper><SupplierTrainingDetail /></LazyPageWrapper>} />
+            <Route path="/fornecedor/leituras" element={<LazyPageWrapper><SupplierReadings /></LazyPageWrapper>} />
+            <Route path="/fornecedor/pesquisas" element={<LazyPageWrapper><SupplierSurveys /></LazyPageWrapper>} />
 
             {/* Rotas protegidas principais com lazy loading */}
             <Route path="/dashboard" element={
@@ -516,6 +536,8 @@ const AppContent = () => {
             <Route path="/fornecedores/vinculacao/:id" element={<ProtectedLazyPageWrapper><SupplierAssignmentPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/conexoes" element={<ProtectedLazyPageWrapper><SupplierConnections /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/avaliacoes" element={<ProtectedLazyPageWrapper><SupplierEvaluations /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/leituras-obrigatorias" element={<ProtectedLazyPageWrapper><SupplierMandatoryReadingsPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/pesquisas" element={<ProtectedLazyPageWrapper><SupplierSurveysManagementPage /></ProtectedLazyPageWrapper>} />
             
             {/* Demais rotas com lazy loading */}
             <Route path="/gestao-esg" element={<ProtectedLazyPageWrapper><GestaoESG /></ProtectedLazyPageWrapper>} />
