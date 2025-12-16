@@ -18552,15 +18552,80 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_document_evaluations: {
+        Row: {
+          company_id: string
+          compliance_percentage: number | null
+          created_at: string | null
+          evaluated_by: string | null
+          evaluation_date: string
+          id: string
+          next_evaluation_date: string | null
+          observation: string | null
+          supplier_id: string
+          supplier_status: string | null
+          total_weight_achieved: number | null
+          total_weight_required: number | null
+        }
+        Insert: {
+          company_id: string
+          compliance_percentage?: number | null
+          created_at?: string | null
+          evaluated_by?: string | null
+          evaluation_date?: string
+          id?: string
+          next_evaluation_date?: string | null
+          observation?: string | null
+          supplier_id: string
+          supplier_status?: string | null
+          total_weight_achieved?: number | null
+          total_weight_required?: number | null
+        }
+        Update: {
+          company_id?: string
+          compliance_percentage?: number | null
+          created_at?: string | null
+          evaluated_by?: string | null
+          evaluation_date?: string
+          id?: string
+          next_evaluation_date?: string | null
+          observation?: string | null
+          supplier_id?: string
+          supplier_status?: string | null
+          total_weight_achieved?: number | null
+          total_weight_required?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_document_evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_document_evaluations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_document_submissions: {
         Row: {
           company_id: string
           created_at: string
           evaluated_at: string | null
           evaluated_by: string | null
+          evaluation_status: string | null
+          exempt_reason: string | null
+          expiry_date: string | null
           file_name: string | null
           file_path: string | null
           id: string
+          is_exempt: boolean | null
+          next_evaluation_date: string | null
           notes: string | null
           required_document_id: string
           score: number | null
@@ -18574,9 +18639,14 @@ export type Database = {
           created_at?: string
           evaluated_at?: string | null
           evaluated_by?: string | null
+          evaluation_status?: string | null
+          exempt_reason?: string | null
+          expiry_date?: string | null
           file_name?: string | null
           file_path?: string | null
           id?: string
+          is_exempt?: boolean | null
+          next_evaluation_date?: string | null
           notes?: string | null
           required_document_id: string
           score?: number | null
@@ -18590,9 +18660,14 @@ export type Database = {
           created_at?: string
           evaluated_at?: string | null
           evaluated_by?: string | null
+          evaluation_status?: string | null
+          exempt_reason?: string | null
+          expiry_date?: string | null
           file_name?: string | null
           file_path?: string | null
           id?: string
+          is_exempt?: boolean | null
+          next_evaluation_date?: string | null
           notes?: string | null
           required_document_id?: string
           score?: number | null
@@ -18720,6 +18795,60 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_expiration_alerts: {
+        Row: {
+          alert_status: string | null
+          alert_type: string
+          company_id: string
+          created_at: string | null
+          days_until_expiry: number | null
+          expiry_date: string
+          id: string
+          reference_id: string
+          reference_name: string
+          supplier_id: string
+        }
+        Insert: {
+          alert_status?: string | null
+          alert_type: string
+          company_id: string
+          created_at?: string | null
+          days_until_expiry?: number | null
+          expiry_date: string
+          id?: string
+          reference_id: string
+          reference_name: string
+          supplier_id: string
+        }
+        Update: {
+          alert_status?: string | null
+          alert_type?: string
+          company_id?: string
+          created_at?: string | null
+          days_until_expiry?: number | null
+          expiry_date?: string
+          id?: string
+          reference_id?: string
+          reference_name?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_expiration_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_expiration_alerts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_management: {
         Row: {
           access_code: string | null
@@ -18794,6 +18923,79 @@ export type Database = {
           },
         ]
       }
+      supplier_performance_evaluations: {
+        Row: {
+          communication_score: number | null
+          company_id: string
+          compliance_score: number | null
+          created_at: string | null
+          delivery_score: number | null
+          evaluated_by: string | null
+          evaluation_date: string
+          id: string
+          observation: string | null
+          overall_score: number | null
+          price_score: number | null
+          product_service_id: string
+          quality_score: number | null
+          supplier_id: string
+        }
+        Insert: {
+          communication_score?: number | null
+          company_id: string
+          compliance_score?: number | null
+          created_at?: string | null
+          delivery_score?: number | null
+          evaluated_by?: string | null
+          evaluation_date?: string
+          id?: string
+          observation?: string | null
+          overall_score?: number | null
+          price_score?: number | null
+          product_service_id: string
+          quality_score?: number | null
+          supplier_id: string
+        }
+        Update: {
+          communication_score?: number | null
+          company_id?: string
+          compliance_score?: number | null
+          created_at?: string | null
+          delivery_score?: number | null
+          evaluated_by?: string | null
+          evaluation_date?: string
+          id?: string
+          observation?: string | null
+          overall_score?: number | null
+          price_score?: number | null
+          product_service_id?: string
+          quality_score?: number | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_performance_evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_performance_evaluations_product_service_id_fkey"
+            columns: ["product_service_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_products_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_performance_evaluations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_performance_metrics: {
         Row: {
           company_id: string
@@ -18856,6 +19058,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      supplier_products_services: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          item_type: string
+          name: string
+          supplier_id: string
+          unit_of_measure: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_type: string
+          name: string
+          supplier_id: string
+          unit_of_measure?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_type?: string
+          name?: string
+          supplier_id?: string
+          unit_of_measure?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_products_services_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_products_services_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplier_required_documents: {
         Row: {

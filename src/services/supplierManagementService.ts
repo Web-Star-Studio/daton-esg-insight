@@ -85,6 +85,11 @@ export interface DocumentSubmission {
   evaluated_at?: string;
   score?: number;
   notes?: string;
+  expiry_date?: string;
+  is_exempt?: boolean;
+  exempt_reason?: string;
+  next_evaluation_date?: string;
+  evaluation_status?: 'Ativo' | 'Inativo';
   created_at: string;
   updated_at: string;
   required_document?: RequiredDocument;
@@ -907,4 +912,236 @@ export async function updateSupplierAssignments(
         category_id: catId
       })));
   }
+}
+
+// ==================== PRODUTOS/SERVIÇOS [ALX] ====================
+
+export interface SupplierProductService {
+  id: string;
+  company_id: string;
+  supplier_id: string;
+  name: string;
+  item_type: 'produto' | 'servico';
+  description?: string;
+  category?: string;
+  unit_of_measure?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getSupplierProductsServices(supplierId: string): Promise<SupplierProductService[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_products_services')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('supplier_id', supplierId)
+    .order('name');
+    
+  if (error) throw error;
+  return (data || []) as SupplierProductService[];
+}
+
+export async function createSupplierProductService(item: {
+  supplier_id: string;
+  name: string;
+  item_type: 'produto' | 'servico';
+  description?: string;
+  category?: string;
+  unit_of_measure?: string;
+}): Promise<SupplierProductService> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_products_services')
+    .insert({ ...item, company_id: companyId })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data as SupplierProductService;
+}
+
+export async function updateSupplierProductService(id: string, updates: Partial<SupplierProductService>): Promise<SupplierProductService> {
+  const { data, error } = await supabase
+    .from('supplier_products_services')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data as SupplierProductService;
+}
+
+export async function deleteSupplierProductService(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('supplier_products_services')
+    .delete()
+    .eq('id', id);
+    
+  if (error) throw error;
+}
+
+// ==================== AVALIAÇÕES DOCUMENTAIS [AVA1] ====================
+
+export interface SupplierDocumentEvaluation {
+  id: string;
+  company_id: string;
+  supplier_id: string;
+  evaluation_date: string;
+  total_weight_required: number;
+  total_weight_achieved: number;
+  compliance_percentage: number;
+  next_evaluation_date?: string;
+  observation?: string;
+  evaluated_by?: string;
+  supplier_status: 'Ativo' | 'Inativo';
+  created_at: string;
+}
+
+export async function getSupplierDocumentEvaluations(supplierId: string): Promise<SupplierDocumentEvaluation[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_document_evaluations')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('supplier_id', supplierId)
+    .order('evaluation_date', { ascending: false });
+    
+  if (error) throw error;
+  return (data || []) as SupplierDocumentEvaluation[];
+}
+
+export async function createSupplierDocumentEvaluation(evaluation: {
+  supplier_id: string;
+  total_weight_required: number;
+  total_weight_achieved: number;
+  compliance_percentage: number;
+  next_evaluation_date?: string | null;
+  observation?: string | null;
+  supplier_status: 'Ativo' | 'Inativo';
+}): Promise<SupplierDocumentEvaluation> {
+  const companyId = await getCurrentUserCompanyId();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { data, error } = await supabase
+    .from('supplier_document_evaluations')
+    .insert({ ...evaluation, company_id: companyId, evaluated_by: user?.id })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data as SupplierDocumentEvaluation;
+}
+
+export async function updateDocumentSubmission(id: string, updates: {
+  is_exempt?: boolean;
+  exempt_reason?: string | null;
+  expiry_date?: string | null;
+}): Promise<void> {
+  const { error } = await supabase
+    .from('supplier_document_submissions')
+    .update(updates)
+    .eq('id', id);
+    
+  if (error) throw error;
+}
+
+// ==================== AVALIAÇÕES DE DESEMPENHO [AVA2] ====================
+
+export interface SupplierPerformanceEvaluation {
+  id: string;
+  company_id: string;
+  supplier_id: string;
+  product_service_id: string;
+  evaluation_date: string;
+  quality_score: number;
+  delivery_score: number;
+  price_score: number;
+  communication_score: number;
+  compliance_score: number;
+  overall_score: number;
+  observation?: string;
+  evaluated_by?: string;
+  created_at: string;
+}
+
+export async function getSupplierPerformanceEvaluations(supplierId: string): Promise<SupplierPerformanceEvaluation[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_performance_evaluations')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('supplier_id', supplierId)
+    .order('evaluation_date', { ascending: false });
+    
+  if (error) throw error;
+  return (data || []) as SupplierPerformanceEvaluation[];
+}
+
+export async function createSupplierPerformanceEvaluation(evaluation: {
+  supplier_id: string;
+  product_service_id: string;
+  quality_score: number;
+  delivery_score: number;
+  price_score: number;
+  communication_score: number;
+  compliance_score: number;
+  overall_score: number;
+  observation?: string | null;
+}): Promise<SupplierPerformanceEvaluation> {
+  const companyId = await getCurrentUserCompanyId();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { data, error } = await supabase
+    .from('supplier_performance_evaluations')
+    .insert({ ...evaluation, company_id: companyId, evaluated_by: user?.id })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data as SupplierPerformanceEvaluation;
+}
+
+// ==================== ALERTAS DE VENCIMENTO ====================
+
+export interface SupplierExpirationAlert {
+  id: string;
+  company_id: string;
+  supplier_id: string;
+  alert_type: 'documento' | 'treinamento' | 'avaliacao';
+  reference_id: string;
+  reference_name: string;
+  expiry_date: string;
+  days_until_expiry?: number;
+  alert_status: 'Pendente' | 'Visualizado' | 'Resolvido';
+  created_at: string;
+  supplier?: { company_name?: string; full_name?: string };
+}
+
+export async function getSupplierExpirationAlerts(): Promise<SupplierExpirationAlert[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_expiration_alerts')
+    .select('*, supplier:supplier_management(company_name, full_name)')
+    .eq('company_id', companyId)
+    .order('expiry_date');
+    
+  if (error) throw error;
+  return (data || []) as SupplierExpirationAlert[];
+}
+
+export async function updateExpirationAlertStatus(id: string, status: string): Promise<void> {
+  const { error } = await supabase
+    .from('supplier_expiration_alerts')
+    .update({ alert_status: status })
+    .eq('id', id);
+    
+  if (error) throw error;
 }
