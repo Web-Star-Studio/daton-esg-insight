@@ -327,6 +327,7 @@ const menuSections: MenuSection[] = [
       },
       { id: "supplier-doc-type-assoc", title: "Associação Doc ↔ Tipo", icon: Handshake, path: "/fornecedores/associacao-documentos", description: "Vincular documentos obrigatórios a tipos" },
       { id: "supplier-connections", title: "Conexões", icon: Handshake, path: "/fornecedores/conexoes", description: "Vínculos entre fornecedores" },
+      { id: "supplier-deliveries", title: "Fornecimentos (ALX)", icon: Package, path: "/fornecedores/entregas", description: "Registro de fornecimentos individuais" },
       { id: "supplier-evaluations", title: "Avaliações", icon: CheckSquare, path: "/fornecedores/avaliacoes", description: "Avaliação de documentos e qualificação" },
       { id: "supplier-evaluation-criteria", title: "Critérios de Avaliação", icon: Settings, path: "/fornecedores/criterios-avaliacao", description: "Configurar critérios e pesos AVA2" },
       { id: "supplier-failures", title: "Falhas de Fornecimento", icon: AlertTriangle, path: "/fornecedores/falhas", description: "Registro de falhas e inativação automática" },
