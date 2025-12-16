@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Star, StarOff, ChevronRight, Search, X, Zap } from "lucide-react"
+import { Star, StarOff, ChevronRight, Search, X } from "lucide-react"
 import * as icons from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
@@ -32,7 +32,6 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { useHasRole } from "@/middleware/roleGuard"
 import datonLogo from "@/assets/daton-logo-header.png"
-import { cn } from "@/lib/utils"
 
 // Importações de ícones organizadas por categoria
 import {
@@ -43,25 +42,12 @@ import {
   Users2, UserCheck, UserCog, GraduationCap, Briefcase, Calendar,
   FileBarChart, FileCheck, BookOpen, TrendingDown, CheckCircle, ShieldCheck,
   Settings, Bell, Clock, Building2, MapPin,
-  Brain, ShoppingCart, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
+  Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
   FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown, FolderTree
 } from "lucide-react"
 
-// Zone colors mapping for industrial visual
-const ZONE_COLORS: Record<string, { border: string; bg: string; code: string }> = {
-  home: { border: "border-l-industrial-green", bg: "bg-industrial-green/10", code: "ZN-00" },
-  esg: { border: "border-l-industrial-yellow", bg: "bg-industrial-yellow/10", code: "ZN-01" },
-  financial: { border: "border-l-industrial-cyan", bg: "bg-industrial-cyan/10", code: "ZN-02" },
-  sgq: { border: "border-l-industrial-orange", bg: "bg-industrial-orange/10", code: "ZN-03" },
-  suppliers: { border: "border-l-industrial-purple", bg: "bg-industrial-purple/10", code: "ZN-04" },
-  "data-reports": { border: "border-l-industrial-cyan", bg: "bg-industrial-cyan/10", code: "ZN-05" },
-  settings: { border: "border-l-industrial-steel", bg: "bg-industrial-steel/10", code: "ZN-06" },
-  "platform-admin": { border: "border-l-industrial-orange", bg: "bg-industrial-orange/10", code: "ZN-07" },
-  help: { border: "border-l-sidebar-foreground/30", bg: "bg-sidebar-foreground/5", code: "ZN-08" },
-}
-
-// Interface definitions
+// Nova estrutura ESG completa reorganizada
 interface MenuItem {
   id: string
   title: string
@@ -81,7 +67,6 @@ interface MenuSection {
   hasDivider?: boolean
 }
 
-// Menu sections definition (keeping original structure)
 const menuSections: MenuSection[] = [
   {
     id: "home",
@@ -98,6 +83,8 @@ const menuSections: MenuSection[] = [
     defaultOpen: true,
     items: [
       { id: "esg-management", title: "Painel de Gestão ESG", icon: Leaf, path: "/gestao-esg", description: "Central de gestão ESG" },
+      
+      // CATEGORIA: AMBIENTAL (E)
       {
         id: "environmental-category",
         title: "Ambiental",
@@ -141,9 +128,12 @@ const menuSections: MenuSection[] = [
               { id: "waste-logs", title: "Registros de Resíduos", icon: Trash2, path: "/residuos", description: "Controle e destinação de resíduos" }
             ]
           },
+          
           { id: "sustainability-targets", title: "Metas de Sustentabilidade", icon: Target, path: "/metas-sustentabilidade", description: "Definição e acompanhamento de metas" }
         ]
       },
+      
+      // CATEGORIA: SOCIAL (S)
       {
         id: "social-category",
         title: "Social",
@@ -159,6 +149,8 @@ const menuSections: MenuSection[] = [
           { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" }
         ]
       },
+      
+      // CATEGORIA: GOVERNANÇA (G)
       {
         id: "governance-category",
         title: "Governança",
@@ -183,20 +175,104 @@ const menuSections: MenuSection[] = [
     isCollapsible: true,
     defaultOpen: false,
     items: [
-      { id: "financial-dashboard", title: "Dashboard Financeiro", icon: icons.DollarSign, path: "/financeiro/dashboard", description: "Visão consolidada das finanças" },
-      { id: "chart-of-accounts", title: "Plano de Contas", icon: icons.DollarSign, path: "/financeiro/plano-contas", description: "Estrutura contábil da empresa" },
-      { id: "accounting-entries", title: "Lançamentos Contábeis", icon: icons.DollarSign, path: "/financeiro/lancamentos-contabeis", description: "Registro de operações contábeis" },
-      { id: "accounts-payable", title: "Contas a Pagar", icon: icons.DollarSign, path: "/financeiro/contas-pagar", description: "Gestão de obrigações financeiras" },
-      { id: "accounts-receivable", title: "Contas a Receber", icon: TrendingUp, path: "/financeiro/contas-receber", description: "Gestão de recebíveis" },
-      { id: "financial-approvals", title: "Aprovações", icon: icons.CheckCircle, path: "/financeiro/aprovacoes", description: "Aprovações financeiras pendentes" },
-      { id: "esg-financial-dashboard", title: "Dashboard ESG", icon: icons.Activity, path: "/financeiro/esg-dashboard", description: "Integração Financeiro-ESG" },
-      { id: "budget-management", title: "Gestão de Orçamento", icon: TrendingUp, path: "/financeiro/orcamento", description: "Planejamento e controle orçamentário" },
-      { id: "cash-flow", title: "Fluxo de Caixa", icon: icons.DollarSign, path: "/financeiro/fluxo-caixa", description: "Controle de entradas e saídas" },
-      { id: "cost-centers", title: "Centros de Custo", icon: Building2, path: "/financeiro/centros-custo", description: "Alocação de despesas por departamento" },
-      { id: "financial-reports", title: "Relatórios Financeiros", icon: icons.DollarSign, path: "/financeiro/relatorios", description: "DRE e análises gerenciais" },
-      { id: "profitability-analysis", title: "Análise de Rentabilidade", icon: TrendingUp, path: "/financeiro/rentabilidade", description: "ROI de projetos e categorias" },
-      { id: "waste-payables", title: "Contas a Pagar - Resíduos", icon: icons.DollarSign, path: "/financeiro/residuos/contas-a-pagar", description: "Gestão financeira de pagamentos de resíduos" },
-      { id: "waste-receivables", title: "Contas a Receber - Resíduos", icon: TrendingUp, path: "/financeiro/residuos/contas-a-receber", description: "Receitas com venda de recicláveis" }
+      { 
+        id: "financial-dashboard", 
+        title: "Dashboard Financeiro", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/dashboard", 
+        description: "Visão consolidada das finanças" 
+      },
+      { 
+        id: "chart-of-accounts", 
+        title: "Plano de Contas", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/plano-contas", 
+        description: "Estrutura contábil da empresa" 
+      },
+      { 
+        id: "accounting-entries", 
+        title: "Lançamentos Contábeis", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/lancamentos-contabeis", 
+        description: "Registro de operações contábeis" 
+      },
+      { 
+        id: "accounts-payable", 
+        title: "Contas a Pagar", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/contas-pagar", 
+        description: "Gestão de obrigações financeiras" 
+      },
+      { 
+        id: "accounts-receivable", 
+        title: "Contas a Receber", 
+        icon: TrendingUp, 
+        path: "/financeiro/contas-receber", 
+        description: "Gestão de recebíveis" 
+      },
+      { 
+        id: "financial-approvals", 
+        title: "Aprovações", 
+        icon: icons.CheckCircle, 
+        path: "/financeiro/aprovacoes", 
+        description: "Aprovações financeiras pendentes" 
+      },
+      { 
+        id: "esg-financial-dashboard", 
+        title: "Dashboard ESG", 
+        icon: icons.Activity, 
+        path: "/financeiro/esg-dashboard", 
+        description: "Integração Financeiro-ESG" 
+      },
+      { 
+        id: "budget-management",
+        title: "Gestão de Orçamento", 
+        icon: TrendingUp, 
+        path: "/financeiro/orcamento", 
+        description: "Planejamento e controle orçamentário" 
+      },
+      { 
+        id: "cash-flow", 
+        title: "Fluxo de Caixa", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/fluxo-caixa", 
+        description: "Controle de entradas e saídas" 
+      },
+      { 
+        id: "cost-centers", 
+        title: "Centros de Custo", 
+        icon: Building2, 
+        path: "/financeiro/centros-custo", 
+        description: "Alocação de despesas por departamento" 
+      },
+      { 
+        id: "financial-reports", 
+        title: "Relatórios Financeiros", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/relatorios", 
+        description: "DRE e análises gerenciais" 
+      },
+      { 
+        id: "profitability-analysis", 
+        title: "Análise de Rentabilidade", 
+        icon: TrendingUp, 
+        path: "/financeiro/rentabilidade", 
+        description: "ROI de projetos e categorias" 
+      },
+      { 
+        id: "waste-payables", 
+        title: "Contas a Pagar - Resíduos", 
+        icon: icons.DollarSign, 
+        path: "/financeiro/residuos/contas-a-pagar", 
+        description: "Gestão financeira de pagamentos de resíduos" 
+      },
+      { 
+        id: "waste-receivables", 
+        title: "Contas a Receber - Resíduos", 
+        icon: TrendingUp, 
+        path: "/financeiro/residuos/contas-a-receber", 
+        description: "Receitas com venda de recicláveis" 
+      }
     ]
   },
   {
@@ -291,24 +367,6 @@ const menuSections: MenuSection[] = [
   }
 ]
 
-// LED Indicator Component
-const LedIndicator = ({ status }: { status: 'active' | 'warning' | 'danger' | null }) => {
-  if (!status) return null
-  
-  const statusClasses = {
-    active: "led-active",
-    warning: "led-warning",
-    danger: "led-danger"
-  }
-  
-  return <div className={cn("led-indicator", statusClasses[status])} />
-}
-
-// Zone Badge Component
-const ZoneBadge = ({ code }: { code: string }) => (
-  <span className="zone-code">{code}</span>
-)
-
 export function AppSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -362,26 +420,33 @@ export function AppSidebar() {
     }))
   }
 
+  // Get notification count for specific menu item
   const getNotificationCount = (itemId: string): number => {
-    if (!notificationCounts) return 0
+    if (!notificationCounts) return 0;
+    
     const countMap: Record<string, number> = {
       'environmental-licensing': notificationCounts.licenses_expiring,
       'audits': notificationCounts.pending_audits,
       'non-conformities': notificationCounts.open_non_conformities,
       'training-management': notificationCounts.pending_trainings,
-    }
-    return countMap[itemId] || 0
+    };
+    
+    return countMap[itemId] || 0;
   }
 
-  const getStatusIndicator = (itemId: string): 'active' | 'warning' | 'danger' | null => {
-    const count = getNotificationCount(itemId)
+  // Get status indicator for specific menu item
+  const getStatusIndicator = (itemId: string): 'active' | 'warning' | 'expired' | null => {
+    const count = getNotificationCount(itemId);
+    
     if (itemId === 'environmental-licensing' && count > 0) {
-      return count > 5 ? 'danger' : 'warning'
+      return count > 5 ? 'expired' : 'warning';
     }
+    
     if (itemId === 'non-conformities' && count > 0) {
-      return 'warning'
+      return 'warning';
     }
-    return null
+    
+    return null;
   }
 
   const renderSubMenuItem = (item: MenuItem, isParentActive: boolean) => {
@@ -392,28 +457,25 @@ export function AppSidebar() {
       <SidebarMenuSubItem key={item.id}>
         <SidebarMenuSubButton
           onClick={() => navigate(item.path)}
-          className={cn(
-            "group cursor-pointer font-industrial text-xs transition-all duration-150",
-            active 
-              ? "bg-primary/15 text-primary border-l-2 border-primary" 
-              : "hover:bg-sidebar-accent/80 border-l-2 border-transparent hover:border-sidebar-foreground/20"
-          )}
+          className={`group cursor-pointer ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
         >
-          <NavigationTooltip title={item.title} description={item.description} disabled={false}>
+          <NavigationTooltip
+            title={item.title}
+            description={item.description}
+            disabled={false}
+          >
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="industrial-button p-1">
-                <item.icon className="h-3 w-3 flex-shrink-0" />
-              </div>
-              {!collapsed && <span className="truncate flex-1 min-w-0">{item.title}</span>}
+              <item.icon className="h-3 w-3 flex-shrink-0" />
+              {!collapsed && <span className="text-xs truncate flex-1 min-w-0">{item.title}</span>}
             </div>
           </NavigationTooltip>
           
           {!collapsed && (
             <div
-              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity flex items-center justify-center"
+              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
               onClick={(e) => handleFavoriteToggle(item, e)}
             >
-              {isFav ? <Star className="h-2.5 w-2.5 fill-current text-industrial-yellow" /> : <StarOff className="h-2.5 w-2.5 text-sidebar-foreground/40 hover:text-sidebar-foreground" />}
+              {isFav ? <Star className="h-2.5 w-2.5 fill-current text-yellow-500" /> : <StarOff className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />}
             </div>
           )}
         </SidebarMenuSubButton>
@@ -440,62 +502,58 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <CollapsibleTrigger asChild>
               <SidebarMenuButton
-                className={cn(
-                  "group font-industrial transition-all duration-150",
+                className={`group ${
                   isCategory 
-                    ? "zone-header py-2"
+                    ? "font-semibold text-xs uppercase tracking-wide text-muted-foreground hover:text-foreground"
                     : active || hasActiveSubItem 
-                      ? "bg-primary/10 text-primary" 
-                      : "hover:bg-sidebar-accent/80"
-                )}
+                      ? "bg-primary/10 text-primary font-medium" 
+                      : "hover:bg-muted/50"
+                }`}
               >
-                <NavigationTooltip title={item.title} description={item.description} disabled={!collapsed}>
+                <NavigationTooltip
+                  title={item.title}
+                  description={item.description}
+                  disabled={!collapsed}
+                >
                   <div className="flex items-center gap-3 flex-1">
-                    <div className={cn(
-                      "industrial-button p-1.5 relative",
-                      (active || hasActiveSubItem) && "active"
-                    )}>
+                    <div className="relative">
                       <item.icon className="h-4 w-4 flex-shrink-0" />
                       {statusIndicator && (
-                        <div className="absolute -top-1 -right-1">
-                          <LedIndicator status={statusIndicator} />
-                        </div>
+                        <StatusIndicator 
+                          status={statusIndicator} 
+                          pulse={statusIndicator === 'warning'}
+                          className="absolute -top-0.5 -right-0.5"
+                        />
                       )}
                     </div>
                     {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
                   </div>
                 </NavigationTooltip>
                 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   {!collapsed && notificationCount > 0 && (
                     <BadgeNotification 
                       count={notificationCount}
                       variant={notificationCount > 5 ? 'destructive' : 'warning'}
-                      className="font-mono text-[10px]"
+                      className="mr-1"
                     />
                   )}
                   {!collapsed && (
                     <div
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity flex items-center justify-center"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity hover-scale flex items-center justify-center"
                       onClick={(e) => handleFavoriteToggle(item, e)}
                     >
-                      {isFav ? <Star className="h-3 w-3 fill-current text-industrial-yellow" /> : <StarOff className="h-3 w-3 text-sidebar-foreground/40 hover:text-sidebar-foreground" />}
+                      {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
                     </div>
                   )}
                   {!collapsed && (
-                    <ChevronRight className={cn(
-                      "h-3 w-3 transition-transform duration-150",
-                      isExpanded && "rotate-90"
-                    )} />
+                    <ChevronRight className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   )}
                 </div>
               </SidebarMenuButton>
             </CollapsibleTrigger>
-            <CollapsibleContent className="animate-industrial-slide">
-              <SidebarMenuSub className={cn(
-                "ml-4 pl-2",
-                isCategory && "border-l border-sidebar-border"
-              )}>
+            <CollapsibleContent>
+              <SidebarMenuSub className={isCategory ? "border-l-2 border-muted ml-2 pl-1.5" : ""}>
                 {item.subItems?.map(subItem => 
                   subItem.subItems && subItem.subItems.length > 0 
                     ? renderMenuItem(subItem)
@@ -512,24 +570,22 @@ export function AppSidebar() {
       <SidebarMenuItem key={item.id}>
         <SidebarMenuButton
           onClick={() => navigate(item.path)}
-          className={cn(
-            "group font-industrial transition-all duration-150",
-            active 
-              ? "bg-primary/10 text-primary" 
-              : "hover:bg-sidebar-accent/80"
-          )}
+          className={`group transition-all duration-200 hover-scale ${active ? "bg-primary/10 text-primary font-medium shadow-sm" : "hover:bg-muted/50 hover:shadow-sm"}`}
         >
-          <NavigationTooltip title={item.title} description={item.description} disabled={!collapsed}>
+          <NavigationTooltip
+            title={item.title}
+            description={item.description}
+            disabled={!collapsed}
+          >
             <div className="flex items-center gap-3 flex-1">
-              <div className={cn(
-                "industrial-button p-1.5 relative",
-                active && "active"
-              )}>
+              <div className="relative">
                 <item.icon className="h-4 w-4 flex-shrink-0" />
                 {statusIndicator && (
-                  <div className="absolute -top-1 -right-1">
-                    <LedIndicator status={statusIndicator} />
-                  </div>
+                  <StatusIndicator 
+                    status={statusIndicator} 
+                    pulse={statusIndicator === 'warning'}
+                    className="absolute -top-0.5 -right-0.5"
+                  />
                 )}
               </div>
               {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
@@ -540,16 +596,16 @@ export function AppSidebar() {
             <BadgeNotification 
               count={notificationCount}
               variant={notificationCount > 5 ? 'destructive' : 'warning'}
-              className="font-mono text-[10px]"
+              className="mr-1"
             />
           )}
           
           {!collapsed && (
             <div
-              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity flex items-center justify-center"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center"
               onClick={(e) => handleFavoriteToggle(item, e)}
             >
-              {isFav ? <Star className="h-3 w-3 fill-current text-industrial-yellow" /> : <StarOff className="h-3 w-3 text-sidebar-foreground/40 hover:text-sidebar-foreground" />}
+              {isFav ? <Star className="h-3 w-3 fill-current text-yellow-500" /> : <StarOff className="h-3 w-3 text-muted-foreground hover:text-foreground" />}
             </div>
           )}
         </SidebarMenuButton>
@@ -557,19 +613,24 @@ export function AppSidebar() {
     )
   }
 
+  // Filter menu items based on search
   const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
     if (!searchQuery.trim()) return items
     
     return items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            item.description.toLowerCase().includes(searchQuery.toLowerCase())
+      
       if (matchesSearch) return true
+      
+      // Check subitems
       if (item.subItems) {
         return item.subItems.some(subItem => 
           subItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           subItem.description.toLowerCase().includes(searchQuery.toLowerCase())
         )
       }
+      
       return false
     })
   }
@@ -586,55 +647,38 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className="border-r border-sidebar-border bg-sidebar metal-texture transition-all duration-200" 
+      className="border-r bg-sidebar transition-all duration-300 hover:shadow-lg" 
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       data-tour="sidebar"
     >
-      {/* Industrial Header */}
-      <SidebarHeader className={cn(
-        "p-4 border-b border-sidebar-border transition-all duration-200",
-        isHovering && "bg-sidebar-accent/30"
-      )}>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <img 
-              src={datonLogo} 
-              alt="Daton" 
-              className={cn(
-                "transition-all duration-200",
-                collapsed ? "w-8 h-8" : "w-24 h-8"
-              )} 
-            />
-          </div>
-          {!collapsed && (
-            <div className="flex items-center gap-1.5">
-              <div className="led-indicator led-active" />
-              <span className="font-mono text-[10px] text-sidebar-foreground/60 uppercase tracking-wider">Online</span>
-            </div>
-          )}
-        </div>
+      <SidebarHeader className={`p-4 border-b transition-all duration-300 ${isHovering ? 'shadow-sm' : ''}`}>
+        <img 
+          src={datonLogo} 
+          alt="Daton" 
+          className={`transition-all duration-300 ${collapsed ? "w-8 h-8" : "w-24 h-8"} ${isHovering ? 'brightness-110' : ''}`} 
+        />
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-        {/* Industrial Search Terminal */}
+        {/* Quick Search - Only visible when expanded */}
         {!collapsed && (
-          <div className="px-3 py-3 border-b border-sidebar-border">
+          <div className="px-3 py-3 border-b animate-fade-in">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-sidebar-foreground/40" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="> BUSCAR MÓDULO..."
+                placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="industrial-input pl-8 h-9 text-xs"
+                className="pl-8 h-8 text-xs bg-muted/50 border-muted-foreground/20 focus:border-primary transition-colors"
               />
               {searchQuery && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-sidebar-accent"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -643,32 +687,30 @@ export function AppSidebar() {
           </div>
         )}
 
-        {/* Quick Access Zone - Favoritos */}
+
+        {/* Favoritos */}
         {favorites.length > 0 && !collapsed && !searchQuery && (
-          <SidebarGroup className="px-0 border-b border-sidebar-border">
-            <SidebarGroupLabel className="px-4 py-2 flex items-center gap-2">
-              <Zap className="h-3 w-3 text-industrial-yellow" />
-              <span className="zone-header">ACESSO RÁPIDO</span>
-              <ZoneBadge code="FAV" />
+          <SidebarGroup className="px-0 animate-fade-in">
+            <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+              ⭐ FAVORITOS
             </SidebarGroupLabel>
-            <SidebarGroupContent className="caution-stripe py-1">
+            <SidebarGroupContent>
               <SidebarMenu>
                 {favorites.slice(0, 5).map((fav) => {
+                  // Renderizar ícone original do módulo (não estrela)
                   const IconComponent = icons[fav.icon as keyof typeof icons] as React.ComponentType<{ className?: string }> || FileText
                   
                   return (
-                    <SidebarMenuItem key={`fav-${fav.id}`}>
+                    <SidebarMenuItem key={`fav-${fav.id}`} className="animate-fade-in">
                       <SidebarMenuButton 
                         onClick={() => navigate(fav.path)}
-                        className="group font-industrial transition-all duration-150 hover:bg-sidebar-accent/80"
+                        className="group transition-all duration-200 hover-scale"
                       >
-                        <div className="industrial-button p-1.5">
-                          <IconComponent className="h-4 w-4" />
-                        </div>
+                        <IconComponent className="h-4 w-4" />
                         <span className="text-sm">{fav.title}</span>
                         {!collapsed && (
                           <div
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity flex items-center justify-center ml-auto"
+                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200 hover-scale flex items-center justify-center ml-auto"
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleFavorite({
@@ -679,7 +721,7 @@ export function AppSidebar() {
                               })
                             }}
                           >
-                            <Star className="h-3 w-3 fill-current text-industrial-yellow" />
+                            <Star className="h-3 w-3 fill-current text-yellow-500 hover:text-yellow-600" />
                           </div>
                         )}
                       </SidebarMenuButton>
@@ -693,74 +735,61 @@ export function AppSidebar() {
 
         {/* Search Results Info */}
         {searchQuery && filteredSections.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-sidebar-foreground/60">
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground animate-fade-in">
             <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="font-mono text-xs">NENHUM RESULTADO</p>
-            <p className="text-[10px] mt-1 font-industrial">Tente outro termo</p>
+            <p>Nenhum resultado encontrado</p>
+            <p className="text-xs mt-1">Tente outro termo de busca</p>
           </div>
         )}
 
-        {/* Operational Zones - Main Sections */}
-        {filteredSections.map((section) => {
-          const zoneConfig = ZONE_COLORS[section.id] || ZONE_COLORS.help
-          
-          return (
-            <div key={section.id}>
-              {section.hasDivider && !searchQuery && (
-                <div className="mx-4 my-3 border-t border-dashed border-sidebar-border" />
-              )}
-              
-              {section.isCollapsible && !searchQuery ? (
-                <Collapsible 
-                  defaultOpen={section.defaultOpen || searchQuery.length > 0}
-                  open={searchQuery.length > 0 ? true : expandedSections[section.id]}
-                  onOpenChange={(open) => setExpandedSections(prev => ({ ...prev, [section.id]: open }))}
-                >
-                  <SidebarGroup className={cn("px-0", zoneConfig.border, "border-l-2 ml-2")}>
-                    <CollapsibleTrigger asChild>
-                      <SidebarGroupLabel className="px-3 py-2 cursor-pointer hover:bg-sidebar-accent/50 transition-colors flex items-center justify-between group">
-                        <div className="flex items-center gap-2">
-                          {section.icon && (
-                            <div className="industrial-button p-1">
-                              <section.icon className="h-3 w-3" />
-                            </div>
-                          )}
-                          <span className="zone-header">{section.title}</span>
-                          <ZoneBadge code={zoneConfig.code} />
-                        </div>
-                        {!collapsed && (
-                          <ChevronRight className={cn(
-                            "h-3 w-3 transition-transform duration-150 text-sidebar-foreground/40 group-hover:text-sidebar-foreground",
-                            (expandedSections[section.id] || searchQuery) && "rotate-90"
-                          )} />
-                        )}
-                      </SidebarGroupLabel>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="animate-industrial-slide">
-                      <SidebarGroupContent>
-                        <SidebarMenu>
-                          {section.items.map((item) => renderMenuItem(item))}
-                        </SidebarMenu>
-                      </SidebarGroupContent>
-                    </CollapsibleContent>
-                  </SidebarGroup>
-                </Collapsible>
-              ) : (
-                <SidebarGroup className={cn("px-0", zoneConfig.border, "border-l-2 ml-2")}>
-                  <SidebarGroupLabel className="px-3 py-2 flex items-center gap-2">
-                    <span className="zone-header">{section.title}</span>
-                    <ZoneBadge code={zoneConfig.code} />
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {section.items.map((item) => renderMenuItem(item))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
+        {/* Seções principais */}
+        {filteredSections.map((section) => (
+          <div key={section.id} className="animate-fade-in">
+            {section.hasDivider && !searchQuery && (
+              <div className="mx-4 my-4 border-t border-border"></div>
+            )}
+            
+            {section.isCollapsible && !searchQuery ? (
+              <Collapsible 
+                defaultOpen={section.defaultOpen || searchQuery.length > 0}
+                open={searchQuery.length > 0 ? true : expandedSections[section.id]}
+                onOpenChange={(open) => setExpandedSections(prev => ({ ...prev, [section.id]: open }))}
+              >
+                <SidebarGroup className="px-0">
+                  <CollapsibleTrigger asChild>
+                    <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-all duration-200 flex items-center justify-between group">
+                      <div className="flex items-center gap-2">
+                        {section.icon && <section.icon className="h-4 w-4" />}
+                        <span>{section.title}</span>
+                      </div>
+                      {!collapsed && (
+                        <ChevronRight className={`h-3 w-3 transition-all duration-200 group-hover:text-foreground ${expandedSections[section.id] || searchQuery ? 'rotate-90' : ''}`} />
+                      )}
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="transition-all duration-200">
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {section.items.map((item) => renderMenuItem(item))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
                 </SidebarGroup>
-              )}
-            </div>
-          )
-        })}
+              </Collapsible>
+            ) : (
+              <SidebarGroup className="px-0">
+                <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+                  {section.title}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => renderMenuItem(item))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </div>
+        ))}
       </SidebarContent>
     </Sidebar>
   )

@@ -58,24 +58,14 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Industrial Palette */
-    --industrial-orange: 24 100% 50%;
-    --industrial-yellow: 45 100% 51%;
-    --industrial-steel: 220 10% 40%;
-    --industrial-dark: 220 15% 10%;
-    --industrial-glow: 24 100% 50%;
-    --industrial-cyan: 185 80% 45%;
-    --industrial-green: 151 100% 37%;
-    --industrial-purple: 280 60% 50%;
-
-    /* Sidebar Industrial - Light Mode */
-    --sidebar-background: 220 15% 97%;
-    --sidebar-foreground: 220 15% 15%;
+    /* Sidebar - Verde suave inspirado no design */
+    --sidebar-background: 0 0% 100%; /* Fundo branco para o sidebar */
+    --sidebar-foreground: 0 0% 9%;
     --sidebar-primary: 151 100% 37%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 92%;
-    --sidebar-accent-foreground: 220 15% 15%;
-    --sidebar-border: 220 10% 85%;
+    --sidebar-accent: 151 100% 95%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 220 13% 91%;
     --sidebar-ring: 151 100% 37%;
 
     /* Gradientes e sombras profissionais atualizados */
@@ -162,26 +152,15 @@ All colors MUST be HSL.
     --border: 0 0% 15%;
     --input: 0 0% 15%;
     --ring: 151 100% 37%;
-
-    /* Industrial Palette - Dark Mode */
-    --industrial-orange: 24 100% 55%;
-    --industrial-yellow: 45 100% 55%;
-    --industrial-steel: 220 10% 60%;
-    --industrial-dark: 220 15% 6%;
-    --industrial-glow: 24 100% 55%;
-    --industrial-cyan: 185 80% 50%;
-    --industrial-green: 151 100% 45%;
-    --industrial-purple: 280 60% 55%;
     
-    /* Sidebar Industrial - Dark Mode */
-    --sidebar-background: 220 15% 6%;
-    --sidebar-foreground: 220 10% 90%;
-    --sidebar-primary: 151 100% 45%;
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 151 100% 37%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 12%;
-    --sidebar-accent-foreground: 220 10% 90%;
-    --sidebar-border: 220 10% 15%;
-    --sidebar-ring: 151 100% 45%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 151 100% 37%;
 
     /* Cores para gráficos - Modo escuro */
     --chart-1: 151 100% 45%;  /* Verde Daton mais claro */
@@ -511,87 +490,6 @@ All colors MUST be HSL.
 
   .ai-chat-window {
     z-index: 100 !important;
-  }
-
-  /* Industrial Sidebar Utilities */
-  .industrial-zone {
-    @apply relative border-l-2 pl-3;
-  }
-
-  .industrial-zone::before {
-    content: '';
-    @apply absolute left-0 top-0 bottom-0 w-0.5 opacity-50;
-    background: linear-gradient(180deg, currentColor 0%, transparent 100%);
-  }
-
-  .zone-header {
-    @apply font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/60;
-  }
-
-  .zone-code {
-    @apply font-mono text-[9px] px-1.5 py-0.5 rounded bg-sidebar-accent text-sidebar-foreground/70;
-  }
-
-  .led-indicator {
-    @apply w-2 h-2 rounded-full;
-  }
-
-  .led-active {
-    @apply bg-industrial-green shadow-[0_0_8px_hsl(var(--industrial-green))];
-  }
-
-  .led-warning {
-    @apply bg-industrial-yellow shadow-[0_0_8px_hsl(var(--industrial-yellow))] animate-led-pulse;
-  }
-
-  .led-danger {
-    @apply bg-destructive shadow-[0_0_8px_hsl(var(--destructive))] animate-led-pulse;
-  }
-
-  .caution-stripe {
-    background: repeating-linear-gradient(
-      -45deg,
-      hsl(var(--industrial-yellow) / 0.2),
-      hsl(var(--industrial-yellow) / 0.2) 4px,
-      transparent 4px,
-      transparent 8px
-    );
-  }
-
-  .industrial-button {
-    @apply relative bg-sidebar-accent border border-sidebar-border rounded-sm p-2 transition-all duration-150;
-    @apply hover:bg-sidebar-accent/80 hover:border-sidebar-foreground/20;
-    @apply active:scale-95;
-  }
-
-  .industrial-button.active {
-    @apply bg-primary/10 border-primary/50;
-    box-shadow: 0 0 12px hsl(var(--primary) / 0.3);
-  }
-
-  .industrial-input {
-    @apply font-mono text-xs bg-sidebar-accent border-2 border-sidebar-border rounded-sm;
-    @apply placeholder:text-sidebar-foreground/40 placeholder:font-mono;
-    @apply focus:border-industrial-orange focus:ring-1 focus:ring-industrial-orange/50;
-  }
-
-  .metal-texture {
-    background-image: 
-      linear-gradient(180deg, transparent 0%, hsl(var(--sidebar-border) / 0.3) 100%),
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 1px,
-        hsl(var(--sidebar-foreground) / 0.02) 1px,
-        hsl(var(--sidebar-foreground) / 0.02) 2px
-      );
-  }
-
-  .grid-pattern {
-    background-image: 
-      linear-gradient(hsl(var(--sidebar-border) / 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--sidebar-border) / 0.3) 1px, transparent 1px);
-    background-size: 8px 8px;
   }
 }
 
