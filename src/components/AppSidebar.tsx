@@ -327,7 +327,9 @@ const menuSections: MenuSection[] = [
       },
       { id: "supplier-doc-type-assoc", title: "Associação Doc ↔ Tipo", icon: Handshake, path: "/fornecedores/associacao-documentos", description: "Vincular documentos obrigatórios a tipos" },
       { id: "supplier-connections", title: "Conexões", icon: Handshake, path: "/fornecedores/conexoes", description: "Vínculos entre fornecedores" },
-      { id: "supplier-evaluations", title: "Avaliações", icon: CheckSquare, path: "/fornecedores/avaliacoes", description: "Avaliação de documentos e qualificação" }
+      { id: "supplier-evaluations", title: "Avaliações", icon: CheckSquare, path: "/fornecedores/avaliacoes", description: "Avaliação de documentos e qualificação" },
+      { id: "supplier-indicators", title: "Indicadores de Gestão", icon: BarChart3, path: "/fornecedores/indicadores", description: "AVA1, AVA2, EXT1 - Conformidade e participação" },
+      { id: "supplier-import-export", title: "Importar/Exportar", icon: FileSpreadsheet, path: "/fornecedores/importar-exportar", description: "Importar e exportar fornecedores via Excel" }
     ]
   },
   {

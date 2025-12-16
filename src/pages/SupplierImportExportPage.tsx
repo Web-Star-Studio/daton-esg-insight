@@ -110,16 +110,14 @@ export default function SupplierImportExportPage() {
 
   if (!companyId) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <p className="text-muted-foreground">Selecione uma empresa.</p>
-        </div>
-      </AppLayout>
+      <div className="flex items-center justify-center h-[50vh]">
+        <p className="text-muted-foreground">Selecione uma empresa.</p>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -327,6 +325,6 @@ export default function SupplierImportExportPage() {
           </Card>
         )}
       </div>
-    </AppLayout>
+    </>
   );
 }

@@ -128,10 +128,10 @@ export function exportPortalParticipationReport(
 
 // Export Suppliers List
 export async function exportSuppliersList(companyId: string, format: 'excel' | 'csv' = 'excel') {
-  const { data: suppliers, error } = await supabase
-    .from('managed_suppliers')
+  const { data: suppliers, error } = await (supabase
+    .from('managed_suppliers' as any)
     .select('*')
-    .eq('company_id', companyId) as any;
+    .eq('company_id', companyId) as any);
 
   if (error || !suppliers?.length) {
     throw new Error('Nenhum fornecedor encontrado');
@@ -264,7 +264,7 @@ export async function importSuppliers(companyId: string, data: ParsedSupplier[])
     const supplier = data[i];
     try {
       const { error } = await (supabase
-        .from('managed_suppliers')
+        .from('managed_suppliers' as any)
         .insert({
           company_id: companyId,
           document_number: supplier.document_number,
