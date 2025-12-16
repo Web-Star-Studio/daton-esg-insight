@@ -18803,6 +18803,185 @@ export type Database = {
           },
         ]
       }
+      supplier_training_category_links: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          id: string
+          training_material_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          id?: string
+          training_material_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          training_material_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_training_category_links_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_training_category_links_training_material_id_fkey"
+            columns: ["training_material_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_training_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_training_materials: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          custom_form_id: string | null
+          description: string | null
+          due_days: number | null
+          external_url: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          material_type: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_form_id?: string | null
+          description?: string | null
+          due_days?: number | null
+          external_url?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          material_type: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          custom_form_id?: string | null
+          description?: string | null
+          due_days?: number | null
+          external_url?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          material_type?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_training_materials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_training_materials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_training_materials_custom_form_id_fkey"
+            columns: ["custom_form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_training_progress: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          form_submission_id: string | null
+          id: string
+          score: number | null
+          status: string | null
+          supplier_id: string
+          training_material_id: string
+          updated_at: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          form_submission_id?: string | null
+          id?: string
+          score?: number | null
+          status?: string | null
+          supplier_id: string
+          training_material_id: string
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          form_submission_id?: string | null
+          id?: string
+          score?: number | null
+          status?: string | null
+          supplier_id?: string
+          training_material_id?: string
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_training_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_training_progress_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_training_progress_training_material_id_fkey"
+            columns: ["training_material_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_training_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_type_assignments: {
         Row: {
           created_at: string

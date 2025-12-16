@@ -511,3 +511,169 @@ export const connectionTypeLabels: Record<string, string> = {
   'material_perigoso': 'Material Perigoso',
   'outro': 'Outro'
 };
+
+// ==================== TREINAMENTOS E INFORMATIVOS ====================
+
+export interface SupplierTrainingMaterial {
+  id: string;
+  company_id: string;
+  title: string;
+  description?: string;
+  material_type: 'arquivo' | 'link' | 'questionario';
+  file_path?: string;
+  file_name?: string;
+  file_size?: number;
+  external_url?: string;
+  custom_form_id?: string;
+  is_active: boolean;
+  is_mandatory: boolean;
+  due_days?: number;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  categories?: SupplierCategory[];
+  custom_form?: { id: string; title: string };
+}
+
+export interface SupplierTrainingCategoryLink {
+  id: string;
+  training_material_id: string;
+  category_id: string;
+  created_at: string;
+}
+
+export async function getTrainingMaterials(): Promise<SupplierTrainingMaterial[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_training_materials')
+    .select(`
+      *,
+      custom_forms(id, title)
+    `)
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  
+  // Buscar categorias vinculadas
+  const materials = data || [];
+  const materialIds = materials.map(m => m.id);
+  
+  if (materialIds.length > 0) {
+    const { data: links } = await supabase
+      .from('supplier_training_category_links')
+      .select('training_material_id, category_id, supplier_categories(id, name)')
+      .in('training_material_id', materialIds);
+    
+    const linksByMaterial = new Map<string, SupplierCategory[]>();
+    (links || []).forEach((link: any) => {
+      if (!linksByMaterial.has(link.training_material_id)) {
+        linksByMaterial.set(link.training_material_id, []);
+      }
+      if (link.supplier_categories) {
+        linksByMaterial.get(link.training_material_id)!.push(link.supplier_categories);
+      }
+    });
+    
+    materials.forEach(m => {
+      (m as SupplierTrainingMaterial).categories = linksByMaterial.get(m.id) || [];
+      (m as SupplierTrainingMaterial).custom_form = m.custom_forms;
+    });
+  }
+  
+  return materials as SupplierTrainingMaterial[];
+}
+
+export async function createTrainingMaterial(material: {
+  title: string;
+  description?: string;
+  material_type: 'arquivo' | 'link' | 'questionario';
+  file_path?: string;
+  file_name?: string;
+  file_size?: number;
+  external_url?: string;
+  custom_form_id?: string;
+  is_mandatory?: boolean;
+  due_days?: number;
+  category_ids?: string[];
+}): Promise<SupplierTrainingMaterial> {
+  const companyId = await getCurrentUserCompanyId();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { category_ids, ...materialData } = material;
+  
+  const { data, error } = await supabase
+    .from('supplier_training_materials')
+    .insert({
+      ...materialData,
+      company_id: companyId,
+      created_by: user?.id
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  
+  // Vincular categorias
+  if (category_ids && category_ids.length > 0) {
+    await supabase
+      .from('supplier_training_category_links')
+      .insert(category_ids.map(catId => ({
+        training_material_id: data.id,
+        category_id: catId
+      })));
+  }
+  
+  return data as SupplierTrainingMaterial;
+}
+
+export async function updateTrainingMaterial(
+  id: string, 
+  updates: Partial<SupplierTrainingMaterial> & { category_ids?: string[] }
+): Promise<SupplierTrainingMaterial> {
+  const { category_ids, categories, custom_form, ...materialUpdates } = updates;
+  
+  const { data, error } = await supabase
+    .from('supplier_training_materials')
+    .update(materialUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  
+  // Atualizar categorias se fornecidas
+  if (category_ids !== undefined) {
+    await supabase
+      .from('supplier_training_category_links')
+      .delete()
+      .eq('training_material_id', id);
+    
+    if (category_ids.length > 0) {
+      await supabase
+        .from('supplier_training_category_links')
+        .insert(category_ids.map(catId => ({
+          training_material_id: id,
+          category_id: catId
+        })));
+    }
+  }
+  
+  return data as SupplierTrainingMaterial;
+}
+
+export async function deleteTrainingMaterial(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('supplier_training_materials')
+    .delete()
+    .eq('id', id);
+    
+  if (error) throw error;
+}
+
+export const materialTypeLabels: Record<string, string> = {
+  'arquivo': 'Arquivo',
+  'link': 'Link',
+  'questionario': 'Questionário'
+};
