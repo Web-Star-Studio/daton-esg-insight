@@ -18797,8 +18797,10 @@ export type Database = {
       }
       supplier_expiration_alerts: {
         Row: {
+          alert_category: string | null
           alert_status: string | null
           alert_type: string
+          auto_inactivation_triggered: boolean | null
           company_id: string
           created_at: string | null
           days_until_expiry: number | null
@@ -18809,8 +18811,10 @@ export type Database = {
           supplier_id: string
         }
         Insert: {
+          alert_category?: string | null
           alert_status?: string | null
           alert_type: string
+          auto_inactivation_triggered?: boolean | null
           company_id: string
           created_at?: string | null
           days_until_expiry?: number | null
@@ -18821,8 +18825,10 @@ export type Database = {
           supplier_id: string
         }
         Update: {
+          alert_category?: string | null
           alert_status?: string | null
           alert_type?: string
+          auto_inactivation_triggered?: boolean | null
           company_id?: string
           created_at?: string | null
           days_until_expiry?: number | null
@@ -18852,6 +18858,8 @@ export type Database = {
       supplier_management: {
         Row: {
           access_code: string | null
+          auto_inactivated_at: string | null
+          auto_inactivation_reason: string | null
           cnpj: string | null
           company_id: string
           company_name: string | null
@@ -18862,6 +18870,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_locked: boolean | null
+          last_failure_date: string | null
           last_login_at: string | null
           login_attempts: number | null
           must_change_password: boolean | null
@@ -18871,14 +18880,18 @@ export type Database = {
           phone_1: string
           phone_2: string | null
           portal_enabled: boolean | null
+          reactivation_blocked_until: string | null
           registration_date: string
           responsible_name: string | null
           status: string
+          supply_failure_count: number | null
           temporary_password: string | null
           updated_at: string
         }
         Insert: {
           access_code?: string | null
+          auto_inactivated_at?: string | null
+          auto_inactivation_reason?: string | null
           cnpj?: string | null
           company_id: string
           company_name?: string | null
@@ -18889,6 +18902,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_locked?: boolean | null
+          last_failure_date?: string | null
           last_login_at?: string | null
           login_attempts?: number | null
           must_change_password?: boolean | null
@@ -18898,14 +18912,18 @@ export type Database = {
           phone_1: string
           phone_2?: string | null
           portal_enabled?: boolean | null
+          reactivation_blocked_until?: string | null
           registration_date?: string
           responsible_name?: string | null
           status?: string
+          supply_failure_count?: number | null
           temporary_password?: string | null
           updated_at?: string
         }
         Update: {
           access_code?: string | null
+          auto_inactivated_at?: string | null
+          auto_inactivation_reason?: string | null
           cnpj?: string | null
           company_id?: string
           company_name?: string | null
@@ -18916,6 +18934,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_locked?: boolean | null
+          last_failure_date?: string | null
           last_login_at?: string | null
           login_attempts?: number | null
           must_change_password?: boolean | null
@@ -18925,9 +18944,11 @@ export type Database = {
           phone_1?: string
           phone_2?: string | null
           portal_enabled?: boolean | null
+          reactivation_blocked_until?: string | null
           registration_date?: string
           responsible_name?: string | null
           status?: string
+          supply_failure_count?: number | null
           temporary_password?: string | null
           updated_at?: string
         }
@@ -19305,6 +19326,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "supplier_sessions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_supply_failures: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          failure_date: string
+          failure_type: string
+          id: string
+          related_evaluation_id: string | null
+          severity: string | null
+          supplier_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          failure_date: string
+          failure_type: string
+          id?: string
+          related_evaluation_id?: string | null
+          severity?: string | null
+          supplier_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          failure_date?: string
+          failure_type?: string
+          id?: string
+          related_evaluation_id?: string | null
+          severity?: string | null
+          supplier_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_supply_failures_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_supply_failures_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "supplier_management"
@@ -21441,6 +21519,7 @@ export type Database = {
         }
         Returns: Json
       }
+      check_supplier_mandatory_documents: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       debug_auth_status: { Args: never; Returns: Json }
       exec_sql: { Args: { query: string }; Returns: Json }
