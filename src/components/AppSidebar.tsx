@@ -323,6 +323,7 @@ const menuSections: MenuSection[] = [
           { id: "supplier-trainings", title: "Treinamentos e Informativos", icon: BookOpen, path: "/fornecedores/treinamentos", description: "Materiais, links e questionários" }
         ]
       },
+      { id: "supplier-doc-type-assoc", title: "Associação Doc ↔ Tipo", icon: Handshake, path: "/fornecedores/associacao-documentos", description: "Vincular documentos obrigatórios a tipos" },
       { id: "supplier-connections", title: "Conexões", icon: Handshake, path: "/fornecedores/conexoes", description: "Vínculos entre fornecedores" },
       { id: "supplier-evaluations", title: "Avaliações", icon: CheckSquare, path: "/fornecedores/avaliacoes", description: "Avaliação de documentos e qualificação" }
     ]
