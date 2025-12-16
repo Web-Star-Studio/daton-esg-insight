@@ -1,0 +1,323 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, FileText, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { LoadingState } from "@/components/ui/loading-state";
+import {
+  getRequiredDocuments,
+  createRequiredDocument,
+  updateRequiredDocument,
+  deleteRequiredDocument,
+  weightLabels,
+  RequiredDocument,
+} from "@/services/supplierManagementService";
+
+export default function RequiredDocuments() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<RequiredDocument | null>(null);
+  const [formData, setFormData] = useState({
+    document_name: "",
+    weight: 3,
+    description: "",
+  });
+
+  const { data: documents, isLoading, error, refetch } = useQuery({
+    queryKey: ['required-documents'],
+    queryFn: getRequiredDocuments,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createRequiredDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['required-documents'] });
+      toast({ title: "Documento criado com sucesso!" });
+      closeModal();
+    },
+    onError: () => {
+      toast({ title: "Erro ao criar documento", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<RequiredDocument> }) =>
+      updateRequiredDocument(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['required-documents'] });
+      toast({ title: "Documento atualizado com sucesso!" });
+      closeModal();
+    },
+    onError: () => {
+      toast({ title: "Erro ao atualizar documento", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteRequiredDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['required-documents'] });
+      toast({ title: "Documento excluído com sucesso!" });
+    },
+    onError: () => {
+      toast({ title: "Erro ao excluir documento", variant: "destructive" });
+    },
+  });
+
+  const openModal = (doc?: RequiredDocument) => {
+    if (doc) {
+      setEditingDoc(doc);
+      setFormData({
+        document_name: doc.document_name,
+        weight: doc.weight,
+        description: doc.description || "",
+      });
+    } else {
+      setEditingDoc(null);
+      setFormData({ document_name: "", weight: 3, description: "" });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingDoc(null);
+    setFormData({ document_name: "", weight: 3, description: "" });
+  };
+
+  const handleSubmit = () => {
+    if (!formData.document_name.trim()) {
+      toast({ title: "Nome do documento é obrigatório", variant: "destructive" });
+      return;
+    }
+
+    if (editingDoc) {
+      updateMutation.mutate({ id: editingDoc.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const getWeightBadgeColor = (weight: number) => {
+    switch (weight) {
+      case 1: return "bg-red-100 text-red-800";
+      case 2: return "bg-orange-100 text-orange-800";
+      case 3: return "bg-yellow-100 text-yellow-800";
+      case 4: return "bg-blue-100 text-blue-800";
+      case 5: return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  return (
+    <MainLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/fornecedores/dashboard')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Documentação Obrigatória</h1>
+              <p className="text-muted-foreground mt-1">
+                Cadastre os documentos obrigatórios para qualificação de fornecedores
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => openModal()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Documento
+          </Button>
+        </div>
+
+        {/* Weight Legend */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Legenda de Pesos (Grau de Necessidade)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(weightLabels).map(([weight, label]) => (
+                <Badge key={weight} className={getWeightBadgeColor(Number(weight))}>
+                  {weight} - {label}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Documents Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Documentos Cadastrados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LoadingState
+              loading={isLoading}
+              error={error?.message}
+              retry={refetch}
+              empty={!documents?.length}
+              emptyMessage="Nenhum documento cadastrado"
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome do Documento</TableHead>
+                    <TableHead>Peso</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {documents?.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell className="font-medium">{doc.document_name}</TableCell>
+                      <TableCell>
+                        <Badge className={getWeightBadgeColor(doc.weight)}>
+                          {doc.weight} - {weightLabels[doc.weight]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {doc.description || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={doc.is_active ? "default" : "secondary"}>
+                          {doc.is_active ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openModal(doc)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              if (confirm("Deseja excluir este documento?")) {
+                                deleteMutation.mutate(doc.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </LoadingState>
+          </CardContent>
+        </Card>
+
+        {/* Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingDoc ? "Editar Documento" : "Novo Documento Obrigatório"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="document_name">Nome do Documento *</Label>
+                <Input
+                  id="document_name"
+                  value={formData.document_name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, document_name: e.target.value })
+                  }
+                  placeholder="Ex: Alvará de Funcionamento"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="weight">Peso (Grau de Necessidade) *</Label>
+                <Select
+                  value={String(formData.weight)}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, weight: Number(value) })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(weightLabels).map(([weight, label]) => (
+                      <SelectItem key={weight} value={weight}>
+                        {weight} - {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição (opcional)</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Descrição do documento..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeModal}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {editingDoc ? "Salvar" : "Criar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </MainLayout>
+  );
+}
