@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MainLayout } from "@/components/MainLayout";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -15,65 +17,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Star, Package, Wrench, Save } from "lucide-react";
+import { ArrowLeft, ClipboardList, Save, CheckCircle, XCircle, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getManagedSupplierById, getSupplierAssignments } from "@/services/supplierManagementService";
 import {
-  getManagedSupplierById,
-  getSupplierProductsServices,
-  getSupplierPerformanceEvaluations,
-  createSupplierPerformanceEvaluation,
-  SupplierProductService,
-} from "@/services/supplierManagementService";
+  getActiveEvaluationCriteria,
+  getEvaluationConfig,
+  getCriteriaEvaluations,
+  getCriteriaEvaluationItems,
+  createCriteriaEvaluation,
+  initializeDefaultCriteria,
+  SupplierEvaluationCriteria,
+  SupplierCriteriaEvaluation,
+} from "@/services/supplierCriteriaService";
 
-interface EvaluationScores {
-  quality: number;
-  delivery: number;
-  price: number;
-  communication: number;
-  compliance: number;
-}
-
-const scoreLabels: Record<number, string> = {
-  1: "Muito Ruim",
-  2: "Ruim",
-  3: "Regular",
-  4: "Bom",
-  5: "Excelente",
-};
-
-function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(star)}
-          className="focus:outline-none"
-        >
-          <Star
-            className={`h-6 w-6 transition-colors ${
-              star <= value ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-            }`}
-          />
-        </button>
-      ))}
-      <span className="ml-2 text-sm text-muted-foreground">
-        {value > 0 ? `${value}/5 - ${scoreLabels[value]}` : "Não avaliado"}
-      </span>
-    </div>
-  );
-}
+type CriteriaStatus = 'ATENDE' | 'NAO_ATENDE' | null;
 
 export default function SupplierPerformanceEvaluationPage() {
   const { id: supplierId } = useParams<{ id: string }>();
@@ -81,14 +42,7 @@ export default function SupplierPerformanceEvaluationPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [selectedItemId, setSelectedItemId] = useState<string>("");
-  const [scores, setScores] = useState<EvaluationScores>({
-    quality: 0,
-    delivery: 0,
-    price: 0,
-    communication: 0,
-    compliance: 0,
-  });
+  const [criteriaStatuses, setCriteriaStatuses] = useState<Map<string, CriteriaStatus>>(new Map());
   const [observation, setObservation] = useState("");
 
   const { data: supplier } = useQuery({
@@ -97,167 +51,209 @@ export default function SupplierPerformanceEvaluationPage() {
     enabled: !!supplierId,
   });
 
-  const { data: items, isLoading: itemsLoading } = useQuery({
-    queryKey: ["supplier-products-services", supplierId],
-    queryFn: () => getSupplierProductsServices(supplierId!),
+  const { data: assignments } = useQuery({
+    queryKey: ["supplier-assignments", supplierId],
+    queryFn: () => getSupplierAssignments(supplierId!),
     enabled: !!supplierId,
   });
 
-  const { data: evaluations, isLoading: evalLoading } = useQuery({
-    queryKey: ["performance-evaluations", supplierId],
-    queryFn: () => getSupplierPerformanceEvaluations(supplierId!),
+  const { data: criteria, isLoading: criteriaLoading } = useQuery({
+    queryKey: ["active-evaluation-criteria"],
+    queryFn: getActiveEvaluationCriteria,
+  });
+
+  const { data: config } = useQuery({
+    queryKey: ["evaluation-config"],
+    queryFn: getEvaluationConfig,
+  });
+
+  const { data: evaluations, isLoading: evalsLoading } = useQuery({
+    queryKey: ["criteria-evaluations", supplierId],
+    queryFn: () => getCriteriaEvaluations(supplierId!),
     enabled: !!supplierId,
   });
 
-  const overallScore = useMemo(() => {
-    const validScores = Object.values(scores).filter(s => s > 0);
-    if (validScores.length === 0) return 0;
-    return (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(2);
-  }, [scores]);
+  // Initialize default criteria if none exist
+  useEffect(() => {
+    if (criteria && criteria.length === 0) {
+      initializeDefaultCriteria().then(() => {
+        queryClient.invalidateQueries({ queryKey: ["active-evaluation-criteria"] });
+      });
+    }
+  }, [criteria, queryClient]);
 
-  const createMutation = useMutation({
-    mutationFn: createSupplierPerformanceEvaluation,
+  // Calculate totals
+  const { totalWeight, achievedWeight, allFilled } = useMemo(() => {
+    if (!criteria) return { totalWeight: 0, achievedWeight: 0, allFilled: false };
+    
+    const total = criteria.reduce((sum, c) => sum + c.weight, 0);
+    const achieved = criteria.reduce((sum, c) => {
+      const status = criteriaStatuses.get(c.id);
+      return status === 'ATENDE' ? sum + c.weight : sum;
+    }, 0);
+    const filled = criteria.every(c => criteriaStatuses.get(c.id) !== undefined && criteriaStatuses.get(c.id) !== null);
+    
+    return { totalWeight: total, achievedWeight: achieved, allFilled: filled };
+  }, [criteria, criteriaStatuses]);
+
+  const minimumRequired = config?.minimum_approval_points || 0;
+  const isApproved = achievedWeight >= minimumRequired;
+  const percentage = totalWeight > 0 ? Math.round((achievedWeight / totalWeight) * 100) : 0;
+
+  const saveMutation = useMutation({
+    mutationFn: createCriteriaEvaluation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["performance-evaluations", supplierId] });
+      queryClient.invalidateQueries({ queryKey: ["criteria-evaluations", supplierId] });
       toast({ title: "Avaliação salva com sucesso!" });
-      resetForm();
+      setCriteriaStatuses(new Map());
+      setObservation("");
     },
     onError: () => {
       toast({ title: "Erro ao salvar avaliação", variant: "destructive" });
     },
   });
 
-  const resetForm = () => {
-    setSelectedItemId("");
-    setScores({ quality: 0, delivery: 0, price: 0, communication: 0, compliance: 0 });
-    setObservation("");
+  const handleStatusChange = (criteriaId: string, status: CriteriaStatus) => {
+    setCriteriaStatuses(prev => {
+      const newMap = new Map(prev);
+      newMap.set(criteriaId, status);
+      return newMap;
+    });
   };
 
   const handleSubmit = () => {
-    if (!selectedItemId) {
-      toast({ title: "Selecione um produto/serviço", variant: "destructive" });
+    if (!allFilled) {
+      toast({ title: "Preencha todos os critérios", variant: "destructive" });
       return;
     }
 
-    const allScoresFilled = Object.values(scores).every(s => s > 0);
-    if (!allScoresFilled) {
-      toast({ title: "Preencha todas as notas", variant: "destructive" });
-      return;
-    }
+    const items = criteria!.map(c => ({
+      criteria_id: c.id,
+      criteria_name: c.name,
+      weight: c.weight,
+      status: criteriaStatuses.get(c.id) as 'ATENDE' | 'NAO_ATENDE',
+    }));
 
-    createMutation.mutate({
+    saveMutation.mutate({
       supplier_id: supplierId!,
-      product_service_id: selectedItemId,
-      quality_score: scores.quality,
-      delivery_score: scores.delivery,
-      price_score: scores.price,
-      communication_score: scores.communication,
-      compliance_score: scores.compliance,
-      overall_score: parseFloat(overallScore as string),
-      observation: observation || null,
+      total_weight: totalWeight,
+      achieved_weight: achievedWeight,
+      minimum_required: minimumRequired,
+      is_approved: isApproved,
+      observation: observation || undefined,
+      items,
     });
   };
 
-  // Get latest evaluation for each item
-  const itemsWithLatestEval = useMemo(() => {
-    if (!items) return [];
-    
-    return items.map(item => {
-      const itemEvals = evaluations?.filter(e => e.product_service_id === item.id) || [];
-      const latest = itemEvals.sort((a, b) => 
-        new Date(b.evaluation_date).getTime() - new Date(a.evaluation_date).getTime()
-      )[0];
-      
-      return { ...item, latestEvaluation: latest };
-    });
-  }, [items, evaluations]);
-
   const supplierName = supplier?.person_type === "PJ" ? supplier.company_name : supplier?.full_name;
+  const supplierTypes = assignments?.types?.map(t => t.supplier_type?.name).filter(Boolean).join(", ") || "-";
+  const supplierCategories = assignments?.categories?.map(c => c.category?.name).filter(Boolean).join(", ") || "-";
 
   return (
     <MainLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/fornecedores/cadastro")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Avaliação de Desempenho [AVA2]</h1>
-            <p className="text-muted-foreground mt-1">
-              {supplierName ? `Fornecedor: ${supplierName}` : "Carregando..."}
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/fornecedores/avaliacoes")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Avaliação de Critérios [AVA2]</h1>
+              <p className="text-muted-foreground mt-1">
+                {supplierName ? `Fornecedor: ${supplierName}` : "Carregando..."}
+              </p>
+            </div>
           </div>
+          <Button variant="outline" onClick={() => navigate("/fornecedores/criterios-avaliacao")}>
+            <Settings className="h-4 w-4 mr-2" />
+            Configurar Critérios
+          </Button>
         </div>
 
-        {/* Items Summary */}
+        {/* Supplier Info */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-muted-foreground">Fornecedor</Label>
+                <p className="font-medium">{supplierName || "-"}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Tipo(s)</Label>
+                <p className="font-medium">{supplierTypes}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Categoria(s)</Label>
+                <p className="font-medium">{supplierCategories}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Data</Label>
+                <p className="font-medium">{format(new Date(), "dd/MM/yyyy", { locale: ptBR })}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Evaluation Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Produtos/Serviços Cadastrados
+              <ClipboardList className="h-5 w-5" />
+              Critérios a Serem Avaliados
             </CardTitle>
             <CardDescription>
-              Selecione um item para avaliar ou visualize avaliações anteriores
+              Marque ATENDE ou NÃO ATENDE para cada critério
             </CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingState
-              loading={itemsLoading}
-              empty={!itemsWithLatestEval.length}
-              emptyMessage="Nenhum produto ou serviço cadastrado. Cadastre primeiro na página de Produtos/Serviços."
+              loading={criteriaLoading}
+              empty={!criteria?.length}
+              emptyMessage="Nenhum critério configurado. Configure os critérios primeiro."
             >
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Última Avaliação</TableHead>
-                    <TableHead>Nota</TableHead>
-                    <TableHead className="text-right">Ação</TableHead>
+                    <TableHead>Critério</TableHead>
+                    <TableHead className="w-72">Status</TableHead>
+                    <TableHead className="w-24 text-center">Peso</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {itemsWithLatestEval.map((item) => (
-                    <TableRow key={item.id} className={selectedItemId === item.id ? "bg-muted/50" : ""}>
+                  {criteria?.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell>
-                        {item.item_type === "produto" ? (
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-blue-500" />
-                            <span>Produto</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Wrench className="h-4 w-4 text-green-500" />
-                            <span>Serviço</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.category || "-"}</TableCell>
-                      <TableCell>
-                        {item.latestEvaluation 
-                          ? format(new Date(item.latestEvaluation.evaluation_date), "dd/MM/yyyy", { locale: ptBR })
-                          : "Nunca"
-                        }
-                      </TableCell>
-                      <TableCell>
-                        {item.latestEvaluation ? (
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>{item.latestEvaluation.overall_score}</span>
-                          </div>
-                        ) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant={selectedItemId === item.id ? "default" : "outline"}
-                          onClick={() => setSelectedItemId(item.id)}
+                        <RadioGroup
+                          value={criteriaStatuses.get(c.id) || ""}
+                          onValueChange={(value) => handleStatusChange(c.id, value as CriteriaStatus)}
+                          className="flex gap-4"
                         >
-                          Avaliar
-                        </Button>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="ATENDE" id={`${c.id}-atende`} />
+                            <Label 
+                              htmlFor={`${c.id}-atende`} 
+                              className="flex items-center gap-1 cursor-pointer text-green-600"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              ATENDE
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="NAO_ATENDE" id={`${c.id}-nao-atende`} />
+                            <Label 
+                              htmlFor={`${c.id}-nao-atende`} 
+                              className="flex items-center gap-1 cursor-pointer text-red-600"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              NÃO ATENDE
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="font-mono">{c.weight}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -267,73 +263,63 @@ export default function SupplierPerformanceEvaluationPage() {
           </CardContent>
         </Card>
 
-        {/* Evaluation Form */}
-        {selectedItemId && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Nova Avaliação
-              </CardTitle>
-              <CardDescription>
-                {items?.find(i => i.id === selectedItemId)?.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label>Qualidade do Produto/Serviço</Label>
-                  <StarRating value={scores.quality} onChange={(v) => setScores({ ...scores, quality: v })} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Prazo de Entrega</Label>
-                  <StarRating value={scores.delivery} onChange={(v) => setScores({ ...scores, delivery: v })} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Preço/Custo-Benefício</Label>
-                  <StarRating value={scores.price} onChange={(v) => setScores({ ...scores, price: v })} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Comunicação</Label>
-                  <StarRating value={scores.communication} onChange={(v) => setScores({ ...scores, communication: v })} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Conformidade com Requisitos</Label>
-                  <StarRating value={scores.compliance} onChange={(v) => setScores({ ...scores, compliance: v })} />
-                </div>
+        {/* Result Summary */}
+        <Card className={isApproved && allFilled ? "border-green-200 bg-green-50/50" : allFilled ? "border-red-200 bg-red-50/50" : ""}>
+          <CardHeader>
+            <CardTitle>Resultado</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="text-muted-foreground">Peso Atingido</Label>
+                <p className="text-2xl font-bold">{achievedWeight} / {totalWeight}</p>
               </div>
-
-              <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Star className="h-8 w-8 fill-yellow-400 text-yellow-400" />
-                  <span className="text-3xl font-bold">{overallScore}</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Nota Geral (média das avaliações)
-                </div>
+              <div>
+                <Label className="text-muted-foreground">Mínimo para Aprovação</Label>
+                <p className="text-2xl font-bold">{minimumRequired} pontos</p>
               </div>
-
-              <div className="space-y-2">
-                <Label>Observação</Label>
-                <Textarea
-                  value={observation}
-                  onChange={(e) => setObservation(e.target.value)}
-                  placeholder="Adicione observações sobre esta avaliação..."
-                  rows={3}
-                />
+              <div>
+                <Label className="text-muted-foreground">Status</Label>
+                {allFilled ? (
+                  <Badge 
+                    className={isApproved ? "bg-green-600 text-white text-lg px-4 py-1" : "bg-red-600 text-white text-lg px-4 py-1"}
+                  >
+                    {isApproved ? "✓ APROVADO" : "✗ REPROVADO"}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-lg px-4 py-1">Pendente</Badge>
+                )}
               </div>
+            </div>
+            <Progress value={percentage} className="h-3" />
+            <p className="text-sm text-muted-foreground">
+              Aprovação depende da soma dos pesos dos itens ATENDE
+            </p>
+          </CardContent>
+        </Card>
 
-              <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Avaliação
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {/* Observation and Save */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Observações</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              value={observation}
+              onChange={(e) => setObservation(e.target.value)}
+              placeholder="Adicione observações sobre esta avaliação..."
+              rows={3}
+            />
+            <Button 
+              onClick={handleSubmit} 
+              disabled={!allFilled || saveMutation.isPending}
+              size="lg"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Salvar Avaliação
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* History */}
         <Card>
@@ -342,7 +328,7 @@ export default function SupplierPerformanceEvaluationPage() {
           </CardHeader>
           <CardContent>
             <LoadingState
-              loading={evalLoading}
+              loading={evalsLoading}
               empty={!evaluations?.length}
               emptyMessage="Nenhuma avaliação anterior"
             >
@@ -350,40 +336,33 @@ export default function SupplierPerformanceEvaluationPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Qualidade</TableHead>
-                    <TableHead>Entrega</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Comunicação</TableHead>
-                    <TableHead>Conformidade</TableHead>
-                    <TableHead>Nota Geral</TableHead>
+                    <TableHead>Peso Atingido</TableHead>
+                    <TableHead>Mínimo</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Observação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {evaluations?.map((eval_) => {
-                    const item = items?.find(i => i.id === eval_.product_service_id);
-                    return (
-                      <TableRow key={eval_.id}>
-                        <TableCell>
-                          {format(new Date(eval_.evaluation_date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="font-medium">{item?.name || "-"}</TableCell>
-                        <TableCell>{eval_.quality_score}</TableCell>
-                        <TableCell>{eval_.delivery_score}</TableCell>
-                        <TableCell>{eval_.price_score}</TableCell>
-                        <TableCell>{eval_.communication_score}</TableCell>
-                        <TableCell>{eval_.compliance_score}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{eval_.overall_score}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate">{eval_.observation || "-"}</TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {evaluations?.map((eval_) => (
+                    <TableRow key={eval_.id}>
+                      <TableCell>
+                        {format(new Date(eval_.evaluation_date), "dd/MM/yyyy", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Progress value={(eval_.achieved_weight / eval_.total_weight) * 100} className="w-20" />
+                          <span>{eval_.achieved_weight} / {eval_.total_weight}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{eval_.minimum_required || "-"}</TableCell>
+                      <TableCell>
+                        <Badge className={eval_.is_approved ? "bg-green-600" : "bg-red-600"}>
+                          {eval_.is_approved ? "Aprovado" : "Reprovado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">{eval_.observation || "-"}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </LoadingState>
