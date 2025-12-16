@@ -15,6 +15,8 @@ export default {
     extend: {
       fontFamily: {
         'inter': ['Inter', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'monospace'],
+        'industrial': ['DM Sans', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -61,6 +63,16 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        industrial: {
+          orange: "hsl(var(--industrial-orange))",
+          yellow: "hsl(var(--industrial-yellow))",
+          steel: "hsl(var(--industrial-steel))",
+          dark: "hsl(var(--industrial-dark))",
+          glow: "hsl(var(--industrial-glow))",
+          cyan: "hsl(var(--industrial-cyan))",
+          green: "hsl(var(--industrial-green))",
+          purple: "hsl(var(--industrial-purple))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",
@@ -122,6 +134,18 @@ export default {
         "glow-pulse": {
           "0%, 100%": { boxShadow: "0 0 20px rgba(0, 191, 99, 0.3)" },
           "50%": { boxShadow: "0 0 40px rgba(0, 191, 99, 0.6)" }
+        },
+        "led-pulse": {
+          "0%, 100%": { boxShadow: "0 0 4px currentColor" },
+          "50%": { boxShadow: "0 0 12px currentColor, 0 0 20px currentColor" }
+        },
+        "industrial-slide": {
+          "0%": { transform: "translateX(-100%)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" }
+        },
+        "scan-line": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100%)" }
         }
       },
       animation: {
@@ -134,7 +158,10 @@ export default {
         "bounce-in": "bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
         "flip-in": "flip-in 0.6s ease-out",
         "wiggle": "wiggle 0.5s ease-in-out",
-        "glow-pulse": "glow-pulse 2s ease-in-out infinite"
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+        "led-pulse": "led-pulse 2s ease-in-out infinite",
+        "industrial-slide": "industrial-slide 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+        "scan-line": "scan-line 2s linear infinite"
       },
       spacing: {
         '18': '4.5rem',
