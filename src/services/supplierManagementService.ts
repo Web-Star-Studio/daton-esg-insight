@@ -12,16 +12,27 @@ export interface RequiredDocument {
   updated_at: string;
 }
 
+export interface SupplierCategory {
+  id: string;
+  company_id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SupplierType {
   id: string;
   company_id: string;
   name: string;
   parent_type_id?: string;
+  category_id?: string;
   description?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
   children?: SupplierType[];
+  category?: SupplierCategory;
 }
 
 export interface ManagedSupplier {
@@ -146,6 +157,55 @@ export async function deleteRequiredDocument(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// ==================== CATEGORIAS DE FORNECEDOR ====================
+
+export async function getSupplierCategories(): Promise<SupplierCategory[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_categories')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('name');
+    
+  if (error) throw error;
+  return (data || []) as SupplierCategory[];
+}
+
+export async function createSupplierCategory(category: { name: string }): Promise<SupplierCategory> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_categories')
+    .insert({ name: category.name, company_id: companyId })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data as SupplierCategory;
+}
+
+export async function updateSupplierCategory(id: string, updates: Partial<SupplierCategory>): Promise<SupplierCategory> {
+  const { data, error } = await supabase
+    .from('supplier_categories')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data as SupplierCategory;
+}
+
+export async function deleteSupplierCategory(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('supplier_categories')
+    .delete()
+    .eq('id', id);
+    
+  if (error) throw error;
+}
+
 // ==================== TIPOS DE FORNECEDOR ====================
 
 export async function getSupplierTypes(): Promise<SupplierType[]> {
@@ -181,7 +241,7 @@ export function buildTypeTree(types: SupplierType[]): SupplierType[] {
   return roots;
 }
 
-export async function createSupplierType(type: { name: string; parent_type_id?: string; description?: string }): Promise<SupplierType> {
+export async function createSupplierType(type: { name: string; parent_type_id?: string; category_id?: string; description?: string }): Promise<SupplierType> {
   const companyId = await getCurrentUserCompanyId();
   
   const { data, error } = await supabase

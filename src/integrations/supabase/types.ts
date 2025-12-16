@@ -18341,6 +18341,41 @@ export type Database = {
           },
         ]
       }
+      supplier_categories: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_connections: {
         Row: {
           company_id: string
@@ -18806,6 +18841,7 @@ export type Database = {
       }
       supplier_types: {
         Row: {
+          category_id: string | null
           company_id: string
           created_at: string
           description: string | null
@@ -18816,6 +18852,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           company_id: string
           created_at?: string
           description?: string | null
@@ -18826,6 +18863,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           company_id?: string
           created_at?: string
           description?: string | null
@@ -18836,6 +18874,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_types_company_id_fkey"
             columns: ["company_id"]
