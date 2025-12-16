@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { MainLayout } from "@/components/MainLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -26,8 +26,7 @@ export default function SupplierManagementDashboard() {
   ];
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -189,7 +188,6 @@ export default function SupplierManagementDashboard() {
             </Card>
           </div>
         </LoadingState>
-      </div>
-    </MainLayout>
+    </div>
   );
 }

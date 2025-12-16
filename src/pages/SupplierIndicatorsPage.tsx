@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Star, Users, Download, Calendar, BarChart3 } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
-import { MainLayout } from '@/components/MainLayout';
+
 
 import { DocumentComplianceCard } from '@/components/supplier-indicators/DocumentComplianceCard';
 import { PerformanceComplianceCard } from '@/components/supplier-indicators/PerformanceComplianceCard';
