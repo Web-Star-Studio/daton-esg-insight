@@ -18586,6 +18586,55 @@ export type Database = {
           },
         ]
       }
+      supplier_document_type_requirements: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          is_mandatory: boolean | null
+          required_document_id: string
+          supplier_type_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          required_document_id: string
+          supplier_type_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          required_document_id?: string
+          supplier_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_document_type_requirements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_document_type_requirements_required_document_id_fkey"
+            columns: ["required_document_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_required_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_document_type_requirements_supplier_type_id_fkey"
+            columns: ["supplier_type_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_evaluations: {
         Row: {
           comments: string | null

@@ -90,6 +90,18 @@ export interface DocumentSubmission {
   required_document?: RequiredDocument;
 }
 
+// Interface para associação Documento ↔ Tipo
+export interface DocumentTypeRequirement {
+  id: string;
+  company_id: string;
+  supplier_type_id: string;
+  required_document_id: string;
+  is_mandatory: boolean;
+  created_at: string;
+  required_document?: RequiredDocument;
+  supplier_type?: SupplierType;
+}
+
 // Helper
 async function getCurrentUserCompanyId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -677,3 +689,66 @@ export const materialTypeLabels: Record<string, string> = {
   'link': 'Link',
   'questionario': 'Questionário'
 };
+
+// ==================== ASSOCIAÇÃO DOCUMENTO ↔ TIPO ====================
+
+export async function getDocumentsForType(typeId: string): Promise<DocumentTypeRequirement[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_document_type_requirements')
+    .select(`
+      *,
+      required_document:supplier_required_documents(*)
+    `)
+    .eq('company_id', companyId)
+    .eq('supplier_type_id', typeId);
+    
+  if (error) throw error;
+  return (data || []) as DocumentTypeRequirement[];
+}
+
+export async function getDocumentTypeRequirements(): Promise<DocumentTypeRequirement[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_document_type_requirements')
+    .select(`
+      *,
+      required_document:supplier_required_documents(*),
+      supplier_type:supplier_types(*)
+    `)
+    .eq('company_id', companyId);
+    
+  if (error) throw error;
+  return (data || []) as DocumentTypeRequirement[];
+}
+
+export async function updateTypeDocuments(typeId: string, documentIds: string[]): Promise<void> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  // Remover associações existentes para este tipo
+  const { error: deleteError } = await supabase
+    .from('supplier_document_type_requirements')
+    .delete()
+    .eq('supplier_type_id', typeId)
+    .eq('company_id', companyId);
+    
+  if (deleteError) throw deleteError;
+  
+  // Criar novas associações
+  if (documentIds.length > 0) {
+    const insertData = documentIds.map(docId => ({
+      company_id: companyId,
+      supplier_type_id: typeId,
+      required_document_id: docId,
+      is_mandatory: true
+    }));
+    
+    const { error: insertError } = await supabase
+      .from('supplier_document_type_requirements')
+      .insert(insertData);
+      
+    if (insertError) throw insertError;
+  }
+}
