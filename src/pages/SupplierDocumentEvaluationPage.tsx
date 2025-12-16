@@ -138,6 +138,7 @@ export default function SupplierDocumentEvaluationPage() {
 
     const achievedWeight = documentsWithStatus.reduce((sum, d) => {
       if (d.isExempt) return sum;
+      // Verificar status do documento - ATENDE (Aprovado)
       if (d.submission?.status === "Aprovado") {
         return sum + (d.weight || 1);
       }
@@ -194,11 +195,11 @@ export default function SupplierDocumentEvaluationPage() {
   };
 
   const getStatusBadge = (submission?: DocumentSubmission, isExempt?: boolean) => {
-    if (isExempt) return <Badge variant="outline">Isento</Badge>;
+    if (isExempt) return <Badge variant="outline">ISENTO</Badge>;
     if (!submission) return <Badge variant="secondary">Pendente</Badge>;
     switch (submission.status) {
-      case "Aprovado": return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
-      case "Rejeitado": return <Badge className="bg-red-100 text-red-800">Rejeitado</Badge>;
+      case "Aprovado": return <Badge className="bg-green-100 text-green-800">ATENDE</Badge>;
+      case "Rejeitado": return <Badge className="bg-red-100 text-red-800">NÃO ATENDE</Badge>;
       default: return <Badge className="bg-yellow-100 text-yellow-800">Em análise</Badge>;
     }
   };

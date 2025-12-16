@@ -18552,6 +18552,108 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_criteria_evaluation_items: {
+        Row: {
+          created_at: string | null
+          criteria_id: string | null
+          criteria_name: string
+          evaluation_id: string
+          id: string
+          status: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_id?: string | null
+          criteria_name: string
+          evaluation_id: string
+          id?: string
+          status: string
+          weight: number
+        }
+        Update: {
+          created_at?: string | null
+          criteria_id?: string | null
+          criteria_name?: string
+          evaluation_id?: string
+          id?: string
+          status?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_criteria_evaluation_items_criteria_id_fkey"
+            columns: ["criteria_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_evaluation_criteria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_criteria_evaluation_items_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_criteria_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_criteria_evaluations: {
+        Row: {
+          achieved_weight: number
+          company_id: string
+          created_at: string | null
+          evaluated_by: string | null
+          evaluation_date: string | null
+          id: string
+          is_approved: boolean
+          minimum_required: number | null
+          observation: string | null
+          supplier_id: string
+          total_weight: number
+        }
+        Insert: {
+          achieved_weight: number
+          company_id: string
+          created_at?: string | null
+          evaluated_by?: string | null
+          evaluation_date?: string | null
+          id?: string
+          is_approved: boolean
+          minimum_required?: number | null
+          observation?: string | null
+          supplier_id: string
+          total_weight: number
+        }
+        Update: {
+          achieved_weight?: number
+          company_id?: string
+          created_at?: string | null
+          evaluated_by?: string | null
+          evaluation_date?: string | null
+          id?: string
+          is_approved?: boolean
+          minimum_required?: number | null
+          observation?: string | null
+          supplier_id?: string
+          total_weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_criteria_evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_criteria_evaluations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_document_evaluations: {
         Row: {
           company_id: string
@@ -18752,6 +18854,82 @@ export type Database = {
             columns: ["supplier_type_id"]
             isOneToOne: false
             referencedRelation: "supplier_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_evaluation_config: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          minimum_approval_points: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          minimum_approval_points?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          minimum_approval_points?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_evaluation_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_evaluation_criteria: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          weight: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          weight?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_evaluation_criteria_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
