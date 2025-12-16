@@ -44,7 +44,7 @@ import {
   Settings, Bell, Clock, Building2, MapPin,
   Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
-  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown
+  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown, FolderTree
 } from "lucide-react"
 
 // Nova estrutura ESG completa reorganizada
@@ -318,6 +318,7 @@ const menuSections: MenuSection[] = [
         description: "Configurações de tipos e documentação",
         subItems: [
           { id: "required-documents", title: "Documentação Obrigatória", icon: FileText, path: "/fornecedores/documentacao", description: "Documentos exigidos por tipo" },
+          { id: "supplier-categories", title: "Categorias de Fornecedor", icon: FolderTree, path: "/fornecedores/categorias", description: "Agrupamento de tipos (2º nível)" },
           { id: "supplier-types", title: "Tipos de Fornecedor", icon: Layers, path: "/fornecedores/tipos", description: "Categorização de fornecedores" }
         ]
       },

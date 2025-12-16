@@ -26,11 +26,13 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   getSupplierTypes,
+  getSupplierCategories,
   createSupplierType,
   updateSupplierType,
   deleteSupplierType,
   buildTypeTree,
   SupplierType,
+  SupplierCategory,
 } from "@/services/supplierManagementService";
 import { cn } from "@/lib/utils";
 
@@ -123,12 +125,18 @@ export default function SupplierTypesPage() {
   const [formData, setFormData] = useState({
     name: "",
     parent_type_id: "",
+    category_id: "",
     description: "",
   });
 
   const { data: types, isLoading, error, refetch } = useQuery({
     queryKey: ['supplier-types'],
     queryFn: getSupplierTypes,
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ['supplier-categories'],
+    queryFn: getSupplierCategories,
   });
 
   const typeTree = types ? buildTypeTree(types) : [];
@@ -175,11 +183,12 @@ export default function SupplierTypesPage() {
       setFormData({
         name: type.name,
         parent_type_id: type.parent_type_id || "",
+        category_id: type.category_id || "",
         description: type.description || "",
       });
     } else {
       setEditingType(null);
-      setFormData({ name: "", parent_type_id: "", description: "" });
+      setFormData({ name: "", parent_type_id: "", category_id: "", description: "" });
     }
     setIsModalOpen(true);
   };
@@ -187,7 +196,7 @@ export default function SupplierTypesPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingType(null);
-    setFormData({ name: "", parent_type_id: "", description: "" });
+    setFormData({ name: "", parent_type_id: "", category_id: "", description: "" });
   };
 
   const handleSubmit = () => {
@@ -199,6 +208,7 @@ export default function SupplierTypesPage() {
     const submitData = {
       name: formData.name,
       parent_type_id: formData.parent_type_id || undefined,
+      category_id: formData.category_id || undefined,
       description: formData.description || undefined,
     };
 
@@ -279,6 +289,32 @@ export default function SupplierTypesPage() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex: Resid., Comb., N1, N2..."
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria (opcional)</Label>
+                <Select
+                  value={formData.category_id}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, category_id: value === "none" ? "" : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {categories
+                      ?.filter((c) => c.is_active)
+                      .map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Vincule este tipo a uma categoria de atividade
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="parent">Tipo Pai (opcional)</Label>
