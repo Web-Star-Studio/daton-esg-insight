@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { 
   BarChart3, 
@@ -13,13 +13,6 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import datonLogo from "@/assets/daton-logo-header.png"
-import amchamLogo from "@/assets/clients/amcham-new.png"
-import cooperliquidosLogo from "@/assets/clients/cooperliquidos-new.png"
-import gabardoLogo from "@/assets/clients/gabardo-new.png"
-import mercosulLogo from "@/assets/clients/mercosul-new.png"
-import proambLogo from "@/assets/clients/proamb-new.png"
-import safewebLogo from "@/assets/clients/safeweb-new.png"
-import thyssenkruppLogo from "@/assets/clients/thyssenkrupp-new.png"
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -52,34 +45,6 @@ export default function LandingPage() {
       description: "Controle completo do ciclo de vida dos resíduos"
     }
   ]
-
-  const clients = [
-    { name: "Amcham", logo: amchamLogo },
-    { name: "Cooperliquidos", logo: cooperliquidosLogo },
-    { name: "Gabardo", logo: gabardoLogo },
-    { name: "Mercosul", logo: mercosulLogo },
-    { name: "Proamb", logo: proambLogo },
-    { name: "Safeweb", logo: safewebLogo },
-    { name: "ThyssenKrupp", logo: thyssenkruppLogo }
-  ]
-
-  // Client logos slideshow
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const logosPerSlide = 4
-  const totalSlides = Math.ceil(clients.length / logosPerSlide)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides)
-    }, 3000)
-    return () => clearInterval(timer)
-  }, [totalSlides])
-
-  const getVisibleLogos = () => {
-    const start = currentSlide * logosPerSlide
-    const end = start + logosPerSlide
-    return clients.slice(start, end)
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -209,44 +174,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Client Logos Slideshow */}
-      <section className="py-12 border-y border-border/40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-muted-foreground mb-8">
-            Empresas que confiam no Daton
-          </p>
-          <div className="relative overflow-hidden">
-            <div 
-              className="flex items-center justify-center gap-12 transition-all duration-500 ease-in-out"
-            >
-              {getVisibleLogos().map((client, index) => (
-                <div 
-                  key={`${client.name}-${currentSlide}-${index}`}
-                  className="flex-shrink-0 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all"
-                >
-                  <img 
-                    src={client.logo} 
-                    alt={client.name} 
-                    className="h-8 md:h-10 object-contain"
-                  />
-                </div>
-              ))}
-            </div>
-            {/* Dots indicator */}
-            <div className="flex justify-center gap-2 mt-6">
-              {Array.from({ length: totalSlides }).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    index === currentSlide ? 'bg-primary' : 'bg-border'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section className="py-24">
