@@ -319,7 +319,8 @@ const menuSections: MenuSection[] = [
         subItems: [
           { id: "required-documents", title: "Documentação Obrigatória", icon: FileText, path: "/fornecedores/documentacao", description: "Documentos exigidos por tipo" },
           { id: "supplier-categories", title: "Categorias de Fornecedor", icon: FolderTree, path: "/fornecedores/categorias", description: "Agrupamento de tipos (2º nível)" },
-          { id: "supplier-types", title: "Tipos de Fornecedor", icon: Layers, path: "/fornecedores/tipos", description: "Categorização de fornecedores" }
+          { id: "supplier-types", title: "Tipos de Fornecedor", icon: Layers, path: "/fornecedores/tipos", description: "Categorização de fornecedores" },
+          { id: "supplier-trainings", title: "Treinamentos e Informativos", icon: BookOpen, path: "/fornecedores/treinamentos", description: "Materiais, links e questionários" }
         ]
       },
       { id: "supplier-connections", title: "Conexões", icon: Handshake, path: "/fornecedores/conexoes", description: "Vínculos entre fornecedores" },

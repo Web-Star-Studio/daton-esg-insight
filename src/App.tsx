@@ -128,6 +128,7 @@ const SupplierManagementDashboard = lazy(() => import("./pages/SupplierManagemen
 const RequiredDocuments = lazy(() => import("./pages/RequiredDocuments"));
 const SupplierCategoriesPage = lazy(() => import("./pages/SupplierCategoriesPage"));
 const SupplierTypesPage = lazy(() => import("./pages/SupplierTypesPage"));
+const SupplierTrainingMaterialsPage = lazy(() => import("./pages/SupplierTrainingMaterialsPage"));
 const SupplierRegistration = lazy(() => import("./pages/SupplierRegistration"));
 const SupplierConnections = lazy(() => import("./pages/SupplierConnections"));
 const SupplierEvaluations = lazy(() => import("./pages/SupplierEvaluations"));
@@ -507,6 +508,7 @@ const AppContent = () => {
             <Route path="/fornecedores/documentacao" element={<ProtectedLazyPageWrapper><RequiredDocuments /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/categorias" element={<ProtectedLazyPageWrapper><SupplierCategoriesPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/tipos" element={<ProtectedLazyPageWrapper><SupplierTypesPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/treinamentos" element={<ProtectedLazyPageWrapper><SupplierTrainingMaterialsPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/cadastro" element={<ProtectedLazyPageWrapper><SupplierRegistration /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/conexoes" element={<ProtectedLazyPageWrapper><SupplierConnections /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/avaliacoes" element={<ProtectedLazyPageWrapper><SupplierEvaluations /></ProtectedLazyPageWrapper>} />
