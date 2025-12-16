@@ -227,7 +227,7 @@ export async function getManagedSuppliers(): Promise<ManagedSupplier[]> {
     .order('created_at', { ascending: false });
     
   if (error) throw error;
-  return data || [];
+  return (data || []) as ManagedSupplier[];
 }
 
 export async function getManagedSupplierById(id: string): Promise<ManagedSupplier | null> {
@@ -238,7 +238,7 @@ export async function getManagedSupplierById(id: string): Promise<ManagedSupplie
     .maybeSingle();
     
   if (error) throw error;
-  return data;
+  return data as ManagedSupplier | null;
 }
 
 export function generateTemporaryPassword(): string {
@@ -298,7 +298,7 @@ export async function createManagedSupplier(supplierData: CreateSupplierData): P
       .insert(assignments);
   }
   
-  return data;
+  return data as ManagedSupplier;
 }
 
 export async function updateManagedSupplier(id: string, updates: Partial<ManagedSupplier>): Promise<ManagedSupplier> {
@@ -310,7 +310,7 @@ export async function updateManagedSupplier(id: string, updates: Partial<Managed
     .single();
     
   if (error) throw error;
-  return data;
+  return data as ManagedSupplier;
 }
 
 export async function deleteManagedSupplier(id: string): Promise<void> {
@@ -338,7 +338,7 @@ export async function getSupplierConnections(): Promise<SupplierConnection[]> {
     .order('created_at', { ascending: false });
     
   if (error) throw error;
-  return data || [];
+  return (data || []) as SupplierConnection[];
 }
 
 export async function createSupplierConnection(connection: {
@@ -356,7 +356,7 @@ export async function createSupplierConnection(connection: {
     .single();
     
   if (error) throw error;
-  return data;
+  return data as SupplierConnection;
 }
 
 export async function deleteSupplierConnection(id: string): Promise<void> {
@@ -388,7 +388,7 @@ export async function getDocumentSubmissions(supplierId?: string): Promise<Docum
   const { data, error } = await query.order('submitted_at', { ascending: false });
     
   if (error) throw error;
-  return data || [];
+  return (data || []) as DocumentSubmission[];
 }
 
 export async function evaluateDocumentSubmission(
@@ -409,7 +409,7 @@ export async function evaluateDocumentSubmission(
     .single();
     
   if (error) throw error;
-  return data;
+  return data as DocumentSubmission;
 }
 
 // ==================== ESTATÍSTICAS ====================
