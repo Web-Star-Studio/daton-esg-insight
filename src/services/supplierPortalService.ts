@@ -217,12 +217,37 @@ export async function getSurveyResponses(surveyId: string): Promise<SurveyRespon
 // SUPPLIER PORTAL (External access)
 // =============================================
 
+// Helper to get supplier categories
+async function getSupplierCategoryIds(supplierId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('supplier_category_assignments')
+    .select('category_id')
+    .eq('supplier_id', supplierId);
+  
+  if (error) {
+    console.error('Error fetching supplier categories:', error);
+    return [];
+  }
+  
+  return (data || []).map(d => d.category_id);
+}
+
 export async function getSupplierReadings(supplierId: string, companyId: string): Promise<(MandatoryReading & { confirmed: boolean })[]> {
-  const { data: readings, error: readingsError } = await supabase
+  // Get supplier's categories for EXT→CAT filtering
+  const categoryIds = await getSupplierCategoryIds(supplierId);
+
+  let query = supabase
     .from('supplier_mandatory_readings')
     .select('*')
     .eq('company_id', companyId)
     .eq('is_active', true);
+
+  // Filter by category if supplier has categories assigned (EXT→CAT)
+  if (categoryIds.length > 0) {
+    query = query.or(`category_id.is.null,category_id.in.(${categoryIds.join(',')})`);
+  }
+
+  const { data: readings, error: readingsError } = await query;
 
   if (readingsError) throw readingsError;
 
@@ -253,11 +278,21 @@ export async function confirmReading(supplierId: string, readingId: string): Pro
 }
 
 export async function getSupplierSurveysForPortal(supplierId: string, companyId: string): Promise<(SupplierSurvey & { response?: SurveyResponse })[]> {
-  const { data: surveys, error: surveysError } = await supabase
+  // Get supplier's categories for EXT→CAT filtering
+  const categoryIds = await getSupplierCategoryIds(supplierId);
+
+  let query = supabase
     .from('supplier_surveys')
     .select('*')
     .eq('company_id', companyId)
     .eq('is_active', true);
+
+  // Filter by category if supplier has categories assigned (EXT→CAT)
+  if (categoryIds.length > 0) {
+    query = query.or(`category_id.is.null,category_id.in.(${categoryIds.join(',')})`);
+  }
+
+  const { data: surveys, error: surveysError } = await query;
 
   if (surveysError) throw surveysError;
 
@@ -313,7 +348,10 @@ export async function completeSurveyResponse(supplierId: string, surveyId: strin
 // =============================================
 
 export async function getSupplierTrainingsForPortal(supplierId: string, companyId: string) {
-  // Simplified query - get all active trainings for company
+  // Get supplier's categories for EXT→CAT filtering
+  const categoryIds = await getSupplierCategoryIds(supplierId);
+
+  // Get all active trainings for company
   const { data: trainings, error: trainError } = await supabase
     .from('supplier_training_materials')
     .select('*')
@@ -321,6 +359,28 @@ export async function getSupplierTrainingsForPortal(supplierId: string, companyI
     .eq('is_active', true);
 
   if (trainError) throw trainError;
+
+  // Get training-category links to filter (EXT→CAT)
+  let filteredTrainings = trainings || [];
+  if (categoryIds.length > 0) {
+    const { data: categoryLinks } = await supabase
+      .from('supplier_training_category_links')
+      .select('training_material_id, category_id')
+      .in('category_id', categoryIds);
+
+    const linkedTrainingIds = new Set((categoryLinks || []).map(l => l.training_material_id));
+    
+    // Include trainings that are either linked to supplier's categories OR have no category links (general trainings)
+    const { data: allLinks } = await supabase
+      .from('supplier_training_category_links')
+      .select('training_material_id');
+    
+    const trainingsWithLinks = new Set((allLinks || []).map(l => l.training_material_id));
+    
+    filteredTrainings = filteredTrainings.filter(t => 
+      !trainingsWithLinks.has(t.id) || linkedTrainingIds.has(t.id)
+    );
+  }
 
   const { data: progress, error: progError } = await supabase
     .from('supplier_training_progress')
@@ -331,7 +391,7 @@ export async function getSupplierTrainingsForPortal(supplierId: string, companyI
 
   const progressMap = new Map((progress as any[] || []).map(p => [p.training_material_id, p]));
 
-  return (trainings || []).map(training => ({
+  return filteredTrainings.map(training => ({
     ...training,
     progress: progressMap.get(training.id)
   }));

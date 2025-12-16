@@ -140,6 +140,7 @@ const SupplierIndicatorsPage = lazy(() => import("./pages/SupplierIndicatorsPage
 const SupplierImportExportPage = lazy(() => import("./pages/SupplierImportExportPage"));
 const SupplierEvaluationCriteriaPage = lazy(() => import("./pages/SupplierEvaluationCriteriaPage"));
 const SupplierFailuresPage = lazy(() => import("./pages/SupplierFailuresPage"));
+const SupplierDeliveriesPage = lazy(() => import("./pages/SupplierDeliveriesPage"));
 
 // Supplier Portal (External)
 const SupplierLogin = lazy(() => import("./pages/supplier-portal/SupplierLogin"));
@@ -546,6 +547,7 @@ const AppContent = () => {
             <Route path="/fornecedores/importar-exportar" element={<ProtectedLazyPageWrapper><SupplierImportExportPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/falhas" element={<ProtectedLazyPageWrapper><SupplierFailuresPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/criterios-avaliacao" element={<ProtectedLazyPageWrapper><SupplierEvaluationCriteriaPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/fornecedores/entregas" element={<ProtectedLazyPageWrapper><SupplierDeliveriesPage /></ProtectedLazyPageWrapper>} />
             
             {/* Demais rotas com lazy loading */}
             <Route path="/gestao-esg" element={<ProtectedLazyPageWrapper><GestaoESG /></ProtectedLazyPageWrapper>} />

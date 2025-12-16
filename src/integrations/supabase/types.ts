@@ -18602,6 +18602,7 @@ export type Database = {
           achieved_weight: number
           company_id: string
           created_at: string | null
+          delivery_id: string | null
           evaluated_by: string | null
           evaluation_date: string | null
           id: string
@@ -18615,6 +18616,7 @@ export type Database = {
           achieved_weight: number
           company_id: string
           created_at?: string | null
+          delivery_id?: string | null
           evaluated_by?: string | null
           evaluation_date?: string | null
           id?: string
@@ -18628,6 +18630,7 @@ export type Database = {
           achieved_weight?: number
           company_id?: string
           created_at?: string | null
+          delivery_id?: string | null
           evaluated_by?: string | null
           evaluation_date?: string | null
           id?: string
@@ -18646,10 +18649,100 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "supplier_criteria_evaluations_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_deliveries"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "supplier_criteria_evaluations_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_deliveries: {
+        Row: {
+          business_unit_id: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          delivery_date: string
+          description: string
+          evaluation_id: string | null
+          id: string
+          quantity: number | null
+          reference_number: string | null
+          status: string | null
+          supplier_id: string
+          supplier_type_id: string | null
+          total_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_unit_id?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          delivery_date: string
+          description: string
+          evaluation_id?: string | null
+          id?: string
+          quantity?: number | null
+          reference_number?: string | null
+          status?: string | null
+          supplier_id: string
+          supplier_type_id?: string | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_unit_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          delivery_date?: string
+          description?: string
+          evaluation_id?: string | null
+          id?: string
+          quantity?: number | null
+          reference_number?: string | null
+          status?: string | null
+          supplier_id?: string
+          supplier_type_id?: string | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_deliveries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_deliveries_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_criteria_evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_deliveries_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_deliveries_supplier_type_id_fkey"
+            columns: ["supplier_type_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_types"
             referencedColumns: ["id"]
           },
         ]
