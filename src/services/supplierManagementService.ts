@@ -752,3 +752,159 @@ export async function updateTypeDocuments(typeId: string, documentIds: string[])
     if (insertError) throw insertError;
   }
 }
+
+// ==================== VINCULAÇÕES DE FORNECEDOR ====================
+
+export interface SupplierUnitAssignment {
+  id: string;
+  company_id: string;
+  supplier_id: string;
+  business_unit_id: string;
+  is_corporate: boolean;
+  created_at: string;
+}
+
+export interface SupplierCategoryAssignment {
+  id: string;
+  company_id: string;
+  supplier_id: string;
+  category_id: string;
+  created_at: string;
+  category?: SupplierCategory;
+}
+
+export interface SupplierTypeAssignment {
+  id: string;
+  supplier_id: string;
+  supplier_type_id: string;
+  company_id?: string;
+  supplier_type?: SupplierType;
+}
+
+export interface SupplierAssignments {
+  units: SupplierUnitAssignment[];
+  types: SupplierTypeAssignment[];
+  categories: SupplierCategoryAssignment[];
+}
+
+interface BusinessUnit {
+  id: string;
+  name: string;
+}
+
+export async function getBusinessUnits(): Promise<BusinessUnit[]> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('companies')
+    .select('business_units')
+    .eq('id', companyId)
+    .single();
+    
+  if (error) throw error;
+  
+  // business_units é JSONB - retornar como array
+  const units = data?.business_units;
+  if (Array.isArray(units)) {
+    return units.map((u: any, index: number) => ({
+      id: u.id || `unit-${index}`,
+      name: u.name || u
+    }));
+  }
+  
+  return [];
+}
+
+export async function getSupplierAssignments(supplierId: string): Promise<SupplierAssignments> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  const [unitsResult, typesResult, categoriesResult] = await Promise.all([
+    supabase
+      .from('supplier_unit_assignments')
+      .select('*')
+      .eq('supplier_id', supplierId)
+      .eq('company_id', companyId),
+    supabase
+      .from('supplier_type_assignments')
+      .select('*, supplier_type:supplier_types(*)')
+      .eq('supplier_id', supplierId),
+    supabase
+      .from('supplier_category_assignments')
+      .select('*, category:supplier_categories(*)')
+      .eq('supplier_id', supplierId)
+      .eq('company_id', companyId)
+  ]);
+  
+  if (unitsResult.error) throw unitsResult.error;
+  if (typesResult.error) throw typesResult.error;
+  if (categoriesResult.error) throw categoriesResult.error;
+  
+  return {
+    units: (unitsResult.data || []) as SupplierUnitAssignment[],
+    types: (typesResult.data || []) as SupplierTypeAssignment[],
+    categories: (categoriesResult.data || []) as SupplierCategoryAssignment[]
+  };
+}
+
+export async function updateSupplierAssignments(
+  supplierId: string,
+  data: {
+    units: string[];
+    types: string[];
+    categories: string[];
+    isCorporate: boolean;
+  }
+): Promise<void> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  // Atualizar unidades
+  await supabase
+    .from('supplier_unit_assignments')
+    .delete()
+    .eq('supplier_id', supplierId)
+    .eq('company_id', companyId);
+  
+  if (data.units.length > 0) {
+    await supabase
+      .from('supplier_unit_assignments')
+      .insert(data.units.map(unitId => ({
+        company_id: companyId,
+        supplier_id: supplierId,
+        business_unit_id: unitId,
+        is_corporate: data.isCorporate
+      })));
+  }
+  
+  // Atualizar tipos
+  await supabase
+    .from('supplier_type_assignments')
+    .delete()
+    .eq('supplier_id', supplierId);
+  
+  if (data.types.length > 0) {
+    await supabase
+      .from('supplier_type_assignments')
+      .insert(data.types.map(typeId => ({
+        supplier_id: supplierId,
+        supplier_type_id: typeId,
+        company_id: companyId
+      })));
+  }
+  
+  // Atualizar categorias
+  await supabase
+    .from('supplier_category_assignments')
+    .delete()
+    .eq('supplier_id', supplierId)
+    .eq('company_id', companyId);
+  
+  if (data.categories.length > 0) {
+    await supabase
+      .from('supplier_category_assignments')
+      .insert(data.categories.map(catId => ({
+        company_id: companyId,
+        supplier_id: supplierId,
+        category_id: catId
+      })));
+  }
+}

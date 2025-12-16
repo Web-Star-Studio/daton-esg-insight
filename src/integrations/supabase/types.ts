@@ -18376,6 +18376,52 @@ export type Database = {
           },
         ]
       }
+      supplier_category_assignments: {
+        Row: {
+          category_id: string
+          company_id: string
+          created_at: string | null
+          id: string
+          supplier_id: string
+        }
+        Insert: {
+          category_id: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          supplier_id: string
+        }
+        Update: {
+          category_id?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_category_assignments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_category_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_category_assignments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_connections: {
         Row: {
           company_id: string
@@ -19033,24 +19079,34 @@ export type Database = {
       }
       supplier_type_assignments: {
         Row: {
+          company_id: string | null
           created_at: string
           id: string
           supplier_id: string
           supplier_type_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           id?: string
           supplier_id: string
           supplier_type_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           id?: string
           supplier_id?: string
           supplier_type_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_type_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_type_assignments_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -19121,6 +19177,48 @@ export type Database = {
             columns: ["parent_type_id"]
             isOneToOne: false
             referencedRelation: "supplier_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_unit_assignments: {
+        Row: {
+          business_unit_id: string
+          company_id: string
+          created_at: string | null
+          id: string
+          is_corporate: boolean | null
+          supplier_id: string
+        }
+        Insert: {
+          business_unit_id: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_corporate?: boolean | null
+          supplier_id: string
+        }
+        Update: {
+          business_unit_id?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_corporate?: boolean | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_unit_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_unit_assignments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_management"
             referencedColumns: ["id"]
           },
         ]

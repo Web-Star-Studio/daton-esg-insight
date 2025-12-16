@@ -32,7 +32,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Plus, Building2, User, ArrowLeft, Pencil, Trash2, 
-  Eye, Copy, Search, Filter 
+  Eye, Copy, Search, Filter, Link2 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -343,13 +343,23 @@ export default function SupplierRegistration() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setViewingSupplier(supplier)}
+                            title="Visualizar"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => navigate(`/fornecedores/vinculacao/${supplier.id}`)}
+                            title="Vincular"
+                          >
+                            <Link2 className="h-4 w-4 text-primary" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => openModal(supplier)}
+                            title="Editar"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -361,6 +371,7 @@ export default function SupplierRegistration() {
                                 deleteMutation.mutate(supplier.id);
                               }
                             }}
+                            title="Excluir"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
