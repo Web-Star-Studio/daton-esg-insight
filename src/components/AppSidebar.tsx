@@ -339,6 +339,9 @@ const menuSections: MenuSection[] = [
   {
     id: "data-reports",
     title: "DADOS E RELATÓRIOS",
+    icon: Database,
+    isCollapsible: true,
+    defaultOpen: false,
     items: [
       { id: "data-collection", title: "Coleta de Dados", icon: Database, path: "/coleta-dados", description: "Importação e gestão de dados ESG" },
       { id: "documents", title: "Documentos", icon: Folder, path: "/documentos", description: "Biblioteca, extrações e reconciliação IA" },
@@ -351,6 +354,9 @@ const menuSections: MenuSection[] = [
   {
     id: "settings",
     title: "CONFIGURAÇÕES",
+    icon: Settings,
+    isCollapsible: true,
+    defaultOpen: false,
     hasDivider: true,
     items: [
       { id: "organization-config", title: "Configuração da Organização", icon: Building, path: "/configuracao-organizacional", description: "Dados e estrutura organizacional" },
