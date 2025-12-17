@@ -24,7 +24,12 @@ const VALID_ROUTES = [
   '/beneficios-remuneracao', '/recrutamento',
   '/seguranca-trabalho', '/ponto-frequencia',
   '/desenvolvimento-carreira', '/ouvidoria-clientes',
-  '/gestao-usuarios', '/intelligence-center'
+  '/gestao-usuarios', '/intelligence-center',
+  // Portal do Fornecedor (externo)
+  '/fornecedor/login', '/fornecedor/dashboard',
+  '/fornecedor/treinamentos', '/fornecedor/treinamento',
+  '/fornecedor/leituras', '/fornecedor/pesquisas',
+  '/fornecedor/alterar-senha'
 ];
 
 interface RouteValidatorProps {
