@@ -2039,6 +2039,153 @@ export type Database = {
           },
         ]
       }
+      audit_item_attachments: {
+        Row: {
+          audit_id: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          response_id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          audit_id: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          response_id: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          audit_id?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          response_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_item_attachments_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_item_attachments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_item_attachments_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "audit_item_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_item_responses: {
+        Row: {
+          audit_id: string
+          company_id: string
+          created_at: string | null
+          id: string
+          justification: string | null
+          observations: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_option_id: string | null
+          response_value: string | null
+          session_item_id: string
+          strengths: string | null
+          updated_at: string | null
+          weaknesses: string | null
+        }
+        Insert: {
+          audit_id: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          justification?: string | null
+          observations?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_option_id?: string | null
+          response_value?: string | null
+          session_item_id: string
+          strengths?: string | null
+          updated_at?: string | null
+          weaknesses?: string | null
+        }
+        Update: {
+          audit_id?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          justification?: string | null
+          observations?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_option_id?: string | null
+          response_value?: string | null
+          session_item_id?: string
+          strengths?: string | null
+          updated_at?: string | null
+          weaknesses?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_item_responses_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_item_responses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_item_responses_response_option_id_fkey"
+            columns: ["response_option_id"]
+            isOneToOne: false
+            referencedRelation: "audit_response_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_item_responses_session_item_id_fkey"
+            columns: ["session_item_id"]
+            isOneToOne: false
+            referencedRelation: "audit_session_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string | null
@@ -2132,6 +2279,123 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_occurrences: {
+        Row: {
+          audit_id: string
+          closed_at: string | null
+          closed_by: string | null
+          company_id: string
+          corrective_action: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          due_date: string | null
+          evidence_required: boolean | null
+          id: string
+          immediate_action: string | null
+          occurrence_number: string | null
+          occurrence_type: string
+          preventive_action: string | null
+          priority: string | null
+          response_id: string | null
+          responsible_user_id: string | null
+          root_cause: string | null
+          session_id: string | null
+          session_item_id: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          audit_id: string
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id: string
+          corrective_action?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          due_date?: string | null
+          evidence_required?: boolean | null
+          id?: string
+          immediate_action?: string | null
+          occurrence_number?: string | null
+          occurrence_type: string
+          preventive_action?: string | null
+          priority?: string | null
+          response_id?: string | null
+          responsible_user_id?: string | null
+          root_cause?: string | null
+          session_id?: string | null
+          session_item_id?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          audit_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id?: string
+          corrective_action?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          due_date?: string | null
+          evidence_required?: boolean | null
+          id?: string
+          immediate_action?: string | null
+          occurrence_number?: string | null
+          occurrence_type?: string
+          preventive_action?: string | null
+          priority?: string | null
+          response_id?: string | null
+          responsible_user_id?: string | null
+          root_cause?: string | null
+          session_id?: string | null
+          session_item_id?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_occurrences_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_occurrences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_occurrences_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "audit_item_responses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_occurrences_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_occurrences_session_item_id_fkey"
+            columns: ["session_item_id"]
+            isOneToOne: false
+            referencedRelation: "audit_session_items"
             referencedColumns: ["id"]
           },
         ]
