@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Redirecionando...</title>
+  <script>
+    // Redireciona para index.html preservando a rota original
+    sessionStorage.setItem('redirect', window.location.href);
+    window.location.replace('/');
+  </script>
+</head>
+<body>
+  <p>Redirecionando...</p>
+</body>
+</html>
