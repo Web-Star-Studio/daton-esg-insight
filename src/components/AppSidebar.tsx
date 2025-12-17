@@ -808,7 +808,7 @@ export function AppSidebar() {
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {section.items.map((item) => renderMenuItem(item))}
+                    {section.items.map((item) => renderMenuItem(item, true))}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
