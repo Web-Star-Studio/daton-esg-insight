@@ -79,6 +79,7 @@ const menuSections: MenuSection[] = [
   {
     id: "esg",
     title: "ESG",
+    icon: Leaf,
     isCollapsible: true,
     defaultOpen: true,
     items: [
@@ -495,7 +496,7 @@ export function AppSidebar() {
     )
   }
 
-  const renderMenuItem = (item: MenuItem) => {
+  const renderMenuItem = (item: MenuItem, hideIcon: boolean = false) => {
     const active = isActive(item.path)
     const isFav = isFavorite(item.id)
     const hasSubItems = item.subItems && item.subItems.length > 0
@@ -528,17 +529,23 @@ export function AppSidebar() {
                   disabled={!collapsed}
                 >
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="relative">
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      {statusIndicator && (
-                        <StatusIndicator 
-                          status={statusIndicator} 
-                          pulse={statusIndicator === 'warning'}
-                          className="absolute -top-0.5 -right-0.5"
-                        />
-                      )}
-                    </div>
-                    {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
+                    {!hideIcon && (
+                      <div className="relative">
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {statusIndicator && (
+                          <StatusIndicator 
+                            status={statusIndicator} 
+                            pulse={statusIndicator === 'warning'}
+                            className="absolute -top-0.5 -right-0.5"
+                          />
+                        )}
+                      </div>
+                    )}
+                    {!collapsed && (
+                      <span className={hideIcon ? "text-[11px] text-muted-foreground truncate pl-2" : "text-sm font-medium truncate"}>
+                        {item.title}
+                      </span>
+                    )}
                   </div>
                 </NavigationTooltip>
                 
@@ -568,7 +575,7 @@ export function AppSidebar() {
               <SidebarMenuSub className={isCategory ? "border-l-2 border-muted ml-2 pl-1.5" : ""}>
                 {item.subItems?.map(subItem => 
                   subItem.subItems && subItem.subItems.length > 0 
-                    ? renderMenuItem(subItem)
+                    ? renderMenuItem(subItem, hideIcon)
                     : renderSubMenuItem(subItem, active || hasActiveSubItem)
                 )}
               </SidebarMenuSub>
@@ -590,17 +597,23 @@ export function AppSidebar() {
             disabled={!collapsed}
           >
             <div className="flex items-center gap-3 flex-1">
-              <div className="relative">
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                {statusIndicator && (
-                  <StatusIndicator 
-                    status={statusIndicator} 
-                    pulse={statusIndicator === 'warning'}
-                    className="absolute -top-0.5 -right-0.5"
-                  />
-                )}
-              </div>
-              {!collapsed && <span className="text-sm font-medium truncate">{item.title}</span>}
+              {!hideIcon && (
+                <div className="relative">
+                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  {statusIndicator && (
+                    <StatusIndicator 
+                      status={statusIndicator} 
+                      pulse={statusIndicator === 'warning'}
+                      className="absolute -top-0.5 -right-0.5"
+                    />
+                  )}
+                </div>
+              )}
+              {!collapsed && (
+                <span className={hideIcon ? "text-[11px] text-muted-foreground truncate pl-2" : "text-sm font-medium truncate"}>
+                  {item.title}
+                </span>
+              )}
             </div>
           </NavigationTooltip>
           
@@ -782,7 +795,7 @@ export function AppSidebar() {
                   <CollapsibleContent className="transition-all duration-200">
                     <SidebarGroupContent>
                       <SidebarMenu>
-                        {section.items.map((item) => renderMenuItem(item))}
+                        {section.items.map((item) => renderMenuItem(item, section.id !== 'esg'))}
                       </SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
