@@ -795,7 +795,7 @@ export function AppSidebar() {
                   <CollapsibleContent className="transition-all duration-200">
                     <SidebarGroupContent>
                       <SidebarMenu>
-                        {section.items.map((item) => renderMenuItem(item, section.id !== 'esg'))}
+                        {section.items.map((item) => renderMenuItem(item, true))}
                       </SidebarMenu>
                     </SidebarGroupContent>
                   </CollapsibleContent>
