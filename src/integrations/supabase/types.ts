@@ -2416,6 +2416,173 @@ export type Database = {
           },
         ]
       }
+      audit_session_items: {
+        Row: {
+          audit_standards_link_id: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          item_snapshot: Json | null
+          session_id: string
+          standard_item_id: string
+        }
+        Insert: {
+          audit_standards_link_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          item_snapshot?: Json | null
+          session_id: string
+          standard_item_id: string
+        }
+        Update: {
+          audit_standards_link_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          item_snapshot?: Json | null
+          session_id?: string
+          standard_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_session_items_audit_standards_link_id_fkey"
+            columns: ["audit_standards_link_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standards_link"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_session_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_session_items_standard_item_id_fkey"
+            columns: ["standard_item_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standard_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_session_participants: {
+        Row: {
+          confirmed: boolean | null
+          confirmed_at: string | null
+          created_at: string | null
+          external_email: string | null
+          external_name: string | null
+          id: string
+          notes: string | null
+          role: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          confirmed?: boolean | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          external_email?: string | null
+          external_name?: string | null
+          id?: string
+          notes?: string | null
+          role: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          confirmed?: boolean | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          external_email?: string | null
+          external_name?: string | null
+          id?: string
+          notes?: string | null
+          role?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_sessions: {
+        Row: {
+          audit_id: string
+          auditee_id: string | null
+          auditor_id: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          end_time: string | null
+          id: string
+          location: string | null
+          name: string
+          notes: string | null
+          responded_items: number | null
+          session_date: string | null
+          start_time: string | null
+          status: string | null
+          total_items: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          audit_id: string
+          auditee_id?: string | null
+          auditor_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          responded_items?: number | null
+          session_date?: string | null
+          start_time?: string | null
+          status?: string | null
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          audit_id?: string
+          auditee_id?: string | null
+          auditor_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_time?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          responded_items?: number | null
+          session_date?: string | null
+          start_time?: string | null
+          status?: string | null
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_sessions_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_standard_items: {
         Row: {
           created_at: string | null
@@ -2553,6 +2720,48 @@ export type Database = {
             columns: ["response_type_id"]
             isOneToOne: false
             referencedRelation: "audit_response_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_standards_link: {
+        Row: {
+          audit_id: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          standard_id: string
+          standard_snapshot: Json | null
+        }
+        Insert: {
+          audit_id: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          standard_id: string
+          standard_snapshot?: Json | null
+        }
+        Update: {
+          audit_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          standard_id?: string
+          standard_snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_standards_link_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_standards_link_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standards"
             referencedColumns: ["id"]
           },
         ]
@@ -2800,43 +3009,88 @@ export type Database = {
         Row: {
           audit_type: string
           auditor: string | null
+          category_id: string | null
           company_id: string
           created_at: string
           end_date: string | null
+          execution_started_at: string | null
           id: string
+          planning_locked_at: string | null
+          planning_locked_by: string | null
+          planning_status: string | null
+          responded_items: number | null
           scope: string | null
           start_date: string | null
           status: string
+          target_entity: string | null
+          target_entity_type: string | null
+          template_id: string | null
           title: string
+          total_items: number | null
           updated_at: string
         }
         Insert: {
           audit_type: string
           auditor?: string | null
+          category_id?: string | null
           company_id: string
           created_at?: string
           end_date?: string | null
+          execution_started_at?: string | null
           id?: string
+          planning_locked_at?: string | null
+          planning_locked_by?: string | null
+          planning_status?: string | null
+          responded_items?: number | null
           scope?: string | null
           start_date?: string | null
           status?: string
+          target_entity?: string | null
+          target_entity_type?: string | null
+          template_id?: string | null
           title: string
+          total_items?: number | null
           updated_at?: string
         }
         Update: {
           audit_type?: string
           auditor?: string | null
+          category_id?: string | null
           company_id?: string
           created_at?: string
           end_date?: string | null
+          execution_started_at?: string | null
           id?: string
+          planning_locked_at?: string | null
+          planning_locked_by?: string | null
+          planning_status?: string | null
+          responded_items?: number | null
           scope?: string | null
           start_date?: string | null
           status?: string
+          target_entity?: string | null
+          target_entity_type?: string | null
+          template_id?: string | null
           title?: string
+          total_items?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "audit_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audits_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       automation_rules: {
         Row: {
@@ -22264,6 +22518,7 @@ export type Database = {
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       debug_auth_status: { Args: never; Returns: Json }
       exec_sql: { Args: { query: string }; Returns: Json }
+      finalize_audit_planning: { Args: { p_audit_id: string }; Returns: Json }
       get_conversion_factor:
         | {
             Args: { p_emission_source_id: string; p_unit: string }
