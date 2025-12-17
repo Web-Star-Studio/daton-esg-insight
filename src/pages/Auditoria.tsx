@@ -11,9 +11,10 @@ import { AuditAreasManagement } from "@/components/audit/AuditAreasManagement";
 import { ISORequirementsLibrary } from "@/components/audit/ISORequirementsLibrary";
 import { AuditorsManagement } from "@/components/audit/AuditorsManagement";
 import { ISOTemplatesLibrary } from "@/components/audit/ISOTemplatesLibrary";
+import { AuditConfigurationTab } from "@/components/audit/tabs/AuditConfigurationTab";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Eye } from "lucide-react";
+import { Eye, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -302,7 +303,7 @@ export default function Auditoria() {
       </div>
 
       <Tabs defaultValue="program" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="flex flex-wrap">
           <TabsTrigger value="program">Programa</TabsTrigger>
           <TabsTrigger value="areas">Áreas</TabsTrigger>
           <TabsTrigger value="requirements">Requisitos ISO</TabsTrigger>
@@ -311,6 +312,10 @@ export default function Auditoria() {
           <TabsTrigger value="sgq">SGQ</TabsTrigger>
           <TabsTrigger value="calendar">Calendário</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="config" className="gap-1">
+            <Settings className="h-4 w-4" />
+            Configurações
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="program" className="space-y-4">
@@ -707,6 +712,10 @@ export default function Auditoria() {
 
         <TabsContent value="reports" className="space-y-4">
           <AuditReportsTab />
+        </TabsContent>
+
+        <TabsContent value="config" className="space-y-4">
+          <AuditConfigurationTab />
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
