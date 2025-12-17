@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -98,187 +94,164 @@ export default function DocumentTypeAssociationPage() {
     .reduce((sum, d) => sum + d.weight, 0);
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/fornecedores">Fornecedores</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Associação Doc ↔ Tipo</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Link2 className="h-6 w-6" />
+            Associação de Documentos por Tipo
+          </h1>
+          <p className="text-muted-foreground">
+            Vincule quais documentos obrigatórios cada tipo de fornecedor deve apresentar
+          </p>
+        </div>
+      </div>
 
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Link2 className="h-6 w-6" />
-                Associação de Documentos por Tipo
-              </h1>
-              <p className="text-muted-foreground">
-                Vincule quais documentos obrigatórios cada tipo de fornecedor deve apresentar
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Selector Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Selecione um Tipo de Fornecedor</CardTitle>
+            <CardDescription>
+              Escolha o tipo para configurar os documentos obrigatórios
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select value={selectedTypeId} onValueChange={handleTypeChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione um tipo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {loadingTypes ? (
+                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                ) : activeTypes.length === 0 ? (
+                  <SelectItem value="empty" disabled>Nenhum tipo cadastrado</SelectItem>
+                ) : (
+                  activeTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                      {type.description && (
+                        <span className="text-muted-foreground ml-2">
+                          ({type.description})
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+
+            {selectedTypeId && (
+              <div className="mt-4 p-3 bg-muted rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Documentos selecionados:
+                  </span>
+                  <Badge variant="secondary">
+                    {selectedDocIds.length} de {activeDocuments.length}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Weight className="h-4 w-4" />
+                    Peso total:
+                  </span>
+                  <Badge variant="outline" className="font-mono">
+                    {totalWeight} pontos
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Save Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Ações</CardTitle>
+            <CardDescription>
+              Salve as alterações após configurar os documentos
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Button 
+              onClick={handleSave} 
+              disabled={!selectedTypeId || saveMutation.isPending || !hasChanges}
+              className="w-full"
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Salvar Associações
+            </Button>
+
+            {hasChanges && (
+              <p className="text-sm text-amber-600 text-center">
+                * Existem alterações não salvas
               </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Documents Checklist */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Documentos Obrigatórios
+          </CardTitle>
+          <CardDescription>
+            Marque os documentos que este tipo de fornecedor deve apresentar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!selectedTypeId ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Selecione um tipo de fornecedor para ver os documentos disponíveis
             </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Selector Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Selecione um Tipo de Fornecedor</CardTitle>
-                <CardDescription>
-                  Escolha o tipo para configurar os documentos obrigatórios
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Select value={selectedTypeId} onValueChange={handleTypeChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione um tipo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {loadingTypes ? (
-                      <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                    ) : activeTypes.length === 0 ? (
-                      <SelectItem value="empty" disabled>Nenhum tipo cadastrado</SelectItem>
-                    ) : (
-                      activeTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                          {type.description && (
-                            <span className="text-muted-foreground ml-2">
-                              ({type.description})
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-
-                {selectedTypeId && (
-                  <div className="mt-4 p-3 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">
-                        Documentos selecionados:
-                      </span>
-                      <Badge variant="secondary">
-                        {selectedDocIds.length} de {activeDocuments.length}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Weight className="h-4 w-4" />
-                        Peso total:
-                      </span>
-                      <Badge variant="outline" className="font-mono">
-                        {totalWeight} pontos
-                      </Badge>
+          ) : loadingDocs || loadingAssociations ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : activeDocuments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum documento obrigatório cadastrado.
+              <br />
+              <a href="/fornecedores/documentos" className="text-primary hover:underline">
+                Cadastrar documentos
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activeDocuments.map((doc) => (
+                <label
+                  key={doc.id}
+                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={selectedDocIds.includes(doc.id)}
+                      onCheckedChange={(checked) => handleDocToggle(doc.id, !!checked)}
+                    />
+                    <div>
+                      <span className="font-medium">{doc.document_name}</span>
+                      {doc.description && (
+                        <p className="text-sm text-muted-foreground">{doc.description}</p>
+                      )}
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Save Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Ações</CardTitle>
-                <CardDescription>
-                  Salve as alterações após configurar os documentos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <Button 
-                  onClick={handleSave} 
-                  disabled={!selectedTypeId || saveMutation.isPending || !hasChanges}
-                  className="w-full"
-                >
-                  {saveMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Salvar Associações
-                </Button>
-
-                {hasChanges && (
-                  <p className="text-sm text-amber-600 text-center">
-                    * Existem alterações não salvas
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Documents Checklist */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Documentos Obrigatórios
-              </CardTitle>
-              <CardDescription>
-                Marque os documentos que este tipo de fornecedor deve apresentar
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!selectedTypeId ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Selecione um tipo de fornecedor para ver os documentos disponíveis
-                </div>
-              ) : loadingDocs || loadingAssociations ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : activeDocuments.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum documento obrigatório cadastrado.
-                  <br />
-                  <a href="/fornecedores/documentos" className="text-primary hover:underline">
-                    Cadastrar documentos
-                  </a>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {activeDocuments.map((doc) => (
-                    <label
-                      key={doc.id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={selectedDocIds.includes(doc.id)}
-                          onCheckedChange={(checked) => handleDocToggle(doc.id, !!checked)}
-                        />
-                        <div>
-                          <span className="font-medium">{doc.document_name}</span>
-                          {doc.description && (
-                            <p className="text-sm text-muted-foreground">{doc.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="font-mono">
-                        Peso: {doc.weight}
-                      </Badge>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+                  <Badge variant="outline" className="font-mono">
+                    Peso: {doc.weight}
+                  </Badge>
+                </label>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
