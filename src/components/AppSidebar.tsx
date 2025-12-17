@@ -466,16 +466,19 @@ export function AppSidebar() {
       <SidebarMenuSubItem key={item.id}>
         <SidebarMenuSubButton
           onClick={() => navigate(item.path)}
-          className={`group cursor-pointer ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50"}`}
+          className={`group cursor-pointer ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/30"}`}
         >
           <NavigationTooltip
             title={item.title}
             description={item.description}
             disabled={false}
           >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <item.icon className="h-3 w-3 flex-shrink-0" />
-              {!collapsed && <span className="text-xs truncate flex-1 min-w-0">{item.title}</span>}
+            <div className="flex items-center flex-1 min-w-0 pl-2">
+              {!collapsed && (
+                <span className={`text-[11px] truncate flex-1 min-w-0 ${active ? "" : "text-muted-foreground"}`}>
+                  {item.title}
+                </span>
+              )}
             </div>
           </NavigationTooltip>
           
