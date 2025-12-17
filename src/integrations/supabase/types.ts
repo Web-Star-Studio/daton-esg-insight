@@ -2263,6 +2263,250 @@ export type Database = {
           },
         ]
       }
+      audit_response_options: {
+        Row: {
+          adherence_value: number | null
+          color_hex: string | null
+          created_at: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_not_counted: boolean | null
+          label: string
+          label_en: string | null
+          label_es: string | null
+          response_type_id: string
+          triggers_occurrence: boolean | null
+        }
+        Insert: {
+          adherence_value?: number | null
+          color_hex?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_not_counted?: boolean | null
+          label: string
+          label_en?: string | null
+          label_es?: string | null
+          response_type_id: string
+          triggers_occurrence?: boolean | null
+        }
+        Update: {
+          adherence_value?: number | null
+          color_hex?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_not_counted?: boolean | null
+          label?: string
+          label_en?: string | null
+          label_es?: string | null
+          response_type_id?: string
+          triggers_occurrence?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_response_options_response_type_id_fkey"
+            columns: ["response_type_id"]
+            isOneToOne: false
+            referencedRelation: "audit_response_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_response_types: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          name: string
+          name_en: string | null
+          name_es: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name: string
+          name_en?: string | null
+          name_es?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          name_en?: string | null
+          name_es?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_response_types_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_standard_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          field_type: string
+          guidance_text: string | null
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          item_number: string
+          parent_id: string | null
+          requires_justification: boolean | null
+          standard_id: string
+          title: string
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          field_type?: string
+          guidance_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          item_number: string
+          parent_id?: string | null
+          requires_justification?: boolean | null
+          standard_id: string
+          title: string
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          field_type?: string
+          guidance_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          item_number?: string
+          parent_id?: string | null
+          requires_justification?: boolean | null
+          standard_id?: string
+          title?: string
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_standard_items_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standard_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_standard_items_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_standards: {
+        Row: {
+          allow_partial_response: boolean | null
+          auto_numbering: boolean | null
+          calculation_method: string
+          code: string
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          name_en: string | null
+          name_es: string | null
+          response_type_id: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          allow_partial_response?: boolean | null
+          auto_numbering?: boolean | null
+          calculation_method?: string
+          code: string
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_en?: string | null
+          name_es?: string | null
+          response_type_id?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          allow_partial_response?: boolean | null
+          auto_numbering?: boolean | null
+          calculation_method?: string
+          code?: string
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_en?: string | null
+          name_es?: string | null
+          response_type_id?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_standards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_standards_response_type_id_fkey"
+            columns: ["response_type_id"]
+            isOneToOne: false
+            referencedRelation: "audit_response_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditor_profiles: {
         Row: {
           active: boolean
