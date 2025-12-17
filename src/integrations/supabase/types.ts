@@ -1747,6 +1747,56 @@ export type Database = {
           },
         ]
       }
+      audit_categories: {
+        Row: {
+          color_hex: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          color_hex?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          color_hex?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_checklist_responses: {
         Row: {
           audit_id: string
@@ -2503,6 +2553,182 @@ export type Database = {
             columns: ["response_type_id"]
             isOneToOne: false
             referencedRelation: "audit_response_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_template_planning_items: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          standard_item_id: string
+          template_planning_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          standard_item_id: string
+          template_planning_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          standard_item_id?: string
+          template_planning_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_template_planning_items_standard_item_id_fkey"
+            columns: ["standard_item_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standard_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_template_planning_items_template_planning_id_fkey"
+            columns: ["template_planning_id"]
+            isOneToOne: false
+            referencedRelation: "audit_template_plannings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_template_plannings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          name: string
+          suggested_duration_minutes: number | null
+          template_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name: string
+          suggested_duration_minutes?: number | null
+          template_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name?: string
+          suggested_duration_minutes?: number | null
+          template_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_template_plannings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_template_standards: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          standard_id: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          standard_id: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          standard_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_template_standards_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "audit_standards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_template_standards_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "audit_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_templates: {
+        Row: {
+          category_id: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          default_audit_type: string | null
+          description: string | null
+          estimated_duration_hours: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          default_audit_type?: string | null
+          description?: string | null
+          estimated_duration_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          default_audit_type?: string | null
+          description?: string | null
+          estimated_duration_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "audit_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
