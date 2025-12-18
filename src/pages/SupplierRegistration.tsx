@@ -47,6 +47,7 @@ import {
   getSupplierTypes,
   getSupplierCategories,
   checkCnpjCpfExists,
+  ManagedSupplier,
   ManagedSupplierWithTypeCount,
   SupplierType,
   SupplierCategory,
@@ -327,40 +328,6 @@ export default function SupplierRegistration() {
       } : {
         company_name: formData.company_name,
         cnpj: cleanDocument(formData.cnpj),
-        responsible_name: formData.responsible_name,
-      }),
-      nickname: formData.nickname || undefined,
-      full_address: fullAddress,
-      cep: formData.cep,
-      street: formData.street,
-      street_number: formData.street_number,
-      neighborhood: formData.neighborhood,
-      city: formData.city,
-      state: formData.state,
-      phone_1: formData.phone_1,
-      phone_2: formData.phone_2 || undefined,
-      email: formData.email || undefined,
-      type_ids: selectedTypes,
-    };
-
-    if (editingSupplier) {
-      updateMutation.mutate({ id: editingSupplier.id, data: submitData });
-    } else {
-      createMutation.mutate(submitData);
-    }
-  };
-
-    // Montar endereço completo para compatibilidade
-    const fullAddress = `${formData.street}, ${formData.street_number} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, CEP: ${formData.cep}`;
-
-    const submitData = {
-      person_type: personType,
-      ...(personType === 'PF' ? {
-        full_name: formData.full_name,
-        cpf: formData.cpf,
-      } : {
-        company_name: formData.company_name,
-        cnpj: formData.cnpj,
         responsible_name: formData.responsible_name,
       }),
       nickname: formData.nickname || undefined,
