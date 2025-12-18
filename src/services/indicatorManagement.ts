@@ -45,6 +45,8 @@ export interface IndicatorPeriodData {
   company_id: string;
   period_year: number;
   period_month: number;
+  year: number; // alias for period_year
+  month: number; // alias for period_month
   measured_value?: number;
   target_value?: number;
   deviation_value?: number;
@@ -53,6 +55,7 @@ export interface IndicatorPeriodData {
   needs_action_plan: boolean;
   action_plan_id?: string;
   notes?: string;
+  observation?: string; // alias for notes
   collected_by_user_id?: string;
   collected_at?: string;
   created_at: string;
@@ -67,6 +70,7 @@ export interface ExtendedQualityIndicator {
   description?: string;
   category: string;
   measurement_unit: string;
+  unit: string; // alias for measurement_unit
   measurement_type: 'manual' | 'automatic' | 'calculated';
   calculation_formula?: string;
   frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
@@ -82,6 +86,7 @@ export interface ExtendedQualityIndicator {
   location?: string;
   direction: 'higher_better' | 'lower_better' | 'equal_better';
   tolerance_value?: number;
+  target_value?: number;
   icon?: string;
   group_id?: string;
   analysis_user_id?: string;
@@ -206,16 +211,26 @@ class IndicatorManagementService {
     if (error) throw error;
 
     // Filter period data for current year and map
-    return (data || []).map(ind => ({
-      ...ind,
-      direction: ind.direction || 'higher_better',
-      auto_analysis: ind.auto_analysis || false,
-      status: ind.status || 'active',
-      indicator_group: ind.indicator_groups,
-      period_data: (ind.indicator_period_data || []).filter(
-        (pd: any) => pd.period_year === currentYear
-      )
-    })) as ExtendedQualityIndicator[];
+    return (data || []).map(ind => {
+      const target = ind.indicator_targets?.[0];
+      return {
+        ...ind,
+        direction: ind.direction || 'higher_better',
+        auto_analysis: ind.auto_analysis || false,
+        status: ind.status || 'active',
+        unit: ind.measurement_unit,
+        target_value: target?.target_value,
+        indicator_group: ind.indicator_groups,
+        period_data: (ind.indicator_period_data || [])
+          .filter((pd: any) => pd.period_year === currentYear)
+          .map((pd: any) => ({
+            ...pd,
+            year: pd.period_year,
+            month: pd.period_month,
+            observation: pd.notes
+          }))
+      };
+    }) as ExtendedQualityIndicator[];
   }
 
   async getIndicatorStats(year?: number): Promise<IndicatorStats> {
@@ -443,5 +458,83 @@ export const useIndicatorCollections = (indicatorId: string) => {
     queryKey: ['indicator-collections', indicatorId],
     queryFn: () => indicatorManagementService.getCollections(indicatorId),
     enabled: !!indicatorId
+  });
+};
+
+// Aliases for compatibility
+export const useCreatePeriodData = useSavePeriodData;
+export const useUpdatePeriodData = useSavePeriodData;
+
+// Create Indicator mutation
+export const useCreateIndicator = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (indicator: Partial<ExtendedQualityIndicator>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile?.company_id) throw new Error('Company not found');
+      
+      const { data, error } = await supabase
+        .from('quality_indicators')
+        .insert({
+          company_id: profile.company_id,
+          name: indicator.name!,
+          code: indicator.code,
+          description: indicator.description,
+          category: indicator.category || 'Geral',
+          measurement_unit: indicator.unit || indicator.measurement_unit || '%',
+          measurement_type: indicator.measurement_type || 'manual',
+          frequency: indicator.frequency || 'monthly',
+          direction: indicator.direction || 'higher_better',
+          tolerance_value: indicator.tolerance_value,
+          icon: indicator.icon,
+          group_id: indicator.group_id,
+          analysis_user_id: indicator.analysis_user_id,
+          auto_analysis: indicator.auto_analysis || false,
+          analysis_instructions: indicator.analysis_instructions,
+          suggested_actions: indicator.suggested_actions,
+          location: indicator.location,
+          is_active: true,
+          created_by_user_id: user.id,
+          status: 'active'
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Create target if provided
+      if (indicator.target_value) {
+        const { error: targetError } = await supabase
+          .from('indicator_targets')
+          .insert({
+            indicator_id: data.id,
+            target_year: new Date().getFullYear(),
+            target_value: indicator.target_value,
+            tolerance_upper: indicator.tolerance_value,
+            tolerance_lower: indicator.tolerance_value
+          } as any);
+        
+        if (targetError) console.warn('Error creating target:', targetError);
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['indicators-with-data'] });
+      queryClient.invalidateQueries({ queryKey: ['indicator-stats'] });
+    },
+    onError: () => {
+      toast({ title: "Erro", description: "Erro ao criar indicador", variant: "destructive" });
+    }
   });
 };
