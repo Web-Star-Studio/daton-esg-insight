@@ -12522,6 +12522,136 @@ export type Database = {
           },
         ]
       }
+      indicator_collections: {
+        Row: {
+          collection_name: string
+          collection_type: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          formula: string | null
+          frequency: string | null
+          id: string
+          indicator_id: string
+          is_active: boolean
+          measurement_unit: string | null
+          source_indicator_id: string | null
+          updated_at: string
+          variable_name: string
+        }
+        Insert: {
+          collection_name: string
+          collection_type?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          formula?: string | null
+          frequency?: string | null
+          id?: string
+          indicator_id: string
+          is_active?: boolean
+          measurement_unit?: string | null
+          source_indicator_id?: string | null
+          updated_at?: string
+          variable_name: string
+        }
+        Update: {
+          collection_name?: string
+          collection_type?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          formula?: string | null
+          frequency?: string | null
+          id?: string
+          indicator_id?: string
+          is_active?: boolean
+          measurement_unit?: string | null
+          source_indicator_id?: string | null
+          updated_at?: string
+          variable_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_collections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_collections_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_collections_source_indicator_id_fkey"
+            columns: ["source_indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicator_groups: {
+        Row: {
+          color: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          parent_group_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_group_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_group_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_groups_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_groups_parent_group_id_fkey"
+            columns: ["parent_group_id"]
+            isOneToOne: false
+            referencedRelation: "indicator_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       indicator_measurements: {
         Row: {
           collected_by_user_id: string | null
@@ -12652,6 +12782,91 @@ export type Database = {
           },
         ]
       }
+      indicator_period_data: {
+        Row: {
+          action_plan_id: string | null
+          collected_at: string | null
+          collected_by_user_id: string | null
+          collection_id: string | null
+          company_id: string
+          created_at: string
+          deviation_percentage: number | null
+          deviation_value: number | null
+          id: string
+          indicator_id: string
+          measured_value: number | null
+          needs_action_plan: boolean | null
+          notes: string | null
+          period_month: number
+          period_year: number
+          status: string | null
+          target_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          action_plan_id?: string | null
+          collected_at?: string | null
+          collected_by_user_id?: string | null
+          collection_id?: string | null
+          company_id: string
+          created_at?: string
+          deviation_percentage?: number | null
+          deviation_value?: number | null
+          id?: string
+          indicator_id: string
+          measured_value?: number | null
+          needs_action_plan?: boolean | null
+          notes?: string | null
+          period_month: number
+          period_year: number
+          status?: string | null
+          target_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          action_plan_id?: string | null
+          collected_at?: string | null
+          collected_by_user_id?: string | null
+          collection_id?: string | null
+          company_id?: string
+          created_at?: string
+          deviation_percentage?: number | null
+          deviation_value?: number | null
+          id?: string
+          indicator_id?: string
+          measured_value?: number | null
+          needs_action_plan?: boolean | null
+          notes?: string | null
+          period_month?: number
+          period_year?: number
+          status?: string | null
+          target_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_period_data_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "indicator_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_period_data_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "indicator_period_data_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "quality_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       indicator_targets: {
         Row: {
           created_at: string
@@ -12661,7 +12876,10 @@ export type Database = {
           indicator_id: string
           is_active: boolean
           lower_limit: number | null
+          target_by_period: Json | null
           target_value: number
+          tolerance_lower: number | null
+          tolerance_upper: number | null
           upper_limit: number | null
           valid_from: string
           valid_until: string | null
@@ -12674,7 +12892,10 @@ export type Database = {
           indicator_id: string
           is_active?: boolean
           lower_limit?: number | null
+          target_by_period?: Json | null
           target_value: number
+          tolerance_lower?: number | null
+          tolerance_upper?: number | null
           upper_limit?: number | null
           valid_from: string
           valid_until?: string | null
@@ -12687,7 +12908,10 @@ export type Database = {
           indicator_id?: string
           is_active?: boolean
           lower_limit?: number | null
+          target_by_period?: Json | null
           target_value?: number
+          tolerance_lower?: number | null
+          tolerance_upper?: number | null
           upper_limit?: number | null
           valid_from?: string
           valid_until?: string | null
@@ -17633,60 +17857,104 @@ export type Database = {
       }
       quality_indicators: {
         Row: {
+          analysis_instructions: string | null
+          analysis_user_id: string | null
+          auto_analysis: boolean | null
           calculation_formula: string | null
           category: string
+          code: string | null
           collection_method: string | null
           company_id: string
           created_at: string
           created_by_user_id: string
           data_source: string | null
           description: string | null
+          direction: string | null
           frequency: string
+          group_id: string | null
+          icon: string | null
           id: string
           is_active: boolean
+          location: string | null
           measurement_type: string
           measurement_unit: string
           name: string
           responsible_user_id: string | null
+          status: string | null
+          strategic_objective: string | null
+          suggested_actions: string | null
+          tolerance_value: number | null
           updated_at: string
         }
         Insert: {
+          analysis_instructions?: string | null
+          analysis_user_id?: string | null
+          auto_analysis?: boolean | null
           calculation_formula?: string | null
           category: string
+          code?: string | null
           collection_method?: string | null
           company_id: string
           created_at?: string
           created_by_user_id: string
           data_source?: string | null
           description?: string | null
+          direction?: string | null
           frequency?: string
+          group_id?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
+          location?: string | null
           measurement_type?: string
           measurement_unit: string
           name: string
           responsible_user_id?: string | null
+          status?: string | null
+          strategic_objective?: string | null
+          suggested_actions?: string | null
+          tolerance_value?: number | null
           updated_at?: string
         }
         Update: {
+          analysis_instructions?: string | null
+          analysis_user_id?: string | null
+          auto_analysis?: boolean | null
           calculation_formula?: string | null
           category?: string
+          code?: string | null
           collection_method?: string | null
           company_id?: string
           created_at?: string
           created_by_user_id?: string
           data_source?: string | null
           description?: string | null
+          direction?: string | null
           frequency?: string
+          group_id?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean
+          location?: string | null
           measurement_type?: string
           measurement_unit?: string
           name?: string
           responsible_user_id?: string | null
+          status?: string | null
+          strategic_objective?: string | null
+          suggested_actions?: string | null
+          tolerance_value?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quality_indicators_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "indicator_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
