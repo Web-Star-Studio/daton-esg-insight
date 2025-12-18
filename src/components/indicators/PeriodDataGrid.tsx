@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Save, Loader2, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
-import { ExtendedQualityIndicator, useCreatePeriodData, useUpdatePeriodData } from "@/services/indicatorManagement";
+import { ExtendedQualityIndicator, useSavePeriodData } from "@/services/indicatorManagement";
 import { useToast } from "@/hooks/use-toast";
 
 interface PeriodDataGridProps {
@@ -31,8 +31,7 @@ type PeriodValues = Record<number, { value: string; observation: string }>;
 
 export function PeriodDataGrid({ indicator, year }: PeriodDataGridProps) {
   const { toast } = useToast();
-  const createPeriodData = useCreatePeriodData();
-  const updatePeriodData = useUpdatePeriodData();
+  const savePeriodData = useSavePeriodData();
   
   // Initialize values from existing period_data
   const [values, setValues] = useState<PeriodValues>(() => {
@@ -100,27 +99,17 @@ export function PeriodDataGrid({ indicator, year }: PeriodDataGridProps) {
 
     setSaving(month);
     try {
-      const existingData = indicator.period_data?.find(pd => pd.month === month && pd.year === year);
       const numValue = parseFloat(data.value);
       const status = getStatus(numValue);
 
-      if (existingData) {
-        await updatePeriodData.mutateAsync({
-          id: existingData.id,
-          measured_value: numValue,
-          observation: data.observation,
-          status,
-        });
-      } else {
-        await createPeriodData.mutateAsync({
-          indicator_id: indicator.id,
-          year,
-          month,
-          measured_value: numValue,
-          observation: data.observation,
-          status,
-        });
-      }
+      await savePeriodData.mutateAsync({
+        indicator_id: indicator.id,
+        period_year: year,
+        period_month: month,
+        measured_value: numValue,
+        notes: data.observation,
+        status,
+      });
 
       toast({
         title: "Valor salvo",
