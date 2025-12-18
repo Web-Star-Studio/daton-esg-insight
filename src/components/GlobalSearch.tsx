@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -43,6 +43,7 @@ import {
   BookOpen,
   Boxes
 } from 'lucide-react';
+import { isRouteDisabled } from '@/config/enabledModules';
 import {
   CommandDialog,
   CommandEmpty,
@@ -144,6 +145,11 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Filter out pages from disabled modules
+  const enabledSystemPages = useMemo(() => {
+    return SYSTEM_PAGES.filter(page => !isRouteDisabled(page.path));
+  }, []);
+
   // Search function with parallel queries
   const performSearch = useCallback(async (query: string) => {
     if (!query || query.length < 2) {
@@ -156,8 +162,8 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     const lowerQuery = query.toLowerCase();
 
     try {
-      // Search system pages
-      const matchingPages = SYSTEM_PAGES.filter(page => 
+      // Search system pages (filtered by enabled modules)
+      const matchingPages = enabledSystemPages.filter(page => 
         page.title.toLowerCase().includes(lowerQuery) ||
         page.keywords.some(kw => kw.includes(lowerQuery))
       );

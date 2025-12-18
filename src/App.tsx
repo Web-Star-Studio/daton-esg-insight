@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ENABLED_MODULES } from "@/config/enabledModules";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -234,6 +235,54 @@ const AppContent = () => {
             {/* Rota de onboarding - protegida */}
             <Route path="/onboarding" element={<OnboardingRoute />} />
             
+            {/* ========================================== */}
+            {/* MÓDULOS DESABILITADOS - Redirecionamentos */}
+            {/* ========================================== */}
+            
+            {/* Financeiro - desabilitado */}
+            {!ENABLED_MODULES.financial && (
+              <Route path="/financeiro/*" element={<Navigate to="/dashboard" replace />} />
+            )}
+            
+            {/* Dados e Relatórios - desabilitado */}
+            {!ENABLED_MODULES.dataReports && (
+              <>
+                <Route path="/coleta-dados" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/relatorios-integrados" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/sdg-dashboard" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/indicadores-recomendados" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/ativos" element={<Navigate to="/dashboard" replace />} />
+              </>
+            )}
+            
+            {/* ESG Ambiental - desabilitado */}
+            {!ENABLED_MODULES.esgEnvironmental && (
+              <>
+                <Route path="/inventario-gee" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard-ghg" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/projetos-carbono" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/monitoramento-esg" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/monitoramento-agua" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/monitoramento-energia" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/monitoramento-emissoes" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/monitoramento-residuos" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/residuos" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/metas-sustentabilidade" element={<Navigate to="/dashboard" replace />} />
+              </>
+            )}
+            
+            {/* ESG Governança - desabilitado */}
+            {!ENABLED_MODULES.esgGovernance && (
+              <>
+                <Route path="/governanca-esg" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/gestao-riscos" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/compliance" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/auditoria" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/gestao-stakeholders" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/analise-materialidade" element={<Navigate to="/dashboard" replace />} />
+              </>
+            )}
+
             {/* Páginas públicas com lazy loading */}
             <Route path="/contato" element={
               <LazyPageWrapper>

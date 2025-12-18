@@ -1,10 +1,11 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Star, StarOff, ChevronRight, Search, X } from "lucide-react"
 import * as icons from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { BadgeNotification, StatusIndicator } from "@/components/ui/badge-notification"
 import { useNotificationCounts } from "@/hooks/useNotificationCounts"
+import { DISABLED_SECTION_IDS, DISABLED_ESG_CATEGORY_IDS } from "@/config/enabledModules"
 import {
   Sidebar,
   SidebarContent,
@@ -666,15 +667,32 @@ export function AppSidebar() {
     })
   }
 
+  // Filter sections based on enabled modules configuration
+  const modulesFilteredSections = useMemo(() => {
+    return menuSections
+      // Filter out disabled top-level sections (financial, data-reports)
+      .filter(section => !DISABLED_SECTION_IDS.includes(section.id))
+      // Filter out disabled ESG categories within ESG section
+      .map(section => {
+        if (section.id === 'esg') {
+          return {
+            ...section,
+            items: section.items.filter(item => !DISABLED_ESG_CATEGORY_IDS.includes(item.id))
+          }
+        }
+        return section
+      })
+  }, [])
+
   const filteredSections = searchQuery.trim() 
-    ? menuSections
+    ? modulesFilteredSections
         .filter(section => isPlatformAdmin || section.id !== 'platform-admin')
         .map(section => ({
           ...section,
           items: filterMenuItems(section.items)
         }))
         .filter(section => section.items.length > 0)
-    : menuSections.filter(section => isPlatformAdmin || section.id !== 'platform-admin')
+    : modulesFilteredSections.filter(section => isPlatformAdmin || section.id !== 'platform-admin')
 
   return (
     <Sidebar 
