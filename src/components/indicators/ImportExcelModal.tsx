@@ -3,10 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useIndicatorGroups } from "@/services/indicatorManagement";
 import * as XLSX from "xlsx";
 
 interface ImportExcelModalProps {
@@ -50,8 +55,11 @@ export function ImportExcelModal({ open, onOpenChange }: ImportExcelModalProps) 
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
   const [importProgress, setImportProgress] = useState(0);
-  const [importResults, setImportResults] = useState<{ success: number; errors: number }>({ success: 0, errors: 0 });
+  const [importResults, setImportResults] = useState<{ success: number; errors: number; details: string[] }>({ success: 0, errors: 0, details: [] });
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: groups } = useIndicatorGroups();
 
   const findColumn = (headers: string[], options: string[]) => {
     const normalizedHeaders = headers.map(h => h?.toLowerCase().trim());
@@ -150,27 +158,105 @@ export function ImportExcelModal({ open, onOpenChange }: ImportExcelModalProps) 
     setStep("importing");
     let success = 0;
     let errors = 0;
+    const details: string[] = [];
+    const currentYear = new Date().getFullYear();
+
+    // Get user and company
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: "Erro", description: "Usuário não autenticado", variant: "destructive" });
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.company_id) {
+      toast({ title: "Erro", description: "Empresa não encontrada", variant: "destructive" });
+      return;
+    }
 
     for (let i = 0; i < parsedData.length; i++) {
       const row = parsedData[i];
       if (!row.valid) {
         errors++;
+        details.push(`Linha ${i + 2}: Dados inválidos - ${row.errors.join(', ')}`);
         continue;
       }
 
       try {
-        // Here you would call your API to create the indicator
-        // await createIndicator(row);
-        await new Promise(resolve => setTimeout(resolve, 100)); // Simulate API call
+        // Create indicator
+        const { data: indicator, error: indicatorError } = await supabase
+          .from('quality_indicators')
+          .insert({
+            company_id: profile.company_id,
+            name: row.name!,
+            code: row.code,
+            measurement_unit: row.unit || '%',
+            category: 'Importado',
+            measurement_type: 'manual',
+            frequency: 'monthly',
+            direction: 'higher_better',
+            is_active: true,
+            created_by_user_id: user.id,
+            status: 'active',
+            group_id: selectedGroupId || null
+          })
+          .select()
+          .single();
+
+        if (indicatorError) throw indicatorError;
+
+        // Create target if provided
+        if (row.target) {
+          await supabase
+            .from('indicator_targets')
+            .insert({
+              indicator_id: indicator.id,
+              target_year: currentYear,
+              target_value: row.target
+            } as any);
+        }
+
+        // Create period data for each month value
+        const monthValues = Object.entries(row.values);
+        if (monthValues.length > 0) {
+          const periodDataInserts = monthValues.map(([month, value]) => ({
+            indicator_id: indicator.id,
+            company_id: profile.company_id,
+            period_year: currentYear,
+            period_month: parseInt(month),
+            measured_value: value,
+            status: row.target 
+              ? (value >= row.target ? 'on_target' : value >= row.target * 0.9 ? 'warning' : 'critical')
+              : 'pending',
+            collected_by_user_id: user.id,
+            collected_at: new Date().toISOString()
+          }));
+
+          await supabase
+            .from('indicator_period_data')
+            .insert(periodDataInserts);
+        }
+
         success++;
-      } catch {
+        details.push(`${row.name}: Importado com sucesso`);
+      } catch (err: any) {
         errors++;
+        details.push(`${row.name}: Erro - ${err.message}`);
       }
 
       setImportProgress(Math.round(((i + 1) / parsedData.length) * 100));
     }
 
-    setImportResults({ success, errors });
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['indicators-with-data'] });
+    queryClient.invalidateQueries({ queryKey: ['indicator-stats'] });
+
+    setImportResults({ success, errors, details });
     setStep("done");
   };
 
@@ -179,6 +265,8 @@ export function ImportExcelModal({ open, onOpenChange }: ImportExcelModalProps) 
     setFile(null);
     setParsedData([]);
     setImportProgress(0);
+    setSelectedGroupId("");
+    setImportResults({ success: 0, errors: 0, details: [] });
     onOpenChange(false);
   };
 
@@ -219,7 +307,25 @@ export function ImportExcelModal({ open, onOpenChange }: ImportExcelModalProps) 
               </div>
             </div>
 
-            <ScrollArea className="h-[400px] border rounded-lg">
+            {/* Group Selection */}
+            <div className="space-y-2">
+              <Label>Grupo de Destino (opcional)</Label>
+              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sem grupo</SelectItem>
+                  {groups?.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <ScrollArea className="h-[350px] border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -266,21 +372,35 @@ export function ImportExcelModal({ open, onOpenChange }: ImportExcelModalProps) 
         )}
 
         {step === "done" && (
-          <div className="py-8 space-y-4 text-center">
-            <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
-            <p className="text-xl font-medium">Importação Concluída</p>
+          <div className="py-6 space-y-4">
+            <div className="text-center">
+              <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
+              <p className="text-xl font-medium mt-4">Importação Concluída</p>
+            </div>
             <div className="flex justify-center gap-8">
-              <div>
+              <div className="text-center">
                 <p className="text-3xl font-bold text-green-600">{importResults.success}</p>
                 <p className="text-sm text-muted-foreground">Importados</p>
               </div>
               {importResults.errors > 0 && (
-                <div>
+                <div className="text-center">
                   <p className="text-3xl font-bold text-destructive">{importResults.errors}</p>
                   <p className="text-sm text-muted-foreground">Erros</p>
                 </div>
               )}
             </div>
+            
+            {importResults.details.length > 0 && (
+              <ScrollArea className="h-[200px] border rounded-lg p-3">
+                <div className="space-y-1 text-sm">
+                  {importResults.details.map((detail, index) => (
+                    <p key={index} className={detail.includes('Erro') ? 'text-destructive' : 'text-muted-foreground'}>
+                      {detail}
+                    </p>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
           </div>
         )}
 
