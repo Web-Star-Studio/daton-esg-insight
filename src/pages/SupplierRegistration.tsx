@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,10 +33,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Plus, Building2, User, ArrowLeft, Pencil, Trash2, 
-  Eye, Copy, Search, Filter, Link2 
+  Eye, Copy, Search, Filter, Link2, Loader2 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -45,12 +45,41 @@ import {
   updateManagedSupplier,
   deleteManagedSupplier,
   getSupplierTypes,
+  getSupplierCategories,
+  checkCnpjCpfExists,
   ManagedSupplier,
+  SupplierType,
+  SupplierCategory,
 } from "@/services/supplierManagementService";
+
+// Interface para resposta do ViaCEP
+interface ViaCepResponse {
+  cep: string;
+  logradouro: string;
+  complemento: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+  erro?: boolean;
+}
+
+// Função para buscar CEP via ViaCEP
+async function fetchAddressByCep(cep: string): Promise<ViaCepResponse | null> {
+  const cleanCep = cep.replace(/\D/g, '');
+  if (cleanCep.length !== 8) return null;
+  
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+    const data: ViaCepResponse = await response.json();
+    if (data.erro) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
 
 export default function SupplierRegistration() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewingSupplier, setViewingSupplier] = useState<ManagedSupplier | null>(null);
@@ -59,6 +88,8 @@ export default function SupplierRegistration() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   const [formData, setFormData] = useState({
     // PF
@@ -70,7 +101,13 @@ export default function SupplierRegistration() {
     responsible_name: "",
     // Common
     nickname: "",
-    full_address: "",
+    // Endereço separado
+    cep: "",
+    street: "",
+    street_number: "",
+    neighborhood: "",
+    city: "",
+    state: "",
     phone_1: "",
     phone_2: "",
     email: "",
@@ -86,18 +123,34 @@ export default function SupplierRegistration() {
     queryFn: getSupplierTypes,
   });
 
+  const { data: supplierCategories } = useQuery({
+    queryKey: ['supplier-categories'],
+    queryFn: getSupplierCategories,
+  });
+
+  // Agrupar tipos por categoria
+  const getTypesGroupedByCategory = useCallback(() => {
+    if (!supplierTypes || !supplierCategories) return [];
+    
+    return supplierCategories.map(category => ({
+      category,
+      types: supplierTypes.filter(type => type.category_id === category.id)
+    })).filter(group => group.types.length > 0);
+  }, [supplierTypes, supplierCategories]);
+
   const createMutation = useMutation({
     mutationFn: createManagedSupplier,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['managed-suppliers'] });
-      toast({ 
-        title: "Fornecedor cadastrado com sucesso!",
+      toast.success("Fornecedor cadastrado com sucesso!", {
         description: `Senha temporária: ${data.temporary_password}`
       });
       closeModal();
     },
-    onError: () => {
-      toast({ title: "Erro ao cadastrar fornecedor", variant: "destructive" });
+    onError: (err: Error) => {
+      toast.error("Erro ao cadastrar fornecedor", {
+        description: err.message
+      });
     },
   });
 
@@ -106,11 +159,13 @@ export default function SupplierRegistration() {
       updateManagedSupplier(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['managed-suppliers'] });
-      toast({ title: "Fornecedor atualizado com sucesso!" });
+      toast.success("Fornecedor atualizado com sucesso!");
       closeModal();
     },
-    onError: () => {
-      toast({ title: "Erro ao atualizar fornecedor", variant: "destructive" });
+    onError: (err: Error) => {
+      toast.error("Erro ao atualizar fornecedor", {
+        description: err.message
+      });
     },
   });
 
@@ -118,12 +173,37 @@ export default function SupplierRegistration() {
     mutationFn: deleteManagedSupplier,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['managed-suppliers'] });
-      toast({ title: "Fornecedor excluído com sucesso!" });
+      toast.success("Fornecedor excluído com sucesso!");
     },
     onError: () => {
-      toast({ title: "Erro ao excluir fornecedor", variant: "destructive" });
+      toast.error("Erro ao excluir fornecedor");
     },
   });
+
+  // Handler para buscar CEP
+  const handleCepChange = async (cep: string) => {
+    setFormData(prev => ({ ...prev, cep }));
+    
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      setIsLoadingCep(true);
+      const address = await fetchAddressByCep(cleanCep);
+      setIsLoadingCep(false);
+      
+      if (address) {
+        setFormData(prev => ({
+          ...prev,
+          street: address.logradouro,
+          neighborhood: address.bairro,
+          city: address.localidade,
+          state: address.uf,
+        }));
+        toast.success("Endereço encontrado!");
+      } else {
+        toast.error("CEP não encontrado");
+      }
+    }
+  };
 
   const openModal = (supplier?: ManagedSupplier) => {
     if (supplier) {
@@ -136,7 +216,12 @@ export default function SupplierRegistration() {
         cnpj: supplier.cnpj || "",
         responsible_name: supplier.responsible_name || "",
         nickname: supplier.nickname || "",
-        full_address: supplier.full_address,
+        cep: supplier.cep || "",
+        street: supplier.street || "",
+        street_number: supplier.street_number || "",
+        neighborhood: supplier.neighborhood || "",
+        city: supplier.city || "",
+        state: supplier.state || "",
         phone_1: supplier.phone_1,
         phone_2: supplier.phone_2 || "",
         email: supplier.email || "",
@@ -146,7 +231,8 @@ export default function SupplierRegistration() {
       setPersonType('PJ');
       setFormData({
         full_name: "", cpf: "", company_name: "", cnpj: "",
-        responsible_name: "", nickname: "", full_address: "",
+        responsible_name: "", nickname: "", 
+        cep: "", street: "", street_number: "", neighborhood: "", city: "", state: "",
         phone_1: "", phone_2: "", email: "",
       });
       setSelectedTypes([]);
@@ -161,20 +247,62 @@ export default function SupplierRegistration() {
     setSelectedTypes([]);
   };
 
-  const handleSubmit = () => {
-    // Validations
+  const handleSubmit = async () => {
+    // Validações básicas
     if (personType === 'PF') {
-      if (!formData.full_name || !formData.cpf || !formData.full_address || !formData.phone_1) {
-        toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      if (!formData.full_name || !formData.cpf) {
+        toast.error("Preencha todos os campos obrigatórios", {
+          description: "Nome completo e CPF são obrigatórios"
+        });
         return;
       }
     } else {
-      if (!formData.company_name || !formData.cnpj || !formData.responsible_name || 
-          !formData.full_address || !formData.phone_1 || !formData.email) {
-        toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+      if (!formData.company_name || !formData.cnpj || !formData.responsible_name || !formData.email) {
+        toast.error("Preencha todos os campos obrigatórios", {
+          description: "Razão social, CNPJ, responsável e e-mail são obrigatórios"
+        });
         return;
       }
     }
+
+    // Validar endereço obrigatório
+    if (!formData.cep || !formData.street || !formData.street_number || 
+        !formData.neighborhood || !formData.city || !formData.state) {
+      toast.error("Preencha todos os campos de endereço", {
+        description: "CEP, rua, número, bairro, cidade e estado são obrigatórios"
+      });
+      return;
+    }
+
+    if (!formData.phone_1) {
+      toast.error("Telefone é obrigatório");
+      return;
+    }
+
+    // Validar se pelo menos um tipo está selecionado
+    if (selectedTypes.length === 0 && !editingSupplier) {
+      toast.error("Selecione pelo menos um tipo de fornecedor");
+      return;
+    }
+
+    // Verificar duplicidade de CNPJ/CPF
+    setIsValidating(true);
+    const checkResult = await checkCnpjCpfExists(
+      personType === 'PJ' ? formData.cnpj : undefined,
+      personType === 'PF' ? formData.cpf : undefined,
+      editingSupplier?.id
+    );
+    setIsValidating(false);
+
+    if (checkResult.exists) {
+      toast.error(`Este ${checkResult.field?.toUpperCase()} já está cadastrado`, {
+        description: "Não é possível cadastrar fornecedores com CNPJ/CPF duplicado"
+      });
+      return;
+    }
+
+    // Montar endereço completo para compatibilidade
+    const fullAddress = `${formData.street}, ${formData.street_number} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, CEP: ${formData.cep}`;
 
     const submitData = {
       person_type: personType,
@@ -187,7 +315,13 @@ export default function SupplierRegistration() {
         responsible_name: formData.responsible_name,
       }),
       nickname: formData.nickname || undefined,
-      full_address: formData.full_address,
+      full_address: fullAddress,
+      cep: formData.cep,
+      street: formData.street,
+      street_number: formData.street_number,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state,
       phone_1: formData.phone_1,
       phone_2: formData.phone_2 || undefined,
       email: formData.email || undefined,
@@ -225,8 +359,10 @@ export default function SupplierRegistration() {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: `${label} copiado!` });
+    toast.success(`${label} copiado!`);
   };
+
+  const typesGrouped = getTypesGroupedByCategory();
 
   return (
     <div className="space-y-6">
@@ -471,15 +607,71 @@ export default function SupplierRegistration() {
               </TabsContent>
             </Tabs>
 
-            {/* Common Fields */}
+            {/* Campos de Endereço - Separados */}
             <div className="space-y-4 pt-4 border-t">
-              <div className="space-y-2">
-                <Label>Endereço Completo *</Label>
-                <Input
-                  value={formData.full_address}
-                  onChange={(e) => setFormData({ ...formData, full_address: e.target.value })}
-                />
+              <h3 className="font-medium text-sm">Endereço *</h3>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>CEP *</Label>
+                  <div className="relative">
+                    <Input
+                      value={formData.cep}
+                      onChange={(e) => handleCepChange(e.target.value)}
+                      placeholder="00000-000"
+                      maxLength={9}
+                    />
+                    {isLoadingCep && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label>Rua/Logradouro *</Label>
+                  <Input
+                    value={formData.street}
+                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                    placeholder="Preenchido automaticamente"
+                  />
+                </div>
               </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Número *</Label>
+                  <Input
+                    value={formData.street_number}
+                    onChange={(e) => setFormData({ ...formData, street_number: e.target.value })}
+                    placeholder="123"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Bairro *</Label>
+                  <Input
+                    value={formData.neighborhood}
+                    onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                    placeholder="Preenchido automaticamente"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade *</Label>
+                  <Input
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Preenchido automaticamente"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado *</Label>
+                  <Input
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    placeholder="UF"
+                    maxLength={2}
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Telefone 1 *</Label>
@@ -496,6 +688,7 @@ export default function SupplierRegistration() {
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Apelido (opcional)</Label>
                 <Input
@@ -505,27 +698,41 @@ export default function SupplierRegistration() {
                 />
               </div>
 
-              {/* Types Selection */}
-              {supplierTypes && supplierTypes.length > 0 && (
+              {/* Types Selection - Agrupados por Categoria */}
+              {typesGrouped.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Tipos de Fornecedor</Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-lg p-3">
-                    {supplierTypes.map((type) => (
-                      <div key={type.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={type.id}
-                          checked={selectedTypes.includes(type.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedTypes([...selectedTypes, type.id]);
-                            } else {
-                              setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
-                            }
-                          }}
-                        />
-                        <label htmlFor={type.id} className="text-sm cursor-pointer">
-                          {type.name}
-                        </label>
+                  <Label>Tipos de Fornecedor *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione pelo menos um tipo. A categoria é inferida automaticamente do tipo selecionado.
+                  </p>
+                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4">
+                    {typesGrouped.map(({ category, types }) => (
+                      <div key={category.id}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            {category.name}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pl-2">
+                          {types.map((type) => (
+                            <div key={type.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={type.id}
+                                checked={selectedTypes.includes(type.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedTypes([...selectedTypes, type.id]);
+                                  } else {
+                                    setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
+                                  }
+                                }}
+                              />
+                              <label htmlFor={type.id} className="text-sm cursor-pointer">
+                                {type.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -539,8 +746,11 @@ export default function SupplierRegistration() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={createMutation.isPending || updateMutation.isPending || isValidating}
               >
+                {(createMutation.isPending || updateMutation.isPending || isValidating) && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
                 {editingSupplier ? "Salvar" : "Cadastrar"}
               </Button>
             </DialogFooter>
@@ -594,7 +804,18 @@ export default function SupplierRegistration() {
                   )}
                   <div>
                     <span className="text-muted-foreground">Endereço:</span>
-                    <p className="font-medium">{viewingSupplier.full_address}</p>
+                    <p className="font-medium">
+                      {viewingSupplier.street && viewingSupplier.street_number ? (
+                        <>
+                          {viewingSupplier.street}, {viewingSupplier.street_number}
+                          {viewingSupplier.neighborhood && ` - ${viewingSupplier.neighborhood}`}
+                          <br />
+                          {viewingSupplier.city} - {viewingSupplier.state}, CEP: {viewingSupplier.cep}
+                        </>
+                      ) : (
+                        viewingSupplier.full_address
+                      )}
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Contato:</span>
