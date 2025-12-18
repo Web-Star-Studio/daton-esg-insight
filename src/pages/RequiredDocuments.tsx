@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, FileText, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, ArrowLeft, Eye, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -39,7 +39,10 @@ import {
   deleteRequiredDocument,
   weightLabels,
   RequiredDocument,
+  getSupplierTypes,
+  SupplierType,
 } from "@/services/supplierManagementService";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function RequiredDocuments() {
   const navigate = useNavigate();
@@ -52,10 +55,20 @@ export default function RequiredDocuments() {
     weight: 3,
     description: "",
   });
+  
+  // Modal para ver tipos associados
+  const [viewTypesDoc, setViewTypesDoc] = useState<RequiredDocument | null>(null);
+  const [associatedTypes, setAssociatedTypes] = useState<SupplierType[]>([]);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
   const { data: documents, isLoading, error, refetch } = useQuery({
     queryKey: ['required-documents'],
     queryFn: getRequiredDocuments,
+  });
+
+  const { data: allTypes } = useQuery({
+    queryKey: ['supplier-types'],
+    queryFn: getSupplierTypes,
   });
 
   const createMutation = useMutation({
@@ -139,6 +152,37 @@ export default function RequiredDocuments() {
     }
   };
 
+  // Função para buscar tipos associados a um documento
+  const handleViewTypes = async (doc: RequiredDocument) => {
+    setViewTypesDoc(doc);
+    setIsLoadingTypes(true);
+    setAssociatedTypes([]);
+    
+    try {
+      // Buscar associações na tabela supplier_type_documents
+      const { data: links, error } = await supabase
+        .from('supplier_type_documents')
+        .select('supplier_type_id')
+        .eq('required_document_id', doc.id);
+      
+      if (error) {
+        console.error('Erro ao buscar tipos:', error);
+        setAssociatedTypes([]);
+      } else if (links && links.length > 0 && allTypes) {
+        const typeIds = links.map(l => l.supplier_type_id);
+        const matchedTypes = allTypes.filter(t => typeIds.includes(t.id));
+        setAssociatedTypes(matchedTypes);
+      } else {
+        setAssociatedTypes([]);
+      }
+    } catch (err) {
+      console.error('Erro:', err);
+      setAssociatedTypes([]);
+    } finally {
+      setIsLoadingTypes(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
         {/* Header */}
@@ -198,7 +242,7 @@ export default function RequiredDocuments() {
                     <TableHead>Nome do Documento</TableHead>
                     <TableHead>Peso</TableHead>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Tipos Associados</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -215,9 +259,14 @@ export default function RequiredDocuments() {
                         {doc.description || "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={doc.is_active ? "default" : "secondary"}>
-                          {doc.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewTypes(doc)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver Tipos
+                        </Button>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -249,7 +298,7 @@ export default function RequiredDocuments() {
           </CardContent>
         </Card>
 
-        {/* Modal */}
+        {/* Modal Create/Edit */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent>
             <DialogHeader>
@@ -311,6 +360,52 @@ export default function RequiredDocuments() {
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {editingDoc ? "Salvar" : "Criar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Ver Tipos Associados */}
+        <Dialog open={!!viewTypesDoc} onOpenChange={() => setViewTypesDoc(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Tipos Associados ao Documento
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              {viewTypesDoc && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Documento: <span className="font-medium text-foreground">{viewTypesDoc.document_name}</span>
+                </p>
+              )}
+              
+              {isLoadingTypes ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : associatedTypes.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium mb-2">
+                    {associatedTypes.length} tipo(s) associado(s):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {associatedTypes.map((type) => (
+                      <Badge key={type.id} variant="outline" className="text-sm">
+                        {type.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Este documento não está associado a nenhum tipo de fornecedor.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewTypesDoc(null)}>
+                Fechar
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -65,8 +65,6 @@ export default function SupplierDeliveriesPage() {
     delivery_date: format(new Date(), "yyyy-MM-dd"),
     description: "",
     reference_number: "",
-    quantity: "",
-    total_value: "",
   });
 
   // Queries
@@ -124,8 +122,6 @@ export default function SupplierDeliveriesPage() {
       delivery_date: format(new Date(), "yyyy-MM-dd"),
       description: "",
       reference_number: "",
-      quantity: "",
-      total_value: "",
     });
   };
 
@@ -141,8 +137,6 @@ export default function SupplierDeliveriesPage() {
       delivery_date: formData.delivery_date,
       description: formData.description,
       reference_number: formData.reference_number || undefined,
-      quantity: formData.quantity ? parseFloat(formData.quantity) : undefined,
-      total_value: formData.total_value ? parseFloat(formData.total_value) : undefined,
     });
   };
 
@@ -431,32 +425,12 @@ export default function SupplierDeliveriesPage() {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Referência (NF, OS...)</Label>
-                  <Input
-                    value={formData.reference_number}
-                    onChange={(e) => setFormData(f => ({ ...f, reference_number: e.target.value }))}
-                    placeholder="Ex: NF-12345"
-                  />
-                </div>
-                <div>
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData(f => ({ ...f, quantity: e.target.value }))}
-                  />
-                </div>
-              </div>
               <div>
-                <Label>Valor Total (R$)</Label>
+                <Label>Referência (NF, OS...)</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.total_value}
-                  onChange={(e) => setFormData(f => ({ ...f, total_value: e.target.value }))}
+                  value={formData.reference_number}
+                  onChange={(e) => setFormData(f => ({ ...f, reference_number: e.target.value }))}
+                  placeholder="Ex: NF-12345"
                 />
               </div>
             </div>

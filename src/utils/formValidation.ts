@@ -147,3 +147,27 @@ export const VALIDATION_PATTERNS = {
   CURRENCY: /^\d+(\.\d{2})?$/,
   PERCENTAGE: /^(100|[1-9]?\d)(\.\d+)?$/
 };
+
+// Formatação automática de CNPJ (XX.XXX.XXX/XXXX-XX)
+export const formatCNPJ = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 14);
+  return digits
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2');
+};
+
+// Formatação automática de CPF (XXX.XXX.XXX-XX)
+export const formatCPF = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1-$2');
+};
+
+// Limpa formatação (remove pontos, barras, traços)
+export const cleanDocument = (value: string): string => {
+  return value.replace(/\D/g, '');
+};
