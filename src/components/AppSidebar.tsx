@@ -285,6 +285,7 @@ const menuSections: MenuSection[] = [
     defaultOpen: false,
     items: [
       { id: "sgq-dashboard", title: "Dashboard SGQ", icon: Award, path: "/quality-dashboard", description: "Painel de gestão da qualidade" },
+      { id: "gestao-indicadores", title: "Gestão de Indicadores", icon: BarChart3, path: "/gestao-indicadores", description: "Monitoramento e análise de indicadores" },
       { id: "strategic-planning", title: "Planejamento Estratégico", icon: Target, path: "/planejamento-estrategico", description: "Definição de estratégias organizacionais" },
       { id: "process-mapping", title: "Mapeamento de Processos", icon: Workflow, path: "/mapeamento-processos", description: "Documentação e otimização de processos" },
       { id: "non-conformities", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades", description: "Gestão de não conformidades e ações corretivas" },
