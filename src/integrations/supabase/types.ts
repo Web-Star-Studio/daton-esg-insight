@@ -2039,6 +2039,44 @@ export type Database = {
           },
         ]
       }
+      audit_grade_config: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          grades: Json
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          grades?: Json
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          grades?: Json
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_grade_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_item_attachments: {
         Row: {
           audit_id: string
@@ -2673,6 +2711,177 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "audit_response_types_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_scoring_config: {
+        Row: {
+          audit_id: string
+          company_id: string
+          created_at: string | null
+          id: string
+          include_na_in_total: boolean | null
+          max_score: number | null
+          nc_major_penalty: number | null
+          nc_minor_penalty: number | null
+          observation_penalty: number | null
+          opportunity_bonus: number | null
+          passing_score: number | null
+          response_weights: Json | null
+          scoring_method: string
+          session_weights: Json | null
+          standard_weights: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          audit_id: string
+          company_id: string
+          created_at?: string | null
+          id?: string
+          include_na_in_total?: boolean | null
+          max_score?: number | null
+          nc_major_penalty?: number | null
+          nc_minor_penalty?: number | null
+          observation_penalty?: number | null
+          opportunity_bonus?: number | null
+          passing_score?: number | null
+          response_weights?: Json | null
+          scoring_method?: string
+          session_weights?: Json | null
+          standard_weights?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          audit_id?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          include_na_in_total?: boolean | null
+          max_score?: number | null
+          nc_major_penalty?: number | null
+          nc_minor_penalty?: number | null
+          observation_penalty?: number | null
+          opportunity_bonus?: number | null
+          passing_score?: number | null
+          response_weights?: Json | null
+          scoring_method?: string
+          session_weights?: Json | null
+          standard_weights?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_scoring_config_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: true
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_scoring_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_scoring_results: {
+        Row: {
+          audit_id: string
+          calculated_at: string | null
+          calculated_by: string | null
+          calculation_version: number | null
+          company_id: string
+          conforming_items: number | null
+          created_at: string | null
+          grade: string | null
+          id: string
+          max_possible_score: number
+          na_items: number | null
+          nc_major_count: number | null
+          nc_minor_count: number | null
+          non_conforming_items: number | null
+          observation_count: number | null
+          opportunity_count: number | null
+          partial_items: number | null
+          percentage: number
+          responded_items: number | null
+          session_scores: Json | null
+          standard_scores: Json | null
+          status: string | null
+          total_items: number | null
+          total_score: number
+          updated_at: string | null
+        }
+        Insert: {
+          audit_id: string
+          calculated_at?: string | null
+          calculated_by?: string | null
+          calculation_version?: number | null
+          company_id: string
+          conforming_items?: number | null
+          created_at?: string | null
+          grade?: string | null
+          id?: string
+          max_possible_score?: number
+          na_items?: number | null
+          nc_major_count?: number | null
+          nc_minor_count?: number | null
+          non_conforming_items?: number | null
+          observation_count?: number | null
+          opportunity_count?: number | null
+          partial_items?: number | null
+          percentage?: number
+          responded_items?: number | null
+          session_scores?: Json | null
+          standard_scores?: Json | null
+          status?: string | null
+          total_items?: number | null
+          total_score?: number
+          updated_at?: string | null
+        }
+        Update: {
+          audit_id?: string
+          calculated_at?: string | null
+          calculated_by?: string | null
+          calculation_version?: number | null
+          company_id?: string
+          conforming_items?: number | null
+          created_at?: string | null
+          grade?: string | null
+          id?: string
+          max_possible_score?: number
+          na_items?: number | null
+          nc_major_count?: number | null
+          nc_minor_count?: number | null
+          non_conforming_items?: number | null
+          observation_count?: number | null
+          opportunity_count?: number | null
+          partial_items?: number | null
+          percentage?: number
+          responded_items?: number | null
+          session_scores?: Json | null
+          standard_scores?: Json | null
+          status?: string | null
+          total_items?: number | null
+          total_score?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_scoring_results_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: true
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_scoring_results_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -22702,6 +22911,7 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_audit_score: { Args: { p_audit_id: string }; Returns: Json }
       calculate_bsc_objective_progress: {
         Args: { p_objective_id: string }
         Returns: number
