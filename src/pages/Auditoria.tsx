@@ -12,9 +12,11 @@ import { ISORequirementsLibrary } from "@/components/audit/ISORequirementsLibrar
 import { AuditorsManagement } from "@/components/audit/AuditorsManagement";
 import { ISOTemplatesLibrary } from "@/components/audit/ISOTemplatesLibrary";
 import { AuditConfigurationTab } from "@/components/audit/tabs/AuditConfigurationTab";
+import { AuditDetailPage } from "@/components/audit/detail";
+import { AuditCreationWizard } from "@/components/audit/planning";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Eye, Settings } from "lucide-react";
+import { Eye, Settings, Wand2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -74,6 +76,10 @@ export default function Auditoria() {
     start_date: '',
     end_date: ''
   });
+
+  // New states for integrated audit detail and creation wizard
+  const [selectedAuditIdForDetail, setSelectedAuditIdForDetail] = useState<string | null>(null);
+  const [showCreationWizard, setShowCreationWizard] = useState(false);
 
   const { data: audits = [], isLoading: loadingAudits, refetch: refetchAudits } = useQuery({
     queryKey: ['audits'],
@@ -228,6 +234,33 @@ export default function Auditoria() {
     loadSgqAudits();
   }, []);
 
+  // Show audit detail page if selected
+  if (selectedAuditIdForDetail && userProfile?.company_id) {
+    return (
+      <div className="space-y-6">
+        <AuditDetailPage
+          auditId={selectedAuditIdForDetail}
+          companyId={userProfile.company_id}
+          onBack={() => setSelectedAuditIdForDetail(null)}
+        />
+      </div>
+    );
+  }
+
+  // Creation wizard dialog
+  const creationWizardDialog = (
+    <AuditCreationWizard
+      open={showCreationWizard}
+      onOpenChange={(open) => {
+        setShowCreationWizard(open);
+        if (!open) {
+          loadSgqAudits();
+          refetchAudits();
+        }
+      }}
+    />
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -238,6 +271,10 @@ export default function Auditoria() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowCreationWizard(true)}>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Assistente de Criação
+          </Button>
           <Button onClick={() => setIsAuditModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nova Auditoria
@@ -503,9 +540,9 @@ export default function Auditoria() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setEditingAudit(audit);
+                              setSelectedAuditIdForDetail(audit.id);
                             }}
-                            title="Editar auditoria"
+                            title="Ver detalhes"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -696,7 +733,11 @@ export default function Auditoria() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setSelectedAuditIdForDetail(audit.id)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </div>
@@ -787,6 +828,9 @@ export default function Auditoria() {
           toast({ title: "Template importado", description: "Checklist criado com sucesso" });
         }}
       />
+
+      {/* Creation Wizard */}
+      {creationWizardDialog}
     </div>
   );
 }
