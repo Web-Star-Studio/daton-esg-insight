@@ -301,17 +301,42 @@ export async function deleteSupplierType(id: string): Promise<void> {
 
 // ==================== FORNECEDORES ====================
 
-export async function getManagedSuppliers(): Promise<ManagedSupplier[]> {
+export interface ManagedSupplierWithTypeCount extends ManagedSupplier {
+  type_count?: number;
+}
+
+export async function getManagedSuppliers(): Promise<ManagedSupplierWithTypeCount[]> {
   const companyId = await getCurrentUserCompanyId();
   
-  const { data, error } = await supabase
+  // Buscar fornecedores
+  const { data: suppliers, error } = await supabase
     .from('supplier_management')
     .select('*')
     .eq('company_id', companyId)
     .order('created_at', { ascending: false });
     
   if (error) throw error;
-  return (data || []) as ManagedSupplier[];
+  
+  if (!suppliers || suppliers.length === 0) return [];
+  
+  // Buscar contagem de tipos para cada fornecedor
+  const supplierIds = suppliers.map(s => s.id);
+  const { data: assignments } = await supabase
+    .from('supplier_type_assignments')
+    .select('supplier_id')
+    .in('supplier_id', supplierIds);
+  
+  // Contar associações por fornecedor
+  const typeCounts: Record<string, number> = {};
+  (assignments || []).forEach(a => {
+    typeCounts[a.supplier_id] = (typeCounts[a.supplier_id] || 0) + 1;
+  });
+  
+  // Adicionar contagem aos fornecedores
+  return suppliers.map(s => ({
+    ...s,
+    type_count: typeCounts[s.id] || 0
+  })) as ManagedSupplierWithTypeCount[];
 }
 
 export async function getManagedSupplierById(id: string): Promise<ManagedSupplier | null> {

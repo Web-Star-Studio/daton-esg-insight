@@ -291,3 +291,125 @@ export async function importSuppliers(companyId: string, data: ParsedSupplier[])
 
   return { success, failed, errors };
 }
+
+// ==================== IMPORTAÇÃO DE DOCUMENTOS ====================
+
+// Template para importação de documentos
+export function downloadDocumentImportTemplate() {
+  const headers = ['Nome do Documento *', 'Peso (1-5) *', 'Descrição'];
+  const exampleRow = ['Alvará de Funcionamento', '5', 'Documento obrigatório para operação'];
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template Documentos');
+
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  saveAs(new Blob([wbout]), 'template_importacao_documentos.xlsx');
+}
+
+// Interface para documento parseado
+export interface ParsedDocument {
+  document_name: string;
+  weight: number;
+  description?: string;
+}
+
+// Parse do arquivo de documentos
+export async function parseDocumentImportFile(file: File): Promise<ParsedDocument[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+
+        const rows = jsonData.slice(1);
+        const documents: ParsedDocument[] = rows
+          .filter(row => row.length > 0 && row[0])
+          .map(row => ({
+            document_name: String(row[0] || '').trim(),
+            weight: parseInt(String(row[1] || '3'), 10) || 3,
+            description: String(row[2] || '').trim() || undefined,
+          }));
+
+        resolve(documents);
+      } catch (error) {
+        reject(new Error('Erro ao processar arquivo de documentos.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Validação dos documentos
+export interface DocumentValidationResult {
+  isValid: boolean;
+  errors: { row: number; field: string; message: string }[];
+  validData: ParsedDocument[];
+}
+
+export function validateDocumentImportData(data: ParsedDocument[]): DocumentValidationResult {
+  const errors: { row: number; field: string; message: string }[] = [];
+  const validData: ParsedDocument[] = [];
+
+  data.forEach((doc, index) => {
+    const row = index + 2;
+    let hasError = false;
+
+    if (!doc.document_name) {
+      errors.push({ row, field: 'Nome do Documento', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (doc.weight < 1 || doc.weight > 5) {
+      errors.push({ row, field: 'Peso', message: 'Peso deve ser entre 1 e 5' });
+      hasError = true;
+    }
+
+    if (!hasError) validData.push(doc);
+  });
+
+  return { isValid: errors.length === 0, errors, validData };
+}
+
+// Importação dos documentos
+export interface DocumentImportResult {
+  success: number;
+  failed: number;
+  errors: { row: number; message: string }[];
+}
+
+export async function importDocuments(companyId: string, data: ParsedDocument[]): Promise<DocumentImportResult> {
+  let success = 0;
+  let failed = 0;
+  const errors: { row: number; message: string }[] = [];
+
+  for (let i = 0; i < data.length; i++) {
+    const doc = data[i];
+    try {
+      const { error } = await supabase
+        .from('supplier_required_documents')
+        .insert({
+          company_id: companyId,
+          document_name: doc.document_name,
+          weight: doc.weight,
+          description: doc.description,
+          is_active: true
+        });
+
+      if (error) {
+        failed++;
+        errors.push({ row: i + 2, message: error.message });
+      } else {
+        success++;
+      }
+    } catch (err: any) {
+      failed++;
+      errors.push({ row: i + 2, message: err.message || 'Erro' });
+    }
+  }
+
+  return { success, failed, errors };
+}

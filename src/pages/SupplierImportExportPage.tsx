@@ -14,7 +14,7 @@ import { MainLayout } from '@/components/MainLayout';
 import { toast } from 'sonner';
 
 import * as exportService from '@/services/supplierExportService';
-import type { ParsedSupplier, ValidationResult, ImportResult } from '@/services/supplierExportService';
+import type { ParsedSupplier, ValidationResult, ImportResult, ParsedDocument, DocumentValidationResult, DocumentImportResult } from '@/services/supplierExportService';
 
 export default function SupplierImportExportPage() {
   const { selectedCompany } = useCompany();
@@ -25,6 +25,12 @@ export default function SupplierImportExportPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'upload' | 'validate' | 'import' | 'result'>('upload');
+  const [importType, setImportType] = useState<'suppliers' | 'documents'>('suppliers');
+  
+  // Document import states
+  const [parsedDocs, setParsedDocs] = useState<ParsedDocument[]>([]);
+  const [docValidation, setDocValidation] = useState<DocumentValidationResult | null>(null);
+  const [docImportResult, setDocImportResult] = useState<DocumentImportResult | null>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -105,7 +111,65 @@ export default function SupplierImportExportPage() {
     setParsedData([]);
     setValidationResult(null);
     setImportResult(null);
+    setParsedDocs([]);
+    setDocValidation(null);
+    setDocImportResult(null);
     setStep('upload');
+  };
+
+  // Document import handlers
+  const handleDownloadDocTemplate = () => {
+    exportService.downloadDocumentImportTemplate();
+    toast.success('Template de documentos baixado!');
+  };
+
+  const onDropDocuments = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+    
+    const file = acceptedFiles[0];
+    setIsProcessing(true);
+    
+    try {
+      const data = await exportService.parseDocumentImportFile(file);
+      setParsedDocs(data);
+      
+      const validation = exportService.validateDocumentImportData(data);
+      setDocValidation(validation);
+      setStep('validate');
+      
+      if (validation.isValid) {
+        toast.success(`${data.length} documentos prontos para importar`);
+      } else {
+        toast.warning(`${validation.errors.length} erros encontrados`);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao processar arquivo');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleImportDocuments = async () => {
+    if (!companyId || !docValidation?.validData.length) return;
+    
+    setIsProcessing(true);
+    setStep('import');
+    
+    try {
+      const result = await exportService.importDocuments(companyId, docValidation.validData);
+      setDocImportResult(result);
+      setStep('result');
+      
+      if (result.failed === 0) {
+        toast.success(`${result.success} documentos importados com sucesso!`);
+      } else {
+        toast.warning(`${result.success} importados, ${result.failed} falharam`);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Erro na importação');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (!companyId) {

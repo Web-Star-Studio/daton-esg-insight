@@ -33,7 +33,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Plus, Building2, User, ArrowLeft, Pencil, Trash2, 
-  Eye, Copy, Search, Filter, Link2, Loader2 
+  Eye, Copy, Search, Filter, Link2, Loader2, CheckCircle, AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -47,10 +47,11 @@ import {
   getSupplierTypes,
   getSupplierCategories,
   checkCnpjCpfExists,
-  ManagedSupplier,
+  ManagedSupplierWithTypeCount,
   SupplierType,
   SupplierCategory,
 } from "@/services/supplierManagementService";
+import { formatCNPJ, formatCPF, validateCNPJ, validateCPF, cleanDocument } from "@/utils/formValidation";
 
 // Interface para resposta do ViaCEP
 interface ViaCepResponse {
@@ -82,8 +83,8 @@ export default function SupplierRegistration() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [viewingSupplier, setViewingSupplier] = useState<ManagedSupplier | null>(null);
-  const [editingSupplier, setEditingSupplier] = useState<ManagedSupplier | null>(null);
+  const [viewingSupplier, setViewingSupplier] = useState<ManagedSupplierWithTypeCount | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<ManagedSupplierWithTypeCount | null>(null);
   const [personType, setPersonType] = useState<'PF' | 'PJ'>('PJ');
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -205,7 +206,7 @@ export default function SupplierRegistration() {
     }
   };
 
-  const openModal = (supplier?: ManagedSupplier) => {
+  const openModal = (supplier?: ManagedSupplierWithTypeCount) => {
     if (supplier) {
       setEditingSupplier(supplier);
       setPersonType(supplier.person_type);
@@ -256,10 +257,24 @@ export default function SupplierRegistration() {
         });
         return;
       }
+      // Validar formato do CPF
+      if (!validateCPF(formData.cpf)) {
+        toast.error("CPF inválido", {
+          description: "Verifique os dígitos informados"
+        });
+        return;
+      }
     } else {
       if (!formData.company_name || !formData.cnpj || !formData.responsible_name || !formData.email) {
         toast.error("Preencha todos os campos obrigatórios", {
           description: "Razão social, CNPJ, responsável e e-mail são obrigatórios"
+        });
+        return;
+      }
+      // Validar formato do CNPJ
+      if (!validateCNPJ(formData.cnpj)) {
+        toast.error("CNPJ inválido", {
+          description: "Verifique os dígitos informados"
         });
         return;
       }
@@ -285,11 +300,11 @@ export default function SupplierRegistration() {
       return;
     }
 
-    // Verificar duplicidade de CNPJ/CPF
+    // Verificar duplicidade de CNPJ/CPF (usando valor limpo)
     setIsValidating(true);
     const checkResult = await checkCnpjCpfExists(
-      personType === 'PJ' ? formData.cnpj : undefined,
-      personType === 'PF' ? formData.cpf : undefined,
+      personType === 'PJ' ? cleanDocument(formData.cnpj) : undefined,
+      personType === 'PF' ? cleanDocument(formData.cpf) : undefined,
       editingSupplier?.id
     );
     setIsValidating(false);
@@ -300,6 +315,40 @@ export default function SupplierRegistration() {
       });
       return;
     }
+
+    // Montar endereço completo para compatibilidade
+    const fullAddress = `${formData.street}, ${formData.street_number} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, CEP: ${formData.cep}`;
+
+    const submitData = {
+      person_type: personType,
+      ...(personType === 'PF' ? {
+        full_name: formData.full_name,
+        cpf: cleanDocument(formData.cpf),
+      } : {
+        company_name: formData.company_name,
+        cnpj: cleanDocument(formData.cnpj),
+        responsible_name: formData.responsible_name,
+      }),
+      nickname: formData.nickname || undefined,
+      full_address: fullAddress,
+      cep: formData.cep,
+      street: formData.street,
+      street_number: formData.street_number,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state,
+      phone_1: formData.phone_1,
+      phone_2: formData.phone_2 || undefined,
+      email: formData.email || undefined,
+      type_ids: selectedTypes,
+    };
+
+    if (editingSupplier) {
+      updateMutation.mutate({ id: editingSupplier.id, data: submitData });
+    } else {
+      createMutation.mutate(submitData);
+    }
+  };
 
     // Montar endereço completo para compatibilidade
     const fullAddress = `${formData.street}, ${formData.street_number} - ${formData.neighborhood}, ${formData.city} - ${formData.state}, CEP: ${formData.cep}`;
@@ -434,6 +483,7 @@ export default function SupplierRegistration() {
                     <TableHead>Nome/Razão Social</TableHead>
                     <TableHead>CPF/CNPJ</TableHead>
                     <TableHead>Contato</TableHead>
+                    <TableHead>Vinculação</TableHead>
                     <TableHead>Data Cadastro</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -460,13 +510,28 @@ export default function SupplierRegistration() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {supplier.person_type === 'PJ' ? supplier.cnpj : supplier.cpf}
+                        {supplier.person_type === 'PJ' 
+                          ? formatCNPJ(supplier.cnpj || '') 
+                          : formatCPF(supplier.cpf || '')}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           {supplier.phone_1}
                           {supplier.email && <div className="text-muted-foreground">{supplier.email}</div>}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {(supplier as ManagedSupplierWithTypeCount).type_count && (supplier as ManagedSupplierWithTypeCount).type_count! > 0 ? (
+                          <Badge className="bg-green-100 text-green-800 flex items-center gap-1 w-fit">
+                            <CheckCircle className="h-3 w-3" />
+                            Vinculado ({(supplier as ManagedSupplierWithTypeCount).type_count})
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-yellow-100 text-yellow-800 flex items-center gap-1 w-fit">
+                            <AlertCircle className="h-3 w-3" />
+                            Pendente
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         {format(new Date(supplier.registration_date), "dd/MM/yyyy", { locale: ptBR })}
@@ -554,8 +619,9 @@ export default function SupplierRegistration() {
                     <Label>CNPJ *</Label>
                     <Input
                       value={formData.cnpj}
-                      onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
                       placeholder="00.000.000/0000-00"
+                      maxLength={18}
                     />
                   </div>
                 </div>
@@ -591,8 +657,9 @@ export default function SupplierRegistration() {
                     <Label>CPF *</Label>
                     <Input
                       value={formData.cpf}
-                      onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
                       placeholder="000.000.000-00"
+                      maxLength={14}
                     />
                   </div>
                 </div>
