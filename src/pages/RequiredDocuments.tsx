@@ -159,9 +159,9 @@ export default function RequiredDocuments() {
     setAssociatedTypes([]);
     
     try {
-      // Buscar associações na tabela supplier_type_documents
+      // Buscar associações na tabela supplier_document_type_requirements
       const { data: links, error } = await supabase
-        .from('supplier_type_documents')
+        .from('supplier_document_type_requirements')
         .select('supplier_type_id')
         .eq('required_document_id', doc.id);
       
