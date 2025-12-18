@@ -112,6 +112,7 @@ const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
 const GestaoIndicadores = lazy(() => import("./pages/GestaoIndicadores"));
+const IndicadorDetalhes = lazy(() => import("./pages/IndicadorDetalhes"));
 
 const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos").then(module => ({ default: module.GerenciamentoProjetos })));
 
