@@ -46,6 +46,13 @@ export interface ManagedSupplier {
   responsible_name?: string;
   nickname?: string;
   full_address: string;
+  // Novos campos de endereço separados
+  cep?: string;
+  street?: string;
+  street_number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
   phone_1: string;
   phone_2?: string;
   email?: string;
@@ -340,10 +347,62 @@ interface CreateSupplierData {
   responsible_name?: string;
   nickname?: string;
   full_address: string;
+  // Campos de endereço separados
+  cep?: string;
+  street?: string;
+  street_number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
   phone_1: string;
   phone_2?: string;
   email?: string;
   type_ids?: string[];
+}
+
+// Função para verificar se CNPJ/CPF já existe
+export async function checkCnpjCpfExists(
+  cnpj?: string, 
+  cpf?: string, 
+  excludeId?: string
+): Promise<{ exists: boolean; field: 'cnpj' | 'cpf' | null }> {
+  const companyId = await getCurrentUserCompanyId();
+  
+  if (cnpj) {
+    let query = supabase
+      .from('supplier_management')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('cnpj', cnpj);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
+    
+    const { data } = await query.limit(1);
+    if (data && data.length > 0) {
+      return { exists: true, field: 'cnpj' };
+    }
+  }
+  
+  if (cpf) {
+    let query = supabase
+      .from('supplier_management')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('cpf', cpf);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
+    
+    const { data } = await query.limit(1);
+    if (data && data.length > 0) {
+      return { exists: true, field: 'cpf' };
+    }
+  }
+  
+  return { exists: false, field: null };
 }
 
 export async function createManagedSupplier(supplierData: CreateSupplierData): Promise<ManagedSupplier> {
