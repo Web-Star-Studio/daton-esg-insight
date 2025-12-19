@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +16,7 @@ import { useIndicatorsWithData, useIndicatorStats, useIndicatorGroups } from "@/
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 export default function GestaoIndicadores() {
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -139,6 +141,7 @@ export default function GestaoIndicadores() {
               indicators={indicators || []}
               groups={groups || []}
               isLoading={loadingIndicators || loadingGroups}
+              onSelectIndicator={(indicator) => navigate(`/indicador/${indicator.id}`)}
             />
           </TabsContent>
 
