@@ -278,12 +278,21 @@ export async function validateEmployees(
   });
 }
 
+export interface ImportProgress {
+  current: number;
+  total: number;
+  percentage: number;
+  currentEmployee?: string;
+  stage: 'preparing' | 'creating_entities' | 'importing' | 'finalizing';
+}
+
 // Import employees to database
 export async function importEmployees(
   employees: ParsedEmployee[],
   options: {
     skipExisting: boolean;
     createMissingEntities: boolean;
+    onProgress?: (progress: ImportProgress) => void;
   } = { skipExisting: true, createMissingEntities: true }
 ): Promise<ImportResult> {
   const result: ImportResult = {
@@ -324,7 +333,20 @@ export async function importEmployees(
     
     const existingCpfs = new Set(existingEmployees?.map(e => e.employee_code) || []);
     
-    for (const emp of employees) {
+    for (let index = 0; index < employees.length; index++) {
+      const emp = employees[index];
+      
+      // Emit progress every 5 employees or at start/end
+      if (options.onProgress && (index % 5 === 0 || index === employees.length - 1)) {
+        options.onProgress({
+          current: index + 1,
+          total: employees.length,
+          percentage: Math.round(((index + 1) / employees.length) * 100),
+          currentEmployee: emp.nome,
+          stage: 'importing'
+        });
+      }
+      
       try {
         // Validate CPF
         if (!emp.cpf || !validateCPF(emp.cpf)) {
