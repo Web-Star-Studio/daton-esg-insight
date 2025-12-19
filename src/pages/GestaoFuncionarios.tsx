@@ -3,13 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar, FileText, Gift, BarChart3, Settings, Plus, Edit } from 'lucide-react';
+import { Users, UserPlus, TrendingUp, Building2, Briefcase, Calendar, FileText, Gift, BarChart3, Settings, Plus, Edit, Upload } from 'lucide-react';
 import { EmployeesList } from '@/components/EmployeesList';
 import { EmployeeModal } from '@/components/EmployeeModal';
 import { EmployeeDetailModal } from '@/components/EmployeeDetailModal';
 import { EmployeeReportsModal } from '@/components/EmployeeReportsModal';
 import { BenefitManagementModal } from '@/components/BenefitManagementModal';
 import { BenefitConfigurationModal } from '@/components/BenefitConfigurationModal';
+import { EmployeeImportSection } from '@/components/EmployeeImportSection';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getEmployeesStats, type Employee } from '@/services/employees';
 import { useBenefits, getBenefitStats } from '@/services/benefits';
@@ -127,7 +128,7 @@ export default function GestaoFuncionarios() {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4" />
             <span>Dashboard</span>
@@ -135,6 +136,10 @@ export default function GestaoFuncionarios() {
           <TabsTrigger value="funcionarios" className="flex items-center space-x-2">
             <Users className="w-4 h-4" />
             <span>Funcionários</span>
+          </TabsTrigger>
+          <TabsTrigger value="importacao" className="flex items-center space-x-2">
+            <Upload className="w-4 h-4" />
+            <span>Importação</span>
           </TabsTrigger>
           <TabsTrigger value="diversidade" className="flex items-center space-x-2">
             <Building2 className="w-4 h-4" />
@@ -198,6 +203,10 @@ export default function GestaoFuncionarios() {
             onCreateEmployee={handleCreateEmployee}
             onViewEmployee={handleViewEmployee}
           />
+        </TabsContent>
+
+        <TabsContent value="importacao" className="space-y-4">
+          <EmployeeImportSection />
         </TabsContent>
 
         <TabsContent value="diversidade" className="space-y-4">
