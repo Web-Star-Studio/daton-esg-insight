@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ interface IndicatorCardProps {
 const MONTH_LABELS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 
 export function IndicatorCard({ indicator, onSelect }: IndicatorCardProps) {
+  const navigate = useNavigate();
+  
   // Get current month's data
   const currentMonth = new Date().getMonth() + 1;
   const currentMonthData = indicator.period_data?.find(pd => pd.period_month === currentMonth);
@@ -158,24 +161,31 @@ export function IndicatorCard({ indicator, onSelect }: IndicatorCardProps) {
         </div>
 
         {/* Mini sparkline */}
-        <div className="flex gap-1 mb-3">
-          {chartData.map((data, idx) => (
-            <Tooltip key={idx}>
-              <TooltipTrigger asChild>
-                <div 
-                  className={cn(
-                    "flex-1 h-6 rounded-sm transition-all",
-                    getCellColor(data.status),
-                    idx === currentMonth - 1 && "ring-2 ring-primary ring-offset-1"
-                  )}
-                />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="font-medium">{MONTH_LABELS[idx]}</p>
-                <p>{data.value !== undefined ? formatValue(data.value) : 'Sem dados'}</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
+        <div className="flex gap-0.5 mb-3 h-8 items-end">
+          {chartData.map((data, idx) => {
+            const hasValue = data.value !== undefined && data.value !== null;
+            const maxValue = Math.max(...chartData.map(d => d.value ?? 0), 1);
+            const heightPercent = hasValue ? Math.max((data.value! / maxValue) * 100, 15) : 100;
+            
+            return (
+              <Tooltip key={idx}>
+                <TooltipTrigger asChild>
+                  <div 
+                    className={cn(
+                      "flex-1 min-w-[6px] rounded-sm transition-all cursor-pointer hover:opacity-80",
+                      getCellColor(data.status),
+                      idx === currentMonth - 1 && "ring-1 ring-primary ring-offset-1"
+                    )}
+                    style={{ height: `${heightPercent}%` }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">{MONTH_LABELS[idx]}</p>
+                  <p>{hasValue ? formatValue(data.value) : 'Sem dados'}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
 
         {/* Footer */}
@@ -192,6 +202,10 @@ export function IndicatorCard({ indicator, onSelect }: IndicatorCardProps) {
             variant="ghost" 
             size="sm" 
             className="opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/indicador/${indicator.id}`);
+            }}
           >
             <BarChart3 className="h-4 w-4 mr-1" />
             Detalhes
