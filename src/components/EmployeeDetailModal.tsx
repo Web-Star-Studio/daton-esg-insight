@@ -32,6 +32,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { EmployeeBenefitsModal } from './EmployeeBenefitsModal';
 import { EmployeeDocumentsTab } from './EmployeeDocumentsTab';
 import { EmployeeTrainingsTab } from './EmployeeTrainingsTab';
+import { EmployeeFormsTab } from './EmployeeFormsTab';
 import { useEmployeeExperiences, type EmployeeExperience } from '@/services/employeeExperiences';
 import { useEmployeeEducation, type EmployeeEducation } from '@/services/employeeEducation';
 import { useBranches } from '@/services/branches';
@@ -199,12 +200,13 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-7 shrink-0">
+            <TabsList className="grid w-full grid-cols-8 shrink-0">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="experiences">Experiências</TabsTrigger>
               <TabsTrigger value="education">Formação</TabsTrigger>
               <TabsTrigger value="benefits">Benefícios</TabsTrigger>
               <TabsTrigger value="trainings">Treinamentos</TabsTrigger>
+              <TabsTrigger value="forms">Formulários</TabsTrigger>
               <TabsTrigger value="documents">Documentos</TabsTrigger>
               <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
@@ -613,6 +615,13 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
 
                 <TabsContent value="trainings" className="space-y-6 mt-0">
                   <EmployeeTrainingsTab 
+                    employeeId={employee.id}
+                    employeeName={employee.full_name}
+                  />
+                </TabsContent>
+
+                <TabsContent value="forms" className="space-y-6 mt-0">
+                  <EmployeeFormsTab 
                     employeeId={employee.id}
                     employeeName={employee.full_name}
                   />

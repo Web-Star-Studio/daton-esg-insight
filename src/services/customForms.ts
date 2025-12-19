@@ -52,6 +52,15 @@ export interface CreateFormData {
 
 export interface SubmitFormData {
   submission_data: Record<string, any>;
+  employee_id?: string;
+}
+
+export interface FormSubmissionWithEmployee extends FormSubmission {
+  employee?: {
+    id: string;
+    full_name: string;
+    employee_code: string;
+  };
 }
 
 class CustomFormsService {
@@ -131,8 +140,23 @@ class CustomFormsService {
     const { data, error } = await supabase.functions.invoke('custom-forms-management', {
       body: {
         action: 'SUBMIT_FORM',
-        formId,
+        form_id: formId,
         ...submissionData
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getEmployeeSubmissions(employeeId: string): Promise<FormSubmissionWithEmployee[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      body: {
+        action: 'GET_EMPLOYEE_SUBMISSIONS',
+        employeeId
       }
     });
 

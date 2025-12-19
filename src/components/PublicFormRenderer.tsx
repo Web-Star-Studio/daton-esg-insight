@@ -10,24 +10,55 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField } from "@/services/customForms";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, User } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface PublicFormRendererProps {
   formId: string;
   onSubmitSuccess?: () => void;
+  preselectedEmployeeId?: string;
+  showEmployeeSelector?: boolean;
 }
 
-export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRendererProps) {
+interface Employee {
+  id: string;
+  full_name: string;
+  employee_code: string;
+}
+
+export function PublicFormRenderer({ 
+  formId, 
+  onSubmitSuccess,
+  preselectedEmployeeId,
+  showEmployeeSelector = true
+}: PublicFormRendererProps) {
   const [form, setForm] = useState<CustomForm | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>(preselectedEmployeeId);
   const { toast } = useToast();
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees-for-form'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, full_name, employee_code')
+        .eq('status', 'Ativo')
+        .order('full_name');
+      
+      if (error) throw error;
+      return data as Employee[];
+    },
+    enabled: showEmployeeSelector,
+  });
 
   useEffect(() => {
     loadForm();
@@ -39,44 +70,27 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
       const data = await customFormsService.getForm(formId);
       
       if (!data) {
-        toast({
-          title: "Erro",
-          description: "Formulário não encontrado",
-          variant: "destructive",
-        });
+        toast({ title: "Erro", description: "Formulário não encontrado", variant: "destructive" });
         return;
       }
 
       if (!data.is_published) {
-        toast({
-          title: "Aviso",
-          description: "Este formulário não está publicado",
-          variant: "destructive",
-        });
+        toast({ title: "Aviso", description: "Este formulário não está publicado", variant: "destructive" });
         return;
       }
 
       setForm(data);
       
-      // Initialize form data with default values
       const initialData: Record<string, any> = {};
       data.structure_json.fields.forEach((field: FormField) => {
-        if (field.type === 'checkbox') {
-          initialData[field.id] = false;
-        } else if (field.type === 'multiselect') {
-          initialData[field.id] = [];
-        } else {
-          initialData[field.id] = '';
-        }
+        if (field.type === 'checkbox') initialData[field.id] = false;
+        else if (field.type === 'multiselect') initialData[field.id] = [];
+        else initialData[field.id] = '';
       });
       setFormData(initialData);
     } catch (error) {
       console.error('Erro ao carregar formulário:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar formulário",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Erro ao carregar formulário", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -84,13 +98,11 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
     if (!form) return false;
     
     form.structure_json.fields.forEach((field: FormField) => {
       if (field.required) {
         const value = formData[field.id];
-        
         if (field.type === 'multiselect' && Array.isArray(value) && value.length === 0) {
           newErrors[field.id] = 'Este campo é obrigatório';
         } else if (field.type === 'checkbox' && !value) {
@@ -100,27 +112,17 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
         }
       }
       
-      // Validation rules
       if (field.validation && formData[field.id]) {
         const value = formData[field.id];
-        
         if (field.validation.min !== undefined && field.type === 'number') {
-          if (parseFloat(value) < field.validation.min) {
-            newErrors[field.id] = `Valor mínimo: ${field.validation.min}`;
-          }
+          if (parseFloat(value) < field.validation.min) newErrors[field.id] = `Valor mínimo: ${field.validation.min}`;
         }
-        
         if (field.validation.max !== undefined && field.type === 'number') {
-          if (parseFloat(value) > field.validation.max) {
-            newErrors[field.id] = `Valor máximo: ${field.validation.max}`;
-          }
+          if (parseFloat(value) > field.validation.max) newErrors[field.id] = `Valor máximo: ${field.validation.max}`;
         }
-        
         if (field.validation.pattern && (field.type === 'text' || field.type === 'textarea')) {
           const regex = new RegExp(field.validation.pattern);
-          if (!regex.test(value)) {
-            newErrors[field.id] = 'Formato inválido';
-          }
+          if (!regex.test(value)) newErrors[field.id] = 'Formato inválido';
         }
       }
     });
@@ -131,50 +133,34 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) {
-      toast({
-        title: "Erro de validação",
-        description: "Por favor, corrija os erros no formulário",
-        variant: "destructive",
-      });
+      toast({ title: "Erro de validação", description: "Por favor, corrija os erros no formulário", variant: "destructive" });
       return;
     }
 
     try {
       setSubmitting(true);
-      
       await customFormsService.submitForm(formId, {
-        submission_data: formData
+        submission_data: formData,
+        employee_id: selectedEmployeeId
       });
 
-      toast({
-        title: "Sucesso",
-        description: "Formulário enviado com sucesso!",
-      });
+      toast({ title: "Sucesso", description: "Formulário enviado com sucesso!" });
 
-      // Reset form
       const resetData: Record<string, any> = {};
       form?.structure_json.fields.forEach((field: FormField) => {
-        if (field.type === 'checkbox') {
-          resetData[field.id] = false;
-        } else if (field.type === 'multiselect') {
-          resetData[field.id] = [];
-        } else {
-          resetData[field.id] = '';
-        }
+        if (field.type === 'checkbox') resetData[field.id] = false;
+        else if (field.type === 'multiselect') resetData[field.id] = [];
+        else resetData[field.id] = '';
       });
       setFormData(resetData);
       setErrors({});
+      setSelectedEmployeeId(undefined);
       
       onSubmitSuccess?.();
     } catch (error) {
       console.error('Erro ao enviar formulário:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao enviar formulário",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Erro ao enviar formulário", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -182,10 +168,7 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
 
   const updateFieldValue = (fieldId: string, value: any) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
-    // Clear error when user starts typing
-    if (errors[fieldId]) {
-      setErrors(prev => ({ ...prev, [fieldId]: '' }));
-    }
+    if (errors[fieldId]) setErrors(prev => ({ ...prev, [fieldId]: '' }));
   };
 
   const renderField = (field: FormField) => {
@@ -195,142 +178,63 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
     const fieldElement = () => {
       switch (field.type) {
         case 'text':
-          return (
-            <Input
-              type="text"
-              value={value}
-              onChange={(e) => updateFieldValue(field.id, e.target.value)}
-              placeholder={field.placeholder}
-              className={hasError ? 'border-destructive' : ''}
-            />
-          );
-          
+          return <Input type="text" value={value} onChange={(e) => updateFieldValue(field.id, e.target.value)} placeholder={field.placeholder} className={hasError ? 'border-destructive' : ''} />;
         case 'textarea':
-          return (
-            <Textarea
-              value={value}
-              onChange={(e) => updateFieldValue(field.id, e.target.value)}
-              placeholder={field.placeholder}
-              rows={4}
-              className={hasError ? 'border-destructive' : ''}
-            />
-          );
-          
+          return <Textarea value={value} onChange={(e) => updateFieldValue(field.id, e.target.value)} placeholder={field.placeholder} rows={4} className={hasError ? 'border-destructive' : ''} />;
         case 'number':
-          return (
-            <Input
-              type="number"
-              value={value}
-              onChange={(e) => updateFieldValue(field.id, e.target.value)}
-              placeholder={field.placeholder}
-              min={field.validation?.min}
-              max={field.validation?.max}
-              className={hasError ? 'border-destructive' : ''}
-            />
-          );
-          
+          return <Input type="number" value={value} onChange={(e) => updateFieldValue(field.id, e.target.value)} placeholder={field.placeholder} min={field.validation?.min} max={field.validation?.max} className={hasError ? 'border-destructive' : ''} />;
         case 'date':
           return (
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !value && "text-muted-foreground",
-                    hasError && "border-destructive"
-                  )}
-                >
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground", hasError && "border-destructive")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {value ? format(new Date(value), "dd/MM/yyyy", { locale: ptBR }) : (field.placeholder || "Selecione uma data")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={value ? new Date(value) : undefined}
-                  onSelect={(date) => updateFieldValue(field.id, date?.toISOString().split('T')[0])}
-                  disabled={(date) => date < new Date("1900-01-01")}
-                  initialFocus
-                />
+                <Calendar mode="single" selected={value ? new Date(value) : undefined} onSelect={(date) => updateFieldValue(field.id, date?.toISOString().split('T')[0])} initialFocus />
               </PopoverContent>
             </Popover>
           );
-          
         case 'checkbox':
           return (
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id={field.id}
-                checked={value}
-                onCheckedChange={(checked) => updateFieldValue(field.id, checked)}
-              />
-              <Label htmlFor={field.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                {field.label}
-              </Label>
+              <Checkbox id={field.id} checked={value} onCheckedChange={(checked) => updateFieldValue(field.id, checked)} />
+              <Label htmlFor={field.id}>{field.label}</Label>
             </div>
           );
-          
         case 'select':
           return (
             <Select value={value} onValueChange={(newValue) => updateFieldValue(field.id, newValue)}>
-              <SelectTrigger className={hasError ? 'border-destructive' : ''}>
-                <SelectValue placeholder={field.placeholder || "Selecione uma opção"} />
-              </SelectTrigger>
-              <SelectContent>
-                {field.options?.map((option, index) => (
-                  <SelectItem key={index} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <SelectTrigger className={hasError ? 'border-destructive' : ''}><SelectValue placeholder={field.placeholder || "Selecione"} /></SelectTrigger>
+              <SelectContent>{field.options?.map((option, i) => <SelectItem key={i} value={option}>{option}</SelectItem>)}</SelectContent>
             </Select>
           );
-          
         case 'multiselect':
           return (
             <div className="space-y-2">
-              {field.options?.map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`${field.id}_${index}`}
-                    checked={Array.isArray(value) && value.includes(option)}
-                    onCheckedChange={(checked) => {
-                      const currentValues = Array.isArray(value) ? value : [];
-                      if (checked) {
-                        updateFieldValue(field.id, [...currentValues, option]);
-                      } else {
-                        updateFieldValue(field.id, currentValues.filter((v: string) => v !== option));
-                      }
-                    }}
-                  />
-                  <Label htmlFor={`${field.id}_${index}`} className="text-sm">
-                    {option}
-                  </Label>
+              {field.options?.map((option, i) => (
+                <div key={i} className="flex items-center space-x-2">
+                  <Checkbox id={`${field.id}_${i}`} checked={Array.isArray(value) && value.includes(option)} onCheckedChange={(checked) => {
+                    const currentValues = Array.isArray(value) ? value : [];
+                    if (checked) updateFieldValue(field.id, [...currentValues, option]);
+                    else updateFieldValue(field.id, currentValues.filter((v: string) => v !== option));
+                  }} />
+                  <Label htmlFor={`${field.id}_${i}`}>{option}</Label>
                 </div>
               ))}
             </div>
           );
-          
-        default:
-          return null;
+        default: return null;
       }
     };
 
     return (
       <div key={field.id} className="space-y-2">
-        {field.type !== 'checkbox' && (
-          <Label htmlFor={field.id} className="text-sm font-medium">
-            {field.label}
-            {field.required && <span className="text-destructive ml-1">*</span>}
-          </Label>
-        )}
-        
+        {field.type !== 'checkbox' && <Label htmlFor={field.id}>{field.label}{field.required && <span className="text-destructive ml-1">*</span>}</Label>}
         {fieldElement()}
-        
-        {hasError && (
-          <p className="text-sm text-destructive">{errors[field.id]}</p>
-        )}
+        {hasError && <p className="text-sm text-destructive">{errors[field.id]}</p>}
       </div>
     );
   };
@@ -338,22 +242,8 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
   if (loading) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <div className="animate-pulse space-y-2">
-            <div className="h-6 bg-muted rounded w-3/4"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-4 bg-muted rounded w-1/4"></div>
-                <div className="h-10 bg-muted rounded"></div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
+        <CardHeader><div className="animate-pulse space-y-2"><div className="h-6 bg-muted rounded w-3/4"></div><div className="h-4 bg-muted rounded w-1/2"></div></div></CardHeader>
+        <CardContent><div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="space-y-2"><div className="h-4 bg-muted rounded w-1/4"></div><div className="h-10 bg-muted rounded"></div></div>)}</div></CardContent>
       </Card>
     );
   }
@@ -363,9 +253,7 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="p-12 text-center">
           <h3 className="text-lg font-semibold mb-2">Formulário não encontrado</h3>
-          <p className="text-muted-foreground">
-            O formulário solicitado não existe ou não está disponível.
-          </p>
+          <p className="text-muted-foreground">O formulário solicitado não existe ou não está disponível.</p>
         </CardContent>
       </Card>
     );
@@ -375,26 +263,31 @@ export function PublicFormRenderer({ formId, onSubmitSuccess }: PublicFormRender
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>{form.title}</CardTitle>
-        {form.description && (
-          <CardDescription>{form.description}</CardDescription>
-        )}
+        {form.description && <CardDescription>{form.description}</CardDescription>}
         <div className="flex items-center gap-2">
-          <Badge variant="outline">
-            {form.structure_json.fields.length} campos
-          </Badge>
-          {form.is_published && (
-            <Badge variant="default">Publicado</Badge>
-          )}
+          <Badge variant="outline">{form.structure_json.fields.length} campos</Badge>
+          {form.is_published && <Badge variant="default">Publicado</Badge>}
         </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {showEmployeeSelector && employees.length > 0 && (
+            <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+              <Label className="flex items-center gap-2"><User className="h-4 w-4" />Vincular a Funcionário (opcional)</Label>
+              <Select value={selectedEmployeeId || ''} onValueChange={(val) => setSelectedEmployeeId(val || undefined)}>
+                <SelectTrigger><SelectValue placeholder="Selecione um funcionário..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {employees.map((emp) => <SelectItem key={emp.id} value={emp.id}>{emp.full_name} ({emp.employee_code})</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
           {form.structure_json.fields.map((field: FormField) => renderField(field))}
           
           <div className="pt-4 border-t">
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Enviando..." : "Enviar Formulário"}
-            </Button>
+            <Button type="submit" className="w-full" disabled={submitting}>{submitting ? "Enviando..." : "Enviar Formulário"}</Button>
           </div>
         </form>
       </CardContent>

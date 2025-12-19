@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Users, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, FileText, Users, Edit, Trash2, Eye, Copy, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -98,6 +98,15 @@ export default function FormulariosCustomizados() {
 
   const handleViewSubmissions = (formId: string) => {
     setSubmissionsFormId(formId);
+  };
+
+  const handleCopyLink = (formId: string) => {
+    const link = `${window.location.origin}/form/${formId}`;
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link copiado!",
+      description: "O link do formulário foi copiado para a área de transferência",
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -247,11 +256,22 @@ export default function FormulariosCustomizados() {
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(form.updated_at)}</TableCell>
-                    <TableCell className="text-right space-x-2">
+                    <TableCell className="text-right space-x-1">
+                      {form.is_published && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyLink(form.id)}
+                          title="Copiar link do formulário"
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewSubmissions(form.id)}
+                        title="Ver respostas"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -259,6 +279,7 @@ export default function FormulariosCustomizados() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditForm(form)}
+                        title="Editar formulário"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>

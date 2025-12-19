@@ -8578,6 +8578,7 @@ export type Database = {
       form_submissions: {
         Row: {
           company_id: string
+          employee_id: string | null
           form_id: string
           id: string
           submission_data: Json
@@ -8586,6 +8587,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          employee_id?: string | null
           form_id: string
           id?: string
           submission_data: Json
@@ -8594,6 +8596,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          employee_id?: string | null
           form_id?: string
           id?: string
           submission_data?: Json
@@ -8601,6 +8604,13 @@ export type Database = {
           submitted_by_user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "form_submissions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "form_submissions_form_id_fkey"
             columns: ["form_id"]
