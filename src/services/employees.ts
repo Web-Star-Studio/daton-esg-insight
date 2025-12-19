@@ -218,27 +218,60 @@ export const deleteEmployee = async (id: string) => {
 };
 
 export const getEmployeesStats = async () => {
-  const { data: employees, error } = await supabase
+  // 1. Contar total de funcionários (server-side, sem limite de 1000)
+  const { count: totalEmployees, error: totalError } = await supabase
     .from('employees')
-    .select('*');
+    .select('*', { count: 'exact', head: true });
 
-  if (error) throw error;
+  if (totalError) throw totalError;
 
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter(e => e.status === 'Ativo').length;
-  const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
-  const genderDistribution = employees.reduce((acc, emp) => {
+  // 2. Contar funcionários ativos (server-side)
+  const { count: activeEmployees, error: activeError } = await supabase
+    .from('employees')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'Ativo');
+
+  if (activeError) throw activeError;
+
+  // 3. Buscar departamentos únicos
+  const { data: deptData, error: deptError } = await supabase
+    .from('employees')
+    .select('department')
+    .not('department', 'is', null);
+
+  if (deptError) throw deptError;
+  const departments = [...new Set(deptData?.map(e => e.department).filter(Boolean))];
+
+  // 4. Buscar distribuição de gênero (trazer apenas campo gender)
+  const { data: genderData, error: genderError } = await supabase
+    .from('employees')
+    .select('gender');
+
+  if (genderError) throw genderError;
+  const genderDistribution = (genderData || []).reduce((acc, emp) => {
     const gender = emp.gender || 'Não informado';
     acc[gender] = (acc[gender] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
+  // 5. Calcular salário médio
+  const { data: salaryData, error: salaryError } = await supabase
+    .from('employees')
+    .select('salary')
+    .not('salary', 'is', null);
+
+  if (salaryError) throw salaryError;
+  const salaries = salaryData?.map(e => e.salary).filter((s): s is number => s !== null) || [];
+  const avgSalary = salaries.length > 0 
+    ? salaries.reduce((sum, s) => sum + s, 0) / salaries.length 
+    : 0;
+
   return {
-    totalEmployees,
-    activeEmployees,
+    totalEmployees: totalEmployees || 0,
+    activeEmployees: activeEmployees || 0,
     departments: departments.length,
     genderDistribution,
-    avgSalary: employees.filter(e => e.salary).reduce((sum, e) => sum + (e.salary || 0), 0) / employees.filter(e => e.salary).length || 0
+    avgSalary
   };
 };
 
