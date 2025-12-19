@@ -29,12 +29,11 @@ export function HeimdallLanding() {
     useEffect(() => {
         // Initialize Lenis with physics-based smooth scrolling
         const lenis = new Lenis({
-            duration: 1.2,           // Animation duration
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Ease out expo
-            direction: 'vertical',
-            gestureDirection: 'vertical',
-            smooth: true,
-            smoothTouch: false,      // Disable on touch devices
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            orientation: 'vertical',
+            gestureOrientation: 'vertical',
+            smoothWheel: true,
             touchMultiplier: 2,
         });
 
