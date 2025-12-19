@@ -242,17 +242,45 @@ export const getEmployeesStats = async () => {
   if (deptError) throw deptError;
   const departments = [...new Set(deptData?.map(e => e.department).filter(Boolean))];
 
-  // 4. Buscar distribuição de gênero (trazer apenas campo gender)
-  const { data: genderData, error: genderError } = await supabase
-    .from('employees')
-    .select('gender');
+  // 4. Buscar distribuição de gênero com contagens server-side (evita limite de 1000)
+  const genderValues = ['Masculino', 'Feminino', 'Não binário', 'Outro'];
+  const genderDistribution: Record<string, number> = {};
 
-  if (genderError) throw genderError;
-  const genderDistribution = (genderData || []).reduce((acc, emp) => {
-    const gender = emp.gender || 'Não informado';
-    acc[gender] = (acc[gender] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Contar cada gênero específico em paralelo
+  const genderPromises = genderValues.map(async (genderValue) => {
+    const { count, error } = await supabase
+      .from('employees')
+      .select('*', { count: 'exact', head: true })
+      .eq('gender', genderValue);
+    
+    if (!error && count && count > 0) {
+      return { gender: genderValue, count };
+    }
+    return null;
+  });
+
+  // Contar "Não informado" (gender IS NULL)
+  const nullCountPromise = supabase
+    .from('employees')
+    .select('*', { count: 'exact', head: true })
+    .is('gender', null);
+
+  const [genderResults, nullResult] = await Promise.all([
+    Promise.all(genderPromises),
+    nullCountPromise
+  ]);
+
+  // Processar resultados de gêneros específicos
+  genderResults.forEach(result => {
+    if (result) {
+      genderDistribution[result.gender] = result.count;
+    }
+  });
+
+  // Processar "Não informado"
+  if (!nullResult.error && nullResult.count && nullResult.count > 0) {
+    genderDistribution['Não informado'] = nullResult.count;
+  }
 
   // 5. Calcular salário médio
   const { data: salaryData, error: salaryError } = await supabase
