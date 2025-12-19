@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 import { 
   Users, 
   Edit, 
@@ -17,9 +26,11 @@ import {
   Building,
   UserPlus,
   TrendingUp,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
-import { getEmployees, getEmployeesStats } from "@/services/employees";
+import { useEmployeesPaginated, useDepartments, getEmployeesStats } from "@/services/employees";
 
 interface EmployeesListProps {
   onEditEmployee: (employee: any) => void;
@@ -29,31 +40,47 @@ interface EmployeesListProps {
 
 export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee }: EmployeesListProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDepartment, setFilterDepartment] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
 
-  const { data: employees = [], isLoading } = useOptimizedQuery({
-    queryKey: ['employees'],
-    queryFn: getEmployees,
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset to page 1 on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterDepartment]);
+
+  const { data: paginatedData, isLoading } = useEmployeesPaginated({
+    page: currentPage,
+    pageSize,
+    search: debouncedSearch,
+    status: filterStatus,
+    department: filterDepartment,
   });
+
+  const { data: departments = [] } = useDepartments();
 
   const { data: stats } = useOptimizedQuery({
     queryKey: ['employee-stats'],
     queryFn: getEmployeesStats,
   });
 
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.employee_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (employee.position && employee.position.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = filterStatus === "all" || employee.status === filterStatus;
-    const matchesDepartment = filterDepartment === "all" || employee.department === filterDepartment;
-    
-    return matchesSearch && matchesStatus && matchesDepartment;
-  });
+  const employees = paginatedData?.data || [];
+  const totalCount = paginatedData?.totalCount || 0;
+  const totalPages = paginatedData?.totalPages || 1;
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const getStatusColor = (status: string) => {
@@ -66,9 +93,36 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
     }
   };
 
-  const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
+  // Calculate display range
+  const fromRecord = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const toRecord = Math.min(currentPage * pageSize, totalCount);
 
-  if (isLoading) {
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible + 2) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      
+      if (currentPage > 3) pages.push('ellipsis');
+      
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      for (let i = start; i <= end; i++) pages.push(i);
+      
+      if (currentPage < totalPages - 2) pages.push('ellipsis');
+      
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
+
+  if (isLoading && employees.length === 0) {
     return (
       <div className="space-y-4">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -98,7 +152,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
               <Users className="h-4 w-4 text-primary" />
               <div>
                 <p className="text-sm font-medium">Total de Funcionários</p>
-                <p className="text-2xl font-bold">{stats?.totalEmployees || employees.length}</p>
+                <p className="text-2xl font-bold">{stats?.totalEmployees || totalCount}</p>
               </div>
             </div>
           </CardContent>
@@ -121,12 +175,8 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-500" />
               <div>
-                <p className="text-sm font-medium">Taxa de Retenção</p>
-                <p className="text-2xl font-bold">
-                  {employees.length > 0 
-                    ? Math.round((employees.filter(e => e.status === 'Ativo').length / employees.length) * 100)
-                    : 0}%
-                </p>
+                <p className="text-sm font-medium">Ativos</p>
+                <p className="text-2xl font-bold">{stats?.activeEmployees || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -137,12 +187,8 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
             <div className="flex items-center gap-2">
               <UserPlus className="h-4 w-4 text-purple-500" />
               <div>
-                <p className="text-sm font-medium">Contratações (Ano)</p>
-                <p className="text-2xl font-bold">
-                  {employees.filter(e => 
-                    new Date(e.hire_date).getFullYear() === new Date().getFullYear()
-                  ).length}
-                </p>
+                <p className="text-sm font-medium">Exibindo</p>
+                <p className="text-2xl font-bold">{employees.length}</p>
               </div>
             </div>
           </CardContent>
@@ -209,12 +255,20 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
               </SelectContent>
             </Select>
           </div>
+
+          {/* Pagination Info */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              Exibindo {fromRecord} - {toRecord} de {totalCount} funcionários
+            </span>
+            {isLoading && <span className="text-primary">Carregando...</span>}
+          </div>
         </CardContent>
       </Card>
 
       {/* Employees List */}
       <div className="grid gap-4">
-        {filteredEmployees.map((employee) => (
+        {employees.map((employee) => (
           <Card key={employee.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -332,7 +386,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
           </Card>
         ))}
         
-        {filteredEmployees.length === 0 && (
+        {employees.length === 0 && !isLoading && (
           <Card>
             <CardContent className="p-8 text-center">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -353,6 +407,57 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
           </Card>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+              </PaginationItem>
+              
+              {getPageNumbers().map((page, idx) => (
+                <PaginationItem key={idx}>
+                  {page === 'ellipsis' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="gap-1"
+                >
+                  Próximo
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }
