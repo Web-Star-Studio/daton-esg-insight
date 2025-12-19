@@ -49,6 +49,34 @@ export interface ImportResult {
   };
 }
 
+// Find the actual header row by looking for CPF and Nome columns
+function findHeaderRow(worksheet: XLSX.WorkSheet): number {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  
+  // Search in the first 15 rows for a row containing "CPF" and "Nome"
+  for (let row = range.s.r; row <= Math.min(range.e.r, 15); row++) {
+    const cellValues: string[] = [];
+    
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      if (cell && cell.v) {
+        cellValues.push(String(cell.v).toUpperCase().trim());
+      }
+    }
+    
+    // If we find CPF and NOME in the same row, this is the header
+    const hasCPF = cellValues.some(v => v === 'CPF');
+    const hasNome = cellValues.some(v => v === 'NOME' || v.includes('NOME'));
+    
+    if (hasCPF && hasNome) {
+      return row;
+    }
+  }
+  
+  return 0; // Fallback to first row
+}
+
 // Parse Excel file
 export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> {
   return new Promise((resolve, reject) => {
@@ -60,7 +88,15 @@ export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> 
         const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+        
+        // Detect header row automatically
+        const headerRow = findHeaderRow(worksheet);
+        
+        // Parse starting from the detected header row
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          raw: false,
+          range: headerRow
+        });
         
         const employees: ParsedEmployee[] = jsonData.map((row: any, index) => {
           const lotacao = row['Lotação'] || row['Lotacao'] || row['LOTAÇÃO'] || row['LOTACAO'] || '';
@@ -77,7 +113,7 @@ export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> 
           }
           
           return {
-            rowNumber: index + 2, // +2 because row 1 is header, index starts at 0
+            rowNumber: headerRow + index + 2, // +2: header row + 1-indexed + data starts after header
             cpf: cpfClean,
             cpfFormatted: formatCPF(cpfClean),
             nome: row['Nome'] || row['NOME'] || row['nome'] || '',
