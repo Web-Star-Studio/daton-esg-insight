@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings, ClipboardList, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserAndCompany } from "@/utils/auth";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ interface NonConformity {
 }
 
 export default function NaoConformidades() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCreateNCOpen, setIsCreateNCOpen] = useState(false);
   const [selectedNCId, setSelectedNCId] = useState<string | null>(null);
@@ -408,7 +410,7 @@ export default function NaoConformidades() {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Dashboard
@@ -420,6 +422,14 @@ export default function NaoConformidades() {
           <TabsTrigger value="list" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Lista
+          </TabsTrigger>
+          <TabsTrigger 
+            value="tasks" 
+            className="flex items-center gap-2"
+            onClick={() => navigate("/nc-tarefas")}
+          >
+            <ClipboardList className="h-4 w-4" />
+            Minhas Tarefas
           </TabsTrigger>
         </TabsList>
 
@@ -606,6 +616,14 @@ export default function NaoConformidades() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={() => navigate(`/nao-conformidades/${nc.id}`)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Gerenciar</span>
+                        </Button>
+                        <Button 
                           variant="outline" 
                           size="sm"
                           onMouseEnter={() => prefetchNCDetails(nc.id)}
@@ -615,7 +633,7 @@ export default function NaoConformidades() {
                           }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          <span className="text-xs">Visualizar</span>
+                          <span className="text-xs">Ver</span>
                         </Button>
                         <Button 
                           variant="outline" 
