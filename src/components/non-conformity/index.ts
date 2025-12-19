@@ -1,4 +1,5 @@
 export { NCStageWizard } from "./NCStageWizard";
+export { NCStage1Details } from "./NCStage1Details";
 export { NCStage2ImmediateAction } from "./NCStage2ImmediateAction";
 export { NCStage3CauseAnalysis } from "./NCStage3CauseAnalysis";
 export { NCStage4Planning } from "./NCStage4Planning";

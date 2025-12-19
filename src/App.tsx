@@ -107,6 +107,8 @@ const PlanejamentoEstrategico = lazy(() => import("./pages/PlanejamentoEstrategi
 const MapeamentoProcessos = lazy(() => import("./pages/MapeamentoProcessos"));
 const GestaoRiscos = lazy(() => import("./pages/GestaoRiscos"));
 const NaoConformidades = lazy(() => import("./pages/NaoConformidades"));
+const NCDetailsPage = lazy(() => import("./pages/NCDetailsPage"));
+const NCTarefas = lazy(() => import("./pages/NCTarefas"));
 const PlanoAcao5W2H = lazy(() => import("./pages/PlanoAcao5W2H"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento"));
 const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
@@ -641,6 +643,8 @@ const AppContent = () => {
             <Route path="/mapeamento-processos" element={<ProtectedLazyPageWrapper><MapeamentoProcessos /></ProtectedLazyPageWrapper>} />
             <Route path="/gestao-riscos" element={<ProtectedLazyPageWrapper><GestaoRiscos /></ProtectedLazyPageWrapper>} />
             <Route path="/nao-conformidades" element={<ProtectedLazyPageWrapper><NaoConformidades /></ProtectedLazyPageWrapper>} />
+            <Route path="/nao-conformidades/:id" element={<ProtectedLazyPageWrapper><NCDetailsPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/nc-tarefas" element={<ProtectedLazyPageWrapper><NCTarefas /></ProtectedLazyPageWrapper>} />
             <Route path="/acoes-corretivas" element={<ProtectedLazyPageWrapper><AcoesCorretivas /></ProtectedLazyPageWrapper>} />
             <Route path="/plano-acao-5w2h" element={<ProtectedLazyPageWrapper><PlanoAcao5W2H /></ProtectedLazyPageWrapper>} />
             <Route path="/base-conhecimento" element={<ProtectedLazyPageWrapper><BaseConhecimento /></ProtectedLazyPageWrapper>} />
