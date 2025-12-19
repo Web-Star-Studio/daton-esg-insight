@@ -81,7 +81,7 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
         canComplete: false,
       };
     }
-    if (isPast(dueDate) && !isToday(dueDate) && plan.status !== "Concluída") {
+    if (isPast(dueDate) && !isToday(dueDate) && (plan.status as string) !== "Concluída") {
       return {
         badge: <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" /> Atrasada</Badge>,
         canStart: plan.status === "Planejada",

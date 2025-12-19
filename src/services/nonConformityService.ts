@@ -509,7 +509,7 @@ class NonConformityService {
       .rpc('get_nc_dashboard_stats', { p_company_id: companyId });
     
     if (error) throw error;
-    return data as NCDashboardStats;
+    return data as unknown as NCDashboardStats;
   }
 
   // ==================== USERS FOR ASSIGNMENT ====================
