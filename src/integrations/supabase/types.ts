@@ -15866,6 +15866,459 @@ export type Database = {
           },
         ]
       }
+      nc_action_plans: {
+        Row: {
+          attachments: Json | null
+          company_id: string
+          completed_at: string | null
+          completion_date: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          evidence: string | null
+          how_method: string | null
+          how_much_cost: string | null
+          id: string
+          non_conformity_id: string
+          order_index: number | null
+          status: string | null
+          updated_at: string | null
+          what_action: string
+          when_deadline: string
+          where_location: string | null
+          who_responsible_id: string | null
+          why_reason: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          company_id: string
+          completed_at?: string | null
+          completion_date?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          evidence?: string | null
+          how_method?: string | null
+          how_much_cost?: string | null
+          id?: string
+          non_conformity_id: string
+          order_index?: number | null
+          status?: string | null
+          updated_at?: string | null
+          what_action: string
+          when_deadline: string
+          where_location?: string | null
+          who_responsible_id?: string | null
+          why_reason?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          company_id?: string
+          completed_at?: string | null
+          completion_date?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          evidence?: string | null
+          how_method?: string | null
+          how_much_cost?: string | null
+          id?: string
+          non_conformity_id?: string
+          order_index?: number | null
+          status?: string | null
+          updated_at?: string | null
+          what_action?: string
+          when_deadline?: string
+          where_location?: string | null
+          who_responsible_id?: string | null
+          why_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nc_action_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_action_plans_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_action_plans_non_conformity_id_fkey"
+            columns: ["non_conformity_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_action_plans_who_responsible_id_fkey"
+            columns: ["who_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nc_cause_analysis: {
+        Row: {
+          analysis_method: string
+          attachments: Json | null
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          due_date: string | null
+          five_whys_data: Json | null
+          id: string
+          ishikawa_data: Json | null
+          non_conformity_id: string
+          responsible_user_id: string | null
+          root_cause: string | null
+          similar_nc_ids: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_method: string
+          attachments?: Json | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          due_date?: string | null
+          five_whys_data?: Json | null
+          id?: string
+          ishikawa_data?: Json | null
+          non_conformity_id: string
+          responsible_user_id?: string | null
+          root_cause?: string | null
+          similar_nc_ids?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_method?: string
+          attachments?: Json | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          due_date?: string | null
+          five_whys_data?: Json | null
+          id?: string
+          ishikawa_data?: Json | null
+          non_conformity_id?: string
+          responsible_user_id?: string | null
+          root_cause?: string | null
+          similar_nc_ids?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nc_cause_analysis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_cause_analysis_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_cause_analysis_non_conformity_id_fkey"
+            columns: ["non_conformity_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_cause_analysis_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nc_effectiveness: {
+        Row: {
+          attachments: Json | null
+          company_id: string
+          created_at: string | null
+          evaluated_at: string | null
+          evaluated_by_user_id: string | null
+          evidence: string
+          generated_revision_nc_id: string | null
+          id: string
+          is_effective: boolean | null
+          non_conformity_id: string
+          postponed_reason: string | null
+          postponed_responsible_id: string | null
+          postponed_to: string | null
+          requires_risk_update: boolean | null
+          requires_sgq_change: boolean | null
+          revision_number: number | null
+          risk_update_notes: string | null
+          sgq_change_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          company_id: string
+          created_at?: string | null
+          evaluated_at?: string | null
+          evaluated_by_user_id?: string | null
+          evidence: string
+          generated_revision_nc_id?: string | null
+          id?: string
+          is_effective?: boolean | null
+          non_conformity_id: string
+          postponed_reason?: string | null
+          postponed_responsible_id?: string | null
+          postponed_to?: string | null
+          requires_risk_update?: boolean | null
+          requires_sgq_change?: boolean | null
+          revision_number?: number | null
+          risk_update_notes?: string | null
+          sgq_change_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          company_id?: string
+          created_at?: string | null
+          evaluated_at?: string | null
+          evaluated_by_user_id?: string | null
+          evidence?: string
+          generated_revision_nc_id?: string | null
+          id?: string
+          is_effective?: boolean | null
+          non_conformity_id?: string
+          postponed_reason?: string | null
+          postponed_responsible_id?: string | null
+          postponed_to?: string | null
+          requires_risk_update?: boolean | null
+          requires_sgq_change?: boolean | null
+          revision_number?: number | null
+          risk_update_notes?: string | null
+          sgq_change_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nc_effectiveness_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_effectiveness_evaluated_by_user_id_fkey"
+            columns: ["evaluated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_effectiveness_generated_revision_nc_id_fkey"
+            columns: ["generated_revision_nc_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_effectiveness_non_conformity_id_fkey"
+            columns: ["non_conformity_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_effectiveness_postponed_responsible_id_fkey"
+            columns: ["postponed_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nc_immediate_actions: {
+        Row: {
+          attachments: Json | null
+          company_id: string
+          completion_date: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          description: string
+          due_date: string
+          evidence: string | null
+          id: string
+          non_conformity_id: string
+          responsible_user_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          company_id: string
+          completion_date?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description: string
+          due_date: string
+          evidence?: string | null
+          id?: string
+          non_conformity_id: string
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          company_id?: string
+          completion_date?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string
+          due_date?: string
+          evidence?: string | null
+          id?: string
+          non_conformity_id?: string
+          responsible_user_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nc_immediate_actions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_immediate_actions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_immediate_actions_non_conformity_id_fkey"
+            columns: ["non_conformity_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_immediate_actions_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nc_tasks: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          completed_by_user_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          description: string | null
+          due_date: string
+          id: string
+          non_conformity_id: string
+          priority: string | null
+          reference_id: string | null
+          reference_table: string | null
+          responsible_user_id: string | null
+          status: string | null
+          task_type: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          completed_by_user_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          non_conformity_id: string
+          priority?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+          responsible_user_id?: string | null
+          status?: string | null
+          task_type: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          completed_by_user_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          non_conformity_id?: string
+          priority?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+          responsible_user_id?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nc_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_tasks_completed_by_user_id_fkey"
+            columns: ["completed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_tasks_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_tasks_non_conformity_id_fkey"
+            columns: ["non_conformity_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nc_tasks_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       non_conformities: {
         Row: {
           approval_date: string | null
@@ -15877,6 +16330,7 @@ export type Database = {
           completion_date: string | null
           corrective_actions: string | null
           created_at: string
+          current_stage: number | null
           damage_level: string | null
           description: string
           detected_by_user_id: string | null
@@ -15887,13 +16341,23 @@ export type Database = {
           id: string
           impact_analysis: string | null
           nc_number: string
+          organizational_unit_id: string | null
+          parent_nc_id: string | null
           preventive_actions: string | null
+          process_id: string | null
           recurrence_count: number | null
           responsible_user_id: string | null
+          revision_number: number | null
           root_cause_analysis: string | null
           severity: string
           similar_nc_ids: Json | null
           source: string | null
+          stage_1_completed_at: string | null
+          stage_2_completed_at: string | null
+          stage_3_completed_at: string | null
+          stage_4_completed_at: string | null
+          stage_5_completed_at: string | null
+          stage_6_completed_at: string | null
           status: string | null
           title: string
           updated_at: string
@@ -15908,6 +16372,7 @@ export type Database = {
           completion_date?: string | null
           corrective_actions?: string | null
           created_at?: string
+          current_stage?: number | null
           damage_level?: string | null
           description: string
           detected_by_user_id?: string | null
@@ -15918,13 +16383,23 @@ export type Database = {
           id?: string
           impact_analysis?: string | null
           nc_number: string
+          organizational_unit_id?: string | null
+          parent_nc_id?: string | null
           preventive_actions?: string | null
+          process_id?: string | null
           recurrence_count?: number | null
           responsible_user_id?: string | null
+          revision_number?: number | null
           root_cause_analysis?: string | null
           severity: string
           similar_nc_ids?: Json | null
           source?: string | null
+          stage_1_completed_at?: string | null
+          stage_2_completed_at?: string | null
+          stage_3_completed_at?: string | null
+          stage_4_completed_at?: string | null
+          stage_5_completed_at?: string | null
+          stage_6_completed_at?: string | null
           status?: string | null
           title: string
           updated_at?: string
@@ -15939,6 +16414,7 @@ export type Database = {
           completion_date?: string | null
           corrective_actions?: string | null
           created_at?: string
+          current_stage?: number | null
           damage_level?: string | null
           description?: string
           detected_by_user_id?: string | null
@@ -15949,18 +16425,36 @@ export type Database = {
           id?: string
           impact_analysis?: string | null
           nc_number?: string
+          organizational_unit_id?: string | null
+          parent_nc_id?: string | null
           preventive_actions?: string | null
+          process_id?: string | null
           recurrence_count?: number | null
           responsible_user_id?: string | null
+          revision_number?: number | null
           root_cause_analysis?: string | null
           severity?: string
           similar_nc_ids?: Json | null
           source?: string | null
+          stage_1_completed_at?: string | null
+          stage_2_completed_at?: string | null
+          stage_3_completed_at?: string | null
+          stage_4_completed_at?: string | null
+          stage_5_completed_at?: string | null
+          stage_6_completed_at?: string | null
           status?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "non_conformities_parent_nc_id_fkey"
+            columns: ["parent_nc_id"]
+            isOneToOne: false
+            referencedRelation: "non_conformities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       non_conformity_timeline: {
         Row: {
@@ -23288,6 +23782,7 @@ export type Database = {
             Args: { p_company_id: string; p_indicator_id: string }
             Returns: Json
           }
+      get_nc_dashboard_stats: { Args: { p_company_id: string }; Returns: Json }
       get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -23385,6 +23880,7 @@ export type Database = {
           url: string
         }[]
       }
+      update_nc_overdue_tasks: { Args: never; Returns: undefined }
       update_overdue_tasks: { Args: never; Returns: undefined }
       user_has_company_access: {
         Args: { p_company_id: string }
