@@ -28,7 +28,8 @@ import {
   downloadEmployeeTemplate,
   type ParsedEmployee,
   type EmployeeValidation,
-  type ImportResult
+  type ImportResult,
+  type ImportProgress
 } from '@/services/employeeImport';
 import { formErrorHandler } from '@/utils/formErrorHandler';
 
@@ -38,6 +39,7 @@ export function EmployeeImportSection() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [step, setStep] = useState<'upload' | 'validate' | 'result'>('upload');
   
   // Import options
@@ -91,11 +93,13 @@ export function EmployeeImportSection() {
 
   const handleImport = async () => {
     setIsImporting(true);
+    setImportProgress({ current: 0, total: parsedEmployees.length, percentage: 0, stage: 'preparing' });
     
     try {
       const result = await importEmployees(parsedEmployees, {
         skipExisting,
         createMissingEntities,
+        onProgress: setImportProgress,
       });
       
       setImportResult(result);
@@ -117,6 +121,7 @@ export function EmployeeImportSection() {
       });
     } finally {
       setIsImporting(false);
+      setImportProgress(null);
     }
   };
 
@@ -395,28 +400,41 @@ export function EmployeeImportSection() {
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleReset}>
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleImport} 
-                    disabled={isImporting || validCount === 0}
-                  >
-                    {isImporting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Importando...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Importar {validCount} Funcionários
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {!isImporting && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleReset}>
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleImport} 
+                      disabled={validCount === 0}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Importar {validCount} Funcionários
+                    </Button>
+                  </div>
+                )}
               </div>
+              
+              {/* Progress indicator */}
+              {isImporting && importProgress && (
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Importando funcionários...</span>
+                    <span className="text-sm text-muted-foreground">
+                      {importProgress.current} de {importProgress.total}
+                    </span>
+                  </div>
+                  <Progress value={importProgress.percentage} className="h-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      {importProgress.currentEmployee || 'Preparando...'}
+                    </span>
+                    <span>{importProgress.percentage}%</span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>
