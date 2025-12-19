@@ -220,32 +220,33 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   // Hook para notificações de processamento em tempo real
   useDocumentProcessingNotifications();
-  
+
   return (
     <>
       <RouteValidator>
         <GlobalKeyboardShortcuts />
         <PageTransition>
-                  <Routes>
+          <Routes>
             {/* Landing Page - público */}
             <Route path="/" element={<LandingPage />} />
-            
+            <Route path="/landing" element={<LandingPage />} />
+
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            
+
             {/* Rota de onboarding - protegida */}
             <Route path="/onboarding" element={<OnboardingRoute />} />
-            
+
             {/* ========================================== */}
             {/* MÓDULOS DESABILITADOS - Redirecionamentos */}
             {/* ========================================== */}
-            
+
             {/* Financeiro - desabilitado */}
             {!ENABLED_MODULES.financial && (
               <Route path="/financeiro/*" element={<Navigate to="/dashboard" replace />} />
             )}
-            
+
             {/* Dados e Relatórios - desabilitado */}
             {!ENABLED_MODULES.dataReports && (
               <>
@@ -256,7 +257,7 @@ const AppContent = () => {
                 <Route path="/ativos" element={<Navigate to="/dashboard" replace />} />
               </>
             )}
-            
+
             {/* ESG Ambiental - desabilitado */}
             {!ENABLED_MODULES.esgEnvironmental && (
               <>
@@ -272,7 +273,7 @@ const AppContent = () => {
                 <Route path="/metas-sustentabilidade" element={<Navigate to="/dashboard" replace />} />
               </>
             )}
-            
+
             {/* ESG Governança - desabilitado */}
             {!ENABLED_MODULES.esgGovernance && (
               <>
@@ -322,14 +323,14 @@ const AppContent = () => {
                 <Dashboard />
               </ProtectedLazyPageWrapper>
             } />
-            
+
             {/* Database Documentation */}
             <Route path="/documentacao-banco" element={
               <ProtectedLazyPageWrapper>
                 <DatabaseDocumentation />
               </ProtectedLazyPageWrapper>
             } />
-            
+
             {/* Inventário e GHG */}
             <Route path="/inventario-gee" element={
               <ProtectedLazyPageWrapper>
@@ -342,14 +343,14 @@ const AppContent = () => {
               </ProtectedLazyPageWrapper>
             } />
             <Route path="/emissoes" element={<Navigate to="/inventario-gee" replace />} />
-            
+
             {/* Gestão de Documentos - Hub Unificado */}
             <Route path="/documentos" element={
               <ProtectedLazyPageWrapper>
                 <DocumentosHub />
               </ProtectedLazyPageWrapper>
             } />
-            
+
             {/* Redirects antigos para o novo hub */}
             <Route path="/extracoes-documentos" element={<Navigate to="/documentos?tab=extracoes" replace />} />
             <Route path="/reconciliacao-documentos" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
@@ -437,7 +438,7 @@ const AppContent = () => {
                 <RegistrarDestinacao />
               </ProtectedLazyPageWrapper>
             } />
-            
+
             {/* Monitoramento ESG - FASE 1 & 2 */}
             <Route path="/monitoramento-esg" element={
               <ProtectedLazyPageWrapper>
@@ -580,7 +581,7 @@ const AppContent = () => {
                 <RegistrarAtividadeConservacao />
               </ProtectedLazyPageWrapper>
             } />
-            
+
             {/* Supplier Management Module */}
             <Route path="/fornecedores/dashboard" element={<ProtectedLazyPageWrapper><SupplierManagementDashboard /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/documentacao" element={<ProtectedLazyPageWrapper><RequiredDocuments /></ProtectedLazyPageWrapper>} />
@@ -599,7 +600,7 @@ const AppContent = () => {
             <Route path="/fornecedores/falhas" element={<ProtectedLazyPageWrapper><SupplierFailuresPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/criterios-avaliacao" element={<ProtectedLazyPageWrapper><SupplierEvaluationCriteriaPage /></ProtectedLazyPageWrapper>} />
             <Route path="/fornecedores/entregas" element={<ProtectedLazyPageWrapper><SupplierDeliveriesPage /></ProtectedLazyPageWrapper>} />
-            
+
             {/* Demais rotas com lazy loading */}
             <Route path="/gestao-esg" element={<ProtectedLazyPageWrapper><GestaoESG /></ProtectedLazyPageWrapper>} />
             <Route path="/ativos" element={<ProtectedLazyPageWrapper><Ativos /></ProtectedLazyPageWrapper>} />
@@ -616,12 +617,12 @@ const AppContent = () => {
             <Route path="/auditoria" element={<ProtectedLazyPageWrapper><Auditoria /></ProtectedLazyPageWrapper>} />
             <Route path="/auditoria/:id" element={<ProtectedLazyPageWrapper><AuditDetails /></ProtectedLazyPageWrapper>} />
             <Route path="/compliance" element={<ProtectedLazyPageWrapper><Compliance /></ProtectedLazyPageWrapper>} />
-            
+
             {/* Sistema e alertas */}
             <Route path="/smart-notifications" element={<ProtectedLazyPageWrapper><SmartNotificationSystem /></ProtectedLazyPageWrapper>} />
             <Route path="/intelligent-alerts" element={<ProtectedLazyPageWrapper><IntelligentAlertsSystem /></ProtectedLazyPageWrapper>} />
             <Route path="/advanced-reports" element={<ProtectedLazyPageWrapper><AdvancedReportingSystem /></ProtectedLazyPageWrapper>} />
-            
+
             {/* ESG e stakeholders */}
             <Route path="/gestao-stakeholders" element={<ProtectedLazyPageWrapper><GestaoStakeholders /></ProtectedLazyPageWrapper>} />
             <Route path="/analise-materialidade" element={<ProtectedLazyPageWrapper><AnaliseMaterialidade /></ProtectedLazyPageWrapper>} />
@@ -634,7 +635,7 @@ const AppContent = () => {
             <Route path="/governanca-esg" element={<ProtectedLazyPageWrapper><GovernancaESG /></ProtectedLazyPageWrapper>} />
             <Route path="/relatorios-integrados" element={<ProtectedLazyPageWrapper><RelatoriosIntegrados /></ProtectedLazyPageWrapper>} />
             <Route path="/production-monitoring" element={<ProtectedLazyPageWrapper><ProductionMonitoring /></ProtectedLazyPageWrapper>} />
-            
+
             {/* SGQ modules */}
             <Route path="/planejamento-estrategico" element={<ProtectedLazyPageWrapper><PlanejamentoEstrategico /></ProtectedLazyPageWrapper>} />
             <Route path="/mapeamento-processos" element={<ProtectedLazyPageWrapper><MapeamentoProcessos /></ProtectedLazyPageWrapper>} />
@@ -655,7 +656,7 @@ const AppContent = () => {
             <Route path="/dashboard-sgq" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/auditorias-internas" element={<Navigate to="/auditoria" replace />} />
             <Route path="/avaliacao-fornecedores" element={<Navigate to="/gestao-fornecedores" replace />} />
-            
+
             {/* RH modules */}
             <Route path="/estrutura-organizacional" element={<ProtectedLazyPageWrapper><EstruturaOrganizacional /></ProtectedLazyPageWrapper>} />
             <Route path="/descricao-cargos" element={<ProtectedLazyPageWrapper><DescricaoCargos /></ProtectedLazyPageWrapper>} />
@@ -693,20 +694,20 @@ const AppContent = () => {
             <Route path="/gerador-relatorios" element={<Navigate to="/relatorios-integrados" replace />} />
             <Route path="/marketplace-esg" element={<Navigate to="/marketplace" replace />} />
             <Route path="/reconciliacao-ia" element={<Navigate to="/documentos?tab=reconciliacao" replace />} />
-            
+
             {/* Formulário público */}
             <Route path="/form/:formId" element={
               <LazyPageWrapper>
                 <PublicForm />
               </LazyPageWrapper>
             } />
-            
+
             {/* System Status - Production Readiness */}
             <Route path="/system-status" element={<ProtectedLazyPageWrapper><SystemStatus /></ProtectedLazyPageWrapper>} />
-            
+
             {/* Platform Admin Dashboard - Only accessible to platform admins */}
-            <Route 
-              path="/platform-admin" 
+            <Route
+              path="/platform-admin"
               element={
                 <ProtectedRoute>
                   <RoleGuard requiredRole="platform_admin">
@@ -715,14 +716,14 @@ const AppContent = () => {
                     </Suspense>
                   </RoleGuard>
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Catch-all deve ser sempre a última rota */}
             <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </PageTransition>
-              </RouteValidator>
+          </Routes>
+        </PageTransition>
+      </RouteValidator>
     </>
   );
 };
@@ -737,10 +738,10 @@ const App = () => (
               <SmartToastProvider>
                 <Toaster />
                 <Sonner />
-                <BrowserRouter 
-                  future={{ 
-                    v7_startTransition: true, 
-                    v7_relativeSplatPath: true 
+                <BrowserRouter
+                  future={{
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true
                   }}
                 >
                   <AppContent />

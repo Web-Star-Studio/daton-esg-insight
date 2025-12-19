@@ -1,0 +1,486 @@
+/**
+ * Heimdall Power Style - Complete Design System
+ * 
+ * Global Atmosphere & Physics:
+ * - Background: #0B0C0E (Carvão Profundo)
+ * - Headings: Sans-serif Grotesca, Bold/Black, tracking-tight
+ * - Labels: Monospace, uppercase, #888, tracking-widest
+ * - Scroll: Lenis with damping 0.1
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* ============================================
+   CSS VARIABLES - DESIGN TOKENS
+   ============================================ */
+:root {
+  /* Core Colors - LIGHT THEME */
+  --heimdall-bg: #FFFFFF;
+  --heimdall-bg-secondary: #F4F4F5;
+  --heimdall-bg-tertiary: #EDEDEF;
+
+  /* Text Colors - Dark on Light */
+  --heimdall-text: #111827;
+  --heimdall-text-secondary: #4B5563;
+  --heimdall-text-muted: #9CA3AF;
+
+  /* Brand Colors - Daton Green */
+  --heimdall-accent: #15c470;
+  --heimdall-accent-hover: #109e5a;
+  /* Slightly darker shade for hover */
+  --heimdall-neon-green: #15c470;
+
+  /* Borders - Subtle Dark */
+  --heimdall-border: rgba(0, 0, 0, 0.08);
+  --heimdall-border-subtle: rgba(0, 0, 0, 0.05);
+  --heimdall-border-strong: #E5E7EB;
+
+  /* Glass Effect - Frosty White */
+  --heimdall-glass-bg: rgba(255, 255, 255, 0.85);
+  --heimdall-glass-blur: blur(12px);
+
+  /* Animation Curves */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Spacing */
+  --heimdall-section-padding: clamp(80px, 12vh, 160px);
+  --heimdall-container-max: 1440px;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+.heimdall-page {
+  background-color: var(--heimdall-bg);
+  color: var(--heimdall-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.heimdall-container {
+  max-width: var(--heimdall-container-max);
+  margin: 0 auto;
+  padding-inline: 2rem;
+}
+
+/* ============================================
+   TYPOGRAPHY - GROTESQUE HEADINGS
+   ============================================ */
+.heimdall-heading-xl {
+  font-size: clamp(3rem, 10vw, 7rem);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  /* tracking-tight */
+  text-transform: uppercase;
+  color: var(--heimdall-text);
+}
+
+.heimdall-heading-lg {
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--heimdall-text);
+}
+
+.heimdall-heading-md {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--heimdall-text);
+}
+
+.heimdall-heading-sm {
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--heimdall-text);
+}
+
+/* Technical Labels - Monospace */
+.heimdall-label {
+  font-family: 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  /* tracking-widest */
+  text-transform: uppercase;
+  color: var(--heimdall-text-secondary);
+}
+
+.heimdall-label-accent {
+  font-family: 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--heimdall-accent);
+}
+
+/* Body Text */
+.heimdall-body {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.7;
+  color: var(--heimdall-text-secondary);
+}
+
+.heimdall-body-sm {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--heimdall-text-secondary);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.heimdall-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  /* Pill shape */
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-expo);
+  white-space: nowrap;
+}
+
+.heimdall-btn-primary {
+  background: var(--heimdall-accent);
+  color: var(--heimdall-text);
+}
+
+.heimdall-btn-primary:hover {
+  background: var(--heimdall-accent-hover);
+  filter: brightness(1.05);
+}
+
+.heimdall-btn-secondary {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--heimdall-text);
+  border: 1px solid var(--heimdall-border);
+}
+
+.heimdall-btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.heimdall-btn-ghost {
+  background: transparent;
+  color: var(--heimdall-text);
+}
+
+.heimdall-btn-ghost:hover {
+  color: var(--heimdall-accent);
+}
+
+/* Magnetic Button Arrow */
+.heimdall-btn .btn-arrow {
+  transition: transform 0.2s ease-out;
+}
+
+.heimdall-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ============================================
+   SCROLL REVEAL ANIMATIONS
+   ============================================ */
+.reveal-text {
+  overflow: hidden;
+}
+
+.reveal-text-inner {
+  transform: translateY(110%);
+  animation: revealText 0.8s var(--ease-out-expo) forwards;
+}
+
+@keyframes revealText {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Stagger animation delays */
+.reveal-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.reveal-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.reveal-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.reveal-delay-4 {
+  animation-delay: 0.4s;
+}
+
+.reveal-delay-5 {
+  animation-delay: 0.5s;
+}
+
+/* ============================================
+   KEYFRAME ANIMATIONS
+   ============================================ */
+@keyframes heimdall-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heimdall-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes heimdall-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes heimdall-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(21, 196, 112, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(21, 196, 112, 0.6);
+  }
+}
+
+@keyframes heimdall-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes heimdall-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes heimdall-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ============================================
+   CUSTOM CURSOR
+   ============================================ */
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  transition: transform 0.15s ease-out, width 0.2s ease, height 0.2s ease;
+}
+
+.custom-cursor.cursor-hover {
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+}
+
+/* ============================================
+   SIBLING FADE EFFECT (Nav Links)
+   ============================================ */
+.sibling-fade>* {
+  transition: opacity 0.3s ease;
+}
+
+.sibling-fade:hover>* {
+  opacity: 0.4;
+}
+
+.sibling-fade:hover>*:hover {
+  opacity: 1;
+}
+
+/* ============================================
+   NEWS TICKER DIMMING EFFECT
+   ============================================ */
+.ticker-list {
+  transition: all 0.3s ease;
+}
+
+.ticker-item {
+  transition: opacity 0.3s ease, transform 0.3s var(--ease-expo);
+}
+
+.ticker-list:hover .ticker-item {
+  opacity: 0.3;
+}
+
+.ticker-list:hover .ticker-item:hover {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+/* ============================================
+   VIDEO OVERLAY GRADIENT
+   ============================================ */
+.video-overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,
+      var(--heimdall-bg) 10%,
+      rgba(255, 255, 255, 0.5) 40%,
+      transparent 70%);
+  pointer-events: none;
+}
+
+/* ============================================
+   3D CANVAS STYLES
+   ============================================ */
+.canvas-container {
+  cursor: grab;
+}
+
+.canvas-container:active {
+  cursor: grabbing;
+}
+
+/* ============================================
+   GLASS CARD
+   ============================================ */
+.glass-card {
+  background: var(--heimdall-glass-bg);
+  backdrop-filter: var(--heimdall-glass-blur);
+  -webkit-backdrop-filter: var(--heimdall-glass-blur);
+  border: 1px solid var(--heimdall-border);
+  border-radius: 16px;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #888888 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-gradient {
+  border-image: linear-gradient(90deg, transparent, var(--heimdall-border), transparent) 1;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .heimdall-heading-xl {
+    font-size: clamp(2.5rem, 12vw, 4rem);
+  }
+
+  .heimdall-heading-lg {
+    font-size: clamp(1.75rem, 8vw, 3rem);
+  }
+
+  .heimdall-container {
+    padding-inline: 1.25rem;
+  }
+}
+
+/* PRECISION DESIGN SYSTEM EXTENSIONS */
+
+.font-sora {
+  font-family: 'Sora', sans-serif;
+}
+
+.font-mono {
+  font-family: 'Space Mono', monospace;
+}
+
+.precision-grid {
+  background-size: 60px 60px;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+.precision-border {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.text-stroke-sm {
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.1);
+  color: transparent;
+}
