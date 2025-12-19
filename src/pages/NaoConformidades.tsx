@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NonConformityDetailsModal } from "@/components/NonConformityDetailsModal";
 import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAdvancedDashboard";
 import { ApprovalWorkflowManager } from "@/components/ApprovalWorkflowManager";
+import { NCAdvancedDashboard } from "@/components/non-conformity";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -434,129 +435,8 @@ export default function NaoConformidades() {
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-6">
-          {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de NCs</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalNCs}</div>
-            <p className="text-xs text-muted-foreground">
-              registradas no sistema
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">NCs Abertas</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{openNCs}</div>
-            <p className="text-xs text-muted-foreground">
-              aguardando resolução
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">NCs Críticas</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{criticalNCs}</div>
-            <p className="text-xs text-muted-foreground">
-              requerem atenção imediata
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">NCs Fechadas</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{closedNCs}</div>
-            <p className="text-xs text-muted-foreground">
-              resolvidas com sucesso
-            </p>
-          </CardContent>
-          </Card>
-        </div>
-
-        {/* Basic Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Resumo Rápido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Taxa de Resolução</span>
-                  <span className="font-semibold">
-                    {totalNCs > 0 ? ((closedNCs / totalNCs) * 100).toFixed(1) : 0}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tempo Médio</span>
-                  <span className="font-semibold">12 dias</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Recorrências</span>
-                  <span className="font-semibold text-orange-600">3</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Ações Necessárias</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 rounded-lg bg-red-50">
-                  <span className="text-sm">Aprovações Pendentes</span>
-                  <Badge variant="destructive">{nonConformities?.filter(nc => !nc.approved_by_user_id).length || 0}</Badge>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-yellow-50">
-                  <span className="text-sm">Análises Pendentes</span>
-                  <Badge variant="secondary">{nonConformities?.filter(nc => nc.status === "Em Análise").length || 0}</Badge>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50">
-                  <span className="text-sm">Em Correção</span>
-                  <Badge>{nonConformities?.filter(nc => nc.status === "Em Correção").length || 0}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Distribuição por Fonte</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {["Auditoria Interna", "Cliente", "Fornecedor", "Processo"].map(source => {
-                  const count = nonConformities?.filter(nc => nc.source === source).length || 0;
-                  return (
-                    <div key={source} className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">{source}</span>
-                      <Badge variant="outline">{count}</Badge>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
+          <NCAdvancedDashboard nonConformities={(nonConformities || []) as any} />
+        </TabsContent>
 
       <TabsContent value="analytics" className="mt-6">
         <NonConformitiesAdvancedDashboard />
