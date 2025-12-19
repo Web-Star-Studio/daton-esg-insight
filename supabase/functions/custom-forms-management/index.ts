@@ -97,6 +97,9 @@ serve(async (req) => {
       case 'GET_SUBMISSIONS':
         return await getSubmissions(supabaseClient, company_id, body.formId)
       
+      case 'GET_EMPLOYEE_SUBMISSIONS':
+        return await getEmployeeSubmissions(supabaseClient, company_id, body.employeeId)
+      
       default:
         return new Response('Invalid action', { status: 400, headers: corsHeaders })
     }
@@ -249,20 +252,31 @@ async function deleteForm(supabase: any, company_id: string, form_id: string) {
 }
 
 async function submitForm(supabase: any, company_id: string, user_id: string, submissionData: any) {
+  console.log('📝 Submitting form:', { form_id: submissionData.form_id, employee_id: submissionData.employee_id })
+  
+  const insertData: any = {
+    form_id: submissionData.form_id,
+    submission_data: submissionData.submission_data,
+    company_id,
+    submitted_by_user_id: user_id,
+  }
+  
+  // Add employee_id if provided
+  if (submissionData.employee_id) {
+    insertData.employee_id = submissionData.employee_id
+  }
+  
   const { data, error } = await supabase
     .from('form_submissions')
-    .insert({
-      form_id: submissionData.form_id,
-      submission_data: submissionData.submission_data,
-      company_id,
-      submitted_by_user_id: user_id,
-    })
+    .insert(insertData)
     .select()
     .single()
 
   if (error) {
     throw new Error(`Failed to submit form: ${error.message}`)
   }
+
+  console.log('✅ Form submitted successfully:', data.id)
 
   return new Response(
     JSON.stringify(data),
@@ -282,9 +296,62 @@ async function getSubmissions(supabase: any, company_id: string, form_id: string
     throw new Error(`Failed to fetch submissions: ${error.message}`)
   }
 
-  // Manually fetch user data for each submission
-  const submissionsWithUsers = await Promise.all(
+  // Manually fetch user and employee data for each submission
+  const submissionsWithData = await Promise.all(
     (data || []).map(async (submission: any) => {
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('id', submission.submitted_by_user_id)
+        .single()
+
+      let employeeData = null
+      if (submission.employee_id) {
+        const { data: empData } = await supabase
+          .from('employees')
+          .select('id, full_name, employee_code')
+          .eq('id', submission.employee_id)
+          .single()
+        employeeData = empData
+      }
+
+      return {
+        ...submission,
+        submitted_by: userData,
+        employee: employeeData
+      }
+    })
+  )
+
+  return new Response(
+    JSON.stringify(submissionsWithData),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function getEmployeeSubmissions(supabase: any, company_id: string, employee_id: string) {
+  console.log('📋 Fetching submissions for employee:', employee_id)
+  
+  const { data, error } = await supabase
+    .from('form_submissions')
+    .select('*')
+    .eq('employee_id', employee_id)
+    .eq('company_id', company_id)
+    .order('submitted_at', { ascending: false })
+
+  if (error) {
+    throw new Error(`Failed to fetch employee submissions: ${error.message}`)
+  }
+
+  // Fetch form info for each submission
+  const submissionsWithForms = await Promise.all(
+    (data || []).map(async (submission: any) => {
+      const { data: formData } = await supabase
+        .from('custom_forms')
+        .select('id, title, description')
+        .eq('id', submission.form_id)
+        .single()
+
       const { data: userData } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -293,13 +360,16 @@ async function getSubmissions(supabase: any, company_id: string, form_id: string
 
       return {
         ...submission,
+        form: formData,
         submitted_by: userData
       }
     })
   )
 
+  console.log('✅ Found', submissionsWithForms.length, 'submissions for employee')
+
   return new Response(
-    JSON.stringify(submissionsWithUsers),
+    JSON.stringify(submissionsWithForms),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }

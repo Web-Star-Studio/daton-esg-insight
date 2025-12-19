@@ -4,14 +4,17 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 // Form field structure validation
 const FormFieldSchema = z.object({
   id: z.string(),
-  type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'radio', 'date', 'file']),
+  type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'radio', 'date', 'file', 'multiselect']),
   label: z.string().min(1, 'Label is required'),
   placeholder: z.string().optional(),
   required: z.boolean().optional(),
-  options: z.array(z.object({
-    label: z.string(),
-    value: z.string()
-  })).optional(),
+  options: z.union([
+    z.array(z.object({
+      label: z.string(),
+      value: z.string()
+    })),
+    z.array(z.string())
+  ]).optional(),
   validation: z.object({
     min: z.number().optional(),
     max: z.number().optional(),
@@ -26,7 +29,11 @@ const FormStructureSchema = z.object({
   sections: z.array(z.object({
     title: z.string(),
     fields: z.array(z.string())
-  })).optional()
+  })).optional(),
+  theme: z.object({
+    primaryColor: z.string().optional(),
+    backgroundColor: z.string().optional()
+  }).optional()
 });
 
 // Create form validation
@@ -63,7 +70,8 @@ export const DeleteFormSchema = z.object({
 export const SubmitFormSchema = z.object({
   action: z.literal('SUBMIT_FORM'),
   form_id: z.string().uuid('Invalid form ID'),
-  submission_data: z.record(z.any())
+  submission_data: z.record(z.any()),
+  employee_id: z.string().uuid('Invalid employee ID').optional()
 });
 
 // Get form validation
@@ -76,6 +84,12 @@ export const GetFormSchema = z.object({
 export const GetSubmissionsSchema = z.object({
   action: z.literal('GET_SUBMISSIONS'),
   formId: z.string().uuid('Invalid form ID')
+});
+
+// Get employee submissions validation
+export const GetEmployeeSubmissionsSchema = z.object({
+  action: z.literal('GET_EMPLOYEE_SUBMISSIONS'),
+  employeeId: z.string().uuid('Invalid employee ID')
 });
 
 // Get forms validation
@@ -91,6 +105,7 @@ export const ActionSchema = z.discriminatedUnion('action', [
   SubmitFormSchema,
   GetFormSchema,
   GetSubmissionsSchema,
+  GetEmployeeSubmissionsSchema,
   GetFormsSchema
 ]);
 
