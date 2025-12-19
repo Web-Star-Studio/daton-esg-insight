@@ -61,6 +61,22 @@ const sanitizeEmployeeData = (data: Record<string, any>): Record<string, any> =>
   return sanitized;
 };
 
+// Pagination interface
+export interface PaginatedEmployeesParams {
+  page: number;
+  pageSize: number;
+  search?: string;
+  status?: string;
+  department?: string;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 export const getEmployees = async () => {
   const { data, error } = await supabase
     .from('employees')
@@ -69,6 +85,62 @@ export const getEmployees = async () => {
 
   if (error) throw error;
   return data;
+};
+
+// Paginated employees with server-side filtering
+export const getEmployeesPaginated = async (params: PaginatedEmployeesParams): Promise<PaginatedResult<Employee>> => {
+  const { page, pageSize, search, status, department } = params;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from('employees')
+    .select('*', { count: 'exact' });
+
+  // Apply filters
+  if (search && search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    query = query.or(`full_name.ilike.${searchTerm},employee_code.ilike.${searchTerm},position.ilike.${searchTerm}`);
+  }
+
+  if (status && status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  if (department && department !== 'all') {
+    query = query.eq('department', department);
+  }
+
+  // Apply pagination and ordering
+  const { data, error, count } = await query
+    .order('full_name')
+    .range(from, to);
+
+  if (error) throw error;
+
+  const totalCount = count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return {
+    data: data || [],
+    totalCount,
+    totalPages,
+    currentPage: page,
+  };
+};
+
+// Get all departments for filter dropdown
+export const getDepartments = async (): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('employees')
+    .select('department')
+    .not('department', 'is', null)
+    .order('department');
+
+  if (error) throw error;
+  
+  const uniqueDepartments = [...new Set(data?.map(e => e.department).filter(Boolean) as string[])];
+  return uniqueDepartments;
 };
 
 export const getEmployee = async (id: string) => {
@@ -175,6 +247,21 @@ export const useEmployees = () => {
   return useQuery({
     queryKey: ['employees'],
     queryFn: getEmployees,
+  });
+};
+
+export const useEmployeesPaginated = (params: PaginatedEmployeesParams) => {
+  return useQuery({
+    queryKey: ['employees-paginated', params.page, params.pageSize, params.search, params.status, params.department],
+    queryFn: () => getEmployeesPaginated(params),
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+export const useDepartments = () => {
+  return useQuery({
+    queryKey: ['departments'],
+    queryFn: getDepartments,
   });
 };
 
