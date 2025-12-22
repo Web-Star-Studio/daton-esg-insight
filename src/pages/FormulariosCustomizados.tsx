@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Users, Edit, Trash2, Eye, QrCode } from "lucide-react";
+import { Plus, FileText, Users, Edit, Trash2, BarChart3, QrCode, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm } from "@/services/customForms";
 import { FormBuilderModal } from "@/components/FormBuilderModal";
-import { FormSubmissionsModal } from "@/components/FormSubmissionsModal";
+import { FormDashboard } from "@/components/forms/FormDashboard";
 import { FormShareModal } from "@/components/FormShareModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -16,7 +16,7 @@ export default function FormulariosCustomizados() {
   const [loading, setLoading] = useState(true);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
-  const [submissionsFormId, setSubmissionsFormId] = useState<string | null>(null);
+  const [dashboardFormId, setDashboardFormId] = useState<string | null>(null);
   const [shareForm, setShareForm] = useState<{ id: string; title: string } | null>(null);
   const { toast } = useToast();
 
@@ -98,8 +98,8 @@ export default function FormulariosCustomizados() {
     loadForms();
   };
 
-  const handleViewSubmissions = (formId: string) => {
-    setSubmissionsFormId(formId);
+  const handleOpenDashboard = (formId: string) => {
+    setDashboardFormId(formId);
   };
 
   const handleShareForm = (form: CustomForm) => {
@@ -274,10 +274,10 @@ export default function FormulariosCustomizados() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleViewSubmissions(form.id)}
-                        title="Ver respostas"
+                        onClick={() => handleOpenDashboard(form.id)}
+                        title="Ver dashboard de respostas"
                       >
-                        <Eye className="h-4 w-4" />
+                        <BarChart3 className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -329,11 +329,11 @@ export default function FormulariosCustomizados() {
         onFormSaved={handleFormSaved}
       />
 
-      {submissionsFormId && (
-        <FormSubmissionsModal
-          formId={submissionsFormId}
-          open={!!submissionsFormId}
-          onClose={() => setSubmissionsFormId(null)}
+      {dashboardFormId && (
+        <FormDashboard
+          formId={dashboardFormId}
+          open={!!dashboardFormId}
+          onClose={() => setDashboardFormId(null)}
         />
       )}
 
