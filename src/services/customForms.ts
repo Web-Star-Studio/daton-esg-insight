@@ -178,6 +178,30 @@ class CustomFormsService {
     if (error) throw error;
     return data;
   }
+
+  // ============= PUBLIC METHODS (NO AUTH) =============
+
+  async getPublicForm(formId: string): Promise<CustomForm | null> {
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      body: { action: 'GET_PUBLIC_FORM', formId }
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async submitPublicForm(formId: string, submissionData: SubmitFormData): Promise<FormSubmission> {
+    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
+      body: {
+        action: 'SUBMIT_PUBLIC_FORM',
+        form_id: formId,
+        ...submissionData
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  }
 }
 
 export const customFormsService = new CustomFormsService();

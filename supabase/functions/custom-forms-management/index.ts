@@ -15,6 +15,38 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const body = await req.json()
+    const { action } = body
+
+    // PUBLIC ACTIONS - No authentication required
+    const publicActions = ['GET_PUBLIC_FORM', 'SUBMIT_PUBLIC_FORM']
+    if (publicActions.includes(action)) {
+      console.log('📋 Processing public action:', action)
+      
+      // Validate public request
+      try {
+        ActionSchema.parse(body)
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          return new Response(
+            JSON.stringify({ error: 'Validation failed', details: validationError.errors }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        throw validationError
+      }
+
+      switch (action) {
+        case 'GET_PUBLIC_FORM':
+          return await getPublicForm(supabaseClient, body.formId)
+        case 'SUBMIT_PUBLIC_FORM':
+          return await submitPublicForm(supabaseClient, body)
+        default:
+          return new Response('Invalid action', { status: 400, headers: corsHeaders })
+      }
+    }
+
+    // AUTHENTICATED ACTIONS - Require auth
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       console.error('❌ Missing Authorization header')
@@ -54,9 +86,8 @@ serve(async (req) => {
     console.log('✅ Company found:', profile.company_id)
 
     const company_id = profile.company_id
-    const body = await req.json()
     
-    // Validate request body with Zod
+    // Validate authenticated request body with Zod
     try {
       const validatedData = ActionSchema.parse(body)
       console.log('✅ Request validated:', validatedData.action)
@@ -73,7 +104,6 @@ serve(async (req) => {
       }
       throw validationError
     }
-    const { action } = body
 
     switch (action) {
       case 'GET_FORMS':
@@ -370,6 +400,84 @@ async function getEmployeeSubmissions(supabase: any, company_id: string, employe
 
   return new Response(
     JSON.stringify(submissionsWithForms),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+// ============= PUBLIC FUNCTIONS (NO AUTH) =============
+
+async function getPublicForm(supabase: any, form_id: string) {
+  console.log('📋 Fetching public form:', form_id)
+  
+  const { data, error } = await supabase
+    .from('custom_forms')
+    .select('*')
+    .eq('id', form_id)
+    .eq('is_published', true)
+    .single()
+
+  if (error) {
+    console.error('❌ Form not found or not published:', error.message)
+    return new Response(
+      JSON.stringify({ error: 'Form not found or not published' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  console.log('✅ Public form found:', data.title)
+
+  return new Response(
+    JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function submitPublicForm(supabase: any, submissionData: any) {
+  console.log('📝 Submitting public form:', submissionData.form_id)
+  
+  // Verify form exists and is published
+  const { data: form, error: formError } = await supabase
+    .from('custom_forms')
+    .select('id, company_id, is_published')
+    .eq('id', submissionData.form_id)
+    .eq('is_published', true)
+    .single()
+
+  if (formError || !form) {
+    console.error('❌ Form not found or not published')
+    return new Response(
+      JSON.stringify({ error: 'Form not found or not published' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const insertData: any = {
+    form_id: submissionData.form_id,
+    submission_data: submissionData.submission_data,
+    company_id: form.company_id,
+    // submitted_by_user_id is null for public submissions
+  }
+  
+  // Add employee_id if provided
+  if (submissionData.employee_id) {
+    insertData.employee_id = submissionData.employee_id
+  }
+  
+  const { data, error } = await supabase
+    .from('form_submissions')
+    .insert(insertData)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('❌ Failed to submit form:', error.message)
+    throw new Error(`Failed to submit form: ${error.message}`)
+  }
+
+  console.log('✅ Public form submitted successfully:', data.id)
+
+  return new Response(
+    JSON.stringify(data),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }

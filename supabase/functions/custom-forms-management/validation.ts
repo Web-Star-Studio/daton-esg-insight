@@ -97,6 +97,20 @@ export const GetFormsSchema = z.object({
   action: z.literal('GET_FORMS')
 });
 
+// Public form validation (no auth required)
+export const GetPublicFormSchema = z.object({
+  action: z.literal('GET_PUBLIC_FORM'),
+  formId: z.string().uuid('Invalid form ID')
+});
+
+// Public form submission validation (no auth required)
+export const SubmitPublicFormSchema = z.object({
+  action: z.literal('SUBMIT_PUBLIC_FORM'),
+  form_id: z.string().uuid('Invalid form ID'),
+  submission_data: z.record(z.any()),
+  employee_id: z.string().uuid('Invalid employee ID').optional()
+});
+
 // Union of all action schemas
 export const ActionSchema = z.discriminatedUnion('action', [
   CreateFormSchema,
@@ -106,7 +120,9 @@ export const ActionSchema = z.discriminatedUnion('action', [
   GetFormSchema,
   GetSubmissionsSchema,
   GetEmployeeSubmissionsSchema,
-  GetFormsSchema
+  GetFormsSchema,
+  GetPublicFormSchema,
+  SubmitPublicFormSchema
 ]);
 
 export type ActionType = z.infer<typeof ActionSchema>;
