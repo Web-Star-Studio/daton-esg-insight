@@ -46,6 +46,30 @@ interface ExtractedLicenseData {
   }>;
 }
 
+// Sanitize filename for Supabase Storage (remove accents, spaces, special chars)
+function sanitizeFileName(originalName: string): string {
+  // Separate extension
+  const lastDotIndex = originalName.lastIndexOf('.');
+  const extension = lastDotIndex > 0 ? originalName.slice(lastDotIndex) : '';
+  const baseName = lastDotIndex > 0 ? originalName.slice(0, lastDotIndex) : originalName;
+  
+  // Normalize to remove accents (NFD decomposes accented characters)
+  const normalized = baseName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Remove diacritics
+  
+  // Replace spaces and special characters
+  const sanitized = normalized
+    .toLowerCase()
+    .replace(/\s+/g, '_')           // Spaces → underscores
+    .replace(/[^a-z0-9_-]/g, '')    // Remove non-allowed characters
+    .replace(/_+/g, '_')            // Remove duplicate underscores
+    .replace(/^_|_$/g, '');         // Remove leading/trailing underscores
+  
+  // Return sanitized name + extension
+  return `${sanitized || 'document'}${extension.toLowerCase()}`;
+}
+
 // Robust JSON parser with fallback
 function extractJsonFromResponse(content: string): any {
   try {
@@ -168,8 +192,10 @@ async function handleUpload(supabaseClient: any, userId: string, companyId: stri
   
   // Convert base64 to blob
   const fileData = Uint8Array.from(atob(file.data), c => c.charCodeAt(0));
-  const fileName = `license-${Date.now()}-${file.name}`;
+  const sanitizedName = sanitizeFileName(file.name);
+  const fileName = `license-${Date.now()}-${sanitizedName}`;
   const filePath = `licenses/${companyId}/${fileName}`;
+  console.log(`Sanitized filename: ${file.name} -> ${sanitizedName}`);
 
   // Upload to storage
   const { data: uploadData, error: uploadError } = await supabaseClient
