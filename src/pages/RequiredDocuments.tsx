@@ -211,9 +211,9 @@ export default function RequiredDocuments() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(weightLabels).map(([weight, label]) => (
+              {Object.entries(weightLabels).map(([weight]) => (
                 <Badge key={weight} className={getWeightBadgeColor(Number(weight))}>
-                  {weight} - {label}
+                  {weight}
                 </Badge>
               ))}
             </div>
