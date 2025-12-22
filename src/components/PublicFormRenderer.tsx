@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { NPSInput } from "@/components/forms/NPSInput";
 
 interface PublicFormRendererProps {
   formId: string;
@@ -52,6 +53,7 @@ export function PublicFormRenderer({
       data.structure_json.fields.forEach((field: FormField) => {
         if (field.type === 'checkbox') initialData[field.id] = false;
         else if (field.type === 'multiselect') initialData[field.id] = [];
+        else if (field.type === 'nps') initialData[field.id] = null;
         else initialData[field.id] = '';
       });
       setFormData(initialData);
@@ -74,7 +76,9 @@ export function PublicFormRenderer({
           newErrors[field.id] = 'Este campo é obrigatório';
         } else if (field.type === 'checkbox' && !value) {
           newErrors[field.id] = 'Este campo é obrigatório';
-        } else if (!value || (typeof value === 'string' && value.trim() === '')) {
+        } else if (field.type === 'nps' && (value === null || value === undefined)) {
+          newErrors[field.id] = 'Este campo é obrigatório';
+        } else if (field.type !== 'nps' && (!value || (typeof value === 'string' && value.trim() === ''))) {
           newErrors[field.id] = 'Este campo é obrigatório';
         }
       }
@@ -117,6 +121,7 @@ export function PublicFormRenderer({
       form?.structure_json.fields.forEach((field: FormField) => {
         if (field.type === 'checkbox') resetData[field.id] = false;
         else if (field.type === 'multiselect') resetData[field.id] = [];
+        else if (field.type === 'nps') resetData[field.id] = null;
         else resetData[field.id] = '';
       });
       setFormData(resetData);
@@ -190,6 +195,14 @@ export function PublicFormRenderer({
                 </div>
               ))}
             </div>
+          );
+        case 'nps':
+          return (
+            <NPSInput
+              value={value !== '' && value !== null ? Number(value) : null}
+              onChange={(score) => updateFieldValue(field.id, score)}
+              hasError={hasError}
+            />
           );
         default: return null;
       }

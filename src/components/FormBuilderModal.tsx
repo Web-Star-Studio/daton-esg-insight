@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField, type FormStructure } from "@/services/customForms";
 import { FormFieldEditor } from "@/components/FormFieldEditor";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare } from "lucide-react";
+import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp } from "lucide-react";
 
 interface FormBuilderModalProps {
   open: boolean;
@@ -28,6 +28,7 @@ const FIELD_TYPES = [
   { type: 'checkbox', label: 'Checkbox', icon: CheckSquare },
   { type: 'select', label: 'Seleção Única', icon: CheckSquare },
   { type: 'multiselect', label: 'Múltipla Escolha', icon: CheckSquare },
+  { type: 'nps', label: 'NPS (0-10)', icon: ThumbsUp },
 ] as const;
 
 export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: FormBuilderModalProps) {

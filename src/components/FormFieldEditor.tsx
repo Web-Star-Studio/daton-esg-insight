@@ -182,6 +182,33 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                   <span className="text-sm">{field.placeholder || 'Opção'}</span>
                 </div>
               )}
+              {field.type === 'nps' && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Nada provável</span>
+                    <span>Muito provável</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 11 }, (_, i) => (
+                      <div
+                        key={i}
+                        className={`w-6 h-6 rounded text-xs flex items-center justify-center font-medium ${
+                          i <= 6 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                          i <= 8 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                          'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                        }`}
+                      >
+                        {i}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-red-600">Detratores</span>
+                    <span className="text-yellow-600">Neutros</span>
+                    <span className="text-green-600">Promotores</span>
+                  </div>
+                </div>
+              )}
               {hasOptions && field.options && (
                 <div className="space-y-1">
                   {field.options.map((option, index) => (
