@@ -32,7 +32,7 @@ interface AggregatedData {
 }
 
 // Closed field types that can be charted
-const CLOSED_FIELD_TYPES = ['select', 'multiselect', 'checkbox'];
+const CLOSED_FIELD_TYPES = ['select', 'multiselect', 'checkbox', 'rating'];
 const OPEN_FIELD_TYPES = ['text', 'textarea'];
 const NPS_FIELD_TYPE = 'nps';
 
@@ -40,11 +40,24 @@ function aggregateFieldData(submissions: FormSubmission[], field: FormField): Ag
   const counts: Record<string, number> = {};
 
   if (field.type === 'checkbox') {
-    // For checkbox, count true/false
+    // Checkbox can be boolean (legacy) or string (with options - radio behavior)
     submissions.forEach(s => {
       const value = s.submission_data[field.id];
-      const label = value === true ? 'Sim' : value === false ? 'Não' : null;
-      if (label) {
+      if (typeof value === 'string' && value) {
+        // Checkbox with options (radio behavior)
+        counts[value] = (counts[value] || 0) + 1;
+      } else if (typeof value === 'boolean') {
+        // Legacy boolean checkbox
+        const label = value ? 'Sim' : 'Não';
+        counts[label] = (counts[label] || 0) + 1;
+      }
+    });
+  } else if (field.type === 'rating') {
+    // For rating, count each star value
+    submissions.forEach(s => {
+      const value = s.submission_data[field.id];
+      if (value !== null && value !== undefined) {
+        const label = `${value} estrela${Number(value) > 1 ? 's' : ''}`;
         counts[label] = (counts[label] || 0) + 1;
       }
     });

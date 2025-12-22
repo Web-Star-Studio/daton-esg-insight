@@ -5,8 +5,9 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type FormField } from "@/services/customForms";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Star, Upload } from "lucide-react";
 
 interface FormFieldEditorProps {
   field: FormField;
@@ -32,7 +33,8 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
     onUpdate({ options: newOptions });
   };
 
-  const hasOptions = field.type === 'select' || field.type === 'multiselect';
+  // Checkbox now also has options (radio behavior)
+  const hasOptions = field.type === 'select' || field.type === 'multiselect' || field.type === 'checkbox';
 
   return (
     <Card>
@@ -72,6 +74,7 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
           <Label htmlFor="required">Campo obrigatório</Label>
         </div>
 
+        {/* Options for select, multiselect, and checkbox */}
         {hasOptions && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -81,6 +84,13 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                 Adicionar
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {field.type === 'checkbox' 
+                ? 'Checkbox permite selecionar apenas 1 opção'
+                : field.type === 'multiselect'
+                  ? 'Múltipla escolha permite selecionar várias opções'
+                  : 'Seleção única via dropdown'}
+            </p>
             <div className="space-y-2">
               {field.options?.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
@@ -100,6 +110,46 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Rating configuration */}
+        {field.type === 'rating' && (
+          <div className="space-y-2">
+            <Label>Quantidade de Estrelas</Label>
+            <Select 
+              value={String(field.validation?.max || 5)} 
+              onValueChange={(v) => onUpdate({ 
+                validation: { ...field.validation, max: Number(v) } 
+              })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">3 Estrelas</SelectItem>
+                <SelectItem value="5">5 Estrelas</SelectItem>
+                <SelectItem value="10">10 Estrelas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* File configuration */}
+        {field.type === 'file' && (
+          <div className="space-y-2">
+            <Label htmlFor="fileTypes">Tipos de Arquivo Aceitos</Label>
+            <Input
+              id="fileTypes"
+              value={field.validation?.pattern || ''}
+              onChange={(e) => onUpdate({ 
+                validation: { ...field.validation, pattern: e.target.value } 
+              })}
+              placeholder=".pdf,.jpg,.png,.doc,.docx"
+            />
+            <p className="text-xs text-muted-foreground">
+              Separe as extensões por vírgula. Ex: .pdf,.jpg,.png
+            </p>
           </div>
         )}
 
@@ -156,6 +206,7 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
           </div>
         )}
 
+        {/* Preview Section */}
         <div className="pt-4 border-t">
           <h4 className="font-medium mb-2">Pré-visualização</h4>
           <div className="p-3 border rounded-lg bg-muted/20">
@@ -163,7 +214,7 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
-            <div className="mt-1">
+            <div className="mt-2">
               {field.type === 'text' && (
                 <Input placeholder={field.placeholder} disabled />
               )}
@@ -176,12 +227,58 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
               {field.type === 'date' && (
                 <Input type="date" disabled />
               )}
-              {field.type === 'checkbox' && (
-                <div className="flex items-center space-x-2">
-                  <input type="checkbox" disabled />
-                  <span className="text-sm">{field.placeholder || 'Opção'}</span>
+              
+              {/* Checkbox with options (radio behavior) */}
+              {field.type === 'checkbox' && field.options && field.options.length > 0 && (
+                <div className="space-y-2">
+                  {field.options.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input 
+                        type="radio" 
+                        disabled 
+                        name={`preview-${field.id}`}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm">{option}</span>
+                    </div>
+                  ))}
                 </div>
               )}
+              
+              {/* Select preview */}
+              {field.type === 'select' && field.options && (
+                <div className="space-y-1">
+                  {field.options.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input 
+                        type="radio" 
+                        disabled 
+                        name={`preview-${field.id}`}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Multiselect preview */}
+              {field.type === 'multiselect' && field.options && (
+                <div className="space-y-1">
+                  {field.options.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        disabled 
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm">{option}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* NPS preview */}
               {field.type === 'nps' && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -202,25 +299,33 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-red-600">Detratores</span>
-                    <span className="text-yellow-600">Neutros</span>
-                    <span className="text-green-600">Promotores</span>
-                  </div>
                 </div>
               )}
-              {hasOptions && field.options && (
-                <div className="space-y-1">
-                  {field.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input 
-                        type={field.type === 'multiselect' ? 'checkbox' : 'radio'} 
-                        disabled 
-                        name={`preview-${field.id}`}
-                      />
-                      <span className="text-sm">{option}</span>
-                    </div>
+              
+              {/* Rating preview */}
+              {field.type === 'rating' && (
+                <div className="flex gap-1">
+                  {Array.from({ length: field.validation?.max || 5 }, (_, i) => (
+                    <Star 
+                      key={i} 
+                      className="h-6 w-6 text-yellow-400 fill-yellow-400" 
+                    />
                   ))}
+                </div>
+              )}
+              
+              {/* File upload preview */}
+              {field.type === 'file' && (
+                <div className="border-2 border-dashed rounded-lg p-4 text-center bg-muted/30">
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Clique ou arraste para enviar
+                  </p>
+                  {field.validation?.pattern && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Aceito: {field.validation.pattern}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

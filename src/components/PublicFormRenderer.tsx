@@ -5,17 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField } from "@/services/customForms";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Upload } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { NPSInput } from "@/components/forms/NPSInput";
+import { RatingInput } from "@/components/forms/RatingInput";
 
 interface PublicFormRendererProps {
   formId: string;
@@ -51,10 +53,18 @@ export function PublicFormRenderer({
       
       const initialData: Record<string, any> = {};
       data.structure_json.fields.forEach((field: FormField) => {
-        if (field.type === 'checkbox') initialData[field.id] = false;
-        else if (field.type === 'multiselect') initialData[field.id] = [];
-        else if (field.type === 'nps') initialData[field.id] = null;
-        else initialData[field.id] = '';
+        if (field.type === 'checkbox') {
+          // Checkbox with options uses string (radio behavior), legacy uses boolean
+          initialData[field.id] = field.options?.length ? '' : false;
+        } else if (field.type === 'multiselect') {
+          initialData[field.id] = [];
+        } else if (field.type === 'nps' || field.type === 'rating') {
+          initialData[field.id] = null;
+        } else if (field.type === 'file') {
+          initialData[field.id] = null;
+        } else {
+          initialData[field.id] = '';
+        }
       });
       setFormData(initialData);
     } catch (error) {
@@ -72,13 +82,23 @@ export function PublicFormRenderer({
     form.structure_json.fields.forEach((field: FormField) => {
       if (field.required) {
         const value = formData[field.id];
+        
         if (field.type === 'multiselect' && Array.isArray(value) && value.length === 0) {
           newErrors[field.id] = 'Este campo é obrigatório';
-        } else if (field.type === 'checkbox' && !value) {
+        } else if (field.type === 'checkbox') {
+          // Checkbox with options (radio behavior)
+          if (field.options?.length && !value) {
+            newErrors[field.id] = 'Por favor, selecione uma opção';
+          } else if (!field.options?.length && !value) {
+            // Legacy boolean checkbox
+            newErrors[field.id] = 'Este campo é obrigatório';
+          }
+        } else if ((field.type === 'nps' || field.type === 'rating') && (value === null || value === undefined)) {
           newErrors[field.id] = 'Este campo é obrigatório';
-        } else if (field.type === 'nps' && (value === null || value === undefined)) {
-          newErrors[field.id] = 'Este campo é obrigatório';
-        } else if (field.type !== 'nps' && (!value || (typeof value === 'string' && value.trim() === ''))) {
+        } else if (field.type === 'file' && !value) {
+          newErrors[field.id] = 'Por favor, selecione um arquivo';
+        } else if (!['nps', 'rating', 'file', 'checkbox', 'multiselect'].includes(field.type) && 
+                   (!value || (typeof value === 'string' && value.trim() === ''))) {
           newErrors[field.id] = 'Este campo é obrigatório';
         }
       }
@@ -119,10 +139,17 @@ export function PublicFormRenderer({
 
       const resetData: Record<string, any> = {};
       form?.structure_json.fields.forEach((field: FormField) => {
-        if (field.type === 'checkbox') resetData[field.id] = false;
-        else if (field.type === 'multiselect') resetData[field.id] = [];
-        else if (field.type === 'nps') resetData[field.id] = null;
-        else resetData[field.id] = '';
+        if (field.type === 'checkbox') {
+          resetData[field.id] = field.options?.length ? '' : false;
+        } else if (field.type === 'multiselect') {
+          resetData[field.id] = [];
+        } else if (field.type === 'nps' || field.type === 'rating') {
+          resetData[field.id] = null;
+        } else if (field.type === 'file') {
+          resetData[field.id] = null;
+        } else {
+          resetData[field.id] = '';
+        }
       });
       setFormData(resetData);
       setErrors({});
@@ -143,59 +170,143 @@ export function PublicFormRenderer({
 
   const renderField = (field: FormField) => {
     const hasError = !!errors[field.id];
-    const value = formData[field.id] || '';
+    const value = formData[field.id];
 
     const fieldElement = () => {
       switch (field.type) {
         case 'text':
-          return <Input type="text" value={value} onChange={(e) => updateFieldValue(field.id, e.target.value)} placeholder={field.placeholder} className={hasError ? 'border-destructive' : ''} />;
+          return (
+            <Input 
+              type="text" 
+              value={value || ''} 
+              onChange={(e) => updateFieldValue(field.id, e.target.value)} 
+              placeholder={field.placeholder} 
+              className={hasError ? 'border-destructive' : ''} 
+            />
+          );
+        
         case 'textarea':
-          return <Textarea value={value} onChange={(e) => updateFieldValue(field.id, e.target.value)} placeholder={field.placeholder} rows={4} className={hasError ? 'border-destructive' : ''} />;
+          return (
+            <Textarea 
+              value={value || ''} 
+              onChange={(e) => updateFieldValue(field.id, e.target.value)} 
+              placeholder={field.placeholder} 
+              rows={4} 
+              className={hasError ? 'border-destructive' : ''} 
+            />
+          );
+        
         case 'number':
-          return <Input type="number" value={value} onChange={(e) => updateFieldValue(field.id, e.target.value)} placeholder={field.placeholder} min={field.validation?.min} max={field.validation?.max} className={hasError ? 'border-destructive' : ''} />;
+          return (
+            <Input 
+              type="number" 
+              value={value || ''} 
+              onChange={(e) => updateFieldValue(field.id, e.target.value)} 
+              placeholder={field.placeholder} 
+              min={field.validation?.min} 
+              max={field.validation?.max} 
+              className={hasError ? 'border-destructive' : ''} 
+            />
+          );
+        
         case 'date':
           return (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground", hasError && "border-destructive")}>
+                <Button 
+                  variant="outline" 
+                  className={cn(
+                    "w-full justify-start text-left font-normal", 
+                    !value && "text-muted-foreground", 
+                    hasError && "border-destructive"
+                  )}
+                >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {value ? format(new Date(value), "dd/MM/yyyy", { locale: ptBR }) : (field.placeholder || "Selecione uma data")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={value ? new Date(value) : undefined} onSelect={(date) => updateFieldValue(field.id, date?.toISOString().split('T')[0])} initialFocus />
+                <Calendar 
+                  mode="single" 
+                  selected={value ? new Date(value) : undefined} 
+                  onSelect={(date) => updateFieldValue(field.id, date?.toISOString().split('T')[0])} 
+                  initialFocus 
+                />
               </PopoverContent>
             </Popover>
           );
+        
         case 'checkbox':
+          // Checkbox with options (radio behavior - only 1 selection)
+          if (field.options && field.options.length > 0) {
+            return (
+              <RadioGroup 
+                value={value || ''} 
+                onValueChange={(newValue) => updateFieldValue(field.id, newValue)}
+                className={hasError ? 'border border-destructive rounded-md p-2' : ''}
+              >
+                {field.options.map((option, i) => (
+                  <div key={i} className="flex items-center space-x-2">
+                    <RadioGroupItem value={option} id={`${field.id}_${i}`} />
+                    <Label htmlFor={`${field.id}_${i}`} className="font-normal cursor-pointer">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            );
+          }
+          // Legacy: simple boolean checkbox
           return (
             <div className="flex items-center space-x-2">
-              <Checkbox id={field.id} checked={value} onCheckedChange={(checked) => updateFieldValue(field.id, checked)} />
+              <Checkbox 
+                id={field.id} 
+                checked={value === true} 
+                onCheckedChange={(checked) => updateFieldValue(field.id, checked)} 
+              />
               <Label htmlFor={field.id}>{field.label}</Label>
             </div>
           );
+        
         case 'select':
           return (
-            <Select value={value} onValueChange={(newValue) => updateFieldValue(field.id, newValue)}>
-              <SelectTrigger className={hasError ? 'border-destructive' : ''}><SelectValue placeholder={field.placeholder || "Selecione"} /></SelectTrigger>
-              <SelectContent>{field.options?.map((option, i) => <SelectItem key={i} value={option}>{option}</SelectItem>)}</SelectContent>
+            <Select value={value || ''} onValueChange={(newValue) => updateFieldValue(field.id, newValue)}>
+              <SelectTrigger className={hasError ? 'border-destructive' : ''}>
+                <SelectValue placeholder={field.placeholder || "Selecione"} />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map((option, i) => (
+                  <SelectItem key={i} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           );
+        
         case 'multiselect':
           return (
-            <div className="space-y-2">
+            <div className={cn("space-y-2", hasError && "border border-destructive rounded-md p-2")}>
               {field.options?.map((option, i) => (
                 <div key={i} className="flex items-center space-x-2">
-                  <Checkbox id={`${field.id}_${i}`} checked={Array.isArray(value) && value.includes(option)} onCheckedChange={(checked) => {
-                    const currentValues = Array.isArray(value) ? value : [];
-                    if (checked) updateFieldValue(field.id, [...currentValues, option]);
-                    else updateFieldValue(field.id, currentValues.filter((v: string) => v !== option));
-                  }} />
-                  <Label htmlFor={`${field.id}_${i}`}>{option}</Label>
+                  <Checkbox 
+                    id={`${field.id}_${i}`} 
+                    checked={Array.isArray(value) && value.includes(option)} 
+                    onCheckedChange={(checked) => {
+                      const currentValues = Array.isArray(value) ? value : [];
+                      if (checked) {
+                        updateFieldValue(field.id, [...currentValues, option]);
+                      } else {
+                        updateFieldValue(field.id, currentValues.filter((v: string) => v !== option));
+                      }
+                    }} 
+                  />
+                  <Label htmlFor={`${field.id}_${i}`} className="font-normal cursor-pointer">
+                    {option}
+                  </Label>
                 </div>
               ))}
             </div>
           );
+        
         case 'nps':
           return (
             <NPSInput
@@ -204,13 +315,68 @@ export function PublicFormRenderer({
               hasError={hasError}
             />
           );
-        default: return null;
+        
+        case 'rating':
+          return (
+            <RatingInput
+              value={value !== null && value !== undefined ? Number(value) : null}
+              onChange={(rating) => updateFieldValue(field.id, rating)}
+              maxStars={field.validation?.max || 5}
+              hasError={hasError}
+            />
+          );
+        
+        case 'file':
+          return (
+            <div 
+              className={cn(
+                "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors",
+                hasError && "border-destructive",
+                value && "border-primary bg-primary/5"
+              )}
+            >
+              <input 
+                type="file" 
+                id={field.id}
+                accept={field.validation?.pattern || '*'}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    updateFieldValue(field.id, file.name);
+                  }
+                }}
+                className="hidden"
+              />
+              <label htmlFor={field.id} className="cursor-pointer block">
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {value || 'Clique para selecionar arquivo'}
+                </p>
+                {field.validation?.pattern && !value && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aceito: {field.validation.pattern}
+                  </p>
+                )}
+              </label>
+            </div>
+          );
+        
+        default: 
+          return null;
       }
     };
 
+    // For checkbox with options, don't show label above (it's shown with each option)
+    const showLabelAbove = !(field.type === 'checkbox' && (!field.options || field.options.length === 0));
+
     return (
       <div key={field.id} className="space-y-2">
-        {field.type !== 'checkbox' && <Label htmlFor={field.id}>{field.label}{field.required && <span className="text-destructive ml-1">*</span>}</Label>}
+        {showLabelAbove && (
+          <Label htmlFor={field.id}>
+            {field.label}
+            {field.required && <span className="text-destructive ml-1">*</span>}
+          </Label>
+        )}
         {fieldElement()}
         {hasError && <p className="text-sm text-destructive">{errors[field.id]}</p>}
       </div>
@@ -220,8 +386,22 @@ export function PublicFormRenderer({
   if (loading) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader><div className="animate-pulse space-y-2"><div className="h-6 bg-muted rounded w-3/4"></div><div className="h-4 bg-muted rounded w-1/2"></div></div></CardHeader>
-        <CardContent><div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="space-y-2"><div className="h-4 bg-muted rounded w-1/4"></div><div className="h-10 bg-muted rounded"></div></div>)}</div></CardContent>
+        <CardHeader>
+          <div className="animate-pulse space-y-2">
+            <div className="h-6 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="space-y-2">
+                <div className="h-4 bg-muted rounded w-1/4"></div>
+                <div className="h-10 bg-muted rounded"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
       </Card>
     );
   }
@@ -252,7 +432,9 @@ export function PublicFormRenderer({
           {form.structure_json.fields.map((field: FormField) => renderField(field))}
           
           <div className="pt-4 border-t">
-            <Button type="submit" className="w-full" disabled={submitting}>{submitting ? "Enviando..." : "Enviar Formulário"}</Button>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Enviando..." : "Enviar Formulário"}
+            </Button>
           </div>
         </form>
       </CardContent>
