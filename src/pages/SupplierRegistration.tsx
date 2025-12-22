@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -211,15 +211,15 @@ export default function SupplierRegistration() {
     }
   };
 
-  const openModal = (supplier?: ManagedSupplierWithTypeCount) => {
+  const openModal = async (supplier?: ManagedSupplierWithTypeCount) => {
     if (supplier) {
       setEditingSupplier(supplier);
       setPersonType(supplier.person_type);
       setFormData({
         full_name: supplier.full_name || "",
-        cpf: supplier.cpf || "",
+        cpf: supplier.cpf ? formatCPF(supplier.cpf) : "",
         company_name: supplier.company_name || "",
-        cnpj: supplier.cnpj || "",
+        cnpj: supplier.cnpj ? formatCNPJ(supplier.cnpj) : "",
         responsible_name: supplier.responsible_name || "",
         nickname: supplier.nickname || "",
         cep: supplier.cep || "",
@@ -228,12 +228,28 @@ export default function SupplierRegistration() {
         neighborhood: supplier.neighborhood || "",
         city: supplier.city || "",
         state: supplier.state || "",
-        phone_1: supplier.phone_1,
+        phone_1: supplier.phone_1 || "",
         phone_2: supplier.phone_2 || "",
         email: supplier.email || "",
         status: supplier.status || "Ativo",
         inactivation_reason: supplier.inactivation_reason || "",
       });
+      
+      // Carregar tipos associados ao fornecedor
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: assignments } = await supabase
+          .from('supplier_type_assignments')
+          .select('supplier_type_id')
+          .eq('supplier_id', supplier.id);
+        
+        if (assignments) {
+          setSelectedTypes(assignments.map(a => a.supplier_type_id));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar tipos do fornecedor:', error);
+        setSelectedTypes([]);
+      }
     } else {
       setEditingSupplier(null);
       setPersonType('PJ');
@@ -750,105 +766,117 @@ export default function SupplierRegistration() {
                 />
               </div>
 
-              {/* Types Selection - Agrupados por Categoria */}
-              {typesGrouped.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Tipos de Fornecedor *</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Selecione pelo menos um tipo. A categoria é inferida automaticamente do tipo selecionado.
+              {/* Aviso para endereços antigos */}
+              {editingSupplier && !formData.cep && editingSupplier.full_address && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                  <strong className="text-yellow-800">Endereço atual:</strong> 
+                  <span className="text-yellow-700 ml-1">{editingSupplier.full_address}</span>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Este fornecedor foi cadastrado antes da separação dos campos de endereço. 
+                    Por favor, preencha os campos acima para atualizar.
                   </p>
-                  <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4">
-                    {typesGrouped.map(({ category, types }) => (
-                      <div key={category.id}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {category.name}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 pl-2">
-                          {types.map((type) => (
-                            <div key={type.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={type.id}
-                                checked={selectedTypes.includes(type.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedTypes([...selectedTypes, type.id]);
-                                  } else {
-                                    setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
-                                  }
-                                }}
-                              />
-                              <label htmlFor={type.id} className="text-sm cursor-pointer">
-                                {type.name}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Seção de Status - Apenas para Edição */}
-              {editingSupplier && (
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="font-medium text-sm">Status do Fornecedor</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select 
-                        value={formData.status} 
-                        onValueChange={(v: 'Ativo' | 'Inativo' | 'Suspenso') => 
-                          setFormData({ ...formData, status: v })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ativo">
-                            <span className="flex items-center gap-2">
-                              <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                              Ativo
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="Inativo">
-                            <span className="flex items-center gap-2">
-                              <span className="h-2 w-2 rounded-full bg-gray-400"></span>
-                              Inativo
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="Suspenso">
-                            <span className="flex items-center gap-2">
-                              <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                              Suspenso
-                            </span>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {(formData.status === 'Inativo' || formData.status === 'Suspenso') && (
-                    <div className="space-y-2">
-                      <Label>Motivo da {formData.status === 'Inativo' ? 'Inativação' : 'Suspensão'}</Label>
-                      <Textarea
-                        value={formData.inactivation_reason}
-                        onChange={(e) => setFormData({ ...formData, inactivation_reason: e.target.value })}
-                        placeholder={`Descreva o motivo da ${formData.status === 'Inativo' ? 'inativação' : 'suspensão'} do fornecedor...`}
-                        rows={3}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Ex: Problemas documentais, questões de fornecimento, valores, encerramento de atividades, etc.
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
+
+            {/* Types Selection - Agrupados por Categoria */}
+            {typesGrouped.length > 0 && (
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Tipos de Fornecedor {!editingSupplier && '*'}</Label>
+                <p className="text-xs text-muted-foreground">
+                  Selecione pelo menos um tipo. A categoria é inferida automaticamente do tipo selecionado.
+                </p>
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-4">
+                  {typesGrouped.map(({ category, types }) => (
+                    <div key={category.id}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="text-xs">
+                          {category.name}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pl-2">
+                        {types.map((type) => (
+                          <div key={type.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={type.id}
+                              checked={selectedTypes.includes(type.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedTypes([...selectedTypes, type.id]);
+                                } else {
+                                  setSelectedTypes(selectedTypes.filter((id) => id !== type.id));
+                                }
+                              }}
+                            />
+                            <label htmlFor={type.id} className="text-sm cursor-pointer">
+                              {type.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Seção de Status - Apenas para Edição */}
+            {editingSupplier && (
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-medium text-sm">Status do Fornecedor</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select 
+                      value={formData.status} 
+                      onValueChange={(v: 'Ativo' | 'Inativo' | 'Suspenso') => 
+                        setFormData({ ...formData, status: v })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Ativo">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            Ativo
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="Inativo">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                            Inativo
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="Suspenso">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                            Suspenso
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {(formData.status === 'Inativo' || formData.status === 'Suspenso') && (
+                  <div className="space-y-2">
+                    <Label>Motivo da {formData.status === 'Inativo' ? 'Inativação' : 'Suspensão'}</Label>
+                    <Textarea
+                      value={formData.inactivation_reason}
+                      onChange={(e) => setFormData({ ...formData, inactivation_reason: e.target.value })}
+                      placeholder={`Descreva o motivo da ${formData.status === 'Inativo' ? 'inativação' : 'suspensão'} do fornecedor...`}
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ex: Problemas documentais, questões de fornecimento, valores, encerramento de atividades, etc.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <DialogFooter>
               <Button variant="outline" onClick={closeModal}>
