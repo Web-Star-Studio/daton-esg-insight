@@ -21114,6 +21114,7 @@ export type Database = {
           full_address: string
           full_name: string | null
           id: string
+          inactivation_reason: string | null
           is_locked: boolean | null
           last_failure_date: string | null
           last_login_at: string | null
@@ -21131,6 +21132,8 @@ export type Database = {
           responsible_name: string | null
           state: string | null
           status: string
+          status_changed_at: string | null
+          status_changed_by: string | null
           street: string | null
           street_number: string | null
           supply_failure_count: number | null
@@ -21152,6 +21155,7 @@ export type Database = {
           full_address: string
           full_name?: string | null
           id?: string
+          inactivation_reason?: string | null
           is_locked?: boolean | null
           last_failure_date?: string | null
           last_login_at?: string | null
@@ -21169,6 +21173,8 @@ export type Database = {
           responsible_name?: string | null
           state?: string | null
           status?: string
+          status_changed_at?: string | null
+          status_changed_by?: string | null
           street?: string | null
           street_number?: string | null
           supply_failure_count?: number | null
@@ -21190,6 +21196,7 @@ export type Database = {
           full_address?: string
           full_name?: string | null
           id?: string
+          inactivation_reason?: string | null
           is_locked?: boolean | null
           last_failure_date?: string | null
           last_login_at?: string | null
@@ -21207,6 +21214,8 @@ export type Database = {
           responsible_name?: string | null
           state?: string | null
           status?: string
+          status_changed_at?: string | null
+          status_changed_by?: string | null
           street?: string | null
           street_number?: string | null
           supply_failure_count?: number | null
