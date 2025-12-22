@@ -466,15 +466,41 @@ export async function createManagedSupplier(supplierData: CreateSupplierData): P
   return data as ManagedSupplier;
 }
 
-export async function updateManagedSupplier(id: string, updates: Partial<ManagedSupplier>): Promise<ManagedSupplier> {
+export async function updateManagedSupplier(id: string, updates: Partial<ManagedSupplier> & { type_ids?: string[] }): Promise<ManagedSupplier> {
+  // Extrair type_ids do objeto de atualização (não é coluna da tabela)
+  const { type_ids, ...supplierUpdates } = updates as any;
+  
+  // Atualizar dados do fornecedor
   const { data, error } = await supabase
     .from('supplier_management')
-    .update(updates)
+    .update(supplierUpdates)
     .eq('id', id)
     .select()
     .single();
     
   if (error) throw error;
+  
+  // Se type_ids foi fornecido, atualizar as atribuições de tipos
+  if (type_ids !== undefined) {
+    // Primeiro, remover todas as atribuições existentes
+    await supabase
+      .from('supplier_type_assignments')
+      .delete()
+      .eq('supplier_id', id);
+    
+    // Depois, inserir as novas atribuições
+    if (type_ids.length > 0) {
+      const assignments = type_ids.map((typeId: string) => ({
+        supplier_id: id,
+        supplier_type_id: typeId
+      }));
+      
+      await supabase
+        .from('supplier_type_assignments')
+        .insert(assignments);
+    }
+  }
+  
   return data as ManagedSupplier;
 }
 
