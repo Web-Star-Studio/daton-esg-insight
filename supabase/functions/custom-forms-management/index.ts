@@ -223,6 +223,7 @@ async function createForm(supabase: any, company_id: string, user_id: string, fo
       description: formData.description,
       structure_json: formData.structure_json,
       is_published: formData.is_published || false,
+      is_public: formData.is_public || false,
       company_id,
       created_by_user_id: user_id,
     })
@@ -247,6 +248,7 @@ async function updateForm(supabase: any, company_id: string, form_id: string, up
       description: updateData.description,
       structure_json: updateData.structure_json,
       is_published: updateData.is_published,
+      is_public: updateData.is_public ?? false,
       updated_at: new Date().toISOString()
     })
     .eq('id', form_id)
@@ -414,12 +416,13 @@ async function getPublicForm(supabase: any, form_id: string) {
     .select('*')
     .eq('id', form_id)
     .eq('is_published', true)
+    .eq('is_public', true)
     .single()
 
   if (error) {
-    console.error('❌ Form not found or not published:', error.message)
+    console.error('❌ Form not found, not published, or not public:', error.message)
     return new Response(
-      JSON.stringify({ error: 'Form not found or not published' }),
+      JSON.stringify({ error: 'Formulário não encontrado ou não está disponível publicamente' }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
@@ -435,18 +438,19 @@ async function getPublicForm(supabase: any, form_id: string) {
 async function submitPublicForm(supabase: any, submissionData: any) {
   console.log('📝 Submitting public form:', submissionData.form_id)
   
-  // Verify form exists and is published
+  // Verify form exists, is published and is public
   const { data: form, error: formError } = await supabase
     .from('custom_forms')
-    .select('id, company_id, is_published')
+    .select('id, company_id, is_published, is_public')
     .eq('id', submissionData.form_id)
     .eq('is_published', true)
+    .eq('is_public', true)
     .single()
 
   if (formError || !form) {
-    console.error('❌ Form not found or not published')
+    console.error('❌ Form not found, not published, or not public')
     return new Response(
-      JSON.stringify({ error: 'Form not found or not published' }),
+      JSON.stringify({ error: 'Formulário não encontrado ou não está disponível publicamente' }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

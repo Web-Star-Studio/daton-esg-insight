@@ -5403,6 +5403,7 @@ export type Database = {
           created_by_user_id: string
           description: string | null
           id: string
+          is_public: boolean
           is_published: boolean
           structure_json: Json
           title: string
@@ -5414,6 +5415,7 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           id?: string
+          is_public?: boolean
           is_published?: boolean
           structure_json: Json
           title: string
@@ -5425,6 +5427,7 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           id?: string
+          is_public?: boolean
           is_published?: boolean
           structure_json?: Json
           title?: string
