@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Plus, Building2, User, ArrowLeft, Pencil, Trash2, 
   Eye, Copy, Search, Filter, Link2, Loader2, CheckCircle, AlertCircle
@@ -113,6 +114,9 @@ export default function SupplierRegistration() {
     phone_1: "",
     phone_2: "",
     email: "",
+    // Status (apenas para edição)
+    status: "Ativo" as 'Ativo' | 'Inativo' | 'Suspenso',
+    inactivation_reason: "",
   });
 
   const { data: suppliers, isLoading, error, refetch } = useQuery({
@@ -227,6 +231,8 @@ export default function SupplierRegistration() {
         phone_1: supplier.phone_1,
         phone_2: supplier.phone_2 || "",
         email: supplier.email || "",
+        status: supplier.status || "Ativo",
+        inactivation_reason: supplier.inactivation_reason || "",
       });
     } else {
       setEditingSupplier(null);
@@ -236,6 +242,8 @@ export default function SupplierRegistration() {
         responsible_name: "", nickname: "", 
         cep: "", street: "", street_number: "", neighborhood: "", city: "", state: "",
         phone_1: "", phone_2: "", email: "",
+        status: "Ativo",
+        inactivation_reason: "",
       });
       setSelectedTypes([]);
     }
@@ -342,6 +350,16 @@ export default function SupplierRegistration() {
       phone_2: formData.phone_2 || undefined,
       email: formData.email || undefined,
       type_ids: selectedTypes,
+      // Campos de status (apenas para edição)
+      ...(editingSupplier && {
+        status: formData.status,
+        inactivation_reason: (formData.status === 'Inativo' || formData.status === 'Suspenso') 
+          ? formData.inactivation_reason || null 
+          : null,
+        status_changed_at: editingSupplier.status !== formData.status 
+          ? new Date().toISOString() 
+          : undefined,
+      }),
     };
 
     if (editingSupplier) {
@@ -772,6 +790,64 @@ export default function SupplierRegistration() {
                   </div>
                 </div>
               )}
+
+              {/* Seção de Status - Apenas para Edição */}
+              {editingSupplier && (
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="font-medium text-sm">Status do Fornecedor</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select 
+                        value={formData.status} 
+                        onValueChange={(v: 'Ativo' | 'Inativo' | 'Suspenso') => 
+                          setFormData({ ...formData, status: v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ativo">
+                            <span className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                              Ativo
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="Inativo">
+                            <span className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                              Inativo
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="Suspenso">
+                            <span className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                              Suspenso
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {(formData.status === 'Inativo' || formData.status === 'Suspenso') && (
+                    <div className="space-y-2">
+                      <Label>Motivo da {formData.status === 'Inativo' ? 'Inativação' : 'Suspensão'}</Label>
+                      <Textarea
+                        value={formData.inactivation_reason}
+                        onChange={(e) => setFormData({ ...formData, inactivation_reason: e.target.value })}
+                        placeholder={`Descreva o motivo da ${formData.status === 'Inativo' ? 'inativação' : 'suspensão'} do fornecedor...`}
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Ex: Problemas documentais, questões de fornecimento, valores, encerramento de atividades, etc.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -860,6 +936,14 @@ export default function SupplierRegistration() {
                     <div>
                       <span className="text-muted-foreground">E-mail:</span>
                       <p className="font-medium">{viewingSupplier.email}</p>
+                    </div>
+                  )}
+                  {viewingSupplier.inactivation_reason && (viewingSupplier.status === 'Inativo' || viewingSupplier.status === 'Suspenso') && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <span className="text-yellow-700 text-xs font-medium">
+                        Motivo da {viewingSupplier.status === 'Inativo' ? 'Inativação' : 'Suspensão'}:
+                      </span>
+                      <p className="text-yellow-800 mt-1">{viewingSupplier.inactivation_reason}</p>
                     </div>
                   )}
                   {viewingSupplier.access_code && (

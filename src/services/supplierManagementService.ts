@@ -46,7 +46,7 @@ export interface ManagedSupplier {
   responsible_name?: string;
   nickname?: string;
   full_address: string;
-  // Novos campos de endereço separados
+  // Campos de endereço separados
   cep?: string;
   street?: string;
   street_number?: string;
@@ -60,6 +60,10 @@ export interface ManagedSupplier {
   temporary_password?: string;
   access_code?: string;
   status: 'Ativo' | 'Inativo' | 'Suspenso';
+  // Campos de controle de status
+  inactivation_reason?: string;
+  status_changed_at?: string;
+  status_changed_by?: string;
   created_at: string;
   updated_at: string;
   supplier_types?: SupplierType[];
