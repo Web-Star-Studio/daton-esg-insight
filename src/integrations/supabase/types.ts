@@ -21103,6 +21103,8 @@ export type Database = {
           access_code: string | null
           auto_inactivated_at: string | null
           auto_inactivation_reason: string | null
+          cep: string | null
+          city: string | null
           cnpj: string | null
           company_id: string
           company_name: string | null
@@ -21117,6 +21119,7 @@ export type Database = {
           last_login_at: string | null
           login_attempts: number | null
           must_change_password: boolean | null
+          neighborhood: string | null
           nickname: string | null
           password_hash: string | null
           person_type: string
@@ -21126,7 +21129,10 @@ export type Database = {
           reactivation_blocked_until: string | null
           registration_date: string
           responsible_name: string | null
+          state: string | null
           status: string
+          street: string | null
+          street_number: string | null
           supply_failure_count: number | null
           temporary_password: string | null
           updated_at: string
@@ -21135,6 +21141,8 @@ export type Database = {
           access_code?: string | null
           auto_inactivated_at?: string | null
           auto_inactivation_reason?: string | null
+          cep?: string | null
+          city?: string | null
           cnpj?: string | null
           company_id: string
           company_name?: string | null
@@ -21149,6 +21157,7 @@ export type Database = {
           last_login_at?: string | null
           login_attempts?: number | null
           must_change_password?: boolean | null
+          neighborhood?: string | null
           nickname?: string | null
           password_hash?: string | null
           person_type: string
@@ -21158,7 +21167,10 @@ export type Database = {
           reactivation_blocked_until?: string | null
           registration_date?: string
           responsible_name?: string | null
+          state?: string | null
           status?: string
+          street?: string | null
+          street_number?: string | null
           supply_failure_count?: number | null
           temporary_password?: string | null
           updated_at?: string
@@ -21167,6 +21179,8 @@ export type Database = {
           access_code?: string | null
           auto_inactivated_at?: string | null
           auto_inactivation_reason?: string | null
+          cep?: string | null
+          city?: string | null
           cnpj?: string | null
           company_id?: string
           company_name?: string | null
@@ -21181,6 +21195,7 @@ export type Database = {
           last_login_at?: string | null
           login_attempts?: number | null
           must_change_password?: boolean | null
+          neighborhood?: string | null
           nickname?: string | null
           password_hash?: string | null
           person_type?: string
@@ -21190,7 +21205,10 @@ export type Database = {
           reactivation_blocked_until?: string | null
           registration_date?: string
           responsible_name?: string | null
+          state?: string | null
           status?: string
+          street?: string | null
+          street_number?: string | null
           supply_failure_count?: number | null
           temporary_password?: string | null
           updated_at?: string
