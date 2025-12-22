@@ -27,7 +27,6 @@ const FIELD_TYPES = [
   { type: 'textarea', label: 'Texto Longo', icon: AlignLeft },
   { type: 'number', label: 'Número', icon: Hash },
   { type: 'date', label: 'Data', icon: Calendar },
-  { type: 'checkbox', label: 'Checkbox', icon: CheckSquare },
   { type: 'select', label: 'Seleção Única', icon: CheckSquare },
   { type: 'multiselect', label: 'Múltipla Escolha', icon: CheckSquare },
   { type: 'nps', label: 'NPS (0-10)', icon: ThumbsUp },
@@ -113,7 +112,7 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       label: `Campo ${fields.length + 1}`,
       required: false,
       placeholder: '',
-      options: ['select', 'multiselect', 'checkbox'].includes(type) 
+      options: ['select', 'multiselect'].includes(type) 
         ? ['Opção 1', 'Opção 2'] 
         : undefined,
       validation: type === 'rating' 

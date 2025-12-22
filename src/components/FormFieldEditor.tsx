@@ -33,8 +33,7 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
     onUpdate({ options: newOptions });
   };
 
-  // Checkbox now also has options (radio behavior)
-  const hasOptions = field.type === 'select' || field.type === 'multiselect' || field.type === 'checkbox';
+  const hasOptions = field.type === 'select' || field.type === 'multiselect';
 
   return (
     <Card>
@@ -85,11 +84,9 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {field.type === 'checkbox' 
-                ? 'Checkbox permite selecionar apenas 1 opção'
-                : field.type === 'multiselect'
-                  ? 'Múltipla escolha permite selecionar várias opções'
-                  : 'Seleção única via dropdown'}
+              {field.type === 'multiselect'
+                ? 'Múltipla escolha permite selecionar várias opções'
+                : 'Seleção única via dropdown'}
             </p>
             <div className="space-y-2">
               {field.options?.map((option, index) => (
@@ -228,22 +225,6 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                 <Input type="date" disabled />
               )}
               
-              {/* Checkbox with options (radio behavior) */}
-              {field.type === 'checkbox' && field.options && field.options.length > 0 && (
-                <div className="space-y-2">
-                  {field.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input 
-                        type="radio" 
-                        disabled 
-                        name={`preview-${field.id}`}
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm">{option}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
               
               {/* Select preview */}
               {field.type === 'select' && field.options && (
