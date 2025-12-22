@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, FileText, Users, Edit, Trash2, BarChart3, QrCode, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,18 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm } from "@/services/customForms";
 import { FormBuilderModal } from "@/components/FormBuilderModal";
-import { FormDashboard } from "@/components/forms/FormDashboard";
 import { FormShareModal } from "@/components/FormShareModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ROUTE_PATHS } from "@/constants/routePaths";
 
 export default function FormulariosCustomizados() {
   const [forms, setForms] = useState<CustomForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
-  const [dashboardFormId, setDashboardFormId] = useState<string | null>(null);
   const [shareForm, setShareForm] = useState<{ id: string; title: string } | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // SEO
   useEffect(() => {
@@ -99,7 +100,7 @@ export default function FormulariosCustomizados() {
   };
 
   const handleOpenDashboard = (formId: string) => {
-    setDashboardFormId(formId);
+    navigate(ROUTE_PATHS.DATA.FORM_DASHBOARD(formId));
   };
 
   const handleShareForm = (form: CustomForm) => {
@@ -329,13 +330,6 @@ export default function FormulariosCustomizados() {
         onFormSaved={handleFormSaved}
       />
 
-      {dashboardFormId && (
-        <FormDashboard
-          formId={dashboardFormId}
-          open={!!dashboardFormId}
-          onClose={() => setDashboardFormId(null)}
-        />
-      )}
 
       {shareForm && (
         <FormShareModal

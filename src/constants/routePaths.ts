@@ -84,6 +84,7 @@ export const ROUTE_PATHS = {
     DOCUMENTS_RECONCILIATION: '/documentos?tab=reconciliacao',
     DATA_COLLECTION: '/coleta-dados',
     CUSTOM_FORMS: '/formularios-customizados',
+    FORM_DASHBOARD: (formId: string) => `/formularios-customizados/${formId}/dashboard`,
     ASSETS: '/ativos',
     PERFORMANCE: '/desempenho',
     FACTOR_LIBRARY: '/biblioteca-fatores',

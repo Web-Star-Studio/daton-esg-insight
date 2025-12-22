@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormSubmission, type FormField } from "@/services/customForms";
 import { FieldBarChart } from "./charts/FieldBarChart";
@@ -24,10 +22,8 @@ import {
   ThumbsUp
 } from "lucide-react";
 
-interface FormDashboardProps {
+interface FormDashboardContentProps {
   formId: string;
-  open: boolean;
-  onClose: () => void;
 }
 
 interface AggregatedData {
@@ -89,17 +85,17 @@ function getOpenResponses(submissions: FormSubmission[], field: FormField) {
     }));
 }
 
-export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
+export function FormDashboardContent({ formId }: FormDashboardContentProps) {
   const [form, setForm] = useState<CustomForm | null>(null);
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (open && formId) {
+    if (formId) {
       loadData();
     }
-  }, [open, formId]);
+  }, [formId]);
 
   const loadData = async () => {
     try {
@@ -239,126 +235,188 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
 
   if (loading) {
     return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-7xl max-h-[95vh]">
-          <DialogHeader>
-            <DialogTitle>Carregando Dashboard...</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   if (!form) {
     return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-7xl max-h-[95vh]">
-          <DialogHeader>
-            <DialogTitle>Formulário não encontrado</DialogTitle>
-          </DialogHeader>
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Não foi possível carregar os dados do formulário.</p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Não foi possível carregar os dados do formulário.</p>
+      </div>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0 pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl">{form.title}</DialogTitle>
-              {form.description && (
-                <p className="text-sm text-muted-foreground mt-1">{form.description}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant={form.is_published ? "default" : "secondary"}>
-                {form.is_published ? "Publicado" : "Rascunho"}
-              </Badge>
-              <Button size="sm" onClick={handleExportToCSV} disabled={submissions.length === 0}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
-            </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{form.title}</h1>
+          {form.description && (
+            <p className="text-sm text-muted-foreground mt-1">{form.description}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={form.is_published ? "default" : "secondary"}>
+            {form.is_published ? "Publicado" : "Rascunho"}
+          </Badge>
+          <Button size="sm" onClick={handleExportToCSV} disabled={submissions.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="resumo" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="resumo" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">Resumo</span>
+          </TabsTrigger>
+          <TabsTrigger value="graficos" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Gráficos</span>
+          </TabsTrigger>
+          <TabsTrigger value="abertas" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Abertas</span>
+          </TabsTrigger>
+          <TabsTrigger value="tabela" className="flex items-center gap-2">
+            <TableIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Tabela</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* RESUMO TAB */}
+        <TabsContent value="resumo" className="space-y-6 mt-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total de Respostas</CardTitle>
+                <Users className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {form.structure_json.fields.length} campos no formulário
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-chart-2/10 to-chart-2/5 border-chart-2/20">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Última Resposta</CardTitle>
+                <Calendar className="h-5 w-5 text-chart-2" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-semibold">
+                  {stats.lastDate ? formatDate(stats.lastDate) : 'Nenhuma'}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Média de {stats.avgPerDay} respostas/dia
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-chart-3/10 to-chart-3/5 border-chart-3/20">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Campos Analisáveis</CardTitle>
+                <PieChartIcon className="h-5 w-5 text-chart-3" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{closedFields.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {openFields.length} campos de texto livre
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </DialogHeader>
 
-        <Tabs defaultValue="resumo" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
-            <TabsTrigger value="resumo" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Resumo</span>
-            </TabsTrigger>
-            <TabsTrigger value="graficos" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Gráficos</span>
-            </TabsTrigger>
-            <TabsTrigger value="abertas" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Abertas</span>
-            </TabsTrigger>
-            <TabsTrigger value="tabela" className="flex items-center gap-2">
-              <TableIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Tabela</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <ScrollArea className="flex-1 mt-4">
-            {/* RESUMO TAB */}
-            <TabsContent value="resumo" className="m-0 space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Respostas</CardTitle>
-                    <Users className="h-5 w-5 text-primary" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold">{stats.total}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {form.structure_json.fields.length} campos no formulário
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-chart-2/10 to-chart-2/5 border-chart-2/20">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Última Resposta</CardTitle>
-                    <Calendar className="h-5 w-5 text-chart-2" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-lg font-semibold">
-                      {stats.lastDate ? formatDate(stats.lastDate) : 'Nenhuma'}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Média de {stats.avgPerDay} respostas/dia
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-chart-3/10 to-chart-3/5 border-chart-3/20">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Campos Analisáveis</CardTitle>
-                    <PieChartIcon className="h-5 w-5 text-chart-3" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold">{closedFields.length}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {openFields.length} campos de texto livre
-                    </p>
-                  </CardContent>
-                </Card>
+          {/* NPS Score Cards - Prominent display */}
+          {npsFields.length > 0 && submissions.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <ThumbsUp className="h-5 w-5" />
+                Net Promoter Score (NPS)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {npsFields.map(field => (
+                  <NPSScoreCard
+                    key={field.id}
+                    fieldLabel={field.label}
+                    data={npsDataMap[field.id]}
+                  />
+                ))}
               </div>
+            </div>
+          )}
 
-              {/* NPS Score Cards - Prominent display */}
-              {npsFields.length > 0 && submissions.length > 0 && (
+          {/* Quick Overview Charts */}
+          {closedFields.length > 0 && submissions.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {closedFields.slice(0, 4).map((field, index) => {
+                const data = aggregateFieldData(submissions, field);
+                return index % 2 === 0 ? (
+                  <FieldBarChart 
+                    key={field.id} 
+                    fieldLabel={field.label} 
+                    data={data}
+                    colorIndex={index}
+                  />
+                ) : (
+                  <FieldPieChart 
+                    key={field.id} 
+                    fieldLabel={field.label} 
+                    data={data}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {submissions.length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhuma resposta ainda</h3>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Este formulário ainda não recebeu nenhuma resposta. Compartilhe o link ou QR Code para começar a coletar dados.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* GRÁFICOS TAB */}
+        <TabsContent value="graficos" className="space-y-6 mt-6">
+          {closedFields.length === 0 && npsFields.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Sem campos fechados</h3>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Este formulário não possui campos do tipo seleção, checkbox, NPS ou múltipla escolha para gerar gráficos.
+                </p>
+              </CardContent>
+            </Card>
+          ) : submissions.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Sem dados para gráficos</h3>
+                <p className="text-sm text-muted-foreground">
+                  Aguardando respostas para gerar visualizações.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* NPS Section */}
+              {npsFields.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <ThumbsUp className="h-5 w-5" />
@@ -367,7 +425,7 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {npsFields.map(field => (
                       <NPSScoreCard
-                        key={field.id}
+                        key={`nps-${field.id}`}
                         fieldLabel={field.label}
                         data={npsDataMap[field.id]}
                       />
@@ -376,220 +434,139 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
                 </div>
               )}
 
-              {/* Quick Overview Charts */}
-              {closedFields.length > 0 && submissions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {closedFields.slice(0, 4).map((field, index) => {
-                    const data = aggregateFieldData(submissions, field);
-                    return index % 2 === 0 ? (
-                      <FieldBarChart 
-                        key={field.id} 
-                        fieldLabel={field.label} 
-                        data={data}
+              {/* Bar Charts Section */}
+              {closedFields.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Gráficos de Barras
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {closedFields.map((field, index) => (
+                      <FieldBarChart
+                        key={`bar-${field.id}`}
+                        fieldLabel={field.label}
+                        data={aggregateFieldData(submissions, field)}
                         colorIndex={index}
                       />
-                    ) : (
-                      <FieldPieChart 
-                        key={field.id} 
-                        fieldLabel={field.label} 
-                        data={data}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pie Charts Section */}
+              {closedFields.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <PieChartIcon className="h-5 w-5" />
+                    Gráficos de Pizza
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {closedFields.map((field) => (
+                      <FieldPieChart
+                        key={`pie-${field.id}`}
+                        fieldLabel={field.label}
+                        data={aggregateFieldData(submissions, field)}
                       />
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
+            </>
+          )}
+        </TabsContent>
 
-              {submissions.length === 0 && (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Nenhuma resposta ainda</h3>
-                    <p className="text-sm text-muted-foreground text-center max-w-md">
-                      Este formulário ainda não recebeu nenhuma resposta. Compartilhe o link ou QR Code para começar a coletar dados.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+        {/* RESPOSTAS ABERTAS TAB */}
+        <TabsContent value="abertas" className="space-y-6 mt-6">
+          {openFields.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Sem campos de texto</h3>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Este formulário não possui campos de texto ou textarea para exibir respostas abertas.
+                </p>
+              </CardContent>
+            </Card>
+          ) : submissions.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Sem respostas</h3>
+                <p className="text-sm text-muted-foreground">
+                  Aguardando respostas para exibir.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {openFields.map((field) => (
+                <OpenResponsesSection
+                  key={field.id}
+                  fieldLabel={field.label}
+                  responses={getOpenResponses(submissions, field)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-            {/* GRÁFICOS TAB */}
-            <TabsContent value="graficos" className="m-0 space-y-6">
-              {closedFields.length === 0 && npsFields.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Sem campos fechados</h3>
-                    <p className="text-sm text-muted-foreground text-center max-w-md">
-                      Este formulário não possui campos do tipo seleção, checkbox, NPS ou múltipla escolha para gerar gráficos.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : submissions.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Sem dados para gráficos</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Aguardando respostas para gerar visualizações.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  {/* NPS Section */}
-                  {npsFields.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <ThumbsUp className="h-5 w-5" />
-                        Net Promoter Score (NPS)
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {npsFields.map(field => (
-                          <NPSScoreCard
-                            key={`nps-${field.id}`}
-                            fieldLabel={field.label}
-                            data={npsDataMap[field.id]}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bar Charts Section */}
-                  {closedFields.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5" />
-                        Gráficos de Barras
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {closedFields.map((field, index) => (
-                          <FieldBarChart
-                            key={`bar-${field.id}`}
-                            fieldLabel={field.label}
-                            data={aggregateFieldData(submissions, field)}
-                            colorIndex={index}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pie Charts Section */}
-                  {closedFields.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <PieChartIcon className="h-5 w-5" />
-                        Gráficos de Pizza
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {closedFields.map((field) => (
-                          <FieldPieChart
-                            key={`pie-${field.id}`}
-                            fieldLabel={field.label}
-                            data={aggregateFieldData(submissions, field)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </TabsContent>
-
-            {/* RESPOSTAS ABERTAS TAB */}
-            <TabsContent value="abertas" className="m-0 space-y-6">
-              {openFields.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Sem campos de texto</h3>
-                    <p className="text-sm text-muted-foreground text-center max-w-md">
-                      Este formulário não possui campos de texto ou textarea para exibir respostas abertas.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : submissions.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Sem respostas</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Aguardando respostas para exibir.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {openFields.map((field) => (
-                    <OpenResponsesSection
-                      key={field.id}
-                      fieldLabel={field.label}
-                      responses={getOpenResponses(submissions, field)}
-                    />
-                  ))}
+        {/* TABELA TAB */}
+        <TabsContent value="tabela" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TableIcon className="h-5 w-5" />
+                Todas as Respostas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {submissions.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhuma resposta encontrada</h3>
+                  <p className="text-muted-foreground">
+                    Este formulário ainda não recebeu nenhuma resposta.
+                  </p>
                 </div>
-              )}
-            </TabsContent>
-
-            {/* TABELA TAB */}
-            <TabsContent value="tabela" className="m-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TableIcon className="h-5 w-5" />
-                    Todas as Respostas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {submissions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Nenhuma resposta encontrada</h3>
-                      <p className="text-muted-foreground">
-                        Este formulário ainda não recebeu nenhuma resposta.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="whitespace-nowrap">Data</TableHead>
-                            <TableHead className="whitespace-nowrap">Usuário</TableHead>
-                            {form.structure_json.fields.map((field) => (
-                              <TableHead key={field.id} className="whitespace-nowrap">
-                                {field.label}
-                              </TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {submissions.map((submission) => (
-                            <TableRow key={submission.id}>
-                              <TableCell className="whitespace-nowrap">
-                                {formatDate(submission.submitted_at)}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap">
-                                {submission.submitted_by?.full_name || 'Não identificado'}
-                              </TableCell>
-                              {form.structure_json.fields.map((field) => (
-                                <TableCell key={field.id} className="max-w-[200px] truncate">
-                                  {formatValue(submission.submission_data[field.id], field.type)}
-                                </TableCell>
-                              ))}
-                            </TableRow>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Data</TableHead>
+                        <TableHead className="whitespace-nowrap">Usuário</TableHead>
+                        {form.structure_json.fields.map((field) => (
+                          <TableHead key={field.id} className="whitespace-nowrap">
+                            {field.label}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {submissions.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(submission.submitted_at)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {submission.submitted_by?.full_name || 'Não identificado'}
+                          </TableCell>
+                          {form.structure_json.fields.map((field) => (
+                            <TableCell key={field.id} className="max-w-[200px] truncate">
+                              {formatValue(submission.submission_data[field.id], field.type)}
+                            </TableCell>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
