@@ -11,6 +11,7 @@ import { customFormsService, type CustomForm, type FormSubmission, type FormFiel
 import { FieldBarChart } from "./charts/FieldBarChart";
 import { FieldPieChart } from "./charts/FieldPieChart";
 import { OpenResponsesSection } from "./charts/OpenResponsesSection";
+import { NPSScoreCard, calculateNPS } from "./charts/NPSScoreCard";
 import { 
   Download, 
   Users, 
@@ -19,7 +20,8 @@ import {
   PieChart as PieChartIcon, 
   MessageSquare,
   Table as TableIcon,
-  TrendingUp
+  TrendingUp,
+  ThumbsUp
 } from "lucide-react";
 
 interface FormDashboardProps {
@@ -36,6 +38,7 @@ interface AggregatedData {
 // Closed field types that can be charted
 const CLOSED_FIELD_TYPES = ['select', 'multiselect', 'checkbox'];
 const OPEN_FIELD_TYPES = ['text', 'textarea'];
+const NPS_FIELD_TYPE = 'nps';
 
 function aggregateFieldData(submissions: FormSubmission[], field: FormField): AggregatedData[] {
   const counts: Record<string, number> = {};
@@ -120,14 +123,28 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
     }
   };
 
-  const { closedFields, openFields } = useMemo(() => {
-    if (!form) return { closedFields: [], openFields: [] };
+  const { closedFields, openFields, npsFields } = useMemo(() => {
+    if (!form) return { closedFields: [], openFields: [], npsFields: [] };
     
     return {
       closedFields: form.structure_json.fields.filter(f => CLOSED_FIELD_TYPES.includes(f.type)),
-      openFields: form.structure_json.fields.filter(f => OPEN_FIELD_TYPES.includes(f.type))
+      openFields: form.structure_json.fields.filter(f => OPEN_FIELD_TYPES.includes(f.type)),
+      npsFields: form.structure_json.fields.filter(f => f.type === NPS_FIELD_TYPE)
     };
   }, [form]);
+
+  // Calculate NPS data for each NPS field
+  const npsDataMap = useMemo(() => {
+    const map: Record<string, ReturnType<typeof calculateNPS>> = {};
+    npsFields.forEach(field => {
+      const responses = submissions
+        .map(s => s.submission_data[field.id])
+        .filter(v => v !== null && v !== undefined)
+        .map(v => Number(v));
+      map[field.id] = calculateNPS(responses);
+    });
+    return map;
+  }, [npsFields, submissions]);
 
   const stats = useMemo(() => {
     if (!submissions.length) {
@@ -340,6 +357,25 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
                 </Card>
               </div>
 
+              {/* NPS Score Cards - Prominent display */}
+              {npsFields.length > 0 && submissions.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ThumbsUp className="h-5 w-5" />
+                    Net Promoter Score (NPS)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {npsFields.map(field => (
+                      <NPSScoreCard
+                        key={field.id}
+                        fieldLabel={field.label}
+                        data={npsDataMap[field.id]}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Quick Overview Charts */}
               {closedFields.length > 0 && submissions.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -378,13 +414,13 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
 
             {/* GRÁFICOS TAB */}
             <TabsContent value="graficos" className="m-0 space-y-6">
-              {closedFields.length === 0 ? (
+              {closedFields.length === 0 && npsFields.length === 0 ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Sem campos fechados</h3>
                     <p className="text-sm text-muted-foreground text-center max-w-md">
-                      Este formulário não possui campos do tipo seleção, checkbox ou múltipla escolha para gerar gráficos.
+                      Este formulário não possui campos do tipo seleção, checkbox, NPS ou múltipla escolha para gerar gráficos.
                     </p>
                   </CardContent>
                 </Card>
@@ -400,40 +436,63 @@ export function FormDashboard({ formId, open, onClose }: FormDashboardProps) {
                 </Card>
               ) : (
                 <>
-                  {/* Bar Charts Section */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Gráficos de Barras
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {closedFields.map((field, index) => (
-                        <FieldBarChart
-                          key={`bar-${field.id}`}
-                          fieldLabel={field.label}
-                          data={aggregateFieldData(submissions, field)}
-                          colorIndex={index}
-                        />
-                      ))}
+                  {/* NPS Section */}
+                  {npsFields.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <ThumbsUp className="h-5 w-5" />
+                        Net Promoter Score (NPS)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {npsFields.map(field => (
+                          <NPSScoreCard
+                            key={`nps-${field.id}`}
+                            fieldLabel={field.label}
+                            data={npsDataMap[field.id]}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Bar Charts Section */}
+                  {closedFields.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Gráficos de Barras
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {closedFields.map((field, index) => (
+                          <FieldBarChart
+                            key={`bar-${field.id}`}
+                            fieldLabel={field.label}
+                            data={aggregateFieldData(submissions, field)}
+                            colorIndex={index}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Pie Charts Section */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <PieChartIcon className="h-5 w-5" />
-                      Gráficos de Pizza
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {closedFields.map((field) => (
-                        <FieldPieChart
-                          key={`pie-${field.id}`}
-                          fieldLabel={field.label}
-                          data={aggregateFieldData(submissions, field)}
-                        />
-                      ))}
+                  {closedFields.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <PieChartIcon className="h-5 w-5" />
+                        Gráficos de Pizza
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {closedFields.map((field) => (
+                          <FieldPieChart
+                            key={`pie-${field.id}`}
+                            fieldLabel={field.label}
+                            data={aggregateFieldData(submissions, field)}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </>
               )}
             </TabsContent>

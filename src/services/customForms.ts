@@ -14,7 +14,7 @@ export interface CustomForm {
 
 export interface FormField {
   id: string;
-  type: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'date' | 'checkbox';
+  type: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'date' | 'checkbox' | 'nps';
   label: string;
   required: boolean;
   placeholder?: string;
