@@ -34,6 +34,7 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublished, setIsPublished] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
   const [fields, setFields] = useState<FormField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -44,11 +45,13 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       setTitle(editingForm.title);
       setDescription(editingForm.description || "");
       setIsPublished(editingForm.is_published);
+      setIsPublic((editingForm as any).is_public || false);
       setFields(editingForm.structure_json?.fields || []);
     } else {
       setTitle("");
       setDescription("");
       setIsPublished(false);
+      setIsPublic(false);
       setFields([]);
     }
     setSelectedFieldId(null);
@@ -130,6 +133,7 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
         description: description.trim() || undefined,
         structure_json: structure,
         is_published: isPublished,
+        is_public: isPublic,
       };
 
       if (editingForm) {
@@ -207,6 +211,23 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
                   />
                   <Label htmlFor="published">Publicar formulário</Label>
                 </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="public"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                    disabled={!isPublished}
+                  />
+                  <Label htmlFor="public" className={!isPublished ? "text-muted-foreground" : ""}>
+                    Permitir acesso público (sem login)
+                  </Label>
+                </div>
+                {isPublished && !isPublic && (
+                  <p className="text-xs text-muted-foreground">
+                    Formulário interno: apenas usuários autenticados podem responder
+                  </p>
+                )}
               </CardContent>
             </Card>
 

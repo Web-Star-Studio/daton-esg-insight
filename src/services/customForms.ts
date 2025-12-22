@@ -6,6 +6,7 @@ export interface CustomForm {
   description?: string;
   structure_json: FormStructure;
   is_published: boolean;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
   submission_count?: number;
@@ -48,6 +49,7 @@ export interface CreateFormData {
   description?: string;
   structure_json: FormStructure;
   is_published?: boolean;
+  is_public?: boolean;
 }
 
 export interface SubmitFormData {

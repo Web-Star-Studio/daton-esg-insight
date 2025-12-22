@@ -245,9 +245,16 @@ export default function FormulariosCustomizados() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={form.is_published ? "default" : "secondary"}>
-                        {form.is_published ? "Publicado" : "Rascunho"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={form.is_published ? "default" : "secondary"}>
+                          {form.is_published ? "Publicado" : "Rascunho"}
+                        </Badge>
+                        {form.is_published && (
+                          <Badge variant={(form as any).is_public ? "outline" : "secondary"}>
+                            {(form as any).is_public ? "Público" : "Interno"}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -257,12 +264,12 @@ export default function FormulariosCustomizados() {
                     </TableCell>
                     <TableCell>{formatDate(form.updated_at)}</TableCell>
                     <TableCell className="text-right space-x-1">
-                      {form.is_published && (
+                      {form.is_published && (form as any).is_public && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleCopyLink(form.id)}
-                          title="Copiar link do formulário"
+                          title="Copiar link público do formulário"
                         >
                           <Link className="h-4 w-4" />
                         </Button>
