@@ -39,13 +39,16 @@ import { cn } from "@/lib/utils";
 interface TreeNodeProps {
   type: SupplierType;
   level: number;
+  categories?: SupplierCategory[];
   onEdit: (type: SupplierType) => void;
   onDelete: (id: string) => void;
 }
 
-function TreeNode({ type, level, onEdit, onDelete }: TreeNodeProps) {
+function TreeNode({ type, level, categories, onEdit, onDelete }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = type.children && type.children.length > 0;
+  
+  const categoryName = categories?.find(c => c.id === type.category_id)?.name;
 
   return (
     <div>
@@ -75,6 +78,12 @@ function TreeNode({ type, level, onEdit, onDelete }: TreeNodeProps) {
         
         <Tag className="h-4 w-4 text-primary" />
         <span className="font-medium flex-1">{type.name}</span>
+        
+        {categoryName && (
+          <Badge variant="outline" className="text-xs">
+            {categoryName}
+          </Badge>
+        )}
         
         <Badge variant={type.is_active ? "default" : "secondary"} className="text-xs">
           {type.is_active ? "Ativo" : "Inativo"}
@@ -106,6 +115,7 @@ function TreeNode({ type, level, onEdit, onDelete }: TreeNodeProps) {
               key={child.id}
               type={child}
               level={level + 1}
+              categories={categories}
               onEdit={onEdit}
               onDelete={onDelete}
             />
@@ -124,7 +134,6 @@ export default function SupplierTypesPage() {
   const [editingType, setEditingType] = useState<SupplierType | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    parent_type_id: "",
     category_id: "",
     description: "",
   });
@@ -182,13 +191,12 @@ export default function SupplierTypesPage() {
       setEditingType(type);
       setFormData({
         name: type.name,
-        parent_type_id: type.parent_type_id || "",
         category_id: type.category_id || "",
         description: type.description || "",
       });
     } else {
       setEditingType(null);
-      setFormData({ name: "", parent_type_id: "", category_id: "", description: "" });
+      setFormData({ name: "", category_id: "", description: "" });
     }
     setIsModalOpen(true);
   };
@@ -196,7 +204,7 @@ export default function SupplierTypesPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingType(null);
-    setFormData({ name: "", parent_type_id: "", category_id: "", description: "" });
+    setFormData({ name: "", category_id: "", description: "" });
   };
 
   const handleSubmit = () => {
@@ -204,11 +212,15 @@ export default function SupplierTypesPage() {
       toast({ title: "Nome é obrigatório", variant: "destructive" });
       return;
     }
+    
+    if (!formData.category_id) {
+      toast({ title: "Categoria é obrigatória", variant: "destructive" });
+      return;
+    }
 
     const submitData = {
       name: formData.name,
-      parent_type_id: formData.parent_type_id || undefined,
-      category_id: formData.category_id || undefined,
+      category_id: formData.category_id,
       description: formData.description || undefined,
     };
 
@@ -262,6 +274,7 @@ export default function SupplierTypesPage() {
                     key={type.id}
                     type={type}
                     level={0}
+                    categories={categories}
                     onEdit={openModal}
                     onDelete={(id) => deleteMutation.mutate(id)}
                   />
@@ -290,18 +303,15 @@ export default function SupplierTypesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Categoria (opcional)</Label>
+                <Label htmlFor="category">Categoria *</Label>
                 <Select
                   value={formData.category_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category_id: value === "none" ? "" : value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
                     {categories
                       ?.filter((c) => c.is_active)
                       .map((category) => (
@@ -314,29 +324,6 @@ export default function SupplierTypesPage() {
                 <p className="text-xs text-muted-foreground">
                   Vincule este tipo a uma categoria de atividade
                 </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="parent">Tipo Pai (opcional)</Label>
-                <Select
-                  value={formData.parent_type_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, parent_type_id: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um tipo pai" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum (raiz)</SelectItem>
-                    {types
-                      ?.filter((t) => t.id !== editingType?.id)
-                      .map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Descrição (opcional)</Label>
