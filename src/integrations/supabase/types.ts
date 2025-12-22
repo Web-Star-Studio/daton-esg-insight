@@ -8586,7 +8586,7 @@ export type Database = {
           id: string
           submission_data: Json
           submitted_at: string
-          submitted_by_user_id: string
+          submitted_by_user_id: string | null
         }
         Insert: {
           company_id: string
@@ -8595,7 +8595,7 @@ export type Database = {
           id?: string
           submission_data: Json
           submitted_at?: string
-          submitted_by_user_id: string
+          submitted_by_user_id?: string | null
         }
         Update: {
           company_id?: string
@@ -8604,7 +8604,7 @@ export type Database = {
           id?: string
           submission_data?: Json
           submitted_at?: string
-          submitted_by_user_id?: string
+          submitted_by_user_id?: string | null
         }
         Relationships: [
           {
