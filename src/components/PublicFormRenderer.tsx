@@ -417,9 +417,26 @@ export function PublicFormRenderer({
     );
   }
 
+  const logoUrl = form?.structure_json?.theme?.logoUrl;
+  const logoPosition = form?.structure_json?.theme?.logoPosition || 'center';
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
+        {logoUrl && (
+          <div className={cn(
+            "mb-4",
+            logoPosition === 'left' && "text-left",
+            logoPosition === 'center' && "text-center",
+            logoPosition === 'right' && "text-right"
+          )}>
+            <img 
+              src={logoUrl} 
+              alt="Logo" 
+              className="max-h-24 object-contain inline-block"
+            />
+          </div>
+        )}
         <CardTitle>{form.title}</CardTitle>
         {form.description && <CardDescription>{form.description}</CardDescription>}
         <div className="flex items-center gap-2">

@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField, type FormStructure } from "@/services/customForms";
 import { FormFieldEditor } from "@/components/FormFieldEditor";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp, Star, Upload } from "lucide-react";
+import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp, Star, Upload, ImageIcon, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormBuilderModalProps {
   open: boolean;
@@ -41,7 +43,43 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
   const [fields, setFields] = useState<FormField[]>([]);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoPosition, setLogoPosition] = useState<'left' | 'center' | 'right'>('center');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const { toast } = useToast();
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Erro", description: "Por favor, selecione uma imagem", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Erro", description: "Imagem deve ter no máximo 2MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fileName = `logo-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const { data, error } = await supabase.storage
+        .from('form-logos')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: publicUrl } = supabase.storage
+        .from('form-logos')
+        .getPublicUrl(data.path);
+      
+      setLogoUrl(publicUrl.publicUrl);
+      toast({ title: "Sucesso", description: "Logo enviada com sucesso" });
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast({ title: "Erro", description: "Erro ao fazer upload da imagem", variant: "destructive" });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   useEffect(() => {
     if (editingForm) {
@@ -50,12 +88,16 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       setIsPublished(editingForm.is_published);
       setIsPublic((editingForm as any).is_public || false);
       setFields(editingForm.structure_json?.fields || []);
+      setLogoUrl(editingForm.structure_json?.theme?.logoUrl || null);
+      setLogoPosition(editingForm.structure_json?.theme?.logoPosition || 'center');
     } else {
       setTitle("");
       setDescription("");
       setIsPublished(false);
       setIsPublic(false);
       setFields([]);
+      setLogoUrl(null);
+      setLogoPosition('center');
     }
     setSelectedFieldId(null);
   }, [editingForm, open]);
@@ -135,6 +177,8 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
         theme: {
           primaryColor: 'hsl(var(--primary))',
           backgroundColor: 'hsl(var(--background))',
+          logoUrl: logoUrl || undefined,
+          logoPosition: logoPosition,
         }
       };
 
@@ -238,6 +282,63 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
                     Formulário interno: apenas usuários autenticados podem responder
                   </p>
                 )}
+
+                {/* Logo Upload Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <Label>Logo/Imagem do Formulário</Label>
+                  
+                  {logoUrl ? (
+                    <div className="relative border rounded-lg p-2">
+                      <img 
+                        src={logoUrl} 
+                        alt="Logo do formulário" 
+                        className="max-h-24 mx-auto object-contain"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setLogoUrl(null)}
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => e.target.files?.[0] && handleLogoUpload(e.target.files[0])}
+                        className="hidden"
+                        id="logo-upload"
+                        disabled={uploadingLogo}
+                      />
+                      <label htmlFor="logo-upload" className="cursor-pointer">
+                        <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {uploadingLogo ? 'Enviando...' : 'Clique para adicionar logo'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Máx 2MB</p>
+                      </label>
+                    </div>
+                  )}
+                  
+                  {logoUrl && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Posição:</Label>
+                      <Select value={logoPosition} onValueChange={(v: 'left' | 'center' | 'right') => setLogoPosition(v)}>
+                        <SelectTrigger className="w-32 h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Esquerda</SelectItem>
+                          <SelectItem value="center">Centro</SelectItem>
+                          <SelectItem value="right">Direita</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

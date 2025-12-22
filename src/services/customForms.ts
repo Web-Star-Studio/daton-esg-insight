@@ -31,6 +31,8 @@ export interface FormStructure {
   theme?: {
     primaryColor?: string;
     backgroundColor?: string;
+    logoUrl?: string;
+    logoPosition?: 'left' | 'center' | 'right';
   };
 }
 
