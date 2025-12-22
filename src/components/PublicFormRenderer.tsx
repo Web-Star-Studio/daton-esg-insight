@@ -10,55 +10,27 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField } from "@/services/customForms";
-import { CalendarIcon, User } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 
 interface PublicFormRendererProps {
   formId: string;
   onSubmitSuccess?: () => void;
-  preselectedEmployeeId?: string;
-  showEmployeeSelector?: boolean;
-}
-
-interface Employee {
-  id: string;
-  full_name: string;
-  employee_code: string;
 }
 
 export function PublicFormRenderer({ 
   formId, 
-  onSubmitSuccess,
-  preselectedEmployeeId,
-  showEmployeeSelector = true
+  onSubmitSuccess
 }: PublicFormRendererProps) {
   const [form, setForm] = useState<CustomForm | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | undefined>(preselectedEmployeeId);
   const { toast } = useToast();
-
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees-for-form'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, full_name, employee_code')
-        .eq('status', 'Ativo')
-        .order('full_name');
-      
-      if (error) throw error;
-      return data as Employee[];
-    },
-    enabled: showEmployeeSelector,
-  });
 
   useEffect(() => {
     loadForm();
@@ -67,15 +39,10 @@ export function PublicFormRenderer({
   const loadForm = async () => {
     try {
       setLoading(true);
-      const data = await customFormsService.getForm(formId);
+      const data = await customFormsService.getPublicForm(formId);
       
       if (!data) {
-        toast({ title: "Erro", description: "Formulário não encontrado", variant: "destructive" });
-        return;
-      }
-
-      if (!data.is_published) {
-        toast({ title: "Aviso", description: "Este formulário não está publicado", variant: "destructive" });
+        toast({ title: "Erro", description: "Formulário não encontrado ou não publicado", variant: "destructive" });
         return;
       }
 
@@ -90,7 +57,7 @@ export function PublicFormRenderer({
       setFormData(initialData);
     } catch (error) {
       console.error('Erro ao carregar formulário:', error);
-      toast({ title: "Erro", description: "Erro ao carregar formulário", variant: "destructive" });
+      toast({ title: "Erro", description: "Formulário não encontrado ou não publicado", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -140,9 +107,8 @@ export function PublicFormRenderer({
 
     try {
       setSubmitting(true);
-      await customFormsService.submitForm(formId, {
-        submission_data: formData,
-        employee_id: selectedEmployeeId
+      await customFormsService.submitPublicForm(formId, {
+        submission_data: formData
       });
 
       toast({ title: "Sucesso", description: "Formulário enviado com sucesso!" });
@@ -155,7 +121,6 @@ export function PublicFormRenderer({
       });
       setFormData(resetData);
       setErrors({});
-      setSelectedEmployeeId(undefined);
       
       onSubmitSuccess?.();
     } catch (error) {
@@ -271,19 +236,6 @@ export function PublicFormRenderer({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {showEmployeeSelector && employees.length > 0 && (
-            <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
-              <Label className="flex items-center gap-2"><User className="h-4 w-4" />Vincular a Funcionário (opcional)</Label>
-              <Select value={selectedEmployeeId || ''} onValueChange={(val) => setSelectedEmployeeId(val || undefined)}>
-                <SelectTrigger><SelectValue placeholder="Selecione um funcionário..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
-                  {employees.map((emp) => <SelectItem key={emp.id} value={emp.id}>{emp.full_name} ({emp.employee_code})</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          
           {form.structure_json.fields.map((field: FormField) => renderField(field))}
           
           <div className="pt-4 border-t">
