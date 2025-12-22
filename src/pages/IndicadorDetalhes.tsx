@@ -27,7 +27,7 @@ export default function IndicadorDetalhes() {
   const [selectedYear] = useState(new Date().getFullYear());
 
   // Fetch indicator with all data
-  const { data: indicator, isLoading } = useQuery({
+  const { data: indicator, isLoading, error: queryError } = useQuery({
     queryKey: ['indicator-detail', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -36,13 +36,30 @@ export default function IndicadorDetalhes() {
           *,
           indicator_groups(*),
           indicator_targets(*),
-          indicator_period_data(*),
-          profiles!quality_indicators_responsible_user_id_fkey(full_name)
+          indicator_period_data(*)
         `)
         .eq('id', id!)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching indicator:', error);
+        throw error;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      // Fetch responsible user name separately if exists
+      let responsibleName: string | null = null;
+      if (data.responsible_user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', data.responsible_user_id)
+          .maybeSingle();
+        responsibleName = profile?.full_name || null;
+      }
 
       const target = data.indicator_targets?.find((t: any) => t.target_year === selectedYear);
       
@@ -55,6 +72,7 @@ export default function IndicadorDetalhes() {
         target_value: target?.target_value,
         tolerance_value: target?.tolerance_upper,
         indicator_group: data.indicator_groups,
+        responsible_name: responsibleName,
         period_data: (data.indicator_period_data || [])
           .filter((pd: any) => pd.period_year === selectedYear)
           .map((pd: any) => ({
