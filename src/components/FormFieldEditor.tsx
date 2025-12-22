@@ -124,9 +124,11 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="1">1 Estrela</SelectItem>
+                <SelectItem value="2">2 Estrelas</SelectItem>
                 <SelectItem value="3">3 Estrelas</SelectItem>
+                <SelectItem value="4">4 Estrelas</SelectItem>
                 <SelectItem value="5">5 Estrelas</SelectItem>
-                <SelectItem value="10">10 Estrelas</SelectItem>
               </SelectContent>
             </Select>
           </div>
