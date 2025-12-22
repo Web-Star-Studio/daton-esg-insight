@@ -206,10 +206,7 @@ export default function RequiredDocuments() {
 
         {/* Weight Legend */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Legenda de Pesos (Grau de Necessidade)</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="py-4">
             <div className="flex flex-wrap gap-2">
               {Object.entries(weightLabels).map(([weight]) => (
                 <Badge key={weight} className={getWeightBadgeColor(Number(weight))}>
@@ -252,7 +249,7 @@ export default function RequiredDocuments() {
                       <TableCell className="font-medium">{doc.document_name}</TableCell>
                       <TableCell>
                         <Badge className={getWeightBadgeColor(doc.weight)}>
-                          {doc.weight} - {weightLabels[doc.weight]}
+                          {doc.weight}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
