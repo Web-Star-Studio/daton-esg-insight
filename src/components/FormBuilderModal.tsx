@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField, type FormStructure } from "@/services/customForms";
 import { FormFieldEditor } from "@/components/FormFieldEditor";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp } from "lucide-react";
+import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp, Star, Upload } from "lucide-react";
 
 interface FormBuilderModalProps {
   open: boolean;
@@ -29,6 +29,8 @@ const FIELD_TYPES = [
   { type: 'select', label: 'Seleção Única', icon: CheckSquare },
   { type: 'multiselect', label: 'Múltipla Escolha', icon: CheckSquare },
   { type: 'nps', label: 'NPS (0-10)', icon: ThumbsUp },
+  { type: 'rating', label: 'Avaliação (Estrelas)', icon: Star },
+  { type: 'file', label: 'Upload de Arquivo', icon: Upload },
 ] as const;
 
 export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: FormBuilderModalProps) {
@@ -69,7 +71,14 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       label: `Campo ${fields.length + 1}`,
       required: false,
       placeholder: '',
-      options: type === 'select' || type === 'multiselect' ? ['Opção 1', 'Opção 2'] : undefined,
+      options: ['select', 'multiselect', 'checkbox'].includes(type) 
+        ? ['Opção 1', 'Opção 2'] 
+        : undefined,
+      validation: type === 'rating' 
+        ? { max: 5 } 
+        : type === 'file' 
+          ? { pattern: '.pdf,.jpg,.png,.doc,.docx' }
+          : undefined,
     };
 
     setFields([...fields, newField]);

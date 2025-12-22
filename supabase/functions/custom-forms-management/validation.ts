@@ -4,7 +4,7 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 // Form field structure validation
 const FormFieldSchema = z.object({
   id: z.string(),
-  type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'radio', 'date', 'file', 'multiselect', 'nps']),
+  type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'radio', 'date', 'file', 'multiselect', 'nps', 'rating']),
   label: z.string().min(1, 'Label is required'),
   placeholder: z.string().optional(),
   required: z.boolean().optional(),
