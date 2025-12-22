@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileText, Users, Edit, Trash2, Eye, Copy, Link } from "lucide-react";
+import { Plus, FileText, Users, Edit, Trash2, Eye, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm } from "@/services/customForms";
 import { FormBuilderModal } from "@/components/FormBuilderModal";
 import { FormSubmissionsModal } from "@/components/FormSubmissionsModal";
+import { FormShareModal } from "@/components/FormShareModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function FormulariosCustomizados() {
@@ -16,6 +17,7 @@ export default function FormulariosCustomizados() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
   const [submissionsFormId, setSubmissionsFormId] = useState<string | null>(null);
+  const [shareForm, setShareForm] = useState<{ id: string; title: string } | null>(null);
   const { toast } = useToast();
 
   // SEO
@@ -100,13 +102,8 @@ export default function FormulariosCustomizados() {
     setSubmissionsFormId(formId);
   };
 
-  const handleCopyLink = (formId: string) => {
-    const link = `${window.location.origin}/form/${formId}`;
-    navigator.clipboard.writeText(link);
-    toast({
-      title: "Link copiado!",
-      description: "O link do formulário foi copiado para a área de transferência",
-    });
+  const handleShareForm = (form: CustomForm) => {
+    setShareForm({ id: form.id, title: form.title });
   };
 
   const formatDate = (dateString: string) => {
@@ -268,10 +265,10 @@ export default function FormulariosCustomizados() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleCopyLink(form.id)}
-                          title="Copiar link público do formulário"
+                          onClick={() => handleShareForm(form)}
+                          title="Compartilhar formulário (QR Code e Link)"
                         >
-                          <Link className="h-4 w-4" />
+                          <QrCode className="h-4 w-4" />
                         </Button>
                       )}
                       <Button
@@ -338,7 +335,16 @@ export default function FormulariosCustomizados() {
           open={!!submissionsFormId}
           onClose={() => setSubmissionsFormId(null)}
         />
-       )}
+      )}
+
+      {shareForm && (
+        <FormShareModal
+          open={!!shareForm}
+          onClose={() => setShareForm(null)}
+          formId={shareForm.id}
+          formTitle={shareForm.title}
+        />
+      )}
     </>
   );
 }
