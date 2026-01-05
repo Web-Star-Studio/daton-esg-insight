@@ -4610,6 +4610,7 @@ export type Database = {
           headquarters_country: string | null
           id: string
           legal_structure: string | null
+          logo_url: string | null
           name: string
           reporting_scope: string | null
           sector: string | null
@@ -4633,6 +4634,7 @@ export type Database = {
           headquarters_country?: string | null
           id?: string
           legal_structure?: string | null
+          logo_url?: string | null
           name: string
           reporting_scope?: string | null
           sector?: string | null
@@ -4656,6 +4658,7 @@ export type Database = {
           headquarters_country?: string | null
           id?: string
           legal_structure?: string | null
+          logo_url?: string | null
           name?: string
           reporting_scope?: string | null
           sector?: string | null
@@ -6612,11 +6615,14 @@ export type Database = {
       }
       email_campaigns: {
         Row: {
+          button_color: string | null
           company_id: string
           created_at: string | null
           created_by_user_id: string
           form_id: string
+          header_color: string | null
           id: string
+          logo_url: string | null
           mailing_list_id: string
           message: string | null
           opened_count: number | null
@@ -6629,11 +6635,14 @@ export type Database = {
           total_recipients: number | null
         }
         Insert: {
+          button_color?: string | null
           company_id: string
           created_at?: string | null
           created_by_user_id: string
           form_id: string
+          header_color?: string | null
           id?: string
+          logo_url?: string | null
           mailing_list_id: string
           message?: string | null
           opened_count?: number | null
@@ -6646,11 +6655,14 @@ export type Database = {
           total_recipients?: number | null
         }
         Update: {
+          button_color?: string | null
           company_id?: string
           created_at?: string | null
           created_by_user_id?: string
           form_id?: string
+          header_color?: string | null
           id?: string
+          logo_url?: string | null
           mailing_list_id?: string
           message?: string | null
           opened_count?: number | null

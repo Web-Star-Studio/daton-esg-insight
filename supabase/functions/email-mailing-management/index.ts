@@ -95,9 +95,33 @@ function generateEmailHtml(
   subject: string,
   message: string,
   formUrl: string,
-  contactName?: string
+  contactName?: string,
+  options?: {
+    headerColor?: string;
+    buttonColor?: string;
+    logoUrl?: string;
+  }
 ): string {
   const greeting = contactName ? `Olá ${contactName},` : "Olá,";
+  const headerColor = options?.headerColor || '#10B981';
+  const buttonColor = options?.buttonColor || '#10B981';
+  const logoUrl = options?.logoUrl;
+
+  // Calculate darker shade for hover
+  const darkenColor = (color: string): string => {
+    const hex = color.replace('#', '');
+    const r = Math.max(0, parseInt(hex.substring(0, 2), 16) - 30);
+    const g = Math.max(0, parseInt(hex.substring(2, 4), 16) - 30);
+    const b = Math.max(0, parseInt(hex.substring(4, 6), 16) - 30);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  };
+
+  const headerColorDark = darkenColor(headerColor);
+  const buttonColorHover = darkenColor(buttonColor);
+
+  const logoHtml = logoUrl 
+    ? `<img src="${logoUrl}" alt="Logo" style="max-height: 60px; margin-bottom: 15px; object-fit: contain;" />`
+    : '';
 
   return `
 <!DOCTYPE html>
@@ -109,18 +133,19 @@ function generateEmailHtml(
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px 20px; text-align: center; }
+    .header { background: linear-gradient(135deg, ${headerColor} 0%, ${headerColorDark} 100%); padding: 30px 20px; text-align: center; }
     .header h1 { color: white; margin: 0; font-size: 24px; }
     .content { padding: 30px 20px; }
     .message { margin-bottom: 30px; white-space: pre-wrap; }
-    .cta-button { display: inline-block; background: #10B981; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-    .cta-button:hover { background: #059669; }
+    .cta-button { display: inline-block; background: ${buttonColor}; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+    .cta-button:hover { background: ${buttonColorHover}; }
     .footer { background: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #666; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
+      ${logoHtml}
       <h1>${subject}</h1>
     </div>
     <div class="content">
@@ -427,7 +452,7 @@ serve(async (req) => {
       }
 
       case "CREATE_CAMPAIGN": {
-        const { mailingListId, formId, subject, message } = body;
+        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl } = body;
 
         // Count recipients
         const { count } = await supabase
@@ -444,6 +469,9 @@ serve(async (req) => {
             form_id: formId,
             subject,
             message,
+            header_color: headerColor || '#10B981',
+            button_color: buttonColor || '#10B981',
+            logo_url: logoUrl || null,
             status: "draft",
             total_recipients: count || 0,
             created_by_user_id: user.id,
@@ -528,7 +556,12 @@ serve(async (req) => {
               campaign.subject,
               campaign.message || "",
               formUrl,
-              contact.name
+              contact.name,
+              {
+                headerColor: campaign.header_color,
+                buttonColor: campaign.button_color,
+                logoUrl: campaign.logo_url,
+              }
             );
 
             await transporter.sendMail({
