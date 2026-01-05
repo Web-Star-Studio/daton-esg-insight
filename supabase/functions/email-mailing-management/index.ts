@@ -20,7 +20,8 @@ interface MailingList {
 
 interface Contact {
   email: string;
-  name?: string;
+  name?: string;           // Nome do contato (CONTATO)
+  companyName?: string;    // Nome da empresa (NOME)
   metadata?: Record<string, any>;
 }
 
@@ -46,10 +47,10 @@ function createTransporter() {
 
 // Get CSV Template
 function getCsvTemplate(): string {
-  return `email,nome,departamento
-joao@empresa.com,João Silva,RH
-maria@empresa.com,Maria Santos,Financeiro
-carlos@empresa.com,Carlos Oliveira,TI`;
+  return `nome,contato,email
+Empresa ABC,João Silva,joao@empresa.com
+Corporação XYZ,Maria Santos,maria@corp.com
+Tech Solutions,Carlos Oliveira,carlos@tech.com`;
 }
 
 // Parse CSV content
@@ -64,7 +65,8 @@ function parseCSV(csvContent: string): Contact[] {
     throw new Error("CSV deve conter uma coluna 'email'");
   }
 
-  const nameIndex = headers.indexOf("nome");
+  const companyNameIndex = headers.indexOf("nome");
+  const contactNameIndex = headers.indexOf("contato");
   const contacts: Contact[] = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -75,14 +77,15 @@ function parseCSV(csvContent: string): Contact[] {
 
     const metadata: Record<string, any> = {};
     headers.forEach((header, idx) => {
-      if (idx !== emailIndex && idx !== nameIndex && values[idx]) {
+      if (idx !== emailIndex && idx !== companyNameIndex && idx !== contactNameIndex && values[idx]) {
         metadata[header] = values[idx];
       }
     });
 
     contacts.push({
       email: email.toLowerCase(),
-      name: nameIndex !== -1 ? values[nameIndex] : undefined,
+      companyName: companyNameIndex !== -1 ? values[companyNameIndex] : undefined,
+      name: contactNameIndex !== -1 ? values[contactNameIndex] : undefined,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
   }
@@ -393,6 +396,7 @@ serve(async (req) => {
           mailing_list_id: listId,
           email: c.email,
           name: c.name,
+          company_name: c.companyName,
           metadata: c.metadata || {},
           status: "active",
         }));
@@ -427,6 +431,45 @@ serve(async (req) => {
           .eq("id", contactId);
 
         if (error) throw new Error(`Failed to delete contact: ${error.message}`);
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "ADD_CONTACT": {
+        const { listId, email, name, companyName } = body;
+
+        // Validate email
+        if (!email || !email.includes("@")) {
+          throw new Error("Email inválido");
+        }
+
+        // Verify list ownership
+        const { data: list } = await supabase
+          .from("email_mailing_lists")
+          .select("id")
+          .eq("id", listId)
+          .eq("company_id", companyId)
+          .single();
+
+        if (!list) throw new Error("Lista não encontrada");
+
+        const { error } = await supabase
+          .from("mailing_list_contacts")
+          .upsert({
+            mailing_list_id: listId,
+            email: email.toLowerCase(),
+            name: name || null,
+            company_name: companyName || null,
+            status: "active",
+          }, {
+            onConflict: "mailing_list_id,email",
+          });
+
+        if (error) throw new Error(`Erro ao adicionar contato: ${error.message}`);
+
+        console.log(`[email-mailing-management] Added contact ${email} to list ${listId}`);
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

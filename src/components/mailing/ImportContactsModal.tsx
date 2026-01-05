@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Upload, Download, FileSpreadsheet, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, Download, FileSpreadsheet, Check, AlertCircle, Building2, User } from 'lucide-react';
 import { mailingService, MailingList } from '@/services/mailingService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,7 +23,8 @@ interface ImportContactsModalProps {
 
 interface ParsedContact {
   email: string;
-  name?: string;
+  name?: string;         // CONTATO
+  companyName?: string;  // NOME
   metadata?: Record<string, any>;
   valid: boolean;
 }
@@ -70,7 +71,8 @@ export function ImportContactsModal({
 
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const emailIndex = headers.indexOf('email');
-    const nameIndex = headers.indexOf('nome');
+    const companyNameIndex = headers.indexOf('nome');
+    const contactNameIndex = headers.indexOf('contato');
 
     if (emailIndex === -1) {
       toast({ title: 'CSV inválido', description: 'O arquivo deve conter uma coluna "email"', variant: 'destructive' });
@@ -85,14 +87,15 @@ export function ImportContactsModal({
 
       const metadata: Record<string, any> = {};
       headers.forEach((header, idx) => {
-        if (idx !== emailIndex && idx !== nameIndex && values[idx]) {
+        if (idx !== emailIndex && idx !== companyNameIndex && idx !== contactNameIndex && values[idx]) {
           metadata[header] = values[idx];
         }
       });
 
       contacts.push({
         email: email || '',
-        name: nameIndex !== -1 ? values[nameIndex] : undefined,
+        companyName: companyNameIndex !== -1 ? values[companyNameIndex] : undefined,
+        name: contactNameIndex !== -1 ? values[contactNameIndex] : undefined,
         metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         valid: isValidEmail
       });
@@ -161,6 +164,16 @@ export function ImportContactsModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Template Info */}
+          <div className="bg-muted/50 rounded-lg p-3 text-sm">
+            <p className="font-medium mb-1">Formato do CSV:</p>
+            <ul className="text-muted-foreground space-y-0.5">
+              <li><strong>NOME</strong> - Nome da empresa</li>
+              <li><strong>CONTATO</strong> - Nome de quem vai receber o email</li>
+              <li><strong>EMAIL</strong> - Email do contato (obrigatório)</li>
+            </ul>
+          </div>
+
           {/* Download Template */}
           <Button
             variant="outline"
@@ -193,7 +206,7 @@ export function ImportContactsModal({
               <div>
                 <p className="font-medium">Arraste um arquivo CSV ou clique para selecionar</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  O arquivo deve conter uma coluna "email"
+                  Colunas: nome, contato, email
                 </p>
               </div>
             )}
@@ -232,10 +245,21 @@ export function ImportContactsModal({
                       ) : (
                         <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
                       )}
-                      <span className="font-medium truncate">{contact.email || '(vazio)'}</span>
-                      {contact.name && (
-                        <span className="text-muted-foreground truncate">- {contact.name}</span>
-                      )}
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className="font-medium truncate">{contact.email || '(vazio)'}</span>
+                        {contact.companyName && (
+                          <span className="text-muted-foreground truncate flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            {contact.companyName}
+                          </span>
+                        )}
+                        {contact.name && (
+                          <span className="text-muted-foreground truncate flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {contact.name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                   {parsedContacts.length > 50 && (
