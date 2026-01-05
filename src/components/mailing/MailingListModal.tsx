@@ -40,7 +40,7 @@ export function MailingListModal({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, getValues, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       name: '',
       description: '',
@@ -48,7 +48,7 @@ export function MailingListModal({
     }
   });
 
-  const selectedFormIds = watch('formIds');
+  const [selectedFormIds, setSelectedFormIds] = React.useState<string[]>([]);
 
   const { data: forms = [], error: formsError } = useQuery({
     queryKey: ['mailing-forms'],
@@ -73,14 +73,19 @@ export function MailingListModal({
   });
 
   useEffect(() => {
+    if (!open) return;
+    
     if (mode === 'edit' && listDetails) {
+      const formIds = listDetails.forms?.map(f => f.id) || [];
       reset({
         name: listDetails.name,
         description: listDetails.description || '',
-        formIds: listDetails.forms?.map(f => f.id) || []
+        formIds
       });
+      setSelectedFormIds(formIds);
     } else if (mode === 'create') {
       reset({ name: '', description: '', formIds: [] });
+      setSelectedFormIds([]);
     }
   }, [mode, listDetails, reset, open]);
 
@@ -125,14 +130,15 @@ export function MailingListModal({
     }
   };
 
-  const toggleForm = (formId: string) => {
-    const current = selectedFormIds || [];
-    if (current.includes(formId)) {
-      setValue('formIds', current.filter(id => id !== formId));
-    } else {
-      setValue('formIds', [...current, formId]);
-    }
-  };
+  const handleToggleForm = React.useCallback((formId: string, checked: boolean) => {
+    setSelectedFormIds(prev => {
+      const next = checked 
+        ? [...prev, formId]
+        : prev.filter(id => id !== formId);
+      setValue('formIds', next);
+      return next;
+    });
+  }, [setValue]);
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
@@ -181,20 +187,20 @@ export function MailingListModal({
             ) : (
               <ScrollArea className="h-40 border rounded-md p-2">
                 <div className="space-y-2">
-                  {forms.map((form) => (
-                    <div
-                      key={form.id}
-                      className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
-                      onClick={() => toggleForm(form.id)}
-                    >
-                      <Checkbox
-                        checked={selectedFormIds?.includes(form.id)}
-                        onCheckedChange={() => {}}
-                        className="pointer-events-none"
-                      />
-                      <span className="text-sm">{form.title}</span>
-                    </div>
-                  ))}
+                    {forms.map((form) => (
+                      <label
+                        key={form.id}
+                        htmlFor={`form-checkbox-${form.id}`}
+                        className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox
+                          id={`form-checkbox-${form.id}`}
+                          checked={selectedFormIds.includes(form.id)}
+                          onCheckedChange={(checked) => handleToggleForm(form.id, !!checked)}
+                        />
+                        <span className="text-sm">{form.title}</span>
+                      </label>
+                    ))}
                 </div>
               </ScrollArea>
             )}
