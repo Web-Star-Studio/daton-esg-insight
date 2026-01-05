@@ -70,13 +70,6 @@ interface MenuSection {
 
 const menuSections: MenuSection[] = [
   {
-    id: "home",
-    title: "INÍCIO",
-    items: [
-      { id: "dashboard", title: "Início", icon: LayoutDashboard, path: "/dashboard", description: "Visão geral do sistema ESG" }
-    ]
-  },
-  {
     id: "esg",
     title: "ESG",
     icon: Leaf,
@@ -790,6 +783,27 @@ export function AppSidebar() {
             <p>Nenhum resultado encontrado</p>
             <p className="text-xs mt-1">Tente outro termo de busca</p>
           </div>
+        )}
+
+        {/* Botão Início - Sempre visível no topo */}
+        {!searchQuery && (
+          <SidebarGroup className="px-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/dashboard')}
+                    className={`group transition-all duration-200 hover-scale ${
+                      isActive('/dashboard') ? 'bg-primary/10 text-primary font-medium' : ''
+                    }`}
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    {!collapsed && <span className="text-sm">Início</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         )}
 
         {/* Seções principais */}
