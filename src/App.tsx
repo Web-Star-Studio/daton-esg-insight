@@ -34,6 +34,7 @@ const Contato = lazy(() => import("./pages/Contato"));
 const Funcionalidades = lazy(() => import("./pages/Funcionalidades"));
 const Documentacao = lazy(() => import("./pages/Documentacao"));
 const FAQ = lazy(() => import("./pages/FAQ"));
+const Ajuda = lazy(() => import("./pages/Ajuda"));
 const InventarioGEE = lazy(() => import("./pages/InventarioGEE"));
 const DashboardGHG = lazy(() => import("./pages/DashboardGHG"));
 const Licenciamento = lazy(() => import("./pages/Licenciamento"));
@@ -310,6 +311,11 @@ const AppContent = () => {
               <LazyPageWrapper>
                 <FAQ />
               </LazyPageWrapper>
+            } />
+            <Route path="/ajuda" element={
+              <ProtectedLazyPageWrapper>
+                <Ajuda />
+              </ProtectedLazyPageWrapper>
             } />
 
             {/* Portal do Fornecedor (público) */}
