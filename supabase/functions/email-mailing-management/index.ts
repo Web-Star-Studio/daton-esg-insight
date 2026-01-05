@@ -582,9 +582,9 @@ serve(async (req) => {
       case "GET_FORMS": {
         const { data, error } = await supabase
           .from("custom_forms")
-          .select("id, title, status, public_url_slug")
+          .select("id, title, is_published, public_url_slug")
           .eq("company_id", companyId)
-          .eq("status", "published")
+          .eq("is_published", true)
           .order("title");
 
         if (error) throw new Error(`Failed to fetch forms: ${error.message}`);
