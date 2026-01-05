@@ -14,11 +14,12 @@ export interface CustomForm {
 
 export interface FormField {
   id: string;
-  type: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'date' | 'checkbox' | 'nps' | 'rating' | 'file';
+  type: 'text' | 'textarea' | 'number' | 'select' | 'multiselect' | 'date' | 'checkbox' | 'nps' | 'rating' | 'file' | 'message';
   label: string;
   required: boolean;
   placeholder?: string;
   options?: string[]; // For select/multiselect fields
+  content?: string; // For message type fields
   validation?: {
     min?: number;
     max?: number;
@@ -33,6 +34,8 @@ export interface FormStructure {
     backgroundColor?: string;
     logoUrl?: string;
     logoPosition?: 'left' | 'center' | 'right';
+    footerImageUrl?: string;
+    footerImagePosition?: 'left' | 'center' | 'right';
   };
 }
 

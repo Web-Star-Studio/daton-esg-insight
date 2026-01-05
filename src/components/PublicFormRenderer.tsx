@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField } from "@/services/customForms";
-import { CalendarIcon, Upload } from "lucide-react";
+import { CalendarIcon, Upload, MessageSquare } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -53,6 +53,9 @@ export function PublicFormRenderer({
       
       const initialData: Record<string, any> = {};
       data.structure_json.fields.forEach((field: FormField) => {
+        // Skip message fields - they don't need initial data
+        if (field.type === 'message') return;
+        
         if (field.type === 'checkbox') {
           // Checkbox with options uses string (radio behavior), legacy uses boolean
           initialData[field.id] = field.options?.length ? '' : false;
@@ -80,6 +83,9 @@ export function PublicFormRenderer({
     if (!form) return false;
     
     form.structure_json.fields.forEach((field: FormField) => {
+      // Skip message fields - they don't require validation
+      if (field.type === 'message') return;
+      
       if (field.required) {
         const value = formData[field.id];
         
@@ -139,6 +145,9 @@ export function PublicFormRenderer({
 
       const resetData: Record<string, any> = {};
       form?.structure_json.fields.forEach((field: FormField) => {
+        // Skip message fields
+        if (field.type === 'message') return;
+        
         if (field.type === 'checkbox') {
           resetData[field.id] = field.options?.length ? '' : false;
         } else if (field.type === 'multiselect') {
@@ -358,6 +367,18 @@ export function PublicFormRenderer({
                   </p>
                 )}
               </label>
+          </div>
+        );
+        
+        case 'message':
+          return (
+            <div className="bg-muted/50 p-4 rounded-lg border">
+              <div className="flex items-start gap-2">
+                <MessageSquare className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-sm whitespace-pre-wrap">
+                  {field.content || field.label}
+                </p>
+              </div>
             </div>
           );
         
@@ -367,15 +388,19 @@ export function PublicFormRenderer({
     };
 
     // For checkbox with options, don't show label above (it's shown with each option)
-    const showLabelAbove = !(field.type === 'checkbox' && (!field.options || field.options.length === 0));
+    // For message type, don't show label above (it has its own styling)
+    const showLabelAbove = !(field.type === 'checkbox' && (!field.options || field.options.length === 0)) && field.type !== 'message';
 
     return (
       <div key={field.id} className="space-y-2">
-        {showLabelAbove && (
+        {showLabelAbove && field.type !== 'message' && (
           <Label htmlFor={field.id}>
             {field.label}
             {field.required && <span className="text-destructive ml-1">*</span>}
           </Label>
+        )}
+        {field.type === 'message' && field.label && field.label !== 'Mensagem Informativa' && (
+          <Label className="font-medium">{field.label}</Label>
         )}
         {fieldElement()}
         {hasError && <p className="text-sm text-destructive">{errors[field.id]}</p>}
@@ -419,6 +444,8 @@ export function PublicFormRenderer({
 
   const logoUrl = form?.structure_json?.theme?.logoUrl;
   const logoPosition = form?.structure_json?.theme?.logoPosition || 'center';
+  const footerImageUrl = form?.structure_json?.theme?.footerImageUrl;
+  const footerImagePosition = form?.structure_json?.theme?.footerImagePosition || 'center';
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -448,6 +475,21 @@ export function PublicFormRenderer({
         <form onSubmit={handleSubmit} className="space-y-6">
           {form.structure_json.fields.map((field: FormField) => renderField(field))}
           
+          {footerImageUrl && (
+            <div className={cn(
+              "pt-4",
+              footerImagePosition === 'left' && "text-left",
+              footerImagePosition === 'center' && "text-center",
+              footerImagePosition === 'right' && "text-right"
+            )}>
+              <img 
+                src={footerImageUrl} 
+                alt="Imagem de Rodapé" 
+                className="max-h-24 object-contain inline-block"
+              />
+            </div>
+          )}
+
           <div className="pt-4 border-t">
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? "Enviando..." : "Enviar Formulário"}

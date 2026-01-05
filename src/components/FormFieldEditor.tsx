@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type FormField } from "@/services/customForms";
-import { Plus, X, Star, Upload } from "lucide-react";
+import { Plus, X, Star, Upload, MessageSquare } from "lucide-react";
 
 interface FormFieldEditorProps {
   field: FormField;
@@ -34,6 +34,7 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
   };
 
   const hasOptions = field.type === 'select' || field.type === 'multiselect';
+  const isMessageType = field.type === 'message';
 
   return (
     <Card>
@@ -45,33 +46,54 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="label">Label do Campo</Label>
+          <Label htmlFor="label">{isMessageType ? 'Título da Mensagem' : 'Label do Campo'}</Label>
           <Input
             id="label"
             value={field.label}
             onChange={(e) => onUpdate({ label: e.target.value })}
-            placeholder="Digite o label do campo"
+            placeholder={isMessageType ? "Digite o título da mensagem" : "Digite o label do campo"}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="placeholder">Placeholder</Label>
-          <Input
-            id="placeholder"
-            value={field.placeholder || ''}
-            onChange={(e) => onUpdate({ placeholder: e.target.value })}
-            placeholder="Texto de exemplo (opcional)"
-          />
-        </div>
+        {/* Message content for message type */}
+        {isMessageType && (
+          <div className="space-y-2">
+            <Label htmlFor="content">Conteúdo da Mensagem</Label>
+            <Textarea
+              id="content"
+              value={field.content || ''}
+              onChange={(e) => onUpdate({ content: e.target.value })}
+              placeholder="Digite o texto que será exibido para quem preencher o formulário..."
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              Este texto será exibido como informação para quem preencher o formulário.
+            </p>
+          </div>
+        )}
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="required"
-            checked={field.required}
-            onCheckedChange={(required) => onUpdate({ required })}
-          />
-          <Label htmlFor="required">Campo obrigatório</Label>
-        </div>
+        {!isMessageType && (
+          <div className="space-y-2">
+            <Label htmlFor="placeholder">Placeholder</Label>
+            <Input
+              id="placeholder"
+              value={field.placeholder || ''}
+              onChange={(e) => onUpdate({ placeholder: e.target.value })}
+              placeholder="Texto de exemplo (opcional)"
+            />
+          </div>
+        )}
+
+        {!isMessageType && (
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="required"
+              checked={field.required}
+              onCheckedChange={(required) => onUpdate({ required })}
+            />
+            <Label htmlFor="required">Campo obrigatório</Label>
+          </div>
+        )}
 
         {/* Options for select, multiselect, and checkbox */}
         {hasOptions && (
@@ -309,6 +331,18 @@ export function FormFieldEditor({ field, onUpdate }: FormFieldEditorProps) {
                       Aceito: {field.validation.pattern}
                     </p>
                   )}
+                </div>
+              )}
+
+              {/* Message preview */}
+              {field.type === 'message' && (
+                <div className="bg-muted/50 p-4 rounded-lg border">
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm whitespace-pre-wrap">
+                      {field.content || 'Texto da mensagem...'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
