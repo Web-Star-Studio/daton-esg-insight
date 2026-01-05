@@ -50,11 +50,21 @@ export function MailingListModal({
 
   const selectedFormIds = watch('formIds');
 
-  const { data: forms = [] } = useQuery({
+  const { data: forms = [], error: formsError } = useQuery({
     queryKey: ['mailing-forms'],
     queryFn: () => mailingService.getForms(),
     enabled: open
   });
+
+  useEffect(() => {
+    if (formsError) {
+      toast({ 
+        title: 'Erro ao carregar formulários', 
+        description: formsError.message, 
+        variant: 'destructive' 
+      });
+    }
+  }, [formsError, toast]);
 
   const { data: listDetails } = useQuery({
     queryKey: ['mailing-list-details', mailingList?.id],

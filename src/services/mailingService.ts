@@ -11,7 +11,7 @@ export interface MailingList {
   contact_count?: number;
   form_count?: number;
   contacts?: MailingContact[];
-  forms?: { id: string; title: string; status: string }[];
+  forms?: { id: string; title: string }[];
 }
 
 export interface MailingContact {
@@ -106,7 +106,7 @@ class MailingService {
     return await this.invoke('SEND_CAMPAIGN', { campaignId });
   }
 
-  async getForms(): Promise<{ id: string; title: string; status: string; public_url_slug?: string }[]> {
+  async getForms(): Promise<{ id: string; title: string }[]> {
     return await this.invoke('GET_FORMS');
   }
 }

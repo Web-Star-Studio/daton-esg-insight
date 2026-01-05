@@ -468,7 +468,7 @@ serve(async (req) => {
           .from("email_campaigns")
           .select(`
             *,
-            custom_forms(id, title, public_url_slug)
+            custom_forms(id, title)
           `)
           .eq("id", campaignId)
           .eq("company_id", companyId)
@@ -518,10 +518,9 @@ serve(async (req) => {
         const gmailUser = Deno.env.get("GMAIL_USER")!;
         let sentCount = 0;
 
-        // Build form URL
-        const formUrl = campaign.custom_forms?.public_url_slug
-          ? `${req.headers.get("origin") || "https://dqlvioijqzlvnvvajmft.supabase.co"}/f/${campaign.custom_forms.public_url_slug}`
-          : `${req.headers.get("origin") || "https://dqlvioijqzlvnvvajmft.supabase.co"}/formulario-publico/${campaign.form_id}`;
+        // Build form URL - using /form/:formId route
+        const origin = req.headers.get("origin") || "https://dqlvioijqzlvnvvajmft.supabase.co";
+        const formUrl = `${origin}/form/${campaign.form_id}`;
 
         for (const contact of contacts) {
           try {
@@ -582,7 +581,7 @@ serve(async (req) => {
       case "GET_FORMS": {
         const { data, error } = await supabase
           .from("custom_forms")
-          .select("id, title, is_published, public_url_slug")
+          .select("id, title")
           .eq("company_id", companyId)
           .eq("is_published", true)
           .order("title");
