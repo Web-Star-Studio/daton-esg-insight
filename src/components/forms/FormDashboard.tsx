@@ -21,6 +21,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import { 
   Download, 
   Users, 
@@ -31,7 +39,8 @@ import {
   Table as TableIcon,
   TrendingUp,
   ThumbsUp,
-  Trash2
+  Trash2,
+  Eye
 } from "lucide-react";
 
 interface FormDashboardContentProps {
@@ -583,7 +592,7 @@ export function FormDashboardContent({ formId }: FormDashboardContentProps) {
                       <TableRow>
                         <TableHead className="whitespace-nowrap">Data</TableHead>
                         <TableHead className="whitespace-nowrap">Usuário</TableHead>
-                        {form.structure_json.fields.map((field) => (
+                        {form.structure_json.fields.slice(0, 3).map((field) => (
                           <TableHead key={field.id} className="whitespace-nowrap">
                             {field.label}
                           </TableHead>
@@ -600,41 +609,77 @@ export function FormDashboardContent({ formId }: FormDashboardContentProps) {
                           <TableCell className="whitespace-nowrap">
                             {submission.submitted_by?.full_name || 'Não identificado'}
                           </TableCell>
-                          {form.structure_json.fields.map((field) => (
+                          {form.structure_json.fields.slice(0, 3).map((field) => (
                             <TableCell key={field.id} className="max-w-[200px] truncate">
                               {formatValue(submission.submission_data[field.id], field.type)}
                             </TableCell>
                           ))}
                           <TableCell>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  disabled={deletingId === submission.id}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir resposta?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. A resposta será permanentemente removida.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDeleteSubmission(submission.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            <div className="flex items-center gap-1">
+                              {/* Ver Detalhes */}
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+                                  <DialogHeader>
+                                    <DialogTitle>Detalhes da Resposta</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 mt-4">
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <span className="font-medium">Data:</span>
+                                      <span>{formatDate(submission.submitted_at)}</span>
+                                      <span className="font-medium">Usuário:</span>
+                                      <span>{submission.submitted_by?.full_name || 'Não identificado'}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="space-y-3">
+                                      {form.structure_json.fields.map((field) => (
+                                        <div key={field.id}>
+                                          <p className="font-medium text-sm">{field.label}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            {formatValue(submission.submission_data[field.id], field.type) || '-'}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+
+                              {/* Excluir */}
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    disabled={deletingId === submission.id}
                                   >
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir resposta?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta ação não pode ser desfeita. A resposta será permanentemente removida.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteSubmission(submission.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
