@@ -239,7 +239,7 @@ serve(async (req) => {
           .from("mailing_list_forms")
           .select(`
             *,
-            custom_forms(id, title, status)
+            custom_forms(id, title, is_published)
           `)
           .eq("mailing_list_id", listId);
 
