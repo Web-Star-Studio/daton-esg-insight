@@ -165,9 +165,7 @@ serve(async (req) => {
 async function getForms(supabase: any, company_id: string) {
   const { data, error } = await supabase
     .from('custom_forms')
-    .select(`
-      *
-    `)
+    .select(`*`)
     .eq('company_id', company_id)
     .order('created_at', { ascending: false })
 
@@ -175,24 +173,36 @@ async function getForms(supabase: any, company_id: string) {
     throw new Error(`Failed to fetch forms: ${error.message}`)
   }
 
-  // Manually fetch user data for each form
-  const formsWithUsers = await Promise.all(
+  // Fetch submission counts and user data for each form
+  const formsWithData = await Promise.all(
     (data || []).map(async (form: any) => {
+      // Get user data
       const { data: userData } = await supabase
         .from('profiles')
         .select('id, full_name')
         .eq('id', form.created_by_user_id)
         .single()
 
+      // Count submissions for this form
+      const { count: submissionCount, error: countError } = await supabase
+        .from('form_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('form_id', form.id)
+
+      if (countError) {
+        console.error('Error counting submissions for form', form.id, ':', countError.message)
+      }
+
       return {
         ...form,
-        created_by: userData
+        created_by: userData,
+        submission_count: submissionCount || 0
       }
     })
   )
 
   return new Response(
-    JSON.stringify(formsWithUsers),
+    JSON.stringify(formsWithData),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }
