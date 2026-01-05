@@ -189,7 +189,8 @@ export function MailingListModal({
                     >
                       <Checkbox
                         checked={selectedFormIds?.includes(form.id)}
-                        onCheckedChange={() => toggleForm(form.id)}
+                        onCheckedChange={() => {}}
+                        className="pointer-events-none"
                       />
                       <span className="text-sm">{form.title}</span>
                     </div>
