@@ -45,7 +45,7 @@ import {
   Settings, Bell, Clock, Building2, MapPin,
   Brain, ShoppingCart, Zap, Truck, BarChart, FlaskConical, Sparkles, Package, Flag, 
   Recycle, Gavel, Trash2, CloudUpload, Wand2, Workflow, BookMarked, Handshake,
-  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown, FolderTree
+  FolderKanban, DollarSign, HelpCircle, Droplets, Cloud, Crown, FolderTree, Mail
 } from "lucide-react"
 
 // Nova estrutura ESG completa reorganizada
@@ -356,6 +356,7 @@ const menuSections: MenuSection[] = [
       { id: "organization-config", title: "Configuração da Organização", icon: Building, path: "/configuracao-organizacional", description: "Dados e estrutura organizacional" },
       { id: "factor-library", title: "Biblioteca de Fatores", icon: FlaskConical, path: "/biblioteca-fatores", description: "Fatores de emissão e conversão" },
       { id: "custom-forms", title: "Formulários Customizados", icon: ClipboardCheck, path: "/formularios-customizados", description: "Criação de formulários personalizados" },
+      { id: "mailing-lists", title: "Listas de Envio", icon: Mail, path: "/listas-de-envio", description: "Gerenciar listas de email e campanhas" },
       { id: "user-management", title: "Gestão de Usuários", icon: UserCog, path: "/gestao-usuarios", description: "Controle de usuários e permissões" },
       { id: "system-status", title: "Status do Sistema", icon: Activity, path: "/system-status", description: "Monitoramento e prontidão para produção" }
     ]

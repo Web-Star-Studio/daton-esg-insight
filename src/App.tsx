@@ -82,6 +82,7 @@ const GestaoESG = lazy(() => import("./pages/GestaoESG"));
 const ColetaDados = lazy(() => import("./pages/ColetaDados"));
 const FormulariosCustomizados = lazy(() => import("./pages/FormulariosCustomizados"));
 const FormDashboardPage = lazy(() => import("./pages/FormDashboardPage"));
+const ListasDeEnvio = lazy(() => import("./pages/ListasDeEnvio"));
 const PublicForm = lazy(() => import("./pages/PublicForm"));
 const DocumentosHub = lazy(() => import("./pages/DocumentosHub"));
 const Auditoria = lazy(() => import("./pages/Auditoria"));
@@ -618,6 +619,7 @@ const AppContent = () => {
             <Route path="/coleta-dados" element={<ProtectedLazyPageWrapper><ColetaDados /></ProtectedLazyPageWrapper>} />
             <Route path="/formularios-customizados" element={<ProtectedLazyPageWrapper><FormulariosCustomizados /></ProtectedLazyPageWrapper>} />
             <Route path="/formularios-customizados/:formId/dashboard" element={<ProtectedLazyPageWrapper><FormDashboardPage /></ProtectedLazyPageWrapper>} />
+            <Route path="/listas-de-envio" element={<ProtectedLazyPageWrapper><ListasDeEnvio /></ProtectedLazyPageWrapper>} />
             <Route path="/auditoria" element={<ProtectedLazyPageWrapper><Auditoria /></ProtectedLazyPageWrapper>} />
             <Route path="/auditoria/:id" element={<ProtectedLazyPageWrapper><AuditDetails /></ProtectedLazyPageWrapper>} />
             <Route path="/compliance" element={<ProtectedLazyPageWrapper><Compliance /></ProtectedLazyPageWrapper>} />

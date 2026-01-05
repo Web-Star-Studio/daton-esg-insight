@@ -165,3 +165,6 @@ verify_jwt = true
 
 [functions.supplier-auto-alerts]
 verify_jwt = false
+
+[functions.email-mailing-management]
+verify_jwt = true
