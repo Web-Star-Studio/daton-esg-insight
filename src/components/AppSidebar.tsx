@@ -372,8 +372,11 @@ const menuSections: MenuSection[] = [
   {
     id: "help",
     title: "AJUDA",
+    icon: HelpCircle,
+    isCollapsible: true,
+    defaultOpen: false,
     items: [
-      { id: "faq", title: "Perguntas Frequentes", icon: HelpCircle, path: "/faq", description: "Central de ajuda e dúvidas comuns" }
+      { id: "help-center", title: "Central de Ajuda", icon: HelpCircle, path: "/ajuda", description: "Central de ajuda e suporte" }
     ]
   }
 ]
@@ -794,12 +797,12 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => navigate('/dashboard')}
-                    className={`group transition-all duration-200 hover-scale ${
+                    className={`group transition-all duration-200 hover-scale px-4 ${
                       isActive('/dashboard') ? 'bg-primary/10 text-primary font-medium' : ''
                     }`}
                   >
-                    <LayoutDashboard className="h-4 w-4" />
-                    {!collapsed && <span className="text-sm">Início</span>}
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    {!collapsed && <span className="text-sm font-normal">Início</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
