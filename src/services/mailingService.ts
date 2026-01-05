@@ -40,6 +40,9 @@ export interface EmailCampaign {
   sent_at?: string;
   created_at: string;
   created_by_user_id: string;
+  header_color?: string;
+  button_color?: string;
+  logo_url?: string;
   email_mailing_lists?: { id: string; name: string };
   custom_forms?: { id: string; title: string };
 }
@@ -98,7 +101,15 @@ class MailingService {
     return await this.invoke('GET_CAMPAIGNS');
   }
 
-  async createCampaign(data: { mailingListId: string; formId: string; subject: string; message?: string }): Promise<EmailCampaign> {
+  async createCampaign(data: { 
+    mailingListId: string; 
+    formId: string; 
+    subject: string; 
+    message?: string;
+    headerColor?: string;
+    buttonColor?: string;
+    logoUrl?: string;
+  }): Promise<EmailCampaign> {
     return await this.invoke('CREATE_CAMPAIGN', data);
   }
 
