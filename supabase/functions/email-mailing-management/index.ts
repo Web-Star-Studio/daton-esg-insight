@@ -93,7 +93,7 @@ function parseCSV(csvContent: string): Contact[] {
   return contacts;
 }
 
-// Generate email HTML template
+// Generate email HTML template - Professional Design
 function generateEmailHtml(
   subject: string,
   message: string,
@@ -105,64 +105,148 @@ function generateEmailHtml(
     logoUrl?: string;
   }
 ): string {
-  const greeting = contactName ? `Olá ${contactName},` : "Olá,";
+  const greeting = contactName ? `Olá, ${contactName}!` : "Olá!";
   const headerColor = options?.headerColor || '#10B981';
   const buttonColor = options?.buttonColor || '#10B981';
   const logoUrl = options?.logoUrl;
 
-  // Calculate darker shade for hover
-  const darkenColor = (color: string): string => {
+  // Calculate lighter shade for accents
+  const lightenColor = (color: string, amount: number = 40): string => {
     const hex = color.replace('#', '');
-    const r = Math.max(0, parseInt(hex.substring(0, 2), 16) - 30);
-    const g = Math.max(0, parseInt(hex.substring(2, 4), 16) - 30);
-    const b = Math.max(0, parseInt(hex.substring(4, 6), 16) - 30);
+    const r = Math.min(255, parseInt(hex.substring(0, 2), 16) + amount);
+    const g = Math.min(255, parseInt(hex.substring(2, 4), 16) + amount);
+    const b = Math.min(255, parseInt(hex.substring(4, 6), 16) + amount);
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   };
 
-  const headerColorDark = darkenColor(headerColor);
-  const buttonColorHover = darkenColor(buttonColor);
+  const headerColorLight = lightenColor(headerColor, 180);
 
   const logoHtml = logoUrl 
-    ? `<img src="${logoUrl}" alt="Logo" style="max-height: 60px; margin-bottom: 15px; object-fit: contain;" />`
+    ? `<tr>
+        <td align="center" style="padding: 30px 20px 10px 20px;">
+          <img src="${logoUrl}" alt="Logo" style="max-height: 70px; max-width: 200px; object-fit: contain;" />
+        </td>
+      </tr>`
     : '';
 
+  // Professional email template using tables for maximum compatibility
   return `
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>${subject}</title>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, ${headerColor} 0%, ${headerColorDark} 100%); padding: 30px 20px; text-align: center; }
-    .header h1 { color: white; margin: 0; font-size: 24px; }
-    .content { padding: 30px 20px; }
-    .message { margin-bottom: 30px; white-space: pre-wrap; }
-    .cta-button { display: inline-block; background: ${buttonColor}; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; }
-    .cta-button:hover { background: ${buttonColorHover}; }
-    .footer { background: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .button-link { padding: 14px 35px !important; }
   </style>
+  <![endif]-->
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      ${logoHtml}
-      <h1>${subject}</h1>
-    </div>
-    <div class="content">
-      <p>${greeting}</p>
-      <div class="message">${message}</div>
-      <p style="text-align: center; margin-top: 30px;">
-        <a href="${formUrl}" class="cta-button">Responder Formulário</a>
-      </p>
-    </div>
-    <div class="footer">
-      <p>Este email foi enviado através do sistema de formulários.</p>
-      <p>Se você não reconhece este email, pode ignorá-lo com segurança.</p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  
+  <!-- Wrapper Table -->
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Main Container -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+          
+          <!-- Logo Section -->
+          ${logoHtml}
+          
+          <!-- Decorative Header Line -->
+          <tr>
+            <td align="center" style="padding: ${logoUrl ? '10px' : '30px'} 40px 20px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="80">
+                <tr>
+                  <td style="height: 4px; background: linear-gradient(90deg, ${headerColor}, ${lightenColor(headerColor, 60)}); border-radius: 2px;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Subject Title -->
+          <tr>
+            <td align="center" style="padding: 0 40px 30px 40px;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #18181b; letter-spacing: -0.5px; text-transform: uppercase;">
+                ${subject}
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="height: 1px; background-color: #e4e4e7;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content Section -->
+          <tr>
+            <td style="padding: 35px 40px;">
+              <!-- Greeting -->
+              <p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #27272a;">
+                ${greeting}
+              </p>
+              
+              <!-- Message Body -->
+              <div style="margin: 0 0 30px 0; font-size: 15px; line-height: 1.7; color: #52525b; white-space: pre-wrap;">
+${message}
+              </div>
+              
+              <!-- CTA Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 15px 0 10px 0;">
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background: ${buttonColor}; border-radius: 10px; box-shadow: 0 4px 14px ${buttonColor}40;">
+                          <a href="${formUrl}" target="_blank" class="button-link" style="display: inline-block; padding: 16px 40px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; letter-spacing: 0.3px;">
+                            Responder Agora &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #fafafa; padding: 25px 40px; border-top: 1px solid #f4f4f5;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
+                      ✉️ Este email foi enviado pelo sistema de formulários.
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
+                      Se você não reconhece esta mensagem, pode ignorá-la com segurança.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+        <!-- End Main Container -->
+        
+      </td>
+    </tr>
+  </table>
+  <!-- End Wrapper Table -->
+  
 </body>
 </html>
   `;
