@@ -56,8 +56,8 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       toast({ title: "Erro", description: "Por favor, selecione uma imagem", variant: "destructive" });
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Erro", description: "Imagem deve ter no máximo 2MB", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Erro", description: "Imagem deve ter no máximo 5MB", variant: "destructive" });
       return;
     }
 
@@ -89,8 +89,8 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       toast({ title: "Erro", description: "Por favor, selecione uma imagem", variant: "destructive" });
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Erro", description: "Imagem deve ter no máximo 2MB", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Erro", description: "Imagem deve ter no máximo 5MB", variant: "destructive" });
       return;
     }
 
@@ -361,7 +361,7 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
                         <p className="text-sm text-muted-foreground mt-2">
                           {uploadingLogo ? 'Enviando...' : 'Clique para adicionar logo'}
                         </p>
-                        <p className="text-xs text-muted-foreground">Máx 2MB</p>
+                        <p className="text-xs text-muted-foreground">Máx 5MB</p>
                       </label>
                     </div>
                   )}
@@ -418,7 +418,7 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
                         <p className="text-sm text-muted-foreground mt-2">
                           {uploadingFooterImage ? 'Enviando...' : 'Clique para adicionar imagem'}
                         </p>
-                        <p className="text-xs text-muted-foreground">Máx 2MB</p>
+                        <p className="text-xs text-muted-foreground">Máx 5MB</p>
                       </label>
                     </div>
                   )}
