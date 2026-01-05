@@ -116,6 +116,12 @@ export const SubmitPublicFormSchema = z.object({
   employee_id: z.string().uuid('Invalid employee ID').optional()
 });
 
+// Delete submission validation
+export const DeleteSubmissionSchema = z.object({
+  action: z.literal('DELETE_SUBMISSION'),
+  submissionId: z.string().uuid('Invalid submission ID')
+});
+
 // Union of all action schemas
 export const ActionSchema = z.discriminatedUnion('action', [
   CreateFormSchema,
@@ -127,7 +133,8 @@ export const ActionSchema = z.discriminatedUnion('action', [
   GetEmployeeSubmissionsSchema,
   GetFormsSchema,
   GetPublicFormSchema,
-  SubmitPublicFormSchema
+  SubmitPublicFormSchema,
+  DeleteSubmissionSchema
 ]);
 
 export type ActionType = z.infer<typeof ActionSchema>;

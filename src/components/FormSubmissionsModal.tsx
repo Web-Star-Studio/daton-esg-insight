@@ -6,7 +6,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormSubmission } from "@/services/customForms";
-import { Download, Users, Calendar } from "lucide-react";
+import { Download, Users, Calendar, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface FormSubmissionsModalProps {
   formId: string;
@@ -18,6 +29,7 @@ export function FormSubmissionsModal({ formId, open, onClose }: FormSubmissionsM
   const [form, setForm] = useState<CustomForm | null>(null);
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,6 +57,27 @@ export function FormSubmissionsModal({ formId, open, onClose }: FormSubmissionsM
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteSubmission = async (submissionId: string) => {
+    try {
+      setDeletingId(submissionId);
+      await customFormsService.deleteSubmission(submissionId);
+      setSubmissions(prev => prev.filter(s => s.id !== submissionId));
+      toast({
+        title: "Sucesso",
+        description: "Resposta excluída com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir resposta:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir resposta",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -249,6 +282,7 @@ export function FormSubmissionsModal({ formId, open, onClose }: FormSubmissionsM
                         {form.structure_json.fields.map((field) => (
                           <TableHead key={field.id}>{field.label}</TableHead>
                         ))}
+                        <TableHead className="w-[80px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -263,6 +297,37 @@ export function FormSubmissionsModal({ formId, open, onClose }: FormSubmissionsM
                               {formatValue(submission.submission_data[field.id], field.type)}
                             </TableCell>
                           ))}
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  disabled={deletingId === submission.id}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir resposta?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. A resposta será permanentemente removida do sistema.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteSubmission(submission.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
