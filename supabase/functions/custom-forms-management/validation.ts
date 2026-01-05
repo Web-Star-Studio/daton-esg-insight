@@ -4,10 +4,11 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 // Form field structure validation
 const FormFieldSchema = z.object({
   id: z.string(),
-  type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'radio', 'date', 'file', 'multiselect', 'nps', 'rating']),
+  type: z.enum(['text', 'textarea', 'number', 'select', 'checkbox', 'radio', 'date', 'file', 'multiselect', 'nps', 'rating', 'message']),
   label: z.string().min(1, 'Label is required'),
   placeholder: z.string().optional(),
   required: z.boolean().optional(),
+  content: z.string().optional(), // For message type fields
   options: z.union([
     z.array(z.object({
       label: z.string(),
@@ -32,7 +33,11 @@ const FormStructureSchema = z.object({
   })).optional(),
   theme: z.object({
     primaryColor: z.string().optional(),
-    backgroundColor: z.string().optional()
+    backgroundColor: z.string().optional(),
+    logoUrl: z.string().optional(),
+    logoPosition: z.enum(['left', 'center', 'right']).optional(),
+    footerImageUrl: z.string().optional(),
+    footerImagePosition: z.enum(['left', 'center', 'right']).optional()
   }).optional()
 });
 

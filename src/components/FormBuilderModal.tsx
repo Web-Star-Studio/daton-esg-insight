@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField, type FormStructure } from "@/services/customForms";
 import { FormFieldEditor } from "@/components/FormFieldEditor";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp, Star, Upload, ImageIcon, X } from "lucide-react";
+import { Plus, GripVertical, Trash2, Type, AlignLeft, Hash, Calendar, CheckSquare, ThumbsUp, Star, Upload, ImageIcon, X, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FormBuilderModalProps {
@@ -32,6 +32,7 @@ const FIELD_TYPES = [
   { type: 'nps', label: 'NPS (0-10)', icon: ThumbsUp },
   { type: 'rating', label: 'Avaliação (Estrelas)', icon: Star },
   { type: 'file', label: 'Upload de Arquivo', icon: Upload },
+  { type: 'message', label: 'Texto/Mensagem', icon: MessageSquare },
 ] as const;
 
 export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: FormBuilderModalProps) {
@@ -45,6 +46,9 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoPosition, setLogoPosition] = useState<'left' | 'center' | 'right'>('center');
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [footerImageUrl, setFooterImageUrl] = useState<string | null>(null);
+  const [footerImagePosition, setFooterImagePosition] = useState<'left' | 'center' | 'right'>('center');
+  const [uploadingFooterImage, setUploadingFooterImage] = useState(false);
   const { toast } = useToast();
 
   const handleLogoUpload = async (file: File) => {
@@ -80,6 +84,39 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
     }
   };
 
+  const handleFooterImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Erro", description: "Por favor, selecione uma imagem", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Erro", description: "Imagem deve ter no máximo 2MB", variant: "destructive" });
+      return;
+    }
+
+    setUploadingFooterImage(true);
+    try {
+      const fileName = `footer-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const { data, error } = await supabase.storage
+        .from('form-logos')
+        .upload(fileName, file, { upsert: true });
+      
+      if (error) throw error;
+      
+      const { data: publicUrl } = supabase.storage
+        .from('form-logos')
+        .getPublicUrl(data.path);
+      
+      setFooterImageUrl(publicUrl.publicUrl);
+      toast({ title: "Sucesso", description: "Imagem de rodapé enviada com sucesso" });
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast({ title: "Erro", description: "Erro ao fazer upload da imagem", variant: "destructive" });
+    } finally {
+      setUploadingFooterImage(false);
+    }
+  };
+
   useEffect(() => {
     if (editingForm) {
       setTitle(editingForm.title);
@@ -89,6 +126,8 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       setFields(editingForm.structure_json?.fields || []);
       setLogoUrl(editingForm.structure_json?.theme?.logoUrl || null);
       setLogoPosition(editingForm.structure_json?.theme?.logoPosition || 'center');
+      setFooterImageUrl(editingForm.structure_json?.theme?.footerImageUrl || null);
+      setFooterImagePosition(editingForm.structure_json?.theme?.footerImagePosition || 'center');
     } else {
       setTitle("");
       setDescription("");
@@ -97,6 +136,8 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
       setFields([]);
       setLogoUrl(null);
       setLogoPosition('center');
+      setFooterImageUrl(null);
+      setFooterImagePosition('center');
     }
     setSelectedFieldId(null);
   }, [editingForm, open]);
@@ -109,9 +150,10 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
     const newField: FormField = {
       id: generateFieldId(),
       type,
-      label: `Campo ${fields.length + 1}`,
-      required: false,
+      label: type === 'message' ? 'Mensagem Informativa' : `Campo ${fields.length + 1}`,
+      required: type === 'message' ? false : false, // message fields are never required
       placeholder: '',
+      content: type === 'message' ? 'Digite aqui o texto da mensagem...' : undefined,
       options: ['select', 'multiselect'].includes(type) 
         ? ['Opção 1', 'Opção 2'] 
         : undefined,
@@ -178,6 +220,8 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
           backgroundColor: 'hsl(var(--background))',
           logoUrl: logoUrl || undefined,
           logoPosition: logoPosition,
+          footerImageUrl: footerImageUrl || undefined,
+          footerImagePosition: footerImagePosition,
         }
       };
 
@@ -326,6 +370,63 @@ export function FormBuilderModal({ open, onClose, editingForm, onFormSaved }: Fo
                     <div className="flex items-center gap-2">
                       <Label className="text-sm">Posição:</Label>
                       <Select value={logoPosition} onValueChange={(v: 'left' | 'center' | 'right') => setLogoPosition(v)}>
+                        <SelectTrigger className="w-32 h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Esquerda</SelectItem>
+                          <SelectItem value="center">Centro</SelectItem>
+                          <SelectItem value="right">Direita</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Image Upload Section */}
+                <div className="space-y-3 pt-4 border-t">
+                  <Label>Imagem de Rodapé (Final do Formulário)</Label>
+                  
+                  {footerImageUrl ? (
+                    <div className="relative border rounded-lg p-2">
+                      <img 
+                        src={footerImageUrl} 
+                        alt="Imagem de rodapé" 
+                        className="max-h-24 mx-auto object-contain"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setFooterImageUrl(null)}
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => e.target.files?.[0] && handleFooterImageUpload(e.target.files[0])}
+                        className="hidden"
+                        id="footer-image-upload"
+                        disabled={uploadingFooterImage}
+                      />
+                      <label htmlFor="footer-image-upload" className="cursor-pointer">
+                        <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {uploadingFooterImage ? 'Enviando...' : 'Clique para adicionar imagem'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Máx 2MB</p>
+                      </label>
+                    </div>
+                  )}
+                  
+                  {footerImageUrl && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Posição:</Label>
+                      <Select value={footerImagePosition} onValueChange={(v: 'left' | 'center' | 'right') => setFooterImagePosition(v)}>
                         <SelectTrigger className="w-32 h-8">
                           <SelectValue />
                         </SelectTrigger>
