@@ -10,6 +10,17 @@ import { FieldBarChart } from "./charts/FieldBarChart";
 import { FieldPieChart } from "./charts/FieldPieChart";
 import { OpenResponsesSection } from "./charts/OpenResponsesSection";
 import { NPSScoreCard, calculateNPS } from "./charts/NPSScoreCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Download, 
   Users, 
@@ -19,7 +30,8 @@ import {
   MessageSquare,
   Table as TableIcon,
   TrendingUp,
-  ThumbsUp
+  ThumbsUp,
+  Trash2
 } from "lucide-react";
 
 interface FormDashboardContentProps {
@@ -102,7 +114,29 @@ export function FormDashboardContent({ formId }: FormDashboardContentProps) {
   const [form, setForm] = useState<CustomForm | null>(null);
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const handleDeleteSubmission = async (submissionId: string) => {
+    try {
+      setDeletingId(submissionId);
+      await customFormsService.deleteSubmission(submissionId);
+      setSubmissions(prev => prev.filter(s => s.id !== submissionId));
+      toast({
+        title: "Sucesso",
+        description: "Resposta excluída com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir resposta:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir resposta",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     if (formId) {
@@ -554,6 +588,7 @@ export function FormDashboardContent({ formId }: FormDashboardContentProps) {
                             {field.label}
                           </TableHead>
                         ))}
+                        <TableHead className="whitespace-nowrap">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -570,6 +605,37 @@ export function FormDashboardContent({ formId }: FormDashboardContentProps) {
                               {formatValue(submission.submission_data[field.id], field.type)}
                             </TableCell>
                           ))}
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  disabled={deletingId === submission.id}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir resposta?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. A resposta será permanentemente removida.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteSubmission(submission.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
