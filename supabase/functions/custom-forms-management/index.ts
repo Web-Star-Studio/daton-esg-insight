@@ -130,6 +130,9 @@ serve(async (req) => {
       case 'GET_EMPLOYEE_SUBMISSIONS':
         return await getEmployeeSubmissions(supabaseClient, company_id, body.employeeId)
       
+      case 'DELETE_SUBMISSION':
+        return await deleteSubmission(supabaseClient, company_id, body.submissionId)
+      
       default:
         return new Response('Invalid action', { status: 400, headers: corsHeaders })
     }
@@ -492,6 +495,44 @@ async function submitPublicForm(supabase: any, submissionData: any) {
 
   return new Response(
     JSON.stringify(data),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function deleteSubmission(supabase: any, company_id: string, submission_id: string) {
+  console.log('🗑️ Deleting submission:', submission_id)
+  
+  // Verify the submission exists and belongs to the company
+  const { data: submission, error: fetchError } = await supabase
+    .from('form_submissions')
+    .select('id')
+    .eq('id', submission_id)
+    .eq('company_id', company_id)
+    .single()
+
+  if (fetchError || !submission) {
+    console.error('❌ Submission not found or access denied:', fetchError?.message)
+    return new Response(
+      JSON.stringify({ error: 'Submissão não encontrada' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const { error } = await supabase
+    .from('form_submissions')
+    .delete()
+    .eq('id', submission_id)
+    .eq('company_id', company_id)
+
+  if (error) {
+    console.error('❌ Failed to delete submission:', error.message)
+    throw new Error(`Erro ao deletar submissão: ${error.message}`)
+  }
+
+  console.log('✅ Submission deleted successfully')
+
+  return new Response(
+    JSON.stringify({ success: true }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }

@@ -336,6 +336,9 @@ export function PublicFormRenderer({
           );
         
         case 'file':
+          const MAX_FILE_SIZE_MB = 5;
+          const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+          
           return (
             <div 
               className={cn(
@@ -351,6 +354,15 @@ export function PublicFormRenderer({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    if (file.size > MAX_FILE_SIZE_BYTES) {
+                      toast({
+                        title: "Arquivo muito grande",
+                        description: `O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB}MB`,
+                        variant: "destructive"
+                      });
+                      e.target.value = '';
+                      return;
+                    }
                     updateFieldValue(field.id, file.name);
                   }
                 }}
@@ -361,11 +373,10 @@ export function PublicFormRenderer({
                 <p className="text-sm text-muted-foreground">
                   {value || 'Clique para selecionar arquivo'}
                 </p>
-                {field.validation?.pattern && !value && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Aceito: {field.validation.pattern}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Limite máximo: {MAX_FILE_SIZE_MB}MB
+                  {field.validation?.pattern && ` • Aceito: ${field.validation.pattern}`}
+                </p>
               </label>
           </div>
         );

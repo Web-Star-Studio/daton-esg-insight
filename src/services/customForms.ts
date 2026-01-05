@@ -186,6 +186,20 @@ class CustomFormsService {
     return data;
   }
 
+  async deleteSubmission(submissionId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const { error } = await supabase.functions.invoke('custom-forms-management', {
+      body: {
+        action: 'DELETE_SUBMISSION',
+        submissionId
+      }
+    });
+
+    if (error) throw error;
+  }
+
   // ============= PUBLIC METHODS (NO AUTH) =============
 
   async getPublicForm(formId: string): Promise<CustomForm | null> {
