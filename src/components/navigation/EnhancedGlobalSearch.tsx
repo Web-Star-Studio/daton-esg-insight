@@ -19,8 +19,7 @@ interface SearchResult {
 
 const searchData: SearchResult[] = [
   // INÍCIO
-  { id: 'dashboard', title: 'Painel Principal', path: '/dashboard', description: 'Visão geral do sistema ESG', category: 'Início', icon: 'BarChart3', keywords: ['painel', 'dashboard', 'visao geral', 'overview', 'inicio'] },
-  { id: 'performance', title: 'Análise de Desempenho', path: '/desempenho', description: 'Monitoramento de KPIs ESG', category: 'Início', icon: 'BarChart3', keywords: ['desempenho', 'performance', 'kpi', 'metricas', 'analise'] },
+  { id: 'dashboard', title: 'Início', path: '/dashboard', description: 'Visão geral do sistema ESG', category: 'Início', icon: 'BarChart3', keywords: ['painel', 'dashboard', 'visao geral', 'overview', 'inicio'] },
 
   // ESTRATÉGIA ESG
   { id: 'esg-management', title: 'Painel de Gestão ESG', path: '/gestao-esg', description: 'Central de gestão ESG', category: 'Estratégia ESG', icon: 'Leaf', keywords: ['esg', 'gestao', 'sustentabilidade', 'estrategia'] },

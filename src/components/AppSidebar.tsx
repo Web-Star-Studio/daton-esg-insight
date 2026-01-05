@@ -73,8 +73,7 @@ const menuSections: MenuSection[] = [
     id: "home",
     title: "INÍCIO",
     items: [
-      { id: "dashboard", title: "Painel Principal", icon: LayoutDashboard, path: "/dashboard", description: "Visão geral do sistema ESG" },
-      { id: "performance", title: "Análise de Desempenho", icon: TrendingUp, path: "/desempenho", description: "Monitoramento de KPIs ESG" }
+      { id: "dashboard", title: "Início", icon: LayoutDashboard, path: "/dashboard", description: "Visão geral do sistema ESG" }
     ]
   },
   {
@@ -82,7 +81,7 @@ const menuSections: MenuSection[] = [
     title: "ESG",
     icon: Leaf,
     isCollapsible: true,
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
       { id: "esg-management", title: "Painel de Gestão ESG", icon: Leaf, path: "/gestao-esg", description: "Central de gestão ESG" },
       
@@ -395,7 +394,8 @@ export function AppSidebar() {
   const { favorites, toggleFavorite, isFavorite } = useFavorites()
   const isPlatformAdmin = useHasRole('platform_admin')
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    'environmental-category': true,
+    'esg': false,
+    'environmental-category': false,
     'social-category': false,
     'governance-category': false
   })
