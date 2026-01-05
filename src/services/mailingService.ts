@@ -18,7 +18,8 @@ export interface MailingContact {
   id: string;
   mailing_list_id: string;
   email: string;
-  name?: string;
+  name?: string;           // Nome do contato (CONTATO)
+  company_name?: string;   // Nome da empresa (NOME)
   metadata?: Record<string, any>;
   status: 'active' | 'bounced' | 'unsubscribed';
   created_at: string;
@@ -95,6 +96,14 @@ class MailingService {
 
   async deleteContact(contactId: string): Promise<void> {
     await this.invoke('DELETE_CONTACT', { contactId });
+  }
+
+  async addContact(listId: string, data: { 
+    email: string; 
+    name?: string; 
+    companyName?: string; 
+  }): Promise<void> {
+    await this.invoke('ADD_CONTACT', { listId, ...data });
   }
 
   async getCampaigns(): Promise<EmailCampaign[]> {

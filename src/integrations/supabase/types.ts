@@ -15431,6 +15431,7 @@ export type Database = {
       }
       mailing_list_contacts: {
         Row: {
+          company_name: string | null
           created_at: string | null
           email: string
           id: string
@@ -15440,6 +15441,7 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          company_name?: string | null
           created_at?: string | null
           email: string
           id?: string
@@ -15449,6 +15451,7 @@ export type Database = {
           status?: string | null
         }
         Update: {
+          company_name?: string | null
           created_at?: string | null
           email?: string
           id?: string
