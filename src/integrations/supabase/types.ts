@@ -6556,6 +6556,174 @@ export type Database = {
           },
         ]
       }
+      email_campaign_sends: {
+        Row: {
+          campaign_id: string
+          contact_id: string
+          email: string
+          error_message: string | null
+          id: string
+          opened_at: string | null
+          responded_at: string | null
+          sent_at: string | null
+          status: string | null
+          tracking_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          contact_id: string
+          email: string
+          error_message?: string | null
+          id?: string
+          opened_at?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          tracking_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          contact_id?: string
+          email?: string
+          error_message?: string | null
+          id?: string
+          opened_at?: string | null
+          responded_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          tracking_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaign_sends_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "mailing_list_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_campaigns: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string
+          form_id: string
+          id: string
+          mailing_list_id: string
+          message: string | null
+          opened_count: number | null
+          responded_count: number | null
+          scheduled_at: string | null
+          sent_at: string | null
+          sent_count: number | null
+          status: string | null
+          subject: string
+          total_recipients: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by_user_id: string
+          form_id: string
+          id?: string
+          mailing_list_id: string
+          message?: string | null
+          opened_count?: number | null
+          responded_count?: number | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          subject: string
+          total_recipients?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string
+          form_id?: string
+          id?: string
+          mailing_list_id?: string
+          message?: string | null
+          opened_count?: number | null
+          responded_count?: number | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string | null
+          subject?: string
+          total_recipients?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_mailing_list_id_fkey"
+            columns: ["mailing_list_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailing_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_mailing_lists: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_mailing_lists_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emission_factors: {
         Row: {
           activity_unit: string
@@ -15248,6 +15416,80 @@ export type Database = {
           usage_limitations?: string | null
         }
         Relationships: []
+      }
+      mailing_list_contacts: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          mailing_list_id: string
+          metadata: Json | null
+          name: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          mailing_list_id: string
+          metadata?: Json | null
+          name?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          mailing_list_id?: string
+          metadata?: Json | null
+          name?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailing_list_contacts_mailing_list_id_fkey"
+            columns: ["mailing_list_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailing_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mailing_list_forms: {
+        Row: {
+          created_at: string | null
+          form_id: string
+          id: string
+          mailing_list_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          form_id: string
+          id?: string
+          mailing_list_id: string
+        }
+        Update: {
+          created_at?: string | null
+          form_id?: string
+          id?: string
+          mailing_list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailing_list_forms_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mailing_list_forms_mailing_list_id_fkey"
+            columns: ["mailing_list_id"]
+            isOneToOne: false
+            referencedRelation: "email_mailing_lists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maintenance_records: {
         Row: {
