@@ -15,7 +15,7 @@ import { HeimdallNavbar } from './HeimdallNavbar';
 import { HeroSection } from './HeroSection';
 import { NewsTicker } from './NewsTicker';
 import { TechStack3D } from './TechStack3D';
-import { DroneSection } from './DroneSection';
+
 import { StatsGrid } from './StatsGrid';
 import { HeimdallFooter } from './HeimdallFooter';
 import { CustomCursor } from './CustomCursor';
@@ -73,8 +73,6 @@ export function HeimdallLanding() {
                 {/* Tech Stack with 3D WebGL Spheres */}
                 <TechStack3D />
 
-                {/* Drone/Technology Section */}
-                <DroneSection />
 
                 {/* Stats Grid */}
                 <StatsGrid />
