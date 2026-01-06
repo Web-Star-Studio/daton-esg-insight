@@ -53,12 +53,18 @@ Corporação XYZ,Maria Santos,maria@corp.com
 Tech Solutions,Carlos Oliveira,carlos@tech.com`;
 }
 
-// Parse CSV content
+// Parse CSV content - supports both comma and semicolon delimiters
 function parseCSV(csvContent: string): Contact[] {
   const lines = csvContent.trim().split("\n");
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  // Detect delimiter automatically (semicolon or comma)
+  const firstLine = lines[0];
+  const delimiter = firstLine.includes(";") ? ";" : ",";
+  
+  console.log(`[parseCSV] Detected delimiter: "${delimiter}"`);
+
+  const headers = firstLine.split(delimiter).map((h) => h.trim().toLowerCase());
   const emailIndex = headers.indexOf("email");
 
   if (emailIndex === -1) {
@@ -70,7 +76,7 @@ function parseCSV(csvContent: string): Contact[] {
   const contacts: Contact[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(",").map((v) => v.trim());
+    const values = lines[i].split(delimiter).map((v) => v.trim());
     const email = values[emailIndex];
 
     if (!email || !email.includes("@")) continue;
