@@ -24,23 +24,11 @@ export function HeimdallNavbar() {
     const [isHovered, setIsHovered] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [isMobile, setIsMobile] = useState(false);
     const navRef = useRef<HTMLElement>(null);
     const pillRef = useRef<HTMLDivElement>(null);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
     const mobileLinksRef = useRef<(HTMLElement | null)[]>([]);
     const navigate = useNavigate();
-
-    // Mobile detection
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
 
     // Scroll detection with direction awareness
     const [isScrollingUp, setIsScrollingUp] = useState(false);
@@ -264,21 +252,20 @@ export function HeimdallNavbar() {
                 </div>
 
                 {/* Right Pill - Contact (DESKTOP ONLY) */}
-                {!isMobile && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '0.5rem 0.625rem',
-                            background: 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
-                            borderRadius: '16px',
-                            border: '1px solid rgba(0, 0, 0, 0.08)',
-                            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)',
-                            pointerEvents: 'auto',
-                        }}
-                    >
+                <div
+                    className="hidden md:flex"
+                    style={{
+                        alignItems: 'center',
+                        padding: '0.5rem 0.625rem',
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(0, 0, 0, 0.08)',
+                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)',
+                        pointerEvents: 'auto',
+                    }}
+                >
                         {/* Contact Text + Arrow Button */}
                         <button
                             onClick={() => handleNavigate('/contato')}
@@ -321,25 +308,23 @@ export function HeimdallNavbar() {
                                 <ArrowRight size={14} color="#ffffff" />
                             </div>
                         </button>
-                    </div>
-                )}
+                </div>
 
                 {/* Mobile Pill - Logo + Hamburger (MOBILE ONLY) */}
-                {isMobile && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.5rem 0.625rem',
-                            background: 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(20px)',
-                            WebkitBackdropFilter: 'blur(20px)',
-                            borderRadius: '16px',
-                            border: '1px solid rgba(0, 0, 0, 0.08)',
-                            pointerEvents: 'auto',
-                        }}
-                    >
+                <div
+                    className="flex md:hidden"
+                    style={{
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 0.625rem',
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(0, 0, 0, 0.08)',
+                        pointerEvents: 'auto',
+                    }}
+                >
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             style={{
@@ -364,10 +349,9 @@ export function HeimdallNavbar() {
                                     // filter: 'brightness(0) invert(1)',
                                 }}
                             />
-                            {mobileMenuOpen ? <X size={18} color="#111827" /> : <Menu size={18} color="#111827" />}
+                        {mobileMenuOpen ? <X size={18} color="#111827" /> : <Menu size={18} color="#111827" />}
                         </button>
-                    </div>
-                )}
+                </div>
             </header>
 
             {/* Mobile Menu */}
