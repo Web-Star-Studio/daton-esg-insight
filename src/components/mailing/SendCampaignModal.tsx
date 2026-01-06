@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Send, Users, FileSpreadsheet, AlertCircle, CheckCircle2, Palette } from 'lucide-react';
+import { Loader2, Send, Users, FileSpreadsheet, AlertCircle, CheckCircle2, Palette, Upload, X } from 'lucide-react';
 import { mailingService, MailingList } from '@/services/mailingService';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,6 +46,9 @@ export function SendCampaignModal({
   const [buttonColor, setButtonColor] = useState('#10B981');
   const [useLogo, setUseLogo] = useState(true);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [footerLogoFile, setFooterLogoFile] = useState<File | null>(null);
+  const [footerLogoPreview, setFooterLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const { data: listDetails } = useQuery({
     queryKey: ['mailing-list-details', mailingList?.id],
@@ -103,11 +106,61 @@ export function SendCampaignModal({
       setHeaderColor('#10B981');
       setButtonColor('#10B981');
       setUseLogo(true);
+      setFooterLogoFile(null);
+      setFooterLogoPreview(null);
     }
   }, [open]);
 
+  const handleFooterLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Arquivo inválido', description: 'Selecione uma imagem', variant: 'destructive' });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Arquivo muito grande', description: 'Máximo 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setFooterLogoFile(file);
+    setFooterLogoPreview(URL.createObjectURL(file));
+  };
+
+  const removeFooterLogo = () => {
+    setFooterLogoFile(null);
+    setFooterLogoPreview(null);
+  };
+
   const createAndSendMutation = useMutation({
     mutationFn: async () => {
+      let footerLogoUrl: string | undefined;
+
+      // Upload footer logo if selected
+      if (footerLogoFile) {
+        setUploadingLogo(true);
+        const fileExt = footerLogoFile.name.split('.').pop();
+        const fileName = `campaign-footer-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('form-logos')
+          .upload(fileName, footerLogoFile, { upsert: true });
+
+        if (uploadError) {
+          setUploadingLogo(false);
+          throw new Error('Erro ao fazer upload do logo');
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('form-logos')
+          .getPublicUrl(fileName);
+
+        footerLogoUrl = urlData.publicUrl;
+        setUploadingLogo(false);
+      }
+
       // Create campaign
       const campaign = await mailingService.createCampaign({
         mailingListId: mailingList!.id,
@@ -116,7 +169,8 @@ export function SendCampaignModal({
         message,
         headerColor,
         buttonColor,
-        logoUrl: useLogo && companyLogo ? companyLogo : undefined
+        logoUrl: useLogo && companyLogo ? companyLogo : undefined,
+        footerLogoUrl
       });
 
       // Send campaign
@@ -277,7 +331,7 @@ export function SendCampaignModal({
               {/* Logo Option */}
               {companyLogo && (
                 <div className="flex items-center gap-3">
-                  <Label className="w-32 text-sm">Logo:</Label>
+                  <Label className="w-32 text-sm">Logo Header:</Label>
                   <img src={companyLogo} alt="Logo" className="h-8 object-contain rounded" />
                   <div className="flex items-center gap-2">
                     <Checkbox 
@@ -294,6 +348,34 @@ export function SendCampaignModal({
                   Configure o logo da empresa nas configurações para incluí-lo nos emails.
                 </p>
               )}
+
+              {/* Footer Logo Upload */}
+              <div className="space-y-2">
+                <Label className="text-sm">Logo no Footer do Email:</Label>
+                <div className="flex items-center gap-3">
+                  {footerLogoPreview ? (
+                    <div className="relative">
+                      <img src={footerLogoPreview} alt="Logo Preview" className="h-12 object-contain rounded border bg-white p-1" />
+                      <button 
+                        type="button"
+                        onClick={removeFooterLogo} 
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex items-center gap-2 border rounded-md px-4 py-2 hover:bg-muted transition-colors">
+                      <Upload className="h-4 w-4" />
+                      <span className="text-sm">Selecionar Logo</span>
+                      <input type="file" accept="image/*" onChange={handleFooterLogoUpload} className="hidden" />
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O logo aparecerá no rodapé do email, abaixo do botão "Responder Agora"
+                </p>
+              </div>
             </div>
           </div>
         )}

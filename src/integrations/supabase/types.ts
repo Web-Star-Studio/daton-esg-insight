@@ -6619,6 +6619,7 @@ export type Database = {
           company_id: string
           created_at: string | null
           created_by_user_id: string
+          footer_logo_url: string | null
           form_id: string
           header_color: string | null
           id: string
@@ -6639,6 +6640,7 @@ export type Database = {
           company_id: string
           created_at?: string | null
           created_by_user_id: string
+          footer_logo_url?: string | null
           form_id: string
           header_color?: string | null
           id?: string
@@ -6659,6 +6661,7 @@ export type Database = {
           company_id?: string
           created_at?: string | null
           created_by_user_id?: string
+          footer_logo_url?: string | null
           form_id?: string
           header_color?: string | null
           id?: string

@@ -44,6 +44,7 @@ export interface EmailCampaign {
   header_color?: string;
   button_color?: string;
   logo_url?: string;
+  footer_logo_url?: string;
   email_mailing_lists?: { id: string; name: string };
   custom_forms?: { id: string; title: string };
 }
@@ -118,6 +119,7 @@ class MailingService {
     headerColor?: string;
     buttonColor?: string;
     logoUrl?: string;
+    footerLogoUrl?: string;
   }): Promise<EmailCampaign> {
     return await this.invoke('CREATE_CAMPAIGN', data);
   }
