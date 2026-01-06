@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
+import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -69,19 +70,23 @@ export function ImportContactsModal({
       return;
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    // Detect delimiter automatically (semicolon or comma)
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes(';') ? ';' : ',';
+
+    const headers = firstLine.split(delimiter).map(h => h.trim().toLowerCase());
     const emailIndex = headers.indexOf('email');
     const companyNameIndex = headers.indexOf('nome');
     const contactNameIndex = headers.indexOf('contato');
 
     if (emailIndex === -1) {
-      toast({ title: 'CSV inválido', description: 'O arquivo deve conter uma coluna "email"', variant: 'destructive' });
+      toast({ title: 'Arquivo inválido', description: 'O arquivo deve conter uma coluna "email"', variant: 'destructive' });
       return;
     }
 
     const contacts: ParsedContact[] = [];
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
+      const values = lines[i].split(delimiter).map(v => v.trim());
       const email = values[emailIndex];
       const isValidEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -104,25 +109,66 @@ export function ImportContactsModal({
     setParsedContacts(contacts);
   }, [toast]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  // Convert Excel file to CSV string
+  const convertExcelToCSV = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target!.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          // Convert to CSV using semicolon as delimiter
+          const csv = XLSX.utils.sheet_to_csv(firstSheet, { FS: ';' });
+          resolve(csv);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (!file) return;
 
     setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
+
+    try {
+      let content: string;
+
+      // Check if it's an Excel file
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        content = await convertExcelToCSV(file);
+      } else {
+        // Regular CSV
+        content = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsText(file);
+        });
+      }
+
       setCsvContent(content);
       parseCSV(content);
-    };
-    reader.readAsText(file);
-  }, [parseCSV]);
+    } catch (error) {
+      toast({
+        title: 'Erro ao processar arquivo',
+        description: 'Não foi possível ler o arquivo.',
+        variant: 'destructive'
+      });
+    }
+  }, [parseCSV, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'text/csv': ['.csv'],
-      'text/plain': ['.txt']
+      'text/plain': ['.txt'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls']
     },
     maxFiles: 1
   });
@@ -204,9 +250,9 @@ export function ImportContactsModal({
               <p>Solte o arquivo aqui...</p>
             ) : (
               <div>
-                <p className="font-medium">Arraste um arquivo CSV ou clique para selecionar</p>
+                <p className="font-medium">Arraste um arquivo CSV ou Excel</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Colunas: nome, contato, email
+                  Formatos: .csv, .xlsx, .xls
                 </p>
               </div>
             )}
