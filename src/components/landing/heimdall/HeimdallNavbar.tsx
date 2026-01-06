@@ -15,8 +15,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
-import { ArrowRight, ChevronDown, Menu, X } from 'lucide-react';
+import { ArrowRight, Menu, X } from 'lucide-react';
 import datonLogo from '@/assets/daton-logo-header.png';
+import {
+    Drawer,
+    DrawerContent,
+    DrawerClose,
+} from '@/components/ui/drawer';
 import './heimdall.css';
 
 export function HeimdallNavbar() {
@@ -26,8 +31,6 @@ export function HeimdallNavbar() {
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const navRef = useRef<HTMLElement>(null);
     const pillRef = useRef<HTMLDivElement>(null);
-    const mobileMenuRef = useRef<HTMLDivElement>(null);
-    const mobileLinksRef = useRef<(HTMLElement | null)[]>([]);
     const navigate = useNavigate();
 
     // Scroll detection with direction awareness
@@ -64,36 +67,10 @@ export function HeimdallNavbar() {
         );
     }, []);
 
-    // Mobile menu animation
-    useEffect(() => {
-        if (mobileMenuOpen && mobileMenuRef.current) {
-            gsap.fromTo(mobileMenuRef.current,
-                { x: '100%' },
-                { x: '0%', duration: 0.4, ease: 'power3.out' }
-            );
-
-            gsap.fromTo(mobileLinksRef.current.filter(Boolean),
-                { x: 50, opacity: 0 },
-                { x: 0, opacity: 1, duration: 0.4, stagger: 0.08, ease: 'power3.out', delay: 0.15 }
-            );
-        }
-    }, [mobileMenuOpen]);
-
     const handleNavigate = (path: string) => {
-        if (mobileMenuOpen) {
-            gsap.to(mobileMenuRef.current, {
-                x: '100%',
-                duration: 0.3,
-                ease: 'power3.in',
-                onComplete: () => {
-                    setMobileMenuOpen(false);
-                    navigate(path);
-                }
-            });
-        } else {
-            navigate(path);
-        }
+        setMobileMenuOpen(false);
         setActiveDropdown(null);
+        navigate(path);
     };
 
     // Links that show in EXPANDED state only (hidden when collapsed)
@@ -354,93 +331,53 @@ export function HeimdallNavbar() {
                 </div>
             </header>
 
-            {/* Mobile Menu */}
-            {mobileMenuOpen && (
-                <div
-                    ref={mobileMenuRef}
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        right: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        background: '#FFFFFF',
-                        zIndex: 1050,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        padding: '2rem',
-                        transform: 'translateX(100%)',
-                    }}
-                >
-                    <button
-                        onClick={() => setMobileMenuOpen(false)}
-                        style={{
-                            position: 'absolute',
-                            top: '1.5rem',
-                            right: '1.5rem',
-                            background: 'none',
-                            border: 'none',
-                            color: '#ffffff',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <X size={24} color="#111827" />
-                    </button>
+            {/* Mobile Drawer Menu */}
+            <Drawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <DrawerContent className="h-[85vh] bg-white">
+                    <div className="flex flex-col h-full px-6 py-4">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-8">
+                            <img
+                                src={datonLogo}
+                                alt="Daton"
+                                className="h-6"
+                            />
+                            <DrawerClose asChild>
+                                <button
+                                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                    aria-label="Fechar menu"
+                                >
+                                    <X size={24} className="text-gray-900" />
+                                </button>
+                            </DrawerClose>
+                        </div>
 
-                    <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
-                        {allLinks.map((link, index) => (
-                            <button
-                                key={index}
-                                ref={(el) => { mobileLinksRef.current[index] = el; }}
-                                onClick={() => handleNavigate(link.href)}
-                                style={{
-                                    display: 'block',
-                                    width: '100%',
-                                    background: 'none',
-                                    border: 'none',
-                                    borderBottom: '1px solid rgba(0,0,0,0.1)',
-                                    color: '#111827',
-                                    fontSize: '1.75rem',
-                                    fontWeight: 500,
-                                    textAlign: 'left',
-                                    padding: '1rem 0',
-                                    cursor: 'pointer',
-                                    opacity: 0,
-                                }}
-                            >
-                                {link.label}
-                            </button>
-                        ))}
+                        {/* Navigation Links */}
+                        <nav className="flex-1 space-y-1">
+                            {allLinks.map((link, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleNavigate(link.href)}
+                                    className="block w-full text-left text-xl font-medium text-gray-900 py-4 border-b border-gray-100 hover:text-primary transition-colors"
+                                >
+                                    {link.label}
+                                </button>
+                            ))}
+                        </nav>
 
-                        <div
-                            ref={(el) => { mobileLinksRef.current[allLinks.length] = el; }}
-                            style={{ marginTop: '2rem', opacity: 0 }}
-                        >
+                        {/* CTA Button */}
+                        <div className="pt-6 pb-4">
                             <button
                                 onClick={() => handleNavigate('/contato')}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.5rem',
-                                    width: '100%',
-                                    background: '#15c470',
-                                    color: '#ffffff',
-                                    padding: '1rem',
-                                    borderRadius: '8px',
-                                    border: 'none',
-                                    fontSize: '1rem',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                }}
+                                className="flex items-center justify-center gap-2 w-full bg-[#15c470] text-white py-4 px-6 rounded-xl font-medium text-lg hover:brightness-110 transition-all"
                             >
-                                Contato <ArrowRight size={18} />
+                                Contato
+                                <ArrowRight size={20} />
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
+                </DrawerContent>
+            </Drawer>
         </>
     );
 }
