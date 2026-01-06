@@ -265,26 +265,6 @@ export function HeroSection() {
                         <b style={{ color: 'var(--heimdall-text)', display: 'block', marginTop: '0.5rem' }}>Transforme dados brutos em inteligência sustentável.</b>
                     </p>
 
-                    {/* Stats Module - Adds density */}
-                    <div className="ui-element" style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '1.5rem',
-                        background: 'rgba(255,255,255,0.6)',
-                        padding: '1.5rem',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(0,0,0,0.05)',
-                        backdropFilter: 'blur(10px)'
-                    }}>
-                        <div>
-                            <div style={{ fontSize: '0.75rem', fontFamily: 'Space Mono', color: 'var(--heimdall-text-muted)' }}>CLIENTES</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--heimdall-text)' }}>+200</div>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '0.75rem', fontFamily: 'Space Mono', color: 'var(--heimdall-text-muted)' }}>DATA POINTS</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--heimdall-text)' }}>1.2M</div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Actions */}
