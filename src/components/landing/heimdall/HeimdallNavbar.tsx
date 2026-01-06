@@ -18,10 +18,10 @@ import { gsap } from 'gsap';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import datonLogo from '@/assets/daton-logo-header.png';
 import {
-    Drawer,
-    DrawerContent,
-    DrawerClose,
-} from '@/components/ui/drawer';
+    Sheet,
+    SheetContent,
+    SheetClose,
+} from '@/components/ui/sheet';
 import './heimdall.css';
 
 export function HeimdallNavbar() {
@@ -331,10 +331,10 @@ export function HeimdallNavbar() {
                 </div>
             </header>
 
-            {/* Mobile Drawer Menu */}
-            <Drawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <DrawerContent className="h-[85vh] bg-white">
-                    <div className="flex flex-col h-full px-6 py-4">
+            {/* Mobile Sheet Menu */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetContent side="right" className="w-full sm:w-80 bg-white border-l border-gray-200 p-0">
+                    <div className="flex flex-col h-full px-6 py-6">
                         {/* Header */}
                         <div className="flex items-center justify-between mb-8">
                             <img
@@ -342,14 +342,6 @@ export function HeimdallNavbar() {
                                 alt="Daton"
                                 className="h-6"
                             />
-                            <DrawerClose asChild>
-                                <button
-                                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                    aria-label="Fechar menu"
-                                >
-                                    <X size={24} className="text-gray-900" />
-                                </button>
-                            </DrawerClose>
                         </div>
 
                         {/* Navigation Links */}
@@ -376,8 +368,8 @@ export function HeimdallNavbar() {
                             </button>
                         </div>
                     </div>
-                </DrawerContent>
-            </Drawer>
+                </SheetContent>
+            </Sheet>
         </>
     );
 }
