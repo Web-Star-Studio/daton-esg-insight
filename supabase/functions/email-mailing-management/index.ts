@@ -109,6 +109,7 @@ function generateEmailHtml(
     headerColor?: string;
     buttonColor?: string;
     logoUrl?: string;
+    footerLogoUrl?: string;
   }
 ): string {
   const greeting = contactName ? `Olá, ${contactName}!` : "Olá!";
@@ -224,6 +225,17 @@ ${message}
                   </td>
                 </tr>
               </table>
+
+              ${options?.footerLogoUrl ? `
+              <!-- Footer Logo -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 25px 0 10px 0;">
+                    <img src="${options.footerLogoUrl}" alt="Logo" style="max-height: 60px; max-width: 180px; object-fit: contain;" />
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
             </td>
           </tr>
           
@@ -585,7 +597,7 @@ serve(async (req) => {
       }
 
       case "CREATE_CAMPAIGN": {
-        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl } = body;
+        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl, footerLogoUrl } = body;
 
         // Count recipients
         const { count } = await supabase
@@ -605,6 +617,7 @@ serve(async (req) => {
             header_color: headerColor || '#10B981',
             button_color: buttonColor || '#10B981',
             logo_url: logoUrl || null,
+            footer_logo_url: footerLogoUrl || null,
             status: "draft",
             total_recipients: count || 0,
             created_by_user_id: user.id,
@@ -694,6 +707,7 @@ serve(async (req) => {
                 headerColor: campaign.header_color,
                 buttonColor: campaign.button_color,
                 logoUrl: campaign.logo_url,
+                footerLogoUrl: campaign.footer_logo_url,
               }
             );
 
