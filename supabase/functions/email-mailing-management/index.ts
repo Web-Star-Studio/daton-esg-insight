@@ -246,7 +246,7 @@ ${message}
                 <tr>
                   <td align="center">
                     <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
-                      ✉️ Este email foi enviado pelo sistema de formulários.
+                      ✉️ Este email foi enviado pela Plataforma Daton.
                     </p>
                     <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
                       Se você não reconhece esta mensagem, pode ignorá-la com segurança.
@@ -712,7 +712,7 @@ serve(async (req) => {
             );
 
             await transporter.sendMail({
-              from: `"Formulários" <${gmailUser}>`,
+              from: `"Plataforma Daton" <${gmailUser}>`,
               to: contact.email,
               subject: campaign.subject,
               html: emailHtml,
