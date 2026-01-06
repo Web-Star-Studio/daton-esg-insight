@@ -132,7 +132,6 @@ export function HeimdallNavbar() {
                         setActiveDropdown(null);
                     }}
                     style={{
-                        display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
                         padding: '0.5rem 0.625rem',
@@ -146,7 +145,7 @@ export function HeimdallNavbar() {
                         transition: transitionStyle,
                         pointerEvents: 'auto',
                     }}
-                    className="hidden md:flex"
+                    className="hidden md:flex md:items-center"
                 >
                     {/* Logo */}
                     <button
