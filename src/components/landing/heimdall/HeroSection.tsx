@@ -21,6 +21,13 @@ export function HeroSection() {
     const navigate = useNavigate();
 
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -206,7 +213,7 @@ export function HeroSection() {
                 {/* THE TYPOGRAPHY - BOLD & STYLIZED */}
                 <h1 style={{
                     fontFamily: 'Sora, sans-serif',
-                    fontSize: 'clamp(3.5rem, 8vw, 7.5rem)',
+                    fontSize: 'clamp(2.2rem, 8vw, 7.5rem)',
                     fontWeight: 800,
                     lineHeight: 1.1, // Increased from 0.9 to prevent clipping
                     color: 'var(--heimdall-text)',
@@ -289,7 +296,7 @@ export function HeroSection() {
                         onMouseEnter={(e) => gsap.to(e.currentTarget, { y: -4, duration: 0.2 })}
                         onMouseLeave={(e) => gsap.to(e.currentTarget, { y: 0, duration: 0.2 })}
                     >
-                        INICIAR AGORA
+                        {isMobile ? 'INICIAR' : 'INICIAR AGORA'}
                         <ArrowRight size={18} />
                     </button>
 
@@ -331,7 +338,7 @@ export function HeroSection() {
                 @media (max-width: 1024px) {
                     .technical-overlay { opacity: 0.3; }
                     /* Stack layout on mobile */
-                    h1 { font-size: 3.5rem !important; }
+                    h1 { font-size: 2.2rem !important; }
                     video { opacity: 0.2; }
                     div[style*="top: 0"][style*="right: 0"] {
                          width: 100% !important;
