@@ -1,11 +1,5 @@
-import { useEffect, lazy, Suspense } from 'react';
-import 'react-quill/dist/quill.snow.css';
+import { LexicalEditor } from './LexicalEditor';
 
-// Lazy load ReactQuill and normalize default export for both ESM/CJS builds
-const ReactQuill = lazy(() =>
-  import('react-quill').then((m: any) => ({ default: m.default ?? m }))
-);
-const QuillAny = ReactQuill as unknown as React.ComponentType<any>;
 interface WysiwygEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -21,83 +15,13 @@ export function WysiwygEditor({
   readOnly = false,
   className = ""
 }: WysiwygEditorProps) {
-  
-
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      ['link', 'blockquote', 'code-block'],
-      [{ 'align': [] }],
-      ['clean']
-    ],
-  };
-
-  const formats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'indent', 'link', 'blockquote', 
-    'code-block', 'align'
-  ];
-
-  useEffect(() => {
-    // Custom styles for the editor
-    const style = document.createElement('style');
-    style.textContent = `
-      .quill .ql-editor {
-        min-height: 300px;
-        font-size: 14px;
-        line-height: 1.6;
-      }
-      .quill .ql-toolbar {
-        border-top: 1px solid hsl(var(--border));
-        border-left: 1px solid hsl(var(--border));
-        border-right: 1px solid hsl(var(--border));
-        border-bottom: none;
-        background: hsl(var(--background));
-      }
-      .quill .ql-container {
-        border-left: 1px solid hsl(var(--border));
-        border-right: 1px solid hsl(var(--border));
-        border-bottom: 1px solid hsl(var(--border));
-        border-top: none;
-        background: hsl(var(--background));
-      }
-      .quill .ql-editor.ql-blank::before {
-        color: hsl(var(--muted-foreground));
-        font-style: normal;
-      }
-      .ql-snow .ql-stroke {
-        stroke: hsl(var(--foreground));
-      }
-      .ql-snow .ql-fill {
-        fill: hsl(var(--foreground));
-      }
-      .ql-snow .ql-picker {
-        color: hsl(var(--foreground));
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
   return (
-    <div className={className}>
-      <Suspense fallback={<div className="min-h-[300px] border rounded-md p-4 animate-pulse bg-muted/50" />}>
-        <QuillAny
-          theme="snow"
-          value={value}
-          onChange={onChange}
-          modules={modules}
-          formats={formats}
-          placeholder={placeholder}
-          readOnly={readOnly}
-        />
-      </Suspense>
-    </div>
+    <LexicalEditor
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      className={className}
+    />
   );
 }
