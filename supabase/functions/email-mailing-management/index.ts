@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import nodemailer from "npm:nodemailer@6.9.8";
+import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import { SmtpClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,29 +20,55 @@ interface MailingList {
 
 interface Contact {
   email: string;
-  name?: string;           // Nome do contato (CONTATO)
-  companyName?: string;    // Nome da empresa (NOME)
+  name?: string; // Nome do contato (CONTATO)
+  companyName?: string; // Nome da empresa (NOME)
   metadata?: Record<string, any>;
 }
 
-// Create nodemailer transporter
+type SendMailArgs = {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+};
+
 function createTransporter() {
   const gmailUser = Deno.env.get("GMAIL_USER");
   const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
   if (!gmailUser || !gmailAppPassword) {
-    throw new Error("Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets.");
+    throw new Error(
+      "Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets."
+    );
   }
 
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: gmailUser,
-      pass: gmailAppPassword,
+  return {
+    async sendMail({ from, to, subject, html }: SendMailArgs) {
+      const client = new SmtpClient();
+      try {
+        await client.connectTLS({
+          hostname: "smtp.gmail.com",
+          port: 465,
+          username: gmailUser,
+          password: gmailAppPassword,
+        });
+
+        await client.send({
+          from,
+          to,
+          subject,
+          content: html,
+          html: html,
+        });
+      } finally {
+        try {
+          await client.close();
+        } catch {
+          // ignore
+        }
+      }
     },
-  });
+  };
 }
 
 // Get CSV Template
