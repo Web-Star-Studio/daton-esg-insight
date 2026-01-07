@@ -120,17 +120,12 @@ class MailingService {
     buttonColor?: string;
     logoUrl?: string;
     footerLogoUrl?: string;
-    scheduledAt?: string;
   }): Promise<EmailCampaign> {
     return await this.invoke('CREATE_CAMPAIGN', data);
   }
 
   async sendCampaign(campaignId: string): Promise<{ success: boolean; sent: number; total: number }> {
     return await this.invoke('SEND_CAMPAIGN', { campaignId });
-  }
-
-  async cancelScheduledCampaign(campaignId: string): Promise<void> {
-    await this.invoke('CANCEL_SCHEDULED_CAMPAIGN', { campaignId });
   }
 
   async getForms(): Promise<{ id: string; title: string }[]> {

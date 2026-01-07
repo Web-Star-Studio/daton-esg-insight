@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.49.4";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import nodemailer from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,59 +20,29 @@ interface MailingList {
 
 interface Contact {
   email: string;
-  name?: string; // Nome do contato (CONTATO)
-  companyName?: string; // Nome da empresa (NOME)
+  name?: string;           // Nome do contato (CONTATO)
+  companyName?: string;    // Nome da empresa (NOME)
   metadata?: Record<string, any>;
 }
 
-type SendMailArgs = {
-  from: string;
-  to: string;
-  subject: string;
-  html: string;
-};
-
+// Create nodemailer transporter
 function createTransporter() {
   const gmailUser = Deno.env.get("GMAIL_USER");
   const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
   if (!gmailUser || !gmailAppPassword) {
-    throw new Error(
-      "Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets."
-    );
+    throw new Error("Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets.");
   }
 
-  return {
-    async sendMail({ from, to, subject, html }: SendMailArgs) {
-      const client = new SMTPClient({
-        connection: {
-          hostname: "smtp.gmail.com",
-          port: 465,
-          tls: true,
-          auth: {
-            username: gmailUser,
-            password: gmailAppPassword,
-          },
-        },
-      });
-
-      try {
-        await client.send({
-          from,
-          to,
-          subject,
-          content: html,
-          html,
-        });
-      } finally {
-        try {
-          await client.close();
-        } catch {
-          // ignore
-        }
-      }
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword,
     },
-  };
+  });
 }
 
 // Get CSV Template
@@ -129,15 +99,177 @@ function parseCSV(csvContent: string): Contact[] {
   return contacts;
 }
 
-// Generate email HTML template
-function generateEmailHtml(subject: string, message: string, formUrl: string, contactName?: string, options?: { headerColor?: string; buttonColor?: string; logoUrl?: string; footerLogoUrl?: string; }): string {
+// Generate email HTML template - Professional Design
+function generateEmailHtml(
+  subject: string,
+  message: string,
+  formUrl: string,
+  contactName?: string,
+  options?: {
+    headerColor?: string;
+    buttonColor?: string;
+    logoUrl?: string;
+    footerLogoUrl?: string;
+  }
+): string {
   const greeting = contactName ? `Olá, ${contactName}!` : "Olá!";
-  const hc = options?.headerColor || '#10B981';
-  const bc = options?.buttonColor || '#10B981';
-  const logo = options?.logoUrl ? `<tr><td align="center" style="padding:30px 20px 10px"><img src="${options.logoUrl}" alt="Logo" width="200" style="max-width:200px;height:auto"/></td></tr>` : '';
-  const footerLogo = options?.footerLogoUrl ? `<table width="100%"><tr><td align="center" style="padding:25px 0 10px"><img src="${options.footerLogoUrl}" alt="Logo" width="180" style="max-width:180px;height:auto"/></td></tr></table>` : '';
+  const headerColor = options?.headerColor || '#10B981';
+  const buttonColor = options?.buttonColor || '#10B981';
+  const logoUrl = options?.logoUrl;
+
+  // Calculate lighter shade for accents
+  const lightenColor = (color: string, amount: number = 40): string => {
+    const hex = color.replace('#', '');
+    const r = Math.min(255, parseInt(hex.substring(0, 2), 16) + amount);
+    const g = Math.min(255, parseInt(hex.substring(2, 4), 16) + amount);
+    const b = Math.min(255, parseInt(hex.substring(4, 6), 16) + amount);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  };
+
+  const headerColorLight = lightenColor(headerColor, 180);
+
+  console.log(`[generateEmailHtml] Header Logo URL: ${logoUrl || 'none'}, Footer Logo URL: ${options?.footerLogoUrl || 'none'}`);
+
+  const logoHtml = logoUrl 
+    ? `<tr>
+        <td align="center" style="padding: 30px 20px 10px 20px;">
+          <img src="${logoUrl}" alt="Logo da Empresa" width="200" height="70" style="display: block; max-width: 200px; height: auto; border: 0; outline: none; text-decoration: none;" />
+        </td>
+      </tr>`
+    : '';
+
+  // Professional email template using tables for maximum compatibility
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${subject}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .button-link { padding: 14px 35px !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
   
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${subject}</title></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Segoe UI,Tahoma,sans-serif"><table width="100%" style="background:#f4f4f5"><tr><td align="center" style="padding:40px 20px"><table width="600" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">${logo}<tr><td align="center" style="padding:${options?.logoUrl ? '10px' : '30px'} 40px 20px"><table width="80"><tr><td style="height:4px;background:${hc};border-radius:2px"></td></tr></table></td></tr><tr><td align="center" style="padding:0 40px 30px"><h1 style="margin:0;font-size:22px;font-weight:700;color:#18181b;text-transform:uppercase">${subject}</h1></td></tr><tr><td style="padding:0 40px"><table width="100%"><tr><td style="height:1px;background:#e4e4e7"></td></tr></table></td></tr><tr><td style="padding:35px 40px"><p style="margin:0 0 20px;font-size:18px;font-weight:600;color:#27272a">${greeting}</p><div style="margin:0 0 30px;font-size:15px;line-height:1.7;color:#52525b;white-space:pre-wrap">${message}</div><table width="100%"><tr><td align="center" style="padding:15px 0 10px"><table><tr><td style="background:${bc};border-radius:10px"><a href="${formUrl}" target="_blank" style="display:inline-block;padding:16px 40px;font-size:15px;font-weight:600;color:#fff;text-decoration:none">Responder Agora →</a></td></tr></table></td></tr></table>${footerLogo}</td></tr><tr><td style="background:#fafafa;padding:25px 40px;border-top:1px solid #f4f4f5"><table width="100%"><tr><td align="center"><p style="margin:0 0 8px;font-size:13px;color:#71717a">✉️ Este email foi enviado pela Plataforma Daton.</p><p style="margin:0;font-size:12px;color:#a1a1aa">Se você não reconhece esta mensagem, pode ignorá-la com segurança.</p></td></tr></table></td></tr></table></td></tr></table></body></html>`;
+  <!-- Wrapper Table -->
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Main Container -->
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
+          
+          <!-- Logo Section -->
+          ${logoHtml}
+          
+          <!-- Decorative Header Line -->
+          <tr>
+            <td align="center" style="padding: ${logoUrl ? '10px' : '30px'} 40px 20px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="80">
+                <tr>
+                  <td style="height: 4px; background: linear-gradient(90deg, ${headerColor}, ${lightenColor(headerColor, 60)}); border-radius: 2px;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Subject Title -->
+          <tr>
+            <td align="center" style="padding: 0 40px 30px 40px;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #18181b; letter-spacing: -0.5px; text-transform: uppercase;">
+                ${subject}
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="height: 1px; background-color: #e4e4e7;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content Section -->
+          <tr>
+            <td style="padding: 35px 40px;">
+              <!-- Greeting -->
+              <p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #27272a;">
+                ${greeting}
+              </p>
+              
+              <!-- Message Body -->
+              <div style="margin: 0 0 30px 0; font-size: 15px; line-height: 1.7; color: #52525b; white-space: pre-wrap;">
+${message}
+              </div>
+              
+              <!-- CTA Button -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 15px 0 10px 0;">
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="background: ${buttonColor}; border-radius: 10px; box-shadow: 0 4px 14px ${buttonColor}40;">
+                          <a href="${formUrl}" target="_blank" class="button-link" style="display: inline-block; padding: 16px 40px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; letter-spacing: 0.3px;">
+                            Responder Agora &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              ${options?.footerLogoUrl ? `
+              <!-- Footer Logo -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 25px 0 10px 0;">
+                    <img src="${options.footerLogoUrl}" alt="Logo da Empresa" width="180" height="60" style="display: block; max-width: 180px; height: auto; border: 0; outline: none; text-decoration: none;" />
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #fafafa; padding: 25px 40px; border-top: 1px solid #f4f4f5;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
+                      ✉️ Este email foi enviado pela Plataforma Daton.
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
+                      Se você não reconhece esta mensagem, pode ignorá-la com segurança.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+        <!-- End Main Container -->
+        
+      </td>
+    </tr>
+  </table>
+  <!-- End Wrapper Table -->
+  
+</body>
+</html>
+  `;
 }
 
 serve(async (req) => {
@@ -146,162 +278,12 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const body = await req.json();
-    const { action } = body;
-
-    console.log(`[email-mailing-management] Action: ${action}`);
-
-    // Handle PROCESS_SCHEDULED_CAMPAIGNS without auth (called by pg_cron)
-    if (action === "PROCESS_SCHEDULED_CAMPAIGNS") {
-      console.log("[email-mailing-management] Processing scheduled campaigns (cron job)...");
-
-      // Find campaigns that are scheduled and due
-      const { data: dueCampaigns, error: fetchError } = await supabase
-        .from("email_campaigns")
-        .select("id, company_id")
-        .eq("status", "scheduled")
-        .lte("scheduled_at", new Date().toISOString());
-
-      if (fetchError) {
-        console.error("[email-mailing-management] Error fetching scheduled campaigns:", fetchError.message);
-        throw new Error(`Failed to fetch scheduled campaigns: ${fetchError.message}`);
-      }
-
-      if (!dueCampaigns || dueCampaigns.length === 0) {
-        console.log("[email-mailing-management] No scheduled campaigns due for sending");
-        return new Response(JSON.stringify({ processed: 0 }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      console.log(`[email-mailing-management] Found ${dueCampaigns.length} campaigns to process`);
-
-      let processedCount = 0;
-      const transporter = createTransporter();
-      const gmailUser = Deno.env.get("GMAIL_USER")!;
-
-      for (const scheduledCampaign of dueCampaigns) {
-        try {
-          // Get full campaign details
-          const { data: campaign, error: campaignError } = await supabase
-            .from("email_campaigns")
-            .select(`
-              *,
-              custom_forms(id, title)
-            `)
-            .eq("id", scheduledCampaign.id)
-            .single();
-
-          if (campaignError || !campaign) {
-            console.error(`[email-mailing-management] Campaign ${scheduledCampaign.id} not found`);
-            continue;
-          }
-
-          // Update status to sending
-          await supabase
-            .from("email_campaigns")
-            .update({ status: "sending" })
-            .eq("id", campaign.id);
-
-          // Get contacts
-          const { data: contacts, error: contactsError } = await supabase
-            .from("mailing_list_contacts")
-            .select("*")
-            .eq("mailing_list_id", campaign.mailing_list_id)
-            .eq("status", "active");
-
-          if (contactsError || !contacts || contacts.length === 0) {
-            await supabase
-              .from("email_campaigns")
-              .update({ status: "failed" })
-              .eq("id", campaign.id);
-            console.error(`[email-mailing-management] No contacts for campaign ${campaign.id}`);
-            continue;
-          }
-
-          // Create campaign sends
-          const sends = contacts.map((contact) => ({
-            campaign_id: campaign.id,
-            contact_id: contact.id,
-            email: contact.email,
-            status: "pending",
-          }));
-
-          await supabase.from("email_campaign_sends").insert(sends);
-
-          // Build form URL
-          const formUrl = `https://dqlvioijqzlvnvvajmft.supabase.co/form/${campaign.form_id}`;
-          let sentCount = 0;
-
-          for (const contact of contacts) {
-            try {
-              const emailHtml = generateEmailHtml(
-                campaign.subject,
-                campaign.message || "",
-                formUrl,
-                contact.name,
-                {
-                  headerColor: campaign.header_color,
-                  buttonColor: campaign.button_color,
-                  logoUrl: campaign.logo_url,
-                  footerLogoUrl: campaign.footer_logo_url,
-                }
-              );
-
-              await transporter.sendMail({
-                from: `"Plataforma Daton" <${gmailUser}>`,
-                to: contact.email,
-                subject: campaign.subject,
-                html: emailHtml,
-              });
-
-              await supabase
-                .from("email_campaign_sends")
-                .update({ status: "sent", sent_at: new Date().toISOString() })
-                .eq("campaign_id", campaign.id)
-                .eq("contact_id", contact.id);
-
-              sentCount++;
-            } catch (emailError: any) {
-              console.error(`[email-mailing-management] Failed to send to ${contact.email}:`, emailError.message);
-              await supabase
-                .from("email_campaign_sends")
-                .update({ status: "failed", error_message: emailError.message })
-                .eq("campaign_id", campaign.id)
-                .eq("contact_id", contact.id);
-            }
-          }
-
-          // Update campaign status
-          await supabase
-            .from("email_campaigns")
-            .update({
-              status: sentCount > 0 ? "sent" : "failed",
-              sent_count: sentCount,
-              sent_at: new Date().toISOString(),
-            })
-            .eq("id", campaign.id);
-
-          console.log(`[email-mailing-management] Scheduled campaign ${campaign.id} processed: ${sentCount}/${contacts.length} emails sent`);
-          processedCount++;
-        } catch (campaignError: any) {
-          console.error(`[email-mailing-management] Error processing campaign ${scheduledCampaign.id}:`, campaignError.message);
-        }
-      }
-
-      return new Response(
-        JSON.stringify({ processed: processedCount, total: dueCampaigns.length }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // All other actions require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Missing authorization header");
     }
 
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const userSupabase = createClient(supabaseUrl, supabaseServiceKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -327,8 +309,10 @@ serve(async (req) => {
     }
 
     const companyId = profile.company_id;
+    const body = await req.json();
+    const { action } = body;
 
-    console.log(`[email-mailing-management] User: ${user.id}, Company: ${companyId}`);
+    console.log(`[email-mailing-management] Action: ${action}, User: ${user.id}, Company: ${companyId}`);
 
     switch (action) {
       case "GET_TEMPLATE": {
@@ -615,7 +599,7 @@ serve(async (req) => {
       }
 
       case "CREATE_CAMPAIGN": {
-        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl, footerLogoUrl, scheduledAt } = body;
+        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl, footerLogoUrl } = body;
 
         // Count recipients
         const { count } = await supabase
@@ -623,9 +607,6 @@ serve(async (req) => {
           .select("*", { count: "exact", head: true })
           .eq("mailing_list_id", mailingListId)
           .eq("status", "active");
-
-        // Determine status based on scheduling
-        const status = scheduledAt ? "scheduled" : "draft";
 
         const { data: campaign, error } = await supabase
           .from("email_campaigns")
@@ -639,8 +620,7 @@ serve(async (req) => {
             button_color: buttonColor || '#10B981',
             logo_url: logoUrl || null,
             footer_logo_url: footerLogoUrl || null,
-            status,
-            scheduled_at: scheduledAt || null,
+            status: "draft",
             total_recipients: count || 0,
             created_by_user_id: user.id,
           })
@@ -649,7 +629,7 @@ serve(async (req) => {
 
         if (error) throw new Error(`Failed to create campaign: ${error.message}`);
 
-        console.log(`[email-mailing-management] Created campaign: ${campaign.id}, status: ${status}, scheduled: ${scheduledAt || 'immediate'}`);
+        console.log(`[email-mailing-management] Created campaign: ${campaign.id}`);
 
         return new Response(JSON.stringify(campaign), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -791,43 +771,6 @@ serve(async (req) => {
         if (error) throw new Error(`Failed to fetch forms: ${error.message}`);
 
         return new Response(JSON.stringify(data || []), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      case "CANCEL_SCHEDULED_CAMPAIGN": {
-        const { campaignId } = body;
-
-        // Get campaign to verify ownership and status
-        const { data: campaign, error: fetchError } = await supabase
-          .from("email_campaigns")
-          .select("id, status")
-          .eq("id", campaignId)
-          .eq("company_id", companyId)
-          .single();
-
-        if (fetchError || !campaign) {
-          throw new Error("Campanha não encontrada");
-        }
-
-        if (campaign.status !== "scheduled") {
-          throw new Error("Apenas campanhas agendadas podem ser canceladas");
-        }
-
-        // Update campaign to draft
-        const { error: updateError } = await supabase
-          .from("email_campaigns")
-          .update({
-            status: "draft",
-            scheduled_at: null,
-          })
-          .eq("id", campaignId);
-
-        if (updateError) throw new Error(`Erro ao cancelar agendamento: ${updateError.message}`);
-
-        console.log(`[email-mailing-management] Cancelled scheduled campaign: ${campaignId}`);
-
-        return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
