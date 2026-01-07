@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
-import { SmtpClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,21 +44,25 @@ function createTransporter() {
 
   return {
     async sendMail({ from, to, subject, html }: SendMailArgs) {
-      const client = new SmtpClient();
-      try {
-        await client.connectTLS({
+      const client = new SMTPClient({
+        connection: {
           hostname: "smtp.gmail.com",
           port: 465,
-          username: gmailUser,
-          password: gmailAppPassword,
-        });
+          tls: true,
+          auth: {
+            username: gmailUser,
+            password: gmailAppPassword,
+          },
+        },
+      });
 
+      try {
         await client.send({
           from,
           to,
           subject,
           content: html,
-          html: html,
+          html,
         });
       } finally {
         try {
