@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import nodemailer from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
@@ -99,177 +99,15 @@ function parseCSV(csvContent: string): Contact[] {
   return contacts;
 }
 
-// Generate email HTML template - Professional Design
-function generateEmailHtml(
-  subject: string,
-  message: string,
-  formUrl: string,
-  contactName?: string,
-  options?: {
-    headerColor?: string;
-    buttonColor?: string;
-    logoUrl?: string;
-    footerLogoUrl?: string;
-  }
-): string {
+// Generate email HTML template
+function generateEmailHtml(subject: string, message: string, formUrl: string, contactName?: string, options?: { headerColor?: string; buttonColor?: string; logoUrl?: string; footerLogoUrl?: string; }): string {
   const greeting = contactName ? `Olá, ${contactName}!` : "Olá!";
-  const headerColor = options?.headerColor || '#10B981';
-  const buttonColor = options?.buttonColor || '#10B981';
-  const logoUrl = options?.logoUrl;
-
-  // Calculate lighter shade for accents
-  const lightenColor = (color: string, amount: number = 40): string => {
-    const hex = color.replace('#', '');
-    const r = Math.min(255, parseInt(hex.substring(0, 2), 16) + amount);
-    const g = Math.min(255, parseInt(hex.substring(2, 4), 16) + amount);
-    const b = Math.min(255, parseInt(hex.substring(4, 6), 16) + amount);
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  };
-
-  const headerColorLight = lightenColor(headerColor, 180);
-
-  console.log(`[generateEmailHtml] Header Logo URL: ${logoUrl || 'none'}, Footer Logo URL: ${options?.footerLogoUrl || 'none'}`);
-
-  const logoHtml = logoUrl 
-    ? `<tr>
-        <td align="center" style="padding: 30px 20px 10px 20px;">
-          <img src="${logoUrl}" alt="Logo da Empresa" width="200" height="70" style="display: block; max-width: 200px; height: auto; border: 0; outline: none; text-decoration: none;" />
-        </td>
-      </tr>`
-    : '';
-
-  // Professional email template using tables for maximum compatibility
-  return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${subject}</title>
-  <!--[if mso]>
-  <style type="text/css">
-    table { border-collapse: collapse; }
-    .button-link { padding: 14px 35px !important; }
-  </style>
-  <![endif]-->
-</head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  const hc = options?.headerColor || '#10B981';
+  const bc = options?.buttonColor || '#10B981';
+  const logo = options?.logoUrl ? `<tr><td align="center" style="padding:30px 20px 10px"><img src="${options.logoUrl}" alt="Logo" width="200" style="max-width:200px;height:auto"/></td></tr>` : '';
+  const footerLogo = options?.footerLogoUrl ? `<table width="100%"><tr><td align="center" style="padding:25px 0 10px"><img src="${options.footerLogoUrl}" alt="Logo" width="180" style="max-width:180px;height:auto"/></td></tr></table>` : '';
   
-  <!-- Wrapper Table -->
-  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f5;">
-    <tr>
-      <td align="center" style="padding: 40px 20px;">
-        
-        <!-- Main Container -->
-        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
-          
-          <!-- Logo Section -->
-          ${logoHtml}
-          
-          <!-- Decorative Header Line -->
-          <tr>
-            <td align="center" style="padding: ${logoUrl ? '10px' : '30px'} 40px 20px 40px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" width="80">
-                <tr>
-                  <td style="height: 4px; background: linear-gradient(90deg, ${headerColor}, ${lightenColor(headerColor, 60)}); border-radius: 2px;"></td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Subject Title -->
-          <tr>
-            <td align="center" style="padding: 0 40px 30px 40px;">
-              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #18181b; letter-spacing: -0.5px; text-transform: uppercase;">
-                ${subject}
-              </h1>
-            </td>
-          </tr>
-          
-          <!-- Divider -->
-          <tr>
-            <td style="padding: 0 40px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td style="height: 1px; background-color: #e4e4e7;"></td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Content Section -->
-          <tr>
-            <td style="padding: 35px 40px;">
-              <!-- Greeting -->
-              <p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #27272a;">
-                ${greeting}
-              </p>
-              
-              <!-- Message Body -->
-              <div style="margin: 0 0 30px 0; font-size: 15px; line-height: 1.7; color: #52525b; white-space: pre-wrap;">
-${message}
-              </div>
-              
-              <!-- CTA Button -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td align="center" style="padding: 15px 0 10px 0;">
-                    <table role="presentation" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td align="center" style="background: ${buttonColor}; border-radius: 10px; box-shadow: 0 4px 14px ${buttonColor}40;">
-                          <a href="${formUrl}" target="_blank" class="button-link" style="display: inline-block; padding: 16px 40px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; letter-spacing: 0.3px;">
-                            Responder Agora &rarr;
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-
-              ${options?.footerLogoUrl ? `
-              <!-- Footer Logo -->
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td align="center" style="padding: 25px 0 10px 0;">
-                    <img src="${options.footerLogoUrl}" alt="Logo da Empresa" width="180" height="60" style="display: block; max-width: 180px; height: auto; border: 0; outline: none; text-decoration: none;" />
-                  </td>
-                </tr>
-              </table>
-              ` : ''}
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #fafafa; padding: 25px 40px; border-top: 1px solid #f4f4f5;">
-              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td align="center">
-                    <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
-                      ✉️ Este email foi enviado pela Plataforma Daton.
-                    </p>
-                    <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
-                      Se você não reconhece esta mensagem, pode ignorá-la com segurança.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-        </table>
-        <!-- End Main Container -->
-        
-      </td>
-    </tr>
-  </table>
-  <!-- End Wrapper Table -->
-  
-</body>
-</html>
-  `;
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${subject}</title></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Segoe UI,Tahoma,sans-serif"><table width="100%" style="background:#f4f4f5"><tr><td align="center" style="padding:40px 20px"><table width="600" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">${logo}<tr><td align="center" style="padding:${options?.logoUrl ? '10px' : '30px'} 40px 20px"><table width="80"><tr><td style="height:4px;background:${hc};border-radius:2px"></td></tr></table></td></tr><tr><td align="center" style="padding:0 40px 30px"><h1 style="margin:0;font-size:22px;font-weight:700;color:#18181b;text-transform:uppercase">${subject}</h1></td></tr><tr><td style="padding:0 40px"><table width="100%"><tr><td style="height:1px;background:#e4e4e7"></td></tr></table></td></tr><tr><td style="padding:35px 40px"><p style="margin:0 0 20px;font-size:18px;font-weight:600;color:#27272a">${greeting}</p><div style="margin:0 0 30px;font-size:15px;line-height:1.7;color:#52525b;white-space:pre-wrap">${message}</div><table width="100%"><tr><td align="center" style="padding:15px 0 10px"><table><tr><td style="background:${bc};border-radius:10px"><a href="${formUrl}" target="_blank" style="display:inline-block;padding:16px 40px;font-size:15px;font-weight:600;color:#fff;text-decoration:none">Responder Agora →</a></td></tr></table></td></tr></table>${footerLogo}</td></tr><tr><td style="background:#fafafa;padding:25px 40px;border-top:1px solid #f4f4f5"><table width="100%"><tr><td align="center"><p style="margin:0 0 8px;font-size:13px;color:#71717a">✉️ Este email foi enviado pela Plataforma Daton.</p><p style="margin:0;font-size:12px;color:#a1a1aa">Se você não reconhece esta mensagem, pode ignorá-la com segurança.</p></td></tr></table></td></tr></table></td></tr></table></body></html>`;
 }
 
 serve(async (req) => {
