@@ -278,12 +278,162 @@ serve(async (req) => {
   }
 
   try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const body = await req.json();
+    const { action } = body;
+
+    console.log(`[email-mailing-management] Action: ${action}`);
+
+    // Handle PROCESS_SCHEDULED_CAMPAIGNS without auth (called by pg_cron)
+    if (action === "PROCESS_SCHEDULED_CAMPAIGNS") {
+      console.log("[email-mailing-management] Processing scheduled campaigns (cron job)...");
+
+      // Find campaigns that are scheduled and due
+      const { data: dueCampaigns, error: fetchError } = await supabase
+        .from("email_campaigns")
+        .select("id, company_id")
+        .eq("status", "scheduled")
+        .lte("scheduled_at", new Date().toISOString());
+
+      if (fetchError) {
+        console.error("[email-mailing-management] Error fetching scheduled campaigns:", fetchError.message);
+        throw new Error(`Failed to fetch scheduled campaigns: ${fetchError.message}`);
+      }
+
+      if (!dueCampaigns || dueCampaigns.length === 0) {
+        console.log("[email-mailing-management] No scheduled campaigns due for sending");
+        return new Response(JSON.stringify({ processed: 0 }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`[email-mailing-management] Found ${dueCampaigns.length} campaigns to process`);
+
+      let processedCount = 0;
+      const transporter = createTransporter();
+      const gmailUser = Deno.env.get("GMAIL_USER")!;
+
+      for (const scheduledCampaign of dueCampaigns) {
+        try {
+          // Get full campaign details
+          const { data: campaign, error: campaignError } = await supabase
+            .from("email_campaigns")
+            .select(`
+              *,
+              custom_forms(id, title)
+            `)
+            .eq("id", scheduledCampaign.id)
+            .single();
+
+          if (campaignError || !campaign) {
+            console.error(`[email-mailing-management] Campaign ${scheduledCampaign.id} not found`);
+            continue;
+          }
+
+          // Update status to sending
+          await supabase
+            .from("email_campaigns")
+            .update({ status: "sending" })
+            .eq("id", campaign.id);
+
+          // Get contacts
+          const { data: contacts, error: contactsError } = await supabase
+            .from("mailing_list_contacts")
+            .select("*")
+            .eq("mailing_list_id", campaign.mailing_list_id)
+            .eq("status", "active");
+
+          if (contactsError || !contacts || contacts.length === 0) {
+            await supabase
+              .from("email_campaigns")
+              .update({ status: "failed" })
+              .eq("id", campaign.id);
+            console.error(`[email-mailing-management] No contacts for campaign ${campaign.id}`);
+            continue;
+          }
+
+          // Create campaign sends
+          const sends = contacts.map((contact) => ({
+            campaign_id: campaign.id,
+            contact_id: contact.id,
+            email: contact.email,
+            status: "pending",
+          }));
+
+          await supabase.from("email_campaign_sends").insert(sends);
+
+          // Build form URL
+          const formUrl = `https://dqlvioijqzlvnvvajmft.supabase.co/form/${campaign.form_id}`;
+          let sentCount = 0;
+
+          for (const contact of contacts) {
+            try {
+              const emailHtml = generateEmailHtml(
+                campaign.subject,
+                campaign.message || "",
+                formUrl,
+                contact.name,
+                {
+                  headerColor: campaign.header_color,
+                  buttonColor: campaign.button_color,
+                  logoUrl: campaign.logo_url,
+                  footerLogoUrl: campaign.footer_logo_url,
+                }
+              );
+
+              await transporter.sendMail({
+                from: `"Plataforma Daton" <${gmailUser}>`,
+                to: contact.email,
+                subject: campaign.subject,
+                html: emailHtml,
+              });
+
+              await supabase
+                .from("email_campaign_sends")
+                .update({ status: "sent", sent_at: new Date().toISOString() })
+                .eq("campaign_id", campaign.id)
+                .eq("contact_id", contact.id);
+
+              sentCount++;
+            } catch (emailError: any) {
+              console.error(`[email-mailing-management] Failed to send to ${contact.email}:`, emailError.message);
+              await supabase
+                .from("email_campaign_sends")
+                .update({ status: "failed", error_message: emailError.message })
+                .eq("campaign_id", campaign.id)
+                .eq("contact_id", contact.id);
+            }
+          }
+
+          // Update campaign status
+          await supabase
+            .from("email_campaigns")
+            .update({
+              status: sentCount > 0 ? "sent" : "failed",
+              sent_count: sentCount,
+              sent_at: new Date().toISOString(),
+            })
+            .eq("id", campaign.id);
+
+          console.log(`[email-mailing-management] Scheduled campaign ${campaign.id} processed: ${sentCount}/${contacts.length} emails sent`);
+          processedCount++;
+        } catch (campaignError: any) {
+          console.error(`[email-mailing-management] Error processing campaign ${scheduledCampaign.id}:`, campaignError.message);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ processed: processedCount, total: dueCampaigns.length }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // All other actions require authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Missing authorization header");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const userSupabase = createClient(supabaseUrl, supabaseServiceKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -309,10 +459,8 @@ serve(async (req) => {
     }
 
     const companyId = profile.company_id;
-    const body = await req.json();
-    const { action } = body;
 
-    console.log(`[email-mailing-management] Action: ${action}, User: ${user.id}, Company: ${companyId}`);
+    console.log(`[email-mailing-management] User: ${user.id}, Company: ${companyId}`);
 
     switch (action) {
       case "GET_TEMPLATE": {
@@ -599,7 +747,7 @@ serve(async (req) => {
       }
 
       case "CREATE_CAMPAIGN": {
-        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl, footerLogoUrl } = body;
+        const { mailingListId, formId, subject, message, headerColor, buttonColor, logoUrl, footerLogoUrl, scheduledAt } = body;
 
         // Count recipients
         const { count } = await supabase
@@ -607,6 +755,9 @@ serve(async (req) => {
           .select("*", { count: "exact", head: true })
           .eq("mailing_list_id", mailingListId)
           .eq("status", "active");
+
+        // Determine status based on scheduling
+        const status = scheduledAt ? "scheduled" : "draft";
 
         const { data: campaign, error } = await supabase
           .from("email_campaigns")
@@ -620,7 +771,8 @@ serve(async (req) => {
             button_color: buttonColor || '#10B981',
             logo_url: logoUrl || null,
             footer_logo_url: footerLogoUrl || null,
-            status: "draft",
+            status,
+            scheduled_at: scheduledAt || null,
             total_recipients: count || 0,
             created_by_user_id: user.id,
           })
@@ -629,7 +781,7 @@ serve(async (req) => {
 
         if (error) throw new Error(`Failed to create campaign: ${error.message}`);
 
-        console.log(`[email-mailing-management] Created campaign: ${campaign.id}`);
+        console.log(`[email-mailing-management] Created campaign: ${campaign.id}, status: ${status}, scheduled: ${scheduledAt || 'immediate'}`);
 
         return new Response(JSON.stringify(campaign), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -771,6 +923,43 @@ serve(async (req) => {
         if (error) throw new Error(`Failed to fetch forms: ${error.message}`);
 
         return new Response(JSON.stringify(data || []), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "CANCEL_SCHEDULED_CAMPAIGN": {
+        const { campaignId } = body;
+
+        // Get campaign to verify ownership and status
+        const { data: campaign, error: fetchError } = await supabase
+          .from("email_campaigns")
+          .select("id, status")
+          .eq("id", campaignId)
+          .eq("company_id", companyId)
+          .single();
+
+        if (fetchError || !campaign) {
+          throw new Error("Campanha não encontrada");
+        }
+
+        if (campaign.status !== "scheduled") {
+          throw new Error("Apenas campanhas agendadas podem ser canceladas");
+        }
+
+        // Update campaign to draft
+        const { error: updateError } = await supabase
+          .from("email_campaigns")
+          .update({
+            status: "draft",
+            scheduled_at: null,
+          })
+          .eq("id", campaignId);
+
+        if (updateError) throw new Error(`Erro ao cancelar agendamento: ${updateError.message}`);
+
+        console.log(`[email-mailing-management] Cancelled scheduled campaign: ${campaignId}`);
+
+        return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

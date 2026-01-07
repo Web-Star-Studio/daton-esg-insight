@@ -167,4 +167,4 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.email-mailing-management]
-verify_jwt = true
+verify_jwt = false
