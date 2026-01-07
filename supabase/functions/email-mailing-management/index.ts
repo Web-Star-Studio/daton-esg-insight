@@ -128,10 +128,12 @@ function generateEmailHtml(
 
   const headerColorLight = lightenColor(headerColor, 180);
 
+  console.log(`[generateEmailHtml] Header Logo URL: ${logoUrl || 'none'}, Footer Logo URL: ${options?.footerLogoUrl || 'none'}`);
+
   const logoHtml = logoUrl 
     ? `<tr>
         <td align="center" style="padding: 30px 20px 10px 20px;">
-          <img src="${logoUrl}" alt="Logo" style="max-height: 70px; max-width: 200px; object-fit: contain;" />
+          <img src="${logoUrl}" alt="Logo da Empresa" width="200" height="70" style="display: block; max-width: 200px; height: auto; border: 0; outline: none; text-decoration: none;" />
         </td>
       </tr>`
     : '';
@@ -231,7 +233,7 @@ ${message}
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding: 25px 0 10px 0;">
-                    <img src="${options.footerLogoUrl}" alt="Logo" style="max-height: 60px; max-width: 180px; object-fit: contain;" />
+                    <img src="${options.footerLogoUrl}" alt="Logo da Empresa" width="180" height="60" style="display: block; max-width: 180px; height: auto; border: 0; outline: none; text-decoration: none;" />
                   </td>
                 </tr>
               </table>
