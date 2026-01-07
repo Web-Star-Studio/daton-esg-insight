@@ -19,10 +19,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Send, Users, FileSpreadsheet, AlertCircle, CheckCircle2, Palette, Upload, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, Send, Users, FileSpreadsheet, AlertCircle, CheckCircle2, Palette, Upload, X, Calendar, Clock } from 'lucide-react';
 import { mailingService, MailingList } from '@/services/mailingService';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface SendCampaignModalProps {
   open: boolean;
@@ -49,6 +53,11 @@ export function SendCampaignModal({
   const [footerLogoFile, setFooterLogoFile] = useState<File | null>(null);
   const [footerLogoPreview, setFooterLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  
+  // Scheduled sending states
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [isScheduleConfirmed, setIsScheduleConfirmed] = useState(false);
 
   const { data: listDetails } = useQuery({
     queryKey: ['mailing-list-details', mailingList?.id],
@@ -108,6 +117,9 @@ export function SendCampaignModal({
       setUseLogo(true);
       setFooterLogoFile(null);
       setFooterLogoPreview(null);
+      setIsScheduled(false);
+      setScheduledDate(undefined);
+      setIsScheduleConfirmed(false);
     }
   }, [open]);
 
@@ -170,21 +182,38 @@ export function SendCampaignModal({
         headerColor,
         buttonColor,
         logoUrl: useLogo && companyLogo ? companyLogo : undefined,
-        footerLogoUrl
+        footerLogoUrl,
+        scheduledAt: isScheduled && scheduledDate ? scheduledDate.toISOString() : undefined
       });
 
-      // Send campaign
+      // If scheduled, just return success without sending
+      if (isScheduled && scheduledDate) {
+        return { 
+          success: true, 
+          sent: 0, 
+          total: mailingList?.contact_count || 0,
+          scheduled: true,
+          scheduledAt: scheduledDate 
+        };
+      }
+
+      // Send campaign immediately
       return await mailingService.sendCampaign(campaign.id);
     },
-    onSuccess: (result) => {
-      setSendResult(result);
+    onSuccess: (result: any) => {
+      if (result.scheduled) {
+        setIsScheduleConfirmed(true);
+        setSendResult({ sent: 0, total: result.total });
+      } else {
+        setSendResult(result);
+      }
       setStep('done');
       queryClient.invalidateQueries({ queryKey: ['mailing-lists'] });
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
     },
     onError: (error: Error) => {
       toast({ 
-        title: 'Erro ao enviar campanha', 
+        title: 'Erro ao processar campanha', 
         description: error.message, 
         variant: 'destructive' 
       });
@@ -200,6 +229,23 @@ export function SendCampaignModal({
       });
       return;
     }
+    
+    if (isScheduled && !scheduledDate) {
+      toast({ 
+        title: 'Selecione a data e hora do agendamento', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    if (isScheduled && scheduledDate && scheduledDate <= new Date()) {
+      toast({ 
+        title: 'A data de agendamento deve ser no futuro', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
     setStep('sending');
     createAndSendMutation.mutate();
   };
@@ -296,6 +342,35 @@ export function SendCampaignModal({
               </p>
             </div>
 
+            {/* Scheduling Option */}
+            <div className="space-y-4 border-t pt-4 mt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Agendar Envio</Label>
+                </div>
+                <Switch
+                  checked={isScheduled}
+                  onCheckedChange={setIsScheduled}
+                />
+              </div>
+              
+              {isScheduled && (
+                <div className="space-y-2 pl-6">
+                  <Label className="text-sm">Data e Hora do Envio</Label>
+                  <DateTimePicker
+                    value={scheduledDate}
+                    onChange={setScheduledDate}
+                    minDate={new Date()}
+                    placeholder="Selecione quando enviar"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    O email será enviado automaticamente na data e hora selecionadas
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Visual Customization */}
             <div className="space-y-4 border-t pt-4 mt-4">
               <div className="flex items-center gap-2">
@@ -382,14 +457,35 @@ export function SendCampaignModal({
         {step === 'sending' && (
           <div className="py-12 text-center">
             <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
-            <p className="mt-4 font-medium">Enviando emails...</p>
+            <p className="mt-4 font-medium">
+              {isScheduled ? 'Agendando campanha...' : 'Enviando emails...'}
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Aguarde enquanto os emails são processados
+              {isScheduled 
+                ? 'Aguarde enquanto a campanha é agendada'
+                : 'Aguarde enquanto os emails são processados'
+              }
             </p>
           </div>
         )}
 
-        {step === 'done' && sendResult && (
+        {step === 'done' && (isScheduleConfirmed ? (
+          <div className="py-8 text-center">
+            <div className="h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto">
+              <Calendar className="h-8 w-8 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-semibold mt-4">Campanha Agendada!</h3>
+            <p className="text-muted-foreground mt-2">
+              O envio será realizado automaticamente em:
+            </p>
+            <p className="font-medium text-lg mt-1">
+              {scheduledDate && format(scheduledDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              {sendResult?.total} destinatários receberão o email
+            </p>
+          </div>
+        ) : sendResult && (
           <div className="py-8 text-center">
             <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
               <CheckCircle2 className="h-8 w-8 text-green-600" />
@@ -404,7 +500,7 @@ export function SendCampaignModal({
               </p>
             )}
           </div>
-        )}
+        ))}
 
         <DialogFooter>
           {step === 'form' && (
@@ -414,11 +510,20 @@ export function SendCampaignModal({
               </Button>
               <Button 
                 onClick={handleSend}
-                disabled={!selectedFormId || !subject || contactCount === 0}
+                disabled={!selectedFormId || !subject || contactCount === 0 || (isScheduled && !scheduledDate)}
                 className="gap-2"
               >
-                <Send className="h-4 w-4" />
-                Enviar para {contactCount} contatos
+                {isScheduled ? (
+                  <>
+                    <Calendar className="h-4 w-4" />
+                    Agendar Campanha
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    Enviar para {contactCount} contatos
+                  </>
+                )}
               </Button>
             </>
           )}
