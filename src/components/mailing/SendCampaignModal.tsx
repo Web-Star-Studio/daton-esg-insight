@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { LexicalEditor } from '@/components/LexicalEditor';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -284,13 +284,12 @@ export function SendCampaignModal({
 
             {/* Message */}
             <div className="space-y-2">
-              <Label htmlFor="message">Mensagem</Label>
-              <Textarea
-                id="message"
+              <Label>Mensagem</Label>
+              <LexicalEditor
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={setMessage}
                 placeholder="Mensagem personalizada que aparecerá no corpo do email..."
-                rows={4}
+                className="min-h-[150px]"
               />
               <p className="text-xs text-muted-foreground">
                 O email incluirá automaticamente um botão para acessar o formulário
