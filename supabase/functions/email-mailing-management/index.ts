@@ -682,9 +682,9 @@ serve(async (req) => {
         const resend = getResendClient();
         let sentCount = 0;
 
-        // Build form URL - using /form/:formId route
-        const origin = req.headers.get("origin") || "https://dqlvioijqzlvnvvajmft.supabase.co";
-        const formUrl = `${origin}/form/${campaign.form_id}`;
+        // Build form URL - using production domain for better email deliverability
+        const PRODUCTION_DOMAIN = "https://daton.com.br";
+        const formUrl = `${PRODUCTION_DOMAIN}/form/${campaign.form_id}`;
 
         for (const contact of contacts) {
           try {
@@ -702,7 +702,7 @@ serve(async (req) => {
             );
 
             const { data: emailData, error: sendError } = await resend.emails.send({
-              from: "Plataforma Daton <noreply@daton.com.br>",
+              from: "Plataforma Daton <contato@daton.com.br>",
               to: [contact.email],
               subject: campaign.subject,
               html: emailHtml,
