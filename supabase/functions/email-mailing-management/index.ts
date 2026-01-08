@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import nodemailer from "npm:nodemailer@6.9.8";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,24 +25,13 @@ interface Contact {
   metadata?: Record<string, any>;
 }
 
-// Create nodemailer transporter
-function createTransporter() {
-  const gmailUser = Deno.env.get("GMAIL_USER");
-  const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
-
-  if (!gmailUser || !gmailAppPassword) {
-    throw new Error("Gmail credentials not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets.");
+// Initialize Resend client
+function getResendClient(): Resend {
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY não configurada. Adicione a API key do Resend nas secrets.");
   }
-
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: gmailUser,
-      pass: gmailAppPassword,
-    },
-  });
+  return new Resend(resendApiKey);
 }
 
 // Get CSV Template
@@ -689,9 +678,8 @@ serve(async (req) => {
 
         await supabase.from("email_campaign_sends").insert(sends);
 
-        // Send emails
-        const transporter = createTransporter();
-        const gmailUser = Deno.env.get("GMAIL_USER")!;
+        // Send emails using Resend
+        const resend = getResendClient();
         let sentCount = 0;
 
         // Build form URL - using /form/:formId route
@@ -713,12 +701,16 @@ serve(async (req) => {
               }
             );
 
-            await transporter.sendMail({
-              from: `"Plataforma Daton" <${gmailUser}>`,
-              to: contact.email,
+            const { data: emailData, error: sendError } = await resend.emails.send({
+              from: "Plataforma Daton <noreply@resend.dev>",
+              to: [contact.email],
               subject: campaign.subject,
               html: emailHtml,
             });
+
+            if (sendError) {
+              throw new Error(sendError.message);
+            }
 
             await supabase
               .from("email_campaign_sends")
@@ -727,7 +719,7 @@ serve(async (req) => {
               .eq("contact_id", contact.id);
 
             sentCount++;
-            console.log(`[email-mailing-management] Email sent to ${contact.email}`);
+            console.log(`[email-mailing-management] Email sent to ${contact.email}, ID: ${emailData?.id}`);
           } catch (emailError: any) {
             console.error(`[email-mailing-management] Failed to send to ${contact.email}:`, emailError.message);
             await supabase
