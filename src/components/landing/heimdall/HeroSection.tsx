@@ -90,16 +90,18 @@ export function HeroSection() {
     return (
         <section
             ref={heroRef}
-            className="precision-grid"
+            className="precision-grid hero-section"
             style={{
                 position: 'relative',
-                minHeight: '100vh',
+                minHeight: isMobile ? 'auto' : '100vh',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 overflow: 'hidden',
                 background: 'var(--heimdall-bg)',
                 isolation: 'isolate',
+                paddingTop: isMobile ? '100px' : undefined,
+                paddingBottom: isMobile ? '80px' : undefined,
             }}
         >
             {/* Custom Mouse Follower (Updated to Green Ring only) */}
@@ -218,7 +220,7 @@ export function HeroSection() {
                     lineHeight: 1.1, // Increased from 0.9 to prevent clipping
                     color: 'var(--heimdall-text)',
                     marginTop: '0',
-                    marginBottom: '2rem',
+                    marginBottom: isMobile ? '1rem' : '2rem',
                     textTransform: 'uppercase',
                     position: 'relative'
                 }}>
@@ -275,7 +277,7 @@ export function HeroSection() {
                 </div>
 
                 {/* Actions */}
-                <div className="ui-element" style={{ display: 'flex', gap: '1rem', marginTop: '3rem' }}>
+                <div className="ui-element" style={{ display: 'flex', gap: '1rem', marginTop: isMobile ? '1.5rem' : '3rem' }}>
                     <button
                         onClick={() => navigate('/funcionalidades')}
                         style={{
