@@ -702,7 +702,7 @@ serve(async (req) => {
             );
 
             const { data: emailData, error: sendError } = await resend.emails.send({
-              from: "Plataforma Daton <noreply@resend.dev>",
+              from: "Plataforma Daton <noreply@daton.com.br>",
               to: [contact.email],
               subject: campaign.subject,
               html: emailHtml,
