@@ -17,10 +17,10 @@ export const ENABLED_MODULES = {
   dataReports: false,
   
   /** ESG Ambiental (categoria dentro do ESG) */
-  esgEnvironmental: true,
+  esgEnvironmental: false,
   
   /** ESG Governança (categoria dentro do ESG) */
-  esgGovernance: true,
+  esgGovernance: false,
   
   // ============================================
   // MÓDULOS ATIVOS
