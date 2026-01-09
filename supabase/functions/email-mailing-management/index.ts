@@ -25,6 +25,29 @@ interface Contact {
   metadata?: Record<string, any>;
 }
 
+// Delay function to respect Resend rate limits (2 emails/second)
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Sanitize and validate email address
+function sanitizeEmail(email: string): string | null {
+  if (!email) return null;
+  
+  // Remove non-ASCII characters and common corruption characters
+  const sanitized = email
+    .replace(/[^\x20-\x7E]/g, '') // Remove non-ASCII characters
+    .replace(/\?+$/g, '')          // Remove trailing ?
+    .replace(/^[?]+/, '')          // Remove leading ?
+    .replace(/�/g, '')             // Remove replacement characters
+    .trim()
+    .toLowerCase();
+  
+  // Basic email format validation
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(sanitized) ? sanitized : null;
+}
+
 // Initialize Resend client
 function getResendClient(): Resend {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -687,6 +710,22 @@ serve(async (req) => {
         const formUrl = `${PRODUCTION_DOMAIN}/form/${campaign.form_id}`;
 
         for (const contact of contacts) {
+          // Sanitize email before sending
+          const cleanEmail = sanitizeEmail(contact.email);
+          
+          if (!cleanEmail) {
+            console.warn(`[email-mailing-management] Invalid email skipped: ${contact.email}`);
+            await supabase
+              .from("email_campaign_sends")
+              .update({ 
+                status: "failed", 
+                error_message: "Email inválido - caracteres não suportados" 
+              })
+              .eq("campaign_id", campaignId)
+              .eq("contact_id", contact.id);
+            continue;
+          }
+
           try {
             const emailHtml = generateEmailHtml(
               campaign.subject,
@@ -703,7 +742,7 @@ serve(async (req) => {
 
             const { data: emailData, error: sendError } = await resend.emails.send({
               from: "Plataforma Daton <contato@daton.com.br>",
-              to: [contact.email],
+              to: [cleanEmail],
               subject: campaign.subject,
               html: emailHtml,
             });
@@ -719,15 +758,18 @@ serve(async (req) => {
               .eq("contact_id", contact.id);
 
             sentCount++;
-            console.log(`[email-mailing-management] Email sent to ${contact.email}, ID: ${emailData?.id}`);
+            console.log(`[email-mailing-management] Email sent to ${cleanEmail}, ID: ${emailData?.id}`);
           } catch (emailError: any) {
-            console.error(`[email-mailing-management] Failed to send to ${contact.email}:`, emailError.message);
+            console.error(`[email-mailing-management] Failed to send to ${cleanEmail}:`, emailError.message);
             await supabase
               .from("email_campaign_sends")
               .update({ status: "failed", error_message: emailError.message })
               .eq("campaign_id", campaignId)
               .eq("contact_id", contact.id);
           }
+
+          // Wait 550ms between emails to respect Resend rate limit (2 emails/second)
+          await delay(550);
         }
 
         // Update campaign status
