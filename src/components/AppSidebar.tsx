@@ -283,7 +283,8 @@ const menuSections: MenuSection[] = [
       { id: "non-conformities", title: "Não Conformidades", icon: AlertTriangle, path: "/nao-conformidades", description: "Gestão de não conformidades e ações corretivas" },
       { id: "corrective-actions", title: "Ações Corretivas", icon: CheckSquare, path: "/acoes-corretivas", description: "Planos de ação e melhorias" },
       { id: "document-control", title: "Controle de Documentos", icon: FileText, path: "/controle-documentos", description: "Versionamento e controle documental" },
-      { 
+      { id: "laia", title: "LAIA", icon: Leaf, path: "/laia", description: "Levantamento e Avaliação de Aspectos e Impactos Ambientais" },
+      {
         id: "licensing", 
         title: "Licenciamento", 
         icon: Gavel, 
