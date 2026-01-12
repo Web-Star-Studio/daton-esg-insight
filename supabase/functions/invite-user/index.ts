@@ -350,7 +350,7 @@ const handler = async (req: Request): Promise<Response> => {
 `;
 
     const { error: emailError } = await resend.emails.send({
-      from: "Daton <noreply@daton.com.br>",
+      from: "Daton <plataforma@daton.com.br>",
       to: [email],
       subject: `Você foi convidado para ${companyName} - Daton`,
       html: emailHtml,
