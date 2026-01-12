@@ -209,10 +209,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create user_role
+    // Create user_role with company_id
     const { error: roleCreateError } = await supabaseAdmin.from("user_roles").insert({
       user_id: newUser.user.id,
       role: role,
+      company_id: callingProfile.company_id, // Garantir que o company_id está correto
+      assigned_by_user_id: callingUser.id,
     });
 
     if (roleCreateError) {

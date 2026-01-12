@@ -24326,6 +24326,7 @@ export type Database = {
         }
         Returns: string
       }
+      normalize_cnpj: { Args: { cnpj: string }; Returns: string }
       normalize_text: {
         Args: { input_text: string; options?: Json }
         Returns: string
