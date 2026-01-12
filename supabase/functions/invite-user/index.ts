@@ -374,6 +374,7 @@ const handler = async (req: Request): Promise<Response> => {
         department: department || null,
         phone: phone || null,
         role: role,
+        has_completed_onboarding: true, // Usuários convidados não precisam de onboarding
       });
 
       if (profileCreateError) {
