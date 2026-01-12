@@ -18407,30 +18407,39 @@ export type Database = {
           company_id: string
           created_at: string
           dashboard_preferences: Json | null
+          department: string | null
+          email: string | null
           full_name: string
           has_completed_onboarding: boolean | null
           id: string
           job_title: string | null
+          phone: string | null
           role: Database["public"]["Enums"]["user_role_type"]
         }
         Insert: {
           company_id: string
           created_at?: string
           dashboard_preferences?: Json | null
+          department?: string | null
+          email?: string | null
           full_name: string
           has_completed_onboarding?: boolean | null
           id: string
           job_title?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
         }
         Update: {
           company_id?: string
           created_at?: string
           dashboard_preferences?: Json | null
+          department?: string | null
+          email?: string | null
           full_name?: string
           has_completed_onboarding?: boolean | null
           id?: string
           job_title?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role_type"]
         }
         Relationships: [
