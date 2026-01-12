@@ -7,8 +7,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, UserPlus } from "lucide-react";
 import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
+
+// System roles with correct values
+const SYSTEM_ROLES = [
+  { value: 'admin', label: 'Administrador', description: 'Acesso total à empresa, gerencia usuários' },
+  { value: 'manager', label: 'Gestor', description: 'Gerencia equipes e processos' },
+  { value: 'analyst', label: 'Analista', description: 'Acesso a análises e relatórios avançados' },
+  { value: 'operator', label: 'Operador', description: 'Cadastro e entrada de dados' },
+  { value: 'viewer', label: 'Visualizador', description: 'Apenas visualização (leitura)' },
+  { value: 'auditor', label: 'Auditor', description: 'Acesso de auditoria e logs' },
+] as const;
 
 const userFormSchema = z.object({
   full_name: z.string()
@@ -17,11 +27,7 @@ const userFormSchema = z.object({
   email: z.string()
     .email("Email inválido")
     .max(255, "Email deve ter no máximo 255 caracteres"),
-  role: z.union([
-    z.literal('Admin'),
-    z.literal('Gestor'),
-    z.literal('Colaborador')
-  ]),
+  role: z.enum(['admin', 'manager', 'analyst', 'operator', 'viewer', 'auditor']),
   department: z.string().optional(),
   phone: z.string().optional(),
 });
@@ -37,6 +43,8 @@ interface UserFormModalProps {
 }
 
 export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: UserFormModalProps) {
+  const isEditing = !!user;
+  
   const {
     register,
     handleSubmit,
@@ -49,11 +57,11 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
     defaultValues: user ? {
       full_name: user.full_name,
       email: user.email,
-      role: user.role as 'Admin' | 'Gestor' | 'Colaborador',
+      role: user.role as UserFormData['role'],
       department: user.department || '',
       phone: user.phone || '',
     } : {
-      role: 'Colaborador',
+      role: 'viewer',
     },
   });
 
@@ -94,13 +102,23 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {user ? 'Editar Usuário' : 'Novo Usuário'}
+          <DialogTitle className="flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <UserPlus className="h-5 w-5" />
+                Editar Usuário
+              </>
+            ) : (
+              <>
+                <Mail className="h-5 w-5" />
+                Convidar Novo Usuário
+              </>
+            )}
           </DialogTitle>
           <DialogDescription>
-            {user 
+            {isEditing 
               ? 'Atualize as informações do usuário abaixo.' 
-              : 'Preencha os dados para criar um novo usuário no sistema.'}
+              : 'Preencha os dados para enviar um convite por email. O usuário receberá um link para definir sua senha.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -131,9 +149,9 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
               type="email"
               placeholder="joao.silva@empresa.com"
               {...register('email')}
-              disabled={isLoading || !!user}
+              disabled={isLoading || isEditing}
             />
-            {user && (
+            {isEditing && (
               <p className="text-xs text-muted-foreground">
                 Email não pode ser alterado
               </p>
@@ -150,37 +168,23 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
             </Label>
             <Select
               value={roleValue}
-              onValueChange={(value) => setValue('role', value as any)}
+              onValueChange={(value) => setValue('role', value as UserFormData['role'])}
               disabled={isLoading}
             >
               <SelectTrigger id="role">
                 <SelectValue placeholder="Selecione o papel" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Admin">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">Admin</span>
-                    <span className="text-xs text-muted-foreground">
-                      Acesso total ao sistema
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="Gestor">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">Gestor</span>
-                    <span className="text-xs text-muted-foreground">
-                      Gerencia equipes e processos
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="Colaborador">
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">Colaborador</span>
-                    <span className="text-xs text-muted-foreground">
-                      Acesso básico às funcionalidades
-                    </span>
-                  </div>
-                </SelectItem>
+                {SYSTEM_ROLES.map((role) => (
+                  <SelectItem key={role.value} value={role.value}>
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{role.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {role.description}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {errors.role && (
@@ -210,6 +214,16 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
             />
           </div>
 
+          {/* Info box for new users */}
+          {!isEditing && (
+            <div className="bg-muted/50 border rounded-lg p-3 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Um email de convite será enviado para o usuário definir sua senha.
+              </p>
+            </div>
+          )}
+
           {/* Ações */}
           <div className="flex justify-end gap-2 pt-4">
             <Button
@@ -222,7 +236,7 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {user ? 'Salvar Alterações' : 'Criar Usuário'}
+              {isEditing ? 'Salvar Alterações' : 'Enviar Convite'}
             </Button>
           </div>
         </form>

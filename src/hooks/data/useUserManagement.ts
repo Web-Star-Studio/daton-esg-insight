@@ -65,23 +65,30 @@ export const useUserManagement = () => {
     }).length,
   };
 
-  // Create user mutation
+  // Invite user mutation (sends email invitation)
   const createUserMutation = useMutation({
     mutationFn: async (userData: Partial<UserProfile>) => {
-      const userAndCompany = await getUserAndCompany();
-      if (!userAndCompany?.company_id) throw new Error('Company not found');
-
-      return await callManageUserFunction('create', {
-        ...userData,
-        company_id: userAndCompany.company_id,
+      const { data, error } = await supabase.functions.invoke('invite-user', {
+        body: {
+          email: userData.email,
+          full_name: userData.full_name,
+          role: userData.role,
+          department: userData.department,
+          phone: userData.phone,
+        },
       });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Usuário criado com sucesso!');
+      toast.success('Convite enviado com sucesso! O usuário receberá um email para definir sua senha.');
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao criar usuário: ${error.message}`);
+      toast.error(`Erro ao enviar convite: ${error.message}`);
     },
   });
 

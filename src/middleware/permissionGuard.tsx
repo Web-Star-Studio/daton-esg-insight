@@ -114,6 +114,86 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VIEW_QUALITY,
     Permission.MANAGE_QUALITY,
   ],
+
+  manager: [
+    // Emissions
+    Permission.VIEW_EMISSIONS,
+    Permission.CREATE_EMISSIONS,
+    Permission.EDIT_EMISSIONS,
+    // Licenses
+    Permission.VIEW_LICENSES,
+    Permission.CREATE_LICENSES,
+    Permission.EDIT_LICENSES,
+    Permission.PROCESS_LICENSES,
+    // Documents
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENTS,
+    Permission.DELETE_DOCUMENTS,
+    Permission.EXTRACT_DOCUMENTS,
+    // Goals
+    Permission.VIEW_GOALS,
+    Permission.CREATE_GOALS,
+    Permission.EDIT_GOALS,
+    // Reports
+    Permission.VIEW_REPORTS,
+    Permission.GENERATE_REPORTS,
+    Permission.EXPORT_REPORTS,
+    // Users (limited view)
+    Permission.VIEW_USERS,
+    // Settings
+    Permission.VIEW_SETTINGS,
+    // Audit
+    Permission.VIEW_AUDITS,
+    Permission.CREATE_AUDITS,
+    // Quality
+    Permission.VIEW_QUALITY,
+    Permission.MANAGE_QUALITY,
+    Permission.APPROVE_ACTIONS,
+  ],
+
+  analyst: [
+    // Emissions - full access
+    Permission.VIEW_EMISSIONS,
+    Permission.CREATE_EMISSIONS,
+    Permission.EDIT_EMISSIONS,
+    // Licenses
+    Permission.VIEW_LICENSES,
+    Permission.CREATE_LICENSES,
+    Permission.EDIT_LICENSES,
+    // Documents
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENTS,
+    Permission.EXTRACT_DOCUMENTS,
+    // Goals
+    Permission.VIEW_GOALS,
+    Permission.CREATE_GOALS,
+    Permission.EDIT_GOALS,
+    // Reports - full access
+    Permission.VIEW_REPORTS,
+    Permission.GENERATE_REPORTS,
+    Permission.EXPORT_REPORTS,
+    // Settings
+    Permission.VIEW_SETTINGS,
+    // Audit
+    Permission.VIEW_AUDITS,
+    // Quality
+    Permission.VIEW_QUALITY,
+  ],
+
+  operator: [
+    // Basic data entry permissions
+    Permission.VIEW_EMISSIONS,
+    Permission.CREATE_EMISSIONS,
+    Permission.EDIT_EMISSIONS,
+    Permission.VIEW_LICENSES,
+    Permission.VIEW_DOCUMENTS,
+    Permission.UPLOAD_DOCUMENTS,
+    Permission.VIEW_GOALS,
+    Permission.CREATE_GOALS,
+    Permission.VIEW_REPORTS,
+    Permission.VIEW_SETTINGS,
+    Permission.VIEW_QUALITY,
+  ],
   
   auditor: [
     // View-only for most features
@@ -129,22 +209,6 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VIEW_AUDITS,
     Permission.CREATE_AUDITS,
     Permission.APPROVE_AUDITS,
-    Permission.VIEW_QUALITY,
-  ],
-  
-  user: [
-    // Standard user permissions
-    Permission.VIEW_EMISSIONS,
-    Permission.CREATE_EMISSIONS,
-    Permission.EDIT_EMISSIONS,
-    Permission.VIEW_LICENSES,
-    Permission.VIEW_DOCUMENTS,
-    Permission.UPLOAD_DOCUMENTS,
-    Permission.VIEW_GOALS,
-    Permission.CREATE_GOALS,
-    Permission.VIEW_REPORTS,
-    Permission.GENERATE_REPORTS,
-    Permission.VIEW_SETTINGS,
     Permission.VIEW_QUALITY,
   ],
   

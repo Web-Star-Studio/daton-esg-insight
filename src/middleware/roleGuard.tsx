@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/utils/logger';
 import { ROUTE_PATHS } from '@/constants/routePaths';
 
-export type UserRole = 'platform_admin' | 'super_admin' | 'admin' | 'user' | 'auditor' | 'viewer';
+export type UserRole = 'platform_admin' | 'super_admin' | 'admin' | 'manager' | 'analyst' | 'operator' | 'auditor' | 'viewer';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -20,11 +20,13 @@ interface RoleGuardProps {
  * Role hierarchy - higher roles inherit permissions from lower roles
  */
 const ROLE_HIERARCHY: Record<UserRole, number> = {
-  platform_admin: 6,
-  super_admin: 5,
-  admin: 4,
-  auditor: 3,
-  user: 2,
+  platform_admin: 8,
+  super_admin: 7,
+  admin: 6,
+  manager: 5,
+  analyst: 4,
+  operator: 3,
+  auditor: 2,
   viewer: 1,
 };
 
