@@ -343,6 +343,7 @@ export default function RequiredDocuments() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
+                  onKeyDown={(e) => e.stopPropagation()}
                   placeholder="Descrição do documento..."
                   rows={3}
                 />
