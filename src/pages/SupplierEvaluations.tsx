@@ -164,6 +164,7 @@ export default function SupplierEvaluations() {
                     <TableHead className="text-center">Pendentes</TableHead>
                     <TableHead className="text-center">Rejeitados</TableHead>
                     <TableHead className="text-center">Taxa de Conformidade</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -204,6 +205,16 @@ export default function SupplierEvaluations() {
                           </div>
                           <span className="text-sm font-medium">{supplier.complianceRate}%</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/fornecedores/avaliacao-documental/${supplier.id}`)}
+                        >
+                          <FileCheck className="h-4 w-4 mr-1" />
+                          Avaliar
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
