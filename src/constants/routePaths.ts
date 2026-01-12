@@ -8,6 +8,8 @@ export const ROUTE_PATHS = {
   PUBLIC: {
     LANDING: '/',
     AUTH: '/auth',
+    SET_PASSWORD: '/set-password',
+    RESET_PASSWORD: '/reset-password',
     CONTACT: '/contato',
     FEATURES: '/funcionalidades',
     DOCUMENTATION: '/documentacao',

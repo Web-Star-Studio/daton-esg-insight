@@ -23,6 +23,7 @@ import { useDocumentProcessingNotifications } from "@/hooks/useDocumentProcessin
 // Páginas críticas carregadas sincronamente
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import SetPassword from "./pages/SetPassword";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import { OnboardingRoute } from "./routes/onboarding";
@@ -240,6 +241,7 @@ const AppContent = () => {
             {/* Rota de autenticação - pública */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/set-password" element={<SetPassword />} />
 
             {/* Rota de onboarding - protegida */}
             <Route path="/onboarding" element={<OnboardingRoute />} />

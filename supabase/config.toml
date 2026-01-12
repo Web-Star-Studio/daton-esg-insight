@@ -168,3 +168,9 @@ verify_jwt = false
 
 [functions.email-mailing-management]
 verify_jwt = true
+
+[functions.invite-user]
+verify_jwt = true
+
+[functions.manage-user]
+verify_jwt = true
