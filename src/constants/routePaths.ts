@@ -60,6 +60,7 @@ export const ROUTE_PATHS = {
     DOCUMENT_CONTROL: '/controle-documentos',
     RISK_MANAGEMENT: '/gestao-riscos',
     SUPPLIER_EVALUATION: '/avaliacao-fornecedores',
+    LAIA: '/laia',
   },
 
   // HR Module
