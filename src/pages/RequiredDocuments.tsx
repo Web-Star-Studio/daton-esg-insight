@@ -327,9 +327,9 @@ export default function RequiredDocuments() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(weightLabels).map(([weight, label]) => (
-                      <SelectItem key={weight} value={weight}>
-                        {weight} - {label}
+                    {[1, 2, 3, 4, 5].map((weight) => (
+                      <SelectItem key={weight} value={String(weight)}>
+                        {weight}
                       </SelectItem>
                     ))}
                   </SelectContent>
