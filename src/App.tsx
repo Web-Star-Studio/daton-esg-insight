@@ -118,6 +118,7 @@ const GestaoFornecedores = lazy(() => import("./pages/GestaoFornecedores"));
 const QualityDashboard = lazy(() => import("./pages/QualityDashboard"));
 const GestaoIndicadores = lazy(() => import("./pages/GestaoIndicadores"));
 const IndicadorDetalhes = lazy(() => import("./pages/IndicadorDetalhes"));
+const LAIAAssessment = lazy(() => import("./pages/LAIAAssessment"));
 
 const GerenciamentoProjetos = lazy(() => import("./pages/GerenciamentoProjetos").then(module => ({ default: module.GerenciamentoProjetos })));
 
@@ -664,6 +665,7 @@ const AppContent = () => {
             <Route path="/indicador/:id" element={<ProtectedLazyPageWrapper><IndicadorDetalhes /></ProtectedLazyPageWrapper>} />
             <Route path="/controle-documentos" element={<ProtectedLazyPageWrapper><ControleDocumentos /></ProtectedLazyPageWrapper>} />
             <Route path="/gerenciamento-projetos" element={<ProtectedLazyPageWrapper><GerenciamentoProjetos /></ProtectedLazyPageWrapper>} />
+            <Route path="/laia" element={<ProtectedLazyPageWrapper><LAIAAssessment /></ProtectedLazyPageWrapper>} />
 // Consolidar rotas duplicadas - removendo duplicações
             <Route path="/indicadores-qualidade" element={<Navigate to="/quality-dashboard" replace />} />
             <Route path="/qualidade" element={<Navigate to="/quality-dashboard" replace />} />

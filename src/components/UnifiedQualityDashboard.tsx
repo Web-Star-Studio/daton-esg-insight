@@ -20,7 +20,8 @@ import {
   Activity,
   ListTodo,
   ClipboardList,
-  Plus
+  Plus,
+  Leaf
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { unifiedQualityService } from '@/services/unifiedQualityService';
@@ -339,6 +340,14 @@ export const UnifiedQualityDashboard: React.FC = () => {
                 >
                   <ClipboardList className="h-6 w-6" />
                   <span className="text-xs">Planos de Ação</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-20 flex-col gap-2"
+                  onClick={() => navigate('/laia')}
+                >
+                  <Leaf className="h-6 w-6" />
+                  <span className="text-xs">LAIA</span>
                 </Button>
               </div>
             </CardContent>
