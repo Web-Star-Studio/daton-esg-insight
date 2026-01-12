@@ -136,8 +136,8 @@ const handler = async (req: Request): Promise<Response> => {
       ? "http://localhost:5173"
       : "https://dqlvioijqzlvnvvajmft.lovableproject.com";
 
-    // STEP 1: Create the user in auth FIRST with all metadata
-    // This ensures the trigger has all the data it needs
+    // STEP 1: Create the user in auth with skip_trigger flag
+    // The trigger will skip processing and we'll create profile/role manually
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       email_confirm: false,
@@ -148,6 +148,7 @@ const handler = async (req: Request): Promise<Response> => {
         role: role,
         department: department || null,
         phone: phone || null,
+        skip_trigger: true, // Flag para o trigger ignorar - edge function cuida da criação
       },
     });
 
