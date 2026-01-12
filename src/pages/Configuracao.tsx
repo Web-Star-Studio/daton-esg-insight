@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -20,6 +20,9 @@ import { getUserAndCompany, type UserWithCompany } from "@/utils/auth"
 import { sanitizeFormData } from "@/utils/inputSanitizer"
 import { useAuth } from "@/contexts/AuthContext"
 import { AIProcessingSettings } from "@/components/settings/AIProcessingSettings"
+import { useUserManagement, type UserProfile } from "@/hooks/data/useUserManagement"
+import { UserListTable } from "@/components/users/UserListTable"
+import { UserFormModal } from "@/components/users/UserFormModal"
 
 const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -74,9 +77,40 @@ export default function Configuracao() {
   const [activeSection, setActiveSection] = useState<Section>("perfil");
   const [userData, setUserData] = useState<UserWithCompany | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { restartOnboarding } = useAuth();
+
+  const {
+    users,
+    usersLoading,
+    createUser,
+    updateUser,
+    isCreating,
+    isUpdating,
+  } = useUserManagement();
+
+  const handleNewUser = () => {
+    setSelectedUser(null);
+    setUserModalOpen(true);
+  };
+
+  const handleEditUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setUserModalOpen(true);
+  };
+
+  const handleSaveUser = (data: Partial<UserProfile>) => {
+    if (selectedUser) {
+      updateUser({ id: selectedUser.id, ...data });
+    } else {
+      createUser(data);
+    }
+    setUserModalOpen(false);
+    setSelectedUser(null);
+  };
 
   const perfilForm = useForm<z.infer<typeof perfilSchema>>({
     resolver: zodResolver(perfilSchema),
@@ -434,37 +468,37 @@ export default function Configuracao() {
           )}
 
           {activeSection === "usuarios" && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Usuários e Permissões</CardTitle>
-                <Button disabled>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Convidar Usuário
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>E-mail</TableHead>
-                      <TableHead>Cargo</TableHead>
-                      <TableHead>Nível de Acesso</TableHead>
-                      <TableHead className="w-[50px]">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                        Gestão de usuários não configurada ainda.
-                        <br />
-                        <span className="text-sm">Esta funcionalidade será habilitada em breve.</span>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Usuários e Permissões</CardTitle>
+                    <CardDescription>
+                      Gerencie os usuários da sua empresa e suas permissões de acesso
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleNewUser}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Convidar Usuário
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <UserListTable 
+                    users={users} 
+                    onEdit={handleEditUser}
+                    isLoading={usersLoading}
+                  />
+                </CardContent>
+              </Card>
+
+              <UserFormModal
+                open={userModalOpen}
+                onOpenChange={setUserModalOpen}
+                user={selectedUser}
+                onSave={handleSaveUser}
+                isLoading={isCreating || isUpdating}
+              />
+            </div>
           )}
 
           {activeSection === "plano" && (
