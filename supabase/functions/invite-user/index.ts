@@ -13,7 +13,7 @@ interface InviteUserRequest {
   role: string;
   department?: string;
   phone?: string;
-  resend?: boolean;
+  isResend?: boolean;
   user_id?: string;
 }
 
@@ -104,9 +104,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Parse request body
-    const { email, full_name, role, department, phone, resend, user_id }: InviteUserRequest = await req.json();
+    const { email, full_name, role, department, phone, isResend, user_id }: InviteUserRequest = await req.json();
 
-    console.log("invite-user: Request", { email, full_name, role, department, resend, user_id });
+    console.log("invite-user: Request", { email, full_name, role, department, isResend, user_id });
 
     // Validate required fields
     if (!email || !full_name || !role) {
@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
       : "https://dqlvioijqzlvnvvajmft.lovableproject.com";
 
     // Handle resend invite flow
-    if (resend && user_id) {
+    if (isResend && user_id) {
       console.log("invite-user: Resending invite for user", user_id);
 
       // Verify user exists and belongs to the same company

@@ -136,7 +136,7 @@ export const useUserManagement = () => {
           email,
           full_name,
           role,
-          resend: true,
+          isResend: true,
           user_id: userId,
         },
       });
