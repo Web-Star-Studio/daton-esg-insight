@@ -56,6 +56,9 @@ export default function Auth() {
     }
   };
 
+  // Função para limpar CNPJ (remover caracteres especiais)
+  const cleanCNPJ = (cnpj: string) => cnpj.replace(/[^\d]/g, '');
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -68,12 +71,23 @@ export default function Auth() {
       return;
     }
 
+    const cleanedCnpj = cleanCNPJ(registerData.cnpj);
+    
+    if (cleanedCnpj.length !== 14) {
+      toast({
+        variant: "destructive",
+        title: "CNPJ inválido",
+        description: "O CNPJ deve ter 14 dígitos.",
+      });
+      return;
+    }
+
     try {
       await register({
-        company_name: registerData.company_name,
-        cnpj: registerData.cnpj,
-        user_name: registerData.user_name,
-        email: registerData.email,
+        company_name: registerData.company_name.trim(),
+        cnpj: cleanedCnpj, // CNPJ normalizado (apenas números)
+        user_name: registerData.user_name.trim(),
+        email: registerData.email.trim().toLowerCase(),
         password: registerData.password
       });
       
