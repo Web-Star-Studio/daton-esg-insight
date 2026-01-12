@@ -123,18 +123,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((u) => u.email === email);
-
-    if (existingUser) {
-      console.log("invite-user: User already exists", existingUser.id);
-      return new Response(
-        JSON.stringify({ error: "Este email já está registrado no sistema" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Get company name
     const { data: company } = await supabaseAdmin
       .from("companies")
@@ -144,11 +132,112 @@ const handler = async (req: Request): Promise<Response> => {
 
     const companyName = company?.name || "Daton";
 
-    // Generate invite link using magic link
     const siteUrl = Deno.env.get("SUPABASE_URL")?.includes("localhost")
       ? "http://localhost:5173"
       : "https://dqlvioijqzlvnvvajmft.lovableproject.com";
 
+    // STEP 1: Create the user in auth FIRST with all metadata
+    // This ensures the trigger has all the data it needs
+    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      email_confirm: false,
+      user_metadata: {
+        full_name: full_name,
+        invited_by: callingUser.id,
+        company_id: callingProfile.company_id,
+        role: role,
+        department: department || null,
+        phone: phone || null,
+      },
+    });
+
+    if (createError) {
+      // Check if user already exists
+      if (createError.message?.includes("already been registered") || 
+          createError.message?.includes("email_exists")) {
+        console.log("invite-user: User already exists");
+        return new Response(
+          JSON.stringify({ error: "Este email já está registrado no sistema" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.error("invite-user: Failed to create user", createError);
+      return new Response(
+        JSON.stringify({ error: createError?.message || "Falha ao criar usuário" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!newUser?.user) {
+      console.error("invite-user: No user returned from createUser");
+      return new Response(
+        JSON.stringify({ error: "Falha ao criar usuário" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("invite-user: User created in auth", newUser.user.id);
+
+    // STEP 2: Check if trigger created the profile, if not create it manually
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("id", newUser.user.id)
+      .single();
+
+    if (!existingProfile) {
+      // Create profile manually if trigger didn't
+      const { error: profileCreateError } = await supabaseAdmin.from("profiles").insert({
+        id: newUser.user.id,
+        email: email,
+        full_name: full_name,
+        company_id: callingProfile.company_id,
+        department: department || null,
+        phone: phone || null,
+        role: role,
+      });
+
+      if (profileCreateError) {
+        console.error("invite-user: Failed to create profile", profileCreateError);
+        // Rollback: delete the auth user
+        await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+        return new Response(
+          JSON.stringify({ error: "Falha ao criar perfil do usuário" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("invite-user: Profile created manually");
+    } else {
+      console.log("invite-user: Profile already exists (created by trigger)");
+    }
+
+    // STEP 3: Check if trigger created the role, if not create it manually
+    const { data: existingRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", newUser.user.id)
+      .single();
+
+    if (!existingRole) {
+      // Create user_role with company_id
+      const { error: roleCreateError } = await supabaseAdmin.from("user_roles").insert({
+        user_id: newUser.user.id,
+        role: role,
+        company_id: callingProfile.company_id,
+        assigned_by_user_id: callingUser.id,
+      });
+
+      if (roleCreateError) {
+        console.error("invite-user: Failed to create user_role", roleCreateError);
+        // Continue anyway - role can be added manually
+      } else {
+        console.log("invite-user: User role created manually");
+      }
+    } else {
+      console.log("invite-user: User role already exists (created by trigger)");
+    }
+
+    // STEP 4: Generate magic link for the EXISTING user
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email,
@@ -159,70 +248,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (linkError || !linkData) {
       console.error("invite-user: Failed to generate magic link", linkError);
-      return new Response(
-        JSON.stringify({ error: "Falha ao gerar link de convite" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // User is created, but we couldn't generate link - don't fail completely
+      // They can use "forgot password" flow
+    } else {
+      console.log("invite-user: Magic link generated");
     }
-
-    console.log("invite-user: Magic link generated");
-
-    // Create the user in auth
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      email_confirm: false,
-      user_metadata: {
-        full_name: full_name,
-        invited_by: callingUser.id,
-        company_id: callingProfile.company_id,
-      },
-    });
-
-    if (createError || !newUser?.user) {
-      console.error("invite-user: Failed to create user", createError);
-      return new Response(
-        JSON.stringify({ error: createError?.message || "Falha ao criar usuário" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("invite-user: User created in auth", newUser.user.id);
-
-    // Create profile
-    const { error: profileCreateError } = await supabaseAdmin.from("profiles").insert({
-      id: newUser.user.id,
-      email: email,
-      full_name: full_name,
-      company_id: callingProfile.company_id,
-      department: department || null,
-      phone: phone || null,
-      role: role,
-    });
-
-    if (profileCreateError) {
-      console.error("invite-user: Failed to create profile", profileCreateError);
-      // Rollback: delete the auth user
-      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-      return new Response(
-        JSON.stringify({ error: "Falha ao criar perfil do usuário" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create user_role with company_id
-    const { error: roleCreateError } = await supabaseAdmin.from("user_roles").insert({
-      user_id: newUser.user.id,
-      role: role,
-      company_id: callingProfile.company_id, // Garantir que o company_id está correto
-      assigned_by_user_id: callingUser.id,
-    });
-
-    if (roleCreateError) {
-      console.error("invite-user: Failed to create user_role", roleCreateError);
-      // Continue anyway - role can be added manually
-    }
-
-    console.log("invite-user: Profile and role created");
 
     // Send invitation email using Resend
     const resend = new Resend(resendApiKey);
