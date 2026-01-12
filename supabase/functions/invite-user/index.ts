@@ -13,6 +13,8 @@ interface InviteUserRequest {
   role: string;
   department?: string;
   phone?: string;
+  resend?: boolean;
+  user_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -102,9 +104,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Parse request body
-    const { email, full_name, role, department, phone }: InviteUserRequest = await req.json();
+    const { email, full_name, role, department, phone, resend, user_id }: InviteUserRequest = await req.json();
 
-    console.log("invite-user: Inviting user", { email, full_name, role, department });
+    console.log("invite-user: Request", { email, full_name, role, department, resend, user_id });
 
     // Validate required fields
     if (!email || !full_name || !role) {
@@ -135,6 +137,182 @@ const handler = async (req: Request): Promise<Response> => {
     const siteUrl = Deno.env.get("SUPABASE_URL")?.includes("localhost")
       ? "http://localhost:5173"
       : "https://dqlvioijqzlvnvvajmft.lovableproject.com";
+
+    // Handle resend invite flow
+    if (resend && user_id) {
+      console.log("invite-user: Resending invite for user", user_id);
+
+      // Verify user exists and belongs to the same company
+      const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email, full_name, company_id")
+        .eq("id", user_id)
+        .single();
+
+      if (existingProfileError || !existingProfile) {
+        console.error("invite-user: User not found for resend", existingProfileError);
+        return new Response(
+          JSON.stringify({ error: "Usuário não encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (existingProfile.company_id !== callingProfile.company_id) {
+        console.error("invite-user: User belongs to different company");
+        return new Response(
+          JSON.stringify({ error: "Você não tem permissão para reenviar convite para este usuário" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Generate new magic link for existing user
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: existingProfile.email,
+        options: {
+          redirectTo: `${siteUrl}/set-password`,
+        },
+      });
+
+      if (linkError || !linkData) {
+        console.error("invite-user: Failed to generate magic link for resend", linkError);
+        return new Response(
+          JSON.stringify({ error: "Falha ao gerar novo link de convite" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("invite-user: Magic link generated for resend");
+
+      // Send resend invitation email
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      const resendClient = new Resend(resendApiKey);
+      const inviteUrl = linkData.properties?.action_link || `${siteUrl}/set-password`;
+
+      const roleLabels: Record<string, string> = {
+        admin: "Administrador",
+        manager: "Gestor",
+        analyst: "Analista",
+        operator: "Operador",
+        viewer: "Visualizador",
+        auditor: "Auditor",
+      };
+
+      const resendEmailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lembrete de Convite - ${companyName}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7fa;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f7fa; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Daton</h1>
+              <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 14px;">Plataforma de Gestão ESG</p>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px;">Olá, ${existingProfile.full_name}!</h2>
+              
+              <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                Este é um lembrete do seu convite para fazer parte da equipe da <strong>${companyName}</strong> na plataforma Daton.
+              </p>
+              
+              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">
+                  <strong>Reenviado por:</strong> ${callingProfile.full_name}
+                </p>
+              </div>
+              
+              <div style="background-color: #f0fdf4; border-left: 4px solid #059669; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: #065f46; font-size: 14px;">
+                  <strong>Seu papel:</strong> ${roleLabels[role] || role}
+                </p>
+              </div>
+              
+              <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                Clique no botão abaixo para definir sua senha e acessar a plataforma:
+              </p>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${inviteUrl}" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 6px rgba(5, 150, 105, 0.3);">
+                      Acessar Plataforma
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #9ca3af; font-size: 14px; margin: 30px 0 0 0; text-align: center;">
+                Este link expira em 24 horas.
+              </p>
+              
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+              
+              <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">
+                Se você não solicitou este convite, por favor ignore este email.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px; border-radius: 0 0 12px 12px; text-align: center;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} Daton - Plataforma de Gestão ESG
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+      const { error: emailError } = await resendClient.emails.send({
+        from: "Daton <plataforma@daton.com.br>",
+        to: [existingProfile.email],
+        subject: `Lembrete: Você foi convidado para ${companyName} - Daton`,
+        html: resendEmailHtml,
+      });
+
+      if (emailError) {
+        console.error("invite-user: Failed to send resend email", emailError);
+        return new Response(
+          JSON.stringify({ error: "Falha ao enviar email de convite" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("invite-user: Resend invitation email sent successfully");
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Convite reenviado com sucesso",
+          user: {
+            id: user_id,
+            email: existingProfile.email,
+            full_name: existingProfile.full_name,
+          },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // STEP 1: Create the user in auth with skip_trigger flag
     // The trigger will skip processing and we'll create profile/role manually

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { UserProfile } from "@/hooks/data/useUserManagement";
-import { Loader2, Mail, UserPlus } from "lucide-react";
+import { Loader2, Mail, UserPlus, RefreshCw } from "lucide-react";
 import { logFormSubmission, logFormValidation, createPerformanceLogger } from '@/utils/formLogging';
 
 // System roles with correct values
@@ -40,9 +41,11 @@ interface UserFormModalProps {
   user?: UserProfile | null;
   onSave: (data: Partial<UserProfile>) => void;
   isLoading?: boolean;
+  onResendInvite?: (user: UserProfile) => void;
+  isResending?: boolean;
 }
 
-export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: UserFormModalProps) {
+export function UserFormModal({ open, onOpenChange, user, onSave, isLoading, onResendInvite, isResending }: UserFormModalProps) {
   const isEditing = !!user;
   
   const {
@@ -54,16 +57,37 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
     reset,
   } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: user ? {
-      full_name: user.full_name,
-      email: user.email,
-      role: user.role as UserFormData['role'],
-      department: user.department || '',
-      phone: user.phone || '',
-    } : {
+    defaultValues: {
+      full_name: '',
+      email: '',
       role: 'viewer',
+      department: '',
+      phone: '',
     },
   });
+
+  // Reset form when modal opens or user changes
+  useEffect(() => {
+    if (open) {
+      if (user) {
+        reset({
+          full_name: user.full_name || '',
+          email: user.email || '',
+          role: (user.role as UserFormData['role']) || 'viewer',
+          department: user.department || '',
+          phone: user.phone || '',
+        });
+      } else {
+        reset({
+          full_name: '',
+          email: '',
+          role: 'viewer',
+          department: '',
+          phone: '',
+        });
+      }
+    }
+  }, [user, open, reset]);
 
   const roleValue = watch('role');
 
@@ -225,19 +249,38 @@ export function UserFormModal({ open, onOpenChange, user, onSave, isLoading }: U
           )}
 
           {/* Ações */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Salvar Alterações' : 'Enviar Convite'}
-            </Button>
+          <div className="flex justify-between pt-4">
+            <div>
+              {isEditing && onResendInvite && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onResendInvite(user!)}
+                  disabled={isLoading || isResending}
+                >
+                  {isResending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Reenviar Convite
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Salvar Alterações' : 'Enviar Convite'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
