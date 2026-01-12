@@ -123,6 +123,36 @@ export const useUserManagement = () => {
     },
   });
 
+  // Resend invite mutation
+  const resendInviteMutation = useMutation({
+    mutationFn: async ({ userId, email, full_name, role }: { 
+      userId: string; 
+      email: string; 
+      full_name: string; 
+      role: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke('invite-user', {
+        body: {
+          email,
+          full_name,
+          role,
+          resend: true,
+          user_id: userId,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Convite reenviado com sucesso!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Erro ao reenviar convite: ${error.message}`);
+    },
+  });
+
   return {
     users,
     stats,
@@ -130,8 +160,10 @@ export const useUserManagement = () => {
     createUser: createUserMutation.mutate,
     updateUser: updateUserMutation.mutate,
     deleteUser: deleteUserMutation.mutate,
+    resendInvite: resendInviteMutation.mutate,
     isCreating: createUserMutation.isPending,
     isUpdating: updateUserMutation.isPending,
     isDeleting: deleteUserMutation.isPending,
+    isResending: resendInviteMutation.isPending,
   };
 };

@@ -29,8 +29,10 @@ export default function GestaoUsuarios() {
     usersLoading, 
     createUser, 
     updateUser,
+    resendInvite,
     isCreating,
-    isUpdating 
+    isUpdating,
+    isResending
   } = useUserManagement();
   
   const [modalOpen, setModalOpen] = useState(false);
@@ -113,6 +115,15 @@ export default function GestaoUsuarios() {
     }
     setModalOpen(false);
     setSelectedUser(null);
+  };
+
+  const handleResendInvite = (user: UserProfile) => {
+    resendInvite({
+      userId: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+    });
   };
 
   const getRoleBadgeColor = (role: UserRole) => {
@@ -297,6 +308,8 @@ export default function GestaoUsuarios() {
         user={selectedUser}
         onSave={handleSaveUser}
         isLoading={isCreating || isUpdating}
+        onResendInvite={handleResendInvite}
+        isResending={isResending}
       />
     </>
   );
