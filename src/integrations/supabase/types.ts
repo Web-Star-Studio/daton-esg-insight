@@ -13739,6 +13739,187 @@ export type Database = {
         }
         Relationships: []
       }
+      laia_assessments: {
+        Row: {
+          activity_operation: string
+          aspect_code: string
+          branch_id: string | null
+          category: string
+          company_id: string
+          consequence_score: number
+          control_types: string[] | null
+          created_at: string | null
+          environmental_aspect: string
+          environmental_impact: string
+          existing_controls: string | null
+          freq_prob_score: number
+          frequency_probability: string
+          has_legal_requirements: boolean | null
+          has_lifecycle_control: boolean | null
+          has_stakeholder_demand: boolean | null
+          has_strategic_options: boolean | null
+          id: string
+          impact_class: string
+          incidence: string
+          legislation_reference: string | null
+          lifecycle_stages: string[] | null
+          notes: string | null
+          operational_situation: string
+          output_actions: string | null
+          responsible_user_id: string | null
+          scope: string
+          sector_id: string | null
+          severity: string
+          significance: string
+          status: string | null
+          temporality: string
+          total_score: number
+          updated_at: string | null
+        }
+        Insert: {
+          activity_operation: string
+          aspect_code: string
+          branch_id?: string | null
+          category: string
+          company_id: string
+          consequence_score: number
+          control_types?: string[] | null
+          created_at?: string | null
+          environmental_aspect: string
+          environmental_impact: string
+          existing_controls?: string | null
+          freq_prob_score: number
+          frequency_probability: string
+          has_legal_requirements?: boolean | null
+          has_lifecycle_control?: boolean | null
+          has_stakeholder_demand?: boolean | null
+          has_strategic_options?: boolean | null
+          id?: string
+          impact_class: string
+          incidence: string
+          legislation_reference?: string | null
+          lifecycle_stages?: string[] | null
+          notes?: string | null
+          operational_situation: string
+          output_actions?: string | null
+          responsible_user_id?: string | null
+          scope: string
+          sector_id?: string | null
+          severity: string
+          significance: string
+          status?: string | null
+          temporality: string
+          total_score: number
+          updated_at?: string | null
+        }
+        Update: {
+          activity_operation?: string
+          aspect_code?: string
+          branch_id?: string | null
+          category?: string
+          company_id?: string
+          consequence_score?: number
+          control_types?: string[] | null
+          created_at?: string | null
+          environmental_aspect?: string
+          environmental_impact?: string
+          existing_controls?: string | null
+          freq_prob_score?: number
+          frequency_probability?: string
+          has_legal_requirements?: boolean | null
+          has_lifecycle_control?: boolean | null
+          has_stakeholder_demand?: boolean | null
+          has_strategic_options?: boolean | null
+          id?: string
+          impact_class?: string
+          incidence?: string
+          legislation_reference?: string | null
+          lifecycle_stages?: string[] | null
+          notes?: string | null
+          operational_situation?: string
+          output_actions?: string | null
+          responsible_user_id?: string | null
+          scope?: string
+          sector_id?: string | null
+          severity?: string
+          significance?: string
+          status?: string | null
+          temporality?: string
+          total_score?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laia_assessments_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_assessments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_assessments_responsible_user_id_fkey"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "laia_assessments_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "laia_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      laia_sectors: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "laia_sectors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       land_use_change: {
         Row: {
           area_hectares: number
