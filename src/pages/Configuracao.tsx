@@ -45,11 +45,11 @@ const empresaSchema = z.object({
   nomeEmpresa: z.string().min(1, "Nome da empresa é obrigatório"),
   cnpj: z.string().min(1, "CNPJ é obrigatório"),
   setor: z.string().min(1, "Setor é obrigatório"),
-  rua: z.string().min(1, "Rua é obrigatória"),
-  numero: z.string().min(1, "Número é obrigatório"),
-  cidade: z.string().min(1, "Cidade é obrigatória"),
-  estado: z.string().min(1, "Estado é obrigatório"),
-  cep: z.string().min(1, "CEP é obrigatório"),
+  rua: z.string().optional(),
+  numero: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().optional(),
+  cep: z.string().optional(),
 });
 
 type Section = "perfil" | "empresa" | "usuarios" | "plano" | "integracoes";
@@ -233,7 +233,14 @@ export default function Configuracao() {
         cep: { maxLength: 10, trimWhitespace: true },
       });
 
-      const address = `${sanitizedData.rua}, ${sanitizedData.numero}, ${sanitizedData.cidade}, ${sanitizedData.estado}, ${sanitizedData.cep}`;
+      const addressParts = [
+        sanitizedData.rua,
+        sanitizedData.numero,
+        sanitizedData.cidade,
+        sanitizedData.estado,
+        sanitizedData.cep
+      ].filter(Boolean);
+      const address = addressParts.length > 0 ? addressParts.join(', ') : null;
 
       const { error } = await supabase
         .from('companies')
