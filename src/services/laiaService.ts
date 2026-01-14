@@ -10,10 +10,14 @@ import {
 // ============ Sectors ============
 
 export async function getLAIASectors(): Promise<LAIASector[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("company_id")
-    .single();
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
@@ -28,10 +32,14 @@ export async function getLAIASectors(): Promise<LAIASector[]> {
 }
 
 export async function createLAIASector(sector: { code: string; name: string; description?: string }): Promise<LAIASector> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("company_id")
-    .single();
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
@@ -84,10 +92,14 @@ export async function getLAIAAssessments(filters?: {
   significance?: string;
   status?: string;
 }): Promise<LAIAAssessment[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("company_id")
-    .single();
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
@@ -168,10 +180,14 @@ export async function getNextAspectCode(sectorId: string): Promise<string> {
 }
 
 export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Promise<LAIAAssessment> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("company_id, id")
-    .single();
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
@@ -297,10 +313,14 @@ export async function deleteLAIAAssessment(id: string): Promise<void> {
 // ============ Dashboard Stats ============
 
 export async function getLAIADashboardStats(): Promise<LAIADashboardStats> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("company_id")
-    .single();
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
