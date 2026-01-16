@@ -76,14 +76,20 @@ export const VALID_NORM_TYPES = [
   'Resolução CNRH', 'Resolução CGSIM', 'Resolução ANS', 'Resolução ANVISA',
   'Instrução Normativa IBAMA', 'Instrução Normativa SRF', 'Instrução Normativa RFB',
   'Portaria MMA', 'Portaria DNIT', 'Portaria MTE', 'Portaria INMETRO',
-  'Norma Regulamentadora', 'Anexo', 'Lei Ordinária', 'Súmula', 'Parecer Normativo'
+  'Norma Regulamentadora', 'Anexo', 'Lei Ordinária', 'Súmula', 'Parecer Normativo',
+  // Tipos do formato NBR/Internacional
+  'NBR ABNT', 'NBR ISO', 'NBR NM', 'ISO', 'ABNT NBR',
+  'Decreto Supremo', 'Decreto Supremo MTC',
+  'Deliberação CONTRAN', 'Resolução MERCOSUL', 'Decisão MERCOSUL',
+  'Portaria COANA', 'Instrução Normativa RFB RF', 'Resolução SUSEP',
+  'Decreto Lei', 'Regulamento Técnico', 'Acordo Internacional'
 ];
 
 export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional'];
 
 export const VALID_APPLICABILITIES = ['real', 'potential', 'na', 'revoked', 'pending'];
 
-export const VALID_STATUSES = ['conforme', 'para_conhecimento', 'adequacao', 'plano_acao', 'na', 'pending'];
+export const VALID_STATUSES = ['conforme', 'para_conhecimento', 'adequacao', 'plano_acao', 'na', 'pending', 'parcial'];
 
 export const COMMON_ISSUING_BODIES = [
   'IBAMA', 'CONAMA', 'MMA', 'MTE', 'ANP', 'ANVISA', 'CETESB', 'ABNT',
@@ -147,13 +153,24 @@ function parseDate(dateStr: string): string {
   return '';
 }
 
-function normalizeJurisdiction(value: string): string {
+function normalizeJurisdiction(value: string, uf?: string): string {
   const normalized = value.toLowerCase().trim();
-  if (normalized.includes('federal')) return 'federal';
+  
+  // Variações de federal (incluindo "FEDERAIS" do formato Gabardo)
+  if (normalized.includes('federal') || normalized === 'federais') return 'federal';
   if (normalized.includes('estadual')) return 'estadual';
   if (normalized.includes('municipal')) return 'municipal';
   if (normalized.includes('nbr') || normalized.includes('abnt')) return 'nbr';
   if (normalized.includes('internac')) return 'internacional';
+  
+  // Detectar internacional pelo UF (MERCOSUL, países, etc.)
+  if (uf) {
+    const ufNorm = uf.toLowerCase();
+    if (ufNorm.includes('mercosul') || ufNorm.includes('países') || ufNorm.includes('paises')) {
+      return 'internacional';
+    }
+  }
+  
   return normalized;
 }
 
@@ -179,24 +196,61 @@ function normalizeStatus(value: string): string {
   if (normalized.includes('adequ')) return 'adequacao';
   if (normalized.includes('plano') || normalized.includes('acao') || normalized.includes('açao')) return 'plano_acao';
   if (normalized === 'na' || normalized === 'n.a') return 'na';
+  // Novos status do formato NBR/Internacional
+  if (normalized.includes('parcial') || normalized.includes('atencao') || normalized === 'atenção') return 'parcial';
   return 'pending';
 }
 
-function parseState(stateValue: string): { state: string; statesList: string } {
-  if (!stateValue) return { state: '', statesList: '' };
+// Normalizar número da norma (corrigir vírgulas do Excel)
+function normalizeNormNumber(value: string): string {
+  if (!value) return '';
+  
+  let normalized = value.trim();
+  
+  // Se tem vírgula e parece ser número decimal do Excel (ex: "14,071" → "14.071")
+  if (/^\d+,\d+$/.test(normalized)) {
+    normalized = normalized.replace(',', '.');
+  }
+  
+  return normalized;
+}
+
+// Tratar subtemas com tags HTML (ex: "subtema1<br/>subtema2")
+function parseSubtheme(value: string): string {
+  if (!value) return '';
+  
+  // Remover tags HTML e pegar primeiro item
+  const cleaned = value.replace(/<br\s*\/?>/gi, '|');
+  const items = cleaned.split('|').map(s => s.trim()).filter(Boolean);
+  
+  return items[0] || value;
+}
+
+function parseState(stateValue: string): { state: string; statesList: string; isInternational: boolean } {
+  if (!stateValue) return { state: '', statesList: '', isInternational: false };
+  
+  // Detectar UF internacional (MERCOSUL, países, etc.)
+  const normalized = stateValue.toLowerCase();
+  if (normalized.includes('mercosul') || normalized.includes('países') || normalized.includes('paises') || normalized.includes('associados')) {
+    return { 
+      state: '', 
+      statesList: stateValue, 
+      isInternational: true 
+    };
+  }
   
   // Se contém vírgulas, são múltiplos estados
   if (stateValue.includes(',')) {
     const states = stateValue.split(',').map(s => s.trim()).filter(Boolean);
     // Se são muitos estados (provavelmente todos), não preencher UF individual
     if (states.length > 20) {
-      return { state: '', statesList: stateValue };
+      return { state: '', statesList: stateValue, isInternational: false };
     }
     // Retornar o primeiro estado e a lista completa
-    return { state: states[0], statesList: stateValue };
+    return { state: states[0], statesList: stateValue, isInternational: false };
   }
   
-  return { state: stateValue.trim(), statesList: '' };
+  return { state: stateValue.trim(), statesList: '', isInternational: false };
 }
 
 function getColumnValue(row: any, ...possibleNames: string[]): string {
@@ -246,23 +300,37 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             'Notas gerais', 'Responsáveis'
           );
           
-          // Parse múltiplos estados
+          // Parse múltiplos estados e detectar internacional
           const stateRaw = getColumnValue(row, 'UF', 'Estado', 'ESTADO');
-          const { state, statesList } = parseState(stateRaw);
+          const { state, statesList, isInternational } = parseState(stateRaw);
+          
+          // Determinar jurisdição (passando UF para detectar internacional)
+          let jurisdiction = normalizeJurisdiction(jurisdictionRaw, stateRaw);
+          if (isInternational && !jurisdiction.includes('internacional')) {
+            jurisdiction = 'internacional';
+          }
+          
+          // Parse subtema (remover tags HTML se houver)
+          const subthemeRaw = getColumnValue(row, 'Subtema', 'SUBTEMA');
+          const subthemeName = parseSubtheme(subthemeRaw);
+          
+          // Normalizar número da norma (corrigir vírgulas do Excel)
+          const normNumberRaw = getColumnValue(row, 'Número', 'Numero', 'NÚMERO', 'NUMERO');
+          const normNumber = normalizeNormNumber(normNumberRaw);
           
           return {
             rowNumber: headerRow + index + 2,
             norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
-            norm_number: getColumnValue(row, 'Número', 'Numero', 'NÚMERO', 'NUMERO'),
+            norm_number: normNumber,
             title: getColumnValue(row, 'Título/Ementa', 'Título', 'Titulo', 'Ementa', 'TÍTULO', 'TITULO', 'EMENTA'),
             summary: getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO'),
             issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
             publication_date: parseDate(getColumnValue(row, 'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO')),
-            jurisdiction: normalizeJurisdiction(jurisdictionRaw),
+            jurisdiction,
             state,
             municipality: getColumnValue(row, 'Município', 'Municipio', 'MUNICÍPIO', 'MUNICIPIO', 'Cidade', 'CIDADE'),
             theme_name: getColumnValue(row, 'Macrotema', 'Tema', 'MACROTEMA', 'TEMA'),
-            subtheme_name: getColumnValue(row, 'Subtema', 'SUBTEMA'),
+            subtheme_name: subthemeName,
             overall_applicability: normalizeApplicability(applicabilityRaw),
             overall_status: normalizeStatus(statusRaw),
             full_text_url: getColumnValue(row, 'URL Texto Integral', 'URL', 'Link', 'LINK'),
