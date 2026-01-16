@@ -35,8 +35,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, AlertTriangle, Plus, Trash2, Eye, 
-  AlertCircle, ShieldAlert, RotateCcw, TrendingDown 
+  AlertCircle, ShieldAlert, RotateCcw, TrendingDown, Settings 
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
 import { format, parseISO } from "date-fns";
@@ -190,13 +191,20 @@ export default function SupplierFailuresPage() {
               </p>
             </div>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Registrar Falha
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/fornecedores/falhas/configuracao">
+                <Settings className="h-4 w-4 mr-2" />
+                Configurações
+              </Link>
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Registrar Falha
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Nova Falha de Fornecimento</DialogTitle>
@@ -289,6 +297,7 @@ export default function SupplierFailuresPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}
