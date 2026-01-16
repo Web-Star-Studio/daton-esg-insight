@@ -14620,9 +14620,11 @@ export type Database = {
         Row: {
           applicability_tags: Json | null
           company_id: string
+          compliance_details: string | null
           created_at: string | null
           created_by: string | null
           full_text_url: string | null
+          general_notes: string | null
           has_alert: boolean | null
           id: string
           is_active: boolean | null
@@ -14643,6 +14645,7 @@ export type Database = {
           revoked_by_legislation_id: string | null
           revokes_legislation_id: string | null
           state: string | null
+          states_list: string | null
           subtheme_id: string | null
           summary: string | null
           theme_id: string | null
@@ -14652,9 +14655,11 @@ export type Database = {
         Insert: {
           applicability_tags?: Json | null
           company_id: string
+          compliance_details?: string | null
           created_at?: string | null
           created_by?: string | null
           full_text_url?: string | null
+          general_notes?: string | null
           has_alert?: boolean | null
           id?: string
           is_active?: boolean | null
@@ -14675,6 +14680,7 @@ export type Database = {
           revoked_by_legislation_id?: string | null
           revokes_legislation_id?: string | null
           state?: string | null
+          states_list?: string | null
           subtheme_id?: string | null
           summary?: string | null
           theme_id?: string | null
@@ -14684,9 +14690,11 @@ export type Database = {
         Update: {
           applicability_tags?: Json | null
           company_id?: string
+          compliance_details?: string | null
           created_at?: string | null
           created_by?: string | null
           full_text_url?: string | null
+          general_notes?: string | null
           has_alert?: boolean | null
           id?: string
           is_active?: boolean | null
@@ -14707,6 +14715,7 @@ export type Database = {
           revoked_by_legislation_id?: string | null
           revokes_legislation_id?: string | null
           state?: string | null
+          states_list?: string | null
           subtheme_id?: string | null
           summary?: string | null
           theme_id?: string | null

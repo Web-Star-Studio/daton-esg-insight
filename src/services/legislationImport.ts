@@ -22,6 +22,10 @@ export interface ParsedLegislation {
   full_text_url: string;
   review_frequency_days: number;
   observations: string;
+  // Campos extras do formato Gabardo
+  compliance_details: string;      // "Observações como é atendido"
+  general_notes: string;           // "Observações gerais, envios datas e responsáveis"
+  states_list: string;             // UFs múltiplos
 }
 
 export interface LegislationValidation {
@@ -60,16 +64,26 @@ export interface LegislationImportProgress {
 // ============= Constants =============
 
 export const VALID_NORM_TYPES = [
+  // Tipos originais
   'Lei', 'Lei Complementar', 'Decreto', 'Portaria', 'Resolução',
   'Instrução Normativa', 'NBR', 'NR', 'Deliberação', 'Medida Provisória',
-  'Convenção', 'Tratado', 'Outro'
+  'Convenção', 'Tratado', 'Outro',
+  // Tipos adicionais do formato Gabardo
+  'Constituição Federal', 'Constituição', 'Decreto-Lei', 'Emenda Constitucional',
+  'Circular', 'Circular SUSEP', 'Portaria Conjunta', 'Portaria Interministerial',
+  'Ato Declaratório', 'Ato Declaratório Interpretativo', 'Ato Normativo',
+  'Resolução CONTRAN', 'Resolução CONAMA', 'Resolução ANTT', 'Resolução CNEN',
+  'Resolução CNRH', 'Resolução CGSIM', 'Resolução ANS', 'Resolução ANVISA',
+  'Instrução Normativa IBAMA', 'Instrução Normativa SRF', 'Instrução Normativa RFB',
+  'Portaria MMA', 'Portaria DNIT', 'Portaria MTE', 'Portaria INMETRO',
+  'Norma Regulamentadora', 'Anexo', 'Lei Ordinária', 'Súmula', 'Parecer Normativo'
 ];
 
 export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional'];
 
 export const VALID_APPLICABILITIES = ['real', 'potential', 'na', 'revoked', 'pending'];
 
-export const VALID_STATUSES = ['conforme', 'para_conhecimento', 'adequacao', 'plano_acao', 'pending'];
+export const VALID_STATUSES = ['conforme', 'para_conhecimento', 'adequacao', 'plano_acao', 'na', 'pending'];
 
 export const COMMON_ISSUING_BODIES = [
   'IBAMA', 'CONAMA', 'MMA', 'MTE', 'ANP', 'ANVISA', 'CETESB', 'ABNT',
@@ -144,21 +158,45 @@ function normalizeJurisdiction(value: string): string {
 }
 
 function normalizeApplicability(value: string): string {
-  const normalized = value.toLowerCase().trim();
-  if (normalized.includes('real') || normalized === 'aplicável') return 'real';
-  if (normalized.includes('potenc')) return 'potential';
-  if (normalized.includes('na') || normalized.includes('não aplicável')) return 'na';
+  // Remove acentos e normaliza para comparação
+  const normalized = value.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  
+  if (normalized.includes('real') || normalized === 'aplicavel') return 'real';
+  if (normalized.includes('potenc')) return 'potential'; // Captura "potencial" e "potêncial" (com erro)
+  if (normalized === 'na' || normalized === 'n.a' || normalized.includes('nao aplicavel')) return 'na';
   if (normalized.includes('revog')) return 'revoked';
   return 'pending';
 }
 
 function normalizeStatus(value: string): string {
-  const normalized = value.toLowerCase().trim();
-  if (normalized.includes('conforme') || normalized.includes('atendido')) return 'conforme';
+  const normalized = value.toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  
+  // "OK" e "CONFORME" do formato Gabardo
+  if (normalized === 'ok' || normalized.includes('conforme') || normalized.includes('atendido')) return 'conforme';
   if (normalized.includes('conhec')) return 'para_conhecimento';
   if (normalized.includes('adequ')) return 'adequacao';
-  if (normalized.includes('plano') || normalized.includes('ação')) return 'plano_acao';
+  if (normalized.includes('plano') || normalized.includes('acao') || normalized.includes('açao')) return 'plano_acao';
+  if (normalized === 'na' || normalized === 'n.a') return 'na';
   return 'pending';
+}
+
+function parseState(stateValue: string): { state: string; statesList: string } {
+  if (!stateValue) return { state: '', statesList: '' };
+  
+  // Se contém vírgulas, são múltiplos estados
+  if (stateValue.includes(',')) {
+    const states = stateValue.split(',').map(s => s.trim()).filter(Boolean);
+    // Se são muitos estados (provavelmente todos), não preencher UF individual
+    if (states.length > 20) {
+      return { state: '', statesList: stateValue };
+    }
+    // Retornar o primeiro estado e a lista completa
+    return { state: states[0], statesList: stateValue };
+  }
+  
+  return { state: stateValue.trim(), statesList: '' };
 }
 
 function getColumnValue(row: any, ...possibleNames: string[]): string {
@@ -192,8 +230,25 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
         const legislations: ParsedLegislation[] = jsonData.map((row: any, index) => {
           const jurisdictionRaw = getColumnValue(row, 'Jurisdição', 'Jurisdicao', 'JURISDIÇÃO', 'JURISDICAO');
           const applicabilityRaw = getColumnValue(row, 'Aplicabilidade', 'APLICABILIDADE');
-          const statusRaw = getColumnValue(row, 'Status', 'STATUS', 'Situação', 'SITUAÇÃO');
+          // Suporta duas colunas de status do formato Gabardo
+          const statusRaw = getColumnValue(row, 'Status', 'STATUS', 'Situação', 'SITUAÇÃO', 'status');
           const reviewDaysRaw = getColumnValue(row, 'Frequência Revisão (dias)', 'Frequência Revisão', 'Revisão', 'REVISÃO');
+          
+          // Campos extras do formato Gabardo
+          const complianceDetails = getColumnValue(row, 
+            'Observações como é atendido', 'OBSERVAÇÕES COMO É ATENDIDO',
+            'Como é atendido', 'COMO É ATENDIDO', 'Compliance'
+          );
+          const generalNotes = getColumnValue(row, 
+            'Observaçãoes gerais, envios datas e responsáveis', 
+            'Observações gerais, envios datas e responsáveis',
+            'OBSERVAÇÕES GERAIS', 'Observações gerais', 
+            'Notas gerais', 'Responsáveis'
+          );
+          
+          // Parse múltiplos estados
+          const stateRaw = getColumnValue(row, 'UF', 'Estado', 'ESTADO');
+          const { state, statesList } = parseState(stateRaw);
           
           return {
             rowNumber: headerRow + index + 2,
@@ -204,7 +259,7 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
             publication_date: parseDate(getColumnValue(row, 'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO')),
             jurisdiction: normalizeJurisdiction(jurisdictionRaw),
-            state: getColumnValue(row, 'UF', 'Estado', 'ESTADO'),
+            state,
             municipality: getColumnValue(row, 'Município', 'Municipio', 'MUNICÍPIO', 'MUNICIPIO', 'Cidade', 'CIDADE'),
             theme_name: getColumnValue(row, 'Macrotema', 'Tema', 'MACROTEMA', 'TEMA'),
             subtheme_name: getColumnValue(row, 'Subtema', 'SUBTEMA'),
@@ -213,6 +268,10 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             full_text_url: getColumnValue(row, 'URL Texto Integral', 'URL', 'Link', 'LINK'),
             review_frequency_days: parseInt(reviewDaysRaw) || 365,
             observations: getColumnValue(row, 'Observações', 'Observacoes', 'OBSERVAÇÕES', 'OBSERVACOES', 'Notas', 'NOTAS'),
+            // Campos extras
+            compliance_details: complianceDetails,
+            general_notes: generalNotes,
+            states_list: statesList,
           };
         });
         
@@ -251,8 +310,17 @@ export async function validateLegislations(
     // Required: norm_type
     if (!leg.norm_type) {
       errors.push('Tipo de Norma é obrigatório');
-    } else if (!VALID_NORM_TYPES.some(t => t.toLowerCase() === leg.norm_type.toLowerCase())) {
-      warnings.push(`Tipo de Norma "${leg.norm_type}" pode não ser reconhecido`);
+    } else {
+      // Verificar se o tipo é reconhecido (busca flexível)
+      const normTypeNormalized = leg.norm_type.toLowerCase().trim();
+      const isRecognized = VALID_NORM_TYPES.some(t => 
+        t.toLowerCase() === normTypeNormalized || 
+        normTypeNormalized.includes(t.toLowerCase()) ||
+        t.toLowerCase().includes(normTypeNormalized)
+      );
+      if (!isRecognized) {
+        warnings.push(`Tipo de Norma "${leg.norm_type}" não padrão (será importado como está)`);
+      }
     }
     
     // Required: title
@@ -267,8 +335,8 @@ export async function validateLegislations(
       errors.push(`Jurisdição "${leg.jurisdiction}" inválida. Use: ${VALID_JURISDICTIONS.join(', ')}`);
     }
     
-    // Conditional: state for estadual/municipal
-    if ((leg.jurisdiction === 'estadual' || leg.jurisdiction === 'municipal') && !leg.state) {
+    // Conditional: state for estadual/municipal (flexibilizado para quando tem states_list)
+    if ((leg.jurisdiction === 'estadual' || leg.jurisdiction === 'municipal') && !leg.state && !leg.states_list) {
       errors.push('UF é obrigatório para legislações estaduais/municipais');
     }
     
@@ -472,6 +540,10 @@ export async function importLegislations(
             full_text_url: leg.full_text_url || null,
             review_frequency_days: leg.review_frequency_days || 365,
             observations: leg.observations || null,
+            // Campos extras do formato Gabardo
+            compliance_details: leg.compliance_details || null,
+            general_notes: leg.general_notes || null,
+            states_list: leg.states_list || null,
           });
         
         if (insertError) {
