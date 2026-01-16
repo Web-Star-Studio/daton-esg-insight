@@ -113,7 +113,12 @@ export const SubmitPublicFormSchema = z.object({
   action: z.literal('SUBMIT_PUBLIC_FORM'),
   form_id: z.string().uuid('Invalid form ID'),
   submission_data: z.record(z.any()),
-  employee_id: z.string().uuid('Invalid employee ID').optional()
+  employee_id: z.string().uuid('Invalid employee ID').optional(),
+  // Tracking fields
+  tracking_id: z.string().uuid('Invalid tracking ID').optional(),
+  respondent_name: z.string().max(200, 'Name too long').optional(),
+  respondent_email: z.string().email('Invalid email').optional(),
+  respondent_phone: z.string().max(20, 'Phone too long').optional(),
 });
 
 // Delete submission validation

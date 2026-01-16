@@ -8763,33 +8763,52 @@ export type Database = {
       }
       form_submissions: {
         Row: {
+          campaign_send_id: string | null
           company_id: string
           employee_id: string | null
           form_id: string
           id: string
+          respondent_email: string | null
+          respondent_name: string | null
+          respondent_phone: string | null
           submission_data: Json
           submitted_at: string
           submitted_by_user_id: string | null
         }
         Insert: {
+          campaign_send_id?: string | null
           company_id: string
           employee_id?: string | null
           form_id: string
           id?: string
+          respondent_email?: string | null
+          respondent_name?: string | null
+          respondent_phone?: string | null
           submission_data: Json
           submitted_at?: string
           submitted_by_user_id?: string | null
         }
         Update: {
+          campaign_send_id?: string | null
           company_id?: string
           employee_id?: string | null
           form_id?: string
           id?: string
+          respondent_email?: string | null
+          respondent_name?: string | null
+          respondent_phone?: string | null
           submission_data?: Json
           submitted_at?: string
           submitted_by_user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "form_submissions_campaign_send_id_fkey"
+            columns: ["campaign_send_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaign_sends"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "form_submissions_employee_id_fkey"
             columns: ["employee_id"]
@@ -24288,6 +24307,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_campaign_responded: {
+        Args: { p_campaign_id: string }
+        Returns: undefined
       }
       increment_field_mapping_usage: {
         Args: {

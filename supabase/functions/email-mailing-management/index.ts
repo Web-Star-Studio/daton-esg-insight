@@ -691,15 +691,27 @@ serve(async (req) => {
           throw new Error("No active contacts found");
         }
 
-        // Create campaign sends
+        // Create campaign sends with tracking_id
         const sends = contacts.map((contact) => ({
           campaign_id: campaignId,
           contact_id: contact.id,
           email: contact.email,
           status: "pending",
+          tracking_id: crypto.randomUUID(), // Unique tracking ID for each recipient
         }));
 
         await supabase.from("email_campaign_sends").insert(sends);
+
+        // Fetch sends with tracking_ids
+        const { data: sendRecords } = await supabase
+          .from("email_campaign_sends")
+          .select("contact_id, tracking_id")
+          .eq("campaign_id", campaignId);
+
+        // Create a map of contact_id -> tracking_id for quick lookup
+        const trackingMap = new Map(
+          (sendRecords || []).map((s: any) => [s.contact_id, s.tracking_id])
+        );
 
         // Send emails using Resend
         const resend = getResendClient();
@@ -707,7 +719,6 @@ serve(async (req) => {
 
         // Build form URL - using production domain for better email deliverability
         const PRODUCTION_DOMAIN = "https://daton.com.br";
-        const formUrl = `${PRODUCTION_DOMAIN}/form/${campaign.form_id}`;
 
         for (const contact of contacts) {
           // Sanitize email before sending
@@ -727,6 +738,14 @@ serve(async (req) => {
           }
 
           try {
+            // Get tracking_id for this contact
+            const trackingId = trackingMap.get(contact.id);
+            
+            // Build form URL with tracking_id
+            const formUrl = trackingId 
+              ? `${PRODUCTION_DOMAIN}/form/${campaign.form_id}?t=${trackingId}`
+              : `${PRODUCTION_DOMAIN}/form/${campaign.form_id}`;
+
             const emailHtml = generateEmailHtml(
               campaign.subject,
               campaign.message || "",
@@ -758,7 +777,7 @@ serve(async (req) => {
               .eq("contact_id", contact.id);
 
             sentCount++;
-            console.log(`[email-mailing-management] Email sent to ${cleanEmail}, ID: ${emailData?.id}`);
+            console.log(`[email-mailing-management] Email sent to ${cleanEmail}, ID: ${emailData?.id}, tracking: ${trackingId}`);
           } catch (emailError: any) {
             console.error(`[email-mailing-management] Failed to send to ${cleanEmail}:`, emailError.message);
             await supabase

@@ -475,6 +475,69 @@ async function submitPublicForm(supabase: any, submissionData: any) {
     // submitted_by_user_id is null for public submissions
   }
   
+  // Process tracking_id if exists (from campaign email)
+  if (submissionData.tracking_id) {
+    console.log('🔍 Processing tracking_id:', submissionData.tracking_id)
+    
+    const { data: sendRecord, error: sendError } = await supabase
+      .from('email_campaign_sends')
+      .select('id, campaign_id, contact_id, email')
+      .eq('tracking_id', submissionData.tracking_id)
+      .single()
+    
+    if (sendRecord && !sendError) {
+      console.log('✅ Found campaign send record:', sendRecord.id)
+      
+      // Link submission to campaign send
+      insertData.campaign_send_id = sendRecord.id
+      insertData.respondent_email = sendRecord.email
+      
+      // Get contact name from mailing list
+      const { data: contact } = await supabase
+        .from('mailing_list_contacts')
+        .select('name')
+        .eq('id', sendRecord.contact_id)
+        .single()
+      
+      if (contact?.name) {
+        insertData.respondent_name = contact.name
+      }
+      
+      // Update campaign send status
+      await supabase
+        .from('email_campaign_sends')
+        .update({ 
+          responded_at: new Date().toISOString(),
+          status: 'responded'
+        })
+        .eq('id', sendRecord.id)
+      
+      // Increment campaign responded count
+      const { error: rpcError } = await supabase.rpc('increment_campaign_responded', { 
+        p_campaign_id: sendRecord.campaign_id 
+      })
+      
+      if (rpcError) {
+        console.error('⚠️ Failed to increment campaign responded count:', rpcError.message)
+      } else {
+        console.log('✅ Campaign tracking updated')
+      }
+    } else {
+      console.warn('⚠️ Tracking ID not found in email_campaign_sends:', submissionData.tracking_id)
+    }
+  }
+  
+  // Add manual identification if provided (overrides tracking data if both exist)
+  if (submissionData.respondent_name) {
+    insertData.respondent_name = submissionData.respondent_name
+  }
+  if (submissionData.respondent_email) {
+    insertData.respondent_email = submissionData.respondent_email
+  }
+  if (submissionData.respondent_phone) {
+    insertData.respondent_phone = submissionData.respondent_phone
+  }
+  
   // Add employee_id if provided
   if (submissionData.employee_id) {
     insertData.employee_id = submissionData.employee_id
@@ -491,7 +554,12 @@ async function submitPublicForm(supabase: any, submissionData: any) {
     throw new Error(`Failed to submit form: ${error.message}`)
   }
 
-  console.log('✅ Public form submitted successfully:', data.id)
+  console.log('✅ Public form submitted:', data.id, {
+    hasTracking: !!insertData.campaign_send_id,
+    hasEmail: !!insertData.respondent_email,
+    hasName: !!insertData.respondent_name,
+    hasPhone: !!insertData.respondent_phone
+  })
 
   return new Response(
     JSON.stringify(data),

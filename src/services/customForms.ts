@@ -60,6 +60,11 @@ export interface CreateFormData {
 export interface SubmitFormData {
   submission_data: Record<string, any>;
   employee_id?: string;
+  // Tracking fields
+  tracking_id?: string;
+  respondent_email?: string;
+  respondent_name?: string;
+  respondent_phone?: string;
 }
 
 export interface FormSubmissionWithEmployee extends FormSubmission {
