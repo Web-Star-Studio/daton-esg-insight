@@ -21567,6 +21567,68 @@ export type Database = {
           },
         ]
       }
+      supplier_failure_config: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          failure_period_months: number | null
+          id: string
+          max_failures_allowed: number | null
+          notify_emails: string[] | null
+          notify_on_at_risk: boolean | null
+          notify_on_failure: boolean | null
+          notify_on_inactivation: boolean | null
+          reactivation_block_days: number | null
+          severity_weight_critical: number | null
+          severity_weight_high: number | null
+          severity_weight_low: number | null
+          severity_weight_medium: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          failure_period_months?: number | null
+          id?: string
+          max_failures_allowed?: number | null
+          notify_emails?: string[] | null
+          notify_on_at_risk?: boolean | null
+          notify_on_failure?: boolean | null
+          notify_on_inactivation?: boolean | null
+          reactivation_block_days?: number | null
+          severity_weight_critical?: number | null
+          severity_weight_high?: number | null
+          severity_weight_low?: number | null
+          severity_weight_medium?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          failure_period_months?: number | null
+          id?: string
+          max_failures_allowed?: number | null
+          notify_emails?: string[] | null
+          notify_on_at_risk?: boolean | null
+          notify_on_failure?: boolean | null
+          notify_on_inactivation?: boolean | null
+          reactivation_block_days?: number | null
+          severity_weight_critical?: number | null
+          severity_weight_high?: number | null
+          severity_weight_low?: number | null
+          severity_weight_medium?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_failure_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_management: {
         Row: {
           access_code: string | null
