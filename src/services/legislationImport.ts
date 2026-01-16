@@ -93,7 +93,16 @@ export const VALID_NORM_TYPES = [
   'Comunicado CVS', 'Portaria CVS',
   'Portaria DAEE', 'Portaria DEPRN', 'Portaria DETRAN', 'Portaria CREA-SP',
   'Deliberação CONSEMA',
-  'Resolução Conjunta SES-SMA-SSRH', 'Resolução SMA-SS'
+  'Resolução Conjunta SES-SMA-SSRH', 'Resolução SMA-SS',
+  // Tipos específicos do Estado do Rio Grande do Sul
+  'Decisão Normativa DAER', 'Decisão Normativa DAER RS', 'Decisão Normativa DAER RS DAER',
+  'Decisão Normativa', 'Decisão',
+  'Instrução Normativa CBMRS', 'Instrução Normativa CBMRS/DSPCI',
+  'Portaria CBMRS', 'Resolução Técnica CBMRS', 'Resolução Técnica CBM',
+  'Resolução Técnica CBM de Transição CBMRS',
+  'Diretriz Técnica FEPAM', 'Portaria FEPAM', 'Resolução FEPAM',
+  'Instrução Normativa DRH', 'Portaria DRH',
+  'Resolução CONSEMA RS', 'Portaria SEMA RS'
 ];
 
 export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional'];
@@ -230,12 +239,37 @@ function normalizeNormNumber(value: string): string {
   
   let normalized = value.trim();
   
-  // Se tem vírgula e parece ser número decimal do Excel (ex: "14,071" → "14.071")
+  // Remover underscore ou traço que indica ausência de número
+  if (normalized === '_' || normalized === '-') return '';
+  
+  // Se tem vírgula e parece ser número com separador de milhar
+  // Exemplos: "15,726" → "15.726", "23,430" → "23.430"
+  if (/^\d{1,3},\d{3}$/.test(normalized)) {
+    normalized = normalized.replace(',', '.');
+  }
+  
+  // Para números menores também (ex: "9,516" → "9.516")
   if (/^\d+,\d+$/.test(normalized)) {
     normalized = normalized.replace(',', '.');
   }
   
   return normalized;
+}
+
+// Limpar tags HTML de campos de texto (formato RS)
+function cleanHtmlFromText(text: string): string {
+  if (!text) return '';
+  
+  // Substituir <br/> e <br> por espaço
+  let cleaned = text.replace(/<br\s*\/?>/gi, ' ');
+  
+  // Remover outras tags HTML se houver
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+  
+  // Normalizar espaços múltiplos
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  return cleaned;
 }
 
 // Tratar subtemas com tags HTML (ex: "subtema1<br/>subtema2")
@@ -331,11 +365,11 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
           const statusRaw = getColumnValue(row, 'Status', 'STATUS', 'Situação', 'SITUAÇÃO', 'status');
           const reviewDaysRaw = getColumnValue(row, 'Frequência Revisão (dias)', 'Frequência Revisão', 'Revisão', 'REVISÃO');
           
-          // Campos extras do formato Gabardo
-          const complianceDetails = getColumnValue(row, 
+          // Campos extras do formato Gabardo (limpar HTML do formato RS)
+          const complianceDetails = cleanHtmlFromText(getColumnValue(row, 
             'Observações como é atendido', 'OBSERVAÇÕES COMO É ATENDIDO',
             'Como é atendido', 'COMO É ATENDIDO', 'Compliance'
-          );
+          ));
           const generalNotes = getColumnValue(row, 
             'Observaçãoes gerais, envios datas e responsáveis', 
             'Observações gerais, envios datas e responsáveis',
@@ -370,7 +404,7 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
             norm_number: normNumber,
             title: getColumnValue(row, 'Título/Ementa', 'Título', 'Titulo', 'Ementa', 'TÍTULO', 'TITULO', 'EMENTA'),
-            summary: getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO'),
+            summary: cleanHtmlFromText(getColumnValue(row, 'Resumo', 'RESUMO', 'Descrição', 'DESCRIÇÃO')),
             issuing_body: getColumnValue(row, 'Órgão Emissor', 'Orgão Emissor', 'Órgão', 'ÓRGÃO EMISSOR', 'ÓRGÃO'),
             publication_date: parseDate(getColumnValue(row, 'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO')),
             jurisdiction,
