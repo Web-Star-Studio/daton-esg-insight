@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField } from "@/services/customForms";
-import { CalendarIcon, Upload, MessageSquare } from "lucide-react";
+import { CalendarIcon, Upload, MessageSquare, UserCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -21,11 +21,13 @@ import { RatingInput } from "@/components/forms/RatingInput";
 
 interface PublicFormRendererProps {
   formId: string;
+  trackingId?: string | null;
   onSubmitSuccess?: () => void;
 }
 
 export function PublicFormRenderer({ 
   formId, 
+  trackingId,
   onSubmitSuccess
 }: PublicFormRendererProps) {
   const [form, setForm] = useState<CustomForm | null>(null);
@@ -33,6 +35,11 @@ export function PublicFormRenderer({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [respondentInfo, setRespondentInfo] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,6 +131,11 @@ export function PublicFormRenderer({
       }
     });
     
+    // Validate respondent email format if provided
+    if (respondentInfo.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(respondentInfo.email)) {
+      newErrors['respondent_email'] = 'Email inválido';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -138,7 +150,11 @@ export function PublicFormRenderer({
     try {
       setSubmitting(true);
       await customFormsService.submitPublicForm(formId, {
-        submission_data: formData
+        submission_data: formData,
+        tracking_id: trackingId || undefined,
+        respondent_name: respondentInfo.name || undefined,
+        respondent_email: respondentInfo.email || undefined,
+        respondent_phone: respondentInfo.phone || undefined
       });
 
       toast({ title: "Sucesso", description: "Formulário enviado com sucesso!" });
@@ -161,6 +177,7 @@ export function PublicFormRenderer({
         }
       });
       setFormData(resetData);
+      setRespondentInfo({ name: '', email: '', phone: '' });
       setErrors({});
       
       onSubmitSuccess?.();
@@ -484,6 +501,62 @@ export function PublicFormRenderer({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Optional Identification Section - only shown when no tracking_id */}
+          {!trackingId && (
+            <Card className="border-dashed border-primary/30 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <UserCircle className="h-5 w-5" />
+                  Identificação (Opcional)
+                </CardTitle>
+                <CardDescription>
+                  Preencha se desejar que possamos entrar em contato sobre sua resposta
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="respondent_name">Nome</Label>
+                    <Input 
+                      id="respondent_name"
+                      placeholder="Seu nome"
+                      value={respondentInfo.name}
+                      onChange={(e) => setRespondentInfo(prev => ({...prev, name: e.target.value}))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="respondent_email">Email</Label>
+                    <Input 
+                      id="respondent_email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={respondentInfo.email}
+                      onChange={(e) => {
+                        setRespondentInfo(prev => ({...prev, email: e.target.value}));
+                        if (errors['respondent_email']) {
+                          setErrors(prev => ({ ...prev, respondent_email: '' }));
+                        }
+                      }}
+                      className={errors['respondent_email'] ? 'border-destructive' : ''}
+                    />
+                    {errors['respondent_email'] && (
+                      <p className="text-sm text-destructive">{errors['respondent_email']}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="respondent_phone">Telefone</Label>
+                  <Input 
+                    id="respondent_phone"
+                    placeholder="(00) 00000-0000"
+                    value={respondentInfo.phone}
+                    onChange={(e) => setRespondentInfo(prev => ({...prev, phone: e.target.value}))}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {form.structure_json.fields.map((field: FormField) => renderField(field))}
           
           {footerImageUrl && (

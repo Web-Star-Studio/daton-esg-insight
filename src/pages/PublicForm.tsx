@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { PublicFormRenderer } from "@/components/PublicFormRenderer";
 
 export default function PublicForm() {
   const { formId } = useParams<{ formId: string }>();
+  const [searchParams] = useSearchParams();
+  const trackingId = searchParams.get('t');
 
   // SEO
   useEffect(() => {
@@ -46,6 +48,7 @@ export default function PublicForm() {
       <div className="container mx-auto py-8">
         <PublicFormRenderer 
           formId={formId}
+          trackingId={trackingId}
           onSubmitSuccess={() => {
             // Could redirect to a thank you page or show a success message
           }}
