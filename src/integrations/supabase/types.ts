@@ -14631,6 +14631,7 @@ export type Database = {
           issuing_body: string | null
           jurisdiction: string
           last_review_date: string | null
+          municipalities_list: string | null
           municipality: string | null
           next_review_date: string | null
           norm_number: string | null
@@ -14666,6 +14667,7 @@ export type Database = {
           issuing_body?: string | null
           jurisdiction?: string
           last_review_date?: string | null
+          municipalities_list?: string | null
           municipality?: string | null
           next_review_date?: string | null
           norm_number?: string | null
@@ -14701,6 +14703,7 @@ export type Database = {
           issuing_body?: string | null
           jurisdiction?: string
           last_review_date?: string | null
+          municipalities_list?: string | null
           municipality?: string | null
           next_review_date?: string | null
           norm_number?: string | null

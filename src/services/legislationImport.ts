@@ -26,6 +26,7 @@ export interface ParsedLegislation {
   compliance_details: string;      // "Observações como é atendido"
   general_notes: string;           // "Observações gerais, envios datas e responsáveis"
   states_list: string;             // UFs múltiplos
+  municipalities_list: string;     // Municípios múltiplos (formato SP)
 }
 
 export interface LegislationValidation {
@@ -82,7 +83,17 @@ export const VALID_NORM_TYPES = [
   'Decreto Supremo', 'Decreto Supremo MTC',
   'Deliberação CONTRAN', 'Resolução MERCOSUL', 'Decisão MERCOSUL',
   'Portaria COANA', 'Instrução Normativa RFB RF', 'Resolução SUSEP',
-  'Decreto Lei', 'Regulamento Técnico', 'Acordo Internacional'
+  'Decreto Lei', 'Regulamento Técnico', 'Acordo Internacional',
+  // Tipos específicos do Estado de São Paulo
+  'Constituição do Estado de São Paulo', 'Constituição Estadual',
+  'Portaria CBMSP', 'Instrução Técnica CBMSP', 'Parecer Técnico CBMSP',
+  'Decisão CETESB', 'Decisão de Diretoria CETESB', 'Decreto CETESB',
+  'Norma Técnica CETESB', 'Memorando CETESB',
+  'Resolução SMA', 'Resolução SIMA', 'Resolução SEMIL', 'Resolução SS',
+  'Comunicado CVS', 'Portaria CVS',
+  'Portaria DAEE', 'Portaria DEPRN', 'Portaria DETRAN', 'Portaria CREA-SP',
+  'Deliberação CONSEMA',
+  'Resolução Conjunta SES-SMA-SSRH', 'Resolução SMA-SS'
 ];
 
 export const VALID_JURISDICTIONS = ['federal', 'estadual', 'municipal', 'nbr', 'internacional'];
@@ -133,11 +144,21 @@ function parseDate(dateStr: string): string {
     return dateStr.split('T')[0];
   }
   
-  // DD/MM/YYYY format
+  // DD/MM/YYYY format (formato brasileiro)
   const brMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (brMatch) {
     const [, day, month, year] = brMatch;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  
+  // MM/DD/YY formato americano curto (ex: 4/14/86)
+  const usShortMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if (usShortMatch) {
+    const [, month, day, year] = usShortMatch;
+    // Converter ano de 2 dígitos para 4 dígitos
+    const yearNum = parseInt(year);
+    const fullYear = yearNum > 50 ? `19${year.padStart(2, '0')}` : `20${year.padStart(2, '0')}`;
+    return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   
   // Try Date parsing
@@ -198,6 +219,8 @@ function normalizeStatus(value: string): string {
   if (normalized === 'na' || normalized === 'n.a') return 'na';
   // Novos status do formato NBR/Internacional
   if (normalized.includes('parcial') || normalized.includes('atencao') || normalized === 'atenção') return 'parcial';
+  // Tratar "FALSE" como N/A (formato SP)
+  if (normalized === 'false') return 'na';
   return 'pending';
 }
 
@@ -224,6 +247,26 @@ function parseSubtheme(value: string): string {
   const items = cleaned.split('|').map(s => s.trim()).filter(Boolean);
   
   return items[0] || value;
+}
+
+// Parse múltiplos municípios (formato SP)
+function parseMunicipality(municipalityValue: string): { 
+  municipality: string; 
+  municipalitiesList: string; 
+} {
+  if (!municipalityValue) return { municipality: '', municipalitiesList: '' };
+  
+  // Se contém vírgulas, são múltiplos municípios
+  if (municipalityValue.includes(',')) {
+    const municipalities = municipalityValue.split(',').map(s => s.trim()).filter(Boolean);
+    // Retornar o primeiro município e a lista completa
+    return { 
+      municipality: municipalities[0], 
+      municipalitiesList: municipalityValue 
+    };
+  }
+  
+  return { municipality: municipalityValue.trim(), municipalitiesList: '' };
 }
 
 function parseState(stateValue: string): { state: string; statesList: string; isInternational: boolean } {
@@ -318,6 +361,10 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
           const normNumberRaw = getColumnValue(row, 'Número', 'Numero', 'NÚMERO', 'NUMERO');
           const normNumber = normalizeNormNumber(normNumberRaw);
           
+          // Parse múltiplos municípios (formato SP)
+          const municipalityRaw = getColumnValue(row, 'Município', 'Municipio', 'MUNICÍPIO', 'MUNICIPIO', 'Cidade', 'CIDADE');
+          const { municipality, municipalitiesList } = parseMunicipality(municipalityRaw);
+          
           return {
             rowNumber: headerRow + index + 2,
             norm_type: getColumnValue(row, 'Tipo de Norma', 'Tipo', 'TIPO DE NORMA', 'TIPO'),
@@ -328,7 +375,7 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             publication_date: parseDate(getColumnValue(row, 'Data Publicação', 'Data de Publicação', 'Publicação', 'DATA PUBLICAÇÃO')),
             jurisdiction,
             state,
-            municipality: getColumnValue(row, 'Município', 'Municipio', 'MUNICÍPIO', 'MUNICIPIO', 'Cidade', 'CIDADE'),
+            municipality,
             theme_name: getColumnValue(row, 'Macrotema', 'Tema', 'MACROTEMA', 'TEMA'),
             subtheme_name: subthemeName,
             overall_applicability: normalizeApplicability(applicabilityRaw),
@@ -340,6 +387,7 @@ export async function parseLegislationExcel(file: File): Promise<ParsedLegislati
             compliance_details: complianceDetails,
             general_notes: generalNotes,
             states_list: statesList,
+            municipalities_list: municipalitiesList,
           };
         });
         
@@ -612,6 +660,7 @@ export async function importLegislations(
             compliance_details: leg.compliance_details || null,
             general_notes: leg.general_notes || null,
             states_list: leg.states_list || null,
+            municipalities_list: leg.municipalities_list || null,
           });
         
         if (insertError) {
