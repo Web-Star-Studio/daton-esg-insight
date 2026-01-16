@@ -174,3 +174,6 @@ verify_jwt = true
 
 [functions.manage-user]
 verify_jwt = true
+
+[functions.supplier-notifications]
+verify_jwt = false
