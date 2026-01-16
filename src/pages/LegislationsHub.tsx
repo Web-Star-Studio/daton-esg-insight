@@ -4,7 +4,8 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Scale, ArrowLeft, FileText, ClipboardList } from "lucide-react";
+import { Plus, Scale, ArrowLeft, FileText, ClipboardList, Upload } from "lucide-react";
+import { LegislationImportDialog } from "@/components/legislation/LegislationImportDialog";
 import { LegislationKPIs } from "@/components/legislation/LegislationKPIs";
 import { LegislationDashboardCharts } from "@/components/legislation/LegislationDashboardCharts";
 import { LegislationFilters } from "@/components/legislation/LegislationFilters";
@@ -14,6 +15,7 @@ import { useLegislations } from "@/hooks/data/useLegislations";
 const LegislationsHub: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
     jurisdiction: "",
@@ -28,7 +30,7 @@ const LegislationsHub: React.FC = () => {
     jurisdiction: activeTab !== "all" ? activeTab : filters.jurisdiction,
   };
 
-  const { legislations, isLoading, deleteLegislation } = useLegislations(effectiveFilters);
+  const { legislations, isLoading, deleteLegislation, refetch } = useLegislations(effectiveFilters);
 
   const handleClearFilters = () => {
     setFilters({
@@ -68,6 +70,10 @@ const LegislationsHub: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar Excel
+          </Button>
           <Button variant="outline" onClick={() => navigate('/licenciamento/legislacoes/compliance')}>
             <ClipboardList className="h-4 w-4 mr-2" />
             Questionário
@@ -124,6 +130,13 @@ const LegislationsHub: React.FC = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Import Dialog */}
+      <LegislationImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportComplete={() => refetch?.()}
+      />
     </div>
   );
 };
