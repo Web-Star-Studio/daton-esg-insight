@@ -37,6 +37,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BranchSelect } from "@/components/BranchSelect";
 import { supabase } from "@/integrations/supabase/client";
+import { parseDateSafe, formatDateForDB } from "@/utils/dateUtils";
 
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -306,14 +307,15 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         category: program.category || "",
         duration_hours: hours,
         duration_minutes: minutes,
-        start_date: program.start_date ? new Date(program.start_date) : null,
-        end_date: program.end_date ? new Date(program.end_date) : null,
+        // Usar parseDateSafe para evitar problemas de timezone
+        start_date: parseDateSafe(program.start_date),
+        end_date: parseDateSafe(program.end_date),
         is_mandatory: program.is_mandatory,
         status: program.status,
         branch_id: program.branch_id || "",
         responsible_name: program.responsible_name || "",
         requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
-        efficacy_evaluation_deadline: program.efficacy_evaluation_deadline ? new Date(program.efficacy_evaluation_deadline) : null,
+        efficacy_evaluation_deadline: parseDateSafe(program.efficacy_evaluation_deadline),
         notify_responsible_email: program.notify_responsible_email || false,
         responsible_email: program.responsible_email || "",
       });
@@ -352,20 +354,20 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       // Converter horas e minutos para decimal
       const totalDurationHours = values.duration_hours + (values.duration_minutes / 60);
       
-      // Sanitizar dados
+      // Sanitizar dados - usar formatDateForDB para evitar problemas de timezone
       const sanitizedValues = {
         name: values.name.trim(),
         description: values.description?.trim() || null,
         category: values.category,
         duration_hours: totalDurationHours,
-        start_date: values.start_date ? format(values.start_date, 'yyyy-MM-dd') : null,
-        end_date: values.end_date ? format(values.end_date, 'yyyy-MM-dd') : null,
+        start_date: formatDateForDB(values.start_date),
+        end_date: formatDateForDB(values.end_date),
         is_mandatory: values.is_mandatory,
         status: values.status,
         branch_id: values.branch_id || null,
         responsible_name: values.responsible_name?.trim() || null,
-        efficacy_evaluation_deadline: values.requires_efficacy_evaluation && values.efficacy_evaluation_deadline 
-          ? format(values.efficacy_evaluation_deadline, 'yyyy-MM-dd') 
+        efficacy_evaluation_deadline: values.requires_efficacy_evaluation 
+          ? formatDateForDB(values.efficacy_evaluation_deadline) 
           : null,
         notify_responsible_email: values.requires_efficacy_evaluation && values.notify_responsible_email,
         responsible_email: values.requires_efficacy_evaluation && values.responsible_email?.trim() 
