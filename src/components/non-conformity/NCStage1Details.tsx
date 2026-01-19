@@ -43,36 +43,36 @@ export function NCStage1Details({ nc, onComplete, isLoading }: NCStage1DetailsPr
   const isStageComplete = nc.current_stage > 1 || !!nc.stage_1_completed_at;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Badge variant="outline" className="text-primary font-mono">
+          <div className="flex items-center gap-3 mb-3">
+            <Badge variant="outline" className="text-primary font-mono px-3 py-1">
               {nc.nc_number}
             </Badge>
-            <Badge variant={severity.variant}>{severity.label}</Badge>
-            <Badge variant={status.variant}>{status.label}</Badge>
+            <Badge variant={severity.variant} className="px-3 py-1">{severity.label}</Badge>
+            <Badge variant={status.variant} className="px-3 py-1">{status.label}</Badge>
           </div>
           <h2 className="text-2xl font-bold">{nc.title}</h2>
         </div>
         
         {!isStageComplete && (
-          <Button onClick={onComplete} disabled={isLoading}>
+          <Button onClick={onComplete} disabled={isLoading} size="lg">
             <CheckCircle className="h-4 w-4 mr-2" />
             Completar Registro
           </Button>
         )}
         
         {isStageComplete && (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3 mr-1" />
+          <Badge variant="secondary" className="bg-green-100 text-green-800 px-4 py-2">
+            <CheckCircle className="h-4 w-4 mr-2" />
             Etapa Concluída
           </Badge>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Informações Básicas */}
         <Card>
           <CardHeader className="pb-3">
