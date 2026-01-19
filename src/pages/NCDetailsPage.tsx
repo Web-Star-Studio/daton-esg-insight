@@ -168,6 +168,13 @@ export default function NCDetailsPage() {
           <NCStage6Effectiveness 
             ncId={nc.id}
             onComplete={handleAdvanceStage}
+            onReopen={() => {
+              toast({
+                title: "NC Reaberta",
+                description: "A não conformidade foi marcada como ineficaz e reaberta para nova análise.",
+              });
+              navigate("/nao-conformidades");
+            }}
           />
         );
       default:
