@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Play, Clock, AlertTriangle, User, Calendar, FileText, Upload, X, Paperclip, Loader2 } from "lucide-react";
+import { Check, Play, Clock, AlertTriangle, User, Calendar, FileText, Upload, X, Paperclip, Loader2, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { 
   useActionPlans, 
   useUpdateActionPlan,
@@ -32,6 +35,7 @@ interface NCStage5ImplementationProps {
 export function NCStage5Implementation({ ncId, onComplete }: NCStage5ImplementationProps) {
   const [selectedPlan, setSelectedPlan] = useState<NCActionPlan | null>(null);
   const [evidence, setEvidence] = useState("");
+  const [completionDate, setCompletionDate] = useState<Date>(new Date());
   const [attachments, setAttachments] = useState<EvidenceAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -48,6 +52,7 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
   const handleOpenComplete = (plan: NCActionPlan) => {
     setSelectedPlan(plan);
     setEvidence(plan.evidence || "");
+    setCompletionDate((plan as any).completion_date ? new Date((plan as any).completion_date + 'T12:00:00') : new Date());
     setAttachments((plan as any).evidence_attachments || []);
   };
 
@@ -129,13 +134,14 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
         status: "Concluída",
         evidence,
         evidence_attachments: attachments,
-        completion_date: format(new Date(), "yyyy-MM-dd"),
+        completion_date: format(completionDate, "yyyy-MM-dd"),
         completed_at: new Date().toISOString(),
       } as any,
     }, {
       onSuccess: () => {
         setSelectedPlan(null);
         setEvidence("");
+        setCompletionDate(new Date());
         setAttachments([]);
       },
     });
@@ -322,6 +328,7 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
       <Dialog open={!!selectedPlan} onOpenChange={(open) => {
         if (!open) {
           setSelectedPlan(null);
+          setCompletionDate(new Date());
           setAttachments([]);
         }
       }}>
@@ -332,6 +339,34 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
           <div className="space-y-4 pt-4">
             <div className="p-3 bg-muted rounded-lg">
               <p className="font-medium">{selectedPlan?.what_action}</p>
+            </div>
+
+            <div>
+              <Label>Data de Realização *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal mt-2",
+                      !completionDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {completionDate ? format(completionDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={completionDate}
+                    onSelect={(date) => date && setCompletionDate(date)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
