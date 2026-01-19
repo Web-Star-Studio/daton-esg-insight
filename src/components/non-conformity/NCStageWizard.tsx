@@ -25,75 +25,82 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
   };
 
   return (
-    <div className="w-full py-4">
-      <div className="flex items-center justify-between relative px-4">
-        {/* Connection line */}
-        <div className="absolute top-6 left-8 right-8 h-0.5 bg-muted -z-10">
-          <div 
-            className="h-full bg-primary transition-all duration-500"
-            style={{ width: `${((currentStage - 1) / (stages.length - 1)) * 100}%` }}
-          />
-        </div>
-
-        {stages.map((stage) => {
+    <div className="w-full py-4 overflow-x-auto">
+      <div className="flex items-start justify-center gap-4 min-w-max px-4">
+        {stages.map((stage, index) => {
           const status = getStageStatus(stage.number);
           const Icon = stage.icon;
           const isClickable = onStageClick && (status === "completed" || status === "current");
+          const isLast = index === stages.length - 1;
 
           return (
-            <div
-              key={stage.number}
-              className={cn(
-                "flex flex-col items-center gap-3 relative z-10 flex-1",
-                isClickable && "cursor-pointer group"
-              )}
-              onClick={() => isClickable && onStageClick?.(stage.number)}
-            >
-              {/* Stage circle */}
+            <div key={stage.number} className="flex items-start">
+              {/* Stage item */}
               <div
                 className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                  status === "completed" && "bg-primary border-primary text-primary-foreground",
-                  status === "current" && "bg-primary/10 border-primary text-primary ring-4 ring-primary/20",
-                  status === "pending" && "bg-muted border-muted-foreground/30 text-muted-foreground",
-                  isClickable && "group-hover:scale-110"
+                  "flex flex-col items-center relative z-10",
+                  isClickable && "cursor-pointer group"
                 )}
+                onClick={() => isClickable && onStageClick?.(stage.number)}
               >
-                {status === "completed" ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  <Icon className="h-5 w-5" />
-                )}
-              </div>
-
-              {/* Stage label */}
-              <div className="text-center">
-                <p
+                {/* Stage circle */}
+                <div
                   className={cn(
-                    "text-xs font-medium transition-colors",
-                    status === "current" && "text-primary",
-                    status === "completed" && "text-foreground",
-                    status === "pending" && "text-muted-foreground"
+                    "w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 shrink-0",
+                    status === "completed" && "bg-primary border-primary text-primary-foreground",
+                    status === "current" && "bg-primary/10 border-primary text-primary ring-4 ring-primary/20",
+                    status === "pending" && "bg-muted border-muted-foreground/30 text-muted-foreground",
+                    isClickable && "group-hover:scale-110"
                   )}
                 >
-                  {stage.label}
-                </p>
-                <p className="text-[10px] text-muted-foreground hidden sm:block mt-0.5">
-                  {stage.description}
-                </p>
+                  {status === "completed" ? (
+                    <Check className="h-6 w-6" />
+                  ) : (
+                    <Icon className="h-6 w-6" />
+                  )}
+                </div>
+
+                {/* Stage number badge */}
+                <span
+                  className={cn(
+                    "absolute top-0 right-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center",
+                    status === "completed" && "bg-green-500 text-white",
+                    status === "current" && "bg-primary text-primary-foreground",
+                    status === "pending" && "bg-muted-foreground/20 text-muted-foreground"
+                  )}
+                >
+                  {stage.number}
+                </span>
+
+                {/* Stage label */}
+                <div className="text-center mt-3 w-24">
+                  <p
+                    className={cn(
+                      "text-xs font-medium transition-colors leading-tight",
+                      status === "current" && "text-primary",
+                      status === "completed" && "text-foreground",
+                      status === "pending" && "text-muted-foreground"
+                    )}
+                  >
+                    {stage.label}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground hidden sm:block mt-1 leading-tight">
+                    {stage.description}
+                  </p>
+                </div>
               </div>
 
-              {/* Stage number badge */}
-              <span
-                className={cn(
-                  "absolute -top-1 -right-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center",
-                  status === "completed" && "bg-green-500 text-white",
-                  status === "current" && "bg-primary text-primary-foreground",
-                  status === "pending" && "bg-muted-foreground/20 text-muted-foreground"
-                )}
-              >
-                {stage.number}
-              </span>
+              {/* Connection line */}
+              {!isLast && (
+                <div className="flex items-center h-14 px-2">
+                  <div 
+                    className={cn(
+                      "w-8 h-0.5 transition-colors duration-300",
+                      status === "completed" ? "bg-primary" : "bg-muted"
+                    )}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
