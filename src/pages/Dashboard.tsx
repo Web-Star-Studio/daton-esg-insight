@@ -317,29 +317,28 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
-              {[
-                { key: 'week', label: 'Semana' },
-                { key: 'month', label: 'Mês' },
-                { key: 'quarter', label: 'Trimestre' },
-                { key: 'year', label: 'Ano' },
-              ].map((preset) => (
-                <Button
-                  key={preset.key}
-                  variant={activePreset === preset.key ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => handlePresetClick(preset.key)}
-                  className="text-xs h-8 px-3"
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
+          <div className="flex items-center gap-1 p-1.5 bg-muted/50 border border-border/50 rounded-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            {[
+              { key: 'week', label: 'Semana' },
+              { key: 'month', label: 'Mês' },
+              { key: 'quarter', label: 'Trimestre' },
+              { key: 'year', label: 'Ano' },
+            ].map((preset) => (
+              <Button
+                key={preset.key}
+                variant={activePreset === preset.key ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handlePresetClick(preset.key)}
+                className="text-xs h-8 px-3 rounded-lg"
+              >
+                {preset.label}
+              </Button>
+            ))}
+            <div className="w-px h-6 bg-border/50 mx-1" />
             <DatePickerWithRange 
               date={dateRange} 
               onDateChange={handleDateChange}
-              className="w-[260px]"
+              className="w-[240px]"
             />
           </div>
         </div>
