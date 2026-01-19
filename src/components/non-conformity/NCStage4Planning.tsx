@@ -385,18 +385,18 @@ export function NCStage4Planning({ ncId, onComplete }: NCStage4PlanningProps) {
         )}
 
         {/* Sugestões de IA */}
-        <div className="border rounded-lg p-4 bg-gradient-to-r from-violet-50 to-purple-50">
+        <div className="border border-amber-200 rounded-lg p-4 bg-amber-50">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-violet-600" />
-              <h4 className="font-medium text-violet-800">Sugestões de Ações (IA)</h4>
+              <Lightbulb className="h-5 w-5 text-amber-600" />
+              <h4 className="font-medium text-amber-800">Sugestões de Ações (IA)</h4>
             </div>
             <Button 
               variant="outline" 
               size="sm"
               onClick={fetchSuggestions}
               disabled={isLoadingSuggestions || !causeAnalysis?.root_cause}
-              className="border-violet-300 text-violet-700 hover:bg-violet-100"
+              className="border-amber-300 text-amber-700 hover:bg-amber-100"
             >
               {isLoadingSuggestions ? (
                 <>
@@ -423,7 +423,7 @@ export function NCStage4Planning({ ncId, onComplete }: NCStage4PlanningProps) {
               {suggestions.map((suggestion, index) => (
                 <div 
                   key={index} 
-                  className="bg-white rounded-lg p-3 border border-violet-200 hover:border-violet-400 transition-colors"
+                  className="bg-white rounded-lg p-3 border border-amber-200 hover:border-amber-400 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -438,7 +438,7 @@ export function NCStage4Planning({ ncId, onComplete }: NCStage4PlanningProps) {
                     <Button 
                       size="sm" 
                       variant="ghost"
-                      className="shrink-0 text-violet-600 hover:text-violet-800 hover:bg-violet-100"
+                      className="shrink-0 text-amber-600 hover:text-amber-800 hover:bg-amber-100"
                       onClick={() => applySuggestion(suggestion)}
                     >
                       <Plus className="h-4 w-4 mr-1" />
