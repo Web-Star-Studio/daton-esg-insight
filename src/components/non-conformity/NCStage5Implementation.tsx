@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Play, Clock, AlertTriangle, User, Calendar, FileText } from "lucide-react";
+import { Check, Play, Clock, AlertTriangle, User, Calendar, FileText, Upload, X, Paperclip, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,14 @@ import { NCActionPlan } from "@/services/nonConformityService";
 import { format, isPast, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface EvidenceAttachment {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+}
 
 interface NCStage5ImplementationProps {
   ncId: string;
@@ -24,6 +32,8 @@ interface NCStage5ImplementationProps {
 export function NCStage5Implementation({ ncId, onComplete }: NCStage5ImplementationProps) {
   const [selectedPlan, setSelectedPlan] = useState<NCActionPlan | null>(null);
   const [evidence, setEvidence] = useState("");
+  const [attachments, setAttachments] = useState<EvidenceAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: plans, isLoading } = useActionPlans(ncId);
   const updateMutation = useUpdateActionPlan();
@@ -38,6 +48,71 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
   const handleOpenComplete = (plan: NCActionPlan) => {
     setSelectedPlan(plan);
     setEvidence(plan.evidence || "");
+    setAttachments((plan as any).evidence_attachments || []);
+  };
+
+  const sanitizeFileName = (fileName: string): string => {
+    return fileName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9.-]/g, '_')
+      .replace(/_+/g, '_')
+      .toLowerCase();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const newAttachments: EvidenceAttachment[] = [];
+      
+      for (const file of Array.from(files)) {
+        const sanitizedName = sanitizeFileName(file.name);
+        const filePath = `${ncId}/${selectedPlan?.id}/${Date.now()}_${sanitizedName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('nc-evidence')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast.error(`Erro ao enviar ${file.name}`);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('nc-evidence')
+          .getPublicUrl(filePath);
+
+        newAttachments.push({
+          name: file.name,
+          url: publicUrl,
+          size: file.size,
+          type: file.type,
+        });
+      }
+
+      setAttachments([...attachments, ...newAttachments]);
+      toast.success(`${newAttachments.length} arquivo(s) anexado(s)`);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast.error('Erro ao enviar arquivos');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   const handleCompleteAction = () => {
@@ -53,13 +128,15 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
       updates: {
         status: "Concluída",
         evidence,
+        evidence_attachments: attachments,
         completion_date: format(new Date(), "yyyy-MM-dd"),
         completed_at: new Date().toISOString(),
-      },
+      } as any,
     }, {
       onSuccess: () => {
         setSelectedPlan(null);
         setEvidence("");
+        setAttachments([]);
       },
     });
   };
@@ -242,8 +319,13 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
       </Card>
 
       {/* Complete Action Dialog */}
-      <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
-        <DialogContent>
+      <Dialog open={!!selectedPlan} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedPlan(null);
+          setAttachments([]);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Concluir Ação</DialogTitle>
           </DialogHeader>
@@ -264,13 +346,78 @@ export function NCStage5Implementation({ ncId, onComplete }: NCStage5Implementat
               />
             </div>
 
+            {/* File Attachment Section */}
+            <div>
+              <Label>Anexos (Evidências, Lista de Presença, etc.)</Label>
+              <div className="mt-2 border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                <input
+                  type="file"
+                  id="file-upload"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                      <span className="text-sm">Enviando...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <Upload className="h-8 w-8" />
+                      <span className="text-sm">Clique para anexar arquivos</span>
+                      <span className="text-xs">PDF, DOC, XLS, Imagens</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* Attached Files List */}
+              {attachments.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {attachments.map((file, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <a 
+                          href={file.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm truncate hover:underline text-primary"
+                        >
+                          {file.name}
+                        </a>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          ({formatFileSize(file.size)})
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveAttachment(index)}
+                        className="shrink-0 h-7 w-7 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setSelectedPlan(null)}>
                 Cancelar
               </Button>
               <Button
                 onClick={handleCompleteAction}
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || isUploading}
               >
                 <Check className="h-4 w-4 mr-2" />
                 Confirmar Conclusão
