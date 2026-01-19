@@ -414,18 +414,83 @@ export default function Dashboard() {
         }}
       />
 
-      {/* Intelligent Alerts & Predictive Insights */}
-      <div className="grid grid-cols-1 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
-        <AlertsPanel />
+      {/* Intelligent Alerts */}
+      <AlertsPanel />
+
+      {/* Recent Activities - Horizontal */}
+      <EnhancedCard 
+        className="animate-fade-in" 
+        style={{ animationDelay: '0.7s' }}
+        variant="minimal"
+        hoverable={false}
+      >
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Bell className="w-5 h-5 text-primary" />
+            Atividades Recentes
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {RECENT_ACTIVITIES.map((activity) => {
+              const Icon = activity.icon;
+              return (
+                <div 
+                  key={activity.id} 
+                  className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group border border-border/50"
+                  onClick={() => console.log('Activity clicked:', activity)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      console.log('Activity clicked:', activity);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Ver detalhes de ${activity.title}`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                      {activity.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                      {activity.description}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {activity.time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="pt-4">
+            <Button variant="ghost" size="sm" className="w-full justify-center gap-2 focus-ring">
+              <Eye className="w-4 h-4" />
+              Ver todas as atividades
+            </Button>
+          </div>
+        </CardContent>
+      </EnhancedCard>
+
+      {/* Predictive Insights */}
+      <div className="animate-fade-in" style={{ animationDelay: '0.8s' }}>
         <PredictiveInsightsWidget />
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ESG Score Gauge - Phase 3 */}
+      {/* Main Content Grid - ESG Score */}
+      <div className="grid grid-cols-1 gap-6">
         <EnhancedCard 
-          className="lg:col-span-2 animate-fade-in" 
-          style={{ animationDelay: '0.8s' }}
+          className="animate-fade-in" 
+          style={{ animationDelay: '0.9s' }}
           variant="premium"
         >
           <CardHeader>
@@ -442,18 +507,20 @@ export default function Dashboard() {
           </CardHeader>
           
           <CardContent>
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Overall ESG Score */}
               {esgScores?.hasData ? (
                 <>
-                  <ESGScoreGauge 
-                    score={esgScores.overall}
-                    label="Score ESG Geral"
-                    showDetails={true}
-                  />
+                  <div className="lg:col-span-1">
+                    <ESGScoreGauge 
+                      score={esgScores.overall}
+                      label="Score ESG Geral"
+                      showDetails={true}
+                    />
+                  </div>
 
                   {/* Individual Pillar Breakdown */}
-                  <div className="space-y-4 pt-4 border-t border-border/30">
+                  <div className="lg:col-span-3 space-y-4 flex flex-col justify-center">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
@@ -480,7 +547,7 @@ export default function Dashboard() {
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 space-y-4">
+                <div className="lg:col-span-4 text-center py-8 space-y-4">
                   <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
                     <BarChart3 className="w-8 h-8 text-muted-foreground" />
                   </div>
@@ -501,70 +568,6 @@ export default function Dashboard() {
                   </Button>
                 </div>
               )}
-            </div>
-          </CardContent>
-        </EnhancedCard>
-
-        {/* Recent Activities */}
-        <EnhancedCard 
-          className="animate-fade-in" 
-          style={{ animationDelay: '0.9s' }}
-          variant="minimal"
-          hoverable={false}
-        >
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Bell className="w-5 h-5 text-primary" />
-              Atividades Recentes
-            </CardTitle>
-          </CardHeader>
-          
-          <CardContent>
-            <div className="space-y-1">
-              {RECENT_ACTIVITIES.map((activity) => {
-                const Icon = activity.icon;
-                return (
-                  <div 
-                    key={activity.id} 
-                    className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
-                    onClick={() => console.log('Activity clicked:', activity)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        console.log('Activity clicked:', activity);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Ver detalhes de ${activity.title}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                        {activity.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {activity.description}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {activity.time}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              <div className="pt-2">
-                <Button variant="ghost" size="sm" className="w-full justify-center gap-2 focus-ring">
-                  <Eye className="w-4 h-4" />
-                  Ver todas as atividades
-                </Button>
-              </div>
             </div>
           </CardContent>
         </EnhancedCard>
