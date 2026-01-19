@@ -8,3 +8,4 @@ export { NCStage6Effectiveness } from "./NCStage6Effectiveness";
 export { IshikawaDiagram } from "./IshikawaDiagram";
 export { FiveWhysAnalysis } from "./FiveWhysAnalysis";
 export { NCAdvancedDashboard } from "./NCAdvancedDashboard";
+export { StageAdvanceConfirmDialog } from "./StageAdvanceConfirmDialog";
