@@ -26,9 +26,9 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
 
   return (
     <div className="w-full py-4">
-      <div className="flex items-center justify-between relative">
+      <div className="flex items-center justify-between relative px-4">
         {/* Connection line */}
-        <div className="absolute top-6 left-0 right-0 h-0.5 bg-muted -z-10">
+        <div className="absolute top-6 left-8 right-8 h-0.5 bg-muted -z-10">
           <div 
             className="h-full bg-primary transition-all duration-500"
             style={{ width: `${((currentStage - 1) / (stages.length - 1)) * 100}%` }}
@@ -44,8 +44,8 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
             <div
               key={stage.number}
               className={cn(
-                "flex flex-col items-center gap-2 relative z-10",
-                isClickable && "cursor-pointer"
+                "flex flex-col items-center gap-3 relative z-10 flex-1",
+                isClickable && "cursor-pointer group"
               )}
               onClick={() => isClickable && onStageClick?.(stage.number)}
             >
@@ -55,7 +55,8 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
                   "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
                   status === "completed" && "bg-primary border-primary text-primary-foreground",
                   status === "current" && "bg-primary/10 border-primary text-primary ring-4 ring-primary/20",
-                  status === "pending" && "bg-muted border-muted-foreground/30 text-muted-foreground"
+                  status === "pending" && "bg-muted border-muted-foreground/30 text-muted-foreground",
+                  isClickable && "group-hover:scale-110"
                 )}
               >
                 {status === "completed" ? (
@@ -66,7 +67,7 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
               </div>
 
               {/* Stage label */}
-              <div className="text-center max-w-[100px]">
+              <div className="text-center">
                 <p
                   className={cn(
                     "text-xs font-medium transition-colors",
@@ -77,7 +78,7 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
                 >
                   {stage.label}
                 </p>
-                <p className="text-[10px] text-muted-foreground hidden sm:block">
+                <p className="text-[10px] text-muted-foreground hidden sm:block mt-0.5">
                   {stage.description}
                 </p>
               </div>
