@@ -132,13 +132,13 @@ export function PredictiveInsightsWidget() {
   };
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 w-full">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="h-5 w-5 text-primary" />
         <h3 className="font-semibold">Análise Preditiva & Score de Risco</h3>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Emission Predictions */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -203,7 +203,7 @@ export function PredictiveInsightsWidget() {
         </div>
 
         {/* Compliance Risk Score */}
-        <div className="space-y-3 pt-4 border-t">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">Score de Risco de Conformidade</h4>
             <div className={cn(

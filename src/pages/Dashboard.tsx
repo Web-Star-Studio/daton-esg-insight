@@ -415,7 +415,7 @@ export default function Dashboard() {
       />
 
       {/* Intelligent Alerts & Predictive Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+      <div className="grid grid-cols-1 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
         <AlertsPanel />
         <PredictiveInsightsWidget />
       </div>
