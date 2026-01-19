@@ -16360,6 +16360,7 @@ export type Database = {
           created_at: string | null
           created_by_user_id: string | null
           evidence: string | null
+          evidence_attachments: Json | null
           how_method: string | null
           how_much_cost: string | null
           id: string
@@ -16381,6 +16382,7 @@ export type Database = {
           created_at?: string | null
           created_by_user_id?: string | null
           evidence?: string | null
+          evidence_attachments?: Json | null
           how_method?: string | null
           how_much_cost?: string | null
           id?: string
@@ -16402,6 +16404,7 @@ export type Database = {
           created_at?: string | null
           created_by_user_id?: string | null
           evidence?: string | null
+          evidence_attachments?: Json | null
           how_method?: string | null
           how_much_cost?: string | null
           id?: string
