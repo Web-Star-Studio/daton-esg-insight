@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Check, Clock, User, Calendar, GripVertical } from "lucide-react";
+import { Plus, Trash2, Check, Clock, User, Calendar, Lightbulb, Loader2, AlertTriangle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,26 +9,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   useActionPlans, 
   useCreateActionPlan, 
   useUpdateActionPlan, 
   useDeleteActionPlan,
-  useCompanyUsers 
+  useCompanyUsers,
+  useCauseAnalysis,
+  useNonConformity
 } from "@/hooks/useNonConformity";
 import { NCActionPlan } from "@/services/nonConformityService";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NCStage4PlanningProps {
   ncId: string;
   onComplete?: () => void;
 }
 
+interface ActionSuggestion {
+  what_action: string;
+  why_reason: string;
+  how_method: string;
+}
+
 export function NCStage4Planning({ ncId, onComplete }: NCStage4PlanningProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<NCActionPlan | null>(null);
+  const [suggestions, setSuggestions] = useState<ActionSuggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [formData, setFormData] = useState({
     what_action: "",
     why_reason: "",
@@ -41,9 +53,62 @@ export function NCStage4Planning({ ncId, onComplete }: NCStage4PlanningProps) {
 
   const { data: plans, isLoading } = useActionPlans(ncId);
   const { data: users } = useCompanyUsers();
+  const { data: causeAnalysis } = useCauseAnalysis(ncId);
+  const { data: nc } = useNonConformity(ncId);
   const createMutation = useCreateActionPlan();
   const updateMutation = useUpdateActionPlan();
   const deleteMutation = useDeleteActionPlan();
+
+  const fetchSuggestions = async () => {
+    if (!causeAnalysis?.root_cause) {
+      toast.error("É necessário ter uma causa raiz identificada para gerar sugestões");
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('nc-action-suggestions', {
+        body: {
+          ncTitle: nc?.title || '',
+          ncDescription: nc?.description || '',
+          rootCause: causeAnalysis.root_cause,
+          analysisMethod: causeAnalysis.analysis_method,
+          contributingFactors: causeAnalysis.ishikawa_data || causeAnalysis.five_whys_data || ''
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.suggestions && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
+        toast.success("Sugestões geradas com sucesso!");
+      } else {
+        toast.info("Não foi possível gerar sugestões no momento");
+      }
+    } catch (error: any) {
+      console.error("Error fetching suggestions:", error);
+      if (error.message?.includes("429")) {
+        toast.error("Limite de requisições atingido. Tente novamente em alguns minutos.");
+      } else if (error.message?.includes("402")) {
+        toast.error("Créditos de IA esgotados. Entre em contato com o administrador.");
+      } else {
+        toast.error("Erro ao gerar sugestões de ações");
+      }
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  const applySuggestion = (suggestion: ActionSuggestion) => {
+    setFormData({
+      ...formData,
+      what_action: suggestion.what_action,
+      why_reason: suggestion.why_reason,
+      how_method: suggestion.how_method,
+    });
+    setIsAddDialogOpen(true);
+    toast.success("Sugestão aplicada! Complete os demais campos.");
+  };
 
   const resetForm = () => {
     setFormData({
@@ -298,7 +363,95 @@ export function NCStage4Planning({ ncId, onComplete }: NCStage4PlanningProps) {
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Lembrete da Causa Raiz */}
+        {causeAnalysis?.root_cause && (
+          <Alert className="bg-amber-50 border-amber-200">
+            <Search className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 font-medium">
+              Causa Raiz Identificada (Etapa Anterior)
+            </AlertTitle>
+            <AlertDescription className="text-amber-700 mt-2">
+              <p className="font-medium">{causeAnalysis.root_cause}</p>
+              {causeAnalysis.analysis_method && (
+                <p className="text-xs mt-1 opacity-75">
+                  Método: {causeAnalysis.analysis_method === '5_whys' ? '5 Porquês' : 
+                           causeAnalysis.analysis_method === 'ishikawa' ? 'Diagrama de Ishikawa' : 
+                           causeAnalysis.analysis_method === 'root_cause' ? 'Análise de Causa Raiz' : 'Outro'}
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Sugestões de IA */}
+        <div className="border rounded-lg p-4 bg-gradient-to-r from-violet-50 to-purple-50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-violet-600" />
+              <h4 className="font-medium text-violet-800">Sugestões de Ações (IA)</h4>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={fetchSuggestions}
+              disabled={isLoadingSuggestions || !causeAnalysis?.root_cause}
+              className="border-violet-300 text-violet-700 hover:bg-violet-100"
+            >
+              {isLoadingSuggestions ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Gerar Sugestões
+                </>
+              )}
+            </Button>
+          </div>
+          
+          {!causeAnalysis?.root_cause && (
+            <p className="text-sm text-muted-foreground">
+              Complete a análise de causa (Etapa 3) para gerar sugestões de ações.
+            </p>
+          )}
+
+          {suggestions.length > 0 && (
+            <div className="space-y-3 mt-3">
+              {suggestions.map((suggestion, index) => (
+                <div 
+                  key={index} 
+                  className="bg-white rounded-lg p-3 border border-violet-200 hover:border-violet-400 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground">{suggestion.what_action}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <span className="font-medium">Por quê:</span> {suggestion.why_reason}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium">Como:</span> {suggestion.how_method}
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      className="shrink-0 text-violet-600 hover:text-violet-800 hover:bg-violet-100"
+                      onClick={() => applySuggestion(suggestion)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Usar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Tabela de Ações */}
         {isLoading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
