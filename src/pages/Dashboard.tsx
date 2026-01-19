@@ -38,18 +38,7 @@ import { AlertsWidget } from '@/components/dashboard/AlertsWidget';
 import { PredictiveInsightsWidget } from '@/components/dashboard/PredictiveInsightsWidget';
 import { ESGScoreGauge } from '@/components/esg/ESGScoreGauge';
 import { AlertsPanel } from '@/components/alerts/AlertsPanel';
-
-interface KPICard {
-  id: string;
-  title: string;
-  value: string;
-  change: number;
-  changeType: 'positive' | 'negative' | 'neutral';
-  icon: any;
-  color: string;
-  bgColor: string;
-  description: string;
-}
+import { KPICarousel, KPIItem } from '@/components/dashboard/KPICarousel';
 
 interface QuickAction {
   id: string;
@@ -69,7 +58,7 @@ interface RecentActivity {
   icon: any;
 }
 
-const getKPICards = (stats: any): KPICard[] => [
+const getKPICards = (stats: any): KPIItem[] => [
   {
     id: 'emissions',
     title: 'Emissões CO₂',
@@ -79,7 +68,8 @@ const getKPICards = (stats: any): KPICard[] => [
     icon: Leaf,
     color: 'text-success',
     bgColor: 'bg-success/10',
-    description: 'Total de emissões deste mês'
+    description: 'Total de emissões deste mês',
+    route: '/inventario-gee'
   },
   {
     id: 'compliance',
@@ -90,7 +80,8 @@ const getKPICards = (stats: any): KPICard[] => [
     icon: Shield,
     color: 'text-primary',
     bgColor: 'bg-primary/10',
-    description: 'Índice de conformidade regulatória'
+    description: 'Índice de conformidade regulatória',
+    route: '/compliance'
   },
   {
     id: 'employees',
@@ -101,7 +92,8 @@ const getKPICards = (stats: any): KPICard[] => [
     icon: Users,
     color: 'text-accent',
     bgColor: 'bg-accent/10',
-    description: 'Total de colaboradores ativos'
+    description: 'Total de colaboradores ativos',
+    route: '/gestao-funcionarios'
   },
   {
     id: 'quality',
@@ -112,7 +104,39 @@ const getKPICards = (stats: any): KPICard[] => [
     icon: Award,
     color: 'text-warning',
     bgColor: 'bg-warning/10',
-    description: 'Índice de qualidade dos processos'
+    description: 'Índice de qualidade dos processos',
+    route: '/quality-dashboard'
+  },
+  {
+    id: 'energy',
+    title: 'Economia de Energia',
+    value: '12.5 MWh',
+    icon: Zap,
+    color: 'text-primary',
+    bgColor: 'bg-gradient-to-r from-primary/20 to-accent/20',
+    description: 'Este mês',
+    route: '/monitoramento-energia'
+  },
+  {
+    id: 'co2-reduction',
+    title: 'Redução CO₂',
+    value: '-15.3%',
+    changeType: 'positive',
+    icon: Leaf,
+    color: 'text-success',
+    bgColor: 'bg-gradient-to-r from-success/20 to-primary/20',
+    description: 'vs mês anterior',
+    route: '/inventario-gee'
+  },
+  {
+    id: 'hr-satisfaction',
+    title: 'Satisfação RH',
+    value: '4.7/5',
+    icon: Users,
+    color: 'text-accent',
+    bgColor: 'bg-gradient-to-r from-accent/20 to-warning/20',
+    description: 'Última pesquisa',
+    route: '/gestao-funcionarios'
   }
 ];
 
@@ -213,7 +237,7 @@ export default function Dashboard() {
     return '🌙 Boa noite';
   };
 
-  const getChangeColor = (changeType: KPICard['changeType']) => {
+  const getChangeColor = (changeType: KPIItem['changeType']) => {
     switch (changeType) {
       case 'positive': return 'text-green-600';
       case 'negative': return 'text-red-600';
@@ -221,7 +245,7 @@ export default function Dashboard() {
     }
   };
 
-  const getChangeIcon = (changeType: KPICard['changeType']) => {
+  const getChangeIcon = (changeType: KPIItem['changeType']) => {
     if (changeType === 'positive') return ArrowUpRight;
     if (changeType === 'negative') return ArrowDownRight;
     return null;
@@ -303,46 +327,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="metrics">
-        {kpiCards.map((kpi, index) => {
-          const Icon = kpi.icon;
-          const ChangeIcon = getChangeIcon(kpi.changeType);
-          
-          const routeMap: Record<string, string> = {
-            emissions: '/inventario-gee',
-            compliance: '/compliance',
-            employees: '/gestao-funcionarios',
-            quality: '/quality-dashboard'
-          };
-          
-          return (
-            <EnhancedCard
-              key={kpi.id}
-              title={kpi.title}
-              subtitle={kpi.description}
-              icon={Icon}
-              iconColor={kpi.color}
-              iconBg={kpi.bgColor}
-              value={kpi.value}
-              change={kpi.change}
-              changeType={kpi.changeType}
-              trend={ChangeIcon && <ChangeIcon className="w-4 h-4" />}
-              variant="stat"
-              className="group animate-fade-in"
-              style={{ animationDelay: `${0.4 + index * 0.1}s` }}
-              onClick={() => navigate(routeMap[kpi.id] || '/dashboard')}
-              onMenuClick={(action) => {
-                if (action === 'details') {
-                  navigate(routeMap[kpi.id] || '/dashboard');
-                } else if (action === 'export') {
-                  console.log('Export data for:', kpi.id);
-                }
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* KPI Cards Carousel */}
+      <KPICarousel
+        items={kpiCards}
+        itemsPerPage={4}
+        onItemClick={(item) => navigate(item.route)}
+        onMenuClick={(item, action) => {
+          if (action === 'details') {
+            navigate(item.route);
+          } else if (action === 'export') {
+            console.log('Export data for:', item.id);
+          }
+        }}
+      />
 
       {/* Intelligent Alerts & Predictive Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
@@ -500,66 +497,8 @@ export default function Dashboard() {
         </EnhancedCard>
       </div>
 
-      {/* Quick Stats & System Health */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style={{ animationDelay: '1s' }}>
-        <EnhancedCard 
-          variant="minimal" 
-          className="group"
-          onClick={() => navigate('/monitoramento-energia')}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-primary to-accent rounded-xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Economia de Energia</p>
-                <p className="text-xl font-bold text-foreground">12.5 MWh</p>
-                <p className="text-xs text-muted-foreground">Este mês</p>
-              </div>
-            </div>
-          </CardContent>
-        </EnhancedCard>
-
-        <EnhancedCard 
-          variant="minimal" 
-          className="group"
-          onClick={() => navigate('/inventario-gee')}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-success to-primary rounded-xl flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Redução CO₂</p>
-                <p className="text-xl font-bold text-success">-15.3%</p>
-                <p className="text-xs text-muted-foreground">vs mês anterior</p>
-              </div>
-            </div>
-          </CardContent>
-        </EnhancedCard>
-
-        <EnhancedCard 
-          variant="minimal" 
-          className="group"
-          onClick={() => navigate('/gestao-funcionarios')}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-accent to-warning rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Satisfação RH</p>
-                <p className="text-xl font-bold text-foreground">4.7/5</p>
-                <p className="text-xs text-muted-foreground">Última pesquisa</p>
-              </div>
-            </div>
-          </CardContent>
-        </EnhancedCard>
-
-        {/* Production Health Widget */}
+      {/* Production Health Widget */}
+      <div className="animate-fade-in" style={{ animationDelay: '1s' }}>
         <ProductionHealthWidget />
       </div>
     </div>
