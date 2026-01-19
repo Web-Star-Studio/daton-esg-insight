@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formErrorHandler } from "@/utils/formErrorHandler";
+import { generateNextEmployeeCode } from "@/services/employeeCodeGenerator";
 
 export interface Employee {
   id: string;
@@ -50,7 +51,8 @@ const sanitizeEmployeeData = (data: Record<string, any>): Record<string, any> =>
   });
   
   // Campos de texto opcionais - converter "" para null
-  const optionalTextFields = ['employee_code', 'email', 'phone', 'department', 'position', 'location', 'notes', 'gender', 'ethnicity', 'education_level'];
+  // NOTA: employee_code NÃO está aqui pois é NOT NULL no banco
+  const optionalTextFields = ['email', 'phone', 'department', 'position', 'location', 'notes', 'gender', 'ethnicity', 'education_level'];
   optionalTextFields.forEach(field => {
     if (sanitized[field] !== undefined && sanitized[field] !== null) {
       const trimmed = String(sanitized[field]).trim();
@@ -164,10 +166,17 @@ export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at
     // Sanitizar dados antes de enviar ao banco
     const sanitizedEmployee = sanitizeEmployeeData(employee);
     
-    // Prepare employee data with company_id and fallback hire_date
+    // Gerar código automaticamente se não fornecido (employee_code é NOT NULL)
+    let employeeCode = sanitizedEmployee.employee_code;
+    if (!employeeCode || (typeof employeeCode === 'string' && employeeCode.trim() === '')) {
+      employeeCode = await generateNextEmployeeCode(profile.company_id);
+    }
+    
+    // Prepare employee data with company_id, generated code, and fallback hire_date
     const employeeData = {
       ...sanitizedEmployee,
       company_id: profile.company_id,
+      employee_code: employeeCode,
       // hire_date é obrigatório - usar data atual se não informada
       hire_date: sanitizedEmployee.hire_date || new Date().toISOString().split('T')[0]
     };

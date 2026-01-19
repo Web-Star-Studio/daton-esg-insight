@@ -228,6 +228,10 @@ export const formErrorHandler = {
         userMessage = "Não é possível excluir - existem dados relacionados.";
         title = "Dependência";
         break;
+      case '23502': // NOT NULL constraint violation
+        userMessage = "Um campo obrigatório não foi preenchido corretamente.";
+        title = "Campo Obrigatório";
+        break;
       case 'MAX_RETRIES_EXCEEDED':
         userMessage = "Não foi possível completar a operação após várias tentativas.";
         title = "Falha na Operação";
