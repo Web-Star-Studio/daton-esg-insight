@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useNavigate } from "react-router-dom"
-import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus } from "lucide-react"
+import { User, Building2, Users, CreditCard, Settings, MoreHorizontal, Plus, Lock, Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,15 +28,13 @@ const perfilSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
   cargo: z.string().min(1, "Cargo é obrigatório"),
-  senhaAtual: z.string().optional(),
-  novaSenha: z.string().optional(),
-  confirmarSenha: z.string().optional(),
-}).refine((data) => {
-  if (data.novaSenha || data.confirmarSenha) {
-    return data.novaSenha === data.confirmarSenha;
-  }
-  return true;
-}, {
+});
+
+const senhaSchema = z.object({
+  senhaAtual: z.string().min(1, "Senha atual é obrigatória"),
+  novaSenha: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres"),
+  confirmarSenha: z.string().min(1, "Confirme sua nova senha"),
+}).refine((data) => data.novaSenha === data.confirmarSenha, {
   message: "As senhas não coincidem",
   path: ["confirmarSenha"],
 });
@@ -79,6 +77,10 @@ export default function Configuracao() {
   const [loading, setLoading] = useState(true);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { restartOnboarding } = useAuth();
@@ -118,6 +120,12 @@ export default function Configuracao() {
       nome: "",
       email: "",
       cargo: "",
+    },
+  });
+
+  const senhaForm = useForm<z.infer<typeof senhaSchema>>({
+    resolver: zodResolver(senhaSchema),
+    defaultValues: {
       senhaAtual: "",
       novaSenha: "",
       confirmarSenha: "",
@@ -152,9 +160,6 @@ export default function Configuracao() {
           nome: data.full_name,
           email: data.email,
           cargo: data.role,
-          senhaAtual: "",
-          novaSenha: "",
-          confirmarSenha: "",
         });
 
         if (data.company) {
@@ -216,6 +221,61 @@ export default function Configuracao() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onSubmitSenha = async (values: z.infer<typeof senhaSchema>) => {
+    if (!userData) return;
+
+    try {
+      setChangingPassword(true);
+
+      // Re-authenticate with current password to verify identity
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userData.email,
+        password: values.senhaAtual,
+      });
+
+      if (signInError) {
+        toast({
+          title: "Senha atual incorreta",
+          description: "Verifique sua senha atual e tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: values.novaSenha,
+      });
+
+      if (updateError) {
+        toast({
+          title: "Erro ao alterar senha",
+          description: updateError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Senha alterada com sucesso",
+        description: "Sua nova senha já está ativa.",
+      });
+
+      senhaForm.reset();
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar a senha.",
+        variant: "destructive",
+      });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -353,6 +413,128 @@ export default function Configuracao() {
 
                     <Button type="submit" disabled={loading}>
                       {loading ? "Salvando..." : "Salvar Alterações"}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === "perfil" && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Alterar Senha
+                </CardTitle>
+                <CardDescription>
+                  Atualize sua senha de acesso ao sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...senhaForm}>
+                  <form onSubmit={senhaForm.handleSubmit(onSubmitSenha)} className="space-y-4">
+                    <FormField
+                      control={senhaForm.control}
+                      name="senhaAtual"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Senha Atual</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showCurrentPassword ? "text" : "password"} 
+                                placeholder="Digite sua senha atual"
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              >
+                                {showCurrentPassword ? (
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={senhaForm.control}
+                      name="novaSenha"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nova Senha</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showNewPassword ? "text" : "password"} 
+                                placeholder="Mínimo 6 caracteres"
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                              >
+                                {showNewPassword ? (
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={senhaForm.control}
+                      name="confirmarSenha"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirmar Nova Senha</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showConfirmPassword ? "text" : "password"} 
+                                placeholder="Digite a nova senha novamente"
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              >
+                                {showConfirmPassword ? (
+                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button type="submit" disabled={changingPassword}>
+                      {changingPassword ? "Alterando..." : "Alterar Senha"}
                     </Button>
                   </form>
                 </Form>
