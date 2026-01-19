@@ -417,160 +417,146 @@ export default function Dashboard() {
       {/* Intelligent Alerts */}
       <AlertsPanel />
 
-      {/* Recent Activities - Horizontal */}
-      <EnhancedCard 
-        className="animate-fade-in" 
-        style={{ animationDelay: '0.7s' }}
-        variant="minimal"
-        hoverable={false}
-      >
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Bell className="w-5 h-5 text-primary" />
-            Atividades Recentes
-          </CardTitle>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {RECENT_ACTIVITIES.map((activity) => {
-              const Icon = activity.icon;
-              return (
-                <div 
-                  key={activity.id} 
-                  className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group border border-border/50"
-                  onClick={() => console.log('Activity clicked:', activity)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      console.log('Activity clicked:', activity);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Ver detalhes de ${activity.title}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                      {activity.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                      {activity.description}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {activity.time}
-                      </span>
+      {/* Recent Activities & ESG Score Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+        {/* Recent Activities - Compact */}
+        <EnhancedCard 
+          className="lg:col-span-1"
+          variant="minimal"
+          hoverable={false}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bell className="w-4 h-4 text-primary" />
+              Atividades Recentes
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {RECENT_ACTIVITIES.slice(0, 4).map((activity) => {
+                const Icon = activity.icon;
+                return (
+                  <div 
+                    key={activity.id} 
+                    className="flex gap-2 p-2 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
+                    onClick={() => console.log('Activity clicked:', activity)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                        {activity.title}
+                      </h4>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">
+                          {activity.time}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="pt-4">
-            <Button variant="ghost" size="sm" className="w-full justify-center gap-2 focus-ring">
-              <Eye className="w-4 h-4" />
-              Ver todas as atividades
+                );
+              })}
+            </div>
+            
+            <Button variant="ghost" size="sm" className="w-full justify-center gap-1 mt-3 h-8 text-xs">
+              <Eye className="w-3 h-3" />
+              Ver todas
             </Button>
-          </div>
-        </CardContent>
-      </EnhancedCard>
+          </CardContent>
+        </EnhancedCard>
 
-      {/* Predictive Insights */}
-      <div className="animate-fade-in" style={{ animationDelay: '0.8s' }}>
-        <PredictiveInsightsWidget />
-      </div>
-
-      {/* Main Content Grid - ESG Score */}
-      <div className="grid grid-cols-1 gap-6">
+        {/* ESG Score */}
         <EnhancedCard 
-          className="animate-fade-in" 
-          style={{ animationDelay: '0.9s' }}
+          className="lg:col-span-2"
           variant="premium"
         >
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="w-5 h-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="w-4 h-4 text-primary" />
                 Score ESG Geral
               </CardTitle>
-              <Badge variant="secondary" className="gap-1 text-xs">
-                <Sparkles className="w-3 h-3" />
+              <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0.5">
+                <Sparkles className="w-2.5 h-2.5" />
                 Tempo real
               </Badge>
             </div>
           </CardHeader>
           
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Overall ESG Score */}
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-6">
               {esgScores?.hasData ? (
                 <>
-                  <div className="lg:col-span-1">
+                  <div className="flex-shrink-0">
                     <ESGScoreGauge 
                       score={esgScores.overall}
-                      label="Score ESG Geral"
-                      showDetails={true}
+                      label="Score ESG"
+                      showDetails={false}
                     />
                   </div>
 
-                  {/* Individual Pillar Breakdown */}
-                  <div className="lg:col-span-3 space-y-4 flex flex-col justify-center">
-                    <div className="space-y-2">
+                  <div className="flex-1 space-y-3">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
-                        <span className="text-sm font-bold text-success">{esgScores.environmental}%</span>
+                        <span className="text-xs font-medium text-foreground">Ambiental (E)</span>
+                        <span className="text-xs font-bold text-success">{esgScores.environmental}%</span>
                       </div>
-                      <Progress value={esgScores.environmental} className="h-2" />
+                      <Progress value={esgScores.environmental} className="h-1.5" />
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">Social (S)</span>
-                        <span className="text-sm font-bold text-primary">{esgScores.social}%</span>
+                        <span className="text-xs font-medium text-foreground">Social (S)</span>
+                        <span className="text-xs font-bold text-primary">{esgScores.social}%</span>
                       </div>
-                      <Progress value={esgScores.social} className="h-2" />
+                      <Progress value={esgScores.social} className="h-1.5" />
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">Governança (G)</span>
-                        <span className="text-sm font-bold text-accent">{esgScores.governance}%</span>
+                        <span className="text-xs font-medium text-foreground">Governança (G)</span>
+                        <span className="text-xs font-bold text-accent">{esgScores.governance}%</span>
                       </div>
-                      <Progress value={esgScores.governance} className="h-2" />
+                      <Progress value={esgScores.governance} className="h-1.5" />
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="lg:col-span-4 text-center py-8 space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
-                    <BarChart3 className="w-8 h-8 text-muted-foreground" />
+                <div className="w-full text-center py-4 space-y-3">
+                  <div className="w-12 h-12 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-foreground">Sem dados ESG disponíveis</p>
-                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                      Comece cadastrando fontes de emissão, funcionários ou políticas para calcular seu Score ESG.
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Sem dados ESG</p>
+                    <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
+                      Cadastre emissões, funcionários ou políticas para calcular.
                     </p>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => navigate('/inventario-gee')}
-                    className="gap-2"
+                    className="gap-1 h-7 text-xs"
                   >
-                    <Plus className="w-4 h-4" />
-                    Iniciar cadastro
+                    <Plus className="w-3 h-3" />
+                    Iniciar
                   </Button>
                 </div>
               )}
             </div>
           </CardContent>
         </EnhancedCard>
+      </div>
+
+      {/* Predictive Insights */}
+      <div className="animate-fade-in" style={{ animationDelay: '0.8s' }}>
+        <PredictiveInsightsWidget />
       </div>
 
       {/* Production Health Widget */}
