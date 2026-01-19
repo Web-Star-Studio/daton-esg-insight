@@ -418,43 +418,43 @@ export default function Dashboard() {
       <AlertsPanel />
 
       {/* Recent Activities & ESG Score Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-fade-in" style={{ animationDelay: '0.7s' }}>
         {/* Recent Activities - Compact */}
         <EnhancedCard 
-          className="lg:col-span-1"
-          variant="minimal"
+          className="lg:col-span-1 border border-border"
+          variant="default"
           hoverable={false}
         >
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <Bell className="w-4 h-4 text-primary" />
               Atividades Recentes
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="pt-0">
-            <div className="space-y-2">
+          <CardContent className="pt-0 px-4 pb-4">
+            <div className="space-y-1">
               {RECENT_ACTIVITIES.slice(0, 4).map((activity) => {
                 const Icon = activity.icon;
                 return (
                   <div 
                     key={activity.id} 
-                    className="flex gap-2 p-2 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
+                    className="flex gap-2.5 p-2.5 rounded-lg hover:bg-muted/50 transition-all cursor-pointer group"
                     onClick={() => console.log('Activity clicked:', activity)}
                     role="button"
                     tabIndex={0}
                   >
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
-                      <Icon className="w-3.5 h-3.5" />
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                      <Icon className="w-4 h-4" />
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                      <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                         {activity.title}
                       </h4>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-2.5 h-2.5 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
                           {activity.time}
                         </span>
                       </div>
@@ -464,8 +464,8 @@ export default function Dashboard() {
               })}
             </div>
             
-            <Button variant="ghost" size="sm" className="w-full justify-center gap-1 mt-3 h-8 text-xs">
-              <Eye className="w-3 h-3" />
+            <Button variant="ghost" size="sm" className="w-full justify-center gap-1.5 mt-2 h-9 text-sm">
+              <Eye className="w-4 h-4" />
               Ver todas
             </Button>
           </CardContent>
@@ -473,24 +473,24 @@ export default function Dashboard() {
 
         {/* ESG Score */}
         <EnhancedCard 
-          className="lg:col-span-2"
-          variant="premium"
+          className="lg:col-span-2 border border-border"
+          variant="default"
         >
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                 <TrendingUp className="w-4 h-4 text-primary" />
                 Score ESG Geral
               </CardTitle>
-              <Badge variant="secondary" className="gap-1 text-[10px] px-2 py-0.5">
-                <Sparkles className="w-2.5 h-2.5" />
+              <Badge variant="secondary" className="gap-1 text-xs px-2 py-0.5">
+                <Sparkles className="w-3 h-3" />
                 Tempo real
               </Badge>
             </div>
           </CardHeader>
           
-          <CardContent className="pt-0">
-            <div className="flex items-center gap-6">
+          <CardContent className="pt-0 px-4 pb-4">
+            <div className="flex items-center gap-8">
               {esgScores?.hasData ? (
                 <>
                   <div className="flex-shrink-0">
@@ -501,50 +501,50 @@ export default function Dashboard() {
                     />
                   </div>
 
-                  <div className="flex-1 space-y-3">
-                    <div className="space-y-1.5">
+                  <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-foreground">Ambiental (E)</span>
-                        <span className="text-xs font-bold text-success">{esgScores.environmental}%</span>
+                        <span className="text-sm font-medium text-foreground">Ambiental (E)</span>
+                        <span className="text-sm font-bold text-success">{esgScores.environmental}%</span>
                       </div>
-                      <Progress value={esgScores.environmental} className="h-1.5" />
+                      <Progress value={esgScores.environmental} className="h-2" />
                     </div>
                     
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-foreground">Social (S)</span>
-                        <span className="text-xs font-bold text-primary">{esgScores.social}%</span>
+                        <span className="text-sm font-medium text-foreground">Social (S)</span>
+                        <span className="text-sm font-bold text-primary">{esgScores.social}%</span>
                       </div>
-                      <Progress value={esgScores.social} className="h-1.5" />
+                      <Progress value={esgScores.social} className="h-2" />
                     </div>
                     
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-foreground">Governança (G)</span>
-                        <span className="text-xs font-bold text-accent">{esgScores.governance}%</span>
+                        <span className="text-sm font-medium text-foreground">Governança (G)</span>
+                        <span className="text-sm font-bold text-accent">{esgScores.governance}%</span>
                       </div>
-                      <Progress value={esgScores.governance} className="h-1.5" />
+                      <Progress value={esgScores.governance} className="h-2" />
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="w-full text-center py-4 space-y-3">
-                  <div className="w-12 h-12 mx-auto bg-muted/50 rounded-full flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-muted-foreground" />
+                <div className="w-full flex items-center gap-6 py-2">
+                  <div className="w-14 h-14 bg-muted/50 rounded-full flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="w-7 h-7 text-muted-foreground" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground">Sem dados ESG</p>
-                    <p className="text-[10px] text-muted-foreground max-w-xs mx-auto">
-                      Cadastre emissões, funcionários ou políticas para calcular.
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Sem dados ESG</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cadastre emissões, funcionários ou políticas para calcular seu score.
                     </p>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => navigate('/inventario-gee')}
-                    className="gap-1 h-7 text-xs"
+                    className="gap-1.5 flex-shrink-0"
                   >
-                    <Plus className="w-3 h-3" />
+                    <Plus className="w-4 h-4" />
                     Iniciar
                   </Button>
                 </div>
