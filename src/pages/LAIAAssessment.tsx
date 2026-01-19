@@ -7,13 +7,15 @@ import { LAIASectorManager } from "@/components/laia/LAIASectorManager";
 import { LAIAAssessmentTable } from "@/components/laia/LAIAAssessmentTable";
 import { LAIAAssessmentForm } from "@/components/laia/LAIAAssessmentForm";
 import { LAIAAssessmentDetail } from "@/components/laia/LAIAAssessmentDetail";
+import { LAIAImportWizard } from "@/components/laia/LAIAImportWizard";
 import { 
   Leaf, 
   Plus, 
   LayoutDashboard, 
   FileSpreadsheet, 
   Building2,
-  ArrowLeft
+  ArrowLeft,
+  Upload
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { LAIAAssessment } from "@/types/laia";
@@ -26,6 +28,7 @@ export default function LAIAAssessmentPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedAssessment, setSelectedAssessment] = useState<LAIAAssessment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const handleView = (assessment: LAIAAssessment) => {
     setSelectedAssessment(assessment);
@@ -76,10 +79,16 @@ export default function LAIAAssessmentPage() {
           </div>
 
           {activeTab === "assessments" && viewMode === "list" && (
-            <Button onClick={() => setViewMode("create")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Avaliação
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Importar Excel
+              </Button>
+              <Button onClick={() => setViewMode("create")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Avaliação
+              </Button>
+            </div>
           )}
         </div>
 
@@ -139,6 +148,12 @@ export default function LAIAAssessmentPage() {
             setSelectedAssessment(null);
           }}
           onEdit={handleEdit}
+        />
+
+        {/* Import Wizard */}
+        <LAIAImportWizard
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
         />
       </div>
     </>
