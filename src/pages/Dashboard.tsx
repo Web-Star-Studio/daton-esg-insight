@@ -230,25 +230,34 @@ export default function Dashboard() {
   const handlePresetClick = (preset: string) => {
     const now = new Date();
     let from: Date;
-    let to: Date = now;
+    let to: Date;
 
     switch (preset) {
       case 'week':
+        // Últimos 7 dias
         from = new Date(now);
-        from.setDate(now.getDate() - 7);
+        from.setDate(now.getDate() - 6);
+        to = now;
         break;
       case 'month':
+        // Mês atual completo (dia 1 até último dia do mês)
         from = new Date(now.getFullYear(), now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         break;
       case 'quarter':
+        // Trimestre atual (3 meses)
         const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
         from = new Date(now.getFullYear(), quarterMonth, 1);
+        to = new Date(now.getFullYear(), quarterMonth + 3, 0);
         break;
       case 'year':
+        // Ano atual completo
         from = new Date(now.getFullYear(), 0, 1);
+        to = new Date(now.getFullYear(), 11, 31);
         break;
       default:
         from = new Date(now.getFullYear(), now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     }
 
     setDateRange({ from, to });
