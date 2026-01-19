@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings, ClipboardList, ExternalLink } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle, Clock, Eye, Edit, BarChart3, TrendingUp, Activity, Settings, ClipboardList, ExternalLink, Trash2, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserAndCompany } from "@/utils/auth";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NonConformityDetailsModal } from "@/components/NonConformityDetailsModal";
 import { NonConformitiesAdvancedDashboard } from "@/components/NonConformitiesAdvancedDashboard";
 import { ApprovalWorkflowManager } from "@/components/ApprovalWorkflowManager";
@@ -237,23 +239,65 @@ export default function NaoConformidades() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "open": 
       case "Aberta": return "bg-red-100 text-red-800";
-      case "Em Análise": return "bg-yellow-100 text-yellow-800";
-      case "Em Correção": return "bg-blue-100 text-blue-800";
+      case "in_progress":
+      case "Em Análise": 
+      case "Em Correção": return "bg-yellow-100 text-yellow-800";
+      case "closed":
       case "Fechada": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "open": 
+      case "Aberta": return "Pendente";
+      case "in_progress":
+      case "Em Análise": 
+      case "Em Correção": return "Em Andamento";
+      case "closed":
+      case "Fechada": return "Concluída";
+      case "cancelled": return "Cancelada";
+      default: return status;
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case "open":
       case "Aberta": return <AlertCircle className="h-4 w-4" />;
-      case "Em Análise": return <Clock className="h-4 w-4" />;
+      case "in_progress":
+      case "Em Análise": 
       case "Em Correção": return <Clock className="h-4 w-4" />;
+      case "closed":
       case "Fechada": return <CheckCircle className="h-4 w-4" />;
       default: return <AlertCircle className="h-4 w-4" />;
     }
   };
+
+  const [deleteNCId, setDeleteNCId] = useState<string | null>(null);
+
+  const deleteNCMutation = useMutation({
+    mutationFn: async (ncId: string) => {
+      const { error } = await supabase
+        .from("non_conformities")
+        .delete()
+        .eq("id", ncId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Não conformidade excluída com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
+      setDeleteNCId(null);
+    },
+    onError: (error: any) => {
+      console.error("Erro ao excluir NC:", error);
+      toast.error(error.message || "Erro ao excluir não conformidade");
+    }
+  });
 
   if (isLoading) {
     return (
@@ -487,14 +531,14 @@ export default function NaoConformidades() {
                     <TableCell>
                       <Badge className={getStatusColor(nc.status)}>
                         {getStatusIcon(nc.status)}
-                        <span className="ml-1">{nc.status}</span>
+                        <span className="ml-1">{getStatusLabel(nc.status)}</span>
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {format(new Date(nc.detected_date), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <Button 
                           variant="default" 
                           size="sm"
@@ -503,30 +547,43 @@ export default function NaoConformidades() {
                           <ExternalLink className="h-4 w-4 mr-1" />
                           <span className="text-xs">Gerenciar</span>
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onMouseEnter={() => prefetchNCDetails(nc.id)}
-                          onClick={() => {
-                            setModalMode('view');
-                            setSelectedNCId(nc.id);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          <span className="text-xs">Ver</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onMouseEnter={() => prefetchNCDetails(nc.id)}
-                          onClick={() => {
-                            setModalMode('edit');
-                            setSelectedNCId(nc.id);
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          <span className="text-xs">Editar</span>
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onMouseEnter={() => prefetchNCDetails(nc.id)}
+                              onClick={() => {
+                                setModalMode('view');
+                                setSelectedNCId(nc.id);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Visualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onMouseEnter={() => prefetchNCDetails(nc.id)}
+                              onClick={() => {
+                                setModalMode('edit');
+                                setSelectedNCId(nc.id);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteNCId(nc.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -567,6 +624,31 @@ export default function NaoConformidades() {
       open={isWorkflowManagerOpen}
       onOpenChange={setIsWorkflowManagerOpen}
     />
+
+    {/* Delete NC Confirmation Dialog */}
+    <AlertDialog open={!!deleteNCId} onOpenChange={(open) => !open && setDeleteNCId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="h-5 w-5" />
+            Excluir Não Conformidade
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir esta não conformidade? Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={() => deleteNCId && deleteNCMutation.mutate(deleteNCId)}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
