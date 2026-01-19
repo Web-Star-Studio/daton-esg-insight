@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { DateRange } from 'react-day-picker';
 import { getDashboardStats, formatEmissionValue, formatEmployeeCount, formatPercentage } from '@/services/dashboardStats';
 import { calculateESGScores, ESGScores } from '@/services/esgScoreService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { EnhancedCard } from '@/components/ui/enhanced-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -28,7 +30,6 @@ import {
   AlertCircle,
   Clock,
   Eye,
-  Filter,
   MoreVertical
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -211,13 +212,15 @@ const RECENT_ACTIVITIES: RecentActivity[] = [
 ];
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedTimeframe, setSelectedTimeframe] = useState('month');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date()
+  });
 
   const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['dashboard-stats', selectedTimeframe],
-    queryFn: () => getDashboardStats(selectedTimeframe as any),
+    queryKey: ['dashboard-stats', dateRange],
+    queryFn: () => getDashboardStats('month'),
     refetchInterval: 60000, // Refresh every minute
   });
 
@@ -229,13 +232,6 @@ export default function Dashboard() {
 
   const isLoading = isLoadingStats || isLoadingESG;
   const kpiCards = getKPICards(dashboardStats);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return '🌅 Bom dia';
-    if (hour < 18) return '☀️ Boa tarde';
-    return '🌙 Boa noite';
-  };
 
   const getChangeColor = (changeType: KPIItem['changeType']) => {
     switch (changeType) {
@@ -276,11 +272,11 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-fade-in content-area" data-tour="dashboard-main" data-testid="dashboard-content">
       {/* Header */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-foreground animate-fade-in">
-              {getGreeting()}, {user?.full_name?.split(' ')[0] || 'Usuário'}! 👋
+              Dashboard ESG
             </h1>
             <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
               Aqui está um resumo do seu desempenho ESG
@@ -288,22 +284,11 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            {selectedTimeframe !== 'month' && (
-              <Badge variant="secondary" className="gap-1">
-                <Filter className="w-3 h-3" />
-                Filtro ativo
-              </Badge>
-            )}
-            <select 
-              value={selectedTimeframe}
-              onChange={(e) => setSelectedTimeframe(e.target.value)}
-              className="px-3 py-2 text-sm border border-border/50 rounded-lg bg-background hover:border-border transition-colors focus-ring"
-            >
-              <option value="week">Esta semana</option>
-              <option value="month">Este mês</option>
-              <option value="quarter">Este trimestre</option>
-              <option value="year">Este ano</option>
-            </select>
+            <DatePickerWithRange 
+              date={dateRange} 
+              onDateChange={setDateRange}
+              className="w-[280px]"
+            />
           </div>
         </div>
 
