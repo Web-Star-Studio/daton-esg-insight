@@ -25,8 +25,8 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
   };
 
   return (
-    <div className="w-full py-4 overflow-x-auto">
-      <div className="flex items-start justify-center gap-4 min-w-max px-4">
+    <div className="w-full py-4">
+      <div className="flex items-start justify-between px-2">
         {stages.map((stage, index) => {
           const status = getStageStatus(stage.number);
           const Icon = stage.icon;
@@ -34,11 +34,11 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
           const isLast = index === stages.length - 1;
 
           return (
-            <div key={stage.number} className="flex items-start">
+            <div key={stage.number} className="flex items-start flex-1">
               {/* Stage item */}
               <div
                 className={cn(
-                  "flex flex-col items-center relative z-10",
+                  "flex flex-col items-center relative z-10 flex-1",
                   isClickable && "cursor-pointer group"
                 )}
                 onClick={() => isClickable && onStageClick?.(stage.number)}
@@ -46,7 +46,7 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
                 {/* Stage circle */}
                 <div
                   className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 shrink-0",
+                    "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 shrink-0",
                     status === "completed" && "bg-primary border-primary text-primary-foreground",
                     status === "current" && "bg-primary/10 border-primary text-primary ring-4 ring-primary/20",
                     status === "pending" && "bg-muted border-muted-foreground/30 text-muted-foreground",
@@ -54,16 +54,16 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
                   )}
                 >
                   {status === "completed" ? (
-                    <Check className="h-6 w-6" />
+                    <Check className="h-5 w-5" />
                   ) : (
-                    <Icon className="h-6 w-6" />
+                    <Icon className="h-5 w-5" />
                   )}
                 </div>
 
                 {/* Stage number badge */}
                 <span
                   className={cn(
-                    "absolute top-0 right-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center",
+                    "absolute top-0 right-1/4 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center",
                     status === "completed" && "bg-green-500 text-white",
                     status === "current" && "bg-primary text-primary-foreground",
                     status === "pending" && "bg-muted-foreground/20 text-muted-foreground"
@@ -73,10 +73,10 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
                 </span>
 
                 {/* Stage label */}
-                <div className="text-center mt-3 w-24">
+                <div className="text-center mt-2">
                   <p
                     className={cn(
-                      "text-xs font-medium transition-colors leading-tight",
+                      "text-[11px] font-medium transition-colors leading-tight",
                       status === "current" && "text-primary",
                       status === "completed" && "text-foreground",
                       status === "pending" && "text-muted-foreground"
@@ -84,7 +84,7 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
                   >
                     {stage.label}
                   </p>
-                  <p className="text-[10px] text-muted-foreground hidden sm:block mt-1 leading-tight">
+                  <p className="text-[9px] text-muted-foreground hidden md:block mt-0.5 leading-tight max-w-[80px] mx-auto">
                     {stage.description}
                   </p>
                 </div>
@@ -92,10 +92,10 @@ export function NCStageWizard({ currentStage, onStageClick, completedStages = []
 
               {/* Connection line */}
               {!isLast && (
-                <div className="flex items-center h-14 px-2">
+                <div className="flex items-center h-12 -mx-1">
                   <div 
                     className={cn(
-                      "w-8 h-0.5 transition-colors duration-300",
+                      "w-4 h-0.5 transition-colors duration-300",
                       status === "completed" ? "bg-primary" : "bg-muted"
                     )}
                   />
