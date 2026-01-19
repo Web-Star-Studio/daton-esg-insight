@@ -217,17 +217,51 @@ export default function Dashboard() {
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     to: new Date()
   });
+  const [activePreset, setActivePreset] = useState<string>('month');
+
+  const handlePresetClick = (preset: string) => {
+    const now = new Date();
+    let from: Date;
+    let to: Date = now;
+
+    switch (preset) {
+      case 'week':
+        from = new Date(now);
+        from.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'quarter':
+        const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+        from = new Date(now.getFullYear(), quarterMonth, 1);
+        break;
+      case 'year':
+        from = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    setDateRange({ from, to });
+    setActivePreset(preset);
+  };
+
+  const handleDateChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    setActivePreset('custom');
+  };
 
   const { data: dashboardStats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['dashboard-stats', dateRange],
     queryFn: () => getDashboardStats('month'),
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   const { data: esgScores, isLoading: isLoadingESG } = useQuery({
     queryKey: ['esg-scores'],
     queryFn: calculateESGScores,
-    refetchInterval: 300000, // Refresh every 5 minutes
+    refetchInterval: 300000,
   });
 
   const isLoading = isLoadingStats || isLoadingESG;
@@ -283,11 +317,29 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center gap-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+              {[
+                { key: 'week', label: 'Semana' },
+                { key: 'month', label: 'Mês' },
+                { key: 'quarter', label: 'Trimestre' },
+                { key: 'year', label: 'Ano' },
+              ].map((preset) => (
+                <Button
+                  key={preset.key}
+                  variant={activePreset === preset.key ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handlePresetClick(preset.key)}
+                  className="text-xs h-8 px-3"
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
             <DatePickerWithRange 
               date={dateRange} 
-              onDateChange={setDateRange}
-              className="w-[280px]"
+              onDateChange={handleDateChange}
+              className="w-[260px]"
             />
           </div>
         </div>
