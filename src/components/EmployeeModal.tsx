@@ -313,6 +313,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     // Prevenir duplo clique
     if (isSubmitting || loading) return;
     
+    // Verificar se companyId está disponível para geração automática de código
+    if (!companyId && !formData.employee_code.trim() && !employee) {
+      toast.error('Carregando configurações... tente novamente em instantes');
+      return;
+    }
+    
     // 1. PRIMEIRO: Validar com dados originais do formulário (strings)
     try {
       employeeSchema.parse({
