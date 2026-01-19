@@ -10,6 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -19,6 +26,7 @@ import {
   Award,
   Bell,
   Calendar,
+  CalendarDays,
   BarChart3,
   Target,
   Zap,
@@ -317,30 +325,50 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-1 p-1.5 bg-muted/50 border border-border/50 rounded-xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            {[
-              { key: 'week', label: 'Semana' },
-              { key: 'month', label: 'Mês' },
-              { key: 'quarter', label: 'Trimestre' },
-              { key: 'year', label: 'Ano' },
-            ].map((preset) => (
-              <Button
-                key={preset.key}
-                variant={activePreset === preset.key ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => handlePresetClick(preset.key)}
-                className="text-xs h-8 px-3 rounded-lg"
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="gap-2 animate-fade-in"
+                style={{ animationDelay: '0.2s' }}
               >
-                {preset.label}
+                <CalendarDays className="h-4 w-4" />
+                <span className="text-sm">
+                  {dateRange?.from && dateRange?.to 
+                    ? `${format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} - ${format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}`
+                    : 'Selecionar período'
+                  }
+                </span>
               </Button>
-            ))}
-            <div className="w-px h-6 bg-border/50 mx-1" />
-            <DatePickerWithRange 
-              date={dateRange} 
-              onDateChange={handleDateChange}
-              className="w-[240px]"
-            />
-          </div>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4 bg-background border border-border shadow-lg z-50" align="end">
+              <div className="space-y-4">
+                <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+                  {[
+                    { key: 'week', label: 'Semana' },
+                    { key: 'month', label: 'Mês' },
+                    { key: 'quarter', label: 'Trimestre' },
+                    { key: 'year', label: 'Ano' },
+                  ].map((preset) => (
+                    <Button
+                      key={preset.key}
+                      variant={activePreset === preset.key ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => handlePresetClick(preset.key)}
+                      className="text-xs h-8 px-3 rounded-lg flex-1"
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+                <DatePickerWithRange 
+                  date={dateRange} 
+                  onDateChange={handleDateChange}
+                  className="w-full"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Quick Actions */}
