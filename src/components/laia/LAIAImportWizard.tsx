@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,14 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -31,20 +40,24 @@ import {
   Loader2,
   Building2,
   FileCheck,
+  MapPin,
 } from 'lucide-react';
 import { useLAIAImport } from '@/hooks/useLAIAImport';
 import { downloadLAIATemplate } from '@/services/laiaImport';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LAIAImportWizardProps {
   open: boolean;
   onClose: () => void;
 }
 
-type Step = 'upload' | 'preview' | 'validate' | 'result';
+type Step = 'upload' | 'branch' | 'preview' | 'validate' | 'result';
 
 const STEPS: { key: Step; label: string }[] = [
   { key: 'upload', label: 'Upload' },
+  { key: 'branch', label: 'Filial' },
   { key: 'preview', label: 'Prévia' },
   { key: 'validate', label: 'Validação' },
   { key: 'result', label: 'Resultado' },
@@ -53,6 +66,9 @@ const STEPS: { key: Step; label: string }[] = [
 export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [skipBranch, setSkipBranch] = useState(false);
+  const { user } = useAuth();
   
   const {
     parsedRows,
@@ -67,13 +83,29 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
     importAssessments,
     reset,
   } = useLAIAImport();
+
+  // Fetch branches for selection
+  const { data: branches = [], isLoading: isLoadingBranches } = useQuery({
+    queryKey: ['branches', user?.company?.id],
+    queryFn: async () => {
+      if (!user?.company?.id) return [];
+      const { data, error } = await supabase
+        .from('branches')
+        .select('id, name, code, city, state')
+        .eq('company_id', user.company.id)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!user?.company?.id,
+  });
   
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
     if (selectedFile) {
       setFile(selectedFile);
       parseFile(selectedFile, {
-        onSuccess: () => setStep('preview'),
+        onSuccess: () => setStep('branch'),
       });
     }
   }, [parseFile]);
@@ -87,6 +119,10 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024, // 10MB
   });
+
+  const handleContinueFromBranch = () => {
+    setStep('preview');
+  };
   
   const handleValidate = () => {
     validate(parsedRows, {
@@ -96,24 +132,29 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
   
   const handleImport = () => {
     const rowsToImport = validationResult?.validRows || parsedRows;
-    importAssessments(rowsToImport, {
-      onSuccess: () => setStep('result'),
-    });
+    const branchToUse = skipBranch ? null : selectedBranchId;
+    importAssessments(rowsToImport, branchToUse);
+    setStep('result');
   };
   
   const handleClose = () => {
     reset();
     setStep('upload');
     setFile(null);
+    setSelectedBranchId(null);
+    setSkipBranch(false);
     onClose();
   };
   
   const handleBack = () => {
-    if (step === 'preview') setStep('upload');
+    if (step === 'branch') setStep('upload');
+    else if (step === 'preview') setStep('branch');
     else if (step === 'validate') setStep('preview');
   };
   
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
+
+  const selectedBranch = branches.find(b => b.id === selectedBranchId);
   
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -193,6 +234,91 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
               )}
             </div>
           )}
+
+          {step === 'branch' && (
+            <div className="p-6 space-y-6">
+              <div className="text-center mb-6">
+                <MapPin className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <h3 className="text-lg font-semibold">Selecione a Filial</h3>
+                <p className="text-muted-foreground">
+                  As {parsedRows.length} avaliações serão vinculadas à filial selecionada
+                </p>
+              </div>
+
+              {isLoadingBranches ? (
+                <div className="flex items-center justify-center gap-2 text-muted-foreground py-8">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Carregando filiais...</span>
+                </div>
+              ) : branches.length === 0 ? (
+                <div className="text-center py-8">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground mb-2">Nenhuma filial cadastrada</p>
+                  <p className="text-sm text-muted-foreground">
+                    As avaliações serão importadas sem vinculação a uma filial específica.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Select 
+                    value={selectedBranchId || ''} 
+                    onValueChange={(value) => {
+                      setSelectedBranchId(value);
+                      setSkipBranch(false);
+                    }}
+                    disabled={skipBranch}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione uma filial..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map(branch => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span>{branch.name}</span>
+                            {branch.city && (
+                              <span className="text-muted-foreground">
+                                ({branch.city}{branch.state ? `, ${branch.state}` : ''})
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex items-center gap-2 p-4 rounded-lg border bg-muted/50">
+                    <Checkbox 
+                      id="skip-branch"
+                      checked={skipBranch}
+                      onCheckedChange={(checked) => {
+                        setSkipBranch(checked === true);
+                        if (checked) setSelectedBranchId(null);
+                      }}
+                    />
+                    <label htmlFor="skip-branch" className="text-sm cursor-pointer">
+                      Importar sem vincular a uma filial específica
+                    </label>
+                  </div>
+
+                  {selectedBranch && (
+                    <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Filial selecionada: {selectedBranch.name}</span>
+                      </div>
+                      {selectedBranch.city && (
+                        <p className="text-sm text-muted-foreground mt-1 ml-7">
+                          {selectedBranch.city}{selectedBranch.state ? `, ${selectedBranch.state}` : ''}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           
           {step === 'preview' && (
             <div className="p-4 space-y-4">
@@ -202,6 +328,12 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
                   <span className="font-medium">{file?.name}</span>
                   <Badge variant="secondary">{parsedRows.length} registros</Badge>
                 </div>
+                {selectedBranch && (
+                  <Badge variant="outline" className="gap-1">
+                    <Building2 className="h-3 w-3" />
+                    {selectedBranch.name}
+                  </Badge>
+                )}
               </div>
               
               <ScrollArea className="h-[400px] border rounded-lg">
@@ -255,6 +387,16 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
           
           {step === 'validate' && validationResult && (
             <div className="p-4 space-y-4">
+              {/* Branch indicator */}
+              {selectedBranch && (
+                <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm">
+                    Importando para a filial: <strong>{selectedBranch.name}</strong>
+                  </span>
+                </div>
+              )}
+
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50 text-center">
@@ -352,6 +494,9 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
                 </h3>
                 <p className="text-muted-foreground">
                   {importResult.imported} avaliações importadas com sucesso
+                  {selectedBranch && (
+                    <span> para a filial <strong>{selectedBranch.name}</strong></span>
+                  )}
                 </p>
               </div>
               
@@ -396,7 +541,7 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-2">
           <div>
-            {(step === 'preview' || step === 'validate') && (
+            {(step === 'branch' || step === 'preview' || step === 'validate') && (
               <Button variant="ghost" onClick={handleBack} disabled={isImporting}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar
@@ -408,6 +553,16 @@ export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
             <Button variant="outline" onClick={handleClose}>
               {step === 'result' ? 'Fechar' : 'Cancelar'}
             </Button>
+
+            {step === 'branch' && (
+              <Button 
+                onClick={handleContinueFromBranch} 
+                disabled={!skipBranch && !selectedBranchId && branches.length > 0}
+              >
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Continuar
+              </Button>
+            )}
             
             {step === 'preview' && (
               <Button onClick={handleValidate} disabled={isValidating}>
