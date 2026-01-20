@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -31,8 +30,9 @@ import {
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager } from "@/services/branches";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Search } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
+import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
 import { unifiedToast } from "@/utils/unifiedToast";
 
 const BRAZILIAN_STATES = [
@@ -68,7 +68,10 @@ const BRAZILIAN_STATES = [
 const branchFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   code: z.string().optional(),
+  cep: z.string().optional(),
   address: z.string().optional(),
+  street_number: z.string().optional(),
+  neighborhood: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   country: z.string().default("Brasil"),
@@ -90,6 +93,7 @@ interface BranchFormModalProps {
 
 export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalProps) {
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: users, isLoading: isLoadingUsers } = useCompanyUsers();
@@ -102,7 +106,10 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
     defaultValues: {
       name: "",
       code: "",
+      cep: "",
       address: "",
+      street_number: "",
+      neighborhood: "",
       city: "",
       state: "",
       country: "Brasil",
@@ -120,7 +127,10 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       form.reset({
         name: branch.name,
         code: branch.code || "",
+        cep: branch.cep || "",
         address: branch.address || "",
+        street_number: branch.street_number || "",
+        neighborhood: branch.neighborhood || "",
         city: branch.city || "",
         state: branch.state || "",
         country: branch.country || "Brasil",
@@ -135,7 +145,10 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       form.reset({
         name: "",
         code: "",
+        cep: "",
         address: "",
+        street_number: "",
+        neighborhood: "",
         city: "",
         state: "",
         country: "Brasil",
@@ -148,6 +161,57 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       });
     }
   }, [branch, form]);
+
+  const handleCepChange = async (cep: string) => {
+    const formattedCep = formatCep(cep);
+    form.setValue("cep", formattedCep);
+
+    // Only search when CEP is complete (8 digits)
+    if (!isValidCep(cep)) {
+      return;
+    }
+
+    setIsLoadingCep(true);
+    try {
+      const addressData = await fetchAddressByCep(cep);
+      
+      if (addressData) {
+        form.setValue("address", addressData.street);
+        form.setValue("neighborhood", addressData.neighborhood);
+        form.setValue("city", addressData.city);
+        form.setValue("state", addressData.state);
+        form.setValue("cep", addressData.cep);
+        
+        unifiedToast.success("Endereço encontrado!", {
+          description: `${addressData.street}, ${addressData.neighborhood} - ${addressData.city}/${addressData.state}`
+        });
+
+        // Automatically fetch coordinates after address is found
+        await handleGeocodeAfterCep(addressData.city, addressData.state, addressData.street);
+      } else {
+        unifiedToast.error("CEP não encontrado", {
+          description: "Verifique o CEP e tente novamente"
+        });
+      }
+    } catch (error) {
+      unifiedToast.error("Erro ao buscar CEP");
+    } finally {
+      setIsLoadingCep(false);
+    }
+  };
+
+  const handleGeocodeAfterCep = async (city: string, state: string, street?: string) => {
+    try {
+      const result = await geocodeAddress(city, state, "Brasil", street);
+      if (result) {
+        form.setValue("latitude", result.latitude);
+        form.setValue("longitude", result.longitude);
+      }
+    } catch (error) {
+      // Silent fail for automatic geocoding
+      console.error("Auto-geocoding failed:", error);
+    }
+  };
 
   const handleGeocode = async () => {
     const city = form.getValues("city");
@@ -181,7 +245,10 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
     const payload = {
       name: data.name,
       code: data.code || undefined,
+      cep: data.cep || undefined,
       address: data.address || undefined,
+      street_number: data.street_number || undefined,
+      neighborhood: data.neighborhood || undefined,
       city: data.city || undefined,
       state: data.state || undefined,
       country: data.country || "Brasil",
@@ -249,27 +316,90 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
               />
             </div>
 
-            {/* Endereço */}
+            {/* CEP */}
             <FormField
               control={form.control}
-              name="address"
+              name="cep"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Endereço</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Endereço completo"
-                      className="resize-none"
-                      rows={2}
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>CEP</FormLabel>
+                  <div className="relative">
+                    <FormControl>
+                      <Input
+                        placeholder="00000-000"
+                        maxLength={9}
+                        {...field}
+                        onChange={(e) => handleCepChange(e.target.value)}
+                        className="pr-10"
+                      />
+                    </FormControl>
+                    {isLoadingCep && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                    {!isLoadingCep && field.value && isValidCep(field.value) && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Search className="h-4 w-4 text-green-500" />
+                      </div>
+                    )}
+                  </div>
+                  <FormDescription className="text-xs">
+                    Digite o CEP para preencher o endereço automaticamente
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Endereço (Logradouro) */}
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-3">
+                    <FormLabel>Endereço</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Rua, Avenida, etc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Número */}
+              <FormField
+                control={form.control}
+                name="street_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nº" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Bairro */}
+              <FormField
+                control={form.control}
+                name="neighborhood"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bairro</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Bairro" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Cidade */}
               <FormField
                 control={form.control}
@@ -310,7 +440,9 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* País */}
               <FormField
                 control={form.control}
@@ -325,9 +457,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Telefone */}
               <FormField
                 control={form.control}
@@ -342,7 +472,9 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Gerente Responsável */}
               <FormField
                 control={form.control}
@@ -368,9 +500,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Status */}
               <FormField
                 control={form.control}
@@ -393,29 +523,29 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                   </FormItem>
                 )}
               />
-
-              {/* É Matriz */}
-              <FormField
-                control={form.control}
-                name="is_headquarters"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <FormLabel>É Matriz?</FormLabel>
-                      <FormDescription className="text-xs">
-                        Marque se esta é a sede principal
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
             </div>
+
+            {/* É Matriz */}
+            <FormField
+              control={form.control}
+              name="is_headquarters"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>É Matriz?</FormLabel>
+                    <FormDescription className="text-xs">
+                      Marque se esta é a sede principal
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             {/* Coordenadas */}
             <div className="space-y-3">
