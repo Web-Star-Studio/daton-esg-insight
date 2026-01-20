@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,7 +31,9 @@ import {
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager } from "@/services/branches";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
+import { geocodeAddress } from "@/utils/geocoding";
+import { unifiedToast } from "@/utils/unifiedToast";
 
 const BRAZILIAN_STATES = [
   { value: "AC", label: "Acre" },
@@ -74,6 +76,8 @@ const branchFormSchema = z.object({
   manager_id: z.string().optional(),
   is_headquarters: z.boolean().default(false),
   status: z.string().default("Ativa"),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
 });
 
 type BranchFormData = z.infer<typeof branchFormSchema>;
@@ -85,6 +89,7 @@ interface BranchFormModalProps {
 }
 
 export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalProps) {
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: users, isLoading: isLoadingUsers } = useCompanyUsers();
@@ -105,6 +110,8 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       manager_id: "",
       is_headquarters: false,
       status: "Ativa",
+      latitude: null,
+      longitude: null,
     },
   });
 
@@ -121,6 +128,8 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
         manager_id: branch.manager_id || "",
         is_headquarters: branch.is_headquarters,
         status: branch.status,
+        latitude: branch.latitude ?? null,
+        longitude: branch.longitude ?? null,
       });
     } else {
       form.reset({
@@ -134,9 +143,39 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
         manager_id: "",
         is_headquarters: false,
         status: "Ativa",
+        latitude: null,
+        longitude: null,
       });
     }
   }, [branch, form]);
+
+  const handleGeocode = async () => {
+    const city = form.getValues("city");
+    const state = form.getValues("state");
+    const country = form.getValues("country");
+    const address = form.getValues("address");
+
+    if (!city && !state) {
+      unifiedToast.error("Informe cidade ou estado para buscar coordenadas");
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeAddress(city, state, country, address);
+      if (result) {
+        form.setValue("latitude", result.latitude);
+        form.setValue("longitude", result.longitude);
+        unifiedToast.success("Coordenadas encontradas!");
+      } else {
+        unifiedToast.error("Não foi possível encontrar as coordenadas");
+      }
+    } catch (error) {
+      unifiedToast.error("Erro ao buscar coordenadas");
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
 
   const onSubmit = (data: BranchFormData) => {
     const payload = {
@@ -150,6 +189,8 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       manager_id: data.manager_id || undefined,
       is_headquarters: data.is_headquarters,
       status: data.status,
+      latitude: data.latitude ?? undefined,
+      longitude: data.longitude ?? undefined,
     };
 
     if (isEditing && branch) {
@@ -374,6 +415,76 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Coordenadas */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-sm font-medium">Coordenadas (para mapa)</FormLabel>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGeocode}
+                  disabled={isGeocoding}
+                  className="gap-2"
+                >
+                  {isGeocoding ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <MapPin className="h-4 w-4" />
+                  )}
+                  Buscar Coordenadas
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Latitude</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="-23.5505"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            field.onChange(val === "" ? null : parseFloat(val));
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Longitude</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="-46.6333"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            field.onChange(val === "" ? null : parseFloat(val));
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Actions */}

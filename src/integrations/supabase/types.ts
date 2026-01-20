@@ -3810,6 +3810,8 @@ export type Database = {
           created_at: string | null
           id: string
           is_headquarters: boolean | null
+          latitude: number | null
+          longitude: number | null
           manager_id: string | null
           name: string
           phone: string | null
@@ -3826,6 +3828,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_headquarters?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           manager_id?: string | null
           name: string
           phone?: string | null
@@ -3842,6 +3846,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_headquarters?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           manager_id?: string | null
           name?: string
           phone?: string | null
