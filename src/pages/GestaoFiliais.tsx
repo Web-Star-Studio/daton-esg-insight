@@ -199,15 +199,6 @@ export default function GestaoFiliais() {
                                 : branch.city || "-"}
                             </div>
                           </TableCell>
-                            {branch.phone ? (
-                              <div className="flex items-center gap-1 text-sm">
-                                <Phone className="h-3 w-3 text-muted-foreground" />
-                                {branch.phone}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
                           <TableCell>
                             {branch.manager ? (
                               <div className="flex items-center gap-1 text-sm">
