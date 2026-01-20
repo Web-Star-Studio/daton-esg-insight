@@ -100,6 +100,7 @@ const AdvancedReportingSystem = lazy(() => import("./components/AdvancedReportin
 const GestaoStakeholders = lazy(() => import("./pages/GestaoStakeholders"));
 const AnaliseMaterialidade = lazy(() => import("./pages/AnaliseMaterialidade"));
 const ConfiguracaoOrganizacional = lazy(() => import("./pages/ConfiguracaoOrganizacional"));
+const GestaoFiliais = lazy(() => import("./pages/GestaoFiliais"));
 const SocialESG = lazy(() => import("./pages/SocialESG"));
 const GovernancaESG = lazy(() => import("./pages/GovernancaESG"));
 const RelatoriosIntegrados = lazy(() => import("./pages/RelatoriosIntegrados"));
@@ -724,6 +725,9 @@ const AppContent = () => {
                 <PublicForm />
               </LazyPageWrapper>
             } />
+
+            {/* Gestão de Filiais */}
+            <Route path="/gestao-filiais" element={<ProtectedLazyPageWrapper><GestaoFiliais /></ProtectedLazyPageWrapper>} />
 
             {/* System Status - Production Readiness */}
             <Route path="/system-status" element={<ProtectedLazyPageWrapper><SystemStatus /></ProtectedLazyPageWrapper>} />
