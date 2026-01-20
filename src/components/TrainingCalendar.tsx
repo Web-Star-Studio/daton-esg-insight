@@ -45,17 +45,19 @@ export function TrainingCalendar({ events, onEventClick, onNewEventClick }: Trai
   const [view, setView] = useState('month');
   const [date, setDate] = useState(new Date());
 
-  const eventStyleGetter = (event: TrainingEvent) => {
-    const categoryColors: Record<string, string> = {
-      'Segurança': '#ef4444',
-      'Desenvolvimento': '#8b5cf6',
-      'Técnico': '#3b82f6',
-      'Compliance': '#f59e0b',
-      'Liderança': '#10b981',
-      'Qualidade': '#06b6d4',
-    };
+const eventStyleGetter = (event: TrainingEvent) => {
+  const categoryColors: Record<string, string> = {
+    'Segurança': 'hsl(0, 84%, 60%)',
+    'Desenvolvimento': 'hsl(280, 67%, 52%)',
+    'Técnico': 'hsl(199, 89%, 48%)',
+    'Compliance': 'hsl(38, 92%, 50%)',
+    'Liderança': 'hsl(151, 100%, 37%)',
+    'Qualidade': 'hsl(199, 89%, 48%)',
+    'NR': 'hsl(151, 100%, 37%)',
+  };
 
-    const backgroundColor = categoryColors[event.resource.category] || '#6b7280';
+  // Default para a cor primária do sistema (verde Daton)
+  const backgroundColor = categoryColors[event.resource.category] || 'hsl(151, 100%, 37%)';
     
     return {
       style: {
