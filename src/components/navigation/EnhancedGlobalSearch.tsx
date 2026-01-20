@@ -36,7 +36,7 @@ const searchData: SearchResult[] = [
 
   // SOCIAL (S)
   { id: 'social-dashboard', title: 'Dashboard Social', path: '/social-esg', description: 'Visão geral consolidada dos aspectos sociais', category: 'Social', icon: 'Users', keywords: ['social', 'dashboard', 'aspectos', 'painel'] },
-  { id: 'employee-management', title: 'Gestão de Funcionários', path: '/gestao-funcionarios', description: 'Gestão de recursos humanos', category: 'Social', icon: 'Users', keywords: ['funcionarios', 'rh', 'recursos', 'humanos', 'colaboradores'] },
+  { id: 'employee-management', title: 'Gestão de Colaboradores', path: '/gestao-funcionarios', description: 'Gestão de recursos humanos', category: 'Social', icon: 'Users', keywords: ['funcionarios', 'rh', 'recursos', 'humanos', 'colaboradores'] },
   { id: 'health-safety', title: 'Saúde e Segurança do Trabalho', path: '/saude-seguranca', description: 'SST e bem-estar dos colaboradores', category: 'Social', icon: 'Shield', keywords: ['saude', 'seguranca', 'sst', 'trabalho', 'bem-estar'] },
   { id: 'training-development', title: 'Treinamentos e Desenvolvimento', path: '/treinamentos', description: 'Capacitação e desenvolvimento profissional', category: 'Social', icon: 'Users', keywords: ['treinamento', 'capacitacao', 'educacao', 'desenvolvimento'] },
 

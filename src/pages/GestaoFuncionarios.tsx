@@ -116,7 +116,7 @@ export default function GestaoFuncionarios() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestão de Funcionários</h1>
+          <h1 className="text-3xl font-bold">Gestão de Colaboradores</h1>
           <p className="text-muted-foreground">
             Gerencie informações, contratos e dados dos funcionários
           </p>

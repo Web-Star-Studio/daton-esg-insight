@@ -101,7 +101,7 @@ const SYSTEM_PAGES = [
   { title: 'Indicadores de Qualidade', path: '/indicadores-qualidade', icon: BarChart3, keywords: ['indicador', 'kpi', 'metrica', 'quality'] },
   
   // RH
-  { title: 'Gestão de Funcionários', path: '/gestao-funcionarios', icon: Users, keywords: ['funcionario', 'colaborador', 'rh', 'employee'] },
+  { title: 'Gestão de Colaboradores', path: '/gestao-funcionarios', icon: Users, keywords: ['funcionario', 'colaborador', 'rh', 'employee'] },
   { title: 'Treinamentos', path: '/gestao-treinamentos', icon: GraduationCap, keywords: ['treinamento', 'capacitacao', 'curso', 'training'] },
   { title: 'Gestão de Desempenho', path: '/gestao-desempenho', icon: Award, keywords: ['avaliacao', 'desempenho', 'pdi', 'performance'] },
   { title: 'Recrutamento', path: '/recrutamento', icon: UserPlus, keywords: ['vaga', 'selecao', 'contratacao', 'recruitment'] },

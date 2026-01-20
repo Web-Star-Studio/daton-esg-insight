@@ -89,7 +89,7 @@ export const useBreadcrumbs = () => {
       '/residuos': [{ label: 'Ambiental', href: '/gestao-esg' }, { label: 'Gestão de Resíduos' }],
       '/licenciamento': [{ label: 'Qualidade', href: '/quality-dashboard' }, { label: 'Licenciamento' }],
       '/social-esg': [{ label: 'Social' }],
-      '/gestao-funcionarios': [{ label: 'Social', href: '/social-esg' }, { label: 'Gestão de Funcionários' }],
+      '/gestao-funcionarios': [{ label: 'Social', href: '/social-esg' }, { label: 'Gestão de Colaboradores' }],
       '/seguranca-trabalho': [{ label: 'Social', href: '/social-esg' }, { label: 'Segurança do Trabalho' }],
       '/gestao-treinamentos': [{ label: 'Social', href: '/social-esg' }, { label: 'Treinamentos' }],
       '/desenvolvimento-carreira': [{ label: 'Social', href: '/social-esg' }, { label: 'Desenvolvimento de Carreira' }],
