@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronsUpDown, Plus, Building2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus, Building2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -84,7 +84,21 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
             Nenhuma filial encontrada.
           </CommandEmpty>
           <CommandGroup>
-            {/* Opção de criar nova filial - sempre visível */}
+            {/* Opção de remover filial - só aparece quando há uma selecionada */}
+            {value && selectedBranch && (
+              <CommandItem
+                onSelect={() => {
+                  onValueChange('');
+                  setOpen(false);
+                }}
+                className="text-destructive"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remover filial
+              </CommandItem>
+            )}
+            
+            {/* Opção de criar nova filial */}
             {showNewBranch ? (
               <div className="p-2 space-y-2 border-b">
                 <input
