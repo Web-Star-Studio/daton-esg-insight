@@ -124,6 +124,8 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
               <Input
                 id="start_date"
                 type="date"
+                min="1900-01-01"
+                max="2100-12-31"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 required
@@ -134,6 +136,8 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
               <Input
                 id="end_date"
                 type="date"
+                min="1900-01-01"
+                max="2100-12-31"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 disabled={formData.is_current}
