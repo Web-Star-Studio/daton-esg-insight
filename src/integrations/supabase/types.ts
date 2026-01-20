@@ -3803,6 +3803,7 @@ export type Database = {
       branches: {
         Row: {
           address: string | null
+          cep: string | null
           city: string | null
           code: string | null
           company_id: string
@@ -3814,13 +3815,16 @@ export type Database = {
           longitude: number | null
           manager_id: string | null
           name: string
+          neighborhood: string | null
           phone: string | null
           state: string | null
           status: string | null
+          street_number: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
+          cep?: string | null
           city?: string | null
           code?: string | null
           company_id: string
@@ -3832,13 +3836,16 @@ export type Database = {
           longitude?: number | null
           manager_id?: string | null
           name: string
+          neighborhood?: string | null
           phone?: string | null
           state?: string | null
           status?: string | null
+          street_number?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
+          cep?: string | null
           city?: string | null
           code?: string | null
           company_id?: string
@@ -3850,9 +3857,11 @@ export type Database = {
           longitude?: number | null
           manager_id?: string | null
           name?: string
+          neighborhood?: string | null
           phone?: string | null
           state?: string | null
           status?: string | null
+          street_number?: string | null
           updated_at?: string | null
         }
         Relationships: [

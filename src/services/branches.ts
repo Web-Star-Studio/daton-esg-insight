@@ -9,6 +9,9 @@ export interface Branch {
   code?: string;
   is_headquarters: boolean;
   address?: string;
+  cep?: string;
+  neighborhood?: string;
+  street_number?: string;
   city?: string;
   state?: string;
   country?: string;
