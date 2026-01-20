@@ -10,6 +10,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Form,
   FormControl,
   FormField,
@@ -28,7 +38,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { deleteBenefit } from "@/services/benefits";
 
 const benefitSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -71,7 +83,27 @@ export function BenefitManagementModal({
   onSuccess,
 }: BenefitManagementModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isEditing = !!benefit;
+
+  const handleDelete = async () => {
+    if (!benefit?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteBenefit(benefit.id);
+      toast.success("Benefício excluído com sucesso!");
+      onSuccess();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error deleting benefit:', error);
+      toast.error("Erro ao excluir benefício");
+    } finally {
+      setIsDeleting(false);
+      setConfirmDeleteOpen(false);
+    }
+  };
 
   const form = useForm<BenefitFormData>({
     resolver: zodResolver(benefitSchema),
@@ -326,21 +358,58 @@ export function BenefitManagementModal({
               )}
             />
 
-            <div className="flex justify-end space-x-2 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Salvando..." : isEditing ? "Atualizar" : "Criar Benefício"}
-              </Button>
+            <div className="flex justify-between pt-6">
+              {isEditing ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setConfirmDeleteOpen(true)}
+                  disabled={isLoading || isDeleting}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </Button>
+              ) : (
+                <div />
+              )}
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Salvando..." : isEditing ? "Atualizar" : "Criar Benefício"}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
+
+        <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir Benefício</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o benefício "{benefit?.name}"?
+                Esta ação não pode ser desfeita e removerá todas as inscrições de funcionários neste benefício.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
