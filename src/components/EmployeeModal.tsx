@@ -16,6 +16,7 @@ import { createEmployee, updateEmployee, type Employee } from '@/services/employ
 import { getDepartments, getPositions, createDepartment, createPosition, deleteDepartment, deletePosition, type Department, type Position } from '@/services/organizationalStructure';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { formErrorHandler } from '@/utils/formErrorHandler';
+import { formatPhone } from '@/utils/formValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
 import { BranchSelect } from './BranchSelect';
@@ -576,8 +577,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
               <Input
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: formatPhone(e.target.value) }))}
                 placeholder="(11) 99999-9999"
+                maxLength={16}
               />
             </div>
           </div>
