@@ -11,6 +11,7 @@ import { FormBuilderModal } from "@/components/FormBuilderModal";
 import { FormShareModal } from "@/components/FormShareModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ROUTE_PATHS } from "@/constants/routePaths";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function FormulariosCustomizados() {
   const [forms, setForms] = useState<CustomForm[]>([]);
@@ -20,6 +21,7 @@ export default function FormulariosCustomizados() {
   const [shareForm, setShareForm] = useState<{ id: string; title: string } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
 
   // SEO
   useEffect(() => {
@@ -44,9 +46,14 @@ export default function FormulariosCustomizados() {
     }
   }, []);
 
+  // Only load forms when auth is ready and user is authenticated
   useEffect(() => {
-    loadForms();
-  }, []);
+    if (!authLoading && user) {
+      loadForms();
+    } else if (!authLoading && !user) {
+      setLoading(false);
+    }
+  }, [authLoading, user]);
 
   const loadForms = async () => {
     try {
