@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -349,7 +349,12 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     }
   }, [open, program]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const onSubmit = async (values: z.infer<typeof trainingProgramSchema>) => {
+    if (isSubmitting) return; // Previne múltiplas submissões
+    
+    setIsSubmitting(true);
     try {
       // Converter horas e minutos para decimal
       const totalDurationHours = values.duration_hours + (values.duration_minutes / 60);
@@ -436,6 +441,8 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         description: `Erro ao salvar programa: ${errorMessage}`,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1123,11 +1130,16 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button type="submit">
-                {isEditing ? "Atualizar" : "Criar Treinamento"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting 
+                  ? "Salvando..." 
+                  : isEditing 
+                    ? "Atualizar" 
+                    : "Criar Treinamento"}
               </Button>
             </div>
           </form>
