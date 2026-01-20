@@ -15,6 +15,8 @@ export interface Branch {
   phone?: string;
   manager_id?: string;
   status: string;
+  latitude?: number | null;
+  longitude?: number | null;
   created_at: string;
   updated_at: string;
 }
