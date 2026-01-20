@@ -194,6 +194,14 @@ export const updateTrainingProgram = async (id: string, updates: Partial<Trainin
 };
 
 export const deleteTrainingProgram = async (id: string) => {
+  // Deletar registros relacionados primeiro para evitar erro de foreign key
+  // Ordem: participantes, avaliações, documentos, sessões
+  await supabase.from('employee_trainings').delete().eq('training_program_id', id);
+  await supabase.from('training_efficacy_evaluations').delete().eq('training_program_id', id);
+  await supabase.from('training_documents').delete().eq('training_program_id', id);
+  await supabase.from('training_schedules').delete().eq('training_program_id', id);
+  
+  // Agora deletar o programa principal
   const { error } = await supabase
     .from('training_programs')
     .delete()

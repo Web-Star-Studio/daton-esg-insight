@@ -146,14 +146,15 @@ export default function GestaoTreinamentos() {
     }));
 
   const handleDeleteProgram = async (id: string, name: string) => {
-    if (confirm(`Tem certeza que deseja excluir o programa "${name}"?`)) {
+    if (confirm(`Tem certeza que deseja excluir o programa "${name}"?\n\nATENÇÃO: Todos os participantes, avaliações, documentos e sessões vinculados também serão excluídos.`)) {
       try {
         await deleteTrainingProgram(id);
         toast({
           title: "Sucesso",
-          description: "Programa de treinamento excluído com sucesso!",
+          description: "Programa de treinamento e registros relacionados excluídos com sucesso!",
         });
         queryClient.invalidateQueries({ queryKey: ["training-programs"] });
+        queryClient.invalidateQueries({ queryKey: ["employee-trainings"] });
       } catch (error) {
         toast({
           title: "Erro",
@@ -623,7 +624,19 @@ export default function GestaoTreinamentos() {
         </TabsContent>
 
         <TabsContent value="calendario" className="space-y-4">
-          <TrainingCalendar events={calendarEvents} />
+          <TrainingCalendar 
+            events={calendarEvents}
+            onEventClick={(event) => {
+              const training = employeeTrainings.find(t => t.id === event.id);
+              if (training) {
+                setSelectedTraining(training);
+                setIsEmployeeTrainingModalOpen(true);
+              }
+            }}
+            onNewEventClick={() => {
+              setIsScheduleModalOpen(true);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="certificacoes" className="space-y-4">
