@@ -1,55 +1,52 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export const generateNextEmployeeCode = async (companyId: string): Promise<string> => {
+  const prefix = 'EMP';
+  
   try {
-    // Get the last employee code for this company
+    // Get all employee codes for this company
     const { data: employees, error } = await supabase
       .from('employees')
       .select('employee_code')
-      .eq('company_id', companyId)
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .eq('company_id', companyId);
 
     if (error) throw error;
 
-    // Find the highest numeric code
+    // Collect all existing codes in a Set for fast lookup
+    const existingCodes = new Set(
+      employees?.map(emp => emp.employee_code) || []
+    );
+
+    // Find the highest number from codes that match EMP pattern
     let maxNumber = 0;
-    const prefix = 'EMP';
-
-    if (employees && employees.length > 0) {
-      employees.forEach(emp => {
-        const match = emp.employee_code.match(/^([A-Za-z-]+)(\d+)$/);
-        if (match) {
-          const num = parseInt(match[2]);
-          if (num > maxNumber) {
-            maxNumber = num;
-          }
+    existingCodes.forEach(code => {
+      const match = code?.match(/^EMP(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) {
+          maxNumber = num;
         }
-      });
+      }
+    });
+
+    // Try to find next available code (with limit to prevent infinite loop)
+    const maxAttempts = 1000;
+    for (let i = 1; i <= maxAttempts; i++) {
+      const candidateNumber = maxNumber + i;
+      const candidateCode = `${prefix}${String(candidateNumber).padStart(3, '0')}`;
+      
+      if (!existingCodes.has(candidateCode)) {
+        return candidateCode;
+      }
     }
 
-    // Generate next code
-    const nextNumber = maxNumber + 1;
-    const nextCode = `${prefix}${String(nextNumber).padStart(3, '0')}`;
-
-    // Verify it doesn't exist (safety check)
-    const { data: existing } = await supabase
-      .from('employees')
-      .select('employee_code')
-      .eq('company_id', companyId)
-      .eq('employee_code', nextCode)
-      .maybeSingle();
-
-    if (existing) {
-      // If it exists, try again with next number
-      return generateNextEmployeeCode(companyId);
-    }
-
-    return nextCode;
+    // Fallback to timestamp if somehow all attempts failed
+    return `${prefix}${Date.now().toString().slice(-6)}`;
+    
   } catch (error) {
     console.error('Error generating employee code:', error);
     // Fallback to timestamp-based code
-    return `EMP${Date.now().toString().slice(-6)}`;
+    return `${prefix}${Date.now().toString().slice(-6)}`;
   }
 };
 
