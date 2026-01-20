@@ -318,10 +318,6 @@ export default function GestaoTreinamentos() {
             <Clock className="w-4 h-4 mr-2" />
             Exportar Horas
           </Button>
-          <Button onClick={() => setIsScheduleModalOpen(true)} variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Agendar
-          </Button>
           <Button onClick={handleNewEmployeeTraining} variant="outline">
             <UserPlus className="w-4 h-4 mr-2" />
             Novo Registro
