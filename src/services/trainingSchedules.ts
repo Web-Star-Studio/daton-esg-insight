@@ -64,22 +64,20 @@ export interface UpdateTrainingScheduleInput {
   status?: string;
 }
 
-// Helper to get user's company ID
+// Helper to get user's company ID using RPC (more robust, consistent with other modules)
 const getUserCompanyId = async (): Promise<string> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single();
-
-  if (error || !profile?.company_id) {
+  const { data: companyId, error } = await supabase.rpc('get_user_company_id');
+  
+  if (error) {
+    console.error('Error getting company ID:', error);
+    throw new Error('Erro ao obter empresa do usuário');
+  }
+  
+  if (!companyId) {
     throw new Error('Empresa do usuário não encontrada');
   }
 
-  return profile.company_id;
+  return companyId;
 };
 
 // Get all training schedules for the company

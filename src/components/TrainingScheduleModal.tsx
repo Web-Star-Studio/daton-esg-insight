@@ -173,10 +173,22 @@ export function TrainingScheduleModal({
     }
   }, [selectedProgramId, programs, isEditing, form]);
 
+  const onInvalid = (errors: any) => {
+    console.log('TrainingScheduleModal - Validation errors:', errors);
+    const firstError = Object.values(errors)[0] as any;
+    toast({
+      title: "Campos obrigatórios",
+      description: firstError?.message || "Por favor, preencha todos os campos obrigatórios antes de salvar.",
+      variant: "destructive",
+    });
+  };
+
   const onSubmit = async (values: z.infer<typeof scheduleSchema>) => {
     if (isSubmitting) return; // Previne múltiplas submissões
     
     setIsSubmitting(true);
+    console.log('TrainingScheduleModal - Submitting values:', values);
+    
     try {
       const submissionData = {
         training_program_id: values.training_program_id,
@@ -192,6 +204,8 @@ export function TrainingScheduleModal({
         status: values.status,
         participants: selectedParticipants,
       };
+
+      console.log('TrainingScheduleModal - Submission data:', submissionData);
 
       if (isEditing && schedule?.id) {
         await updateTrainingSchedule(schedule.id, submissionData);
@@ -209,7 +223,13 @@ export function TrainingScheduleModal({
       queryClient.invalidateQueries({ queryKey: ["training-schedules"] });
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Error saving schedule:', error);
+      console.error('TrainingScheduleModal - Error saving schedule:', error);
+      console.error('TrainingScheduleModal - Error details:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      });
       toast({
         title: "Erro ao salvar agendamento",
         description: error?.message || "Ocorreu um erro. Verifique os dados e tente novamente.",
@@ -250,7 +270,7 @@ export function TrainingScheduleModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column */}
               <div className="space-y-4">
@@ -266,7 +286,7 @@ export function TrainingScheduleModal({
                             <SelectValue placeholder="Selecione o programa" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[9999]" position="popper" sideOffset={4}>
                           {isLoadingPrograms ? (
                             <SelectItem value="_loading" disabled>
                               Carregando programas...
