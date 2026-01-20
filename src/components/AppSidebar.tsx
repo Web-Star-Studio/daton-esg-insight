@@ -355,6 +355,7 @@ const menuSections: MenuSection[] = [
     hasDivider: true,
     items: [
       { id: "organization-config", title: "Configuração da Organização", icon: Building, path: "/configuracao-organizacional", description: "Dados e estrutura organizacional" },
+      { id: "branch-management", title: "Gestão de Filiais", icon: MapPin, path: "/gestao-filiais", description: "Cadastro e gestão de filiais e matriz" },
       { id: "factor-library", title: "Biblioteca de Fatores", icon: FlaskConical, path: "/biblioteca-fatores", description: "Fatores de emissão e conversão" },
       { id: "custom-forms", title: "Formulários Customizados", icon: ClipboardCheck, path: "/formularios-customizados", description: "Criação de formulários personalizados" },
       { id: "mailing-lists", title: "Listas de Envio", icon: Mail, path: "/listas-de-envio", description: "Gerenciar listas de email e campanhas" },
