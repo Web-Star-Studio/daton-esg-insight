@@ -3805,6 +3805,7 @@ export type Database = {
           address: string | null
           cep: string | null
           city: string | null
+          cnpj: string | null
           code: string | null
           company_id: string
           country: string | null
@@ -3826,6 +3827,7 @@ export type Database = {
           address?: string | null
           cep?: string | null
           city?: string | null
+          cnpj?: string | null
           code?: string | null
           company_id: string
           country?: string | null
@@ -3847,6 +3849,7 @@ export type Database = {
           address?: string | null
           cep?: string | null
           city?: string | null
+          cnpj?: string | null
           code?: string | null
           company_id?: string
           country?: string | null

@@ -7,6 +7,7 @@ export interface Branch {
   company_id: string;
   name: string;
   code?: string;
+  cnpj?: string;
   is_headquarters: boolean;
   address?: string;
   cep?: string;
