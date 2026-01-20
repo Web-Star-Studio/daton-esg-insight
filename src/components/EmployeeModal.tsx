@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2, CalendarIcon } from 'lucide-react';
+import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2, CalendarIcon, RefreshCw } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { parseDateSafe, formatDateForDB } from '@/utils/dateUtils';
@@ -69,6 +69,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [positions, setPositions] = useState<Position[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [generatingCode, setGeneratingCode] = useState(false);
   
   // New department/position creation states
   const [showNewDepartment, setShowNewDepartment] = useState(false);
@@ -600,24 +601,58 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="employee_code">
-                Código do Funcionário
-                <span className="text-xs text-muted-foreground ml-1">(auto-gerado se vazio)</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="employee_code"
-                  value={formData.employee_code}
-                  onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
-                  placeholder="Ex: EMP001"
-                  className={codeValidation.exists ? "border-destructive focus-visible:ring-destructive" : ""}
-                  disabled={!!employee}
-                />
+              <Label htmlFor="employee_code">Código do Funcionário</Label>
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <Input
+                    id="employee_code"
+                    value={formData.employee_code}
+                    onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
+                    placeholder="Ex: EMP001"
+                    className={cn(
+                      "flex-1",
+                      codeValidation.exists && "border-destructive focus-visible:ring-destructive"
+                    )}
+                    disabled={!!employee}
+                  />
+                  {!employee && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={async () => {
+                        if (!companyId) {
+                          toast.error('Aguarde o carregamento das configurações...');
+                          return;
+                        }
+                        setGeneratingCode(true);
+                        try {
+                          const nextCode = await generateNextEmployeeCode(companyId);
+                          setFormData(prev => ({ ...prev, employee_code: nextCode }));
+                          toast.success(`Código gerado: ${nextCode}`);
+                        } catch (error) {
+                          console.error('Erro ao gerar código:', error);
+                          toast.error('Erro ao gerar código automaticamente');
+                        } finally {
+                          setGeneratingCode(false);
+                        }
+                      }}
+                      disabled={generatingCode || !companyId}
+                      title="Gerar código automaticamente"
+                    >
+                      {generatingCode ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
                 {codeValidation.checking && (
-                  <p className="text-xs text-muted-foreground mt-1">Verificando disponibilidade...</p>
+                  <p className="text-xs text-muted-foreground">Verificando disponibilidade...</p>
                 )}
                 {codeValidation.exists && (
-                  <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
+                  <div className="flex items-center gap-1 text-xs text-destructive">
                     <AlertCircle className="h-3 w-3" />
                     <span>{codeValidation.message}</span>
                   </div>
