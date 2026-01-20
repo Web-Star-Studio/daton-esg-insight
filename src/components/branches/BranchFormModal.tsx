@@ -34,6 +34,8 @@ import { Loader2, MapPin, Search } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
 import { unifiedToast } from "@/utils/unifiedToast";
+import { validateCNPJ, formatCNPJ } from "@/utils/formValidation";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 const BRAZILIAN_STATES = [
   { value: "AC", label: "Acre" },
@@ -68,6 +70,10 @@ const BRAZILIAN_STATES = [
 const branchFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   code: z.string().optional(),
+  cnpj: z.string().optional().refine(
+    (val) => !val || val.replace(/\D/g, '').length === 0 || validateCNPJ(val),
+    { message: "CNPJ inválido" }
+  ),
   cep: z.string().optional(),
   address: z.string().optional(),
   street_number: z.string().optional(),
@@ -106,6 +112,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
     defaultValues: {
       name: "",
       code: "",
+      cnpj: "",
       cep: "",
       address: "",
       street_number: "",
@@ -127,6 +134,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       form.reset({
         name: branch.name,
         code: branch.code || "",
+        cnpj: branch.cnpj || "",
         cep: branch.cep || "",
         address: branch.address || "",
         street_number: branch.street_number || "",
@@ -145,6 +153,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       form.reset({
         name: "",
         code: "",
+        cnpj: "",
         cep: "",
         address: "",
         street_number: "",
@@ -161,6 +170,15 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       });
     }
   }, [branch, form]);
+
+  const handleCnpjChange = (value: string) => {
+    const formatted = formatCNPJ(value);
+    form.setValue("cnpj", formatted, { shouldValidate: true });
+  };
+
+  const cnpjValue = form.watch("cnpj");
+  const isCnpjValid = cnpjValue && cnpjValue.replace(/\D/g, '').length === 14 && validateCNPJ(cnpjValue);
+  const isCnpjPartial = cnpjValue && cnpjValue.replace(/\D/g, '').length > 0 && cnpjValue.replace(/\D/g, '').length < 14;
 
   const handleCepChange = async (cep: string) => {
     const formattedCep = formatCep(cep);
@@ -245,6 +263,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
     const payload = {
       name: data.name,
       code: data.code || undefined,
+      cnpj: data.cnpj || undefined,
       cep: data.cep || undefined,
       address: data.address || undefined,
       street_number: data.street_number || undefined,
@@ -309,6 +328,56 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                     <FormLabel>Código</FormLabel>
                     <FormControl>
                       <Input placeholder="Código identificador" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* CNPJ */}
+              <FormField
+                control={form.control}
+                name="cnpj"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CNPJ</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          placeholder="00.000.000/0000-00"
+                          maxLength={18}
+                          {...field}
+                          onChange={(e) => handleCnpjChange(e.target.value)}
+                          className="pr-10"
+                        />
+                      </FormControl>
+                      {isCnpjValid && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                      {cnpjValue && cnpjValue.replace(/\D/g, '').length === 14 && !isCnpjValid && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <XCircle className="h-4 w-4 text-destructive" />
+                        </div>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Telefone */}
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(00) 00000-0000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -442,37 +511,20 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* País */}
-              <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>País</FormLabel>
-                    <FormControl>
-                      <Input placeholder="País" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Telefone */}
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="(00) 00000-0000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* País */}
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>País</FormLabel>
+                  <FormControl>
+                    <Input placeholder="País" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Gerente Responsável */}
