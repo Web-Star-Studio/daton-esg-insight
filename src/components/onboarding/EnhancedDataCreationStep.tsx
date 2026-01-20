@@ -139,7 +139,7 @@ export function EnhancedDataCreationStep({
       exampleDataInfo: 'KPIs operacionais, metas de desempenho e avaliações'
     },
     gestao_funcionarios: {
-      title: 'Gestão de Funcionários',
+      title: 'Gestão de Colaboradores',
       icon: <Users className="h-5 w-5" />,
       color: 'from-blue-500 to-indigo-600',
       route: '/gestao-funcionarios',

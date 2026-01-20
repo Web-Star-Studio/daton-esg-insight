@@ -55,7 +55,7 @@ export function usePageContext(): PageContext {
       '/funcionarios': {
         tables: ['employees', 'employee_training', 'attendance_records'],
         relevantColumns: ['name', 'cpf', 'department', 'position', 'hire_date', 'status'],
-        pageTitle: 'Gestão de Funcionários',
+        pageTitle: 'Gestão de Colaboradores',
         dataType: 'employees'
       },
       '/fornecedores': {

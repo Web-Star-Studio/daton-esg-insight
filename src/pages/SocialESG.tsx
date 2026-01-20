@@ -314,7 +314,7 @@ export default function SocialESG() {
           {/* Module Access Cards */}
           <div className="space-y-6">
             <ModuleSummaryCard
-              title="Gestão de Funcionários"
+              title="Gestão de Colaboradores"
               description="Sistema completo de recursos humanos"
               icon={Users}
               metrics={[
