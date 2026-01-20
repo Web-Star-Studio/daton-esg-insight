@@ -41,6 +41,7 @@ const employeeSchema = z.object({
   employee_code: z.string().trim().max(50, 'Código muito longo').optional().or(z.literal('')),
   full_name: z.string().trim().min(1, 'Nome completo é obrigatório').max(255, 'Nome muito longo'),
   email: z.string().trim().email('E-mail inválido').optional().or(z.literal('')),
+  hire_date: z.string().min(1, 'Data de contratação é obrigatória'),
 });
 
 export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: EmployeeModalProps) {
@@ -468,6 +469,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         employee_code: formData.employee_code,
         full_name: formData.full_name,
         email: formData.email,
+        hire_date: formData.hire_date,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -596,7 +598,10 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="employee_code">Código do Funcionário</Label>
+              <Label htmlFor="employee_code">
+                Código do Funcionário
+                <span className="text-xs text-muted-foreground ml-1">(auto-gerado se vazio)</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="employee_code"
@@ -856,7 +861,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Data de Contratação</Label>
+              <Label>Data de Contratação *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
