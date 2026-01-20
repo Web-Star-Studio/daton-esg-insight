@@ -92,10 +92,17 @@ export function TrainingScheduleModal({
   });
 
   // Fetch training programs
-  const { data: programs = [] } = useQuery({
+  const { data: programs = [], isLoading: isLoadingPrograms, error: programsError } = useQuery({
     queryKey: ['training-programs'],
     queryFn: getTrainingPrograms,
   });
+
+  // Log para debug
+  useEffect(() => {
+    if (open) {
+      console.log('TrainingScheduleModal - Programs loaded:', programs.length, 'Error:', programsError);
+    }
+  }, [open, programs, programsError]);
 
   // Fetch employees
   const { data: employees = [] } = useQuery({
@@ -260,11 +267,21 @@ export function TrainingScheduleModal({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {programs.map((program) => (
-                            <SelectItem key={program.id} value={program.id}>
-                              {program.name} - {program.category}
+                          {isLoadingPrograms ? (
+                            <SelectItem value="_loading" disabled>
+                              Carregando programas...
                             </SelectItem>
-                          ))}
+                          ) : programs.length === 0 ? (
+                            <SelectItem value="_empty" disabled>
+                              Nenhum programa encontrado
+                            </SelectItem>
+                          ) : (
+                            programs.map((program) => (
+                              <SelectItem key={program.id} value={program.id}>
+                                {program.name} - {program.category}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
