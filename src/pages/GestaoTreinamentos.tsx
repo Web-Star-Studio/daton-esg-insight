@@ -128,22 +128,28 @@ export default function GestaoTreinamentos() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Generate calendar events from training data
-  const calendarEvents = employeeTrainings
-    .filter(training => training.completion_date)
-    .map((training, index) => ({
-      id: training.id,
-      title: training.training_program?.name || 'Treinamento',
-      start: new Date(training.completion_date!),
-      end: new Date(training.completion_date!),
+  // Generate calendar events from training programs (scheduled dates)
+  const programEvents = programs
+    .filter(program => program.start_date)
+    .map((program) => ({
+      id: `program-${program.id}`,
+      title: program.name,
+      start: new Date(program.start_date + 'T12:00:00'),
+      end: new Date((program.end_date || program.start_date) + 'T12:00:00'),
       resource: {
-        program: training.training_program?.name || 'N/A',
-        category: training.training_program?.category || 'Outros',
-        participants: 1,
-        instructor: training.trainer || 'Não informado',
-        location: 'Sala de Treinamento'
+        program: program.name,
+        category: program.category || 'Outros',
+        participants: employeeTrainings.filter(t => t.training_program_id === program.id).length,
+        instructor: program.responsible_name || 'Não definido',
+        location: 'Sala de Treinamento',
+        type: 'program' as const,
+        programId: program.id,
+        status: program.status
       }
     }));
+
+  // Combine program events
+  const calendarEvents = programEvents;
 
   const handleDeleteProgram = async (id: string, name: string) => {
     if (confirm(`Tem certeza que deseja excluir o programa "${name}"?\n\nATENÇÃO: Todos os participantes, avaliações, documentos e sessões vinculados também serão excluídos.`)) {
@@ -627,10 +633,13 @@ export default function GestaoTreinamentos() {
           <TrainingCalendar 
             events={calendarEvents}
             onEventClick={(event) => {
-              const training = employeeTrainings.find(t => t.id === event.id);
-              if (training) {
-                setSelectedTraining(training);
-                setIsEmployeeTrainingModalOpen(true);
+              // Se for um programa de treinamento, abre detalhes do programa
+              if (event.resource?.programId) {
+                const program = programs.find(p => p.id === event.resource.programId);
+                if (program) {
+                  setSelectedProgramForDetail(program);
+                  setIsDetailModalOpen(true);
+                }
               }
             }}
             onNewEventClick={() => {

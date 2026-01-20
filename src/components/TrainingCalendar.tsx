@@ -29,6 +29,9 @@ interface TrainingEvent {
     participants: number;
     instructor: string;
     location: string;
+    type?: 'program' | 'training';
+    programId?: string;
+    status?: string;
   };
 }
 
@@ -71,9 +74,11 @@ export function TrainingCalendar({ events, onEventClick, onNewEventClick }: Trai
   const EventComponent = ({ event }: { event: TrainingEvent }) => (
     <div className="text-xs">
       <strong>{event.title}</strong>
-      <div className="opacity-75">
-        {event.resource.participants} participantes
-      </div>
+      {event.resource.participants > 0 && (
+        <div className="opacity-75">
+          {event.resource.participants} participante{event.resource.participants !== 1 ? 's' : ''}
+        </div>
+      )}
     </div>
   );
 
