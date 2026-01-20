@@ -84,20 +84,6 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
             Nenhuma filial encontrada.
           </CommandEmpty>
           <CommandGroup>
-            {/* Opção de remover filial - só aparece quando há uma selecionada */}
-            {value && selectedBranch && (
-              <CommandItem
-                onSelect={() => {
-                  onValueChange('');
-                  setOpen(false);
-                }}
-                className="text-destructive"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Remover filial
-              </CommandItem>
-            )}
-            
             {/* Opção de criar nova filial */}
             {showNewBranch ? (
               <div className="p-2 space-y-2 border-b">
@@ -157,13 +143,23 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
                     value === branch.id ? 'opacity-100' : 'opacity-0'
                   )}
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1">
                   <Building2 className="h-4 w-4" />
                   {branch.name}
                   {branch.is_headquarters && (
                     <Badge variant="secondary" className="ml-2">Matriz</Badge>
                   )}
                 </div>
+                {value === branch.id && (
+                  <X
+                    className="h-4 w-4 text-destructive hover:text-destructive/80 cursor-pointer ml-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onValueChange('');
+                      setOpen(false);
+                    }}
+                  />
+                )}
               </CommandItem>
             ))}
           </CommandGroup>
