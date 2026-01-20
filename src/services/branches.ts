@@ -44,23 +44,27 @@ export const getBranches = async () => {
 };
 
 export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => {
+  // Query sem self-join - evita problemas com RLS
   const { data, error } = await supabase
     .from('branches')
     .select(`
       *,
-      manager:profiles(id, full_name),
-      parent_branch:branches!parent_branch_id(id, name)
+      manager:profiles(id, full_name)
     `)
     .order('is_headquarters', { ascending: false })
     .order('name', { ascending: true });
 
   if (error) throw error;
   
-  // Transform the data to handle the profiles join properly
+  // Resolver parent_branch localmente para evitar conflito de RLS com self-join
+  const branchMap = new Map((data || []).map((b: any) => [b.id, b]));
+  
   return (data || []).map((branch: any) => ({
     ...branch,
     manager: branch.manager || null,
-    parent_branch: branch.parent_branch || null,
+    parent_branch: branch.parent_branch_id 
+      ? { id: branch.parent_branch_id, name: branchMap.get(branch.parent_branch_id)?.name || 'Desconhecido' }
+      : null,
   })) as BranchWithManager[];
 };
 
