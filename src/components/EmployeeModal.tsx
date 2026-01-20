@@ -207,7 +207,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           .from('employees')
           .select('id, email')
           .eq('email', emailValue)
-          .maybeSingle();
+          .limit(1);
 
         if (error) {
           console.error('Error checking email:', error);
@@ -216,7 +216,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         }
 
         // If exists and not the same employee being edited
-        if (data && (!employee || data.id !== employee.id)) {
+        if (data && data.length > 0 && (!employee || data[0].id !== employee.id)) {
           setEmailValidation({
             checking: false,
             exists: true,
