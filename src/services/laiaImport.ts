@@ -79,53 +79,85 @@ export interface ImportResult {
 // ============ Column Mapping ============
 
 const COLUMN_MAP: Record<string, string> = {
+  // Sector code
   'cod set': 'sector_code',
-  'código setor': 'sector_code',
+  'codigo setor': 'sector_code',
   'setor': 'sector_code',
+  
+  // Aspect code
   'cod': 'aspect_code',
-  'código': 'aspect_code',
+  'codigo': 'aspect_code',
+  'cod set . cod asp/imp': 'aspect_code',
+  
+  // Aspect & Impact
   'aspecto ambiental': 'environmental_aspect',
   'aspecto': 'environmental_aspect',
   'impacto ambiental': 'environmental_impact',
   'impacto': 'environmental_impact',
-  'atividade/operação': 'activity_operation',
+  
+  // Activity
+  'atividade/operacao': 'activity_operation',
+  'atividade / operacao': 'activity_operation',
   'atividade': 'activity_operation',
-  'operação': 'activity_operation',
+  'operacao': 'activity_operation',
+  
+  // Characterization
   'temporalidade': 'temporality',
-  'situação operacional': 'operational_situation',
-  'situação': 'operational_situation',
-  'incidência': 'incidence',
+  'situacao operacional': 'operational_situation',
+  'situacao': 'operational_situation',
+  'incidencia': 'incidence',
   'classe do impacto': 'impact_class',
   'classe': 'impact_class',
-  'abrangência': 'scope',
+  'abrangencia': 'scope',
   'severidade': 'severity',
-  'consequência': 'consequence_score',
-  'frequência/probabilidade': 'frequency_probability',
+  
+  // Scoring
+  'consequencia': 'consequence_score',
+  'frequencia/probabilidade': 'frequency_probability',
   'freq/prob': 'frequency_probability',
-  'frequência': 'frequency_probability',
+  'frequencia': 'frequency_probability',
   'total': 'total_score',
+  'soma (cons + fre pro)': 'total_score',
   'categoria': 'category',
+  
+  // Significance factors
   'req. legais': 'has_legal_requirements',
   'requisitos legais': 'has_legal_requirements',
   'dpi': 'has_stakeholder_demand',
   'demanda partes interessadas': 'has_stakeholder_demand',
   'oe': 'has_strategic_options',
-  'opções estratégicas': 'has_strategic_options',
-  'significância': 'significance',
+  'opcoes estrategicas': 'has_strategic_options',
+  
+  // Significance result
+  'significancia': 'significance',
+  'enquadramento': 'significance',
+  
+  // Controls
   'tipo de controle': 'control_types',
   'tipos de controle': 'control_types',
+  'tipos': 'control_types',
   'controles existentes': 'existing_controls',
   'controle existente': 'existing_controls',
-  'legislação/norma': 'legislation_reference',
-  'legislação': 'legislation_reference',
+  
+  // Legislation
+  'legislacao/norma': 'legislation_reference',
+  'legislacao': 'legislation_reference',
   'norma': 'legislation_reference',
+  'link legislacao': 'legislation_reference',
+  
+  // Lifecycle
   'controle ciclo de vida': 'has_lifecycle_control',
   'ciclo de vida': 'has_lifecycle_control',
+  'existe controle ou influencia suficiente em algum estagio?': 'has_lifecycle_control',
   'etapas ciclo de vida': 'lifecycle_stages',
   'etapas': 'lifecycle_stages',
-  'ações saídas': 'output_actions',
-  'ações': 'output_actions',
-  'saídas': 'output_actions',
+  'em qual(is) estagio(s)?': 'lifecycle_stages',
+  
+  // Output
+  'acoes saidas': 'output_actions',
+  'acoes': 'output_actions',
+  'saidas': 'output_actions',
+  'saida(s) com base na avaliacao.': 'output_actions',
 };
 
 // ============ Value Mappings ============
@@ -211,9 +243,8 @@ const SIGNIFICANCE_MAP: Record<string, 'significativo' | 'nao_significativo'> = 
   'significativo': 'significativo',
   'sig': 'significativo',
   's': 'significativo',
-  'não significativo': 'nao_significativo',
   'nao significativo': 'nao_significativo',
-  'não sig': 'nao_significativo',
+  'nao sig': 'nao_significativo',
   'ns': 'nao_significativo',
   'n': 'nao_significativo',
 };
@@ -230,7 +261,15 @@ function cleanText(text: unknown): string {
 }
 
 function normalizeKey(key: string): string {
-  return key.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return key
+    .toLowerCase()
+    .trim()
+    // Remove numeric prefixes like "1)", "12)", etc.
+    .replace(/^\d+\)\s*/, '')
+    // Remove accents
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
 }
 
 function parseBoolean(value: unknown): boolean {
@@ -276,10 +315,16 @@ function findHeaderRow(sheet: XLSX.WorkSheet): { headerRow: number; headers: Rec
         if (mappedKey) {
           headers[mappedKey] = col;
         }
-        if (headerText.includes('aspecto') || headerText.includes('cod')) {
+        
+        // Detect key columns with flexible matching
+        if (headerText.includes('aspecto ambiental') || 
+            headerText.includes('cod asp') ||
+            headerText.includes('cod set . cod')) {
           hasAspect = true;
         }
-        if (headerText.includes('setor') || headerText.includes('set')) {
+        if (headerText.includes('cod set') || 
+            headerText.includes('setor') ||
+            (headerText.includes('cod') && headerText.includes('set'))) {
           hasSector = true;
         }
       }
