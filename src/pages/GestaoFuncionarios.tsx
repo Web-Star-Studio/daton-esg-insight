@@ -114,17 +114,11 @@ export default function GestaoFuncionarios() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestão de Colaboradores</h1>
-          <p className="text-muted-foreground">
-            Gerencie informações, contratos e dados dos funcionários
-          </p>
-        </div>
-        <Button onClick={handleCreateEmployee}>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Novo Funcionário
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold">Gestão de Colaboradores</h1>
+        <p className="text-muted-foreground">
+          Gerencie informações, contratos e dados dos funcionários
+        </p>
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-4">
