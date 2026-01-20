@@ -6,30 +6,30 @@ export interface Branch {
   id: string;
   company_id: string;
   name: string;
-  code?: string;
-  cnpj?: string;
+  code?: string | null;
+  cnpj?: string | null;
+  address?: string | null;
+  street_number?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  cep?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  manager_id?: string | null;
   is_headquarters: boolean;
-  address?: string;
-  cep?: string;
-  neighborhood?: string;
-  street_number?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  phone?: string;
-  manager_id?: string;
   status: string;
   latitude?: number | null;
   longitude?: number | null;
+  parent_branch_id?: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface BranchWithManager extends Branch {
-  manager?: {
-    id: string;
-    full_name: string;
-  } | null;
+  manager?: { id: string; full_name: string; } | null;
+  parent_branch?: { id: string; name: string; } | null;
 }
 
 export const getBranches = async () => {
@@ -48,7 +48,8 @@ export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => 
     .from('branches')
     .select(`
       *,
-      manager:profiles(id, full_name)
+      manager:profiles(id, full_name),
+      parent_branch:branches!parent_branch_id(id, name)
     `)
     .order('is_headquarters', { ascending: false })
     .order('name', { ascending: true });
@@ -59,7 +60,19 @@ export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => 
   return (data || []).map((branch: any) => ({
     ...branch,
     manager: branch.manager || null,
+    parent_branch: branch.parent_branch || null,
   })) as BranchWithManager[];
+};
+
+export const getHeadquarters = async (): Promise<Branch[]> => {
+  const { data, error } = await supabase
+    .from('branches')
+    .select('*')
+    .eq('is_headquarters', true)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data as Branch[];
 };
 
 export const createBranch = async (branch: Omit<Branch, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {

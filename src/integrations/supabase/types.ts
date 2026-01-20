@@ -3817,6 +3817,7 @@ export type Database = {
           manager_id: string | null
           name: string
           neighborhood: string | null
+          parent_branch_id: string | null
           phone: string | null
           state: string | null
           status: string | null
@@ -3839,6 +3840,7 @@ export type Database = {
           manager_id?: string | null
           name: string
           neighborhood?: string | null
+          parent_branch_id?: string | null
           phone?: string | null
           state?: string | null
           status?: string | null
@@ -3861,6 +3863,7 @@ export type Database = {
           manager_id?: string | null
           name?: string
           neighborhood?: string | null
+          parent_branch_id?: string | null
           phone?: string | null
           state?: string | null
           status?: string | null
@@ -3880,6 +3883,13 @@ export type Database = {
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branches_parent_branch_id_fkey"
+            columns: ["parent_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
         ]

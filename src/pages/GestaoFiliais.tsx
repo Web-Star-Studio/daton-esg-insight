@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, MapPin, Phone, User, Map, List } from "lucide-react";
+import { Building2, Plus, MapPin, Phone, User, Map, List, GitBranch, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ import { useBranchesWithManager, useDeleteBranch, BranchWithManager } from "@/se
 import { BranchFormModal } from "@/components/branches/BranchFormModal";
 import { BranchStatsCards } from "@/components/branches/BranchStatsCards";
 import { BranchesMap } from "@/components/branches/BranchesMap";
+import { BranchDeduplication } from "@/components/branches/BranchDeduplication";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, Trash2, Search } from "lucide-react";
 
@@ -35,7 +36,8 @@ export default function GestaoFiliais() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<BranchWithManager | null>(null);
   const [branchToDelete, setBranchToDelete] = useState<BranchWithManager | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [viewMode, setViewMode] = useState<"list" | "map" | "dedup">("list");
+  const [showDedup, setShowDedup] = useState(false);
 
   const { data: branches, isLoading } = useBranchesWithManager();
   const deleteMutation = useDeleteBranch();
@@ -77,11 +79,20 @@ export default function GestaoFiliais() {
             Gerencie as filiais e unidades da sua empresa
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Filial
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowDedup(!showDedup)} className="gap-2">
+            <Wrench className="h-4 w-4" />
+            {showDedup ? "Ocultar Deduplicação" : "Limpar Duplicatas"}
+          </Button>
+          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Filial
+          </Button>
+        </div>
       </div>
+
+      {/* Deduplication Panel */}
+      {showDedup && <BranchDeduplication />}
 
       {/* Stats Cards */}
       <BranchStatsCards branches={branches || []} isLoading={isLoading} />
@@ -148,8 +159,8 @@ export default function GestaoFiliais() {
                       <TableRow>
                         <TableHead>Nome</TableHead>
                         <TableHead>Código</TableHead>
+                        <TableHead>CNPJ</TableHead>
                         <TableHead>Localização</TableHead>
-                        <TableHead>Telefone</TableHead>
                         <TableHead>Gerente</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
@@ -160,24 +171,34 @@ export default function GestaoFiliais() {
                         <TableRow key={branch.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
+                              {branch.parent_branch && (
+                                <GitBranch className="h-3 w-3 text-muted-foreground" />
+                              )}
                               {branch.name}
                               {branch.is_headquarters && (
                                 <Badge variant="secondary" className="text-xs">
                                   Matriz
                                 </Badge>
                               )}
+                              {branch.parent_branch && (
+                                <span className="text-xs text-muted-foreground">
+                                  → {branch.parent_branch.name}
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>{branch.code || "-"}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {branch.cnpj || "-"}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 text-sm">
                               <MapPin className="h-3 w-3 text-muted-foreground" />
                               {branch.city && branch.state
-                                ? `${branch.city}, ${branch.state}`
-                                : branch.city || branch.state || "-"}
+                                ? `${branch.city}/${branch.state}`
+                                : branch.city || "-"}
                             </div>
                           </TableCell>
-                          <TableCell>
                             {branch.phone ? (
                               <div className="flex items-center gap-1 text-sm">
                                 <Phone className="h-3 w-3 text-muted-foreground" />
