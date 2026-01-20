@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -11,7 +13,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Star, FileCheck, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ArrowLeft, Star, FileCheck, Clock, AlertCircle, CheckCircle2, Search, HelpCircle, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { LoadingState } from "@/components/ui/loading-state";
 import { format } from "date-fns";
@@ -20,10 +35,16 @@ import {
   getManagedSuppliers,
   getDocumentSubmissions,
   getRequiredDocuments,
+  getLatestEvaluationForSuppliers,
 } from "@/services/supplierManagementService";
 
 export default function SupplierEvaluations() {
   const navigate = useNavigate();
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [complianceFilter, setComplianceFilter] = useState<string>("all");
 
   const { data: suppliers, isLoading: loadingSuppliers } = useQuery({
     queryKey: ['managed-suppliers'],
@@ -40,6 +61,14 @@ export default function SupplierEvaluations() {
     queryFn: () => getDocumentSubmissions(),
   });
 
+  // Fetch latest evaluations for all suppliers to get next_evaluation_date
+  const supplierIds = suppliers?.map(s => s.id) || [];
+  const { data: latestEvaluations } = useQuery({
+    queryKey: ['latest-evaluations', supplierIds],
+    queryFn: () => getLatestEvaluationForSuppliers(supplierIds),
+    enabled: supplierIds.length > 0,
+  });
+
   const isLoading = loadingSuppliers || loadingSubmissions;
 
   const getSupplierName = (supplier: any) => {
@@ -49,36 +78,75 @@ export default function SupplierEvaluations() {
       : supplier.full_name;
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Aprovado': 
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle2 className="h-3 w-3 mr-1" />Aprovado</Badge>;
-      case 'Rejeitado': 
-        return <Badge className="bg-red-100 text-red-800"><AlertCircle className="h-3 w-3 mr-1" />Rejeitado</Badge>;
-      default: 
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
-    }
-  };
+  // Calculate compliance per supplier with next evaluation date
+  const supplierCompliance = useMemo(() => {
+    return suppliers?.map((supplier) => {
+      const supplierSubmissions = submissions?.filter(s => s.supplier_id === supplier.id) || [];
+      const totalRequired = requiredDocs?.length || 0;
+      const approved = supplierSubmissions.filter(s => s.status === 'Aprovado').length;
+      const pending = supplierSubmissions.filter(s => s.status === 'Pendente').length;
+      const rejected = supplierSubmissions.filter(s => s.status === 'Rejeitado').length;
+      
+      const complianceRate = totalRequired > 0 ? Math.round((approved / totalRequired) * 100) : 0;
+      
+      // Get latest evaluation for this supplier
+      const latestEval = latestEvaluations?.find(e => e.supplier_id === supplier.id);
+      const nextEvaluationDate = latestEval?.next_evaluation_date;
 
-  // Calculate compliance per supplier
-  const supplierCompliance = suppliers?.map((supplier) => {
-    const supplierSubmissions = submissions?.filter(s => s.supplier_id === supplier.id) || [];
-    const totalRequired = requiredDocs?.length || 0;
-    const approved = supplierSubmissions.filter(s => s.status === 'Aprovado').length;
-    const pending = supplierSubmissions.filter(s => s.status === 'Pendente').length;
-    const rejected = supplierSubmissions.filter(s => s.status === 'Rejeitado').length;
-    
-    const complianceRate = totalRequired > 0 ? Math.round((approved / totalRequired) * 100) : 0;
+      return {
+        ...supplier,
+        approved,
+        pending,
+        rejected,
+        totalRequired,
+        complianceRate,
+        nextEvaluationDate,
+      };
+    }) || [];
+  }, [suppliers, submissions, requiredDocs, latestEvaluations]);
 
-    return {
-      ...supplier,
-      approved,
-      pending,
-      rejected,
-      totalRequired,
-      complianceRate,
-    };
-  });
+  // Apply filters
+  const filteredSuppliers = useMemo(() => {
+    return supplierCompliance.filter(supplier => {
+      // Search filter
+      const name = getSupplierName(supplier).toLowerCase();
+      const nickname = supplier.nickname?.toLowerCase() || '';
+      const matchesSearch = searchTerm === '' || 
+        name.includes(searchTerm.toLowerCase()) || 
+        nickname.includes(searchTerm.toLowerCase());
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || supplier.status === statusFilter;
+
+      // Compliance filter
+      let matchesCompliance = true;
+      if (complianceFilter === 'high') {
+        matchesCompliance = supplier.complianceRate >= 80;
+      } else if (complianceFilter === 'medium') {
+        matchesCompliance = supplier.complianceRate >= 50 && supplier.complianceRate < 80;
+      } else if (complianceFilter === 'low') {
+        matchesCompliance = supplier.complianceRate < 50;
+      }
+
+      return matchesSearch && matchesStatus && matchesCompliance;
+    });
+  }, [supplierCompliance, searchTerm, statusFilter, complianceFilter]);
+
+  const TooltipHeader = ({ title, tooltip }: { title: string; tooltip: string }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1 cursor-help">
+            {title}
+            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 
   return (
     <div className="space-y-6">
@@ -97,47 +165,45 @@ export default function SupplierEvaluations() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Documentos Obrigatórios</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{requiredDocs?.length || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Submissões Aprovadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {submissions?.filter(s => s.status === 'Aprovado').length || 0}
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar fornecedor por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Pendentes de Análise</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
-                {submissions?.filter(s => s.status === 'Pendente').length || 0}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Rejeitadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {submissions?.filter(s => s.status === 'Rejeitado').length || 0}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="Ativo">Ativo</SelectItem>
+                  <SelectItem value="Inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={complianceFilter} onValueChange={setComplianceFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Conformidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Taxas</SelectItem>
+                  <SelectItem value="high">Alta (≥80%)</SelectItem>
+                  <SelectItem value="medium">Média (50-79%)</SelectItem>
+                  <SelectItem value="low">Baixa (&lt;50%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Compliance Table */}
         <Card>
@@ -152,23 +218,51 @@ export default function SupplierEvaluations() {
               loading={isLoading}
               error={error?.message}
               retry={refetch}
-              empty={!supplierCompliance?.length}
-              emptyMessage="Nenhum fornecedor cadastrado"
+              empty={!filteredSuppliers?.length}
+              emptyMessage={searchTerm || statusFilter !== 'all' || complianceFilter !== 'all' 
+                ? "Nenhum fornecedor encontrado com os filtros aplicados" 
+                : "Nenhum fornecedor cadastrado"}
             >
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Fornecedor</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-center">Aprovados</TableHead>
-                    <TableHead className="text-center">Pendentes</TableHead>
-                    <TableHead className="text-center">Rejeitados</TableHead>
-                    <TableHead className="text-center">Taxa de Conformidade</TableHead>
+                    <TableHead className="text-center">
+                      <TooltipHeader 
+                        title="Aprovados" 
+                        tooltip="Quantidade de documentos aprovados na última avaliação documental" 
+                      />
+                    </TableHead>
+                    <TableHead className="text-center">
+                      <TooltipHeader 
+                        title="Pendentes" 
+                        tooltip="Documentos aguardando análise ou ainda não submetidos" 
+                      />
+                    </TableHead>
+                    <TableHead className="text-center">
+                      <TooltipHeader 
+                        title="Rejeitados" 
+                        tooltip="Documentos que foram rejeitados e precisam de reenvio" 
+                      />
+                    </TableHead>
+                    <TableHead className="text-center">
+                      <TooltipHeader 
+                        title="Taxa de Conformidade" 
+                        tooltip="Percentual de documentos aprovados em relação ao total exigido" 
+                      />
+                    </TableHead>
+                    <TableHead className="text-center">
+                      <TooltipHeader 
+                        title="Próx. Avaliação" 
+                        tooltip="Data programada para a próxima avaliação documental do fornecedor" 
+                      />
+                    </TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {supplierCompliance?.map((supplier) => (
+                  {filteredSuppliers?.map((supplier) => (
                     <TableRow key={supplier.id}>
                       <TableCell className="font-medium">
                         {getSupplierName(supplier)}
@@ -206,6 +300,16 @@ export default function SupplierEvaluations() {
                           <span className="text-sm font-medium">{supplier.complianceRate}%</span>
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        {supplier.nextEvaluationDate ? (
+                          <div className="flex items-center justify-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {format(new Date(supplier.nextEvaluationDate), "dd/MM/yyyy", { locale: ptBR })}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="outline"
@@ -223,58 +327,6 @@ export default function SupplierEvaluations() {
             </LoadingState>
           </CardContent>
         </Card>
-
-        {/* Recent Submissions */}
-        {submissions && submissions.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileCheck className="h-5 w-5" />
-                Submissões Recentes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fornecedor</TableHead>
-                    <TableHead>Documento</TableHead>
-                    <TableHead>Data Submissão</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Pontuação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {submissions.slice(0, 10).map((submission) => {
-                    const supplier = suppliers?.find(s => s.id === submission.supplier_id);
-                    return (
-                      <TableRow key={submission.id}>
-                        <TableCell className="font-medium">
-                          {getSupplierName(supplier)}
-                        </TableCell>
-                        <TableCell>
-                          {submission.required_document?.document_name || "-"}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(submission.submitted_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(submission.status)}</TableCell>
-                        <TableCell>
-                          {submission.score ? (
-                            <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                              <span>{submission.score}/5</span>
-                            </div>
-                          ) : "-"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
     </div>
   );
 }

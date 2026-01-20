@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -20,20 +20,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   ArrowLeft, FileText, Upload, Eye, CheckCircle, XCircle, 
-  Clock, AlertTriangle, Save, Calendar
+  Clock, AlertTriangle, Save, Calendar, X, File
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/ui/loading-state";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useDropzone } from "react-dropzone";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getManagedSupplierById,
   getSupplierAssignments,
@@ -63,6 +64,11 @@ export default function SupplierDocumentEvaluationPage() {
   const [nextEvaluationDate, setNextEvaluationDate] = useState("");
   const [observation, setObservation] = useState("");
   const [documentsState, setDocumentsState] = useState<Map<string, { isExempt: boolean; exemptReason: string; expiryDate: string }>>(new Map());
+  
+  // Upload state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const { data: supplier } = useQuery({
     queryKey: ["supplier", supplierId],
@@ -150,6 +156,97 @@ export default function SupplierDocumentEvaluationPage() {
     return { totalWeight, achievedWeight, percentage };
   }, [documentsWithStatus]);
 
+  // Handle file upload
+  const handleUploadDocument = useCallback(async (file: File) => {
+    if (!selectedDocId || !supplierId || !supplier) return;
+
+    setUploadingFile(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const companyId = supplier.company_id;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${file.name}`;
+      const filePath = `supplier-documents/${companyId}/${supplierId}/${selectedDocId}/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Check if submission exists
+      const existingSubmission = submissions?.find(s => s.required_document_id === selectedDocId);
+
+      if (existingSubmission) {
+        // Update existing submission
+        const { error: updateError } = await supabase
+          .from('supplier_document_submissions')
+          .update({
+            file_path: filePath,
+            file_name: file.name,
+            status: 'Pendente',
+            submitted_at: new Date().toISOString(),
+          })
+          .eq('id', existingSubmission.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Create new submission
+        const { error: insertError } = await supabase
+          .from('supplier_document_submissions')
+          .insert({
+            company_id: companyId,
+            supplier_id: supplierId,
+            required_document_id: selectedDocId,
+            file_path: filePath,
+            file_name: file.name,
+            status: 'Pendente',
+            submitted_at: new Date().toISOString(),
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["document-submissions", supplierId] });
+      toast({ title: "Documento anexado com sucesso!" });
+      setUploadDialogOpen(false);
+      setSelectedDocId(null);
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast({ 
+        title: "Erro ao anexar documento", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } finally {
+      setUploadingFile(false);
+    }
+  }, [selectedDocId, supplierId, supplier, submissions, queryClient, toast]);
+
+  // Dropzone
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.length > 0) {
+        handleUploadDocument(acceptedFiles[0]);
+      }
+    },
+    maxFiles: 1,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.jpg', '.jpeg', '.png'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+    },
+  });
+
+  const openUploadDialog = (docId: string) => {
+    setSelectedDocId(docId);
+    setUploadDialogOpen(true);
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       // Save document exemptions and expiry dates
@@ -212,6 +309,25 @@ export default function SupplierDocumentEvaluationPage() {
     return <Badge variant="outline">{days} dias</Badge>;
   };
 
+  const handleViewDocument = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(filePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      window.open(url, '_blank');
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao visualizar documento", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  };
+
   const supplierName = supplier?.person_type === "PJ" ? supplier.company_name : supplier?.full_name;
 
   return (
@@ -219,7 +335,7 @@ export default function SupplierDocumentEvaluationPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/fornecedores/cadastro")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/fornecedores/avaliacoes")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
@@ -328,12 +444,21 @@ export default function SupplierDocumentEvaluationPage() {
                       </TableCell>
                       <TableCell>
                         {doc.submission?.file_path ? (
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleViewDocument(doc.submission!.file_path!, doc.submission!.file_name || 'documento')}
+                          >
                             <Eye className="h-4 w-4 mr-1" />
                             Ver
                           </Button>
                         ) : (
-                          <Button variant="outline" size="sm" disabled={doc.isExempt}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={doc.isExempt}
+                            onClick={() => openUploadDialog(doc.id)}
+                          >
                             <Upload className="h-4 w-4 mr-1" />
                             Anexar
                           </Button>
@@ -427,6 +552,43 @@ export default function SupplierDocumentEvaluationPage() {
             </LoadingState>
           </CardContent>
         </Card>
+
+        {/* Upload Dialog */}
+        <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Anexar Documento</DialogTitle>
+            </DialogHeader>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary'
+              }`}
+            >
+              <input {...getInputProps()} />
+              {uploadingFile ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="text-sm text-muted-foreground">Enviando...</p>
+                </div>
+              ) : (
+                <>
+                  <File className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  {isDragActive ? (
+                    <p className="text-primary">Solte o arquivo aqui...</p>
+                  ) : (
+                    <>
+                      <p className="font-medium">Arraste um arquivo ou clique para selecionar</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        PDF, DOC, DOCX, JPG, PNG (máx. 10MB)
+                      </p>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

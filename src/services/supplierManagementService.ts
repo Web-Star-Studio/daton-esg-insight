@@ -1165,6 +1165,32 @@ export async function updateDocumentSubmission(id: string, updates: {
   if (error) throw error;
 }
 
+// Get latest evaluation for multiple suppliers (for fetching next_evaluation_date)
+export async function getLatestEvaluationForSuppliers(supplierIds: string[]): Promise<SupplierDocumentEvaluation[]> {
+  if (!supplierIds.length) return [];
+  
+  const companyId = await getCurrentUserCompanyId();
+  
+  const { data, error } = await supabase
+    .from('supplier_document_evaluations')
+    .select('*')
+    .eq('company_id', companyId)
+    .in('supplier_id', supplierIds)
+    .order('evaluation_date', { ascending: false });
+    
+  if (error) throw error;
+  
+  // Get only the latest evaluation per supplier
+  const latestBySupplier = new Map<string, SupplierDocumentEvaluation>();
+  (data || []).forEach((eval_: any) => {
+    if (!latestBySupplier.has(eval_.supplier_id)) {
+      latestBySupplier.set(eval_.supplier_id, eval_ as SupplierDocumentEvaluation);
+    }
+  });
+  
+  return Array.from(latestBySupplier.values());
+}
+
 // ==================== AVALIAÇÕES DE DESEMPENHO [AVA2] ====================
 
 export interface SupplierPerformanceEvaluation {
