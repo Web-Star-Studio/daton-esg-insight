@@ -10,7 +10,8 @@ import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2 } from 'lucide-reac
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
-import { getDepartments, getPositions, createDepartment, createPosition, type Department, type Position } from '@/services/organizationalStructure';
+import { getDepartments, getPositions, createDepartment, createPosition, deleteDepartment, deletePosition, type Department, type Position } from '@/services/organizationalStructure';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { formErrorHandler } from '@/utils/formErrorHandler';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -71,6 +72,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [newPositionTitle, setNewPositionTitle] = useState('');
   const [creatingDepartment, setCreatingDepartment] = useState(false);
   const [creatingPosition, setCreatingPosition] = useState(false);
+
+  // Delete confirmation states
+  const [confirmDeleteDepartment, setConfirmDeleteDepartment] = useState<Department | null>(null);
+  const [confirmDeletePosition, setConfirmDeletePosition] = useState<Position | null>(null);
+  const [deletingDepartment, setDeletingDepartment] = useState(false);
+  const [deletingPosition, setDeletingPosition] = useState(false);
 
   // Experience and Education dialogs
   const [showExperienceDialog, setShowExperienceDialog] = useState(false);
@@ -307,6 +314,74 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     }
   };
 
+  // Delete department with validation
+  const handleDeleteDepartment = async (dept: Department) => {
+    // Check if department is in use
+    const { count } = await supabase
+      .from('employees')
+      .select('*', { count: 'exact', head: true })
+      .eq('department', dept.name);
+    
+    if (count && count > 0) {
+      toast.error(`Não é possível excluir: ${count} funcionário(s) estão vinculados a este departamento`);
+      return;
+    }
+    setConfirmDeleteDepartment(dept);
+  };
+
+  const confirmDepartmentDelete = async () => {
+    if (!confirmDeleteDepartment) return;
+    setDeletingDepartment(true);
+    try {
+      await deleteDepartment(confirmDeleteDepartment.id);
+      setDepartments(prev => prev.filter(d => d.id !== confirmDeleteDepartment.id));
+      if (formData.department === confirmDeleteDepartment.name) {
+        setFormData(prev => ({ ...prev, department: '' }));
+      }
+      toast.success('Departamento excluído com sucesso!');
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      toast.error('Erro ao excluir departamento');
+    } finally {
+      setDeletingDepartment(false);
+      setConfirmDeleteDepartment(null);
+    }
+  };
+
+  // Delete position with validation
+  const handleDeletePosition = async (pos: Position) => {
+    // Check if position is in use
+    const { count } = await supabase
+      .from('employees')
+      .select('*', { count: 'exact', head: true })
+      .eq('position', pos.title);
+    
+    if (count && count > 0) {
+      toast.error(`Não é possível excluir: ${count} funcionário(s) estão vinculados a este cargo`);
+      return;
+    }
+    setConfirmDeletePosition(pos);
+  };
+
+  const confirmPositionDelete = async () => {
+    if (!confirmDeletePosition) return;
+    setDeletingPosition(true);
+    try {
+      await deletePosition(confirmDeletePosition.id);
+      setPositions(prev => prev.filter(p => p.id !== confirmDeletePosition.id));
+      if (formData.position === confirmDeletePosition.title) {
+        setFormData(prev => ({ ...prev, position: '', position_id: '' }));
+      }
+      toast.success('Cargo excluído com sucesso!');
+    } catch (error) {
+      console.error('Error deleting position:', error);
+      toast.error('Erro ao excluir cargo');
+    } finally {
+      setDeletingPosition(false);
+      setConfirmDeletePosition(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -514,9 +589,24 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map(dept => (
-                      <SelectItem key={dept.id} value={dept.name}>
-                        {dept.name}
-                      </SelectItem>
+                      <div key={dept.id} className="flex items-center justify-between group pr-2">
+                        <SelectItem value={dept.name} className="flex-1">
+                          {dept.name}
+                        </SelectItem>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleDeleteDepartment(dept);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
@@ -597,9 +687,24 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                   </SelectTrigger>
                   <SelectContent>
                     {positions.map(pos => (
-                      <SelectItem key={pos.id} value={pos.title}>
-                        {pos.title}
-                      </SelectItem>
+                      <div key={pos.id} className="flex items-center justify-between group pr-2">
+                        <SelectItem value={pos.title} className="flex-1">
+                          {pos.title}
+                        </SelectItem>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleDeletePosition(pos);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1058,6 +1163,52 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         employeeId={employee?.id}
         onAddPending={!employee ? (edu) => setPendingEducation(prev => [...prev, edu]) : undefined}
       />
+
+      {/* Delete Department Confirmation Dialog */}
+      <AlertDialog open={!!confirmDeleteDepartment} onOpenChange={(open) => !open && setConfirmDeleteDepartment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Departamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o departamento "{confirmDeleteDepartment?.name}"?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingDepartment}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDepartmentDelete}
+              disabled={deletingDepartment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingDepartment ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Position Confirmation Dialog */}
+      <AlertDialog open={!!confirmDeletePosition} onOpenChange={(open) => !open && setConfirmDeletePosition(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Cargo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o cargo "{confirmDeletePosition?.title}"?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPosition}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmPositionDelete}
+              disabled={deletingPosition}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingPosition ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
