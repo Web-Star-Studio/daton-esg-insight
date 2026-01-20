@@ -3,16 +3,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Calendar } from './ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { 
   FileText, 
   Download, 
   Users, 
   TrendingUp, 
   Building, 
-  Calendar,
+  CalendarIcon,
   DollarSign,
   Gift,
   Filter,
@@ -22,6 +23,9 @@ import { useQuery } from '@tanstack/react-query';
 import { getEmployees, getEmployeesStats } from '@/services/employees';
 import { getBenefitStats } from '@/services/benefits';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface EmployeeReportsModalProps {
   isOpen: boolean;
@@ -34,8 +38,8 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
   const [filters, setFilters] = useState({
     department: 'all',
     status: 'all',
-    startDate: '',
-    endDate: '',
+    startDate: undefined as Date | undefined,
+    endDate: undefined as Date | undefined,
   });
 
   // Set initial report type when modal opens
@@ -422,24 +426,58 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="startDate">Data Inicial</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                  />
+                <div className="space-y-2">
+                  <Label>Data Inicial</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !filters.startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {filters.startDate ? format(filters.startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={filters.startDate}
+                        onSelect={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
-                <div>
-                  <Label htmlFor="endDate">Data Final</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                  />
+                <div className="space-y-2">
+                  <Label>Data Final</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !filters.endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {filters.endDate ? format(filters.endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={filters.endDate}
+                        onSelect={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </CardContent>
