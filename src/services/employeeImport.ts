@@ -85,7 +85,26 @@ export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> 
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
+        const fileName = file.name.toLowerCase();
+        
+        let workbook: XLSX.WorkBook;
+        
+        // Detectar se é CSV
+        if (fileName.endsWith('.csv')) {
+          // Parse CSV com suporte a separador brasileiro (;)
+          const textContent = data as string;
+          // Detectar separador automaticamente
+          const firstLine = textContent.split('\n')[0] || '';
+          const separator = firstLine.includes(';') ? ';' : ',';
+          workbook = XLSX.read(textContent, { 
+            type: 'string',
+            FS: separator,
+          });
+        } else {
+          // Parse Excel (xlsx/xls)
+          workbook = XLSX.read(data, { type: 'binary', cellDates: true });
+        }
+        
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
@@ -135,7 +154,13 @@ export async function parseEmployeeExcel(file: File): Promise<ParsedEmployee[]> 
     };
     
     reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-    reader.readAsBinaryString(file);
+    
+    // Ler como texto para CSV, como binário para Excel
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      reader.readAsBinaryString(file);
+    }
   });
 }
 
@@ -486,44 +511,29 @@ export async function importEmployees(
   return result;
 }
 
-// Download template Excel
+// Download template CSV
 export function downloadEmployeeTemplate() {
-  const templateData = [
-    {
-      'CPF': '123.456.789-00',
-      'Nome': 'João da Silva',
-      'Nascimento': '15/06/1985',
-      'E-mail': 'joao.silva@empresa.com',
-      'Lotação': 'TI - São Paulo',
-      'Cargo': 'Analista de Sistemas',
-      'Grupo': 'Tecnologia',
-    },
-    {
-      'CPF': '987.654.321-00',
-      'Nome': 'Maria Santos',
-      'Nascimento': '22/03/1990',
-      'E-mail': 'maria.santos@empresa.com',
-      'Lotação': 'RH - Rio de Janeiro',
-      'Cargo': 'Coordenadora de RH',
-      'Grupo': 'Administrativo',
-    },
+  // Dados do template em CSV
+  const headers = ['CPF', 'Nome', 'Nascimento', 'E-mail', 'Lotação', 'Cargo', 'Grupo'];
+  const exampleRows = [
+    ['123.456.789-00', 'João da Silva', '15/06/1985', 'joao.silva@empresa.com', 'TI - São Paulo', 'Analista de Sistemas', 'Tecnologia'],
+    ['987.654.321-00', 'Maria Santos', '22/03/1990', 'maria.santos@empresa.com', 'RH - Rio de Janeiro', 'Coordenadora de RH', 'Administrativo'],
   ];
   
-  const ws = XLSX.utils.json_to_sheet(templateData);
+  // Gerar CSV com separador ponto-e-vírgula (padrão BR para Excel)
+  const csvContent = [
+    headers.join(';'),
+    ...exampleRows.map(row => row.join(';'))
+  ].join('\n');
   
-  // Set column widths
-  ws['!cols'] = [
-    { wch: 16 }, // CPF
-    { wch: 30 }, // Nome
-    { wch: 12 }, // Nascimento
-    { wch: 30 }, // E-mail
-    { wch: 25 }, // Lotação
-    { wch: 25 }, // Cargo
-    { wch: 15 }, // Grupo
-  ];
+  // BOM para UTF-8 (garante acentos corretos no Excel)
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Funcionários');
-  
-  XLSX.writeFile(wb, 'template_importacao_funcionarios.xlsx');
+  // Download
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'template_importacao_funcionarios.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
 }

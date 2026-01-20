@@ -86,6 +86,7 @@ export function EmployeeImportSection() {
     accept: {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
       'application/vnd.ms-excel': ['.xls'],
+      'text/csv': ['.csv'],
     },
     maxFiles: 1,
     disabled: isProcessing,
@@ -148,7 +149,7 @@ export function EmployeeImportSection() {
         <div>
           <h2 className="text-xl font-semibold">Importação de Funcionários</h2>
           <p className="text-sm text-muted-foreground">
-            Importe funcionários a partir de uma planilha Excel
+            Importe funcionários a partir de uma planilha Excel ou CSV
           </p>
         </div>
         <Button variant="outline" onClick={downloadEmployeeTemplate}>
@@ -166,7 +167,7 @@ export function EmployeeImportSection() {
               Upload do Arquivo
             </CardTitle>
             <CardDescription>
-              Arraste um arquivo Excel ou clique para selecionar. O arquivo deve conter as colunas: CPF, Nome, Nascimento, E-mail, Lotação, Cargo
+              Arraste um arquivo Excel ou CSV para selecionar. O arquivo deve conter as colunas: CPF, Nome, Nascimento, E-mail, Lotação, Cargo
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -192,8 +193,8 @@ export function EmployeeImportSection() {
                     <p className="text-primary font-medium">Solte o arquivo aqui...</p>
                   ) : (
                     <>
-                      <p className="font-medium">Arraste um arquivo Excel aqui</p>
-                      <p className="text-sm text-muted-foreground">ou clique para selecionar</p>
+                      <p className="font-medium">Arraste um arquivo Excel ou CSV aqui</p>
+                      <p className="text-sm text-muted-foreground">ou clique para selecionar (.xlsx, .xls, .csv)</p>
                     </>
                   )}
                 </div>
