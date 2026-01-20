@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -69,6 +69,7 @@ export function TrainingScheduleModal({
   schedule 
 }: TrainingScheduleModalProps) {
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!schedule;
@@ -138,7 +139,37 @@ export function TrainingScheduleModal({
     }
   }, [schedule, form]);
 
+  // Observar mudança de programa e auto-preencher datas
+  const selectedProgramId = form.watch('training_program_id');
+
+  useEffect(() => {
+    if (selectedProgramId && !isEditing) {
+      const selectedProgram = programs.find(p => p.id === selectedProgramId);
+      
+      if (selectedProgram) {
+        // Atualizar datas com as datas do programa (usando T12:00:00 para evitar shift de timezone)
+        if (selectedProgram.start_date) {
+          form.setValue('start_date', new Date(selectedProgram.start_date + 'T12:00:00'));
+        }
+        if (selectedProgram.end_date) {
+          form.setValue('end_date', new Date(selectedProgram.end_date + 'T12:00:00'));
+        } else if (selectedProgram.start_date) {
+          form.setValue('end_date', new Date(selectedProgram.start_date + 'T12:00:00'));
+        }
+        
+        // Preencher título sugerido se estiver vazio
+        const currentTitle = form.getValues('title');
+        if (!currentTitle) {
+          form.setValue('title', `${selectedProgram.name} - Turma A`);
+        }
+      }
+    }
+  }, [selectedProgramId, programs, isEditing, form]);
+
   const onSubmit = async (values: z.infer<typeof scheduleSchema>) => {
+    if (isSubmitting) return; // Previne múltiplas submissões
+    
+    setIsSubmitting(true);
     try {
       const submissionData = {
         training_program_id: values.training_program_id,
@@ -170,13 +201,15 @@ export function TrainingScheduleModal({
 
       queryClient.invalidateQueries({ queryKey: ["training-schedules"] });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving schedule:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar agendamento. Funcionalidade será implementada com tabela de agendamentos.",
+        title: "Erro ao salvar agendamento",
+        description: error?.message || "Ocorreu um erro. Verifique os dados e tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -305,6 +338,17 @@ export function TrainingScheduleModal({
                               locale={ptBR}
                               initialFocus
                               className="pointer-events-auto"
+                              disabled={(date) => {
+                                const selectedProgram = programs.find(p => p.id === selectedProgramId);
+                                if (!selectedProgram?.start_date) return false;
+                                
+                                const programStart = new Date(selectedProgram.start_date + 'T00:00:00');
+                                const programEnd = selectedProgram.end_date 
+                                  ? new Date(selectedProgram.end_date + 'T23:59:59')
+                                  : new Date(selectedProgram.start_date + 'T23:59:59');
+                                
+                                return date < programStart || date > programEnd;
+                              }}
                             />
                           </PopoverContent>
                         </Popover>
@@ -346,6 +390,17 @@ export function TrainingScheduleModal({
                               locale={ptBR}
                               initialFocus
                               className="pointer-events-auto"
+                              disabled={(date) => {
+                                const selectedProgram = programs.find(p => p.id === selectedProgramId);
+                                if (!selectedProgram?.start_date) return false;
+                                
+                                const programStart = new Date(selectedProgram.start_date + 'T00:00:00');
+                                const programEnd = selectedProgram.end_date 
+                                  ? new Date(selectedProgram.end_date + 'T23:59:59')
+                                  : new Date(selectedProgram.start_date + 'T23:59:59');
+                                
+                                return date < programStart || date > programEnd;
+                              }}
                             />
                           </PopoverContent>
                         </Popover>
@@ -511,11 +566,11 @@ export function TrainingScheduleModal({
             </div>
 
             <div className="flex justify-end gap-3 pt-6 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                {isEditing ? "Atualizar" : "Criar"} Agendamento
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : isEditing ? "Atualizar" : "Criar"} Agendamento
               </Button>
             </div>
           </form>
