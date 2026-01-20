@@ -370,44 +370,6 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
             </Card>
           </div>
 
-          {/* Report Types */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tipos de Relatório</CardTitle>
-              <CardDescription>
-                Selecione o tipo de relatório que deseja gerar
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reportTypes.map((report) => (
-                  <div
-                    key={report.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                      selectedReportType === report.id ? 'border-primary bg-primary/5' : ''
-                    }`}
-                    onClick={() => setSelectedReportType(report.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <report.icon className={`h-5 w-5 mt-0.5 ${report.color}`} />
-                      <div className="flex-1">
-                        <h4 className="font-medium">{report.name}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {report.description}
-                        </p>
-                      </div>
-                      {selectedReportType === report.id && (
-                        <Badge variant="default" className="ml-2">
-                          Selecionado
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Filters */}
           <Card>
             <CardHeader>
@@ -479,6 +441,44 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
                     onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Report Types */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tipos de Relatório</CardTitle>
+              <CardDescription>
+                Selecione o tipo de relatório que deseja gerar
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {reportTypes.map((report) => (
+                  <div
+                    key={report.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                      selectedReportType === report.id ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => setSelectedReportType(report.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <report.icon className={`h-5 w-5 mt-0.5 ${report.color}`} />
+                      <div className="flex-1">
+                        <h4 className="font-medium">{report.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {report.description}
+                        </p>
+                      </div>
+                      {selectedReportType === report.id && (
+                        <Badge variant="default" className="ml-2">
+                          Selecionado
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
