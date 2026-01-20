@@ -28,14 +28,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateBranch, useUpdateBranch, BranchWithManager } from "@/services/branches";
+import { useCreateBranch, useUpdateBranch, BranchWithManager, getHeadquarters, Branch } from "@/services/branches";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
-import { Loader2, MapPin, Search } from "lucide-react";
+import { Loader2, MapPin, Search, Building2 } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
 import { unifiedToast } from "@/utils/unifiedToast";
 import { validateCNPJ, formatCNPJ } from "@/utils/formValidation";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const BRAZILIAN_STATES = [
   { value: "AC", label: "Acre" },
@@ -84,6 +85,7 @@ const branchFormSchema = z.object({
   phone: z.string().optional(),
   manager_id: z.string().optional(),
   is_headquarters: z.boolean().default(false),
+  parent_branch_id: z.string().optional(),
   status: z.string().default("Ativa"),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
@@ -103,6 +105,10 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: users, isLoading: isLoadingUsers } = useCompanyUsers();
+  const { data: headquarters, isLoading: isLoadingHeadquarters } = useQuery({
+    queryKey: ['branches', 'headquarters'],
+    queryFn: getHeadquarters,
+  });
 
   const isEditing = !!branch;
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -123,11 +129,21 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       phone: "",
       manager_id: "",
       is_headquarters: false,
+      parent_branch_id: "",
       status: "Ativa",
       latitude: null,
       longitude: null,
     },
   });
+
+  const isHeadquarters = form.watch("is_headquarters");
+  
+  // Clear parent_branch_id when switching to headquarters
+  useEffect(() => {
+    if (isHeadquarters) {
+      form.setValue("parent_branch_id", "");
+    }
+  }, [isHeadquarters, form]);
 
   useEffect(() => {
     if (branch) {
@@ -145,6 +161,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
         phone: branch.phone || "",
         manager_id: branch.manager_id || "",
         is_headquarters: branch.is_headquarters,
+        parent_branch_id: branch.parent_branch_id || "",
         status: branch.status,
         latitude: branch.latitude ?? null,
         longitude: branch.longitude ?? null,
@@ -164,6 +181,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
         phone: "",
         manager_id: "",
         is_headquarters: false,
+        parent_branch_id: "",
         status: "Ativa",
         latitude: null,
         longitude: null,
@@ -274,6 +292,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
       phone: data.phone || undefined,
       manager_id: data.manager_id || undefined,
       is_headquarters: data.is_headquarters,
+      parent_branch_id: data.is_headquarters ? null : (data.parent_branch_id || null),
       status: data.status,
       latitude: data.latitude ?? undefined,
       longitude: data.longitude ?? undefined,
@@ -598,6 +617,41 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                 </FormItem>
               )}
             />
+
+            {/* Matriz Pai - only show if not headquarters */}
+            {!isHeadquarters && (
+              <FormField
+                control={form.control}
+                name="parent_branch_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Matriz Vinculada
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingHeadquarters ? "Carregando..." : "Selecione a matriz (opcional)"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma (filial independente)</SelectItem>
+                        {headquarters?.filter(h => h.id !== branch?.id).map((hq) => (
+                          <SelectItem key={hq.id} value={hq.id}>
+                            {hq.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      Vincule esta filial a uma matriz existente
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Coordenadas */}
             <div className="space-y-3">
