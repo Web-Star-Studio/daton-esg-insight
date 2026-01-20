@@ -6,7 +6,10 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2 } from 'lucide-react';
+import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2, CalendarIcon } from 'lucide-react';
+import { Calendar } from './ui/calendar';
+import { cn } from '@/lib/utils';
+import { parseDateSafe, formatDateForDB } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
@@ -769,35 +772,104 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="hire_date">Data de Contratação</Label>
-              <Input
-                id="hire_date"
-                type="date"
-                value={formData.hire_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, hire_date: e.target.value }))}
-              />
+              <Label>Data de Contratação</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.hire_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.hire_date 
+                      ? format(parseDateSafe(formData.hire_date)!, "dd/MM/yyyy")
+                      : "Selecione a data"
+                    }
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={parseDateSafe(formData.hire_date) || undefined}
+                    onSelect={(date) => setFormData(prev => ({ 
+                      ...prev, 
+                      hire_date: formatDateForDB(date) || ''
+                    }))}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
-              <Label htmlFor="termination_date">Data de Demissão</Label>
-              <Input
-                id="termination_date"
-                type="date"
-                value={formData.termination_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, termination_date: e.target.value }))}
-              />
+              <Label>Data de Demissão</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.termination_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.termination_date 
+                      ? format(parseDateSafe(formData.termination_date)!, "dd/MM/yyyy")
+                      : "Selecione a data"
+                    }
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={parseDateSafe(formData.termination_date) || undefined}
+                    onSelect={(date) => setFormData(prev => ({ 
+                      ...prev, 
+                      termination_date: formatDateForDB(date) || ''
+                    }))}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="birth_date">Data de Nascimento</Label>
-              <Input
-                id="birth_date"
-                type="date"
-                value={formData.birth_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, birth_date: e.target.value }))}
-              />
+              <Label>Data de Nascimento</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.birth_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.birth_date 
+                      ? format(parseDateSafe(formData.birth_date)!, "dd/MM/yyyy")
+                      : "Selecione a data"
+                    }
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={parseDateSafe(formData.birth_date) || undefined}
+                    onSelect={(date) => setFormData(prev => ({ 
+                      ...prev, 
+                      birth_date: formatDateForDB(date) || ''
+                    }))}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
