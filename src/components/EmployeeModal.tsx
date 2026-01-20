@@ -106,8 +106,18 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     message?: string;
   }>({ checking: false, exists: false });
 
+  // Email validation state
+  const [emailValidation, setEmailValidation] = useState<{
+    checking: boolean;
+    exists: boolean;
+    message?: string;
+  }>({ checking: false, exists: false });
+
   // Debounce employee code for validation
   const debouncedEmployeeCode = useDebounce(formData.employee_code, 500);
+  
+  // Debounce email for validation
+  const debouncedEmail = useDebounce(formData.email, 500);
 
   // Fetch company_id on mount
   useEffect(() => {
@@ -173,10 +183,62 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     checkEmployeeCodeExists();
   }, [debouncedEmployeeCode, employee]);
 
+  // Check if email exists
+  useEffect(() => {
+    const checkEmailExists = async () => {
+      const emailValue = debouncedEmail.trim().toLowerCase();
+      
+      // Don't check if empty or invalid email
+      if (!emailValue || !emailValue.includes('@')) {
+        setEmailValidation({ checking: false, exists: false });
+        return;
+      }
+      
+      // If editing and email hasn't changed, don't check
+      if (employee && employee.email?.toLowerCase() === emailValue) {
+        setEmailValidation({ checking: false, exists: false });
+        return;
+      }
+
+      setEmailValidation({ checking: true, exists: false });
+
+      try {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('id, email')
+          .eq('email', emailValue)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking email:', error);
+          setEmailValidation({ checking: false, exists: false });
+          return;
+        }
+
+        // If exists and not the same employee being edited
+        if (data && (!employee || data.id !== employee.id)) {
+          setEmailValidation({
+            checking: false,
+            exists: true,
+            message: 'Este e-mail já está em uso'
+          });
+        } else {
+          setEmailValidation({ checking: false, exists: false });
+        }
+      } catch (error) {
+        console.error('Error checking email:', error);
+        setEmailValidation({ checking: false, exists: false });
+      }
+    };
+
+    checkEmailExists();
+  }, [debouncedEmail, employee]);
+
   useEffect(() => {
     if (isOpen) {
       loadDepartmentsAndPositions();
       setCodeValidation({ checking: false, exists: false });
+      setEmailValidation({ checking: false, exists: false });
       if (employee) {
         setFormData({
           employee_code: employee.employee_code || '',
@@ -468,6 +530,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       return;
     }
 
+    // Check for duplicate email before submission
+    if (emailValidation.exists) {
+      toast.error('E-mail já está em uso. Use um e-mail diferente.');
+      return;
+    }
+
     setLoading(true);
     setIsSubmitting(true);
     try {
@@ -563,13 +631,25 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="email@empresa.com"
-              />
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="email@empresa.com"
+                  className={emailValidation.exists ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+                {emailValidation.checking && (
+                  <p className="text-xs text-muted-foreground mt-1">Verificando disponibilidade...</p>
+                )}
+                {emailValidation.exists && (
+                  <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>{emailValidation.message}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
