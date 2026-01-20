@@ -5,6 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import { useCreateEmployeeExperience, EmployeeExperience } from '@/services/employeeExperiences';
 
 export type PendingExperience = Omit<EmployeeExperience, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'employee_id'>;
@@ -21,12 +27,15 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
     company_name: '',
     position_title: '',
     department: '',
-    start_date: '',
-    end_date: '',
+    start_date: undefined as Date | undefined,
+    end_date: undefined as Date | undefined,
     is_current: false,
     description: '',
     reason_for_leaving: '',
   });
+
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const createExperience = useCreateEmployeeExperience();
 
@@ -35,8 +44,8 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
       company_name: '',
       position_title: '',
       department: '',
-      start_date: '',
-      end_date: '',
+      start_date: undefined,
+      end_date: undefined,
       is_current: false,
       description: '',
       reason_for_leaving: '',
@@ -50,8 +59,8 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
       company_name: formData.company_name,
       position_title: formData.position_title,
       department: formData.department || undefined,
-      start_date: formData.start_date,
-      end_date: formData.is_current ? undefined : (formData.end_date || undefined),
+      start_date: formData.start_date ? format(formData.start_date, 'yyyy-MM-dd') : '',
+      end_date: formData.is_current ? undefined : (formData.end_date ? format(formData.end_date, 'yyyy-MM-dd') : undefined),
       is_current: formData.is_current,
       description: formData.description || undefined,
       reason_for_leaving: formData.reason_for_leaving || undefined,
@@ -120,28 +129,69 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start_date">Data de Início *</Label>
-              <Input
-                id="start_date"
-                type="date"
-                min="1900-01-01"
-                max="2100-12-31"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                required
-              />
+              <Label>Data de Início *</Label>
+              <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.start_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.start_date ? format(formData.start_date, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.start_date}
+                    onSelect={(date) => {
+                      setFormData({ ...formData, start_date: date });
+                      setStartDateOpen(false);
+                    }}
+                    locale={ptBR}
+                    fromYear={1900}
+                    toYear={2100}
+                    captionLayout="dropdown-buttons"
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="end_date">Data de Término</Label>
-              <Input
-                id="end_date"
-                type="date"
-                min="1900-01-01"
-                max="2100-12-31"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                disabled={formData.is_current}
-              />
+              <Label>Data de Término</Label>
+              <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.end_date && "text-muted-foreground"
+                    )}
+                    disabled={formData.is_current}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.end_date ? format(formData.end_date, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[9999]" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.end_date}
+                    onSelect={(date) => {
+                      setFormData({ ...formData, end_date: date });
+                      setEndDateOpen(false);
+                    }}
+                    locale={ptBR}
+                    fromYear={1900}
+                    toYear={2100}
+                    captionLayout="dropdown-buttons"
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -150,7 +200,7 @@ export const AddExperienceDialog = ({ open, onOpenChange, employeeId, onAddPendi
               id="is_current"
               checked={formData.is_current}
               onCheckedChange={(checked) => 
-                setFormData({ ...formData, is_current: checked as boolean, end_date: checked ? '' : formData.end_date })
+                setFormData({ ...formData, is_current: checked as boolean, end_date: checked ? undefined : formData.end_date })
               }
             />
             <Label htmlFor="is_current" className="cursor-pointer">
