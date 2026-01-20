@@ -23364,6 +23364,129 @@ export type Database = {
           },
         ]
       }
+      training_schedule_participants: {
+        Row: {
+          attendance_marked_at: string | null
+          attendance_marked_by: string | null
+          attended: boolean | null
+          confirmed: boolean | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          schedule_id: string
+        }
+        Insert: {
+          attendance_marked_at?: string | null
+          attendance_marked_by?: string | null
+          attended?: boolean | null
+          confirmed?: boolean | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          schedule_id: string
+        }
+        Update: {
+          attendance_marked_at?: string | null
+          attendance_marked_by?: string | null
+          attended?: boolean | null
+          confirmed?: boolean | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_schedule_participants_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_schedule_participants_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "training_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_schedules: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by_user_id: string
+          description: string | null
+          end_date: string
+          end_time: string
+          id: string
+          instructor: string | null
+          location: string | null
+          max_participants: number | null
+          start_date: string
+          start_time: string
+          status: string | null
+          title: string
+          training_program_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by_user_id: string
+          description?: string | null
+          end_date: string
+          end_time?: string
+          id?: string
+          instructor?: string | null
+          location?: string | null
+          max_participants?: number | null
+          start_date: string
+          start_time?: string
+          status?: string | null
+          title: string
+          training_program_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by_user_id?: string
+          description?: string | null
+          end_date?: string
+          end_time?: string
+          id?: string
+          instructor?: string | null
+          location?: string | null
+          max_participants?: number | null
+          start_date?: string
+          start_time?: string
+          status?: string | null
+          title?: string
+          training_program_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_schedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_schedules_training_program_id_fkey"
+            columns: ["training_program_id"]
+            isOneToOne: false
+            referencedRelation: "training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_statuses: {
         Row: {
           color: string | null
