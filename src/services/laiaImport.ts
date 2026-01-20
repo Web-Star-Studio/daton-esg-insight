@@ -504,10 +504,11 @@ export async function importLAIAAssessments(
   companyId: string,
   options?: {
     createMissingSectors?: boolean;
+    branchId?: string | null;
     onProgress?: (current: number, total: number, message: string) => void;
   }
 ): Promise<ImportResult> {
-  const { createMissingSectors = true, onProgress } = options || {};
+  const { createMissingSectors = true, branchId, onProgress } = options || {};
   
   const sectorsCreated: string[] = [];
   const errors: { row: number; message: string }[] = [];
@@ -584,6 +585,7 @@ export async function importLAIAAssessments(
         .insert({
           company_id: companyId,
           sector_id: sectorId,
+          branch_id: branchId || null,
           aspect_code,
           activity_operation: row.activity_operation || 'Não especificada',
           environmental_aspect: row.environmental_aspect,
@@ -680,6 +682,9 @@ export function downloadLAIATemplate(): void {
   
   const instructions = [
     ['INSTRUÇÕES DE PREENCHIMENTO'],
+    [''],
+    ['NOTA: A filial pode ser selecionada durante o assistente de importação.'],
+    ['Todas as avaliações do arquivo serão vinculadas à mesma filial selecionada.'],
     [''],
     ['TEMPORALIDADE: P=Passada, A=Atual, F=Futura'],
     ['SITUAÇÃO OPERACIONAL: N=Normal, A=Anormal, E=Emergência'],
