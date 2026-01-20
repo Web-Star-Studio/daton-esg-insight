@@ -264,6 +264,8 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         });
       } else {
         // Clear form and pending items for creation mode
+        // Pre-fill hire_date with current date for new employees
+        const today = new Date().toISOString().split('T')[0];
         setFormData({
           employee_code: '',
           full_name: '',
@@ -272,7 +274,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           department: '',
           position: '',
           position_id: '',
-          hire_date: '',
+          hire_date: today,
           birth_date: '',
           gender: '',
           employment_type: 'CLT',
