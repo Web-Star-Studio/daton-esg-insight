@@ -799,6 +799,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                     }))}
                     initialFocus
                     className="pointer-events-auto"
+                    fromYear={1900}
+                    toYear={2100}
+                    captionLayout="dropdown-buttons"
                   />
                 </PopoverContent>
               </Popover>
@@ -832,6 +835,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                     }))}
                     initialFocus
                     className="pointer-events-auto"
+                    fromYear={1900}
+                    toYear={2100}
+                    captionLayout="dropdown-buttons"
                   />
                 </PopoverContent>
               </Popover>
@@ -867,6 +873,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                     }))}
                     initialFocus
                     className="pointer-events-auto"
+                    fromYear={1900}
+                    toYear={2100}
+                    captionLayout="dropdown-buttons"
                   />
                 </PopoverContent>
               </Popover>
