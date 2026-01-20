@@ -387,8 +387,8 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="department">Departamento</Label>
+                <div className="space-y-2">
+                  <Label>Departamento</Label>
                   <Select
                     value={filters.department}
                     onValueChange={(value) => setFilters(prev => ({ ...prev, department: value }))}
@@ -407,8 +407,8 @@ export function EmployeeReportsModal({ isOpen, onClose, initialReportType }: Emp
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="status">Status</Label>
+                <div className="space-y-2">
+                  <Label>Status</Label>
                   <Select
                     value={filters.status}
                     onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
