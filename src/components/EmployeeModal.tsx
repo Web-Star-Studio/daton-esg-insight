@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { parseDateSafe, formatDateForDB } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { createEmployee, updateEmployee, type Employee } from '@/services/employees';
+import { createEmployee, updateEmployee, useDeleteEmployee, type Employee } from '@/services/employees';
 import { getDepartments, getPositions, createDepartment, createPosition, deleteDepartment, deletePosition, type Department, type Position } from '@/services/organizationalStructure';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { formErrorHandler } from '@/utils/formErrorHandler';
@@ -86,6 +86,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   // Experience and Education dialogs
   const [showExperienceDialog, setShowExperienceDialog] = useState(false);
   const [showEducationDialog, setShowEducationDialog] = useState(false);
+  const [confirmDeleteEmployee, setConfirmDeleteEmployee] = useState(false);
 
   // Pending experiences and education (for creation mode)
   const [pendingExperiences, setPendingExperiences] = useState<PendingExperience[]>([]);
@@ -96,6 +97,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const { data: education } = useEmployeeEducation(employee?.id || '');
   const deleteExperience = useDeleteEmployeeExperience();
   const deleteEducation = useDeleteEmployeeEducation();
+  const deleteEmployeeMutation = useDeleteEmployee();
   const createExperienceMutation = useCreateEmployeeExperience();
   const createEducationMutation = useCreateEmployeeEducation();
 
@@ -1299,16 +1301,31 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={loading || codeValidation.exists || codeValidation.checking}
-            >
-              {loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Criar')}
-            </Button>
+          <div className="flex justify-between pt-4">
+            {employee ? (
+              <Button 
+                type="button" 
+                variant="destructive"
+                onClick={() => setConfirmDeleteEmployee(true)}
+                disabled={loading || deleteEmployeeMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            ) : (
+              <div /> 
+            )}
+            <div className="flex space-x-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={loading || codeValidation.exists || codeValidation.checking}
+              >
+                {loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Criar')}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
@@ -1368,6 +1385,42 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deletingPosition ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Employee Confirmation Dialog */}
+      <AlertDialog open={confirmDeleteEmployee} onOpenChange={setConfirmDeleteEmployee}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Funcionário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o funcionário "{employee?.full_name}"?
+              Esta ação não pode ser desfeita e removerá todos os dados associados (experiências, formações, documentos).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteEmployeeMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                if (employee) {
+                  try {
+                    await deleteEmployeeMutation.mutateAsync(employee.id);
+                    toast.success('Funcionário excluído com sucesso!');
+                    setConfirmDeleteEmployee(false);
+                    onSuccess();
+                    onClose();
+                  } catch (error) {
+                    console.error('Erro ao excluir funcionário:', error);
+                    toast.error('Erro ao excluir funcionário');
+                  }
+                }
+              }}
+              disabled={deleteEmployeeMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteEmployeeMutation.isPending ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
