@@ -19,6 +19,13 @@ export interface Branch {
   updated_at: string;
 }
 
+export interface BranchWithManager extends Branch {
+  manager?: {
+    id: string;
+    full_name: string;
+  } | null;
+}
+
 export const getBranches = async () => {
   const { data, error } = await supabase
     .from('branches')
@@ -28,6 +35,25 @@ export const getBranches = async () => {
 
   if (error) throw error;
   return data as Branch[];
+};
+
+export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => {
+  const { data, error } = await supabase
+    .from('branches')
+    .select(`
+      *,
+      manager:profiles(id, full_name)
+    `)
+    .order('is_headquarters', { ascending: false })
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  
+  // Transform the data to handle the profiles join properly
+  return (data || []).map((branch: any) => ({
+    ...branch,
+    manager: branch.manager || null,
+  })) as BranchWithManager[];
 };
 
 export const createBranch = async (branch: Omit<Branch, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
@@ -77,6 +103,13 @@ export const useBranches = () => {
   return useQuery({
     queryKey: ['branches'],
     queryFn: getBranches,
+  });
+};
+
+export const useBranchesWithManager = () => {
+  return useQuery({
+    queryKey: ['branches', 'with-manager'],
+    queryFn: getBranchesWithManager,
   });
 };
 
