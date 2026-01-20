@@ -5,6 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   GraduationCap, 
   BookOpen, 
@@ -57,6 +68,11 @@ export default function GestaoTreinamentos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  
+  // Bulk selection state
+  const [selectedProgramIds, setSelectedProgramIds] = useState<string[]>([]);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
   
   // Modal states
   const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
@@ -170,6 +186,65 @@ export default function GestaoTreinamentos() {
       }
     }
   };
+
+  // Bulk selection handlers
+  const handleSelectProgram = (programId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProgramIds(prev => [...prev, programId]);
+    } else {
+      setSelectedProgramIds(prev => prev.filter(id => id !== programId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProgramIds(filteredPrograms.map(p => p.id));
+    } else {
+      setSelectedProgramIds([]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProgramIds.length === 0) return;
+    
+    setIsDeletingBulk(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const id of selectedProgramIds) {
+      try {
+        await deleteTrainingProgram(id);
+        successCount++;
+      } catch (error) {
+        console.error(`Error deleting program ${id}:`, error);
+        errorCount++;
+      }
+    }
+
+    setIsDeletingBulk(false);
+    setIsBulkDeleteDialogOpen(false);
+    setSelectedProgramIds([]);
+    
+    queryClient.invalidateQueries({ queryKey: ["training-programs"] });
+    queryClient.invalidateQueries({ queryKey: ["employee-trainings"] });
+
+    if (errorCount === 0) {
+      toast({
+        title: "Sucesso",
+        description: `${successCount} programa(s) excluído(s) com sucesso!`,
+      });
+    } else {
+      toast({
+        title: "Exclusão parcial",
+        description: `${successCount} programa(s) excluído(s), ${errorCount} falha(s).`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isAllSelected = filteredPrograms.length > 0 && 
+    filteredPrograms.every(p => selectedProgramIds.includes(p.id));
+  const isSomeSelected = selectedProgramIds.length > 0;
 
   const handleNewProgram = () => {
     setSelectedProgram(null);
@@ -531,10 +606,66 @@ export default function GestaoTreinamentos() {
                 </Select>
               </div>
 
+              {/* Bulk actions bar */}
+              {isSomeSelected && (
+                <div className="flex items-center justify-between bg-muted/50 border rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <span className="text-sm font-medium">
+                      {selectedProgramIds.length} programa(s) selecionado(s)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedProgramIds([])}
+                    >
+                      Limpar seleção
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setIsBulkDeleteDialogOpen(true)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Excluir selecionados
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Select all header when no selection */}
+              {!isSomeSelected && filteredPrograms.length > 0 && (
+                <div className="flex items-center gap-3 mb-4 pl-4">
+                  <Checkbox
+                    checked={false}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Selecionar todos
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {filteredPrograms.map((program) => (
-                  <div key={program.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div 
+                    key={program.id} 
+                    className={cn(
+                      "flex items-center justify-between p-4 border rounded-lg transition-colors",
+                      selectedProgramIds.includes(program.id) && "bg-muted/50 border-primary/50"
+                    )}
+                  >
                     <div className="flex items-center space-x-4">
+                      <Checkbox
+                        checked={selectedProgramIds.includes(program.id)}
+                        onCheckedChange={(checked) => handleSelectProgram(program.id, checked as boolean)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                       <div className={cn(
                         "w-10 h-10 rounded-lg flex items-center justify-center",
                         program.is_mandatory ? "bg-red-100" : "bg-blue-100"
@@ -759,6 +890,34 @@ export default function GestaoTreinamentos() {
         open={isExportHoursModalOpen}
         onOpenChange={setIsExportHoursModalOpen}
       />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir <strong>{selectedProgramIds.length}</strong> programa(s) de treinamento.
+              <br /><br />
+              <span className="text-destructive font-medium">
+                ATENÇÃO: Todos os participantes, avaliações, documentos e sessões vinculados também serão excluídos permanentemente.
+              </span>
+              <br /><br />
+              Esta ação não pode ser desfeita. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingBulk}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeletingBulk}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingBulk ? "Excluindo..." : `Excluir ${selectedProgramIds.length} programa(s)`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
