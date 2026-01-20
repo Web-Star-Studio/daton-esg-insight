@@ -160,8 +160,44 @@ export async function exportSuppliersList(companyId: string, format: 'excel' | '
 
 // Import Template Download
 export function downloadSupplierImportTemplate() {
-  const headers = ['CNPJ/CPF *', 'Tipo (PF/PJ) *', 'Razão Social/Nome *', 'Nome Fantasia', 'Responsável', 'Telefone', 'Email', 'Endereço', 'Cidade', 'Estado', 'CEP', 'Observações'];
-  const exampleRow = ['12.345.678/0001-90', 'PJ', 'Empresa Exemplo LTDA', 'Exemplo', 'João Silva', '(11) 99999-9999', 'contato@exemplo.com', 'Rua Exemplo, 123', 'São Paulo', 'SP', '01234-567', ''];
+  const headers = [
+    'CNPJ/CPF *', 
+    'Tipo (PF/PJ) *', 
+    'Razão Social/Nome *', 
+    'Nome Fantasia', 
+    'Responsável', 
+    'Telefone', 
+    'Email', 
+    'CEP',
+    'Logradouro',
+    'Número',
+    'Bairro',
+    'Cidade', 
+    'Estado',
+    'Estado/Unidade *',
+    'Categoria *',
+    'Tipo de Fornecedor *',
+    'Observações'
+  ];
+  const exampleRow = [
+    '12.345.678/0001-90', 
+    'PJ', 
+    'Empresa Exemplo LTDA', 
+    'Exemplo', 
+    'João Silva', 
+    '(11) 99999-9999', 
+    'contato@exemplo.com', 
+    '01234-567',
+    'Rua Exemplo',
+    '123',
+    'Centro',
+    'São Paulo', 
+    'SP',
+    'Matriz',
+    'Serviços',
+    'Transporte',
+    ''
+  ];
 
   const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
   const wb = XLSX.utils.book_new();
@@ -180,10 +216,15 @@ export interface ParsedSupplier {
   contact_name?: string;
   contact_phone?: string;
   contact_email?: string;
-  address?: string;
+  zip_code?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
-  zip_code?: string;
+  business_unit?: string;
+  category_name?: string;
+  type_name?: string;
   notes?: string;
 }
 
@@ -213,7 +254,17 @@ export async function parseSupplierImportFile(file: File): Promise<ParsedSupplie
             trade_name: String(row[3] || '').trim() || undefined,
             contact_name: String(row[4] || '').trim() || undefined,
             contact_phone: String(row[5] || '').trim() || undefined,
-            contact_email: String(row[6] || '').trim() || undefined
+            contact_email: String(row[6] || '').trim() || undefined,
+            zip_code: String(row[7] || '').trim() || undefined,
+            street: String(row[8] || '').trim() || undefined,
+            number: String(row[9] || '').trim() || undefined,
+            neighborhood: String(row[10] || '').trim() || undefined,
+            city: String(row[11] || '').trim() || undefined,
+            state: String(row[12] || '').trim() || undefined,
+            business_unit: String(row[13] || '').trim() || undefined,
+            category_name: String(row[14] || '').trim() || undefined,
+            type_name: String(row[15] || '').trim() || undefined,
+            notes: String(row[16] || '').trim() || undefined,
           }));
 
         resolve(suppliers);
@@ -242,6 +293,18 @@ export function validateSupplierImportData(data: ParsedSupplier[]): ValidationRe
       errors.push({ row, field: 'Razão Social', message: 'Campo obrigatório' });
       hasError = true;
     }
+    if (!supplier.business_unit) {
+      errors.push({ row, field: 'Estado/Unidade', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.category_name) {
+      errors.push({ row, field: 'Categoria', message: 'Campo obrigatório' });
+      hasError = true;
+    }
+    if (!supplier.type_name) {
+      errors.push({ row, field: 'Tipo de Fornecedor', message: 'Campo obrigatório' });
+      hasError = true;
+    }
 
     if (!hasError) validData.push(supplier);
   });
@@ -260,10 +323,31 @@ export async function importSuppliers(companyId: string, data: ParsedSupplier[])
   let failed = 0;
   const errors: { row: number; message: string }[] = [];
 
+  // Pre-fetch categories, types, and units for mapping
+  const { data: categories } = await supabase
+    .from('supplier_categories')
+    .select('id, name')
+    .eq('company_id', companyId) as any;
+  
+  const { data: types } = await supabase
+    .from('supplier_types')
+    .select('id, name')
+    .eq('company_id', companyId) as any;
+  
+  const { data: units } = await (supabase
+    .from('business_units' as any)
+    .select('id, name')
+    .eq('company_id', companyId) as any);
+
+  const categoryMap = new Map((categories || []).map((c: any) => [c.name.toLowerCase(), c.id]));
+  const typeMap = new Map((types || []).map((t: any) => [t.name.toLowerCase(), t.id]));
+  const unitMap = new Map((units || []).map((u: any) => [u.name.toLowerCase(), u.id]));
+
   for (let i = 0; i < data.length; i++) {
     const supplier = data[i];
     try {
-      const { error } = await (supabase
+      // Insert supplier
+      const { data: insertedSupplier, error } = await (supabase
         .from('managed_suppliers' as any)
         .insert({
           company_id: companyId,
@@ -274,12 +358,89 @@ export async function importSuppliers(companyId: string, data: ParsedSupplier[])
           contact_name: supplier.contact_name,
           contact_phone: supplier.contact_phone,
           contact_email: supplier.contact_email,
+          zip_code: supplier.zip_code,
+          street: supplier.street,
+          number: supplier.number,
+          neighborhood: supplier.neighborhood,
+          city: supplier.city,
+          state: supplier.state,
+          notes: supplier.notes,
           status: 'ativo'
-        }) as any);
+        })
+        .select('id')
+        .single() as any);
 
       if (error) {
         failed++;
         errors.push({ row: i + 2, message: error.message });
+        continue;
+      }
+
+      const supplierId = insertedSupplier?.id;
+      if (!supplierId) {
+        failed++;
+        errors.push({ row: i + 2, message: 'Erro ao obter ID do fornecedor' });
+        continue;
+      }
+
+      // Create assignments for category, type, and unit
+      const assignmentErrors: string[] = [];
+
+      // Unit assignment
+      if (supplier.business_unit) {
+        const unitId = unitMap.get(supplier.business_unit.toLowerCase());
+        if (unitId) {
+          const { error: unitError } = await (supabase
+            .from('supplier_unit_assignments' as any)
+            .insert({
+              company_id: companyId,
+              supplier_id: supplierId,
+              business_unit_id: unitId,
+            }) as any);
+          if (unitError) assignmentErrors.push(`Unidade: ${unitError.message}`);
+        } else {
+          assignmentErrors.push(`Unidade "${supplier.business_unit}" não encontrada`);
+        }
+      }
+
+      // Category assignment
+      if (supplier.category_name) {
+        const categoryId = categoryMap.get(supplier.category_name.toLowerCase());
+        if (categoryId) {
+          const { error: catError } = await (supabase
+            .from('supplier_category_assignments' as any)
+            .insert({
+              company_id: companyId,
+              supplier_id: supplierId,
+              category_id: categoryId,
+            }) as any);
+          if (catError) assignmentErrors.push(`Categoria: ${catError.message}`);
+        } else {
+          assignmentErrors.push(`Categoria "${supplier.category_name}" não encontrada`);
+        }
+      }
+
+      // Type assignment
+      if (supplier.type_name) {
+        const typeId = typeMap.get(supplier.type_name.toLowerCase());
+        if (typeId) {
+          const { error: typeError } = await (supabase
+            .from('supplier_type_assignments' as any)
+            .insert({
+              company_id: companyId,
+              supplier_id: supplierId,
+              supplier_type_id: typeId,
+            }) as any);
+          if (typeError) assignmentErrors.push(`Tipo: ${typeError.message}`);
+        } else {
+          assignmentErrors.push(`Tipo "${supplier.type_name}" não encontrada`);
+        }
+      }
+
+      if (assignmentErrors.length > 0) {
+        // Supplier was created but with assignment warnings
+        success++;
+        errors.push({ row: i + 2, message: `Criado com avisos: ${assignmentErrors.join('; ')}` });
       } else {
         success++;
       }
