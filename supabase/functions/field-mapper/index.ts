@@ -270,7 +270,7 @@ Para cada campo da planilha, identifique o melhor campo do sistema para mapear, 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       messages: [
         { role: 'system', content: 'Você é um assistente de mapeamento de dados. Retorne apenas JSON válido.' },
         { role: 'user', content: prompt }

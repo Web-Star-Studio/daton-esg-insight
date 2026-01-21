@@ -99,8 +99,8 @@ Deno.serve(async (req) => {
     const mimeType = getMimeType(fileType, isImage);
     
     // Use Lovable AI Gateway with Google Gemini Vision for ALL file types
-    // Gemini 2.5 Flash has native multimodal support for both images and PDFs
-    console.log('Sending to Lovable AI Gateway (google/gemini-2.5-flash)');
+    // Gemini 3 Flash Preview has native multimodal support for both images and PDFs
+    console.log('Sending to Lovable AI Gateway (google/gemini-3-flash-preview)');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'system',

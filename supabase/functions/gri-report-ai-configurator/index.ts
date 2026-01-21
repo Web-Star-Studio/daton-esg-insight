@@ -26,7 +26,7 @@ async function handleDocumentUpload(supabase: any, reportId: string, fileContent
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
@@ -123,7 +123,7 @@ async function handleExtractInfo(supabase: any, reportId: string, phase: string)
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
@@ -498,7 +498,7 @@ async function handleSuggestIndicators(supabase: any, reportId: string, category
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3-flash-preview',
       messages: [
         {
           role: 'system',
