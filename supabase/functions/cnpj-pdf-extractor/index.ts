@@ -21,6 +21,35 @@ interface ExtractedCNPJData {
   dataAbertura: string | null;
 }
 
+function extractCNPJFromText(text: string): string | null {
+  // Matches formatted or unformatted CNPJ
+  const formatted = text.match(/\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/);
+  if (formatted) return formatted[0];
+
+  const digits = text.replace(/\D/g, '');
+  const raw = digits.match(/\b\d{14}\b/);
+  if (!raw) return null;
+
+  const cnpj = raw[0];
+  return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`;
+}
+
+function getRelevantCnpjSnippet(text: string): string {
+  const upper = text.toUpperCase();
+  const anchors = ['CNPJ', 'NÚMERO DE INSCRIÇÃO', 'INSCRIÇÃO', 'COMPROVANTE', 'MATRIZ', 'FILIAL'];
+  let idx = -1;
+  for (const a of anchors) {
+    idx = upper.indexOf(a);
+    if (idx !== -1) break;
+  }
+
+  // Keep a bounded window to avoid dumping huge/garbled PDF text to the model.
+  if (idx === -1) return text.slice(0, 6000);
+  const start = Math.max(0, idx - 2000);
+  const end = Math.min(text.length, idx + 4000);
+  return text.slice(start, end);
+}
+
 // Simple PDF text extraction - works for text-based PDFs
 function extractTextFromPDF(base64Data: string): string {
   try {
@@ -106,6 +135,7 @@ Deno.serve(async (req) => {
     console.log(`Processing file: ${fileName || 'unknown'}, type: ${fileType || 'unknown'}, isImage: ${isImage}`);
 
     let openaiResponse;
+    let pdfExtractedText = '';
 
     if (isImage) {
       // For images, use Vision API directly
@@ -174,10 +204,10 @@ Regras importantes:
       // For PDFs, try to extract text and use text-based GPT-4
       console.log('Processing PDF - attempting text extraction');
       
-      const extractedText = extractTextFromPDF(base64Data);
-      console.log(`Extracted text length: ${extractedText.length}`);
+      pdfExtractedText = extractTextFromPDF(base64Data);
+      console.log(`Extracted text length: ${pdfExtractedText.length}`);
       
-      if (extractedText.length < 50) {
+      if (pdfExtractedText.length < 50) {
         // Not enough text extracted - PDF might be image-based
         return new Response(
           JSON.stringify({ 
@@ -188,6 +218,10 @@ Regras importantes:
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      const cnpjHint = extractCNPJFromText(pdfExtractedText);
+      const snippet = getRelevantCnpjSnippet(pdfExtractedText);
+      console.log('PDF CNPJ regex hint:', cnpjHint ? 'found' : 'not_found');
 
       // Use text-based GPT-4 to parse the extracted content
       openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -225,12 +259,17 @@ Regras importantes:
 - O CNPJ deve estar formatado com pontos, barras e traço
 - O CEP deve conter apenas números (8 dígitos)
 - O UF deve ser a sigla de 2 letras
-- Se algum campo não for encontrado, use null
-- Retorne APENAS o JSON, sem texto adicional`
+ - Se algum campo não for encontrado, use null
+ - Retorne APENAS o JSON, sem texto adicional
+ - Se o CNPJ estiver no texto sem formatação (apenas números), formate corretamente (00.000.000/0000-00)`
             },
             {
               role: 'user',
-              content: `Extraia os dados do seguinte texto de um comprovante de CNPJ:\n\n${extractedText}`
+              content: `Extraia os dados do seguinte texto de um comprovante de CNPJ.
+
+Dica: um possível CNPJ detectado por regex é: ${cnpjHint || 'N/A'}
+
+TEXTO (trecho mais relevante):\n\n${snippet}`
             }
           ],
           max_tokens: 1000,
@@ -261,7 +300,7 @@ Regras importantes:
     }
 
     // Parse JSON from response (handle potential markdown code blocks)
-    let extractedData: ExtractedCNPJData;
+    let extractedData: Partial<ExtractedCNPJData>;
     try {
       let jsonString = content.trim();
       // Remove markdown code blocks if present
@@ -282,6 +321,17 @@ Regras importantes:
       );
     }
 
+    // Normalize/repair missing CNPJ (common failure mode)
+    if (!extractedData.cnpj) {
+      const fromModelText = extractCNPJFromText(content);
+      const fromPdfText = pdfExtractedText ? extractCNPJFromText(pdfExtractedText) : null;
+      extractedData.cnpj = fromModelText || fromPdfText || undefined;
+      console.log('CNPJ recovery:', {
+        fromModelText: !!fromModelText,
+        fromPdfText: !!fromPdfText,
+      });
+    }
+
     // Validate that we got at least the CNPJ
     if (!extractedData.cnpj) {
       return new Response(
@@ -299,17 +349,17 @@ Regras importantes:
     const transformedData = {
       cnpj: extractedData.cnpj,
       name: extractedData.nome || '',
-      tradeName: extractedData.nomeFantasia || null,
+      tradeName: extractedData.nomeFantasia ?? null,
       address: extractedData.logradouro || '',
       streetNumber: extractedData.numero || '',
       neighborhood: extractedData.bairro || '',
       cep: extractedData.cep?.replace(/\D/g, '') || '',
       city: extractedData.cidade || '',
       state: extractedData.uf || '',
-      phone: extractedData.telefone || null,
-      email: extractedData.email || null,
-      status: extractedData.situacao || null,
-      openingDate: extractedData.dataAbertura || null,
+      phone: extractedData.telefone ?? null,
+      email: extractedData.email ?? null,
+      status: extractedData.situacao ?? null,
+      openingDate: extractedData.dataAbertura ?? null,
     };
 
     return new Response(
