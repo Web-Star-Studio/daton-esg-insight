@@ -180,3 +180,6 @@ verify_jwt = false
 
 [functions.cnpj-lookup]
 verify_jwt = false
+
+[functions.cnpj-pdf-extractor]
+verify_jwt = false
