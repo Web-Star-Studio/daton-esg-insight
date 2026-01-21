@@ -7406,11 +7406,12 @@ export type Database = {
           birth_date: string | null
           branch_id: string | null
           company_id: string
+          cpf: string | null
           created_at: string
           department: string | null
           education_level: string | null
           email: string | null
-          employee_code: string
+          employee_code: string | null
           employment_type: string | null
           ethnicity: string | null
           full_name: string
@@ -7435,11 +7436,12 @@ export type Database = {
           birth_date?: string | null
           branch_id?: string | null
           company_id: string
+          cpf?: string | null
           created_at?: string
           department?: string | null
           education_level?: string | null
           email?: string | null
-          employee_code: string
+          employee_code?: string | null
           employment_type?: string | null
           ethnicity?: string | null
           full_name: string
@@ -7464,11 +7466,12 @@ export type Database = {
           birth_date?: string | null
           branch_id?: string | null
           company_id?: string
+          cpf?: string | null
           created_at?: string
           department?: string | null
           education_level?: string | null
           email?: string | null
-          employee_code?: string
+          employee_code?: string | null
           employment_type?: string | null
           ethnicity?: string | null
           full_name?: string

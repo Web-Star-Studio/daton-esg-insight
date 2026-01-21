@@ -43,7 +43,8 @@ interface EmployeeDetailModalProps {
   onEdit: () => void;
   employee?: {
     id: string;
-    employee_code: string;
+    employee_code?: string;
+    cpf?: string;
     full_name: string;
     email?: string;
     phone?: string;
