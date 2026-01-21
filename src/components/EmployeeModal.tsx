@@ -16,7 +16,7 @@ import { createEmployee, updateEmployee, useDeleteEmployee, type Employee } from
 import { getDepartments, getPositions, createDepartment, createPosition, deleteDepartment, deletePosition, type Department, type Position } from '@/services/organizationalStructure';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 import { formErrorHandler } from '@/utils/formErrorHandler';
-import { formatPhone } from '@/utils/formValidation';
+import { formatPhone, formatCPF, validateCPF } from '@/utils/formValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
 import { BranchSelect } from './BranchSelect';
@@ -28,6 +28,7 @@ import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { generateNextEmployeeCode } from '@/services/employeeCodeGenerator';
+import { DateInputWithCalendar } from './DateInputWithCalendar';
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     employee_code: '',
+    cpf: '',
     full_name: '',
     email: '',
     phone: '',
@@ -246,6 +248,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       if (employee) {
         setFormData({
           employee_code: employee.employee_code || '',
+          cpf: employee.cpf || '',
           full_name: employee.full_name || '',
           email: employee.email || '',
           phone: employee.phone || '',
@@ -269,6 +272,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         const today = new Date().toISOString().split('T')[0];
         setFormData({
           employee_code: '',
+          cpf: '',
           full_name: '',
           email: '',
           phone: '',
@@ -496,7 +500,8 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     
     const sanitizedData = {
       ...formData,
-      employee_code: employeeCode,
+      employee_code: employeeCode || null,
+      cpf: formData.cpf.trim() || null,
       full_name: formData.full_name.trim(),
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
@@ -601,7 +606,21 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="employee_code">Código do Funcionário</Label>
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                value={formData.cpf}
+                onChange={(e) => setFormData(prev => ({ ...prev, cpf: formatCPF(e.target.value) }))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+              />
+              {formData.cpf && !validateCPF(formData.cpf) && formData.cpf.replace(/\D/g, '').length === 11 && (
+                <p className="text-xs text-destructive mt-1">CPF inválido</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="employee_code">Código (Opcional)</Label>
               <div className="space-y-1">
                 <div className="flex gap-2">
                   <Input
@@ -659,7 +678,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                 )}
               </div>
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="full_name">Nome Completo*</Label>
               <Input
@@ -670,7 +691,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                 required
               />
             </div>
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -899,112 +919,31 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Data de Contratação *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.hire_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.hire_date 
-                      ? format(parseDateSafe(formData.hire_date)!, "dd/MM/yyyy")
-                      : "Selecione a data"
-                    }
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={parseDateSafe(formData.hire_date) || undefined}
-                    onSelect={(date) => setFormData(prev => ({ 
-                      ...prev, 
-                      hire_date: formatDateForDB(date) || ''
-                    }))}
-                    initialFocus
-                    className="pointer-events-auto"
-                    fromYear={1900}
-                    toYear={2100}
-                    captionLayout="dropdown-buttons"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateInputWithCalendar
+                value={formData.hire_date}
+                onChange={(value) => setFormData(prev => ({ ...prev, hire_date: value }))}
+                placeholder="DD/MM/AAAA"
+              />
             </div>
 
             <div>
               <Label>Data de Demissão</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.termination_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.termination_date 
-                      ? format(parseDateSafe(formData.termination_date)!, "dd/MM/yyyy")
-                      : "Selecione a data"
-                    }
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={parseDateSafe(formData.termination_date) || undefined}
-                    onSelect={(date) => setFormData(prev => ({ 
-                      ...prev, 
-                      termination_date: formatDateForDB(date) || ''
-                    }))}
-                    initialFocus
-                    className="pointer-events-auto"
-                    fromYear={1900}
-                    toYear={2100}
-                    captionLayout="dropdown-buttons"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateInputWithCalendar
+                value={formData.termination_date}
+                onChange={(value) => setFormData(prev => ({ ...prev, termination_date: value }))}
+                placeholder="DD/MM/AAAA"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Data de Nascimento</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.birth_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.birth_date 
-                      ? format(parseDateSafe(formData.birth_date)!, "dd/MM/yyyy")
-                      : "Selecione a data"
-                    }
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={parseDateSafe(formData.birth_date) || undefined}
-                    onSelect={(date) => setFormData(prev => ({ 
-                      ...prev, 
-                      birth_date: formatDateForDB(date) || ''
-                    }))}
-                    initialFocus
-                    className="pointer-events-auto"
-                    fromYear={1900}
-                    toYear={2100}
-                    captionLayout="dropdown-buttons"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateInputWithCalendar
+                value={formData.birth_date}
+                onChange={(value) => setFormData(prev => ({ ...prev, birth_date: value }))}
+                placeholder="DD/MM/AAAA"
+              />
             </div>
 
             <div>

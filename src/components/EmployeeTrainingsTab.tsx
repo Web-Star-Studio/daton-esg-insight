@@ -11,7 +11,8 @@ import {
   Award, 
   AlertTriangle,
   Edit,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ import {
 } from './ui/alert-dialog';
 import { AddEmployeeTrainingDialog } from './AddEmployeeTrainingDialog';
 import { EditEmployeeTrainingDialog } from './EditEmployeeTrainingDialog';
+import { ViewEmployeeTrainingDialog } from './ViewEmployeeTrainingDialog';
 import { toast } from 'sonner';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -38,6 +40,7 @@ interface EmployeeTrainingsTabProps {
 export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrainingsTabProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const queryClient = useQueryClient();
@@ -112,6 +115,11 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
   });
 
   // Helper functions
+  const handleView = (training: any) => {
+    setSelectedTraining(training);
+    setIsViewDialogOpen(true);
+  };
+
   const handleEdit = (training: any) => {
     setSelectedTraining(training);
     setIsEditDialogOpen(true);
@@ -306,6 +314,14 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
                         <Button 
                           variant="outline" 
                           size="sm" 
+                          onClick={() => handleView(training)}
+                          title="Visualizar treinamento"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
                           onClick={() => handleEdit(training)}
                           title="Editar treinamento"
                         >
@@ -396,6 +412,15 @@ export function EmployeeTrainingsTab({ employeeId, employeeName }: EmployeeTrain
         }}
         employeeId={employeeId}
         employeeName={employeeName}
+        training={selectedTraining}
+      />
+
+      <ViewEmployeeTrainingDialog
+        isOpen={isViewDialogOpen}
+        onClose={() => {
+          setIsViewDialogOpen(false);
+          setSelectedTraining(null);
+        }}
         training={selectedTraining}
       />
 

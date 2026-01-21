@@ -6,7 +6,8 @@ import { generateNextEmployeeCode } from "@/services/employeeCodeGenerator";
 export interface Employee {
   id: string;
   company_id: string;
-  employee_code: string;
+  employee_code?: string;
+  cpf?: string;
   full_name: string;
   email?: string;
   phone?: string;
@@ -41,6 +42,12 @@ const sanitizeEmployeeData = (data: Record<string, any>): Record<string, any> =>
       sanitized[field] = null;
     }
   });
+  
+  // Campo CPF - limpar e validar
+  if (sanitized.cpf !== undefined) {
+    const cleanCpf = String(sanitized.cpf || '').replace(/\D/g, '').trim();
+    sanitized.cpf = cleanCpf.length === 11 ? cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : (cleanCpf === '' ? null : sanitized.cpf);
+  }
   
   // Campos UUID - converter "" para null
   const uuidFields = ['branch_id', 'position_id', 'manager_id'];
@@ -166,17 +173,20 @@ export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at
     // Sanitizar dados antes de enviar ao banco
     const sanitizedEmployee = sanitizeEmployeeData(employee);
     
-    // Gerar código automaticamente se não fornecido (employee_code é NOT NULL)
+    // Gerar código automaticamente se não fornecido e CPF também não foi informado
     let employeeCode = sanitizedEmployee.employee_code;
-    if (!employeeCode || (typeof employeeCode === 'string' && employeeCode.trim() === '')) {
+    const hasCpf = sanitizedEmployee.cpf && String(sanitizedEmployee.cpf).replace(/\D/g, '').length === 11;
+    
+    // Só gerar código automático se não tiver código E não tiver CPF
+    if ((!employeeCode || (typeof employeeCode === 'string' && employeeCode.trim() === '')) && !hasCpf) {
       employeeCode = await generateNextEmployeeCode(profile.company_id);
     }
     
-    // Prepare employee data with company_id, generated code, and fallback hire_date
+    // Prepare employee data with company_id, optional code, and fallback hire_date
     const employeeData = {
       ...sanitizedEmployee,
       company_id: profile.company_id,
-      employee_code: employeeCode,
+      employee_code: employeeCode || null,
       // hire_date é obrigatório - usar data atual se não informada
       hire_date: sanitizedEmployee.hire_date || new Date().toISOString().split('T')[0]
     };

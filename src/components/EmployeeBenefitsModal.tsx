@@ -16,7 +16,8 @@ interface EmployeeBenefitsModalProps {
   employee?: {
     id: string;
     full_name: string;
-    employee_code: string;
+    employee_code?: string;
+    cpf?: string;
     department?: string;
     position?: string;
   } | null;
