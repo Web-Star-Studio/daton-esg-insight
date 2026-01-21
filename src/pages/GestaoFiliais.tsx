@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Plus, MapPin, Phone, User, Map, List, GitBranch, Wrench } from "lucide-react";
+import { Building2, Plus, MapPin, User, Map, List, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,6 @@ import { useBranchesWithManager, useDeleteBranch, BranchWithManager } from "@/se
 import { BranchFormModal } from "@/components/branches/BranchFormModal";
 import { BranchStatsCards } from "@/components/branches/BranchStatsCards";
 import { BranchesMap } from "@/components/branches/BranchesMap";
-import { BranchDeduplication } from "@/components/branches/BranchDeduplication";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, Trash2, Search } from "lucide-react";
 
@@ -36,8 +35,7 @@ export default function GestaoFiliais() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<BranchWithManager | null>(null);
   const [branchToDelete, setBranchToDelete] = useState<BranchWithManager | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "map" | "dedup">("list");
-  const [showDedup, setShowDedup] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   const { data: branches, isLoading } = useBranchesWithManager();
   const deleteMutation = useDeleteBranch();
@@ -79,20 +77,11 @@ export default function GestaoFiliais() {
             Gerencie as filiais e unidades da sua empresa
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowDedup(!showDedup)} className="gap-2">
-            <Wrench className="h-4 w-4" />
-            {showDedup ? "Ocultar Deduplicação" : "Limpar Duplicatas"}
-          </Button>
-          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Filial
-          </Button>
-        </div>
+        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nova Filial
+        </Button>
       </div>
-
-      {/* Deduplication Panel */}
-      {showDedup && <BranchDeduplication />}
 
       {/* Stats Cards */}
       <BranchStatsCards branches={branches || []} isLoading={isLoading} />

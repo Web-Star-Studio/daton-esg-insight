@@ -30,13 +30,14 @@ import {
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager, getHeadquarters, Branch } from "@/services/branches";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
-import { Loader2, MapPin, Search, Building2 } from "lucide-react";
+import { Loader2, MapPin, Search, Building2, FileSearch } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
 import { unifiedToast } from "@/utils/unifiedToast";
 import { validateCNPJ, formatCNPJ } from "@/utils/formValidation";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const BRAZILIAN_STATES = [
   { value: "AC", label: "Acre" },
@@ -102,6 +103,7 @@ interface BranchFormModalProps {
 export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalProps) {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: users, isLoading: isLoadingUsers } = useCompanyUsers();
@@ -112,6 +114,76 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
 
   const isEditing = !!branch;
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // Function to fetch CNPJ data from API
+  const handleFetchCnpj = async () => {
+    const cnpjValue = form.getValues("cnpj");
+    
+    if (!cnpjValue || cnpjValue.replace(/\D/g, '').length !== 14) {
+      unifiedToast.error("CNPJ inválido", {
+        description: "Digite um CNPJ completo com 14 dígitos"
+      });
+      return;
+    }
+
+    if (!validateCNPJ(cnpjValue)) {
+      unifiedToast.error("CNPJ inválido", {
+        description: "O CNPJ informado não é válido"
+      });
+      return;
+    }
+
+    setIsLoadingCnpj(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('cnpj-lookup', {
+        body: { cnpj: cnpjValue }
+      });
+
+      if (error) {
+        console.error('CNPJ lookup error:', error);
+        unifiedToast.error("Erro ao buscar CNPJ", {
+          description: error.message || "Tente novamente mais tarde"
+        });
+        return;
+      }
+
+      if (!data.success) {
+        unifiedToast.error("CNPJ não encontrado", {
+          description: data.error || "Verifique o CNPJ e tente novamente"
+        });
+        return;
+      }
+
+      const cnpjData = data.data;
+      
+      // Fill form with retrieved data
+      form.setValue("name", cnpjData.tradeName || cnpjData.name);
+      form.setValue("address", cnpjData.address);
+      form.setValue("street_number", cnpjData.streetNumber);
+      form.setValue("neighborhood", cnpjData.neighborhood);
+      form.setValue("city", cnpjData.city);
+      form.setValue("state", cnpjData.state);
+      form.setValue("cep", formatCep(cnpjData.cep));
+      form.setValue("phone", cnpjData.phone);
+
+      unifiedToast.success("Dados do CNPJ importados!", {
+        description: `${cnpjData.name} - ${cnpjData.city}/${cnpjData.state}`
+      });
+
+      // Automatically fetch coordinates
+      if (cnpjData.city && cnpjData.state) {
+        await handleGeocodeAfterCep(cnpjData.city, cnpjData.state, cnpjData.address);
+      }
+
+    } catch (error) {
+      console.error('CNPJ fetch error:', error);
+      unifiedToast.error("Erro ao buscar CNPJ", {
+        description: "Tente novamente mais tarde"
+      });
+    } finally {
+      setIsLoadingCnpj(false);
+    }
+  };
 
   const form = useForm<BranchFormData>({
     resolver: zodResolver(branchFormSchema),
@@ -362,27 +434,46 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>CNPJ</FormLabel>
-                    <div className="relative">
-                      <FormControl>
-                        <Input
-                          placeholder="00.000.000/0000-00"
-                          maxLength={18}
-                          {...field}
-                          onChange={(e) => handleCnpjChange(e.target.value)}
-                          className="pr-10"
-                        />
-                      </FormControl>
-                      {isCnpjValid && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        </div>
-                      )}
-                      {cnpjValue && cnpjValue.replace(/\D/g, '').length === 14 && !isCnpjValid && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        </div>
-                      )}
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <FormControl>
+                          <Input
+                            placeholder="00.000.000/0000-00"
+                            maxLength={18}
+                            {...field}
+                            onChange={(e) => handleCnpjChange(e.target.value)}
+                            className="pr-10"
+                          />
+                        </FormControl>
+                        {isCnpjValid && !isLoadingCnpj && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          </div>
+                        )}
+                        {cnpjValue && cnpjValue.replace(/\D/g, '').length === 14 && !isCnpjValid && !isLoadingCnpj && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <XCircle className="h-4 w-4 text-destructive" />
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleFetchCnpj}
+                        disabled={isLoadingCnpj || !isCnpjValid}
+                        title="Buscar dados do CNPJ na Receita Federal"
+                      >
+                        {isLoadingCnpj ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileSearch className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
+                    <FormDescription className="text-xs">
+                      Digite o CNPJ e clique no ícone para importar dados automaticamente
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
