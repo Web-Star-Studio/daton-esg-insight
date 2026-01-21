@@ -94,13 +94,26 @@ const branchFormSchema = z.object({
 
 type BranchFormData = z.infer<typeof branchFormSchema>;
 
+export interface BranchImportData {
+  cnpj?: string;
+  name?: string;
+  address?: string;
+  street_number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  cep?: string;
+  phone?: string;
+}
+
 interface BranchFormModalProps {
   open: boolean;
   onOpenChange: () => void;
   branch?: BranchWithManager | null;
+  initialData?: BranchImportData | null;
 }
 
-export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalProps) {
+export function BranchFormModal({ open, onOpenChange, branch, initialData }: BranchFormModalProps) {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
@@ -348,6 +361,31 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
         latitude: branch.latitude ?? null,
         longitude: branch.longitude ?? null,
       });
+    } else if (initialData) {
+      // Pre-fill form with imported data
+      form.reset({
+        name: initialData.name || "",
+        code: "",
+        cnpj: initialData.cnpj || "",
+        cep: initialData.cep || "",
+        address: initialData.address || "",
+        street_number: initialData.street_number || "",
+        neighborhood: initialData.neighborhood || "",
+        city: initialData.city || "",
+        state: initialData.state || "",
+        country: "Brasil",
+        phone: initialData.phone || "",
+        manager_id: "",
+        is_headquarters: false,
+        parent_branch_id: "",
+        status: "Ativa",
+        latitude: null,
+        longitude: null,
+      });
+      // Trigger geocoding for imported data
+      if (initialData.city && initialData.state) {
+        handleGeocodeAfterCep(initialData.city, initialData.state, initialData.address);
+      }
     } else {
       form.reset({
         name: "",
@@ -369,7 +407,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
         longitude: null,
       });
     }
-  }, [branch, form]);
+  }, [branch, initialData, form]);
 
   const handleCnpjChange = (value: string) => {
     const formatted = formatCNPJ(value);

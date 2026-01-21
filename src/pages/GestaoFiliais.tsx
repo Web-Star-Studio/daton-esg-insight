@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Building2, Plus, MapPin, User, Map, List, GitBranch } from "lucide-react";
+import { useState, useRef } from "react";
+import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +24,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranchesWithManager, useDeleteBranch, BranchWithManager } from "@/services/branches";
-import { BranchFormModal } from "@/components/branches/BranchFormModal";
+import { BranchFormModal, BranchImportData } from "@/components/branches/BranchFormModal";
 import { BranchStatsCards } from "@/components/branches/BranchStatsCards";
 import { BranchesMap } from "@/components/branches/BranchesMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, Trash2, Search } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { unifiedToast } from "@/utils/unifiedToast";
+import { formatCep } from "@/utils/viaCep";
 
 export default function GestaoFiliais() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,9 +39,100 @@ export default function GestaoFiliais() {
   const [selectedBranch, setSelectedBranch] = useState<BranchWithManager | null>(null);
   const [branchToDelete, setBranchToDelete] = useState<BranchWithManager | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [isImportingPdf, setIsImportingPdf] = useState(false);
+  const [importedData, setImportedData] = useState<BranchImportData | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: branches, isLoading } = useBranchesWithManager();
   const deleteMutation = useDeleteBranch();
+
+  const handleImportPdf = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      unifiedToast.error("Arquivo inválido", {
+        description: "Apenas arquivos PDF são aceitos"
+      });
+      event.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      unifiedToast.error("Arquivo muito grande", {
+        description: "O arquivo deve ter no máximo 10MB"
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setIsImportingPdf(true);
+    try {
+      // Convert PDF to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Call Edge Function
+      const { data, error } = await supabase.functions.invoke('cnpj-pdf-extractor', {
+        body: { pdfBase64: base64, fileName: file.name }
+      });
+
+      if (error) {
+        console.error('PDF extraction error:', error);
+        unifiedToast.error("Erro ao processar PDF", {
+          description: error.message || "Tente novamente"
+        });
+        return;
+      }
+
+      if (!data.success) {
+        unifiedToast.error("Erro na extração", {
+          description: data.error || "Não foi possível extrair dados do PDF"
+        });
+        return;
+      }
+
+      const extractedData = data.data;
+
+      // Store imported data and open form
+      setImportedData({
+        cnpj: extractedData.cnpj || '',
+        name: extractedData.tradeName || extractedData.name || '',
+        address: extractedData.address || '',
+        street_number: extractedData.streetNumber || '',
+        neighborhood: extractedData.neighborhood || '',
+        city: extractedData.city || '',
+        state: extractedData.state || '',
+        cep: extractedData.cep ? formatCep(extractedData.cep) : '',
+        phone: extractedData.phone || '',
+      });
+
+      unifiedToast.success("Dados do PDF extraídos!", {
+        description: `${extractedData.name} - ${extractedData.city}/${extractedData.state}`
+      });
+
+      setIsFormOpen(true);
+
+    } catch (error) {
+      console.error('PDF import error:', error);
+      unifiedToast.error("Erro ao importar PDF", {
+        description: "Tente novamente com um arquivo válido"
+      });
+    } finally {
+      setIsImportingPdf(false);
+      event.target.value = '';
+    }
+  };
 
   const filteredBranches = branches?.filter((branch) =>
     branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,6 +156,7 @@ export default function GestaoFiliais() {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setSelectedBranch(null);
+    setImportedData(null);
   };
 
   return (
@@ -77,10 +172,33 @@ export default function GestaoFiliais() {
             Gerencie as filiais e unidades da sua empresa
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Filial
-        </Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="application/pdf"
+            className="hidden"
+            onChange={handleImportPdf}
+            disabled={isImportingPdf}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImportingPdf}
+            className="gap-2"
+          >
+            {isImportingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileUp className="h-4 w-4" />
+            )}
+            Importar Filial
+          </Button>
+          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Filial
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -247,6 +365,7 @@ export default function GestaoFiliais() {
         open={isFormOpen}
         onOpenChange={handleCloseForm}
         branch={selectedBranch}
+        initialData={importedData}
       />
 
       {/* Delete Confirmation */}
