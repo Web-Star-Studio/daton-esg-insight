@@ -220,7 +220,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome, código ou cargo..."
+                  placeholder="Buscar por nome, CPF ou cargo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -288,7 +288,7 @@ export function EmployeesList({ onEditEmployee, onCreateEmployee, onViewEmployee
                     </div>
                     
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-primary">{employee.employee_code}</span>
+                      <span className="font-medium text-primary">{employee.cpf || 'CPF não informado'}</span>
                       {employee.position && (
                         <>
                           <span className="text-muted-foreground">•</span>

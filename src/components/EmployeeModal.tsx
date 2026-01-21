@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2, CalendarIcon, RefreshCw } from 'lucide-react';
+import { Plus, AlertCircle, Briefcase, GraduationCap, Trash2, CalendarIcon } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { parseDateSafe, formatDateForDB } from '@/utils/dateUtils';
@@ -27,7 +27,6 @@ import { useEmployeeEducation, useDeleteEmployeeEducation, useCreateEmployeeEduc
 import { Badge } from './ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { generateNextEmployeeCode } from '@/services/employeeCodeGenerator';
 import { DateInputWithCalendar } from './DateInputWithCalendar';
 
 interface EmployeeModalProps {
@@ -39,7 +38,6 @@ interface EmployeeModalProps {
 
 // Validation schema
 const employeeSchema = z.object({
-  employee_code: z.string().trim().max(50, 'Código muito longo').optional().or(z.literal('')),
   full_name: z.string().trim().min(1, 'Nome completo é obrigatório').max(255, 'Nome muito longo'),
   email: z.string().trim().email('E-mail inválido').optional().or(z.literal('')),
   hire_date: z.string().min(1, 'Data de contratação é obrigatória'),
@@ -48,7 +46,6 @@ const employeeSchema = z.object({
 export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: EmployeeModalProps) {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    employee_code: '',
     cpf: '',
     full_name: '',
     email: '',
@@ -71,7 +68,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const [positions, setPositions] = useState<Position[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [generatingCode, setGeneratingCode] = useState(false);
+  
   
   // New department/position creation states
   const [showNewDepartment, setShowNewDepartment] = useState(false);
@@ -105,22 +102,12 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   const createExperienceMutation = useCreateEmployeeExperience();
   const createEducationMutation = useCreateEmployeeEducation();
 
-  // Code validation state
-  const [codeValidation, setCodeValidation] = useState<{
-    checking: boolean;
-    exists: boolean;
-    message?: string;
-  }>({ checking: false, exists: false });
-
   // Email validation state
   const [emailValidation, setEmailValidation] = useState<{
     checking: boolean;
     exists: boolean;
     message?: string;
   }>({ checking: false, exists: false });
-
-  // Debounce employee code for validation
-  const debouncedEmployeeCode = useDebounce(formData.employee_code, 500);
   
   // Debounce email for validation
   const debouncedEmail = useDebounce(formData.email, 500);
@@ -143,51 +130,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     fetchCompanyId();
   }, []);
 
-  // Check if employee code exists
-  useEffect(() => {
-    const checkEmployeeCodeExists = async () => {
-      if (!debouncedEmployeeCode.trim()) {
-        setCodeValidation({ checking: false, exists: false });
-        return;
-      }
-
-      if (employee) {
-        setCodeValidation({ checking: false, exists: false });
-        return;
-      }
-
-      setCodeValidation({ checking: true, exists: false });
-
-      try {
-        const { data, error } = await supabase
-          .from('employees')
-          .select('id, employee_code')
-          .eq('employee_code', debouncedEmployeeCode.trim())
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error checking code:', error);
-          setCodeValidation({ checking: false, exists: false });
-          return;
-        }
-
-        if (data) {
-          setCodeValidation({
-            checking: false,
-            exists: true,
-            message: 'Este código já está em uso'
-          });
-        } else {
-          setCodeValidation({ checking: false, exists: false });
-        }
-      } catch (error) {
-        console.error('Error checking code:', error);
-        setCodeValidation({ checking: false, exists: false });
-      }
-    };
-
-    checkEmployeeCodeExists();
-  }, [debouncedEmployeeCode, employee]);
 
   // Check if email exists
   useEffect(() => {
@@ -243,11 +185,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
   useEffect(() => {
     if (isOpen) {
       loadDepartmentsAndPositions();
-      setCodeValidation({ checking: false, exists: false });
       setEmailValidation({ checking: false, exists: false });
       if (employee) {
         setFormData({
-          employee_code: employee.employee_code || '',
           cpf: employee.cpf || '',
           full_name: employee.full_name || '',
           email: employee.email || '',
@@ -271,7 +211,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
         // Pre-fill hire_date with current date for new employees
         const today = new Date().toISOString().split('T')[0];
         setFormData({
-          employee_code: '',
           cpf: '',
           full_name: '',
           email: '',
@@ -464,16 +403,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     // Prevenir duplo clique
     if (isSubmitting || loading) return;
     
-    // Verificar se companyId está disponível para geração automática de código
-    if (!companyId && !formData.employee_code.trim() && !employee) {
-      toast.error('Carregando configurações... tente novamente em instantes');
-      return;
-    }
-    
     // 1. PRIMEIRO: Validar com dados originais do formulário (strings)
     try {
       employeeSchema.parse({
-        employee_code: formData.employee_code,
         full_name: formData.full_name,
         email: formData.email,
         hire_date: formData.hire_date,
@@ -486,21 +418,9 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
     }
     
     // 2. DEPOIS: Sanitizar para enviar ao banco (converter "" para null)
-    // Gerar código automaticamente se estiver vazio
-    let employeeCode = formData.employee_code.trim();
-    if (!employeeCode && companyId) {
-      try {
-        employeeCode = await generateNextEmployeeCode(companyId);
-      } catch (error) {
-        console.error('Erro ao gerar código do funcionário:', error);
-        toast.error('Erro ao gerar código do funcionário automaticamente');
-        return;
-      }
-    }
-    
     const sanitizedData = {
       ...formData,
-      employee_code: employeeCode || null,
+      employee_code: null, // Campo não mais utilizado - CPF é o identificador
       cpf: formData.cpf.trim() || null,
       full_name: formData.full_name.trim(),
       email: formData.email.trim() || null,
@@ -526,19 +446,8 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
       return;
     }
 
-    if (sanitizedData.employee_code && sanitizedData.employee_code.length > 50) {
-      toast.error('Código do funcionário muito longo (máximo 50 caracteres)');
-      return;
-    }
-
     if (sanitizedData.email && !sanitizedData.email.includes('@')) {
       toast.error('E-mail inválido');
-      return;
-    }
-
-    // Check for duplicate code before submission
-    if (codeValidation.exists) {
-      toast.error('Código do funcionário já está em uso. Use um código diferente.');
       return;
     }
 
@@ -619,68 +528,6 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
               )}
             </div>
 
-            <div>
-              <Label htmlFor="employee_code">Código (Opcional)</Label>
-              <div className="space-y-1">
-                <div className="flex gap-2">
-                  <Input
-                    id="employee_code"
-                    value={formData.employee_code}
-                    onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
-                    placeholder="Ex: EMP001"
-                    className={cn(
-                      "flex-1",
-                      codeValidation.exists && "border-destructive focus-visible:ring-destructive"
-                    )}
-                    disabled={!!employee}
-                  />
-                  {!employee && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={async () => {
-                        if (!companyId) {
-                          toast.error('Aguarde o carregamento das configurações...');
-                          return;
-                        }
-                        setGeneratingCode(true);
-                        try {
-                          const nextCode = await generateNextEmployeeCode(companyId);
-                          setFormData(prev => ({ ...prev, employee_code: nextCode }));
-                          toast.success(`Código gerado: ${nextCode}`);
-                        } catch (error) {
-                          console.error('Erro ao gerar código:', error);
-                          toast.error('Erro ao gerar código automaticamente');
-                        } finally {
-                          setGeneratingCode(false);
-                        }
-                      }}
-                      disabled={generatingCode || !companyId}
-                      title="Gerar código automaticamente"
-                    >
-                      {generatingCode ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                {codeValidation.checking && (
-                  <p className="text-xs text-muted-foreground">Verificando disponibilidade...</p>
-                )}
-                {codeValidation.exists && (
-                  <div className="flex items-center gap-1 text-xs text-destructive">
-                    <AlertCircle className="h-3 w-3" />
-                    <span>{codeValidation.message}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="full_name">Nome Completo*</Label>
               <Input
@@ -1303,7 +1150,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
               </Button>
               <Button 
                 type="submit" 
-                disabled={loading || codeValidation.exists || codeValidation.checking}
+                disabled={loading}
               >
                 {loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Criar')}
               </Button>
