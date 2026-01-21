@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useBranches, useCreateBranch } from '@/services/branches';
 import { Badge } from '@/components/ui/badge';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface BranchSelectProps {
   value?: string;
@@ -32,6 +33,8 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
 
   const selectedBranch = branches?.find((b) => b.id === value);
 
+  const queryClient = useQueryClient();
+
   const handleCreateBranch = async () => {
     if (!newBranchName.trim()) return;
 
@@ -41,12 +44,15 @@ export const BranchSelect = ({ value, onValueChange }: BranchSelectProps) => {
         is_headquarters: false,
         status: 'Ativo',
       });
+      // Forçar invalidação do cache para garantir que a nova filial apareça
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
       onValueChange(newBranch.id);
       setNewBranchName('');
       setShowNewBranch(false);
       setOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating branch:', error);
+      // O erro já é tratado pelo hook useCreateBranch com toast
     }
   };
 
