@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileText, Users, Edit, Trash2, BarChart3, QrCode, Eye } from "lucide-react";
+import { Plus, FileText, Users, Edit, Trash2, BarChart3, QrCode, Eye, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function FormulariosCustomizados() {
   const [forms, setForms] = useState<CustomForm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<CustomForm | null>(null);
   const [shareForm, setShareForm] = useState<{ id: string; title: string } | null>(null);
@@ -58,15 +59,20 @@ export default function FormulariosCustomizados() {
   const loadForms = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await customFormsService.getForms();
       setForms(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar formulários:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar formulários customizados",
-        variant: "destructive",
-      });
+      
+      const isConnectionError = error?.message?.includes('Failed to fetch') || 
+                                error?.message?.includes('502') ||
+                                error?.message?.includes('timeout') ||
+                                error?.message?.includes('múltiplas tentativas');
+      
+      setLoadError(isConnectionError 
+        ? 'Erro de conexão. Verifique sua internet e tente novamente.'
+        : 'Erro ao carregar formulários customizados');
     } finally {
       setLoading(false);
     }
@@ -148,6 +154,32 @@ export default function FormulariosCustomizados() {
             </Card>
           ))}
          </div>
+      </>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Formulários Customizados</h1>
+            <p className="text-muted-foreground">
+              Crie, gerencie e colete dados através de formulários personalizados
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar</h3>
+            <p className="text-muted-foreground mb-4">{loadError}</p>
+            <Button onClick={loadForms} disabled={loading}>
+              <RefreshCw className={loading ? "mr-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4"} />
+              Tentar Novamente
+            </Button>
+          </CardContent>
+        </Card>
       </>
     );
   }

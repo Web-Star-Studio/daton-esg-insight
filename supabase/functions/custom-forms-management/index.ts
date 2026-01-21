@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { ActionSchema } from './validation.ts'
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
+import { z } from 'npm:zod@3.22.4'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

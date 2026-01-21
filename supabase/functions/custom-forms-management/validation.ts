@@ -1,5 +1,5 @@
 // Validation schemas for custom forms management
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'npm:zod@3.22.4';
 
 // Form field structure validation
 const FormFieldSchema = z.object({
