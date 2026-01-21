@@ -38,6 +38,7 @@ import { validateCNPJ, formatCNPJ } from "@/utils/formValidation";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { parseSupabaseFunctionError } from "@/utils/supabaseFunctionError";
 
 const BRAZILIAN_STATES = [
   { value: "AC", label: "Acre" },
@@ -179,16 +180,24 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
       });
 
       if (error) {
-        console.error('PDF extraction error:', error);
-        unifiedToast.error("Erro ao processar PDF", {
-          description: error.message || "Tente novamente"
-        });
+        console.error('CNPJ extractor error:', error);
+        const parsed = parseSupabaseFunctionError(error);
+        unifiedToast.error(
+          parsed.hint === "image_required" ? "PDF escaneado" : "Erro ao processar arquivo",
+          {
+            description:
+              parsed.message ||
+              "Não foi possível processar o documento. Tente novamente.",
+          },
+        );
         return;
       }
 
-      if (!data.success) {
+      if (!data?.success) {
         unifiedToast.error("Erro na extração", {
-          description: data.error || "Não foi possível extrair dados do PDF"
+          description:
+            (data as any)?.error ||
+            "Não foi possível extrair dados do documento. Se o PDF for escaneado, envie um print/foto (PNG/JPG/WEBP).",
         });
         return;
       }

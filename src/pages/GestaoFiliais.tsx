@@ -32,6 +32,7 @@ import { Pencil, Trash2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { unifiedToast } from "@/utils/unifiedToast";
 import { formatCep } from "@/utils/viaCep";
+import { parseSupabaseFunctionError } from "@/utils/supabaseFunctionError";
 
 export default function GestaoFiliais() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -94,16 +95,24 @@ export default function GestaoFiliais() {
       });
 
       if (error) {
-        console.error('PDF extraction error:', error);
-        unifiedToast.error("Erro ao processar PDF", {
-          description: error.message || "Tente novamente"
-        });
+        console.error('CNPJ extractor error:', error);
+        const parsed = parseSupabaseFunctionError(error);
+        unifiedToast.error(
+          parsed.hint === "image_required" ? "PDF escaneado" : "Erro ao processar arquivo",
+          {
+            description:
+              parsed.message ||
+              "Não foi possível processar o documento. Tente novamente.",
+          },
+        );
         return;
       }
 
-      if (!data.success) {
+      if (!data?.success) {
         unifiedToast.error("Erro na extração", {
-          description: data.error || "Não foi possível extrair dados do PDF"
+          description:
+            (data as any)?.error ||
+            "Não foi possível extrair dados do documento. Se o PDF for escaneado, envie um print/foto (PNG/JPG/WEBP).",
         });
         return;
       }
