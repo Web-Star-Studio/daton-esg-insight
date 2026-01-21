@@ -638,18 +638,7 @@ export default function GestaoTreinamentos() {
                 </div>
               )}
 
-              {/* Select all header when no selection */}
-              {!isSomeSelected && filteredPrograms.length > 0 && (
-                <div className="flex items-center gap-3 mb-4 pl-4">
-                  <Checkbox
-                    checked={false}
-                    onCheckedChange={handleSelectAll}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Selecionar todos
-                  </span>
-                </div>
-              )}
+              {/* Checkbox "Selecionar todos" removido conforme solicitação */}
 
               <div className="space-y-4">
                 {filteredPrograms.map((program) => (

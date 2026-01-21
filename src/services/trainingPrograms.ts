@@ -52,21 +52,35 @@ export const getTrainingPrograms = async () => {
   if (error) throw error;
   if (!programs) return [];
 
+  // Status legados que devem ser preservados (não recalcular)
+  const legacyStatuses = ['Ativo', 'Inativo', 'Suspenso', 'Arquivado'];
+
   // Calculate real-time status for each program
   const programsWithCalculatedStatus = await Promise.all(
     programs.map(async (program) => {
-      const hasEfficacy = await checkHasEfficacyEvaluation(supabase, program.id);
-      const calculatedStatus = calculateTrainingStatus({
-        start_date: program.start_date,
-        end_date: program.end_date,
-        efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
-        hasEfficacyEvaluation: hasEfficacy,
-      });
+      // Se o programa tem um status legado válido E não tem datas definidas, preservar o status original
+      if (legacyStatuses.includes(program.status) && !program.start_date && !program.end_date) {
+        return program;
+      }
       
-      return {
-        ...program,
-        status: calculatedStatus, // Override with calculated status
-      };
+      // Só recalcular status se tiver pelo menos uma data definida
+      if (program.start_date || program.end_date) {
+        const hasEfficacy = await checkHasEfficacyEvaluation(supabase, program.id);
+        const calculatedStatus = calculateTrainingStatus({
+          start_date: program.start_date,
+          end_date: program.end_date,
+          efficacy_evaluation_deadline: program.efficacy_evaluation_deadline,
+          hasEfficacyEvaluation: hasEfficacy,
+        });
+        
+        return {
+          ...program,
+          status: calculatedStatus, // Override with calculated status
+        };
+      }
+      
+      // Sem datas definidas e status não-legado, retornar como está
+      return program;
     })
   );
 

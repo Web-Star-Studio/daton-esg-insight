@@ -101,19 +101,22 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
     enabled: open && !isEditing,
   });
 
-  // Query para buscar funcionários ativos
+  // Query para buscar funcionários ativos (case-insensitive e múltiplos status)
   const { data: employees = [] } = useQuery({
     queryKey: ["employees-for-training-modal"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("id, full_name, employee_code, department")
-        .eq("status", "Ativo")
+        .select("id, full_name, employee_code, department, status")
         .order("full_name");
       if (error) throw error;
-      return data || [];
+      // Filtrar localmente para ser case-insensitive e incluir múltiplos status válidos
+      const activeStatuses = ['ativo', 'férias', 'ferias', 'licença', 'licenca'];
+      return (data || []).filter(emp => 
+        emp.status && activeStatuses.includes(emp.status.toLowerCase())
+      );
     },
-    enabled: open && !isEditing,
+    enabled: open, // Funciona tanto na criação quanto na edição
   });
 
   // Departamentos únicos para filtro
