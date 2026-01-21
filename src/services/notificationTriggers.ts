@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { createNotification, triggerSmartNotifications } from "./notifications";
+import { createNotification, createNotificationForUser, triggerSmartNotifications } from "./notifications";
 import { toast } from "sonner";
 
 export interface BusinessEvent {
@@ -465,14 +465,15 @@ class NotificationTriggersService {
     }
   }
 
-  // Training efficacy deadline checker
+  // Training efficacy deadline checker - envia notificações APENAS para o responsável
   async checkTrainingEfficacyDeadlines() {
     try {
-      // Buscar treinamentos que têm prazo de avaliação de eficácia definido
+      // Buscar treinamentos que têm prazo de avaliação de eficácia E responsável definido
       const { data: trainings, error: trainingsError } = await supabase
         .from('training_programs')
-        .select('id, name, end_date, efficacy_evaluation_deadline, status')
-        .not('efficacy_evaluation_deadline', 'is', null);
+        .select('id, name, end_date, efficacy_evaluation_deadline, status, efficacy_evaluator_employee_id, company_id')
+        .not('efficacy_evaluation_deadline', 'is', null)
+        .not('efficacy_evaluator_employee_id', 'is', null); // Apenas com responsável definido
 
       if (trainingsError) {
         console.error('Error fetching training programs:', trainingsError);
@@ -512,12 +513,41 @@ class NotificationTriggersService {
 
         // Notificar se está nos dias de alerta ou se já passou do prazo
         if (notifyDays.includes(daysRemaining) || daysRemaining < 0) {
-          await this.onTrainingEfficacyPending(
-            training.id,
-            training.name,
-            daysRemaining
-          );
-          notificationsTriggered++;
+          // Buscar o email do colaborador responsável
+          const { data: evaluator } = await supabase
+            .from('employees')
+            .select('email')
+            .eq('id', training.efficacy_evaluator_employee_id)
+            .single();
+
+          if (evaluator?.email) {
+            // Encontrar o profile (user) pelo email do responsável
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('company_id', training.company_id)
+              .ilike('email', evaluator.email)
+              .maybeSingle();
+
+            if (userProfile) {
+              // Criar notificação APENAS para o responsável
+              const isOverdue = daysRemaining < 0;
+              await createNotificationForUser(
+                userProfile.id,
+                isOverdue ? 'Avaliação de eficácia vencida' : 'Avaliação de eficácia pendente',
+                isOverdue 
+                  ? `Prazo vencido há ${Math.abs(daysRemaining)} dia(s) para avaliar o treinamento "${training.name}"`
+                  : `Faltam ${daysRemaining} dia(s) para avaliar a eficácia do treinamento "${training.name}"`,
+                (daysRemaining <= 1 || isOverdue) ? 'error' : daysRemaining <= 3 ? 'warning' : 'info',
+                '/avaliacao-eficacia',
+                'Avaliar Treinamento',
+                'training',
+                (daysRemaining <= 3 || isOverdue) ? 'critical' : 'important',
+                { trainingId: training.id, daysRemaining }
+              );
+              notificationsTriggered++;
+            }
+          }
         }
       }
 

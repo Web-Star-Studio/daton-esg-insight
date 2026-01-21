@@ -71,7 +71,8 @@ const trainingProgramSchema = z.object({
   requires_efficacy_evaluation: z.boolean().default(false),
   efficacy_evaluation_deadline: z.date().optional().nullable(),
   notify_responsible_email: z.boolean().default(false),
-  responsible_email: z.string().email("Email inválido").optional().nullable().or(z.literal("")),
+  // ID do colaborador responsável pela avaliação de eficácia
+  efficacy_evaluator_employee_id: z.string().optional().nullable(),
 });
 
 interface TrainingProgramModalProps {
@@ -295,7 +296,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
       requires_efficacy_evaluation: false,
       efficacy_evaluation_deadline: null,
       notify_responsible_email: false,
-      responsible_email: "",
+      efficacy_evaluator_employee_id: null,
     },
   });
 
@@ -320,7 +321,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         requires_efficacy_evaluation: !!program.efficacy_evaluation_deadline,
         efficacy_evaluation_deadline: parseDateSafe(program.efficacy_evaluation_deadline),
         notify_responsible_email: program.notify_responsible_email || false,
-        responsible_email: program.responsible_email || "",
+        efficacy_evaluator_employee_id: program.efficacy_evaluator_employee_id || null,
       });
     } else {
       form.reset({
@@ -338,7 +339,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
         requires_efficacy_evaluation: false,
         efficacy_evaluation_deadline: null,
         notify_responsible_email: false,
-        responsible_email: "",
+        efficacy_evaluator_employee_id: null,
       });
     }
   }, [program, form]);
@@ -378,8 +379,9 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
           ? formatDateForDB(values.efficacy_evaluation_deadline) 
           : null,
         notify_responsible_email: values.requires_efficacy_evaluation && values.notify_responsible_email,
-        responsible_email: values.requires_efficacy_evaluation && values.responsible_email?.trim() 
-          ? values.responsible_email.trim() 
+        // Usar o ID do colaborador responsável pela avaliação
+        efficacy_evaluator_employee_id: values.requires_efficacy_evaluation 
+          ? values.efficacy_evaluator_employee_id || null
           : null,
       };
       
@@ -451,6 +453,26 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
 
   const watchRequiresEfficacy = form.watch("requires_efficacy_evaluation");
   const watchNotifyEmail = form.watch("notify_responsible_email");
+  
+  // Estado para busca do responsável pela avaliação
+  const [evaluatorSearchOpen, setEvaluatorSearchOpen] = useState(false);
+  const [evaluatorSearchTerm, setEvaluatorSearchTerm] = useState("");
+  
+  // Funcionários filtrados para seleção do responsável
+  const filteredEvaluators = useMemo(() => {
+    if (!evaluatorSearchTerm) return employees.slice(0, 20);
+    return employees.filter(emp => 
+      emp.full_name?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase()) ||
+      emp.employee_code?.toLowerCase().includes(evaluatorSearchTerm.toLowerCase())
+    ).slice(0, 20);
+  }, [employees, evaluatorSearchTerm]);
+  
+  // Buscar nome do responsável selecionado
+  const selectedEvaluator = useMemo(() => {
+    const evaluatorId = form.watch("efficacy_evaluator_employee_id");
+    if (!evaluatorId) return null;
+    return employees.find(e => e.id === evaluatorId);
+  }, [employees, form.watch("efficacy_evaluator_employee_id")]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -958,6 +980,86 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                       )}
                     />
 
+                    {/* Campo para selecionar o colaborador responsável pela avaliação */}
+                    <FormField
+                      control={form.control}
+                      name="efficacy_evaluator_employee_id"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Responsável pela Avaliação</FormLabel>
+                          <FormDescription className="text-xs">
+                            Este colaborador será o <strong>único</strong> a visualizar e realizar a avaliação de eficácia
+                          </FormDescription>
+                          <Popover open={evaluatorSearchOpen} onOpenChange={setEvaluatorSearchOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  role="combobox"
+                                  className={cn(
+                                    "w-full justify-between",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {selectedEvaluator ? (
+                                    <span className="truncate">
+                                      {selectedEvaluator.full_name}
+                                      <span className="text-muted-foreground ml-2">
+                                        ({selectedEvaluator.employee_code || 'Sem código'})
+                                      </span>
+                                    </span>
+                                  ) : (
+                                    "Selecione o responsável..."
+                                  )}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[400px] p-0" align="start">
+                              <Command>
+                                <CommandInput 
+                                  placeholder="Buscar por nome ou código..." 
+                                  value={evaluatorSearchTerm}
+                                  onValueChange={setEvaluatorSearchTerm}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>Nenhum colaborador encontrado</CommandEmpty>
+                                  <CommandGroup>
+                                    {filteredEvaluators.map((emp) => (
+                                      <CommandItem
+                                        key={emp.id}
+                                        value={emp.id}
+                                        onSelect={() => {
+                                          field.onChange(emp.id);
+                                          setEvaluatorSearchOpen(false);
+                                          setEvaluatorSearchTerm("");
+                                        }}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            field.value === emp.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{emp.full_name}</span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {emp.employee_code || 'Sem código'} • {emp.department || 'Sem departamento'}
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <FormField
                       control={form.control}
                       name="notify_responsible_email"
@@ -966,7 +1068,7 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                           <div className="space-y-0.5">
                             <FormLabel className="text-sm">Notificar por Email</FormLabel>
                             <FormDescription className="text-xs">
-                              Enviar lembrete quando a avaliação estiver próxima do prazo
+                              Enviar lembrete ao responsável quando a avaliação estiver próxima do prazo
                             </FormDescription>
                           </div>
                           <FormControl>
@@ -978,27 +1080,6 @@ export function TrainingProgramModal({ open, onOpenChange, program }: TrainingPr
                         </FormItem>
                       )}
                     />
-
-                    {watchNotifyEmail && (
-                      <FormField
-                        control={form.control}
-                        name="responsible_email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email do Responsável</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="email"
-                                placeholder="email@empresa.com" 
-                                {...field} 
-                                value={field.value || ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
                   </div>
                 )}
               </div>

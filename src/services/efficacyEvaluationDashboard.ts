@@ -38,11 +38,27 @@ export const getMyPendingEvaluations = async (): Promise<EfficacyEvaluationItem[
 
   if (!profile?.company_id) return [];
 
-  // Buscar treinamentos que precisam de avaliação de eficácia
+  // Buscar o employee vinculado ao email do usuário logado
+  const userEmail = userData.user.email;
+  const { data: linkedEmployee } = await supabase
+    .from('employees')
+    .select('id')
+    .eq('email', userEmail)
+    .eq('company_id', profile.company_id)
+    .maybeSingle();
+
+  // Se o usuário não está vinculado a nenhum employee, não mostrar avaliações
+  if (!linkedEmployee) {
+    console.log('User is not linked to any employee record');
+    return [];
+  }
+
+  // Buscar APENAS treinamentos onde o usuário é o responsável pela avaliação de eficácia
   const { data: trainings, error: trainingsError } = await supabase
     .from('training_programs')
     .select('id, name, category, efficacy_evaluation_deadline, branch_id, efficacy_evaluator_employee_id')
     .eq('company_id', profile.company_id)
+    .eq('efficacy_evaluator_employee_id', linkedEmployee.id) // ← Filtrar pelo responsável
     .not('efficacy_evaluation_deadline', 'is', null)
     .order('efficacy_evaluation_deadline', { ascending: true });
 

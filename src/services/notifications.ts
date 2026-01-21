@@ -117,6 +117,63 @@ export const createNotification = async (
   return data;
 };
 
+/**
+ * Criar notificação para um usuário específico (não o usuário logado)
+ * Usado para enviar notificações direcionadas ao responsável de uma tarefa
+ */
+export const createNotificationForUser = async (
+  targetUserId: string,
+  title: string,
+  message: string,
+  type: 'info' | 'success' | 'warning' | 'error' = 'info',
+  actionUrl?: string,
+  actionLabel?: string,
+  category?: string,
+  priority?: string,
+  metadata?: any
+): Promise<Notification | null> => {
+  try {
+    // Buscar company_id do usuário alvo
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', targetUserId)
+      .single();
+
+    if (profileError || !profile?.company_id) {
+      console.error('Could not find profile for target user:', targetUserId);
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: targetUserId,
+        company_id: profile.company_id,
+        title,
+        message,
+        type,
+        category,
+        priority: priority || 'info',
+        action_url: actionUrl,
+        action_label: actionLabel,
+        metadata,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating notification for user:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in createNotificationForUser:', error);
+    return null;
+  }
+};
+
 // Map event types to valid edge function actions
 const eventToActionMap: Record<string, string | null> = {
   'emission_data_added': 'check_emission_spikes',
