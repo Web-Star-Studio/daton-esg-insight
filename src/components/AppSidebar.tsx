@@ -140,6 +140,7 @@ const menuSections: MenuSection[] = [
           { id: "employee-management", title: "Gestão de Colaboradores", icon: UserCheck, path: "/gestao-funcionarios", description: "Gestão completa de recursos humanos" },
           { id: "health-safety", title: "Segurança do Trabalho", icon: Heart, path: "/seguranca-trabalho", description: "SST e bem-estar dos colaboradores" },
           { id: "training-management", title: "Treinamentos", icon: GraduationCap, path: "/gestao-treinamentos", description: "Gestão de capacitação e treinamentos" },
+          { id: "efficacy-evaluation", title: "Avaliação de Eficácia", icon: ClipboardCheck, path: "/avaliacao-eficacia", description: "Avaliação de eficácia de treinamentos" },
           { id: "career-development", title: "Desenvolvimento de Carreira", icon: TrendingUp, path: "/desenvolvimento-carreira", description: "PDIs, mentoria e crescimento profissional" }
         ]
       },

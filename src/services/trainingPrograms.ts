@@ -20,10 +20,12 @@ export interface TrainingProgram {
   branch_id?: string;
   responsible_id?: string;
   responsible_name?: string;
-  // Novos campos para avaliação de eficácia
+  // Campos para avaliação de eficácia
   efficacy_evaluation_deadline?: string;
   notify_responsible_email?: boolean;
   responsible_email?: string;
+  // ID do colaborador responsável pela avaliação de eficácia
+  efficacy_evaluator_employee_id?: string;
 }
 
 export interface EmployeeTraining {
@@ -119,6 +121,7 @@ export const createTrainingProgram = async (program: Omit<TrainingProgram, 'id' 
     efficacy_evaluation_deadline: program.efficacy_evaluation_deadline ?? null,
     notify_responsible_email: program.notify_responsible_email ?? false,
     responsible_email: program.responsible_email ?? null,
+    efficacy_evaluator_employee_id: program.efficacy_evaluator_employee_id || null,
     company_id: companyId as string,
     created_by_user_id: userData.user.id as string,
   };

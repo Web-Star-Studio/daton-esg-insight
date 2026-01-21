@@ -23287,6 +23287,7 @@ export type Database = {
           description: string | null
           duration_hours: number | null
           efficacy_evaluation_deadline: string | null
+          efficacy_evaluator_employee_id: string | null
           end_date: string | null
           id: string
           is_mandatory: boolean | null
@@ -23310,6 +23311,7 @@ export type Database = {
           description?: string | null
           duration_hours?: number | null
           efficacy_evaluation_deadline?: string | null
+          efficacy_evaluator_employee_id?: string | null
           end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
@@ -23333,6 +23335,7 @@ export type Database = {
           description?: string | null
           duration_hours?: number | null
           efficacy_evaluation_deadline?: string | null
+          efficacy_evaluator_employee_id?: string | null
           end_date?: string | null
           id?: string
           is_mandatory?: boolean | null
@@ -23353,6 +23356,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_programs_efficacy_evaluator_employee_id_fkey"
+            columns: ["efficacy_evaluator_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
           {
