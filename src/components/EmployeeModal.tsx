@@ -691,6 +691,7 @@ export function EmployeeModal({ isOpen, onClose, onSuccess, employee }: Employee
                 required
               />
             </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
