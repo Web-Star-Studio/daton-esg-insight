@@ -21,6 +21,58 @@ interface ExtractedCNPJData {
   dataAbertura: string | null;
 }
 
+// Simple PDF text extraction - works for text-based PDFs
+function extractTextFromPDF(base64Data: string): string {
+  try {
+    // Decode base64 to binary
+    const binaryString = atob(base64Data);
+    
+    // Convert to text and extract readable content
+    // PDF text is often found between "stream" and "endstream" markers
+    // and in text objects marked by "BT" (begin text) and "ET" (end text)
+    
+    let text = '';
+    
+    // Look for text content in the PDF
+    // This is a simplified extraction that works for many text-based PDFs
+    const regex = /\(([^)]+)\)/g;
+    let match;
+    while ((match = regex.exec(binaryString)) !== null) {
+      const content = match[1];
+      // Filter out binary/control characters
+      const cleanContent = content.replace(/[^\x20-\x7E\xA0-\xFF]/g, ' ').trim();
+      if (cleanContent.length > 1) {
+        text += cleanContent + ' ';
+      }
+    }
+    
+    // Also try to find hex-encoded text
+    const hexRegex = /<([0-9A-Fa-f]+)>/g;
+    while ((match = hexRegex.exec(binaryString)) !== null) {
+      try {
+        const hex = match[1];
+        let decoded = '';
+        for (let i = 0; i < hex.length; i += 2) {
+          const charCode = parseInt(hex.substr(i, 2), 16);
+          if (charCode >= 32 && charCode <= 126) {
+            decoded += String.fromCharCode(charCode);
+          }
+        }
+        if (decoded.length > 1) {
+          text += decoded + ' ';
+        }
+      } catch {
+        // Ignore hex decode errors
+      }
+    }
+    
+    return text.trim();
+  } catch (error) {
+    console.error('Error extracting text from PDF:', error);
+    return '';
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -37,30 +89,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { pdfBase64, fileName } = await req.json();
+    const body = await req.json();
+    const { pdfBase64, imageBase64, fileName, fileType } = body;
 
-    if (!pdfBase64) {
+    // Determine if we have an image or PDF
+    const isImage = fileType?.startsWith('image/') || imageBase64;
+    const base64Data = imageBase64 || pdfBase64;
+
+    if (!base64Data) {
       return new Response(
-        JSON.stringify({ success: false, error: 'PDF não fornecido' }),
+        JSON.stringify({ success: false, error: 'Arquivo não fornecido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing PDF: ${fileName || 'unknown'}`);
+    console.log(`Processing file: ${fileName || 'unknown'}, type: ${fileType || 'unknown'}, isImage: ${isImage}`);
 
-    // Call OpenAI Vision API to extract data from PDF
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um especialista em extração de dados de documentos brasileiros.
+    let openaiResponse;
+
+    if (isImage) {
+      // For images, use Vision API directly
+      const mimeType = fileType || 'image/png';
+      
+      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um especialista em extração de dados de documentos brasileiros.
 Sua tarefa é extrair informações do Comprovante de Inscrição e de Situação Cadastral (Cartão CNPJ) da Receita Federal do Brasil.
 
 Extraia os seguintes campos e retorne APENAS um JSON válido (sem markdown, sem explicações):
@@ -86,34 +148,102 @@ Regras importantes:
 - O UF deve ser a sigla de 2 letras
 - Se algum campo não for encontrado, use null
 - Retorne APENAS o JSON, sem texto adicional`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Extraia os dados do comprovante de CNPJ desta imagem/documento:'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${pdfBase64}`,
-                  detail: 'high'
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Extraia os dados do comprovante de CNPJ desta imagem:'
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${mimeType};base64,${base64Data}`,
+                    detail: 'high'
+                  }
                 }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.1,
-      }),
-    });
+              ]
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1,
+        }),
+      });
+    } else {
+      // For PDFs, try to extract text and use text-based GPT-4
+      console.log('Processing PDF - attempting text extraction');
+      
+      const extractedText = extractTextFromPDF(base64Data);
+      console.log(`Extracted text length: ${extractedText.length}`);
+      
+      if (extractedText.length < 50) {
+        // Not enough text extracted - PDF might be image-based
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Este PDF parece ser uma imagem digitalizada. Por favor, faça upload de uma imagem (PNG, JPG) do cartão CNPJ, ou tire um print/screenshot do documento.',
+            hint: 'image_required'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Use text-based GPT-4 to parse the extracted content
+      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `Você é um especialista em extração de dados de documentos brasileiros.
+Sua tarefa é extrair informações do texto de um Comprovante de Inscrição e de Situação Cadastral (Cartão CNPJ) da Receita Federal do Brasil.
+
+Extraia os seguintes campos e retorne APENAS um JSON válido (sem markdown, sem explicações):
+{
+  "cnpj": "00.000.000/0000-00",
+  "nome": "RAZÃO SOCIAL DA EMPRESA",
+  "nomeFantasia": "NOME FANTASIA" ou null,
+  "logradouro": "RUA/AVENIDA NOME",
+  "numero": "123",
+  "bairro": "NOME DO BAIRRO",
+  "cep": "00000000",
+  "cidade": "NOME DA CIDADE",
+  "uf": "UF",
+  "telefone": "(00) 0000-0000" ou null,
+  "email": "email@empresa.com.br" ou null,
+  "situacao": "ATIVA" ou "INAPTA" etc,
+  "dataAbertura": "01/01/2000" ou null
+}
+
+Regras importantes:
+- O CNPJ deve estar formatado com pontos, barras e traço
+- O CEP deve conter apenas números (8 dígitos)
+- O UF deve ser a sigla de 2 letras
+- Se algum campo não for encontrado, use null
+- Retorne APENAS o JSON, sem texto adicional`
+            },
+            {
+              role: 'user',
+              content: `Extraia os dados do seguinte texto de um comprovante de CNPJ:\n\n${extractedText}`
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.1,
+        }),
+      });
+    }
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
       console.error('OpenAI API error:', errorText);
       return new Response(
-        JSON.stringify({ success: false, error: 'Erro ao processar documento com IA' }),
+        JSON.stringify({ success: false, error: 'Erro ao processar documento com IA. Tente enviar uma imagem (PNG/JPG) do documento.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -146,7 +276,7 @@ Regras importantes:
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Não foi possível interpretar os dados extraídos. Tente um PDF com melhor qualidade.' 
+          error: 'Não foi possível interpretar os dados extraídos. Tente um arquivo com melhor qualidade.' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -188,11 +318,11 @@ Regras importantes:
     );
 
   } catch (error) {
-    console.error('Error processing CNPJ PDF:', error);
+    console.error('Error processing CNPJ document:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Erro interno ao processar PDF' 
+        error: error instanceof Error ? error.message : 'Erro interno ao processar documento' 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
