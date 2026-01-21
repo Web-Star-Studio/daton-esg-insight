@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           {
             role: 'system',
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
           mime_type: mimeType,
           document_type: documentType,
           processed_at: new Date().toISOString(),
-          ai_model: 'google/gemini-2.5-flash'
+          ai_model: 'google/gemini-3-flash-preview'
         }
       }),
       { 
