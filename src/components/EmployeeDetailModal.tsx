@@ -185,7 +185,7 @@ export function EmployeeDetailModal({ isOpen, onClose, onEdit, employee }: Emplo
                   <div>
                     <h2 className="text-xl font-bold">{employee.full_name}</h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm text-muted-foreground">{employee.employee_code}</span>
+                      <span className="text-sm text-muted-foreground">{employee.cpf || 'CPF não informado'}</span>
                       <Badge className={getStatusColor(employee.status)}>
                         {employee.status}
                       </Badge>

@@ -4,20 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Check, X, Wand2, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFormErrorValidation } from "@/hooks/useFormErrorValidation";
 import { z } from "zod";
 import { getUserAndCompany } from "@/utils/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useEmployeeCodeValidation } from "@/hooks/useEmployeeCodeValidation";
-import { generateNextEmployeeCode } from "@/services/employeeCodeGenerator";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatCPF, validateCPF } from "@/utils/formValidation";
 
 const employeeSchema = z.object({
-  employee_code: z.string().min(1, "Código do funcionário é obrigatório"),
+  cpf: z.string().min(14, "CPF é obrigatório").refine(val => validateCPF(val), "CPF inválido"),
   full_name: z.string().min(1, "Nome completo é obrigatório"),
   position: z.string().min(1, "Cargo é obrigatório"),
   department: z.string().min(1, "Departamento é obrigatório"),
@@ -37,7 +34,7 @@ export function EmployeeQuickCreateModal({
 }: EmployeeQuickCreateModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
-    employee_code: '',
+    cpf: '',
     full_name: '',
     position: '',
     department: '',
@@ -45,27 +42,8 @@ export function EmployeeQuickCreateModal({
     employment_type: 'CLT',
     status: 'Ativo'
   });
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
   const { validate, hasFieldError, getFieldProps, renderLabel, clearErrors } = useFormErrorValidation(employeeSchema);
-  const codeValidation = useEmployeeCodeValidation(formData.employee_code, companyId);
-
-  // Get company_id when modal opens
-  useEffect(() => {
-    const fetchCompanyId = async () => {
-      try {
-        const userWithCompany = await getUserAndCompany();
-        setCompanyId(userWithCompany?.company_id || null);
-      } catch (error) {
-        console.error('Error fetching company:', error);
-      }
-    };
-
-    if (open) {
-      fetchCompanyId();
-    }
-  }, [open]);
 
   const createMutation = useMutation({
     mutationFn: async (employeeData: any) => {
@@ -79,6 +57,7 @@ export function EmployeeQuickCreateModal({
         .insert([{
           ...employeeData,
           company_id: userWithCompany.company_id,
+          employee_code: null,
           hire_date: new Date().toISOString().split('T')[0]
         }])
         .select()
@@ -99,11 +78,9 @@ export function EmployeeQuickCreateModal({
       console.error('Erro ao criar funcionário:', error);
       if (error.message?.includes('não autenticado')) {
         toast.error("Erro de autenticação. Faça login novamente.");
-      } else if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('employee_code')) {
-        toast.error("Código já existe", {
-          description: codeValidation.suggestedCode 
-            ? `Tente usar: ${codeValidation.suggestedCode}` 
-            : "Use um código diferente ou gere automaticamente.",
+      } else if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('cpf')) {
+        toast.error("CPF já cadastrado", {
+          description: "Este CPF já está vinculado a outro funcionário.",
         });
       } else {
         toast.error("Erro ao criar funcionário. Tente novamente.");
@@ -113,7 +90,7 @@ export function EmployeeQuickCreateModal({
 
   const resetForm = () => {
     setFormData({
-      employee_code: '',
+      cpf: '',
       full_name: '',
       position: '',
       department: '',
@@ -127,50 +104,13 @@ export function EmployeeQuickCreateModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if code is available
-    if (codeValidation.exists) {
-      toast.error("Código já existe", {
-        description: codeValidation.suggestedCode 
-          ? `Use: ${codeValidation.suggestedCode}` 
-          : "Escolha outro código ou gere automaticamente.",
-      });
-      return;
-    }
-
     const validation = validate(formData);
     if (!validation.isValid) return;
 
     createMutation.mutate(formData);
   };
 
-  const handleGenerateCode = async () => {
-    if (!companyId) {
-      toast.error("Erro ao gerar código. Reabra o modal.");
-      return;
-    }
-
-    setIsGeneratingCode(true);
-    try {
-      const newCode = await generateNextEmployeeCode(companyId);
-      setFormData(prev => ({ ...prev, employee_code: newCode }));
-      toast.success(`Código gerado: ${newCode}`);
-    } catch (error) {
-      console.error('Error generating code:', error);
-      toast.error("Erro ao gerar código automaticamente.");
-    } finally {
-      setIsGeneratingCode(false);
-    }
-  };
-
-  const handleUseSuggestedCode = () => {
-    if (codeValidation.suggestedCode) {
-      setFormData(prev => ({ ...prev, employee_code: codeValidation.suggestedCode! }));
-    }
-  };
-
   const isPending = createMutation.isPending;
-  const isCodeValid = !codeValidation.exists && formData.employee_code.length > 0;
-  const canSubmit = isCodeValid && !codeValidation.isChecking && !isPending;
 
   const departments = [
     'Administração', 'Recursos Humanos', 'Financeiro', 'Vendas', 
@@ -190,91 +130,19 @@ export function EmployeeQuickCreateModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className={renderLabel('employee_code', true).className}>
-                  {renderLabel('employee_code', true).label("Código do Funcionário")}
-                </Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateCode}
-                        disabled={isGeneratingCode}
-                        className="h-7 px-2"
-                      >
-                        {isGeneratingCode ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Wand2 className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Gerar código automaticamente</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="relative">
-                <Input
-                  id="employee_code"
-                  placeholder="Ex: EMP001"
-                  value={formData.employee_code}
-                  onChange={(e) => setFormData(prev => ({ ...prev, employee_code: e.target.value }))}
-                  className={
-                    formData.employee_code.length > 0
-                      ? codeValidation.exists
-                        ? "border-red-500 pr-8"
-                        : "border-green-500 pr-8"
-                      : ""
-                  }
-                  {...getFieldProps('employee_code')}
-                />
-                {formData.employee_code.length > 0 && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    {codeValidation.isChecking ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : codeValidation.exists ? (
-                      <X className="h-4 w-4 text-red-500" />
-                    ) : (
-                      <Check className="h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                )}
-              </div>
-              {hasFieldError('employee_code') && (
-                <p className="text-sm text-red-600">Código do funcionário é obrigatório</p>
-              )}
-              {formData.employee_code.length > 0 && !codeValidation.isChecking && (
-                <div className="flex items-center gap-2">
-                  {codeValidation.exists ? (
-                    <>
-                      <Badge variant="destructive" className="text-xs">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Código já existe
-                      </Badge>
-                      {codeValidation.suggestedCode && (
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          onClick={handleUseSuggestedCode}
-                          className="h-auto p-0 text-xs"
-                        >
-                          Usar: {codeValidation.suggestedCode}
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <Badge variant="default" className="text-xs bg-green-500">
-                      <Check className="h-3 w-3 mr-1" />
-                      Disponível
-                    </Badge>
-                  )}
-                </div>
+              <Label className={renderLabel('cpf', true).className}>
+                {renderLabel('cpf', true).label("CPF")}
+              </Label>
+              <Input
+                id="cpf"
+                placeholder="000.000.000-00"
+                value={formData.cpf}
+                onChange={(e) => setFormData(prev => ({ ...prev, cpf: formatCPF(e.target.value) }))}
+                maxLength={14}
+                {...getFieldProps('cpf')}
+              />
+              {hasFieldError('cpf') && (
+                <p className="text-sm text-red-600">CPF é obrigatório e deve ser válido</p>
               )}
             </div>
 
@@ -395,7 +263,7 @@ export function EmployeeQuickCreateModal({
             </Button>
             <Button
               type="submit"
-              disabled={!canSubmit}
+              disabled={isPending}
             >
               {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {isPending ? 'Criando...' : 'Criar Funcionário'}

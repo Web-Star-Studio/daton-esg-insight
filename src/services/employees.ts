@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formErrorHandler } from "@/utils/formErrorHandler";
-import { generateNextEmployeeCode } from "@/services/employeeCodeGenerator";
 
 export interface Employee {
   id: string;
@@ -109,7 +108,7 @@ export const getEmployeesPaginated = async (params: PaginatedEmployeesParams): P
   // Apply filters
   if (search && search.trim()) {
     const searchTerm = `%${search.trim()}%`;
-    query = query.or(`full_name.ilike.${searchTerm},employee_code.ilike.${searchTerm},position.ilike.${searchTerm}`);
+    query = query.or(`full_name.ilike.${searchTerm},cpf.ilike.${searchTerm},position.ilike.${searchTerm}`);
   }
 
   if (status && status !== 'all') {
@@ -173,20 +172,11 @@ export const createEmployee = async (employee: Omit<Employee, 'id' | 'created_at
     // Sanitizar dados antes de enviar ao banco
     const sanitizedEmployee = sanitizeEmployeeData(employee);
     
-    // Gerar código automaticamente se não fornecido e CPF também não foi informado
-    let employeeCode = sanitizedEmployee.employee_code;
-    const hasCpf = sanitizedEmployee.cpf && String(sanitizedEmployee.cpf).replace(/\D/g, '').length === 11;
-    
-    // Só gerar código automático se não tiver código E não tiver CPF
-    if ((!employeeCode || (typeof employeeCode === 'string' && employeeCode.trim() === '')) && !hasCpf) {
-      employeeCode = await generateNextEmployeeCode(profile.company_id);
-    }
-    
-    // Prepare employee data with company_id, optional code, and fallback hire_date
+    // Prepare employee data with company_id
     const employeeData = {
       ...sanitizedEmployee,
       company_id: profile.company_id,
-      employee_code: employeeCode || null,
+      employee_code: null, // Campo não mais utilizado - CPF é o identificador
       // hire_date é obrigatório - usar data atual se não informada
       hire_date: sanitizedEmployee.hire_date || new Date().toISOString().split('T')[0]
     };
@@ -414,17 +404,4 @@ export const useEmployeesAsOptions = () => {
     queryKey: ['employees-options'],
     queryFn: getEmployeesAsOptions,
   });
-};
-
-// Check if employee code already exists
-export const checkEmployeeCodeExists = async (code: string, companyId: string): Promise<boolean> => {
-  const { data, error } = await supabase
-    .from('employees')
-    .select('employee_code')
-    .eq('company_id', companyId)
-    .eq('employee_code', code)
-    .maybeSingle();
-
-  if (error) throw error;
-  return !!data;
 };
