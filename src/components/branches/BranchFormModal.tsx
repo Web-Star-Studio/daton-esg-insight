@@ -134,10 +134,11 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (file.type !== 'application/pdf') {
+    // Validate file type - accept PDF and images
+    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
       unifiedToast.error("Arquivo inválido", {
-        description: "Apenas arquivos PDF são aceitos"
+        description: "Aceitos: PDF, PNG, JPG ou WEBP"
       });
       event.target.value = '';
       return;
@@ -154,7 +155,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
 
     setIsLoadingPdf(true);
     try {
-      // Convert PDF to base64
+      // Convert file to base64
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -167,9 +168,14 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
         reader.readAsDataURL(file);
       });
 
-      // Call Edge Function
+      // Determine if it's an image or PDF
+      const isImage = file.type.startsWith('image/');
+
+      // Call Edge Function with appropriate data
       const { data, error } = await supabase.functions.invoke('cnpj-pdf-extractor', {
-        body: { pdfBase64: base64, fileName: file.name }
+        body: isImage 
+          ? { imageBase64: base64, fileName: file.name, fileType: file.type }
+          : { pdfBase64: base64, fileName: file.name, fileType: file.type }
       });
 
       if (error) {
@@ -621,7 +627,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                       <input
                         type="file"
                         id="pdf-upload"
-                        accept="application/pdf"
+                        accept="application/pdf,image/png,image/jpeg,image/webp"
                         className="hidden"
                         onChange={handleImportPdf}
                         disabled={isLoadingPdf}
@@ -632,7 +638,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                         size="icon"
                         onClick={() => document.getElementById('pdf-upload')?.click()}
                         disabled={isLoadingPdf}
-                        title="Importar dados do PDF do cartão CNPJ"
+                        title="Importar dados do cartão CNPJ (PDF ou imagem)"
                       >
                         {isLoadingPdf ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -642,7 +648,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                       </Button>
                     </div>
                     <FormDescription className="text-xs">
-                      Digite o CNPJ para buscar ou importe o PDF do cartão CNPJ
+                      Digite o CNPJ para buscar ou importe o cartão CNPJ (PDF, PNG, JPG)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

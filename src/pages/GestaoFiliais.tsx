@@ -50,10 +50,11 @@ export default function GestaoFiliais() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (file.type !== 'application/pdf') {
+    // Validate file type - accept PDF and images
+    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
       unifiedToast.error("Arquivo inválido", {
-        description: "Apenas arquivos PDF são aceitos"
+        description: "Aceitos: PDF, PNG, JPG ou WEBP"
       });
       event.target.value = '';
       return;
@@ -70,7 +71,7 @@ export default function GestaoFiliais() {
 
     setIsImportingPdf(true);
     try {
-      // Convert PDF to base64
+      // Convert file to base64
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -82,9 +83,14 @@ export default function GestaoFiliais() {
         reader.readAsDataURL(file);
       });
 
-      // Call Edge Function
+      // Determine if it's an image or PDF
+      const isImage = file.type.startsWith('image/');
+
+      // Call Edge Function with appropriate data
       const { data, error } = await supabase.functions.invoke('cnpj-pdf-extractor', {
-        body: { pdfBase64: base64, fileName: file.name }
+        body: isImage 
+          ? { imageBase64: base64, fileName: file.name, fileType: file.type }
+          : { pdfBase64: base64, fileName: file.name, fileType: file.type }
       });
 
       if (error) {
@@ -176,7 +182,7 @@ export default function GestaoFiliais() {
           <input
             type="file"
             ref={fileInputRef}
-            accept="application/pdf"
+            accept="application/pdf,image/png,image/jpeg,image/webp"
             className="hidden"
             onChange={handleImportPdf}
             disabled={isImportingPdf}
