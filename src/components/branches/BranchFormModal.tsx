@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager, getHeadquarters, Branch } from "@/services/branches";
 import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
-import { Loader2, MapPin, Search, Building2, FileSearch } from "lucide-react";
+import { Loader2, MapPin, Search, Building2, FileSearch, FileUp } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
 import { unifiedToast } from "@/utils/unifiedToast";
@@ -104,6 +104,7 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: users, isLoading: isLoadingUsers } = useCompanyUsers();
@@ -114,6 +115,115 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
 
   const isEditing = !!branch;
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // Handle PDF import
+  const handleImportPdf = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      unifiedToast.error("Arquivo inválido", {
+        description: "Apenas arquivos PDF são aceitos"
+      });
+      event.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      unifiedToast.error("Arquivo muito grande", {
+        description: "O arquivo deve ter no máximo 10MB"
+      });
+      event.target.value = '';
+      return;
+    }
+
+    setIsLoadingPdf(true);
+    try {
+      // Convert PDF to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove data URL prefix
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Call Edge Function
+      const { data, error } = await supabase.functions.invoke('cnpj-pdf-extractor', {
+        body: { pdfBase64: base64, fileName: file.name }
+      });
+
+      if (error) {
+        console.error('PDF extraction error:', error);
+        unifiedToast.error("Erro ao processar PDF", {
+          description: error.message || "Tente novamente"
+        });
+        return;
+      }
+
+      if (!data.success) {
+        unifiedToast.error("Erro na extração", {
+          description: data.error || "Não foi possível extrair dados do PDF"
+        });
+        return;
+      }
+
+      const extractedData = data.data;
+
+      // Fill form with extracted data
+      if (extractedData.cnpj) {
+        form.setValue("cnpj", extractedData.cnpj);
+      }
+      if (extractedData.name) {
+        form.setValue("name", extractedData.tradeName || extractedData.name);
+      }
+      if (extractedData.address) {
+        form.setValue("address", extractedData.address);
+      }
+      if (extractedData.streetNumber) {
+        form.setValue("street_number", extractedData.streetNumber);
+      }
+      if (extractedData.neighborhood) {
+        form.setValue("neighborhood", extractedData.neighborhood);
+      }
+      if (extractedData.city) {
+        form.setValue("city", extractedData.city);
+      }
+      if (extractedData.state) {
+        form.setValue("state", extractedData.state);
+      }
+      if (extractedData.cep) {
+        form.setValue("cep", formatCep(extractedData.cep));
+      }
+      if (extractedData.phone) {
+        form.setValue("phone", extractedData.phone);
+      }
+
+      unifiedToast.success("Dados do PDF importados!", {
+        description: `${extractedData.name} - ${extractedData.city}/${extractedData.state}`
+      });
+
+      // Automatically fetch coordinates
+      if (extractedData.city && extractedData.state) {
+        await handleGeocodeAfterCep(extractedData.city, extractedData.state, extractedData.address);
+      }
+
+    } catch (error) {
+      console.error('PDF import error:', error);
+      unifiedToast.error("Erro ao importar PDF", {
+        description: "Tente novamente com um arquivo válido"
+      });
+    } finally {
+      setIsLoadingPdf(false);
+      event.target.value = '';
+    }
+  };
 
   // Function to fetch CNPJ data from API
   const handleFetchCnpj = async () => {
@@ -470,9 +580,31 @@ export function BranchFormModal({ open, onOpenChange, branch }: BranchFormModalP
                           <FileSearch className="h-4 w-4" />
                         )}
                       </Button>
+                      <input
+                        type="file"
+                        id="pdf-upload"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={handleImportPdf}
+                        disabled={isLoadingPdf}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => document.getElementById('pdf-upload')?.click()}
+                        disabled={isLoadingPdf}
+                        title="Importar dados do PDF do cartão CNPJ"
+                      >
+                        {isLoadingPdf ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileUp className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                     <FormDescription className="text-xs">
-                      Digite o CNPJ e clique no ícone para importar dados automaticamente
+                      Digite o CNPJ para buscar ou importe o PDF do cartão CNPJ
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
