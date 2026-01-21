@@ -1,5 +1,44 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Retry helper for edge function calls with exponential backoff
+async function invokeWithRetry<T>(
+  body: Record<string, unknown>,
+  retries = 2
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const { data, error } = await supabase.functions.invoke('custom-forms-management', { body });
+      
+      if (error) {
+        // Check if it's a timeout/connection error worth retrying
+        const isRetryable = error.message?.includes('Failed to fetch') || 
+                           error.message?.includes('502') ||
+                           error.message?.includes('timeout') ||
+                           error.message?.includes('NetworkError');
+        
+        if (isRetryable && attempt < retries) {
+          console.log(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Exponential backoff
+          continue;
+        }
+        throw error;
+      }
+      
+      return data as T;
+    } catch (e) {
+      lastError = e as Error;
+      if (attempt < retries) {
+        console.log(`⏳ Tentativa ${attempt + 1} falhou, tentando novamente...`);
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Falha após múltiplas tentativas');
+}
+
 export interface CustomForm {
   id: string;
   title: string;
@@ -80,24 +119,14 @@ class CustomFormsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      body: { action: 'GET_FORMS' }
-    });
-
-    if (error) throw error;
-    return data;
+    return invokeWithRetry<CustomForm[]>({ action: 'GET_FORMS' });
   }
 
   async getForm(formId: string): Promise<CustomForm | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      body: { action: 'GET_FORM', formId }
-    });
-
-    if (error) throw error;
-    return data;
+    return invokeWithRetry<CustomForm | null>({ action: 'GET_FORM', formId });
   }
 
   async createForm(formData: CreateFormData): Promise<CustomForm> {
@@ -208,25 +237,15 @@ class CustomFormsService {
   // ============= PUBLIC METHODS (NO AUTH) =============
 
   async getPublicForm(formId: string): Promise<CustomForm | null> {
-    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      body: { action: 'GET_PUBLIC_FORM', formId }
-    });
-
-    if (error) throw error;
-    return data;
+    return invokeWithRetry<CustomForm | null>({ action: 'GET_PUBLIC_FORM', formId });
   }
 
   async submitPublicForm(formId: string, submissionData: SubmitFormData): Promise<FormSubmission> {
-    const { data, error } = await supabase.functions.invoke('custom-forms-management', {
-      body: {
-        action: 'SUBMIT_PUBLIC_FORM',
-        form_id: formId,
-        ...submissionData
-      }
+    return invokeWithRetry<FormSubmission>({
+      action: 'SUBMIT_PUBLIC_FORM',
+      form_id: formId,
+      ...submissionData
     });
-
-    if (error) throw error;
-    return data;
   }
 }
 

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { customFormsService, type CustomForm, type FormField } from "@/services/customForms";
-import { CalendarIcon, Upload, MessageSquare, UserCircle } from "lucide-react";
+import { CalendarIcon, Upload, MessageSquare, UserCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -35,6 +35,7 @@ export function PublicFormRenderer({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errorType, setErrorType] = useState<'not_found' | 'connection' | null>(null);
   const [respondentInfo, setRespondentInfo] = useState({
     name: '',
     email: '',
@@ -49,10 +50,11 @@ export function PublicFormRenderer({
   const loadForm = async () => {
     try {
       setLoading(true);
+      setErrorType(null);
       const data = await customFormsService.getPublicForm(formId);
       
       if (!data) {
-        toast({ title: "Erro", description: "Formulário não encontrado ou não publicado", variant: "destructive" });
+        setErrorType('not_found');
         return;
       }
 
@@ -77,9 +79,17 @@ export function PublicFormRenderer({
         }
       });
       setFormData(initialData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar formulário:', error);
-      toast({ title: "Erro", description: "Formulário não encontrado ou não publicado", variant: "destructive" });
+      
+      // Differentiate between connection errors and not found
+      const isConnectionError = error?.message?.includes('Failed to fetch') || 
+                                error?.message?.includes('502') ||
+                                error?.message?.includes('timeout') ||
+                                error?.message?.includes('NetworkError') ||
+                                error?.message?.includes('múltiplas tentativas');
+      
+      setErrorType(isConnectionError ? 'connection' : 'not_found');
     } finally {
       setLoading(false);
     }
@@ -435,6 +445,33 @@ export function PublicFormRenderer({
       </div>
     );
   };
+
+  // Error state - show appropriate message with retry for connection errors
+  if (errorType && !form) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="py-12 text-center">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">
+            {errorType === 'connection' 
+              ? 'Erro de conexão' 
+              : 'Formulário não encontrado'}
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            {errorType === 'connection'
+              ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+              : 'Este formulário não existe ou não está disponível publicamente.'}
+          </p>
+          {errorType === 'connection' && (
+            <Button onClick={loadForm} disabled={loading}>
+              <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+              Tentar Novamente
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
