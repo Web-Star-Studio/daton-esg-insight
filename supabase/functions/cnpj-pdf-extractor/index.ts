@@ -50,6 +50,22 @@ function getRelevantCnpjSnippet(text: string): string {
   return text.slice(start, end);
 }
 
+function looksLikeScannedOrGarbledPdf(text: string): boolean {
+  if (!text) return true;
+  const len = text.length;
+  if (len < 100) return true;
+
+  // If we can't even see the keyword "CNPJ" in extracted text, it's very likely scanned
+  // or the extraction pulled mostly binary-ish streams.
+  const hasKeyword = /\bCNPJ\b/i.test(text);
+
+  // Heuristic: ratio of readable letters/spaces over total length.
+  const readable = (text.match(/[A-Za-zÀ-ÿ\s]/g) || []).length;
+  const ratio = readable / len;
+
+  return !hasKeyword || ratio < 0.12;
+}
+
 // Simple PDF text extraction - works for text-based PDFs
 function extractTextFromPDF(base64Data: string): string {
   try {
@@ -223,6 +239,17 @@ Regras importantes:
       const snippet = getRelevantCnpjSnippet(pdfExtractedText);
       console.log('PDF CNPJ regex hint:', cnpjHint ? 'found' : 'not_found');
 
+      if (!cnpjHint && looksLikeScannedOrGarbledPdf(pdfExtractedText)) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Não consegui ler o texto deste PDF (provavelmente é um PDF escaneado/imagen). Para extrair o CNPJ, envie uma imagem (PNG/JPG/WEBP) do cartão CNPJ (print ou foto).',
+            hint: 'image_required',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       // Use text-based GPT-4 to parse the extracted content
       openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -334,12 +361,24 @@ TEXTO (trecho mais relevante):\n\n${snippet}`
 
     // Validate that we got at least the CNPJ
     if (!extractedData.cnpj) {
+      // If PDF is likely scanned/garbled, guide user to upload an image.
+      if (pdfExtractedText && looksLikeScannedOrGarbledPdf(pdfExtractedText)) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Não consegui identificar o CNPJ neste PDF. Para melhores resultados, envie uma imagem (PNG/JPG/WEBP) do cartão CNPJ (print ou foto).',
+            hint: 'image_required',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'CNPJ não encontrado no documento. Verifique se é um cartão CNPJ válido.' 
+        JSON.stringify({
+          success: false,
+          error: 'CNPJ não encontrado no documento. Verifique se é um cartão CNPJ válido.',
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
