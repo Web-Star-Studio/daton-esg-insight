@@ -1,9 +1,16 @@
 import { useState, useRef, useMemo } from "react";
-import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2, Crown } from "lucide-react";
+import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2, Crown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -25,7 +32,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranchesWithManager, useDeleteBranch, BranchWithManager } from "@/services/branches";
 import { BranchFormModal, BranchImportData } from "@/components/branches/BranchFormModal";
-import { BranchStatsCards } from "@/components/branches/BranchStatsCards";
 import { BranchesMap } from "@/components/branches/BranchesMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, Trash2, Search } from "lucide-react";
@@ -56,6 +62,9 @@ function groupBranchesByHeadquarters(branches: BranchWithManager[]) {
 
 export default function GestaoFiliais() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [parentBranchFilter, setParentBranchFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<BranchWithManager | null>(null);
   const [branchToDelete, setBranchToDelete] = useState<BranchWithManager | null>(null);
@@ -66,6 +75,27 @@ export default function GestaoFiliais() {
 
   const { data: branches, isLoading } = useBranchesWithManager();
   const deleteMutation = useDeleteBranch();
+
+  // Lista de matrizes para o filtro
+  const headquarters = useMemo(() => 
+    (branches || []).filter(b => b.is_headquarters), 
+    [branches]
+  );
+
+  // Verificar se há filtros ativos
+  const hasActiveFilters = 
+    searchTerm || 
+    statusFilter !== "all" || 
+    typeFilter !== "all" || 
+    parentBranchFilter !== "all";
+
+  // Limpar todos os filtros
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setParentBranchFilter("all");
+  };
 
   const handleImportPdf = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -169,11 +199,35 @@ export default function GestaoFiliais() {
     }
   };
 
-  const filteredBranches = branches?.filter((branch) =>
-    branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.city?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredBranches = useMemo(() => {
+    return (branches || []).filter((branch) => {
+      // Filtro de busca por texto
+      const matchesSearch = 
+        branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        branch.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        branch.city?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filtro de status
+      const matchesStatus = 
+        statusFilter === "all" ||
+        (statusFilter === "active" && (branch.status === "Ativo" || branch.status === "Ativa")) ||
+        (statusFilter === "inactive" && branch.status === "Inativa");
+      
+      // Filtro de tipo
+      const matchesType = 
+        typeFilter === "all" ||
+        (typeFilter === "headquarters" && branch.is_headquarters) ||
+        (typeFilter === "branch" && !branch.is_headquarters);
+      
+      // Filtro de matriz vinculada
+      const matchesParent = 
+        parentBranchFilter === "all" ||
+        (parentBranchFilter === "independent" && !branch.parent_branch_id && !branch.is_headquarters) ||
+        branch.parent_branch_id === parentBranchFilter;
+      
+      return matchesSearch && matchesStatus && matchesType && matchesParent;
+    });
+  }, [branches, searchTerm, statusFilter, typeFilter, parentBranchFilter]);
 
   const { groups, independent } = useMemo(() => 
     groupBranchesByHeadquarters(filteredBranches), 
@@ -322,9 +376,6 @@ export default function GestaoFiliais() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <BranchStatsCards branches={branches || []} isLoading={isLoading} />
-
       {/* Branch List with Tabs */}
       <Card>
         <CardHeader>
@@ -352,17 +403,75 @@ export default function GestaoFiliais() {
         <CardContent>
           {viewMode === "list" ? (
             <>
-              {/* Search */}
-              <div className="mb-4">
-                <div className="relative max-w-sm">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, código ou cidade..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+              {/* Search and Filters */}
+              <div className="mb-4 space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Busca por texto */}
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nome, código ou cidade..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  {/* Filtro de Status */}
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Status</SelectItem>
+                      <SelectItem value="active">Ativa</SelectItem>
+                      <SelectItem value="inactive">Inativa</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Filtro de Tipo */}
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Tipos</SelectItem>
+                      <SelectItem value="headquarters">Matrizes</SelectItem>
+                      <SelectItem value="branch">Filiais</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Filtro de Matriz Vinculada */}
+                  <Select value={parentBranchFilter} onValueChange={setParentBranchFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Matriz Vinculada" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas Matrizes</SelectItem>
+                      <SelectItem value="independent">Independentes</SelectItem>
+                      {headquarters.map((hq) => (
+                        <SelectItem key={hq.id} value={hq.id}>
+                          {hq.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Botão Limpar Filtros */}
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="icon" onClick={clearFilters} title="Limpar filtros">
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
+
+                {/* Indicadores de filtros ativos */}
+                {hasActiveFilters && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Mostrando {filteredBranches.length} de {branches?.length || 0} unidades</span>
+                    <Badge variant="secondary">Filtros aplicados</Badge>
+                  </div>
+                )}
               </div>
 
               {/* Table */}
