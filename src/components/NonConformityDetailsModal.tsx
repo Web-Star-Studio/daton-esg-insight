@@ -665,14 +665,14 @@ export function NonConformityDetailsModal({
                           </div>
                         </div>
                         
-                        {effectiveness.notes && (
+                        {effectiveness.risk_update_notes && (
                           <div>
-                            <Label>Observações da Verificação</Label>
+                            <Label>Observações sobre Riscos</Label>
                             <p className="text-sm p-3 bg-muted rounded mt-1 whitespace-pre-wrap">
-                              {effectiveness.notes}
+                              {effectiveness.risk_update_notes}
                             </p>
                           </div>
-                        )
+                        )}
                       </div>
                     ) : (
                       <div>
