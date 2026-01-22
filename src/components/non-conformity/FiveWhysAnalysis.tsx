@@ -25,13 +25,18 @@ export function FiveWhysAnalysis({ data, onChange, rootCause, onRootCauseChange 
   const addWhy = () => {
     if (data.length >= 7) return; // Max 7 whys
     
-    const whyNumber = data.length + 1;
+    // Pegar a resposta do último "por quê" para formar a nova pergunta
     const previousAnswer = data.length > 0 ? data[data.length - 1].resposta : "";
+    
+    // Formatar a pergunta baseada na resposta anterior
+    const formattedQuestion = previousAnswer && previousAnswer.trim() 
+      ? `Por que ${previousAnswer.trim().toLowerCase().replace(/\.$/, "")}?`
+      : "Por que isso aconteceu?";
     
     onChange([
       ...data,
       {
-        pergunta: `Por que ${previousAnswer ? previousAnswer.toLowerCase() : "isso aconteceu"}?`,
+        pergunta: formattedQuestion,
         resposta: "",
         is_root_cause: false,
       },
@@ -41,6 +46,14 @@ export function FiveWhysAnalysis({ data, onChange, rootCause, onRootCauseChange 
   const updateWhy = (index: number, field: keyof WhyItem, value: string | boolean) => {
     const newData = [...data];
     newData[index] = { ...newData[index], [field]: value };
+    
+    // Se a resposta mudou, atualizar a pergunta do próximo "por quê"
+    if (field === "resposta" && typeof value === "string" && index < newData.length - 1) {
+      const nextQuestion = value.trim() 
+        ? `Por que ${value.trim().toLowerCase().replace(/\.$/, "")}?`
+        : "Por que isso aconteceu?";
+      newData[index + 1] = { ...newData[index + 1], pergunta: nextQuestion };
+    }
     
     // If marking as root cause, update the main root cause field
     if (field === "is_root_cause" && value === true) {
@@ -114,9 +127,14 @@ export function FiveWhysAnalysis({ data, onChange, rootCause, onRootCauseChange 
                   value={item.resposta}
                   onChange={(e) => updateWhy(index, "resposta", e.target.value)}
                   placeholder="Porque..."
-                  rows={2}
-                  className="mt-1"
+                  rows={4}
+                  className="mt-1 min-h-[80px] resize-y"
                 />
+                {item.resposta && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate max-w-full" title={item.resposta}>
+                    💡 Esta resposta será usada para formar o próximo "Por quê?"
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">

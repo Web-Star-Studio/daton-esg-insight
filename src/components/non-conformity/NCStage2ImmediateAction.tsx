@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Check, Clock, AlertTriangle, User, Calendar, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Check, Clock, AlertTriangle, User, Calendar, ArrowRight, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,23 +14,32 @@ import {
   useCreateImmediateAction, 
   useUpdateImmediateAction, 
   useDeleteImmediateAction,
-  useCompanyUsers 
+  useCompanyUsers,
+  useNonConformity 
 } from "@/hooks/useNonConformity";
 import { NCImmediateAction } from "@/services/nonConformityService";
 import { format, isPast, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { StageAdvanceConfirmDialog } from "./StageAdvanceConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NCStage2ImmediateActionProps {
   ncId: string;
   onComplete?: () => void;
 }
 
+interface ImmediateSuggestion {
+  action: string;
+  justification: string;
+}
+
 export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateActionProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [editingAction, setEditingAction] = useState<NCImmediateAction | null>(null);
+  const [suggestions, setSuggestions] = useState<ImmediateSuggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [formData, setFormData] = useState({
     description: "",
     responsible_user_id: "",
@@ -40,9 +49,58 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
 
   const { data: actions, isLoading } = useImmediateActions(ncId);
   const { data: users } = useCompanyUsers();
+  const { data: nc } = useNonConformity(ncId);
   const createMutation = useCreateImmediateAction();
   const updateMutation = useUpdateImmediateAction();
   const deleteMutation = useDeleteImmediateAction();
+
+  const fetchSuggestions = async () => {
+    if (!nc?.title && !nc?.description) {
+      toast.error("Dados insuficientes para gerar sugestões");
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('nc-immediate-suggestions', {
+        body: {
+          ncTitle: nc?.title || '',
+          ncDescription: nc?.description || '',
+          category: nc?.category || '',
+          source: nc?.source || ''
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.suggestions && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
+        toast.success("Sugestões geradas com sucesso!");
+      } else {
+        toast.info("Não foi possível gerar sugestões no momento");
+      }
+    } catch (error: any) {
+      console.error("Error fetching immediate suggestions:", error);
+      if (error.message?.includes("429")) {
+        toast.error("Limite de requisições atingido. Tente novamente em alguns minutos.");
+      } else if (error.message?.includes("402")) {
+        toast.error("Créditos de IA esgotados. Entre em contato com o administrador.");
+      } else {
+        toast.error("Erro ao gerar sugestões de ações");
+      }
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  const applySuggestion = (suggestion: ImmediateSuggestion) => {
+    setFormData({
+      ...formData,
+      description: suggestion.action,
+    });
+    setIsAddDialogOpen(true);
+    toast.success("Sugestão aplicada! Você pode editar antes de salvar.");
+  };
 
   const resetForm = () => {
     setFormData({
@@ -151,10 +209,8 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
 
   const handleAdvanceClick = () => {
     if (allActionsCompleted) {
-      // All completed, advance directly
       onComplete?.();
     } else {
-      // Has pending actions, show confirmation dialog
       setIsConfirmDialogOpen(true);
     }
   };
@@ -206,7 +262,11 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Descreva a ação de contenção..."
                     rows={3}
+                    className="resize-y"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ✏️ Você pode editar o texto conforme necessário
+                  </p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -266,7 +326,70 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          {/* Sugestões de IA */}
+          <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-blue-600" />
+                <h4 className="font-medium text-blue-800">Sugestões de Ações Imediatas (IA)</h4>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fetchSuggestions}
+                disabled={isLoadingSuggestions}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                {isLoadingSuggestions ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                    Gerar Sugestões
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-sm text-blue-700 mb-3">
+              Clique para gerar sugestões de ações de contenção baseadas na descrição da NC.
+            </p>
+
+            {suggestions.length > 0 && (
+              <div className="space-y-3">
+                {suggestions.map((suggestion, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-white rounded-lg p-3 border border-blue-200 hover:border-blue-400 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-foreground">{suggestion.action}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          <span className="font-medium">Justificativa:</span> {suggestion.justification}
+                        </p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        className="shrink-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                        onClick={() => applySuggestion(suggestion)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Usar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tabela de ações */}
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -286,7 +409,7 @@ export function NCStage2ImmediateAction({ ncId, onComplete }: NCStage2ImmediateA
                 {actions.map((action) => (
                   <TableRow key={action.id}>
                     <TableCell className="max-w-[300px]">
-                      <p className="truncate">{action.description}</p>
+                      <p className="truncate" title={action.description}>{action.description}</p>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">

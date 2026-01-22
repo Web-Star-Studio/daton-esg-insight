@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,13 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NonConformityTimelineModal } from "./NonConformityTimelineModal";
+import { NCPrintView } from "./non-conformity/NCPrintView";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getNCStatusLabel, getNCStatusColor, getNCseravityColor } from "@/utils/ncStatusUtils";
 import { 
   Calendar, 
   Clock, 
@@ -23,8 +25,12 @@ import {
   FileText, 
   Target,
   TrendingUp,
-  History
+  History,
+  Printer,
+  Check,
+  X
 } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 
 interface NonConformityDetailsModalProps {
   open: boolean;
@@ -43,28 +49,30 @@ export function NonConformityDetailsModal({
   const [isEditing, setIsEditing] = useState(mode === 'edit');
   const [editData, setEditData] = useState<any>({});
   const queryClient = useQueryClient();
+  const printRef = useRef<HTMLDivElement>(null);
 
-  // Resetar modo quando o modal abrir
+  // Print handler
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `NC-${nonConformityId}`,
+  });
+
   useEffect(() => {
     if (open) {
       setIsEditing(mode === 'edit');
     }
   }, [open, mode]);
 
-  // Etapa 1: Query otimizada com Promise.all e cache
+  // Query principal da NC
   const { data: nonConformity, isLoading } = useQuery({
     queryKey: ["non-conformity", nonConformityId],
     queryFn: async () => {
-      // Query paralela - NC + perfis ao mesmo tempo
       const [ncResult, profilesResult] = await Promise.all([
-        // Buscar NC completo
         supabase
           .from("non_conformities")
           .select("*")
           .eq("id", nonConformityId)
           .single(),
-        
-        // Pré-carregar perfis comuns
         supabase
           .from("profiles")
           .select("id, full_name")
@@ -76,7 +84,6 @@ export function NonConformityDetailsModal({
       const nc = ncResult.data;
       const profiles = profilesResult.data || [];
       
-      // Enriquecer com dados de usuário
       return {
         ...nc,
         responsible: profiles.find(p => p.id === nc.responsible_user_id),
@@ -84,17 +91,79 @@ export function NonConformityDetailsModal({
       };
     },
     enabled: open && !!nonConformityId,
-    staleTime: 2 * 60 * 1000, // 2 minutos - dados "frescos"
-    gcTime: 5 * 60 * 1000, // 5 minutos - cache mantido
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
-  // Optimistic updates com sanitização
+  // Query das Ações Imediatas
+  const { data: immediateActions } = useQuery({
+    queryKey: ["nc-immediate-actions-modal", nonConformityId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nc_immediate_actions")
+        .select("*, responsible:profiles!nc_immediate_actions_responsible_user_id_fkey(id, full_name)")
+        .eq("non_conformity_id", nonConformityId)
+        .order("created_at", { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!nonConformityId,
+  });
+
+  // Query da Análise de Causa
+  const { data: causeAnalysis } = useQuery({
+    queryKey: ["nc-cause-analysis-modal", nonConformityId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nc_cause_analysis")
+        .select("*")
+        .eq("non_conformity_id", nonConformityId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!nonConformityId,
+  });
+
+  // Query dos Planos de Ação
+  const { data: actionPlans } = useQuery({
+    queryKey: ["nc-action-plans-modal", nonConformityId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nc_action_plans")
+        .select("*, who_responsible:profiles!nc_action_plans_who_responsible_id_fkey(id, full_name)")
+        .eq("non_conformity_id", nonConformityId)
+        .order("order_index", { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!nonConformityId,
+  });
+
+  // Query da Eficácia
+  const { data: effectiveness } = useQuery({
+    queryKey: ["nc-effectiveness-modal", nonConformityId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nc_effectiveness")
+        .select("*")
+        .eq("non_conformity_id", nonConformityId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!nonConformityId,
+  });
+
   const handleSave = async () => {
     setIsEditing(false);
     toast.success("Salvando alterações...");
 
     try {
-      // SANITIZAR dados - remover campos enriquecidos e não pertencentes ao schema
       const allowedFields = [
         'title', 'description', 'category', 'severity', 'source',
         'detected_date', 'status', 'root_cause_analysis', 'damage_level',
@@ -112,7 +181,6 @@ export function NonConformityDetailsModal({
           return obj;
         }, {} as any);
 
-      // Optimistic update com dados sanitizados
       queryClient.setQueryData(["non-conformity", nonConformityId], {
         ...nonConformity,
         ...sanitizedData
@@ -128,7 +196,6 @@ export function NonConformityDetailsModal({
       toast.success("Não conformidade atualizada!");
       queryClient.invalidateQueries({ queryKey: ["non-conformities"] });
     } catch (error) {
-      // Reverter em caso de erro
       queryClient.invalidateQueries({ queryKey: ["non-conformity", nonConformityId] });
       toast.error("Erro ao atualizar. Revertendo mudanças...");
       console.error(error);
@@ -159,28 +226,15 @@ export function NonConformityDetailsModal({
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "Crítica": return "bg-red-100 text-red-800 border-red-200";
-      case "Alta": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "Média": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "Baixa": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+  const getAnalysisMethodLabel = (method: string) => {
+    switch (method) {
+      case "5_whys": return "5 Porquês";
+      case "ishikawa": return "Diagrama de Ishikawa";
+      case "root_cause": return "Análise de Causa Raiz";
+      default: return method || "Não especificado";
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Aberta": return "bg-red-100 text-red-800";
-      case "Em Análise": return "bg-yellow-100 text-yellow-800";
-      case "Em Correção": return "bg-blue-100 text-blue-800";
-      case "Fechada": return "bg-green-100 text-green-800";
-      case "Aprovada": return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Etapa 4: Skeleton loading melhorado
   if (isLoading || !nonConformity) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -215,13 +269,6 @@ export function NonConformityDetailsModal({
                   <Badge variant={isEditing ? "default" : "secondary"} className="text-xs">
                     {isEditing ? "Modo Edição" : "Modo Visualização"}
                   </Badge>
-                  {/* Cache indicator */}
-                  <Badge variant="outline" className="text-xs ml-2">
-                    {queryClient.getQueryState(["non-conformity", nonConformityId])?.dataUpdatedAt 
-                      ? `Cache: ${format(new Date(queryClient.getQueryState(["non-conformity", nonConformityId])!.dataUpdatedAt), 'HH:mm:ss')}`
-                      : 'Carregando...'
-                    }
-                  </Badge>
                 </DialogTitle>
                 <p className="text-muted-foreground mt-1">{nonConformity.title}</p>
               </div>
@@ -229,10 +276,18 @@ export function NonConformityDetailsModal({
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => handlePrint()}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowTimeline(true)}
                 >
                   <History className="h-4 w-4 mr-2" />
-                  Timeline
+                  Histórico
                 </Button>
                 {!nonConformity.approved_by_user_id && (
                   <Button
@@ -277,8 +332,8 @@ export function NonConformityDetailsModal({
                       <CardTitle className="text-sm">Status Atual</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge className={getStatusColor(nonConformity.status)}>
-                        {nonConformity.status}
+                      <Badge className={getNCStatusColor(nonConformity.status)}>
+                        {getNCStatusLabel(nonConformity.status)}
                       </Badge>
                     </CardContent>
                   </Card>
@@ -288,7 +343,7 @@ export function NonConformityDetailsModal({
                       <CardTitle className="text-sm">Severidade</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Badge className={getSeverityColor(nonConformity.severity)}>
+                      <Badge className={getNCseravityColor(nonConformity.severity)}>
                         {nonConformity.severity}
                       </Badge>
                     </CardContent>
@@ -314,7 +369,7 @@ export function NonConformityDetailsModal({
                     <CardContent className="space-y-4">
                       <div>
                         <Label>Categoria</Label>
-                        <p className="text-sm text-muted-foreground">{nonConformity.category}</p>
+                        <p className="text-sm text-muted-foreground">{nonConformity.category || "Não especificada"}</p>
                       </div>
                       <div>
                         <Label>Fonte</Label>
@@ -346,7 +401,6 @@ export function NonConformityDetailsModal({
                         <Textarea
                           value={editData.description || ""}
                           onChange={(e) => setEditData({...editData, description: e.target.value})}
-                          disabled={!isEditing}
                           rows={6}
                         />
                       ) : (
@@ -355,9 +409,91 @@ export function NonConformityDetailsModal({
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Ações Imediatas Resumo */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                      Ações Imediatas ({immediateActions?.length || 0})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {immediateActions && immediateActions.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ação</TableHead>
+                            <TableHead>Responsável</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {immediateActions.slice(0, 3).map((action: any) => (
+                            <TableRow key={action.id}>
+                              <TableCell className="max-w-[200px] truncate">{action.description}</TableCell>
+                              <TableCell>{action.responsible?.full_name || "N/A"}</TableCell>
+                              <TableCell>
+                                <Badge variant={action.status === "Concluída" ? "default" : "secondary"}>
+                                  {action.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Nenhuma ação imediata registrada.</p>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="analysis" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="bg-yellow-100 text-yellow-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                      Análise de Causa Raiz
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {causeAnalysis ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Método de Análise</Label>
+                            <p className="text-sm font-medium">{getAnalysisMethodLabel(causeAnalysis.analysis_method)}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Causa Raiz Identificada</Label>
+                          <p className="text-sm p-3 bg-yellow-50 rounded border border-yellow-200 mt-1">
+                            {causeAnalysis.root_cause || "Não identificada"}
+                          </p>
+                        </div>
+                        
+                        {/* 5 Whys Display */}
+                        {causeAnalysis.analysis_method === "5_whys" && causeAnalysis.five_whys_data && (
+                          <div className="mt-4">
+                            <Label>Análise dos 5 Porquês</Label>
+                            <div className="space-y-2 mt-2">
+                              {(causeAnalysis.five_whys_data as any[]).map((item: any, idx: number) => (
+                                <div key={idx} className="pl-4 border-l-2 border-yellow-300 py-1">
+                                  <p className="text-xs text-muted-foreground">{idx + 1}º Por quê: {item.pergunta}</p>
+                                  <p className="text-sm font-medium">{item.resposta || "Sem resposta"}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Análise de causa raiz não realizada.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Análise de Impacto</CardTitle>
@@ -368,7 +504,6 @@ export function NonConformityDetailsModal({
                         placeholder="Descreva o impacto da não conformidade..."
                         value={editData.impact_analysis || ""}
                         onChange={(e) => setEditData({...editData, impact_analysis: e.target.value})}
-                        disabled={!isEditing}
                         rows={4}
                       />
                     ) : (
@@ -378,67 +513,69 @@ export function NonConformityDetailsModal({
                     )}
                   </CardContent>
                 </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Análise de Causa Raiz</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {isEditing ? (
-                      <Textarea
-                        placeholder="Identifique a causa raiz da não conformidade..."
-                        value={editData.root_cause_analysis || ""}
-                        onChange={(e) => setEditData({...editData, root_cause_analysis: e.target.value})}
-                        disabled={!isEditing}
-                        rows={4}
-                      />
-                    ) : (
-                      <p className="text-sm whitespace-pre-wrap">
-                        {nonConformity.root_cause_analysis || "Análise de causa raiz não realizada"}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               <TabsContent value="actions" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Ações Corretivas</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="bg-green-100 text-green-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                      Plano de Ações 5W2H ({actionPlans?.length || 0})
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {isEditing ? (
-                      <Textarea
-                        placeholder="Descreva as ações corretivas a serem implementadas..."
-                        value={editData.corrective_actions || ""}
-                        onChange={(e) => setEditData({...editData, corrective_actions: e.target.value})}
-                        disabled={!isEditing}
-                        rows={4}
-                      />
+                    {actionPlans && actionPlans.length > 0 ? (
+                      <div className="space-y-4">
+                        {actionPlans.map((plan: any, idx: number) => (
+                          <div key={plan.id} className="border rounded-lg p-4 bg-muted/30">
+                            <div className="flex justify-between items-start mb-2">
+                              <Badge variant="outline">Ação {idx + 1}</Badge>
+                              <Badge variant={plan.status === "Concluída" ? "default" : "secondary"}>
+                                {plan.status}
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase">O quê (What)?</p>
+                                <p className="font-medium">{plan.what_action}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase">Por quê (Why)?</p>
+                                <p>{plan.why_reason || "N/A"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase">Quem (Who)?</p>
+                                <p>{plan.who_responsible?.full_name || "N/A"}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground uppercase">Quando (When)?</p>
+                                <p>{format(new Date(plan.when_deadline), "dd/MM/yyyy", { locale: ptBR })}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">
-                        {nonConformity.corrective_actions || "Ações corretivas não definidas"}
-                      </p>
+                      <p className="text-sm text-muted-foreground italic">Nenhuma ação planejada.</p>
                     )}
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Ações Preventivas</CardTitle>
+                    <CardTitle>Ações Corretivas (Legado)</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {isEditing ? (
                       <Textarea
-                        placeholder="Descreva as ações preventivas para evitar recorrência..."
-                        value={editData.preventive_actions || ""}
-                        onChange={(e) => setEditData({...editData, preventive_actions: e.target.value})}
-                        disabled={!isEditing}
+                        placeholder="Descreva as ações corretivas..."
+                        value={editData.corrective_actions || ""}
+                        onChange={(e) => setEditData({...editData, corrective_actions: e.target.value})}
                         rows={4}
                       />
                     ) : (
                       <p className="text-sm whitespace-pre-wrap">
-                        {nonConformity.preventive_actions || "Ações preventivas não definidas"}
+                        {nonConformity.corrective_actions || "Ações corretivas não definidas"}
                       </p>
                     )}
                   </CardContent>
@@ -455,7 +592,6 @@ export function NonConformityDetailsModal({
                           type="date"
                           value={editData.due_date || ""}
                           onChange={(e) => setEditData({...editData, due_date: e.target.value})}
-                          disabled={!isEditing}
                         />
                       ) : (
                         <p className="text-sm">
@@ -478,7 +614,6 @@ export function NonConformityDetailsModal({
                           type="date"
                           value={editData.completion_date || ""}
                           onChange={(e) => setEditData({...editData, completion_date: e.target.value})}
-                          disabled={!isEditing}
                         />
                       ) : (
                         <p className="text-sm">
@@ -496,21 +631,64 @@ export function NonConformityDetailsModal({
               <TabsContent value="effectiveness" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Avaliação de Eficácia</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">6</span>
+                      Avaliação de Eficácia
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {isEditing ? (
-                      <Textarea
-                        placeholder="Avalie a eficácia das ações implementadas..."
-                        value={editData.effectiveness_evaluation || ""}
-                        onChange={(e) => setEditData({...editData, effectiveness_evaluation: e.target.value})}
-                        disabled={!isEditing}
-                        rows={4}
-                      />
+                    {effectiveness ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Resultado</Label>
+                            <div className="flex items-center gap-2 mt-1">
+                              {effectiveness.is_effective ? (
+                                <Badge className="bg-green-100 text-green-800">
+                                  <Check className="h-3 w-3 mr-1" /> Eficaz
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive">
+                                  <X className="h-3 w-3 mr-1" /> Não Eficaz
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Data de Avaliação</Label>
+                            <p className="text-sm">
+                              {effectiveness.evaluated_at 
+                                ? format(new Date(effectiveness.evaluated_at), "dd/MM/yyyy", { locale: ptBR })
+                                : "N/A"
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {effectiveness.notes && (
+                          <div>
+                            <Label>Observações da Verificação</Label>
+                            <p className="text-sm p-3 bg-muted rounded mt-1 whitespace-pre-wrap">
+                              {effectiveness.notes}
+                            </p>
+                          </div>
+                        )
+                      </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">
-                        {nonConformity.effectiveness_evaluation || "Avaliação de eficácia não realizada"}
-                      </p>
+                      <div>
+                        {isEditing ? (
+                          <Textarea
+                            placeholder="Avalie a eficácia das ações implementadas..."
+                            value={editData.effectiveness_evaluation || ""}
+                            onChange={(e) => setEditData({...editData, effectiveness_evaluation: e.target.value})}
+                            rows={4}
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">
+                            Avaliação de eficácia não realizada.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -518,7 +696,7 @@ export function NonConformityDetailsModal({
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-sm">Data da Avaliação</CardTitle>
+                      <CardTitle className="text-sm">Data da Avaliação (Legado)</CardTitle>
                     </CardHeader>
                     <CardContent>
                       {isEditing ? (
@@ -526,7 +704,6 @@ export function NonConformityDetailsModal({
                           type="date"
                           value={editData.effectiveness_date || ""}
                           onChange={(e) => setEditData({...editData, effectiveness_date: e.target.value})}
-                          disabled={!isEditing}
                         />
                       ) : (
                         <p className="text-sm">
@@ -556,6 +733,18 @@ export function NonConformityDetailsModal({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden Print View */}
+      <div className="hidden">
+        <NCPrintView
+          ref={printRef}
+          nc={nonConformity}
+          immediateActions={immediateActions as any}
+          causeAnalysis={causeAnalysis as any}
+          actionPlans={actionPlans as any}
+          effectiveness={effectiveness as any}
+        />
+      </div>
 
       <NonConformityTimelineModal
         open={showTimeline}

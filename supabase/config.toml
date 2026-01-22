@@ -183,3 +183,9 @@ verify_jwt = false
 
 [functions.cnpj-pdf-extractor]
 verify_jwt = false
+
+[functions.nc-immediate-suggestions]
+verify_jwt = true
+
+[functions.nc-action-suggestions]
+verify_jwt = true
