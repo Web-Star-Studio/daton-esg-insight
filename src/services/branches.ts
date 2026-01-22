@@ -32,10 +32,31 @@ export interface BranchWithManager extends Branch {
   parent_branch?: { id: string; name: string; } | null;
 }
 
+// Helper para obter company_id do usuário atual
+const getUserCompanyId = async (): Promise<string | null> => {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData?.user?.id) return null;
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', userData.user.id)
+    .maybeSingle();
+    
+  return profile?.company_id || null;
+};
+
 export const getBranches = async () => {
+  const companyId = await getUserCompanyId();
+  if (!companyId) {
+    console.warn('getBranches: No company_id found for user');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('branches')
     .select('*')
+    .eq('company_id', companyId)
     .order('is_headquarters', { ascending: false })
     .order('name', { ascending: true });
 
@@ -44,13 +65,19 @@ export const getBranches = async () => {
 };
 
 export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => {
-  // Query sem self-join - evita problemas com RLS
+  const companyId = await getUserCompanyId();
+  if (!companyId) {
+    console.warn('getBranchesWithManager: No company_id found for user');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('branches')
     .select(`
       *,
       manager:employees(id, full_name)
     `)
+    .eq('company_id', companyId)
     .order('is_headquarters', { ascending: false })
     .order('name', { ascending: true });
 
@@ -69,9 +96,16 @@ export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => 
 };
 
 export const getHeadquarters = async (): Promise<Branch[]> => {
+  const companyId = await getUserCompanyId();
+  if (!companyId) {
+    console.warn('getHeadquarters: No company_id found for user');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('branches')
     .select('*')
+    .eq('company_id', companyId)
     .eq('is_headquarters', true)
     .order('name', { ascending: true });
 
