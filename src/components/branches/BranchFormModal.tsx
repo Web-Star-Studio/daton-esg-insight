@@ -88,7 +88,7 @@ const branchFormSchema = z.object({
   manager_id: z.string().optional(),
   is_headquarters: z.boolean().default(false),
   parent_branch_id: z.string().optional(),
-  status: z.string().default("Ativa"),
+  status: z.string().default("Ativo"),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
 });

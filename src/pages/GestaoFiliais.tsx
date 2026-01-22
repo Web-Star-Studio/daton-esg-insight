@@ -333,9 +333,9 @@ export default function GestaoFiliais() {
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={branch.status === "Ativa" ? "default" : "secondary"}
+                              variant={branch.status === "Ativo" || branch.status === "Ativa" ? "default" : "secondary"}
                               className={
-                                branch.status === "Ativa"
+                                branch.status === "Ativo" || branch.status === "Ativa"
                                   ? "bg-green-100 text-green-800 hover:bg-green-100"
                                   : ""
                               }
