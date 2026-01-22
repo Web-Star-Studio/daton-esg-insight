@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2 } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { unifiedToast } from "@/utils/unifiedToast";
 import { formatCep } from "@/utils/viaCep";
 import { parseSupabaseFunctionError } from "@/utils/supabaseFunctionError";
+
+interface GroupedBranches {
+  headquarters: BranchWithManager;
+  children: BranchWithManager[];
+}
+
+function groupBranchesByHeadquarters(branches: BranchWithManager[]) {
+  const hqs = branches.filter(b => b.is_headquarters);
+  const others = branches.filter(b => !b.is_headquarters);
+  
+  const groups: GroupedBranches[] = hqs.map(hq => ({
+    headquarters: hq,
+    children: others.filter(b => b.parent_branch_id === hq.id)
+  }));
+  
+  // Filiais independentes (sem parent_branch_id e não são matriz)
+  const independent = others.filter(b => !b.parent_branch_id);
+  
+  return { groups, independent };
+}
 
 export default function GestaoFiliais() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -155,6 +175,11 @@ export default function GestaoFiliais() {
     branch.city?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  const { groups, independent } = useMemo(() => 
+    groupBranchesByHeadquarters(filteredBranches), 
+    [filteredBranches]
+  );
+
   const handleEdit = (branch: BranchWithManager) => {
     setSelectedBranch(branch);
     setIsFormOpen(true);
@@ -173,6 +198,87 @@ export default function GestaoFiliais() {
     setSelectedBranch(null);
     setImportedData(null);
   };
+
+  const renderBranchRow = (branch: BranchWithManager, isChild = false) => (
+    <TableRow 
+      key={branch.id} 
+      className={branch.is_headquarters ? "bg-amber-50/50" : isChild ? "bg-muted/30" : ""}
+    >
+      <TableCell className="font-medium">
+        <div className={`flex items-center gap-2 ${isChild ? "pl-6" : ""}`}>
+          {branch.is_headquarters ? (
+            <Crown className="h-4 w-4 text-amber-600" />
+          ) : isChild ? (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <span className="text-xs">└</span>
+              <GitBranch className="h-3 w-3" />
+            </div>
+          ) : (
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          )}
+          {branch.name}
+          {branch.is_headquarters && (
+            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
+              Matriz
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>{branch.code || "-"}</TableCell>
+      <TableCell className="font-mono text-xs">
+        {branch.cnpj || "-"}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1 text-sm">
+          <MapPin className="h-3 w-3 text-muted-foreground" />
+          {branch.city && branch.state
+            ? `${branch.city}/${branch.state}`
+            : branch.city || "-"}
+        </div>
+      </TableCell>
+      <TableCell>
+        {branch.manager ? (
+          <div className="flex items-center gap-1 text-sm">
+            <User className="h-3 w-3 text-muted-foreground" />
+            {branch.manager.full_name}
+          </div>
+        ) : (
+          "-"
+        )}
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant={branch.status === "Ativo" || branch.status === "Ativa" ? "default" : "secondary"}
+          className={
+            branch.status === "Ativo" || branch.status === "Ativa"
+              ? "bg-green-100 text-green-800 hover:bg-green-100"
+              : ""
+          }
+        >
+          {branch.status}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleEdit(branch)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setBranchToDelete(branch)}
+            disabled={branch.is_headquarters}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -289,81 +395,23 @@ export default function GestaoFiliais() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredBranches.map((branch) => (
-                        <TableRow key={branch.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              {branch.parent_branch && (
-                                <GitBranch className="h-3 w-3 text-muted-foreground" />
-                              )}
-                              {branch.name}
-                              {branch.is_headquarters && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Matriz
-                                </Badge>
-                              )}
-                              {branch.parent_branch && (
-                                <span className="text-xs text-muted-foreground">
-                                  → {branch.parent_branch.name}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{branch.code || "-"}</TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {branch.cnpj || "-"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 text-sm">
-                              <MapPin className="h-3 w-3 text-muted-foreground" />
-                              {branch.city && branch.state
-                                ? `${branch.city}/${branch.state}`
-                                : branch.city || "-"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {branch.manager ? (
-                              <div className="flex items-center gap-1 text-sm">
-                                <User className="h-3 w-3 text-muted-foreground" />
-                                {branch.manager.full_name}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={branch.status === "Ativo" || branch.status === "Ativa" ? "default" : "secondary"}
-                              className={
-                                branch.status === "Ativo" || branch.status === "Ativa"
-                                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                  : ""
-                              }
-                            >
-                              {branch.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(branch)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setBranchToDelete(branch)}
-                                disabled={branch.is_headquarters}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
+                      {/* Render grouped branches by headquarters */}
+                      {groups.map((group) => (
+                        <>
+                          {renderBranchRow(group.headquarters)}
+                          {group.children.map((child) => renderBranchRow(child, true))}
+                        </>
+                      ))}
+                      
+                      {/* Independent branches section */}
+                      {independent.length > 0 && groups.length > 0 && (
+                        <TableRow className="bg-muted/20 border-t-2">
+                          <TableCell colSpan={7} className="py-2 text-xs font-medium text-muted-foreground">
+                            Filiais Independentes
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
+                      {independent.map((branch) => renderBranchRow(branch))}
                     </TableBody>
                   </Table>
                 </div>
