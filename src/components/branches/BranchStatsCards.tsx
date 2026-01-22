@@ -1,4 +1,4 @@
-import { Building2, CheckCircle2, XCircle, Crown } from "lucide-react";
+import { Building2, CheckCircle2, XCircle, Crown, GitBranch } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BranchWithManager } from "@/services/branches";
@@ -10,46 +10,53 @@ interface BranchStatsCardsProps {
 
 export function BranchStatsCards({ branches, isLoading }: BranchStatsCardsProps) {
   const totalBranches = branches.length;
-  const activeBranches = branches.filter((b) => b.status === "Ativa").length;
+  const headquartersCount = branches.filter((b) => b.is_headquarters).length;
+  const linkedBranches = branches.filter((b) => !b.is_headquarters && b.parent_branch_id).length;
+  const independentBranches = branches.filter((b) => !b.is_headquarters && !b.parent_branch_id).length;
   const inactiveBranches = branches.filter((b) => b.status === "Inativa").length;
-  const headquarters = branches.find((b) => b.is_headquarters);
 
   const stats = [
     {
-      title: "Total de Filiais",
+      title: "Total de Unidades",
       value: totalBranches,
       icon: Building2,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
     },
     {
-      title: "Filiais Ativas",
-      value: activeBranches,
-      icon: CheckCircle2,
+      title: "Matrizes",
+      value: headquartersCount,
+      icon: Crown,
+      color: "text-amber-600",
+      bgColor: "bg-amber-100",
+    },
+    {
+      title: "Filiais Vinculadas",
+      value: linkedBranches,
+      icon: GitBranch,
       color: "text-green-600",
       bgColor: "bg-green-100",
     },
     {
-      title: "Filiais Inativas",
-      value: inactiveBranches,
-      icon: XCircle,
-      color: "text-gray-600",
-      bgColor: "bg-gray-100",
+      title: "Filiais Independentes",
+      value: independentBranches,
+      icon: Building2,
+      color: "text-slate-600",
+      bgColor: "bg-slate-100",
     },
     {
-      title: "Matriz",
-      value: headquarters?.name || "Não definida",
-      icon: Crown,
-      color: "text-amber-600",
-      bgColor: "bg-amber-100",
-      isText: true,
+      title: "Inativas",
+      value: inactiveBranches,
+      icon: XCircle,
+      color: "text-red-600",
+      bgColor: "bg-red-100",
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+        {[...Array(5)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-4 w-24" />
@@ -65,7 +72,7 @@ export function BranchStatsCards({ branches, isLoading }: BranchStatsCardsProps)
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
@@ -79,7 +86,7 @@ export function BranchStatsCards({ branches, isLoading }: BranchStatsCardsProps)
               </div>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${stat.isText ? "text-base" : ""}`}>
+              <div className="text-2xl font-bold">
                 {stat.value}
               </div>
             </CardContent>

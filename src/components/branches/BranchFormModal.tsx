@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager, getHeadquarters, Branch } from "@/services/branches";
 import { useCompanyEmployees } from "@/hooks/data/useCompanyEmployees";
-import { Loader2, MapPin, Search, Building2, FileSearch, FileUp } from "lucide-react";
+import { Loader2, MapPin, Search, Building2, FileSearch, FileUp, GitBranch } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
 import { unifiedToast } from "@/utils/unifiedToast";
@@ -903,9 +903,9 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                   <div className="space-y-0.5">
-                    <FormLabel>É Matriz?</FormLabel>
+                    <FormLabel>Definir como Matriz</FormLabel>
                     <FormDescription className="text-xs">
-                      Marque se esta é a sede principal
+                      Você pode ter múltiplas matrizes. Matrizes podem ter filiais vinculadas.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -926,8 +926,8 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Matriz Vinculada
+                      <GitBranch className="h-4 w-4" />
+                      Vincular a uma Matriz
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || "none"}>
                       <FormControl>
@@ -945,7 +945,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                       </SelectContent>
                     </Select>
                     <FormDescription className="text-xs">
-                      Vincule esta filial a uma matriz existente
+                      Opcional: vincule esta unidade a uma das matrizes cadastradas
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
