@@ -340,7 +340,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
       manager_id: "",
       is_headquarters: false,
       parent_branch_id: "",
-      status: "Ativa",
+      status: "Ativo",
       latitude: null,
       longitude: null,
     },
@@ -393,7 +393,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
         manager_id: "",
         is_headquarters: false,
         parent_branch_id: "",
-        status: "Ativa",
+        status: "Ativo",
         latitude: null,
         longitude: null,
       });
