@@ -253,12 +253,12 @@ export default function NaoConformidades() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "open": 
-      case "Aberta": return "Pendente";
+      case "Aberta": return "Aberta";
       case "in_progress":
       case "Em Análise": 
-      case "Em Correção": return "Em Andamento";
+      case "Em Correção": return "Em Tratamento";
       case "closed":
-      case "Fechada": return "Concluída";
+      case "Fechada": return "Encerrada";
       case "cancelled": return "Cancelada";
       default: return status;
     }
@@ -399,9 +399,12 @@ export default function NaoConformidades() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Auditoria Interna">Auditoria Interna</SelectItem>
+                      <SelectItem value="Auditoria Externa">Auditoria Externa</SelectItem>
                       <SelectItem value="Cliente">Cliente</SelectItem>
                       <SelectItem value="Fornecedor">Fornecedor</SelectItem>
                       <SelectItem value="Processo">Processo</SelectItem>
+                      <SelectItem value="Inspeção">Inspeção</SelectItem>
+                      <SelectItem value="Reclamação">Reclamação</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
