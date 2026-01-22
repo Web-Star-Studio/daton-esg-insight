@@ -68,8 +68,46 @@ export default function NaoConformidades() {
     source: "Processo",
     detected_date: new Date().toISOString().split('T')[0],
     damage_level: "Baixo",
-    responsible_user_id: ""
+    responsible_user_id: "",
+    organizational_unit_id: "",
+    sector: ""
   });
+
+  // Buscar filiais da empresa
+  const { data: branches } = useQuery({
+    queryKey: ["branches-for-nc"],
+    queryFn: async () => {
+      const userAndCompany = await getUserAndCompany();
+      if (!userAndCompany?.company_id) return [];
+      const { data, error } = await supabase
+        .from("branches")
+        .select("id, name, is_headquarters")
+        .eq("company_id", userAndCompany.company_id)
+        .eq("status", "Ativo")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Lista fixa de setores
+  const SECTORS = [
+    "Operacional",
+    "Frota", 
+    "Administrativo",
+    "Lavagem",
+    "Abastecimento",
+    "Manutenção",
+    "Logística",
+    "Qualidade",
+    "Segurança",
+    "RH",
+    "Financeiro",
+    "Compras",
+    "TI",
+    "Comercial"
+  ];
 
   // Etapa 3: Função de prefetch
   const prefetchNCDetails = (ncId: string) => {
@@ -159,6 +197,8 @@ export default function NaoConformidades() {
         detected_date: ncData.detected_date,
         damage_level: ncData.damage_level,
         responsible_user_id: ncData.responsible_user_id || null,
+        organizational_unit_id: ncData.organizational_unit_id || null,
+        sector: ncData.sector || null,
         nc_number: ncNumber,
         company_id: profile.company_id
       };
@@ -184,7 +224,9 @@ export default function NaoConformidades() {
         source: "Processo",
         detected_date: new Date().toISOString().split('T')[0],
         damage_level: "Baixo",
-        responsible_user_id: ""
+        responsible_user_id: "",
+        organizational_unit_id: "",
+        sector: ""
       });
     },
     onError: (error: any) => {
@@ -341,6 +383,49 @@ export default function NaoConformidades() {
                     placeholder="Ex: Qualidade, Segurança"
                     disabled={createNCMutation.isPending}
                   />
+                </div>
+              </div>
+
+              {/* Nova linha: Unidade e Setor */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="organizational_unit_id">Unidade</Label>
+                  <Select
+                    value={newNCData.organizational_unit_id}
+                    onValueChange={(value) => setNewNCData({...newNCData, organizational_unit_id: value})}
+                    disabled={createNCMutation.isPending}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a unidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.is_headquarters ? "🏢 " : "🏭 "}
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="sector">Setor</Label>
+                  <Select
+                    value={newNCData.sector}
+                    onValueChange={(value) => setNewNCData({...newNCData, sector: value})}
+                    disabled={createNCMutation.isPending}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTORS.map((sector) => (
+                        <SelectItem key={sector} value={sector}>
+                          {sector}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               

@@ -16868,6 +16868,7 @@ export type Database = {
           responsible_user_id: string | null
           revision_number: number | null
           root_cause_analysis: string | null
+          sector: string | null
           severity: string
           similar_nc_ids: Json | null
           source: string | null
@@ -16910,6 +16911,7 @@ export type Database = {
           responsible_user_id?: string | null
           revision_number?: number | null
           root_cause_analysis?: string | null
+          sector?: string | null
           severity: string
           similar_nc_ids?: Json | null
           source?: string | null
@@ -16952,6 +16954,7 @@ export type Database = {
           responsible_user_id?: string | null
           revision_number?: number | null
           root_cause_analysis?: string | null
+          sector?: string | null
           severity?: string
           similar_nc_ids?: Json | null
           source?: string | null
