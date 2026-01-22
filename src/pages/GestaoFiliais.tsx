@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, lazy, Suspense } from "react";
 import { Building2, Plus, MapPin, User, Map, List, GitBranch, FileUp, Loader2, Crown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +32,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBranchesWithManager, useDeleteBranch, BranchWithManager } from "@/services/branches";
 import { BranchFormModal, BranchImportData } from "@/components/branches/BranchFormModal";
-import { BranchesMap } from "@/components/branches/BranchesMap";
+// Lazy load do mapa para evitar problemas com react-leaflet
+const BranchesMap = lazy(() => 
+  import("@/components/branches/BranchesMap").then(module => ({
+    default: module.BranchesMap
+  }))
+);
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, Trash2, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -527,7 +532,13 @@ export default function GestaoFiliais() {
               )}
             </>
           ) : (
-            <BranchesMap branches={branches || []} />
+            <Suspense fallback={
+              <div className="h-[400px] flex items-center justify-center bg-muted/30 rounded-lg border">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            }>
+              <BranchesMap branches={branches || []} />
+            </Suspense>
           )}
         </CardContent>
       </Card>

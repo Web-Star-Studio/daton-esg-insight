@@ -62,10 +62,6 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2">
-                <Button onClick={this.handleRetry} variant="outline" className="w-full">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Tentar Novamente
-                </Button>
                 <Button onClick={this.handleReload} variant="outline" className="w-full">
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Recarregar Página
