@@ -37,6 +37,7 @@ import {
 import { nonConformityService, NCDashboardStats, NonConformity, NCTask } from "@/services/nonConformityService";
 import { format, differenceInDays, isAfter, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isNCClosed } from "@/utils/ncStatusUtils";
 
 // Cores por etapa
 const STAGE_COLORS = {
@@ -107,14 +108,14 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="NCs Abertas"
-          value={stats?.total_open || nonConformities.filter(nc => nc.status !== "Fechada").length}
+          value={stats?.total_open || nonConformities.filter(nc => !isNCClosed(nc.status)).length}
           icon={<AlertCircle className="h-5 w-5" />}
           trend={calculateTrend(nonConformities, "open")}
           color="orange"
         />
         <StatCard
-          title="NCs Fechadas"
-          value={stats?.total_closed || nonConformities.filter(nc => nc.status === "Fechada").length}
+          title="NCs Encerradas"
+          value={stats?.total_closed || nonConformities.filter(nc => isNCClosed(nc.status)).length}
           icon={<CheckCircle className="h-5 w-5" />}
           trend={calculateTrend(nonConformities, "closed")}
           color="green"
@@ -412,13 +413,13 @@ export function NCAdvancedDashboard({ nonConformities }: NCAdvancedDashboardProp
       {/* Linha 5: Cards de Contadores por Severidade */}
       <div className="grid gap-4 md:grid-cols-4">
         {["Crítica", "Alta", "Média", "Baixa"].map((severity) => {
-          const count = nonConformities.filter(nc => nc.severity === severity && nc.status !== "Fechada").length;
+          const count = nonConformities.filter(nc => nc.severity === severity && !isNCClosed(nc.status)).length;
           return (
             <SeverityCard 
               key={severity}
               severity={severity}
               count={count}
-              total={nonConformities.filter(nc => nc.status !== "Fechada").length}
+              total={nonConformities.filter(nc => !isNCClosed(nc.status)).length}
             />
           );
         })}

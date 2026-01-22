@@ -47,12 +47,24 @@ export function FiveWhysAnalysis({ data, onChange, rootCause, onRootCauseChange 
     const newData = [...data];
     newData[index] = { ...newData[index], [field]: value };
     
-    // Se a resposta mudou, atualizar a pergunta do próximo "por quê"
-    if (field === "resposta" && typeof value === "string" && index < newData.length - 1) {
-      const nextQuestion = value.trim() 
-        ? `Por que ${value.trim().toLowerCase().replace(/\.$/, "")}?`
-        : "Por que isso aconteceu?";
-      newData[index + 1] = { ...newData[index + 1], pergunta: nextQuestion };
+    // Se a resposta mudou, atualizar a pergunta de TODOS os "por quês" subsequentes em cascata
+    if (field === "resposta" && typeof value === "string") {
+      // Atualizar o próximo baseado nesta resposta
+      if (index < newData.length - 1) {
+        const nextQuestion = value.trim() 
+          ? `Por que ${value.trim().toLowerCase().replace(/\.$/, "")}?`
+          : "Por que isso aconteceu?";
+        newData[index + 1] = { ...newData[index + 1], pergunta: nextQuestion };
+      }
+      
+      // Propagar cascata: cada item subsequente usa a resposta do anterior
+      for (let i = index + 1; i < newData.length - 1; i++) {
+        const prevAnswer = newData[i].resposta;
+        const cascadeQuestion = prevAnswer && prevAnswer.trim()
+          ? `Por que ${prevAnswer.trim().toLowerCase().replace(/\.$/, "")}?`
+          : "Por que isso aconteceu?";
+        newData[i + 1] = { ...newData[i + 1], pergunta: cascadeQuestion };
+      }
     }
     
     // If marking as root cause, update the main root cause field
@@ -121,18 +133,42 @@ export function FiveWhysAnalysis({ data, onChange, rootCause, onRootCauseChange 
                 />
               </div>
 
+              {/* Contexto da resposta anterior */}
+              {index > 0 && data[index - 1].resposta && (
+                <div className="p-2 bg-amber-50 dark:bg-amber-950/50 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <span className="font-medium">Baseado na resposta anterior:</span>
+                    <br />
+                    <span className="italic break-words">"{data[index - 1].resposta}"</span>
+                  </p>
+                </div>
+              )}
+
               <div>
                 <Label className="text-sm">Resposta</Label>
                 <Textarea
                   value={item.resposta}
                   onChange={(e) => updateWhy(index, "resposta", e.target.value)}
                   placeholder="Porque..."
-                  rows={4}
-                  className="mt-1 min-h-[80px] resize-y"
+                  rows={5}
+                  className="mt-1 min-h-[120px] resize-y"
                 />
-                {item.resposta && (
-                  <p className="text-xs text-muted-foreground mt-1 truncate max-w-full" title={item.resposta}>
-                    💡 Esta resposta será usada para formar o próximo "Por quê?"
+                
+                {/* Preview da próxima pergunta */}
+                {item.resposta && index < data.length - 1 && (
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/50 rounded border border-blue-200 dark:border-blue-800">
+                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                      Próxima pergunta será:
+                    </span>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 break-words">
+                      "Por que {item.resposta.trim().toLowerCase().replace(/\.$/, "")}?"
+                    </p>
+                  </div>
+                )}
+                
+                {item.resposta && index >= data.length - 1 && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Adicione mais um "Por quê?" para continuar a análise
                   </p>
                 )}
               </div>
@@ -205,14 +241,20 @@ export function FiveWhysAnalysis({ data, onChange, rootCause, onRootCauseChange 
       {data.length > 0 && (
         <div className="p-4 bg-muted rounded-lg">
           <h5 className="font-medium mb-2">Resumo da Análise</h5>
-          <div className="flex gap-4 text-sm">
+          <div className="flex flex-col gap-2 text-sm">
             <span>
               <strong>{data.length}</strong> níveis de análise
             </span>
-            <span>
-              Causa raiz identificada: {" "}
-              <strong className="text-primary">
-                {data.find(d => d.is_root_cause)?.resposta || "Não definida"}
+            <span className="block">
+              Causa raiz identificada:{" "}
+              <strong className="text-primary break-words">
+                {(() => {
+                  const rootCauseAnswer = data.find(d => d.is_root_cause)?.resposta;
+                  if (!rootCauseAnswer) return "Não definida";
+                  return rootCauseAnswer.length > 150 
+                    ? `${rootCauseAnswer.slice(0, 150)}...` 
+                    : rootCauseAnswer;
+                })()}
               </strong>
             </span>
           </div>

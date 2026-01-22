@@ -39,6 +39,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getNCStatusLabel, isNCClosed, STATUS_CHART_COLORS } from "@/utils/ncStatusUtils";
 
 export function NonConformitiesAdvancedDashboard() {
   const navigate = useNavigate();
@@ -126,9 +127,10 @@ export function NonConformitiesAdvancedDashboard() {
         return acc;
       }, {} as Record<string, number>);
 
-      // Stats by status
+      // Stats by status - NORMALIZADO para português
       const byStatus = nonConformities.reduce((acc, nc) => {
-        acc[nc.status] = (acc[nc.status] || 0) + 1;
+        const normalizedStatus = getNCStatusLabel(nc.status);
+        acc[normalizedStatus] = (acc[normalizedStatus] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
@@ -154,24 +156,24 @@ export function NonConformitiesAdvancedDashboard() {
           month: monthName,
           total: monthNCs.length,
           criticas: monthNCs.filter(nc => nc.severity === 'Crítica').length,
-          fechadas: monthNCs.filter(nc => nc.status === 'Fechada').length,
+          encerradas: monthNCs.filter(nc => isNCClosed(nc.status)).length,
         });
       }
 
       // Resolution rate
       const totalNCs = nonConformities.length;
-      const resolvedNCs = nonConformities.filter(nc => nc.status === 'Fechada').length;
+      const resolvedNCs = nonConformities.filter(nc => isNCClosed(nc.status)).length;
       const resolutionRate = totalNCs > 0 ? (resolvedNCs / totalNCs) * 100 : 0;
 
       // Overdue NCs
       const overdueNCs = nonConformities.filter(nc => {
-        if (!nc.due_date || nc.status === 'Fechada') return false;
+        if (!nc.due_date || isNCClosed(nc.status)) return false;
         return new Date(nc.due_date) < now;
       });
 
       // Average resolution time (in days)
       const resolvedNCsWithDates = nonConformities.filter(nc => 
-        nc.status === 'Fechada' && nc.completion_date
+        isNCClosed(nc.status) && nc.completion_date
       );
       const avgResolutionTime = resolvedNCsWithDates.length > 0
         ? resolvedNCsWithDates.reduce((sum, nc) => {
@@ -190,7 +192,7 @@ export function NonConformitiesAdvancedDashboard() {
           resolutionRate,
           overdue: overdueNCs.length,
           avgResolutionTime: Math.round(avgResolutionTime),
-          critical: nonConformities.filter(nc => nc.severity === 'Crítica' && nc.status !== 'Fechada').length
+          critical: nonConformities.filter(nc => nc.severity === 'Crítica' && !isNCClosed(nc.status)).length
         },
         charts: {
           severity: Object.entries(bySeverity).map(([key, value]) => ({ name: key, value })),
@@ -212,13 +214,7 @@ export function NonConformitiesAdvancedDashboard() {
       'Média': '#eab308',
       'Baixa': '#22c55e'
     },
-    status: {
-      'Aberta': '#ef4444',
-      'Em Análise': '#eab308',
-      'Em Correção': '#3b82f6',
-      'Fechada': '#22c55e',
-      'Aprovada': '#8b5cf6'
-    }
+    status: STATUS_CHART_COLORS
   };
 
   if (isLoading) {
