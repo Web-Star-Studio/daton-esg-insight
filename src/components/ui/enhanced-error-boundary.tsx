@@ -57,7 +57,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
               </div>
               <CardTitle>Algo deu errado</CardTitle>
               <CardDescription>
-                Ocorreu um erro inesperado. Você pode tentar novamente ou voltar ao início.
+                Ocorreu um erro inesperado. Recarregue a página ou volte ao início.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
