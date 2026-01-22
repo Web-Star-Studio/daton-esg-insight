@@ -527,7 +527,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
       phone: data.phone || undefined,
       manager_id: data.manager_id || undefined,
       is_headquarters: data.is_headquarters,
-      parent_branch_id: data.is_headquarters ? null : (data.parent_branch_id || null),
+      parent_branch_id: data.is_headquarters ? null : (data.parent_branch_id === "none" || !data.parent_branch_id ? null : data.parent_branch_id),
       status: data.status,
       latitude: data.latitude ?? undefined,
       longitude: data.longitude ?? undefined,
@@ -929,14 +929,14 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                       <Building2 className="h-4 w-4" />
                       Matriz Vinculada
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value || "none"}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={isLoadingHeadquarters ? "Carregando..." : "Selecione a matriz (opcional)"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma (filial independente)</SelectItem>
+                        <SelectItem value="none">Nenhuma (filial independente)</SelectItem>
                         {headquarters?.filter(h => h.id !== branch?.id).map((hq) => (
                           <SelectItem key={hq.id} value={hq.id}>
                             {hq.name}
