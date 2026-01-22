@@ -829,13 +829,31 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gerente Responsável</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                      disabled={!employees?.length && !isLoadingEmployees}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={isLoadingEmployees ? "Carregando..." : "Selecione um funcionário"} />
+                          <SelectValue 
+                            placeholder={
+                              isLoadingEmployees 
+                                ? "Carregando..." 
+                                : employees?.length 
+                                  ? "Selecione um funcionário" 
+                                  : "Nenhum funcionário disponível"
+                            } 
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        {employees?.length === 0 && (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            <p>Nenhum funcionário cadastrado.</p>
+                            <p className="mt-1">Cadastre funcionários primeiro em Gestão de Pessoas.</p>
+                          </div>
+                        )}
                         {employees?.map((employee) => (
                           <SelectItem key={employee.id} value={employee.id}>
                             {employee.full_name}
@@ -844,6 +862,11 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                         ))}
                       </SelectContent>
                     </Select>
+                    {!isLoadingEmployees && employees?.length === 0 && (
+                      <FormDescription className="text-amber-600">
+                        Cadastre funcionários em "Gestão de Pessoas" para selecioná-los como gerentes.
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
