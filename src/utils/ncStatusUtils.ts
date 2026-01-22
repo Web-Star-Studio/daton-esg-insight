@@ -34,6 +34,16 @@ const STATUS_COLORS: Record<string, string> = {
   'Aprovada': 'bg-purple-100 text-purple-800 border-purple-200',
 };
 
+// Cores para gráficos (Recharts) - valores HEX
+export const STATUS_CHART_COLORS: Record<string, string> = {
+  'Aberta': '#ef4444',
+  'Em Tratamento': '#eab308',
+  'Encerrada': '#22c55e',
+  'Pendente': '#f97316',
+  'Cancelada': '#6b7280',
+  'Aprovada': '#8b5cf6'
+};
+
 // Ícones para status (nomes para uso com Lucide)
 const STATUS_ICONS: Record<string, string> = {
   'Aberta': 'AlertCircle',

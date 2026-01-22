@@ -23,6 +23,7 @@ import { NCAdvancedDashboard } from "@/components/non-conformity";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getNCStatusLabel, getNCStatusColor, isNCOpen, isNCClosed } from "@/utils/ncStatusUtils";
 
 interface NonConformity {
   id: string;
@@ -237,42 +238,17 @@ export default function NaoConformidades() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open": 
-      case "Aberta": return "bg-red-100 text-red-800";
-      case "in_progress":
-      case "Em Análise": 
-      case "Em Correção": return "bg-yellow-100 text-yellow-800";
-      case "closed":
-      case "Fechada": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "open": 
-      case "Aberta": return "Aberta";
-      case "in_progress":
-      case "Em Análise": 
-      case "Em Correção": return "Em Tratamento";
-      case "closed":
-      case "Fechada": return "Encerrada";
-      case "cancelled": return "Cancelada";
-      default: return status;
-    }
-  };
+  // Usando funções do utilitário ncStatusUtils para padronização
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "open":
-      case "Aberta": return <AlertCircle className="h-4 w-4" />;
-      case "in_progress":
-      case "Em Análise": 
-      case "Em Correção": return <Clock className="h-4 w-4" />;
-      case "closed":
-      case "Fechada": return <CheckCircle className="h-4 w-4" />;
+    const normalizedStatus = getNCStatusLabel(status);
+    switch (normalizedStatus) {
+      case "Aberta":
+      case "Pendente": return <AlertCircle className="h-4 w-4" />;
+      case "Em Tratamento": return <Clock className="h-4 w-4" />;
+      case "Encerrada":
+      case "Aprovada": return <CheckCircle className="h-4 w-4" />;
+      case "Cancelada": return <AlertCircle className="h-4 w-4" />;
       default: return <AlertCircle className="h-4 w-4" />;
     }
   };
@@ -307,11 +283,11 @@ export default function NaoConformidades() {
     );
   }
 
-  // Stats calculations
+  // Stats calculations - usando funções normalizadas
   const totalNCs = nonConformities?.length || 0;
-  const openNCs = nonConformities?.filter(nc => nc.status === "Aberta").length || 0;
-  const criticalNCs = nonConformities?.filter(nc => nc.severity === "Crítica").length || 0;
-  const closedNCs = nonConformities?.filter(nc => nc.status === "Fechada").length || 0;
+  const openNCs = nonConformities?.filter(nc => isNCOpen(nc.status)).length || 0;
+  const criticalNCs = nonConformities?.filter(nc => nc.severity === "Crítica" && !isNCClosed(nc.status)).length || 0;
+  const closedNCs = nonConformities?.filter(nc => isNCClosed(nc.status)).length || 0;
 
   return (
     <>
@@ -532,9 +508,9 @@ export default function NaoConformidades() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(nc.status)}>
+                      <Badge className={getNCStatusColor(nc.status)}>
                         {getStatusIcon(nc.status)}
-                        <span className="ml-1">{getStatusLabel(nc.status)}</span>
+                        <span className="ml-1">{getNCStatusLabel(nc.status)}</span>
                       </Badge>
                     </TableCell>
                     <TableCell>
