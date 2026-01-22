@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateBranch, useUpdateBranch, BranchWithManager, getHeadquarters, Branch } from "@/services/branches";
-import { useCompanyUsers } from "@/hooks/data/useCompanyUsers";
+import { useCompanyEmployees } from "@/hooks/data/useCompanyEmployees";
 import { Loader2, MapPin, Search, Building2, FileSearch, FileUp } from "lucide-react";
 import { geocodeAddress } from "@/utils/geocoding";
 import { fetchAddressByCep, formatCep, isValidCep } from "@/utils/viaCep";
@@ -121,7 +121,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
-  const { data: users, isLoading: isLoadingUsers } = useCompanyUsers();
+  const { data: employees, isLoading: isLoadingEmployees } = useCompanyEmployees();
   const { data: headquarters, isLoading: isLoadingHeadquarters } = useQuery({
     queryKey: ['branches', 'headquarters'],
     queryFn: getHeadquarters,
@@ -832,13 +832,14 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={isLoadingUsers ? "Carregando..." : "Selecione"} />
+                          <SelectValue placeholder={isLoadingEmployees ? "Carregando..." : "Selecione um funcionário"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {users?.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.full_name}
+                        {employees?.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.full_name}
+                            {employee.position && ` - ${employee.position}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
