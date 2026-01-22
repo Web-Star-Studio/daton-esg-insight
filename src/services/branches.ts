@@ -91,7 +91,7 @@ export const getBranchesWithManager = async (): Promise<BranchWithManager[]> => 
     .from('branches')
     .select(`
       *,
-      manager:employees(id, full_name)
+      manager:employees!branches_manager_id_fkey(id, full_name)
     `)
     .eq('company_id', companyId)
     .order('is_headquarters', { ascending: false })
