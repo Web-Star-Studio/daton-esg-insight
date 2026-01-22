@@ -32,10 +32,26 @@ export interface BranchWithManager extends Branch {
   parent_branch?: { id: string; name: string; } | null;
 }
 
-// Helper para obter company_id do usuário atual
+// Helper para obter company_id do usuário atual com retry para aguardar sessão
 const getUserCompanyId = async (): Promise<string | null> => {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData?.user?.id) return null;
+  let retries = 3;
+  let userData = null;
+  
+  // Retry para aguardar restauração da sessão após F5
+  while (retries > 0) {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user?.id) {
+      userData = data;
+      break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 150));
+    retries--;
+  }
+  
+  if (!userData?.user?.id) {
+    console.warn('[branches] getUserCompanyId: No authenticated user after retries');
+    return null;
+  }
   
   const { data: profile } = await supabase
     .from('profiles')
@@ -160,6 +176,9 @@ export const useBranches = () => {
   return useQuery({
     queryKey: ['branches'],
     queryFn: getBranches,
+    retry: 2,
+    retryDelay: 500,
+    staleTime: 1000 * 60 * 2, // 2 minutos
   });
 };
 
@@ -167,6 +186,9 @@ export const useBranchesWithManager = () => {
   return useQuery({
     queryKey: ['branches', 'with-manager'],
     queryFn: getBranchesWithManager,
+    retry: 2,
+    retryDelay: 500,
+    staleTime: 1000 * 60 * 2, // 2 minutos
   });
 };
 
