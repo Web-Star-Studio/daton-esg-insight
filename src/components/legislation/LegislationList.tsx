@@ -89,7 +89,7 @@ export const LegislationList: React.FC<LegislationListProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead className="w-[120px]">Tipo/Número</TableHead>
-              <TableHead>Título</TableHead>
+              <TableHead>Ementa</TableHead>
               <TableHead className="w-[120px]">Macrotema</TableHead>
               <TableHead className="w-[100px]">Jurisdição</TableHead>
               <TableHead className="w-[100px]">Aplicabilidade</TableHead>
@@ -116,8 +116,8 @@ export const LegislationList: React.FC<LegislationListProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="max-w-md truncate" title={legislation.title}>
-                    {legislation.title}
+                  <div className="max-w-md truncate" title={legislation.summary || legislation.title}>
+                    {legislation.summary || legislation.title || "-"}
                   </div>
                   {legislation.issuing_body && (
                     <span className="text-xs text-muted-foreground">
