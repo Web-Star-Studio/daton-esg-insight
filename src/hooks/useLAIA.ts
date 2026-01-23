@@ -91,6 +91,23 @@ export function useLAIAAssessments(filters?: Parameters<typeof laiaService.getLA
   });
 }
 
+// ============ Branch Stats (for unit selection page) ============
+
+export interface LAIABranchStat {
+  branch_id: string;
+  total: number;
+  criticos: number;
+  significativos: number;
+  nao_significativos: number;
+}
+
+export function useLAIABranchStats() {
+  return useQuery({
+    queryKey: ["laia-branch-stats"],
+    queryFn: laiaService.getLAIABranchStats,
+  });
+}
+
 export function useLAIAAssessment(id: string | undefined) {
   return useQuery({
     queryKey: ["laia-assessment", id],
@@ -175,9 +192,9 @@ export function useDeleteLAIAAssessment() {
 
 // ============ Dashboard Stats ============
 
-export function useLAIADashboardStats() {
+export function useLAIADashboardStats(branchId?: string) {
   return useQuery({
-    queryKey: ["laia-dashboard-stats"],
-    queryFn: laiaService.getLAIADashboardStats,
+    queryKey: ["laia-dashboard-stats", branchId],
+    queryFn: () => laiaService.getLAIADashboardStats(branchId),
   });
 }

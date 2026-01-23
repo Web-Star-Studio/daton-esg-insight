@@ -67,6 +67,7 @@ export interface LAIAAssessment {
 }
 
 export interface LAIAAssessmentFormData {
+  branch_id?: string;
   sector_id: string;
   activity_operation: string;
   environmental_aspect: string;

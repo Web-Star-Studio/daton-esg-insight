@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LAIADashboard } from "@/components/laia/LAIADashboard";
 import { LAIASectorManager } from "@/components/laia/LAIASectorManager";
 import { LAIAAssessmentTable } from "@/components/laia/LAIAAssessmentTable";
 import { LAIAAssessmentForm } from "@/components/laia/LAIAAssessmentForm";
 import { LAIAAssessmentDetail } from "@/components/laia/LAIAAssessmentDetail";
 import { LAIAImportWizard } from "@/components/laia/LAIAImportWizard";
+import { useBranches } from "@/services/branches";
 import { 
   Leaf, 
   Plus, 
@@ -15,15 +19,20 @@ import {
   FileSpreadsheet, 
   Building2,
   ArrowLeft,
-  Upload
+  Upload,
+  ChevronRight
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import type { LAIAAssessment } from "@/types/laia";
 
 type ViewMode = "list" | "create" | "edit";
 
-export default function LAIAAssessmentPage() {
+export default function LAIAUnidadePage() {
+  const { branchId } = useParams<{ branchId: string }>();
   const navigate = useNavigate();
+  
+  const { data: branches, isLoading: branchLoading } = useBranches();
+  const branch = branches?.find(b => b.id === branchId);
+
   const [activeTab, setActiveTab] = useState("dashboard");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedAssessment, setSelectedAssessment] = useState<LAIAAssessment | null>(null);
@@ -46,35 +55,81 @@ export default function LAIAAssessmentPage() {
     setActiveTab("assessments");
   };
 
-  const handleBack = () => {
-    navigate(-1);
-  };
+  if (branchLoading) {
+    return (
+      <div className="container mx-auto py-6 space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (!branch) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center py-12">
+          <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Unidade não encontrada</h2>
+          <p className="text-muted-foreground mb-4">
+            A unidade solicitada não existe ou foi removida.
+          </p>
+          <Button onClick={() => navigate("/laia")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para seleção de unidades
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <Helmet>
-        <title>LAIA - Aspectos e Impactos Ambientais | Plataforma Daton</title>
+        <title>LAIA - {branch.name} | Plataforma Daton</title>
         <meta 
           name="description" 
-          content="Levantamento e Avaliação dos Aspectos e Impactos Ambientais" 
+          content={`Aspectos e Impactos Ambientais - ${branch.name}`} 
         />
       </Helmet>
 
       <div className="container mx-auto py-6 space-y-6">
-        {/* Header */}
+        {/* Breadcrumb & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleBack}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Leaf className="h-6 w-6 text-green-600" />
+          <div className="space-y-2">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Link 
+                to="/laia" 
+                className="hover:text-foreground transition-colors"
+              >
                 LAIA
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Levantamento e Avaliação dos Aspectos e Impactos Ambientais
-              </p>
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+              <span className="text-foreground font-medium">{branch.name}</span>
+            </nav>
+            
+            {/* Title */}
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/laia")}
+                className="shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <Leaf className="h-6 w-6 text-green-600" />
+                  {branch.name}
+                  {branch.is_headquarters && (
+                    <Badge variant="secondary" className="ml-2">Matriz</Badge>
+                  )}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Levantamento e Avaliação dos Aspectos e Impactos Ambientais
+                </p>
+              </div>
             </div>
           </div>
 
@@ -95,6 +150,7 @@ export default function LAIAAssessmentPage() {
         {/* Main Content */}
         {viewMode === "create" ? (
           <LAIAAssessmentForm 
+            branchId={branchId!}
             onSuccess={handleCreateSuccess}
             onCancel={() => setViewMode("list")}
           />
@@ -123,11 +179,12 @@ export default function LAIAAssessmentPage() {
             </TabsList>
 
             <TabsContent value="dashboard" className="mt-6">
-              <LAIADashboard />
+              <LAIADashboard branchId={branchId} />
             </TabsContent>
 
             <TabsContent value="assessments" className="mt-6">
               <LAIAAssessmentTable 
+                branchId={branchId}
                 onView={handleView}
                 onEdit={handleEdit}
               />
@@ -154,6 +211,7 @@ export default function LAIAAssessmentPage() {
         <LAIAImportWizard
           open={importOpen}
           onClose={() => setImportOpen(false)}
+          branchId={branchId}
         />
       </div>
     </>

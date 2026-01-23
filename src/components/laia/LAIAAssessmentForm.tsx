@@ -45,6 +45,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 interface LAIAAssessmentFormProps {
+  branchId: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -81,13 +82,16 @@ const defaultFormData: LAIAAssessmentFormData = {
   notes: "",
 };
 
-export function LAIAAssessmentForm({ onSuccess, onCancel }: LAIAAssessmentFormProps) {
+export function LAIAAssessmentForm({ branchId, onSuccess, onCancel }: LAIAAssessmentFormProps) {
   const { toast } = useToast();
   const { data: sectors } = useLAIASectors();
   const createMutation = useCreateLAIAAssessment();
   
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<LAIAAssessmentFormData>(defaultFormData);
+  const [formData, setFormData] = useState<LAIAAssessmentFormData>({
+    ...defaultFormData,
+    branch_id: branchId,
+  });
 
   // Calculated values
   const consequenceScore = calculateConsequenceScore(formData.scope, formData.severity);
