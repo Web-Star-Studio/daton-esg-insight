@@ -13,7 +13,17 @@ import { useLegislationStats } from "@/hooks/data/useLegislations";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 
-export const LegislationKPIs: React.FC = () => {
+interface KpiFilter {
+  applicability?: string;
+  status?: string;
+  type?: "alerts" | "all" | "pending";
+}
+
+interface LegislationKPIsProps {
+  onKpiClick?: (filter: KpiFilter) => void;
+}
+
+export const LegislationKPIs: React.FC<LegislationKPIsProps> = ({ onKpiClick }) => {
   const { data: stats, isLoading } = useLegislationStats();
 
   if (isLoading) {
@@ -53,6 +63,7 @@ export const LegislationKPIs: React.FC = () => {
       color: "text-primary",
       bgColor: "bg-primary/10",
       progress: null,
+      filter: { type: "all" as const },
     },
     {
       title: "Reais",
@@ -63,6 +74,7 @@ export const LegislationKPIs: React.FC = () => {
       bgColor: "bg-pink-100 dark:bg-pink-900/30",
       progress: realPercentage,
       progressColor: "bg-pink-500",
+      filter: { applicability: "real" },
     },
     {
       title: "Conformes",
@@ -73,6 +85,7 @@ export const LegislationKPIs: React.FC = () => {
       bgColor: "bg-green-100 dark:bg-green-900/30",
       progress: conformePercentage,
       progressColor: "bg-green-500",
+      filter: { status: "conforme" },
     },
     {
       title: "Adequação",
@@ -82,6 +95,7 @@ export const LegislationKPIs: React.FC = () => {
       color: "text-orange-600",
       bgColor: "bg-orange-100 dark:bg-orange-900/30",
       progress: null,
+      filter: { status: "adequacao" },
     },
     {
       title: "Plano de Ação",
@@ -91,6 +105,7 @@ export const LegislationKPIs: React.FC = () => {
       color: "text-red-600",
       bgColor: "bg-red-100 dark:bg-red-900/30",
       progress: null,
+      filter: { status: "plano_acao" },
     },
     {
       title: "Pendentes",
@@ -101,6 +116,7 @@ export const LegislationKPIs: React.FC = () => {
       bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
       progress: pendingPercentage,
       progressColor: "bg-yellow-500",
+      filter: { type: "pending" as const },
     },
     {
       title: "Alertas",
@@ -110,13 +126,18 @@ export const LegislationKPIs: React.FC = () => {
       color: alertsCount > 0 ? "text-red-600" : "text-green-600",
       bgColor: alertsCount > 0 ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30",
       progress: null,
+      filter: { type: "alerts" as const },
     },
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       {kpis.map((kpi) => (
-        <Card key={kpi.title} className="hover:shadow-md transition-shadow">
+        <Card 
+          key={kpi.title} 
+          className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50 active:scale-[0.98]"
+          onClick={() => onKpiClick?.(kpi.filter)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-muted-foreground">{kpi.title}</p>
