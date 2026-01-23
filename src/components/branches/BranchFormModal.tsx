@@ -426,7 +426,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
     }
   }, [branch, initialData, form]);
 
-  // Verificar CNPJ duplicado
+  // Verificar CNPJ duplicado (apenas dentro da mesma empresa)
   const checkCnpjDuplicate = async (cnpj: string) => {
     if (!cnpj || cnpj.replace(/\D/g, '').length !== 14) {
       setCnpjDuplicate(null);
@@ -435,9 +435,29 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
 
     setIsCheckingCnpj(true);
     try {
+      // Obter company_id do usuário atual
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) {
+        setCnpjDuplicate(null);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', userData.user.id)
+        .single();
+
+      if (!profile?.company_id) {
+        setCnpjDuplicate(null);
+        return;
+      }
+
+      // Verificar duplicata apenas dentro da mesma empresa
       const { data, error } = await supabase
         .from("branches")
         .select("id, name")
+        .eq("company_id", profile.company_id)
         .eq("cnpj", cnpj)
         .neq("id", branch?.id || "00000000-0000-0000-0000-000000000000")
         .limit(1);
