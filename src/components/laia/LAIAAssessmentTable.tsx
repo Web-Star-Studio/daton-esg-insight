@@ -51,18 +51,20 @@ import { getCategoryColor, getSignificanceColor } from "@/types/laia";
 import type { LAIAAssessment } from "@/types/laia";
 
 interface LAIAAssessmentTableProps {
+  branchId?: string;
   onView?: (assessment: LAIAAssessment) => void;
   onEdit?: (assessment: LAIAAssessment) => void;
 }
 
-export function LAIAAssessmentTable({ onView, onEdit }: LAIAAssessmentTableProps) {
+export function LAIAAssessmentTable({ branchId, onView, onEdit }: LAIAAssessmentTableProps) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<{
+    branch_id?: string;
     sector_id?: string;
     category?: string;
     significance?: string;
     status?: string;
-  }>({});
+  }>({ branch_id: branchId });
   const [deleteAssessment, setDeleteAssessment] = useState<LAIAAssessment | null>(null);
 
   const { data: sectors } = useLAIASectors();

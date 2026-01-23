@@ -87,6 +87,7 @@ export async function deleteLAIASector(id: string): Promise<void> {
 // ============ Assessments ============
 
 export async function getLAIAAssessments(filters?: {
+  branch_id?: string;
   sector_id?: string;
   category?: string;
   significance?: string;
@@ -113,6 +114,9 @@ export async function getLAIAAssessments(filters?: {
     .eq("company_id", profile.company_id)
     .order("created_at", { ascending: false });
 
+  if (filters?.branch_id) {
+    query = query.eq("branch_id", filters.branch_id);
+  }
   if (filters?.sector_id) {
     query = query.eq("sector_id", filters.sector_id);
   }
@@ -210,6 +214,7 @@ export async function createLAIAAssessment(formData: LAIAAssessmentFormData): Pr
     .from("laia_assessments")
     .insert({
       company_id: profile.company_id,
+      branch_id: formData.branch_id || null,
       sector_id: formData.sector_id,
       aspect_code,
       activity_operation: formData.activity_operation,
@@ -312,7 +317,7 @@ export async function deleteLAIAAssessment(id: string): Promise<void> {
 
 // ============ Dashboard Stats ============
 
-export async function getLAIADashboardStats(): Promise<LAIADashboardStats> {
+export async function getLAIADashboardStats(branchId?: string): Promise<LAIADashboardStats> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Usuário não autenticado");
 
@@ -324,7 +329,7 @@ export async function getLAIADashboardStats(): Promise<LAIADashboardStats> {
 
   if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
 
-  const { data: assessments, error } = await supabase
+  let query = supabase
     .from("laia_assessments")
     .select(`
       id,
@@ -334,6 +339,12 @@ export async function getLAIADashboardStats(): Promise<LAIADashboardStats> {
     `)
     .eq("company_id", profile.company_id)
     .eq("status", "ativo");
+
+  if (branchId) {
+    query = query.eq("branch_id", branchId);
+  }
+
+  const { data: assessments, error } = await query;
 
   if (error) throw error;
 
@@ -366,4 +377,60 @@ export async function getLAIADashboardStats(): Promise<LAIADashboardStats> {
     .sort((a, b) => b.count - a.count);
 
   return stats;
+}
+
+// ============ Branch Stats (for unit selection page) ============
+
+export interface LAIABranchStat {
+  branch_id: string;
+  total: number;
+  criticos: number;
+  significativos: number;
+  nao_significativos: number;
+}
+
+export async function getLAIABranchStats(): Promise<LAIABranchStat[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.company_id) throw new Error("Usuário sem empresa associada");
+
+  const { data: assessments, error } = await supabase
+    .from("laia_assessments")
+    .select("id, branch_id, category, significance")
+    .eq("company_id", profile.company_id)
+    .eq("status", "ativo");
+
+  if (error) throw error;
+
+  // Group by branch_id
+  const branchMap: Record<string, LAIABranchStat> = {};
+
+  assessments?.forEach((a) => {
+    const branchId = a.branch_id || "unassigned";
+    
+    if (!branchMap[branchId]) {
+      branchMap[branchId] = {
+        branch_id: branchId,
+        total: 0,
+        criticos: 0,
+        significativos: 0,
+        nao_significativos: 0,
+      };
+    }
+
+    branchMap[branchId].total++;
+
+    if (a.category === "critico") branchMap[branchId].criticos++;
+    if (a.significance === "significativo") branchMap[branchId].significativos++;
+    else branchMap[branchId].nao_significativos++;
+  });
+
+  return Object.values(branchMap);
 }

@@ -51,6 +51,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface LAIAImportWizardProps {
   open: boolean;
   onClose: () => void;
+  branchId?: string;
 }
 
 type Step = 'upload' | 'branch' | 'preview' | 'validate' | 'result';
@@ -63,11 +64,11 @@ const STEPS: { key: Step; label: string }[] = [
   { key: 'result', label: 'Resultado' },
 ];
 
-export function LAIAImportWizard({ open, onClose }: LAIAImportWizardProps) {
+export function LAIAImportWizard({ open, onClose, branchId }: LAIAImportWizardProps) {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
-  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
-  const [skipBranch, setSkipBranch] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(branchId || null);
+  const [skipBranch, setSkipBranch] = useState(!!branchId);
   const { user } = useAuth();
   
   const {

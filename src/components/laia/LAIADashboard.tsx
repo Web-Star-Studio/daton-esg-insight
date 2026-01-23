@@ -18,8 +18,12 @@ const CATEGORY_COLORS = {
   critico: "#ef4444",
 };
 
-export function LAIADashboard() {
-  const { data: stats, isLoading, error } = useLAIADashboardStats();
+interface LAIADashboardProps {
+  branchId?: string;
+}
+
+export function LAIADashboard({ branchId }: LAIADashboardProps) {
+  const { data: stats, isLoading, error } = useLAIADashboardStats(branchId);
 
   if (isLoading) {
     return (
