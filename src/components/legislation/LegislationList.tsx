@@ -89,12 +89,12 @@ export const LegislationList: React.FC<LegislationListProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead className="w-[120px]">Tipo/Número</TableHead>
+              <TableHead className="w-[100px]">Data</TableHead>
               <TableHead>Ementa</TableHead>
               <TableHead className="w-[120px]">Macrotema</TableHead>
               <TableHead className="w-[100px]">Jurisdição</TableHead>
               <TableHead className="w-[100px]">Aplicabilidade</TableHead>
               <TableHead className="w-[120px]">Status</TableHead>
-              <TableHead className="w-[100px]">Publicação</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -114,6 +114,11 @@ export const LegislationList: React.FC<LegislationListProps> = ({
                       </span>
                     )}
                   </div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {legislation.publication_date && 
+                    format(new Date(legislation.publication_date), "dd/MM/yyyy", { locale: ptBR })
+                  }
                 </TableCell>
                 <TableCell>
                   <div className="max-w-md truncate" title={legislation.summary || legislation.title}>
@@ -152,11 +157,6 @@ export const LegislationList: React.FC<LegislationListProps> = ({
                     type="status" 
                     value={legislation.overall_status} 
                   />
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {legislation.publication_date && 
-                    format(new Date(legislation.publication_date), "dd/MM/yyyy", { locale: ptBR })
-                  }
                 </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
