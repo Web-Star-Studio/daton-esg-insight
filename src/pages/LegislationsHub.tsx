@@ -42,6 +42,32 @@ const LegislationsHub: React.FC = () => {
     });
   };
 
+  const handleKpiClick = (filter: { applicability?: string; status?: string; type?: string }) => {
+    if (filter.type === "all") {
+      handleClearFilters();
+    } else if (filter.type === "alerts") {
+      navigate('/licenciamento/legislacoes/alertas');
+      return;
+    } else if (filter.type === "pending") {
+      setFilters(prev => ({
+        ...prev,
+        applicability: "",
+        status: "pendente",
+      }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        applicability: filter.applicability || "",
+        status: filter.status || "",
+      }));
+    }
+    
+    // Scroll para a tabela de legislações
+    setTimeout(() => {
+      document.getElementById('legislations-table')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
     <div className="space-y-6">
       <Helmet>
@@ -90,13 +116,13 @@ const LegislationsHub: React.FC = () => {
       </div>
 
       {/* KPIs */}
-      <LegislationKPIs />
+      <LegislationKPIs onKpiClick={handleKpiClick} />
 
       {/* Dashboard Visual */}
       <LegislationDashboardCharts />
 
       {/* Main Content */}
-      <Card>
+      <Card id="legislations-table">
         <CardHeader className="pb-3">
           <CardTitle>Legislações</CardTitle>
         </CardHeader>
