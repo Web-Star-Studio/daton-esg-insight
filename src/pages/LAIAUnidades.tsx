@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBranches } from "@/services/branches";
 import { useLAIABranchStats } from "@/hooks/useLAIA";
+import { LAIAUnidadesFilters } from "@/components/laia/LAIAUnidadesFilters";
 import { 
   Building2, 
   Leaf, 
@@ -21,6 +23,13 @@ export default function LAIAUnidades() {
   const { data: branches, isLoading: branchesLoading } = useBranches();
   const { data: branchStats, isLoading: statsLoading } = useLAIABranchStats();
 
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "headquarters" | "branch">("all");
+  const [sortBy, setSortBy] = useState<"name" | "total" | "criticos" | "significativos">("name");
+  const [quickFilter, setQuickFilter] = useState<"criticos" | "sem_aspectos" | null>(null);
+
   const isLoading = branchesLoading || statsLoading;
 
   const getStatsForBranch = (branchId: string) => {
@@ -33,6 +42,76 @@ export default function LAIAUnidades() {
   };
 
   const activeBranches = branches?.filter(b => b.status === 'Ativo') || [];
+
+  // Extract unique cities
+  const uniqueCities = useMemo(() => {
+    return [...new Set(activeBranches.map(b => b.city).filter(Boolean) as string[])].sort();
+  }, [activeBranches]);
+
+  // Filter and sort logic
+  const filteredBranches = useMemo(() => {
+    let result = activeBranches;
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(b => 
+        b.name.toLowerCase().includes(term) ||
+        b.city?.toLowerCase().includes(term)
+      );
+    }
+
+    // City filter
+    if (cityFilter && cityFilter !== "all") {
+      result = result.filter(b => b.city === cityFilter);
+    }
+
+    // Type filter
+    if (typeFilter === "headquarters") {
+      result = result.filter(b => b.is_headquarters);
+    } else if (typeFilter === "branch") {
+      result = result.filter(b => !b.is_headquarters);
+    }
+
+    // Quick filters
+    if (quickFilter === "criticos") {
+      result = result.filter(b => getStatsForBranch(b.id).criticos > 0);
+    } else if (quickFilter === "sem_aspectos") {
+      result = result.filter(b => getStatsForBranch(b.id).total === 0);
+    }
+
+    // Sorting
+    result = [...result].sort((a, b) => {
+      const statsA = getStatsForBranch(a.id);
+      const statsB = getStatsForBranch(b.id);
+
+      switch (sortBy) {
+        case "total":
+          return statsB.total - statsA.total;
+        case "criticos":
+          return statsB.criticos - statsA.criticos;
+        case "significativos":
+          return statsB.significativos - statsA.significativos;
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+
+    return result;
+  }, [activeBranches, searchTerm, cityFilter, typeFilter, sortBy, quickFilter, branchStats]);
+
+  const hasActiveFilters = searchTerm !== "" || 
+    cityFilter !== "all" || 
+    typeFilter !== "all" || 
+    quickFilter !== null;
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setCityFilter("all");
+    setTypeFilter("all");
+    setQuickFilter(null);
+    setSortBy("name");
+  };
 
   return (
     <>
@@ -55,6 +134,26 @@ export default function LAIAUnidades() {
             Selecione uma unidade para gerenciar o levantamento e avaliação dos aspectos ambientais
           </p>
         </div>
+
+        {/* Filters */}
+        {!isLoading && activeBranches.length > 0 && (
+          <LAIAUnidadesFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            cityFilter={cityFilter}
+            setCityFilter={setCityFilter}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            cities={uniqueCities}
+            onClearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            stats={{ total: activeBranches.length, filtered: filteredBranches.length }}
+            onQuickFilter={setQuickFilter}
+            activeQuickFilter={quickFilter}
+          />
+        )}
 
         {/* Branch Cards */}
         {isLoading ? (
@@ -80,9 +179,22 @@ export default function LAIAUnidades() {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredBranches.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">Nenhuma unidade encontrada</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Tente ajustar os filtros para encontrar unidades
+              </p>
+              <Button variant="outline" onClick={clearFilters}>
+                Limpar filtros
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {activeBranches.map((branch) => {
+            {filteredBranches.map((branch) => {
               const stats = getStatsForBranch(branch.id);
               
               return (
