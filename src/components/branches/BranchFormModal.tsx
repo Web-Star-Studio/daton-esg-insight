@@ -119,6 +119,8 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [cnpjDuplicate, setCnpjDuplicate] = useState<string | null>(null);
+  const [isCheckingCnpj, setIsCheckingCnpj] = useState(false);
   const createMutation = useCreateBranch();
   const updateMutation = useUpdateBranch();
   const { data: employees, isLoading: isLoadingEmployees } = useCompanyEmployees();
@@ -424,9 +426,51 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
     }
   }, [branch, initialData, form]);
 
+  // Verificar CNPJ duplicado
+  const checkCnpjDuplicate = async (cnpj: string) => {
+    if (!cnpj || cnpj.replace(/\D/g, '').length !== 14) {
+      setCnpjDuplicate(null);
+      return;
+    }
+
+    setIsCheckingCnpj(true);
+    try {
+      const { data, error } = await supabase
+        .from("branches")
+        .select("id, name")
+        .eq("cnpj", cnpj)
+        .neq("id", branch?.id || "00000000-0000-0000-0000-000000000000")
+        .limit(1);
+
+      if (error) {
+        console.error("Error checking CNPJ:", error);
+        setCnpjDuplicate(null);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setCnpjDuplicate(`Este CNPJ já está em uso pela filial "${data[0].name}"`);
+      } else {
+        setCnpjDuplicate(null);
+      }
+    } catch (err) {
+      console.error("Error checking CNPJ:", err);
+      setCnpjDuplicate(null);
+    } finally {
+      setIsCheckingCnpj(false);
+    }
+  };
+
   const handleCnpjChange = (value: string) => {
     const formatted = formatCNPJ(value);
     form.setValue("cnpj", formatted, { shouldValidate: true });
+    
+    // Verificar duplicata quando CNPJ estiver completo
+    if (formatted.replace(/\D/g, '').length === 14) {
+      checkCnpjDuplicate(formatted);
+    } else {
+      setCnpjDuplicate(null);
+    }
   };
 
   const cnpjValue = form.watch("cnpj");
@@ -659,6 +703,12 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
                     <FormDescription className="text-xs">
                       Digite o CNPJ para buscar ou importe o cartão CNPJ (PDF, PNG, JPG)
                     </FormDescription>
+                    {cnpjDuplicate && (
+                      <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                        <XCircle className="h-4 w-4" />
+                        {cnpjDuplicate}
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1028,7 +1078,7 @@ export function BranchFormModal({ open, onOpenChange, branch, initialData }: Bra
               <Button type="button" variant="outline" onClick={onOpenChange}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending || !!cnpjDuplicate}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? "Salvar" : "Cadastrar"}
               </Button>

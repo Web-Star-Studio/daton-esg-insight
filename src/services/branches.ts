@@ -220,9 +220,16 @@ export const useUpdateBranch = () => {
       unifiedToast.success('Filial atualizada com sucesso');
     },
     onError: (error: any) => {
-      unifiedToast.error('Erro ao atualizar filial', {
-        description: error.message
-      });
+      // Tratar erro de CNPJ duplicado
+      if (error?.message?.includes("idx_branches_cnpj_unique") || error?.message?.includes("duplicate key")) {
+        unifiedToast.error('CNPJ já cadastrado', {
+          description: 'Este CNPJ já está em uso por outra filial. Verifique os dados.'
+        });
+      } else {
+        unifiedToast.error('Erro ao atualizar filial', {
+          description: error.message
+        });
+      }
     },
   });
 };
